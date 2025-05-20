@@ -337,7 +337,19 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                 {activeTab === 'details' && (
                   <div className="space-y-6">
                     {/* Personal Information */}
-                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700 relative">
+                      <div className="absolute top-6 right-6">
+                        <button
+                          onClick={() => setIsEditModalOpen(true)}
+                          className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
+                                   dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
+                                   rounded-lg transition-colors flex items-center gap-1 w-auto"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          Editar
+                        </button>
+                      </div>
+                      
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <User className="w-5 h-5 text-gray-400" />
                         Informações Pessoais
@@ -910,13 +922,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                            dark:border-gray-600 dark:hover:bg-gray-700"
                 >
                   Fechar
-                </button>
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg 
-                           hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Editar
                 </button>
               </div>
             </div>
