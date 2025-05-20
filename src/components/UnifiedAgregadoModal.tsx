@@ -87,8 +87,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
     try {
       setLoading(true);
       
-      // Fetch all data in parallel
-      const [documentoResponse, enderecoResponse, veiculoResponse, ajudanteResponse] = await Promise.all([
+      // Get the active vehicle ID if it exists
+      const activeVehicleId = agregado.veiculo?.[0]?.veiculo_id;
+      
+      // Fetch all data in parallel, but only include documento_ajudante if we have a valid vehicle ID
+      const promises = [
         // Fetch documento_motorista
         supabase
           .from('documento_motorista')
@@ -133,37 +136,44 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
           .eq('motorista_id', agregado.motorista_id)
           .eq('status_veiculo', true)
           .maybeSingle(),
-          
-        // Fetch documento_ajudante
-        supabase
-          .from('documento_ajudante')
-          .select(`
-            *,
-            cnh_ajudante (*)
-          `)
-          .eq('veiculo_id', agregado.veiculo?.[0]?.veiculo_id)
-          .maybeSingle()
-      ]);
+      ];
+      
+      // Only add documento_ajudante query if we have a valid vehicle ID
+      if (activeVehicleId) {
+        promises.push(
+          supabase
+            .from('documento_ajudante')
+            .select(`
+              *,
+              cnh_ajudante (*)
+            `)
+            .eq('veiculo_id', activeVehicleId)
+            .maybeSingle()
+        );
+      }
+
+      const responses = await Promise.all(promises);
 
       // Handle errors
-      if (documentoResponse.error && documentoResponse.error.code !== 'PGRST116') {
-        throw documentoResponse.error;
-      }
-      if (enderecoResponse.error && enderecoResponse.error.code !== 'PGRST116') {
-        throw enderecoResponse.error;
-      }
-      if (veiculoResponse.error && veiculoResponse.error.code !== 'PGRST116') {
-        throw veiculoResponse.error;
-      }
-      if (ajudanteResponse.error && ajudanteResponse.error.code !== 'PGRST116') {
-        throw ajudanteResponse.error;
-      }
+      responses.forEach((response, index) => {
+        if (response.error && response.error.code !== 'PGRST116') {
+          throw response.error;
+        }
+      });
 
       // Set data states
+      const [documentoResponse, enderecoResponse, veiculoResponse, ajudanteResponse] = responses;
+
       setDocumento(documentoResponse.data);
       setEndereco(enderecoResponse.data);
       setVeiculo(veiculoResponse.data);
-      setDocumentoAjudante(ajudanteResponse.data);
+      
+      // Only set documento_ajudante if we had a valid vehicle ID and received a response
+      if (activeVehicleId && ajudanteResponse) {
+        setDocumentoAjudante(ajudanteResponse.data);
+      } else {
+        setDocumentoAjudante(null);
+      }
       
     } catch (error) {
       console.error('Erro ao carregar dados do agregado:', error);
