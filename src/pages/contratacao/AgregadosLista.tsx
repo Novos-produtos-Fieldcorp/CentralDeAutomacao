@@ -23,10 +23,16 @@ import DocumentUploadModal from '../../components/DocumentUploadModal';
 import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 
+interface MotoristaWithAddress extends Motorista {
+  cidade?: string;
+  cidadeLowerCase?: string;
+  estado?: string;
+}
+
 const AgregadosLista = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const [motoristas, setMotoristas] = useState<Motorista[]>([]);
+  const [motoristas, setMotoristas] = useState<MotoristaWithAddress[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,7 +105,7 @@ const AgregadosLista = () => {
     fetchClientes();
     fetchCities();
     fetchVehicleTypes();
-  }, [currentPage, pageSize, searchTerm, phoneSearch, selectedClient, selectedCity, funcaoFilter, selectedStatus, selectedVehicleType, dateRange]);
+  }, [currentPage, pageSize, dateRange, searchTerm, phoneSearch, selectedClient, selectedCity, funcaoFilter, selectedStatus, selectedVehicleType]);
 
   useEffect(() => {
   const handler = setTimeout(() => {
@@ -134,29 +140,24 @@ const fetchMotoristas = async () => {
     const from = (currentPage - 1) * pageSize;
     const to = from + pageSize - 1;
     
-    // Build the base query with essential joins and count
+    // Build the query with filters
     let query = supabase
       .from('motorista')
       .select(`
         *,
-        end_motorista!inner (
-          logradouro!inner (
-            bairro!inner (
-              cidade!inner (
+        end_motorista (
+          logradouro (
+            bairro (
+              cidade (
                 cidade,
-                estado!inner (
+                estado (
                   sigla_estado
                 )
               )
             )
           )
         ),
-        veiculo (
-          placa,
-          marca,
-          tipo,
-          tipologia
-        )
+        documento_motorista (*)
       `, { count: 'exact' })
       .eq('funcao', 'Agregado')
       .eq('company_id', companyId);
@@ -168,11 +169,9 @@ const fetchMotoristas = async () => {
         .lte('data_cadastro', dateRange.endDate);
     }
 
-    // Apply search filters efficiently using indexes
+    // Apply search filter if provided
     if (searchTerm) {
-      query = query.or(
-        `nome.ilike.%${searchTerm}%,cpf.ilike.%${searchTerm}%,veiculo.placa.ilike.%${searchTerm}%`
-      );
+      query = query.or(`nome.ilike.%${searchTerm}%,cpf.ilike.%${searchTerm}%`);
     }
 
     if (phoneSearch) {
@@ -195,22 +194,13 @@ const fetchMotoristas = async () => {
       query = query.eq('veiculo.tipologia', selectedVehicleType);
     }
 
-    // Apply server-side pagination and ordering
-    query = query
-      .order('data_cadastro', { ascending: false })
-      .range(from, to);
-
+    // Apply pagination
+    query = query.range(from, to);
+    
     // Execute the query
-    const { data, error, count } = await query;
+    const { data, error, count } = await query.order('data_cadastro', { ascending: false });
 
     if (error) throw error;
-
-    if (!data) {
-      setMotoristas([]);
-      setTotalCount(0);
-      setTotalPages(1);
-      return;
-    }
 
     // Process the data
     const motoristasData = data?.map(motorista => ({
@@ -220,8 +210,12 @@ const fetchMotoristas = async () => {
     })) || [];
 
     setMotoristas(motoristasData);
-    setTotalCount(count || 0);
-    setTotalPages(Math.ceil((count || 0) / pageSize));
+    
+    // Update pagination state
+    if (count !== null) {
+      setTotalCount(count);
+      setTotalPages(Math.max(1, Math.ceil(count / pageSize)));
+    }
   } catch (error) {
     console.error('Error fetching motoristas:', error);
     toast.error('Erro ao carregar motoristas');
@@ -237,6 +231,7 @@ const fetchMotoristas = async () => {
       const { data, error } = await supabase.from('cliente')
         .select('*')
         .eq('st_cliente', true)
+        .eq('company_id', companyId)
         .order('nome');
 
       if (error) throw error;
@@ -479,44 +474,6 @@ const fetchMotoristas = async () => {
     fetchMotoristas();
   };
 
-  const updateStatus = async (motorista_id: number, newStatus: string) => {
-    try {
-      const { error } = await supabase.from('motorista')
-        .update({ st_cadastro: newStatus })
-        .eq('motorista_id', motorista_id)
-        .eq('company_id', companyId);
-
-      if (error) throw error;
-
-      setMotoristas(motoristas.map(m => 
-        m.motorista_id === motorista_id ? { ...m, st_cadastro: newStatus } : m
-      ));
-      
-      toast.success('Status atualizado com sucesso');
-    } catch (err) {
-      toast.error('Erro ao atualizar status',motorista_id);
-    }
-  };
-
-  const updateCliente = async (motorista_id: number, cliente_id: number | null) => {
-    try {
-      const { error } = await supabase.from('motorista')
-        .update({ cliente_id })
-        .eq('motorista_id', motorista_id);
-
-      if (error) throw error;
-
-      setMotoristas(motoristas.map(m => 
-        m.motorista_id === motorista_id ? { ...m, cliente_id } : m
-      ));
-      
-      toast.success('Cliente atualizado com sucesso');
-    } catch (error) {
-      console.error('Erro ao atualizar cliente:', error);
-      toast.error('Erro ao atualizar cliente');
-    }
-  };
-
   const statusOptions = [
     { value: '', label: 'Todos os status' },
     { value: 'cadastrado', label: 'Cadastrado' },
@@ -549,6 +506,45 @@ const fetchMotoristas = async () => {
         return `${baseStyle} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200`;
       default:
         return baseStyle;
+    }
+  };
+
+  const updateStatus = async (motorista_id: number, newStatus: string) => {
+    try {
+      const { error } = await supabase.from('motorista')
+        .update({ st_cadastro: newStatus })
+        .eq('motorista_id', motorista_id)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      setMotoristas(motoristas.map(m => 
+        m.motorista_id === motorista_id ? { ...m, st_cadastro: newStatus } : m
+      ));
+      
+      toast.success('Status atualizado com sucesso');
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Erro ao atualizar status');
+    }
+  };
+
+  const updateCliente = async (motorista_id: number, cliente_id: number | null) => {
+    try {
+      const { error } = await supabase.from('motorista')
+        .update({ cliente_id })
+        .eq('motorista_id', motorista_id);
+
+      if (error) throw error;
+
+      setMotoristas(prev => prev.map(m => 
+        m.motorista_id === motorista_id ? { ...m, cliente_id } : m
+      ));
+      
+      toast.success('Cliente atualizado com sucesso');
+    } catch (error) {
+      console.error('Erro ao atualizar cliente:', error);
+      toast.error('Erro ao atualizar cliente');
     }
   };
 
@@ -655,9 +651,7 @@ const fetchMotoristas = async () => {
                 setCurrentPage(1); // Reset to first page on filter change
                 handleSearch();
               }}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100 appearance-none"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todos os tipos de veículo</option>
               {vehicleTypes.map(type => (
@@ -677,9 +671,7 @@ const fetchMotoristas = async () => {
                 setCurrentPage(1); // Reset to first page on filter change
                 handleSearch();
               }}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100 appearance-none"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               {statusOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -698,9 +690,7 @@ const fetchMotoristas = async () => {
                 setCurrentPage(1); // Reset to first page on filter change
                 handleSearch();
               }}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100 appearance-none"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todas as cidades</option>
               {cities.map((city, index) => (
@@ -720,9 +710,7 @@ const fetchMotoristas = async () => {
                 setCurrentPage(1); // Reset to first page on filter change
                 handleSearch();
               }}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100 appearance-none"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todos os clientes</option>
               {clientes.map((cliente) => (
