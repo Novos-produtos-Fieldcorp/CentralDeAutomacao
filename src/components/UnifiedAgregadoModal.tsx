@@ -284,13 +284,24 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
-                           rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <X size={24} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
+                             dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
+                             rounded-lg transition-colors flex items-center gap-1 w-auto"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Editar
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
+                             rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
               </div>
               
               {/* Tabs */}
@@ -391,16 +402,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                         </div>
                       </div>
                     </section>
-                    
-                    <button
-                      onClick={() => setIsEditModalOpen(true)}
-                      className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
-                               dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
-                               rounded-lg transition-colors flex items-center gap-1 w-auto"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                      Editar
-                    </button>
                     
                     {/* Address */}
                     <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
