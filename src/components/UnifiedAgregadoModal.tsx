@@ -623,7 +623,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                       
                       <div className="flex justify-between items-center mb-2">
                         <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Comprovante Digital
+                          Comprovante de Residência
                         </div>
                         {documento?.foto_comprovante_residencia && (
                           <button
