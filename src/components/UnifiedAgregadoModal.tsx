@@ -30,9 +30,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
   const [isDocumentFormOpen, setIsDocumentFormOpen] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [agregadoData, setAgregadoData] = useState<Motorista | null>(null);
 
   useEffect(() => {
     if (isOpen && agregado) {
+      setAgregadoData(agregado);
       fetchAgregadoDetails();
     }
   }, [isOpen, agregado]);
@@ -98,6 +100,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
         `)
         .eq('motorista_id', agregado.motorista_id)
         .eq('status_veiculo', true)
+        .limit(1)
         .maybeSingle();
 
       if (veiculoError && veiculoError.code !== 'PGRST116') {
@@ -105,6 +108,19 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
       }
 
       setVeiculo(veiculoData);
+      
+      // Fetch updated agregado data
+      const { data: updatedAgregado, error: agregadoError } = await supabase
+        .from('motorista')
+        .select('*')
+        .eq('motorista_id', agregado.motorista_id)
+        .single();
+        
+      if (agregadoError) {
+        throw agregadoError;
+      }
+      
+      setAgregadoData(updatedAgregado);
     } catch (error) {
       console.error('Error fetching agregado details:', error);
       toast.error('Erro ao carregar detalhes do agregado');
@@ -240,6 +256,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
 
   if (!isOpen || !agregado) return null;
 
+  // Use agregadoData for rendering to ensure we show the most up-to-date information
+  const displayData = agregadoData || agregado;
+
   return (
     <div className="fixed inset-0 z-50">
       {/* Overlay */}
@@ -258,10 +277,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                   </div>
                   <div className="flex flex-col">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                      {agregado.nome}
+                      {displayData.nome}
                     </h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Agregado • {formatCPF(agregado.cpf)}
+                      Agregado • {formatCPF(displayData.cpf)}
                     </p>
                   </div>
                 </div>
@@ -339,21 +358,21 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                           <div>
                             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome</div>
                             <div className="text-base text-gray-900 dark:text-white break-words">
-                              {agregado.nome}
+                              {displayData.nome}
                             </div>
                           </div>
                           
                           <div>
                             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">CPF</div>
                             <div className="text-base text-gray-900 dark:text-white break-words">
-                              {formatCPF(agregado.cpf)}
+                              {formatCPF(displayData.cpf)}
                             </div>
                           </div>
                           
                           <div>
                             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Data de Nascimento</div>
                             <div className="text-base text-gray-900 dark:text-white break-words">
-                              {agregado.dt_nascimento ? formatDate(agregado.dt_nascimento) : 'Não informada'}
+                              {displayData.dt_nascimento ? formatDate(displayData.dt_nascimento) : 'Não informada'}
                             </div>
                           </div>
                         </div>
@@ -362,21 +381,21 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                           <div>
                             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Telefone</div>
                             <div className="text-base text-gray-900 dark:text-white break-words">
-                              {agregado.telefone ? formatPhone(agregado.telefone.toString()) : 'Não informado'}
+                              {displayData.telefone ? formatPhone(displayData.telefone.toString()) : 'Não informado'}
                             </div>
                           </div>
                           
                           <div>
                             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</div>
                             <div className="text-base text-gray-900 dark:text-white break-words">
-                              {agregado.email || 'Não informado'}
+                              {displayData.email || 'Não informado'}
                             </div>
                           </div>
                           
                           <div>
                             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</div>
                             <div className="text-base text-gray-900 dark:text-white break-words capitalize">
-                              {agregado.st_cadastro.replace('_', ' ')}
+                              {displayData.st_cadastro.replace('_', ' ')}
                             </div>
                           </div>
                         </div>
