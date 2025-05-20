@@ -989,5 +989,3 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
 };
 
 export default UnifiedAgregadoModal;
-
-export default UnifiedAgregadoModal
