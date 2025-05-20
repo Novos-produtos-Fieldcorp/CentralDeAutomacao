@@ -836,16 +836,6 @@ const fetchMotoristas = async () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleEdit(motorista);
-                            }}
-                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
-                            title="Editar"
-                          >
-                            <Edit2 size={18} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
                               handleDelete(motorista);
                             }}
                             className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
