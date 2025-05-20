@@ -276,11 +276,11 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                                 <FileText className="w-12 h-12 text-gray-400 mb-2" />
                                 <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
                                 <button
-                                  onClick={() => openDocumentInNewTab(documento.foto_cnh)}
+                                  onClick={() => setActiveDocument(documento.foto_cnh)}
                                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
                                 >
-                                  <ExternalLink size={16} />
-                                  Abrir PDF
+                                  <FileText size={16} />
+                                  Visualizar PDF
                                 </button>
                               </div>
                             ) : (
@@ -288,7 +288,7 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                                 src={documento.foto_cnh}
                                 alt="CNH"
                                 className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                onClick={() => openDocumentInNewTab(documento.foto_cnh)}
+                                onClick={() => setActiveDocument(documento.foto_cnh)}
                               />
                             )}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 dark:group-hover:bg-black/20 transition-colors duration-200" />
@@ -328,11 +328,11 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                                 <FileText className="w-12 h-12 text-gray-400 mb-2" />
                                 <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
                                 <button
-                                  onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
+                                  onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
                                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
                                 >
-                                  <ExternalLink size={16} />
-                                  Abrir PDF
+                                  <FileText size={16} />
+                                  Visualizar PDF
                                 </button>
                               </div>
                             ) : (
@@ -340,7 +340,7 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                                 src={documento.foto_comprovante_residencia}
                                 alt="Comprovante de Residência"
                                 className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
+                                onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
                               />
                             )}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 dark:group-hover:bg-black/20 transition-colors duration-200" />
@@ -381,11 +381,11 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                                   <FileText className="w-12 h-12 text-gray-400 mb-2" />
                                   <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
                                   <button
-                                    onClick={() => openDocumentInNewTab(veiculo.documento_veiculo[0].foto_crv)}
+                                    onClick={() => setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
                                   >
-                                    <ExternalLink size={16} />
-                                    Abrir PDF
+                                    <FileText size={16} />
+                                    Visualizar PDF
                                   </button>
                                 </div>
                               ) : (
@@ -393,7 +393,7 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                                   src={veiculo.documento_veiculo[0].foto_crv}
                                   alt="CRV do veículo"
                                   className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                  onClick={() => openDocumentInNewTab(veiculo.documento_veiculo[0].foto_crv)}
+                                  onClick={() => setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
                                 />
                               )}
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 dark:group-hover:bg-black/20 transition-colors duration-200" />

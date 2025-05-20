@@ -50,6 +50,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   const [veiculoData, setVeiculoData] = useState({
     foto_crv: null as string | null
   });
+  const [activeDocument, setActiveDocument] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && motorista_id) {
@@ -65,7 +66,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       setLoading(true);
       const { data, error } = await supabase
         .from('documento_motorista')
-        .select('*')
+        .select('id_documento_motorista')
         .eq('motorista_id', motorista_id)
         .maybeSingle();
 
@@ -75,33 +76,13 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
       if (data) {
         setDocumento({
-          id_documento_motorista: data.id_documento_motorista,
-          foto_cnh: data.foto_cnh,
-          foto_comprovante_residencia: data.foto_comprovante_residencia,
-          nome_pai: data.nome_pai,
-          nome_mae: data.nome_mae,
-          nr_registro_cnh: data.nr_registro_cnh ? String(data.nr_registro_cnh) : null,
-          categoria_cnh: data.categoria_cnh,
-          validade_cnh: data.validade_cnh,
-          uf_cnh: data.uf_cnh,
-          motorista_id
-        });
-      } else {
-        setDocumento({
-          foto_cnh: null,
-          foto_comprovante_residencia: null,
-          nome_pai: null,
-          nome_mae: null,
-          nr_registro_cnh: null,
-          categoria_cnh: null,
-          validade_cnh: null,
-          uf_cnh: null,
-          motorista_id
+          ...documento,
+          id_documento_motorista: data.id_documento_motorista
         });
       }
     } catch (error) {
       console.error('Error fetching documento:', error);
-      toast.error('Erro ao carregar documentos');
+      toast.error('Erro ao carregar documento');
     } finally {
       setLoading(false);
     }
@@ -114,10 +95,12 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         .from('veiculo')
         .select('*')
         .eq('motorista_id', motorista_id)
-        .eq('status_veiculo', true)
+        .limit(1)
         .maybeSingle();
 
-      if (veiculoError) throw veiculoError;
+      if (veiculoError && veiculoError.code !== 'PGRST116') {
+        throw veiculoError;
+      }
       
       if (veiculoData) {
         setVeiculo(veiculoData);
@@ -129,7 +112,9 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
           .eq('veiculo_id', veiculoData.veiculo_id)
           .maybeSingle();
           
-        if (docError) throw docError;
+        if (docError && docError.code !== 'PGRST116') {
+          throw docError;
+        }
         
         if (docData) {
           setDocumentoVeiculo(docData);
@@ -183,22 +168,22 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
       if (existingDoc) {
         // Update existing record
-        const { error } = await supabase
+        const { error: updateError } = await supabase
           .from('documento_motorista')
           .update(documentData)
           .eq('motorista_id', motorista_id);
 
-        if (error) throw error;
+        if (updateError) throw updateError;
       } else {
         // Create new record
-        const { error } = await supabase
+        const { error: insertError } = await supabase
           .from('documento_motorista')
           .insert({
             motorista_id,
             ...documentData
           });
 
-        if (error) throw error;
+        if (insertError) throw insertError;
       }
 
       // Update vehicle document if vehicle exists
@@ -507,6 +492,55 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Full-screen document viewer */}
+        {activeDocument && (
+          <div 
+            className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+            onClick={() => setActiveDocument(null)}
+          >
+            <div 
+              className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  Visualização do Documento
+                </h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openDocumentInNewTab(activeDocument)}
+                    className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Abrir em nova aba"
+                  >
+                    <ExternalLink size={20} />
+                  </button>
+                  <button
+                    onClick={() => setActiveDocument(null)}
+                    className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              <div className="relative h-[calc(90vh-80px)]">
+                {isPdf(activeDocument) ? (
+                  <iframe 
+                    src={`${activeDocument}#toolbar=1`} 
+                    className="w-full h-full" 
+                    title="PDF Viewer"
+                  />
+                ) : (
+                  <img
+                    src={activeDocument}
+                    alt="Documento"
+                    className="w-full h-full object-contain"
+                  />
+                )}
+              </div>
             </div>
           </div>
         )}

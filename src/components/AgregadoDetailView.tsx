@@ -48,6 +48,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
 }) => {
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
+  const [activeDocument, setActiveDocument] = useState<string | null>(null);
 
   if (!isOpen || !agregado) return null;
 
@@ -298,11 +299,11 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                               <FileText className="w-12 h-12 text-gray-400 mb-2" />
                               <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
                               <button
-                                onClick={() => openDocumentInNewTab(documento.foto_cnh)}
+                                onClick={() => setActiveDocument(documento.foto_cnh)}
                                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
                               >
-                                <ExternalLink size={16} />
-                                Abrir PDF
+                                <FileText size={16} />
+                                Visualizar PDF
                               </button>
                             </div>
                           ) : (
@@ -310,7 +311,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                               src={documento.foto_cnh}
                               alt="CNH"
                               className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                              onClick={() => openDocumentInNewTab(documento.foto_cnh)}
+                              onClick={() => setActiveDocument(documento.foto_cnh)}
                             />
                           )}
                         </div>
@@ -343,7 +344,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="overflow-hidden">
                             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</div>
-                            <div className="text-base text-gray-900 dark:text-white uppercase font-medium break-words">
+                            <div className="text-lg font-semibold text-gray-900 dark:text-white uppercase font-medium break-words">
                               {veiculo.placa}
                             </div>
                           </div>
@@ -427,19 +428,19 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                         <div className="overflow-hidden">
                           <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Proprietário do Veículo</div>
                           <div className="text-base text-gray-900 dark:text-white break-words">
-                            {veiculo.pessoa_fisica_dono_veiculo ? (
+                            {veiculo.documento_veiculo?.[0]?.pessoa_fisica_dono_veiculo ? (
                               <>
-                                <div>{veiculo.pessoa_fisica_dono_veiculo.nome_dono_veiculo}</div>
+                                <div>{veiculo.documento_veiculo[0].pessoa_fisica_dono_veiculo.nome_dono_veiculo}</div>
                                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  Pessoa Física {veiculo.pessoa_fisica_dono_veiculo.nr_rg ? `• RG: ${veiculo.pessoa_fisica_dono_veiculo.nr_rg}` : ''}
+                                  Pessoa Física {veiculo.documento_veiculo[0].pessoa_fisica_dono_veiculo.nr_rg ? `• RG: ${veiculo.documento_veiculo[0].pessoa_fisica_dono_veiculo.nr_rg}` : ''}
                                 </div>
                               </>
-                            ) : veiculo.pessoa_juridica_dono_veiculo ? (
+                            ) : veiculo.documento_veiculo?.[0]?.pessoa_juridica_dono_veiculo ? (
                               <>
-                                <div>{veiculo.pessoa_juridica_dono_veiculo.razao_social}</div>
+                                <div>{veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.razao_social}</div>
                                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  Pessoa Jurídica {veiculo.pessoa_juridica_dono_veiculo.cnpj ? `• CNPJ: ${veiculo.pessoa_juridica_dono_veiculo.cnpj}` : ''}
-                                  {veiculo.pessoa_juridica_dono_veiculo.inscricao_estadual ? ` • IE: ${veiculo.pessoa_juridica_dono_veiculo.inscricao_estadual}` : ''}
+                                  Pessoa Jurídica {veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.cnpj ? `• CNPJ: ${veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.cnpj}` : ''}
+                                  {veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.inscricao_estadual ? ` • IE: ${veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.inscricao_estadual}` : ''}
                                 </div>
                               </>
                             ) : (
@@ -506,10 +507,10 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                             {documento_ajudante.cnh_ajudante[0].foto_cnh && (
                               <div className="mt-2">
                                 <button
-                                  onClick={() => openDocumentInNewTab(documento_ajudante.cnh_ajudante[0].foto_cnh)}
+                                  onClick={() => setActiveDocument(documento_ajudante.cnh_ajudante[0].foto_cnh)}
                                   className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-sm"
                                 >
-                                  <ExternalLink size={14} />
+                                  <FileText size={14} />
                                   Ver CNH do Ajudante
                                 </button>
                               </div>
@@ -557,11 +558,11 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                                   <FileText className="w-12 h-12 text-gray-400 mb-2" />
                                   <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
                                   <button
-                                    onClick={() => openDocumentInNewTab(veiculo.documento_veiculo[0].foto_crv)}
+                                    onClick={() => setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
                                   >
-                                    <ExternalLink size={16} />
-                                    Abrir PDF
+                                    <FileText size={16} />
+                                    Visualizar PDF
                                   </button>
                                 </div>
                               ) : (
@@ -569,7 +570,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                                   src={veiculo.documento_veiculo[0].foto_crv}
                                   alt="CRV do veículo"
                                   className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                  onClick={() => openDocumentInNewTab(veiculo.documento_veiculo[0].foto_crv)}
+                                  onClick={() => setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
                                 />
                               )}
                             </div>
@@ -619,11 +620,11 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                               <FileText className="w-12 h-12 text-gray-400 mb-2" />
                               <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
                               <button
-                                onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
+                                onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
                                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
                               >
-                                <ExternalLink size={16} />
-                                Abrir PDF
+                                <FileText size={16} />
+                                Visualizar PDF
                               </button>
                             </div>
                           ) : (
@@ -631,7 +632,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                               src={documento.foto_comprovante_residencia}
                               alt="Comprovante de Residência"
                               className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                              onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
+                              onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
                             />
                           )}
                         </div>
@@ -772,6 +773,55 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                   Fechar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-screen document viewer */}
+      {activeDocument && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+          onClick={() => setActiveDocument(null)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                Visualização do Documento
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openDocumentInNewTab(activeDocument)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Abrir em nova aba"
+                >
+                  <ExternalLink size={20} />
+                </button>
+                <button
+                  onClick={() => setActiveDocument(null)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="relative h-[calc(90vh-80px)]">
+              {isPdf(activeDocument) ? (
+                <iframe 
+                  src={`${activeDocument}#toolbar=1`} 
+                  className="w-full h-full" 
+                  title="PDF Viewer"
+                />
+              ) : (
+                <img
+                  src={activeDocument}
+                  alt="Documento"
+                  className="w-full h-full object-contain"
+                />
+              )}
             </div>
           </div>
         </div>

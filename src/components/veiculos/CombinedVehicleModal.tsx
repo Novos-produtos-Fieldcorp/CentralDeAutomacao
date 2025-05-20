@@ -16,6 +16,7 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(veiculo?.documento_veiculo?.[0]?.foto_crv || null);
+  const [activeDocument, setActiveDocument] = useState<string | null>(null);
 
   if (!isOpen || !veiculo) return null;
 
@@ -330,11 +331,11 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                             <FileText className="w-12 h-12 text-gray-400 mb-2" />
                             <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
                             <button
-                              onClick={() => openDocumentInNewTab(previewUrl)}
+                              onClick={() => setActiveDocument(previewUrl)}
                               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
                             >
-                              <ExternalLink size={16} />
-                              Abrir PDF
+                              <FileText size={16} />
+                              Visualizar PDF
                             </button>
                           </div>
                         ) : (
@@ -342,7 +343,7 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                             src={previewUrl}
                             alt="CRV do veículo"
                             className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                            onClick={() => openDocumentInNewTab(previewUrl)}
+                            onClick={() => setActiveDocument(previewUrl)}
                           />
                         )}
                       </div>
@@ -419,6 +420,55 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
           </div>
         </div>
       </div>
+
+      {/* Full-screen document viewer */}
+      {activeDocument && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+          onClick={() => setActiveDocument(null)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                Visualização do Documento
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openDocumentInNewTab(activeDocument)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Abrir em nova aba"
+                >
+                  <ExternalLink size={20} />
+                </button>
+                <button
+                  onClick={() => setActiveDocument(null)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="relative h-[calc(90vh-80px)]">
+              {isPdf(activeDocument) ? (
+                <iframe 
+                  src={`${activeDocument}#toolbar=1`} 
+                  className="w-full h-full" 
+                  title="PDF Viewer"
+                />
+              ) : (
+                <img
+                  src={activeDocument}
+                  alt="Documento"
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

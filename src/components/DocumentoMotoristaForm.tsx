@@ -22,6 +22,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
   const [existingDocumento, setExistingDocumento] = useState<any | null>(null);
   const [veiculo, setVeiculo] = useState<any | null>(null);
   const [documentoVeiculo, setDocumentoVeiculo] = useState<any | null>(null);
+  const [activeDocument, setActiveDocument] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     foto_cnh: '',
@@ -392,11 +393,11 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            onClick={() => openDocumentInNewTab(formData.foto_cnh)}
+                            onClick={() => setActiveDocument(formData.foto_cnh)}
                             className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
                           >
-                            <ExternalLink size={16} />
-                            Abrir
+                            <FileText size={16} />
+                            Visualizar
                           </button>
                           <button
                             type="button"
@@ -414,7 +415,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                           src={formData.foto_cnh}
                           alt="CNH"
                           className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                          onClick={() => openDocumentInNewTab(formData.foto_cnh)}
+                          onClick={() => setActiveDocument(formData.foto_cnh)}
                         />
                         <button
                           type="button"
@@ -534,11 +535,11 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            onClick={() => openDocumentInNewTab(formData.foto_comprovante_residencia)}
+                            onClick={() => setActiveDocument(formData.foto_comprovante_residencia)}
                             className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
                           >
-                            <ExternalLink size={16} />
-                            Abrir
+                            <FileText size={16} />
+                            Visualizar
                           </button>
                           <button
                             type="button"
@@ -556,7 +557,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                           src={formData.foto_comprovante_residencia}
                           alt="Comprovante de Residência"
                           className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                          onClick={() => openDocumentInNewTab(formData.foto_comprovante_residencia)}
+                          onClick={() => setActiveDocument(formData.foto_comprovante_residencia)}
                         />
                         <button
                           type="button"
@@ -694,11 +695,11 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                           <div className="flex gap-2">
                             <button
                               type="button"
-                              onClick={() => openDocumentInNewTab(veiculoData.foto_crv)}
+                              onClick={() => setActiveDocument(veiculoData.foto_crv)}
                               className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
                             >
-                              <ExternalLink size={16} />
-                              Abrir
+                              <FileText size={16} />
+                              Visualizar
                             </button>
                             <button
                               type="button"
@@ -716,7 +717,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                             src={veiculoData.foto_crv}
                             alt="CRV do veículo"
                             className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                            onClick={() => openDocumentInNewTab(veiculoData.foto_crv)}
+                            onClick={() => setActiveDocument(veiculoData.foto_crv)}
                           />
                           <button
                             type="button"
@@ -830,6 +831,55 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
               </button>
             </div>
           </form>
+        )}
+
+        {/* Full-screen document viewer */}
+        {activeDocument && (
+          <div 
+            className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+            onClick={() => setActiveDocument(null)}
+          >
+            <div 
+              className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  Visualização do Documento
+                </h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openDocumentInNewTab(activeDocument)}
+                    className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Abrir em nova aba"
+                  >
+                    <ExternalLink size={20} />
+                  </button>
+                  <button
+                    onClick={() => setActiveDocument(null)}
+                    className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              <div className="relative h-[calc(90vh-80px)]">
+                {isPdf(activeDocument) ? (
+                  <iframe 
+                    src={`${activeDocument}#toolbar=1`} 
+                    className="w-full h-full" 
+                    title="PDF Viewer"
+                  />
+                ) : (
+                  <img
+                    src={activeDocument}
+                    alt="Documento"
+                    className="w-full h-full object-contain"
+                  />
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
