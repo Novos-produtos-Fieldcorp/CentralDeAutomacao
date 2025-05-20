@@ -390,17 +390,17 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                           </div>
                         </div>
                       </div>
-                      
-                      <button
-                        onClick={() => setIsEditModalOpen(true)}
-                        className="mt-4 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
-                                 dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
-                                 rounded-lg transition-colors flex items-center gap-1 w-auto"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                        Editar
-                      </button>
                     </section>
+                    
+                    <button
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
+                               dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
+                               rounded-lg transition-colors flex items-center gap-1 w-auto"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      Editar
+                    </button>
                     
                     {/* Address */}
                     <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
