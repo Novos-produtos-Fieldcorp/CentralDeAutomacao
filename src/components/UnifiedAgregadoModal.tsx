@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, User, UserCircle, Home } from 'lucide-react';
-import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, DocumentoAjudante, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
+import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
-import EditMotoristaModal from './EditMotoristaModal';
 
 interface UnifiedAgregadoModalProps {
   isOpen: boolean;
@@ -26,7 +25,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
     })[];
   }) | null>(null);
   const [endereco, setEndereco] = useState<any | null>(null);
-  const [documento_ajudante, setDocumentoAjudante] = useState<DocumentoAjudante | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDocumentFormOpen, setIsDocumentFormOpen] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
@@ -106,22 +104,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
       }
 
       setVeiculo(veiculoData);
-
-      // Fetch documento_ajudante
-      const { data: ajudanteData, error: ajudanteError } = await supabase
-        .from('documento_ajudante')
-        .select(`
-          *,
-          cnh_ajudante (*)
-        `)
-        .eq('veiculo_id', veiculoData?.veiculo_id)
-        .maybeSingle();
-
-      if (ajudanteError && ajudanteError.code !== 'PGRST116') {
-        throw ajudanteError;
-      }
-
-      setDocumentoAjudante(ajudanteData);
     } catch (error) {
       console.error('Error fetching agregado details:', error);
       toast.error('Erro ao carregar detalhes do agregado');
@@ -919,17 +901,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
         onSuccess={() => {
           fetchAgregadoDetails();
           setIsDocumentFormOpen(false);
-        }}
-      />
-
-      {/* Edit Modal */}
-      <EditMotoristaModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        motorista={agregado}
-        onUpdate={() => {
-          fetchAgregadoDetails();
-          if (onSuccess) onSuccess();
         }}
       />
 

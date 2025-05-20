@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Truck, User, MapPin, Phone, Mail, Calendar, CreditCard, FileText, Info, Camera, CheckCircle2, XCircle, ExternalLink, Edit2, Home } from 'lucide-react';
-import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, DocumentoAjudante, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
+import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
@@ -34,7 +34,6 @@ interface AgregadoDetailViewProps {
     nr_end?: number;
     ds_complemento_end?: string;
   } | null;
-  documento_ajudante?: DocumentoAjudante | null;
 }
 
 const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
@@ -43,8 +42,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
   agregado,
   documento,
   veiculo,
-  endereco,
-  documento_ajudante
+  endereco
 }) => {
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
@@ -454,75 +452,6 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                         <Truck className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
                         <p className="text-gray-500 dark:text-gray-400 text-center">
                           Nenhum veículo associado a este agregado
-                        </p>
-                      </div>
-                    )}
-                  </section>
-                  
-                  {/* Helper Information */}
-                  <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                      <User className="w-5 h-5 text-gray-400" />
-                      Informações do Ajudante
-                    </h3>
-                    
-                    {documento_ajudante ? (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="overflow-hidden">
-                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome</div>
-                            <div className="text-base text-gray-900 dark:text-white break-words">
-                              {documento_ajudante.nome || 'Não informado'}
-                            </div>
-                          </div>
-                          
-                          <div className="overflow-hidden">
-                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">CPF</div>
-                            <div className="text-base text-gray-900 dark:text-white break-words">
-                              {documento_ajudante.cpf ? formatCPF(documento_ajudante.cpf.toString()) : 'Não informado'}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* CNH do Ajudante */}
-                        {documento_ajudante.cnh_ajudante && documento_ajudante.cnh_ajudante.length > 0 && (
-                          <div className="mt-4">
-                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">CNH do Ajudante</div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="overflow-hidden">
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Número</div>
-                                <div className="text-base text-gray-900 dark:text-white break-words">
-                                  {documento_ajudante.cnh_ajudante[0].nr_registro || 'Não informado'}
-                                </div>
-                              </div>
-                              
-                              <div className="overflow-hidden">
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Categoria</div>
-                                <div className="text-base text-gray-900 dark:text-white break-words">
-                                  {documento_ajudante.cnh_ajudante[0].categoria || 'Não informada'}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {documento_ajudante.cnh_ajudante[0].foto_cnh && (
-                              <div className="mt-2">
-                                <button
-                                  onClick={() => setActiveDocument(documento_ajudante.cnh_ajudante[0].foto_cnh)}
-                                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-sm"
-                                >
-                                  <FileText size={14} />
-                                  Ver CNH do Ajudante
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-8">
-                        <User className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
-                        <p className="text-gray-500 dark:text-gray-400 text-center">
-                          Nenhum ajudante associado a este agregado
                         </p>
                       </div>
                     )}
