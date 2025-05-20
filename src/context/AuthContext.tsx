@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -94,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (fetchError) {
           console.error('Failed to fetch company data:', fetchError);
+          toast.error('Erro ao conectar com o banco de dados. Verifique sua conexão com a internet.');
           throw new Error('Failed to authenticate with Supabase');
         }
       } catch (error) {

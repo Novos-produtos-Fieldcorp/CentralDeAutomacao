@@ -59,7 +59,17 @@ export const createFilteredQuery = (table: string, companyId: number) => {
         
         // If it's a network error with no retries left, throw a user-friendly error
         if (error instanceof TypeError && error.message === 'Failed to fetch') {
-          throw new Error(`Network error: Unable to connect to database. Please check your internet connection and try again.`);
+          throw new Error(`A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.`);
+        }
+        
+        // If it's a connection refused error, throw a user-friendly error
+        if (error.message && (
+            error.message.includes('ECONNREFUSED') || 
+            error.message.includes('connection refused') ||
+            error.message.includes('network error') ||
+            error.message.includes('supabase.co')
+        )) {
+          throw new Error('A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.');
         }
         
         throw error;

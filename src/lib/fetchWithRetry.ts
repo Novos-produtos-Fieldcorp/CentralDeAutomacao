@@ -40,10 +40,27 @@ export async function fetchWithRetry<T = any>(
   } catch (error) {
     console.error('Fetch error:', error);
     
+    // Handle connection refused errors specifically
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
       // This is likely a CORS or network connectivity issue
       console.error('Network error: Failed to fetch. Possible CORS or connectivity issue.');
-      throw new Error('Erro de rede: Falha ao buscar. Possível problema de CORS ou conectividade.');
+      
+      // Check if the error is specifically for the Supabase connection
+      if (url.includes('supabase.co')) {
+        throw new Error('A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.');
+      } else {
+        throw new Error('Erro de rede: Falha ao buscar. Possível problema de CORS ou conectividade.');
+      }
+    }
+    
+    // For other network errors that might be related to connection refused
+    if (error.message && (
+        error.message.includes('ECONNREFUSED') || 
+        error.message.includes('connection refused') ||
+        error.message.includes('network error') ||
+        error.message.includes('supabase.co')
+    )) {
+      throw new Error('A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.');
     }
     
     if (retries > 0) {

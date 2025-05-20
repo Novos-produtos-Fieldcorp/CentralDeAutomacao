@@ -31,14 +31,15 @@ const Unauthorized = () => {
         <div className="p-6 space-y-6">
           <div className="space-y-4">
             <p className="text-gray-600 dark:text-gray-400">
-              Não foi possível estabelecer uma conexão válida com o WiseApp. Verifique:
+              Não foi possível estabelecer uma conexão válida com o WiseApp ou com o banco de dados. Verifique:
             </p>
             
             <ul className="space-y-3 list-disc list-inside text-gray-600 dark:text-gray-400">
-              <li>O parâmetro accountId não está presente na URL</li>
-              <li>O formato do accountId está incorreto</li>
-              <li>O ID da conta não está cadastrado no sistema</li>
-              <li>Você não tem permissão de acesso</li>
+              <li>Se você tem uma conexão estável com a internet</li>
+              <li>Se o parâmetro accountId está presente na URL</li>
+              <li>Se o formato do accountId está correto</li>
+              <li>Se o ID da conta está cadastrado no sistema</li>
+              <li>Se o serviço do banco de dados está disponível</li>
             </ul>
           </div>
 
@@ -60,9 +61,10 @@ const Unauthorized = () => {
               O que fazer?
             </h2>
             <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
-              <p>1. Verifique se o parâmetro account_id está presente na URL</p>
-              <p>2. Verifique se o account_id está correto</p>
-              <p>3. Caso o problema persista, contate o suporte</p>
+              <p>1. Verifique sua conexão com a internet</p>
+              <p>2. Verifique se o parâmetro account_id está presente na URL</p>
+              <p>3. Tente recarregar a página</p>
+              <p>4. Caso o problema persista, contate o suporte</p>
             </div>
           </div>
 
