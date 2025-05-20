@@ -13,7 +13,6 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 import EditMotoristaModal from '../../components/EditMotoristaModal';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
-import AgregadoDetailView from '../../components/AgregadoDetailView';
 import { useFloatingChat } from '../../hooks/useFloatingChat';
 import BulkActionsModal from '../../components/BulkActionsModal';
 import { VEHICLE_TYPES } from '../../constants/vehicleTypes';
@@ -22,6 +21,7 @@ import MassMessageModal from '../../components/MassMessageModal';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
 import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
+import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 
 interface MotoristaWithAddress extends Motorista {
   cidade?: string;
@@ -46,7 +46,7 @@ const AgregadosLista = () => {
   const [cities, setCities] = useState<{ cidade: string; estado: { sigla_estado: string } }[]>([]);
   const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('Agregado');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
-  const [isAgregadoDetailOpen, setIsAgregadoDetailOpen] = useState(false);
+  const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -304,93 +304,9 @@ const fetchMotoristas = async () => {
     setIsMassMessageModalOpen(true);
   };
 
-  const handleViewAgregadoDetail = async (motorista: Motorista) => {
-    try {
-      setSelectedDocumento({
-        agregado: motorista,
-        documento: null,
-        nome: motorista.nome,
-        cpf: motorista.cpf,
-        email: motorista.email,
-        telefone: motorista.telefone?.toString(),
-        dt_nascimento: motorista.dt_nascimento,
-        endereco: null,
-        veiculo: null,
-        st_cadastro: motorista.st_cadastro
-      });
-      
-      setIsAgregadoDetailOpen(true);
-
-      // Fetch documento_motorista
-      const { data: documentoData, error: documentoError } = await supabase
-        .from('documento_motorista')
-        .select('*')
-        .eq('motorista_id', motorista.motorista_id)
-        .maybeSingle();
-
-      if (documentoError && documentoError.code !== 'PGRST116') {
-        throw documentoError;
-      }
-
-      // Fetch endereco
-      const { data: enderecoData, error: enderecoError } = await supabase
-        .from('end_motorista')
-        .select(`
-          nr_end,
-          ds_complemento_end,
-          logradouro (
-            logradouro,
-            nr_cep,
-            bairro (
-              bairro,
-              cidade (
-                cidade,
-                estado (
-                  sigla_estado
-                )
-              )
-            )
-          )
-        `)
-        .eq('id_motorista', motorista.motorista_id)
-        .maybeSingle();
-
-      if (enderecoError && enderecoError.code !== 'PGRST116') {
-        throw enderecoError;
-      }
-
-      // Fetch veiculo
-      const { data: veiculoData, error: veiculoError } = await supabase
-        .from('veiculo')
-        .select(`
-          *,
-          documento_veiculo (*)
-        `)
-        .eq('motorista_id', motorista.motorista_id)
-        .eq('status_veiculo', true)
-        .maybeSingle();
-
-      if (veiculoError && veiculoError.code !== 'PGRST116') {
-        throw veiculoError;
-      }
-
-      setSelectedDocumento({
-        documento: documentoData || null,
-        nome: motorista.nome,
-        cpf: motorista.cpf,
-        email: motorista.email,
-        telefone: motorista.telefone?.toString(),
-        dt_nascimento: motorista.dt_nascimento,
-        endereco: enderecoData || null,
-        veiculo: veiculoData || null,
-        agregado: motorista,
-        st_cadastro: motorista.st_cadastro
-      });
-    } catch (error) {
-      console.error('Erro ao carregar dados do agregado:', error);
-      toast.error('Erro ao carregar dados do agregado');
-      setIsAgregadoDetailOpen(false);
-    }
+  const handleViewAgregadoDetail = (motorista: Motorista) => {
+    setSelectedMotorista(motorista);
+    setIsUnifiedModalOpen(true);
   };
 
   const handleUploadDocuments = (motorista: Motorista) => {
@@ -513,12 +429,11 @@ const fetchMotoristas = async () => {
     try {
       const { error } = await supabase.from('motorista')
         .update({ st_cadastro: newStatus })
-        .eq('motorista_id', motorista_id)
-        .eq('company_id', companyId);
+        .eq('motorista_id', motorista_id);
 
       if (error) throw error;
 
-      setMotoristas(motoristas.map(m => 
+      setMotoristas(prev => prev.map(m => 
         m.motorista_id === motorista_id ? { ...m, st_cadastro: newStatus } : m
       ));
       
@@ -543,7 +458,7 @@ const fetchMotoristas = async () => {
       
       toast.success('Cliente atualizado com sucesso');
     } catch (error) {
-      console.error('Erro ao atualizar cliente:', error);
+      console.error('Error updating cliente:', error);
       toast.error('Erro ao atualizar cliente');
     }
   };
@@ -914,19 +829,9 @@ const fetchMotoristas = async () => {
                               handleViewAgregadoDetail(motorista);
                             }}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                            title="Visualizar Documentos"
+                            title="Gerenciar Agregado"
                           >
                             <Eye size={18} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleUploadDocuments(motorista);
-                            }}
-                            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors"
-                            title="Enviar Documentos - Faça upload de CNH, comprovante de residência e CRV do veículo"
-                          >
-                            <Upload size={18} />
                           </button>
                           <button
                             onClick={(e) => {
@@ -1049,15 +954,9 @@ const fetchMotoristas = async () => {
           actions={[
             {
               icon: <Eye size={16} />,
-              label: 'Visualizar Documentos',
+              label: 'Gerenciar Agregado',
               onClick: () => handleViewAgregadoDetail(contextMenu.motorista!),
               color: 'text-blue-600 dark:text-blue-400'
-            },
-            {
-              icon: <Upload size={16} />,
-              label: 'Enviar Documentos',
-              onClick: () => handleUploadDocuments(contextMenu.motorista!),
-              color: 'text-green-600 dark:text-green-400'
             },
             {
               icon: <MessageCircle size={16} />,
@@ -1082,28 +981,12 @@ const fetchMotoristas = async () => {
         />
       )}
 
-      <DocumentViewer
-        isOpen={isDocumentViewerOpen}
-        onClose={() => setIsDocumentViewerOpen(false)}
-        documento={selectedDocumento.documento}
-        nome={selectedDocumento.nome}
-        cpf={selectedDocumento.cpf}
-        email={selectedDocumento.email}
-        telefone={selectedDocumento.telefone}
-        dt_nascimento={selectedDocumento.dt_nascimento}
-        endereco={selectedDocumento.endereco}
-        veiculo={selectedDocumento.veiculo}
-        isAgregado={true}
-        st_cadastro={selectedDocumento.st_cadastro}
-      />
-
-      <AgregadoDetailView
-        isOpen={isAgregadoDetailOpen}
-        onClose={() => setIsAgregadoDetailOpen(false)}
-        agregado={selectedDocumento.agregado}
-        documento={selectedDocumento.documento}
-        veiculo={selectedDocumento.veiculo}
-        endereco={selectedDocumento.endereco}
+      {/* Unified Modal */}
+      <UnifiedAgregadoModal
+        isOpen={isUnifiedModalOpen}
+        onClose={() => setIsUnifiedModalOpen(false)}
+        agregado={selectedMotorista}
+        onSuccess={fetchMotoristas}
       />
 
       <EditMotoristaModal
