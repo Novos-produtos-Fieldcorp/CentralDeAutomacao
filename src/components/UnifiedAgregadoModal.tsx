@@ -463,7 +463,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                                    rounded-lg transition-colors flex items-center gap-1"
                         >
                           <FileText className="w-4 h-4" />
-                          Editar Informações
+                          Editar Documentação
                         </button>
                       </div>
                     </div>
