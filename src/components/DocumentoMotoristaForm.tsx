@@ -86,6 +86,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
         .select('*')
         .eq('motorista_id', motorista_id)
         .eq('status_veiculo', true)
+        .limit(1)
         .maybeSingle();
 
       if (veiculoError) throw veiculoError;
@@ -657,6 +658,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</span>
+                        
                         <p className="text-base font-semibold text-gray-900 dark:text-white uppercase">{veiculo.placa}</p>
                       </div>
                       <div>
