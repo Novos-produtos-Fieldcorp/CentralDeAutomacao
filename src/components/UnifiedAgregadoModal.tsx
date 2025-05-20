@@ -465,7 +465,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                   <div className="space-y-6">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Documentos do Agregado
                       </h3>
                       <div className="flex gap-2">
                         <button
