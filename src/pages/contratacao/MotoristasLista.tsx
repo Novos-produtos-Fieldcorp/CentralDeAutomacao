@@ -539,6 +539,12 @@ const MotoristasLista = () => {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
+  const handleSearch = () => {
+    // Apply search filters and reset to page 1
+    setCurrentPage(1);
+    fetchMotoristas();
+  };
+
   const statusOptions = [
     { value: '', label: 'Todos os status' },
     { value: 'cadastrado', label: 'Cadastrado' },
@@ -588,10 +594,12 @@ const MotoristasLista = () => {
       ));
       
       toast.success('Status atualizado com sucesso');
-    } catch (err) {
-      toast.error('Erro ao atualizar status',motorista_id);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Erro ao atualizar status');
     }
   };
+  
   const updateCliente = async (motorista_id: number, cliente_id: number | null) => {
     try {
       const { error } = await supabase.from('motorista')

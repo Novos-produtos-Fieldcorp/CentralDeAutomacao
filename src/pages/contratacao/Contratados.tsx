@@ -236,6 +236,7 @@ const Contratados = () => {
       const { data, error } = await supabase.from('cliente')
         .select('*')
         .eq('st_cliente', true)
+        .eq('company_id', companyId)
         .order('nome');
 
       if (error) throw error;

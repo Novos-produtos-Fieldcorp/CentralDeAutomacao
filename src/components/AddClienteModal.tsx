@@ -6,9 +6,9 @@ import { supabase } from '../lib/supabase';
 import { formatCEP } from '../utils/format';
 
 interface AddClienteModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
 }
 
 const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) => {
