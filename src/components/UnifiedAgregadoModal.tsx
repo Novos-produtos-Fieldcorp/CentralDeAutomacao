@@ -267,7 +267,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
       {/* Modal Container */}
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
-          <div className="relative bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg w-full max-w-5xl shadow-xl max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
               <div className="p-6 flex justify-between items-center">
@@ -284,24 +284,13 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
-                             dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
-                             rounded-lg transition-colors flex items-center gap-1 w-auto"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Editar
-                  </button>
-                  <button
-                    onClick={onClose}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
-                             rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <X size={24} />
-                  </button>
-                </div>
+                <button
+                  onClick={onClose}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
+                           rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <X size={24} />
+                </button>
               </div>
               
               {/* Tabs */}
@@ -348,19 +337,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                 {activeTab === 'details' && (
                   <div className="space-y-6">
                     {/* Personal Information */}
-                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700 relative">
-                      <div className="absolute top-6 right-6">
-                        <button
-                          onClick={() => setIsEditModalOpen(true)}
-                          className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
-                                   dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
-                                   rounded-lg transition-colors flex items-center gap-1 w-auto"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          Editar
-                        </button>
-                      </div>
-                      
+                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <User className="w-5 h-5 text-gray-400" />
                         Informações Pessoais
@@ -922,6 +899,27 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                 )}
               </div>
             )}
+            
+            {/* Footer with standardized buttons */}
+            <div className="border-t border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 
+                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-300 
+                           dark:border-gray-600 dark:hover:bg-gray-700"
+                >
+                  Fechar
+                </button>
+                <button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg 
+                           hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Editar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
