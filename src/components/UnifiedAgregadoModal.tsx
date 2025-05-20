@@ -530,7 +530,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                       <div className="mt-6">
                         <div className="flex justify-between items-center mb-2">
                           <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            CNH Digital
+                            CNH
                           </div>
                           {documento?.foto_cnh && (
                             <button
