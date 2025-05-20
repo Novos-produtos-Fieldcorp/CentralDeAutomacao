@@ -6,6 +6,7 @@ import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import EditMotoristaModal from './EditMotoristaModal';
 
 interface UnifiedAgregadoModalProps {
   isOpen: boolean;
@@ -893,6 +894,17 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
         </div>
       </div>
 
+      {/* Edit Modal */}
+      <EditMotoristaModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        motorista={agregado}
+        onUpdate={() => {
+          fetchAgregadoDetails();
+          if (onSuccess) onSuccess();
+        }}
+      />
+
       {/* Document Form Modal */}
       <DocumentoMotoristaForm
         isOpen={isDocumentFormOpen}
@@ -901,6 +913,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
         onSuccess={() => {
           fetchAgregadoDetails();
           setIsDocumentFormOpen(false);
+          if (onSuccess) onSuccess();
         }}
       />
 
