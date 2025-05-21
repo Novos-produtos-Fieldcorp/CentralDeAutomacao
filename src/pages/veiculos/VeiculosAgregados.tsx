@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Edit2, Trash2, Search, Plus, Eye, FileText } from 'lucide-react';
+import { Edit2, Trash2, Search, Plus, FilePen, FileText } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Veiculo, Motorista } from '../../types/database';
 import AddVeiculoModal from '../../components/veiculos/AddVeiculoModal';
@@ -454,7 +454,7 @@ const VeiculosAgregados = () => {
                             className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
                             title="Visualizar Detalhes - Veja todas as informações do veículo, incluindo especificações técnicas"
                           >
-                            <Eye size={18} />
+                            <FilePen size={18} />
                           </button>
                           <button
                             onClick={() => handleViewDocuments(veiculo)}
@@ -577,7 +577,7 @@ const VeiculosAgregados = () => {
           onClose={() => setContextMenu({ ...contextMenu, visible: false })}
           actions={[
             {
-              icon: <Eye size={16} />,
+              icon: <FilePen size={16} />,
               label: 'Visualizar Detalhes',
               onClick: () => handleViewDetails(contextMenu.veiculo!),
               color: 'text-gray-600 dark:text-gray-400'
