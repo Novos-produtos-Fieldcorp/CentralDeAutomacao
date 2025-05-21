@@ -1007,7 +1007,7 @@ const Contratados = () => {
           onClose={() => setContextMenu({ ...contextMenu, visible: false })}
           actions={[
             {
-              icon: <Eye size={16} />,
+              icon: <FilePen size={16} />,
               label: 'Visualizar Documentos',
               onClick: () => handleViewAgregadoDetail(contextMenu.motorista!),
               color: 'text-blue-600 dark:text-blue-400'
