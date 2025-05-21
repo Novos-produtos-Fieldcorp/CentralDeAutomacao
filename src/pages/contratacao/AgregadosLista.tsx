@@ -943,7 +943,7 @@ const fetchMotoristas = async () => {
           onClose={() => setContextMenu({ ...contextMenu, visible: false })}
           actions={[
             {
-              icon: <Eye size={16} />,
+              icon: <FilePen size={16} />,
               label: 'Gerenciar Agregado',
               onClick: () => handleViewAgregadoDetail(contextMenu.motorista!),
               color: 'text-blue-600 dark:text-blue-400'
