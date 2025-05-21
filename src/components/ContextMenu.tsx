@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Edit2, Trash2, Eye, FileText, Upload, Truck, Camera } from 'lucide-react';
+import { Edit2, Trash2, FilePen, FileText, Upload, Truck, Camera } from 'lucide-react';
 
 interface ContextMenuProps {
   x: number;
