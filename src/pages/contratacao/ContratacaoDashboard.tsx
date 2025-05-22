@@ -18,6 +18,10 @@ interface DashboardStats {
     month: string;
     value: number;
   }[];
+  clientesContratados: {
+    nome: string;
+    total: number;
+  }[];
 }
 
 const ContratacaoDashboard = () => {
@@ -29,7 +33,8 @@ const ContratacaoDashboard = () => {
     qualificados: 0,
     contratosAtivos: 0,
     rejeitados: 0,
-    monthlyRegistrations: []
+    monthlyRegistrations: [],
+    clientesContratados: []
   });
   const [loading, setLoading] = useState(true);
 
@@ -49,27 +54,53 @@ const ContratacaoDashboard = () => {
       const startDate = sixMonthsAgo.toISOString().split('T')[0];
       const endDate = today.toISOString().split('T')[0];
 
-      // Fetch all motoristas with their status and data_cadastro
-      const { data: motoristasData, error: motoristasError } = await supabase
+      // First, get total counts without date filtering
+      const { data: totalData, error: totalError } = await supabase
         .from('motorista')
         .select('*')
+        .eq('company_id', companyId);
+      
+      if (totalError) throw totalError;
+
+      // Then get data for monthly registrations with date filter
+      const { data: motoristasData, error: motoristasError } = await supabase
+        .from('motorista')
+        .select(`
+          *,
+          cliente:cliente_id (
+            nome
+          )
+        `)
         .eq('company_id', companyId)
         .gte('data_cadastro', startDate)
         .lte('data_cadastro', endDate);
       
       if (motoristasError) throw motoristasError;
 
-      if (motoristasData) {
-        // Count by function and status
-        const totalMotoristas = motoristasData.filter(m => m.funcao === 'Motorista').length;
-        const totalAgregados = motoristasData.filter(m => m.funcao === 'Agregado').length;
-        const documentacao = motoristasData.filter(m => m.st_cadastro === 'documentacao').length;
-        const qualificados = motoristasData.filter(m => m.st_cadastro === 'qualificado').length;
-        const contratosAtivos = motoristasData.filter(m => m.st_cadastro === 'contratado').length;
-        const rejeitados = motoristasData.filter(m => m.st_cadastro === 'rejeitado').length;
+      if (totalData && motoristasData) {
+        // Count by function and status using total data
+        const totalMotoristas = totalData.filter(m => m.funcao === 'Motorista').length;
+        const totalAgregados = totalData.filter(m => m.funcao === 'Agregado').length;
+        const documentacao = totalData.filter(m => m.st_cadastro === 'documentacao').length;
+        const qualificados = totalData.filter(m => m.st_cadastro === 'qualificado').length;
+        const contratosAtivos = totalData.filter(m => m.st_cadastro === 'contratado').length;
+        const rejeitados = totalData.filter(m => m.st_cadastro === 'rejeitado').length;
 
-        // Calculate monthly registrations
+        // Calculate monthly registrations using date-filtered data
         const monthlyData = calculateMonthlyRegistrations(motoristasData);
+
+        // Calculate contractors by client using total data
+        const clientesContratados = totalData
+          .filter(m => m.st_cadastro === 'contratado' && m.cliente_id)
+          .reduce((acc: { [key: string]: number }, curr) => {
+            const clientName = curr.cliente?.nome || 'Sem Cliente';
+            acc[clientName] = (acc[clientName] || 0) + 1;
+            return acc;
+          }, {});
+
+        const clientesContratadosArray = Object.entries(clientesContratados)
+          .map(([nome, total]) => ({ nome, total }))
+          .sort((a, b) => b.total - a.total);
 
         setStats({
           totalMotoristas,
@@ -78,7 +109,8 @@ const ContratacaoDashboard = () => {
           qualificados,
           contratosAtivos,
           rejeitados,
-          monthlyRegistrations: monthlyData
+          monthlyRegistrations: monthlyData,
+          clientesContratados: clientesContratadosArray
         });
       }
     } catch (error) {
@@ -246,34 +278,22 @@ const ContratacaoDashboard = () => {
                   </p>
                 </div>
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Motoristas</span>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                          style={{ width: `${stats.contratosAtivos > 0 ? (contratadosMotoristas / stats.contratosAtivos) * 100 : 0}%` }}
-                        />
+                  {stats.clientesContratados.map((cliente, index) => (
+                    <div key={index} className="space-y-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{cliente.nome}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
+                            style={{ width: `${(cliente.total / stats.contratosAtivos) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white min-w-[2.5rem] text-right">
+                          {cliente.total}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white min-w-[2.5rem] text-right">
-                        {contratadosMotoristas}
-                      </span>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Agregados</span>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                          style={{ width: `${stats.contratosAtivos > 0 ? (contratadosAgregados / stats.contratosAtivos) * 100 : 0}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white min-w-[2.5rem] text-right">
-                        {contratadosAgregados}
-                      </span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
             </div>
           </div>

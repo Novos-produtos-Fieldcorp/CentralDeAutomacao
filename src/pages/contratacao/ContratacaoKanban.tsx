@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode, useCallback } from 'react';
 import { MapPin, Phone, Mail, Calendar, Filter, X, FileText, Truck, User, MessageCircle, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, DocumentoMotorista, Veiculo } from '../../types/database';
@@ -32,6 +32,8 @@ const ContratacaoKanban = () => {
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(100);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedMotorista, setSelectedMotorista] = useState<{
     documento: DocumentoMotorista | null;
     nome: string;
@@ -119,6 +121,22 @@ const ContratacaoKanban = () => {
     }
   ]);
 
+  // Debounce search term with a longer delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 1000); // 1 second delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Effect to handle search when debounced term changes
+  useEffect(() => {
+    if (debouncedSearchTerm !== undefined && companyId) {
+      handleSearch();
+    }
+  }, [debouncedSearchTerm, companyId]);
+
   useEffect(() => {
     // Initial load of all columns
     const loadAllColumns = async () => {
@@ -143,28 +161,6 @@ const ContratacaoKanban = () => {
       loadAllColumns();
     }
   }, [funcaoFilter, itemsPerPage, companyId]); // Add companyId to dependencies
-
-  useEffect(() => {
-    if (searchTerm && companyId) { // Add companyId check
-      const loadSearchResults = async () => {
-        setLoading(true);
-        try {
-          // First, get counts for all statuses with search term
-          await Promise.all(columns.map(column => fetchColumnCount(column.id, companyId)));
-          
-          // Then load first page of data for each column with search term
-          await Promise.all(columns.map(column => fetchColumnData(column.id, 1)));
-        } catch (error) {
-          console.error('Error loading search results:', error);
-          toast.error('Erro ao buscar resultados');
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      loadSearchResults();
-    }
-  }, [searchTerm, companyId]); // Add companyId to dependencies
 
   const fetchColumnCount = async (status: string, companyId: string) => {
     try {
@@ -199,18 +195,19 @@ const ContratacaoKanban = () => {
       }
       
       // Apply search filter if provided
-      if (searchTerm) {
+      if (debouncedSearchTerm) {
         // We need to get the full data to search by name or CPF
         const { data: fullData } = await supabase
           .from('motorista')
           .select('motorista_id, nome, cpf')
-          .eq('st_cadastro', status);
+          .eq('st_cadastro', status)
+          .eq('company_id', companyId);
           
         if (fullData) {
-          const searchLower = searchTerm.toLowerCase();
+          const searchLower = debouncedSearchTerm.toLowerCase();
           const matchingIds = fullData.filter(m => 
-            m.nome?.toLowerCase().includes(searchLower) || 
-            m.cpf?.includes(searchLower)
+            (m.nome?.toLowerCase().includes(searchLower) || 
+            m.cpf?.includes(searchLower))
           ).map(m => m.motorista_id);
           
           filteredData = filteredData.filter(m => matchingIds.includes(m.motorista_id));
@@ -242,7 +239,7 @@ const ContratacaoKanban = () => {
   };
 
   const fetchColumnData = async (status: string, page: number) => {
-    if (!companyId) return; // Add guard clause
+    if (!companyId) return;
     
     // Find the column
     const column = columns.find(col => col.id === status);
@@ -280,8 +277,8 @@ const ContratacaoKanban = () => {
       }
       
       // Apply search filter if provided
-      if (searchTerm) {
-        query = query.or(`nome.ilike.%${searchTerm}%,cpf.ilike.%${searchTerm}%`);
+      if (debouncedSearchTerm) {
+        query = query.or(`nome.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
       }
       
       // Apply sorting by data_cadastro (newest first)
@@ -336,36 +333,33 @@ const ContratacaoKanban = () => {
   };
 
   const handleSearch = async () => {
-    if (!companyId) return; // Add guard clause
+    if (!companyId) return;
     
     try {
-      setLoading(true);
+      setIsSearching(true);
       
       // Refresh counts and data for all columns with the search term
       // First update all counts
-      for (const column of columns) {
-        await fetchColumnCount(column.id, companyId);
-      }
+      await Promise.all(columns.map(column => fetchColumnCount(column.id, companyId)));
       
       // Then fetch data for all columns
-      for (const column of columns) {
-        await fetchColumnData(column.id, 1);
-      }
+      await Promise.all(columns.map(column => fetchColumnData(column.id, 1)));
       
     } catch (error) {
       console.error('Error searching:', error);
       toast.error('Erro ao buscar dados');
     } finally {
-      setLoading(false);
+      setIsSearching(false);
     }
   };
 
   const clearSearch = async () => {
-    if (!companyId) return; // Add guard clause
+    if (!companyId) return;
     
     setSearchTerm('');
+    setDebouncedSearchTerm('');
     try {
-      setLoading(true);
+      setIsSearching(true);
       
       // Refresh counts and data for all columns without the search term
       // First update all counts
@@ -382,7 +376,7 @@ const ContratacaoKanban = () => {
       console.error('Error clearing search:', error);
       toast.error('Erro ao limpar busca');
     } finally {
-      setLoading(false);
+      setIsSearching(false);
     }
   };
 
@@ -583,16 +577,17 @@ const ContratacaoKanban = () => {
               placeholder="Buscar por nome ou CPF..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch();
-                }
-              }}
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
                        dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
                        focus:border-blue-500 text-gray-900 dark:text-gray-100"
             />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            {isSearching ? (
+              <div className="absolute left-3 top-2.5">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            )}
             {searchTerm && (
               <button
                 onClick={clearSearch}

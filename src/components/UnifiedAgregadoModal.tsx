@@ -462,9 +462,13 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                 )}
 
                 {activeTab === 'documents' && (
-                  <div className="space-y-6">
+                  <div className="space-y-6">                   
+                    {/* CNH Section */}
+                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <CreditCard className="w-5 h-5 text-gray-400" />
+                      Carteira Nacional de Habilitação (CNH)
                       </h3>
                       <div className="flex gap-2">
                         <button
@@ -473,19 +477,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                                    dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
                                    rounded-lg transition-colors flex items-center gap-1"
                         >
-                          <FileText className="w-4 h-4" />
-                          Editar Documentação
+                          <Edit2 className="w-4 h-4" />
+                          Editar
                         </button>
                       </div>
-                    </div>
-                    
-                    {/* CNH Section */}
-                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-gray-400" />
-                        Carteira Nacional de Habilitação (CNH)
-                      </h3>
-                      
+                    </div>                     
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                           <div>

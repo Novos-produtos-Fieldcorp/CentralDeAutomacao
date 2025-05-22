@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { FileText, Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Eye, Store, UserMinus, MessageCircle, MessageSquare, Users, Building2, Truck, FilePen } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
@@ -6,8 +6,6 @@ import type { Motorista } from '../../types/database';
 import DocumentViewer from '../../components/DocumentViewer';
 import toast from 'react-hot-toast';
 import { formatCPF, formatPhone } from '../../utils/format';
-import { usePagination } from '../../hooks/usePagination';
-import Pagination from '../../components/Pagination';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
@@ -19,25 +17,52 @@ import BulkActionsModal from '../../components/BulkActionsModal';
 import { VEHICLE_TYPES } from '../../constants/vehicleTypes';
 import MassMessageModal from '../../components/MassMessageModal';
 
+interface MotoristaWithAddress extends Motorista {
+  cidade: string;
+  cidadeLowerCase: string;
+  estado: string;
+  veiculo: Array<{
+    veiculo_id: number;
+    placa: string;
+    status_veiculo: boolean;
+    marca: string;
+    tipologia: string;
+    ano: number;
+    combustivel: string;
+    peso: number;
+    cubagem: number;
+    possui_rastreador: boolean;
+    marca_rastreador: string;
+    cor: string;
+    tipo: string;
+  }>;
+}
+
 const Contratados = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const [motoristas, setMotoristas] = useState<Motorista[]>([]);
+  const [motoristas, setMotoristas] = useState<MotoristaWithAddress[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [phoneSearch, setPhoneSearch] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [selectedClient, setSelectedClient] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
-  const [selectedVehicleType, setSelectedVehicleType] = useState('');
+  const [phoneSearch, setPhoneSearch] = useState('');
+  const [debouncedPhoneSearch, setDebouncedPhoneSearch] = useState('');
+  const [selectedVehicleType, setSelectedVehicleType] = useState<string>('');
+  const [selectedCity, setSelectedCity] = useState<string>('');
+  const [selectedClient, setSelectedClient] = useState<number>(0);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [dateRange, setDateRange] = useState<{ startDate: string | null; endDate: string | null }>({
+    startDate: null,
+    endDate: null
+  });
   const [cities, setCities] = useState<{ cidade: string; estado: { sigla_estado: string } }[]>([]);
   const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isAgregadoDetailOpen, setIsAgregadoDetailOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedMotorista, setSelectedMotorista] = useState<Motorista | null>(null);
+  const [selectedMotorista, setSelectedMotorista] = useState<MotoristaWithAddress | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
@@ -48,7 +73,7 @@ const Contratados = () => {
     visible: boolean;
     x: number;
     y: number;
-    motorista: Motorista | null;
+    motorista: MotoristaWithAddress | null;
   }>({
     visible: false,
     x: 0,
@@ -64,7 +89,7 @@ const Contratados = () => {
     dt_nascimento?: string;
     endereco: any;
     veiculo: any | null;
-    agregado?: Motorista | null;
+    agregado?: MotoristaWithAddress | null;
     st_cadastro?: string;
   }>({ documento: null, nome: '', endereco: null, veiculo: null });
   
@@ -73,6 +98,7 @@ const Contratados = () => {
   const [pageSize, setPageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [isSearching, setIsSearching] = useState(false);
 
   const clientColors = [
     'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
@@ -85,63 +111,56 @@ const Contratados = () => {
     'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
   ];
 
+  // Debounce search terms
   useEffect(() => {
-    fetchMotoristas();
-    fetchClientes();
-    fetchCities();
-  }, [currentPage, pageSize, searchTerm, phoneSearch, selectedClient, selectedCity, funcaoFilter, selectedVehicleType]);
-
-  useEffect(() => {
-    // Debounce search term
-    const handler = setTimeout(() => {
+    const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 500);
+    }, 1000);
 
-    return () => clearTimeout(handler);
+    return () => clearTimeout(timer);
   }, [searchTerm]);
 
   useEffect(() => {
-    // Close context menu when clicking anywhere
-    const handleClick = () => {
-      if (contextMenu.visible) {
-        setContextMenu({ ...contextMenu, visible: false });
-      }
-    };
+    const timer = setTimeout(() => {
+      setDebouncedPhoneSearch(phoneSearch);
+    }, 1000);
 
-    document.addEventListener('click', handleClick);
-    return () => {
-      document.removeEventListener('click', handleClick);
-    };
-  }, [contextMenu.visible]);
+    return () => clearTimeout(timer);
+  }, [phoneSearch]);
+
+  // Effect to handle search when debounced terms change
+  useEffect(() => {
+    if (companyId) {
+      const loadData = async () => {
+        try {
+          setIsSearching(true);
+          await fetchMotoristas();
+        } catch (error) {
+          console.error('Error loading data:', error);
+          toast.error('Erro ao carregar dados');
+        } finally {
+          setIsSearching(false);
+        }
+      };
+      loadData();
+    }
+  }, [debouncedSearchTerm, debouncedPhoneSearch, selectedClient, selectedCity, funcaoFilter, selectedVehicleType, currentPage, pageSize, companyId]);
 
   const fetchMotoristas = async () => {
     try {
-      setLoading(true);
-      
-      // Calculate pagination range
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
-      
-      // Build the base query with essential fields only
+
       let query = supabase
         .from('motorista')
         .select(`
-          motorista_id,
-          nome,
-          cpf,
-          email,
-          telefone,
-          funcao,
-          cliente_id,
-          st_cadastro,
-          data_cadastro,
-          dt_nascimento,
-          end_motorista!inner (
-            logradouro!inner (
-              bairro!inner (
-                cidade!inner (
+          *,
+          end_motorista (
+            logradouro (
+              bairro (
+                cidade (
                   cidade,
-                  estado!inner (
+                  estado (
                     sigla_estado
                   )
                 )
@@ -155,56 +174,91 @@ const Contratados = () => {
             tipologia
           )
         `, { count: 'exact' })
-        .eq('st_cadastro', 'contratado')
-        .order('data_cadastro', { ascending: false })
-        .range(from, to);
-        
-      // Apply company filter if available
-      if (companyId) {
-        query = query.eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .eq('st_cadastro', 'contratado');
+
+      // Apply filters
+      if (dateRange.startDate && dateRange.endDate) {
+        query = query.gte('data_cadastro', dateRange.startDate)
+          .lte('data_cadastro', dateRange.endDate);
       }
 
-      // Apply filters efficiently using indexed columns
-      if (searchTerm) {
-        query = query.or(`nome.ilike.%${searchTerm}%,cpf.ilike.%${searchTerm}%,veiculo.placa.ilike.%${searchTerm}%`);
+      if (debouncedSearchTerm) {
+        query = query.or(`nome.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%,veiculo.placa.ilike.%${debouncedSearchTerm}%,veiculo.marca.ilike.%${debouncedSearchTerm}%`);
       }
 
-      if (phoneSearch) {
-        query = query.ilike('telefone', `%${phoneSearch}%`);
+      if (selectedVehicleType) {
+        query = query.eq('veiculo.tipologia', selectedVehicleType);
+      }
+
+      if (selectedCity) {
+        query = query.ilike('end_motorista.logradouro.bairro.cidade.cidade', selectedCity);
       }
 
       if (selectedClient) {
         query = query.eq('cliente_id', selectedClient);
       }
 
+      if (selectedStatus) {
+        query = query.eq('st_cadastro', selectedStatus);
+      }
+
       if (funcaoFilter !== 'todos') {
         query = query.eq('funcao', funcaoFilter);
       }
 
-      if (selectedCity) {
-        query = query.eq('end_motorista.logradouro.bairro.cidade.cidade', selectedCity);
-      }
+      // Apply pagination
+      query = query.range(from, to);
 
-      // Execute the optimized query
-      const { data, error, count } = await query;
+      const { data: motoristasData, error, count } = await query;
 
       if (error) throw error;
 
-      // Process the data efficiently
-      const motoristasData = data?.map(motorista => ({
-        ...motorista,
+      // Process the data
+      let filteredData = (motoristasData || []).map(motorista => ({
+        motorista_id: motorista.motorista_id,
+        nome: motorista.nome,
+        cpf: motorista.cpf,
+        dt_nascimento: motorista.dt_nascimento,
+        genero: motorista.genero,
+        telefone: motorista.telefone,
+        email: motorista.email,
+        funcao: motorista.funcao,
+        origem_usuario: motorista.origem_usuario,
+        st_cadastro: motorista.st_cadastro,
+        autorizacao_lgpd: motorista.autorizacao_lgpd,
+        company_id: motorista.company_id,
+        data_cadastro: motorista.data_cadastro,
+        cliente_id: motorista.cliente_id || 0,
+        conversation_id: motorista.conversation_id,
         cidade: motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || 'Não informada',
-        estado: motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.estado?.sigla_estado || ''
-      })) || [];
+        cidadeLowerCase: motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade?.toLowerCase() || '',
+        estado: motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.estado?.sigla_estado || '',
+        veiculo: motorista.veiculo?.map((v: { 
+          veiculo_id: number;
+          placa: string;
+          status_veiculo: boolean;
+          marca: string;
+          tipologia: string;
+          tipo: string;
+        }) => ({
+          veiculo_id: v.veiculo_id,
+          placa: v.placa,
+          status_veiculo: v.status_veiculo,
+          marca: v.marca,
+          tipologia: v.tipologia,
+          tipo: v.tipo
+        })) || []
+      })) as MotoristaWithAddress[];
 
-      // Apply vehicle type filter in memory (since it's a small subset)
-      const filteredData = selectedVehicleType
-        ? motoristasData.filter(motorista => 
-            motorista.veiculo && 
-            motorista.veiculo.length > 0 && 
-            motorista.veiculo[0].tipologia === selectedVehicleType
-          )
-        : motoristasData;
+      // Apply phone filter on frontend
+      if (debouncedPhoneSearch) {
+        const searchTerm = debouncedPhoneSearch.toLowerCase().replace(/[^0-9]/g, '');
+        filteredData = filteredData.filter(motorista => {
+          const phone = motorista.telefone?.toString().toLowerCase().replace(/[^0-9]/g, '') || '';
+          return phone.includes(searchTerm);
+        });
+      }
 
       setMotoristas(filteredData);
       setTotalCount(count || 0);
@@ -212,23 +266,8 @@ const Contratados = () => {
     } catch (error) {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
-    } finally {
-      setLoading(false);
+      throw error;
     }
-  };
-
-  const handleOpenMassMessageModal = () => {
-    const selectedNumbers = motoristas
-      .filter(m => selectedItems.has(m.motorista_id))
-      .map(m => m.telefone?.toString() || '')
-      .filter(num => num !== '');
-    
-    if (selectedNumbers.length === 0) {
-      toast.error('Selecione pelo menos um motorista com telefone cadastrado');
-      return;
-    }
-    
-    setIsMassMessageModalOpen(true);
   };
 
   const fetchClientes = async () => {
@@ -260,14 +299,58 @@ const Contratados = () => {
         .order('cidade');
 
       if (error) throw error;
-      setCities(data || []);
+      
+      const typedData = data.map(city => ({
+        cidade: city.cidade,
+        estado: {
+          sigla_estado: city.estado?.sigla_estado || ''
+        }
+      })) as { cidade: string; estado: { sigla_estado: string } }[];
+      
+      setCities(typedData);
     } catch (error) {
       console.error('Error fetching cities:', error);
       toast.error('Erro ao carregar cidades');
     }
   };
 
-  const handleStartChat = (motorista: Motorista) => {
+  // Initial data load
+  useEffect(() => {
+    if (companyId) {
+      const loadInitialData = async () => {
+        try {
+          setLoading(true);
+          await Promise.all([
+            fetchMotoristas(),
+            fetchClientes(),
+            fetchCities()
+          ]);
+        } catch (error) {
+          console.error('Error loading initial data:', error);
+          toast.error('Erro ao carregar dados iniciais');
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadInitialData();
+    }
+  }, [companyId]);
+
+  const handleOpenMassMessageModal = () => {
+    const selectedNumbers = motoristas
+      .filter(m => selectedItems.has(m.motorista_id))
+      .map(m => m.telefone?.toString() || '')
+      .filter(num => num !== '');
+    
+    if (selectedNumbers.length === 0) {
+      toast.error('Selecione pelo menos um motorista com telefone cadastrado');
+      return;
+    }
+    
+    setIsMassMessageModalOpen(true);
+  };
+
+  const handleStartChat = (motorista: MotoristaWithAddress) => {
     if (motorista.telefone) {
       startChat(motorista.telefone.toString());
     } else {
@@ -275,7 +358,7 @@ const Contratados = () => {
     }
   };
 
-  const handleViewAgregadoDetail = async (motorista: Motorista) => {
+  const handleViewAgregadoDetail = async (motorista: MotoristaWithAddress) => {
     if (motorista.funcao !== 'Agregado') {
       handleViewDocument(motorista);
       return;
@@ -369,7 +452,7 @@ const Contratados = () => {
     }
   };
 
-  const handleViewDocument = async (motorista: Motorista) => {
+  const handleViewDocument = async (motorista: MotoristaWithAddress) => {
     try {
       setSelectedDocumento({
         documento: null,
@@ -443,12 +526,12 @@ const Contratados = () => {
     }
   };
 
-  const handleEdit = (motorista: Motorista) => {
+  const handleEdit = (motorista: MotoristaWithAddress) => {
     setSelectedMotorista(motorista);
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (motorista: Motorista) => {
+  const handleDelete = (motorista: MotoristaWithAddress) => {
     setSelectedMotorista(motorista);
     setIsDeleteModalOpen(true);
   };
@@ -502,7 +585,7 @@ const Contratados = () => {
       if (error) throw error;
 
       setMotoristas(prev => prev.map(m => 
-        m.motorista_id === motorista_id ? { ...m, cliente_id } : m
+        m.motorista_id === motorista_id ? { ...m, cliente_id: cliente_id || 0 } : m
       ));
       
       toast.success('Cliente atualizado com sucesso');
@@ -512,7 +595,7 @@ const Contratados = () => {
     }
   };
 
-  const handleContextMenu = (e: React.MouseEvent, motorista: Motorista) => {
+  const handleContextMenu = (e: React.MouseEvent, motorista: MotoristaWithAddress) => {
     e.preventDefault();
     setContextMenu({
       visible: true,
@@ -615,17 +698,15 @@ const Contratados = () => {
               placeholder="Buscar por nome, CPF, placa, marca ou modelo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch();
-                }
-              }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
-            <Search 
-              className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 cursor-pointer" 
-              onClick={handleSearch}
-            />
+            {isSearching ? (
+              <div className="absolute left-3 top-2.5">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            )}
           </div>
 
           <div className="relative">
@@ -634,17 +715,15 @@ const Contratados = () => {
               placeholder="Buscar por telefone..."
               value={phoneSearch}
               onChange={(e) => setPhoneSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch();
-                }
-              }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
-            <Phone 
-              className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 cursor-pointer" 
-              onClick={handleSearch}
-            />
+            {isSearching ? (
+              <div className="absolute left-3 top-2.5">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (
+              <Phone className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            )}
           </div>
 
           <div className="relative">
@@ -669,17 +748,21 @@ const Contratados = () => {
 
           <div className="relative">
             <select
-              value={selectedClient}
+              value={selectedClient.toString()}
               onChange={(e) => {
-                setSelectedClient(e.target.value);
-                setCurrentPage(1); // Reset to first page on filter change
+                setSelectedClient(Number(e.target.value));
+                setCurrentPage(1);
                 handleSearch();
               }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
-              <option value="">Todos os clientes</option>
+              <option value="0">Todos os clientes</option>
               {clientes.map((cliente) => (
-                <option key={cliente.cliente_id} value={cliente.cliente_id}>
+                <option 
+                  key={cliente.cliente_id} 
+                  value={cliente.cliente_id}
+                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
                   {cliente.nome}
                 </option>
               ))}
