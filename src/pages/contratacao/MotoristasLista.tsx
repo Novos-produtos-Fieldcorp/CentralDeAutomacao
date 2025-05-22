@@ -226,6 +226,25 @@ const MotoristasLista = () => {
     }
   };
 
+  const fetchClientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('cliente')
+        .select('*')
+        .eq('st_cliente', true)
+        .eq('company_id', companyId)
+        .not('nome', 'is', null)
+        .not('nome', 'eq', '')
+        .order('nome');
+
+      if (error) throw error;
+      
+      setClientes(data as Cliente[]);
+    } catch (error) {
+      toast.error('Erro ao carregar clientes');
+    }
+  };
+
   const fetchMotoristas = useCallback(async () => {
     try {
       // Only show loading on initial load or when changing pages
@@ -325,7 +344,6 @@ const MotoristasLista = () => {
         setAllMotoristas(allData as MotoristaWithAddress[]);
       }
     } catch (error) {
-      console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
       setMotoristas([]);
       setAllMotoristas([]);

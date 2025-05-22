@@ -48,7 +48,7 @@ const ContratacaoDashboard = () => {
 
       // Get date range for last 6 months
       const today = new Date();
-      const sixMonthsAgo = subMonths(today, 5); // 5 months ago + current month = 6 months
+      const sixMonthsAgo = subMonths(today, 5);
       
       // Format dates for query
       const startDate = sixMonthsAgo.toISOString().split('T')[0];
@@ -56,7 +56,7 @@ const ContratacaoDashboard = () => {
 
       // First, get total counts without date filtering
       const { data: totalData, error: totalError } = await supabase
-        .from('motorista')
+        .from('vw_motoristas_completo')
         .select('*')
         .eq('company_id', companyId);
       
@@ -64,13 +64,8 @@ const ContratacaoDashboard = () => {
 
       // Then get data for monthly registrations with date filter
       const { data: motoristasData, error: motoristasError } = await supabase
-        .from('motorista')
-        .select(`
-          *,
-          cliente:cliente_id (
-            nome
-          )
-        `)
+        .from('vw_motoristas_completo')
+        .select('*')
         .eq('company_id', companyId)
         .gte('data_cadastro', startDate)
         .lte('data_cadastro', endDate);
@@ -91,9 +86,9 @@ const ContratacaoDashboard = () => {
 
         // Calculate contractors by client using total data
         const clientesContratados = totalData
-          .filter(m => m.st_cadastro === 'contratado' && m.cliente_id)
+          .filter(m => m.st_cadastro === 'contratado')
           .reduce((acc: { [key: string]: number }, curr) => {
-            const clientName = curr.cliente?.nome || 'Sem Cliente';
+            const clientName = curr.nome_cliente || 'Sem Cliente';
             acc[clientName] = (acc[clientName] || 0) + 1;
             return acc;
           }, {});
@@ -124,7 +119,7 @@ const ContratacaoDashboard = () => {
   // Function to calculate registrations by month for the last 6 months
   const calculateMonthlyRegistrations = (motoristas: any[]) => {
     // Create array of last 6 months
-    const months = [];
+    const months: { key: string; name: string; count: number }[] = [];
     const today = new Date();
     
     for (let i = 0; i <= 5; i++) {

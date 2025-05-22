@@ -17,25 +17,38 @@ import BulkActionsModal from '../../components/BulkActionsModal';
 import { VEHICLE_TYPES } from '../../constants/vehicleTypes';
 import MassMessageModal from '../../components/MassMessageModal';
 
-interface MotoristaWithAddress extends Motorista {
+interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'cidade' | 'estado'> {
+  telefone: string | number;
   cidade: string;
-  cidadeLowerCase: string;
   estado: string;
-  veiculo: Array<{
-    veiculo_id: number;
-    placa: string;
-    status_veiculo: boolean;
-    marca: string;
-    tipologia: string;
-    ano: number;
-    combustivel: string;
-    peso: number;
-    cubagem: number;
-    possui_rastreador: boolean;
-    marca_rastreador: string;
-    cor: string;
-    tipo: string;
-  }>;
+  cidadeLowerCase: string;
+  nome_cliente?: string | null;
+}
+
+interface ViewMotorista {
+  motorista_id: number;
+  nome_motorista: string;
+  cpf: string;
+  dt_nascimento: string;
+  genero: string;
+  telefone: string;
+  email: string;
+  funcao: string;
+  origem_usuario: string;
+  st_cadastro: boolean;
+  autorizacao_lgpd: boolean;
+  company_id: number;
+  data_cadastro: string;
+  cliente_id: number | null;
+  conversation_id: string | null;
+  nome_cidade: string | null;
+  sigla_estado: string | null;
+  nome_cliente: string | null;
+}
+
+interface DashboardData {
+  name: string;
+  count: number;
 }
 
 const Contratados = () => {
@@ -99,6 +112,8 @@ const Contratados = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
+  const [allMotoristas, setAllMotoristas] = useState<MotoristaWithAddress[]>([]);
+  const [dashboardData, setDashboardData] = useState<DashboardData[]>([]);
 
   const clientColors = [
     'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
@@ -144,80 +159,80 @@ const Contratados = () => {
       };
       loadData();
     }
-  }, [debouncedSearchTerm, debouncedPhoneSearch, selectedClient, selectedCity, funcaoFilter, selectedVehicleType, currentPage, pageSize, companyId]);
+  }, [companyId]); // Only depend on companyId for initial load
+
+  // Separate effect for filters
+  useEffect(() => {
+    if (companyId) {
+      const loadData = async () => {
+        try {
+          setIsSearching(true);
+          await fetchMotoristas();
+        } catch (error) {
+          console.error('Error loading data:', error);
+          toast.error('Erro ao carregar dados');
+        } finally {
+          setIsSearching(false);
+        }
+      };
+      loadData();
+    }
+  }, [debouncedSearchTerm, debouncedPhoneSearch, selectedClient, selectedCity, funcaoFilter, selectedVehicleType, currentPage, pageSize, dateRange]);
 
   const fetchMotoristas = async () => {
     try {
+      // Only show loading on initial load or when changing pages
+      if (currentPage === 1 && !debouncedSearchTerm && !debouncedPhoneSearch && !selectedStatus && !selectedCity && !selectedClient) {
+        setLoading(true);
+      }
+      
+      // Calculate pagination parameters
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
-
+      
+      // Build the query with filters using the view
       let query = supabase
-        .from('motorista')
-        .select(`
-          *,
-          end_motorista (
-            logradouro (
-              bairro (
-                cidade (
-                  cidade,
-                  estado (
-                    sigla_estado
-                  )
-                )
-              )
-            )
-          ),
-          veiculo (
-            placa,
-            marca,
-            tipo,
-            tipologia
-          )
-        `, { count: 'exact' })
+        .from('vw_motoristas_completo')
+        .select('*', { count: 'exact' })
         .eq('company_id', companyId)
-        .eq('st_cadastro', 'contratado');
+        .eq('funcao', 'Motorista'); // Always filter by Motorista function
 
-      // Apply filters
+      // Apply date range filter if dates are selected
       if (dateRange.startDate && dateRange.endDate) {
-        query = query.gte('data_cadastro', dateRange.startDate)
+        query = query
+          .gte('data_cadastro', dateRange.startDate)
           .lte('data_cadastro', dateRange.endDate);
       }
 
+      // Apply search filter if provided
       if (debouncedSearchTerm) {
-        query = query.or(`nome.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%,veiculo.placa.ilike.%${debouncedSearchTerm}%,veiculo.marca.ilike.%${debouncedSearchTerm}%`);
+        query = query.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
       }
 
-      if (selectedVehicleType) {
-        query = query.eq('veiculo.tipologia', selectedVehicleType);
-      }
-
-      if (selectedCity) {
-        query = query.ilike('end_motorista.logradouro.bairro.cidade.cidade', selectedCity);
-      }
-
-      if (selectedClient) {
-        query = query.eq('cliente_id', selectedClient);
-      }
-
+      // Apply status filter if selected
       if (selectedStatus) {
         query = query.eq('st_cadastro', selectedStatus);
       }
 
-      if (funcaoFilter !== 'todos') {
-        query = query.eq('funcao', funcaoFilter);
+      // Apply city filter if selected
+      if (selectedCity) {
+        query = query.ilike('nome_cidade', selectedCity);
       }
 
-      // Apply pagination
-      query = query.range(from, to);
+      // Apply client filter if selected
+      if (selectedClient) {
+        query = query.eq('cliente_id', selectedClient);
+      }
 
-      const { data: motoristasData, error, count } = await query;
+      // Execute the query
+      const { data, error, count } = await query.order('data_cadastro', { ascending: false });
 
       if (error) throw error;
 
-      // Process the data
-      let filteredData = (motoristasData || []).map(motorista => ({
+      // Process the data - map view fields to component fields
+      let motoristasData = (data as ViewMotorista[])?.map(motorista => ({
         motorista_id: motorista.motorista_id,
-        nome: motorista.nome,
+        nome: motorista.nome_motorista,
         cpf: motorista.cpf,
         dt_nascimento: motorista.dt_nascimento,
         genero: motorista.genero,
@@ -231,42 +246,46 @@ const Contratados = () => {
         data_cadastro: motorista.data_cadastro,
         cliente_id: motorista.cliente_id || 0,
         conversation_id: motorista.conversation_id,
-        cidade: motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || 'Não informada',
-        cidadeLowerCase: motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade?.toLowerCase() || '',
-        estado: motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.estado?.sigla_estado || '',
-        veiculo: motorista.veiculo?.map((v: { 
-          veiculo_id: number;
-          placa: string;
-          status_veiculo: boolean;
-          marca: string;
-          tipologia: string;
-          tipo: string;
-        }) => ({
-          veiculo_id: v.veiculo_id,
-          placa: v.placa,
-          status_veiculo: v.status_veiculo,
-          marca: v.marca,
-          tipologia: v.tipologia,
-          tipo: v.tipo
-        })) || []
-      })) as MotoristaWithAddress[];
+        cidade: motorista.nome_cidade || 'Não informada',
+        cidadeLowerCase: motorista.nome_cidade?.toLowerCase() || '',
+        estado: motorista.sigla_estado || '',
+        nome_cliente: motorista.nome_cliente
+      })) as unknown as MotoristaWithAddress[];
 
       // Apply phone filter on frontend
       if (debouncedPhoneSearch) {
-        const searchTerm = debouncedPhoneSearch.toLowerCase().replace(/[^0-9]/g, '');
-        filteredData = filteredData.filter(motorista => {
-          const phone = motorista.telefone?.toString().toLowerCase().replace(/[^0-9]/g, '') || '';
-          return phone.includes(searchTerm);
+        const phoneSearchLower = debouncedPhoneSearch.toLowerCase().replace(/[()\-\s]/g, '');
+        motoristasData = motoristasData.filter(motorista => {
+          const phoneStr = motorista.telefone?.toString().replace(/[()\-\s]/g, '') || '';
+          return phoneStr.toLowerCase().includes(phoneSearchLower);
         });
       }
 
-      setMotoristas(filteredData);
-      setTotalCount(count || 0);
-      setTotalPages(Math.ceil((count || 0) / pageSize));
+      // Update total count based on filtered data
+      const filteredCount = motoristasData.length;
+      setTotalCount(filteredCount);
+      setTotalPages(Math.max(1, Math.ceil(filteredCount / pageSize)));
+
+      // Apply pagination
+      const paginatedData = motoristasData.slice(from, to + 1);
+      setMotoristas(paginatedData);
+      
+      // Fetch all motoristas for select all functionality
+      const { data: allData } = await supabase
+        .from('vw_motoristas_completo')
+        .select('motorista_id')
+        .eq('company_id', companyId)
+        .eq('funcao', 'Motorista');
+      
+      if (allData) {
+        setAllMotoristas(allData as MotoristaWithAddress[]);
+      }
     } catch (error) {
-      console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
-      throw error;
+      setMotoristas([]);
+      setAllMotoristas([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -648,6 +667,45 @@ const Contratados = () => {
     { value: 'Agregado', label: 'Agregados' }
   ];
 
+  const fetchDashboardData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('vw_motoristas_completo')
+        .select('cliente_id, nome_cliente')
+        .eq('company_id', companyId)
+        .eq('st_cadastro', true);
+
+      if (error) throw error;
+
+      // Group by client and count
+      const clientCounts = data.reduce((acc: { [key: string]: number }, curr) => {
+        const clientName = curr.nome_cliente || 'Sem cliente';
+        acc[clientName] = (acc[clientName] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Convert to array and sort by count
+      const sortedData = Object.entries(clientCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count);
+
+      setDashboardData(sortedData);
+    } catch (error) {
+      toast.error('Erro ao carregar dados do dashboard');
+    }
+  };
+
+  // Update the select handlers to not trigger immediate search
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCity(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedClient(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
   if (loading) {
     return (
       <LoadingSpinner />
@@ -729,11 +787,7 @@ const Contratados = () => {
           <div className="relative">
             <select
               value={selectedCity}
-              onChange={(e) => {
-                setSelectedCity(e.target.value);
-                setCurrentPage(1); // Reset to first page on filter change
-                handleSearch();
-              }}
+              onChange={handleCityChange}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="">Todas as cidades</option>
@@ -749,11 +803,7 @@ const Contratados = () => {
           <div className="relative">
             <select
               value={selectedClient.toString()}
-              onChange={(e) => {
-                setSelectedClient(Number(e.target.value));
-                setCurrentPage(1);
-                handleSearch();
-              }}
+              onChange={handleClientChange}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="0">Todos os clientes</option>
