@@ -503,7 +503,7 @@ const MotoristasLista = () => {
           .eq('id_motorista', motorista.motorista_id)
           .eq('st_end', true)
           .limit(1)
-          .maybeSingle()
+          .single()
       ]);
 
       if (documentoResponse.error) throw new Error(`Erro ao buscar documentos: ${documentoResponse.error.message}`);

@@ -513,7 +513,7 @@ const Contratados = () => {
           .eq('id_motorista', motorista.motorista_id)
           .eq('st_end', true)
           .limit(1)
-          .maybeSingle(),
+          .single(),
         supabase.from('veiculo')
           .select(`
             *,
