@@ -148,6 +148,7 @@ const MotoristasLista = () => {
         setLoading(true);
         await Promise.all([
           fetchCities(),
+          fetchClientes(),
           fetchWiseappAccountId()
         ]);
       } catch (err) {
@@ -225,6 +226,17 @@ const MotoristasLista = () => {
       console.error('Error fetching WiseApp account ID:', error);
     }
   };
+
+  const clientColors = [
+    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
+    'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+    'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+    'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
+  ];
 
   const fetchClientes = async () => {
     try {
@@ -980,10 +992,14 @@ const MotoristasLista = () => {
                             updateCliente(motorista.motorista_id, e.target.value ? Number(e.target.value) : null);
                           }}
                           onClick={(e) => e.stopPropagation()}
-                          className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                            motorista.cliente_id ?
+                              clientColors[motorista.cliente_id % clientColors.length] :
+                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                          }`}
                         >
                           <option value="">Sem cliente</option>
-                          {clientes.map((cliente) => (
+                          {clientes.map((cliente, index) => (
                             <option 
                               key={cliente.cliente_id} 
                               value={cliente.cliente_id}
