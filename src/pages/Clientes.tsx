@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Upload, FileText, AlertCircle, Loader2, ChevronDown, ChevronUp, Plus, MapPin, ChevronRight, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
+import { X, AlertCircle, Loader2, ChevronDown, ChevronUp, Plus, MapPin, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import type { Cliente } from '../types/database';
 import toast from 'react-hot-toast';
@@ -170,7 +170,7 @@ const Clientes = () => {
             
             // Fetch addresses for each client
             const clientesWithAddress = await Promise.all(
-                clientesData.map(async (cliente) => {
+                clientesData.map(async (cliente: { cliente_id: any; }) => {
                     try {
                         const { data: enderecoData, error: enderecoError } = await supabase
                             .from('end_cliente')
