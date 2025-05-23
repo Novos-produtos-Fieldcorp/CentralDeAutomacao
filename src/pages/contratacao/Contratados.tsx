@@ -113,7 +113,6 @@ const Contratados = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
   const [allMotoristas, setAllMotoristas] = useState<MotoristaWithAddress[]>([]);
-  const [dashboardData, setDashboardData] = useState<DashboardData[]>([]);
 
   const clientColors = [
     'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
@@ -195,7 +194,8 @@ const Contratados = () => {
         .from('vw_motoristas_completo')
         .select('*', { count: 'exact' })
         .eq('company_id', companyId)
-        .eq('funcao', 'Motorista'); // Always filter by Motorista function
+        .eq('funcao', 'Motorista')
+        .eq('st_cadastro', 'contratado');
 
       // Apply date range filter if dates are selected
       if (dateRange.startDate && dateRange.endDate) {
@@ -666,34 +666,6 @@ const Contratados = () => {
     { value: 'Motorista', label: 'Motoristas' },
     { value: 'Agregado', label: 'Agregados' }
   ];
-
-  const fetchDashboardData = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('vw_motoristas_completo')
-        .select('cliente_id, nome_cliente')
-        .eq('company_id', companyId)
-        .eq('st_cadastro', true);
-
-      if (error) throw error;
-
-      // Group by client and count
-      const clientCounts = data.reduce((acc: { [key: string]: number }, curr) => {
-        const clientName = curr.nome_cliente || 'Sem cliente';
-        acc[clientName] = (acc[clientName] || 0) + 1;
-        return acc;
-      }, {});
-
-      // Convert to array and sort by count
-      const sortedData = Object.entries(clientCounts)
-        .map(([name, count]) => ({ name, count }))
-        .sort((a, b) => b.count - a.count);
-
-      setDashboardData(sortedData);
-    } catch (error) {
-      toast.error('Erro ao carregar dados do dashboard');
-    }
-  };
 
   // Update the select handlers to not trigger immediate search
   const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
