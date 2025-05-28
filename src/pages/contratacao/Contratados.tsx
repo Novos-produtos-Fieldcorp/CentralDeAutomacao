@@ -481,17 +481,17 @@ const Contratados = () => {
         telefone: motorista.telefone?.toString(),
         dt_nascimento: motorista.dt_nascimento,
         endereco: null,
-        veiculo: null,
         st_cadastro: motorista.st_cadastro
       });
       
       setIsDocumentViewerOpen(true);
 
-      const [documentoResponse, enderecoResponse, veiculoResponse] = await Promise.all([
+      const [documentoResponse, enderecoResponse] = await Promise.all([
         supabase.from('documento_motorista')
           .select('*')
           .eq('motorista_id', motorista.motorista_id)
-          .maybeSingle(),
+          .limit(1)
+          .single(),
         supabase.from('end_motorista')
           .select(`
             nr_end,
@@ -513,19 +513,15 @@ const Contratados = () => {
           .eq('id_motorista', motorista.motorista_id)
           .eq('st_end', true)
           .limit(1)
-          .single(),
-        supabase.from('veiculo')
-          .select(`
-            *,
-            documento_veiculo (*)
-          `)
-          .eq('motorista_id', motorista.motorista_id)
-          .maybeSingle()
+          .single()
       ]);
 
-      if (documentoResponse.error) throw new Error(`Erro ao buscar documentos: ${documentoResponse.error.message}`);
-      if (enderecoResponse.error) throw new Error(`Erro ao buscar endereço: ${enderecoResponse.error.message}`);
-      if (veiculoResponse.error) throw new Error(`Erro ao buscar veículo: ${veiculoResponse.error.message}`);
+      if (documentoResponse.error && documentoResponse.error.code !== 'PGRST116') {
+        throw new Error(`Erro ao buscar documentos: ${documentoResponse.error.message}`);
+      }
+      if (enderecoResponse.error && enderecoResponse.error.code !== 'PGRST116') {
+        throw new Error(`Erro ao buscar endereço: ${enderecoResponse.error.message}`);
+      }
 
       setSelectedDocumento({
         documento: documentoResponse.data,
@@ -535,7 +531,6 @@ const Contratados = () => {
         telefone: motorista.telefone?.toString(),
         dt_nascimento: motorista.dt_nascimento,
         endereco: enderecoResponse.data,
-        veiculo: veiculoResponse.data,
         st_cadastro: motorista.st_cadastro
       });
     } catch (error) {

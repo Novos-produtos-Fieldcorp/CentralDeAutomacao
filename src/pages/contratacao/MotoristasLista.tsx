@@ -481,7 +481,8 @@ const MotoristasLista = () => {
         supabase.from('documento_motorista')
           .select('*')
           .eq('motorista_id', motorista.motorista_id)
-          .maybeSingle(),
+          .limit(1)
+          .single(),
         supabase.from('end_motorista')
           .select(`
             nr_end,
@@ -506,8 +507,12 @@ const MotoristasLista = () => {
           .single()
       ]);
 
-      if (documentoResponse.error) throw new Error(`Erro ao buscar documentos: ${documentoResponse.error.message}`);
-      if (enderecoResponse.error) throw new Error(`Erro ao buscar endereço: ${enderecoResponse.error.message}`);
+      if (documentoResponse.error && documentoResponse.error.code !== 'PGRST116') {
+        throw new Error(`Erro ao buscar documentos: ${documentoResponse.error.message}`);
+      }
+      if (enderecoResponse.error && enderecoResponse.error.code !== 'PGRST116') {
+        throw new Error(`Erro ao buscar endereço: ${enderecoResponse.error.message}`);
+      }
 
       setSelectedDocumento({
         documento: documentoResponse.data,

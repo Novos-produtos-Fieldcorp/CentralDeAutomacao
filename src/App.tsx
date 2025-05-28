@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ChecklistProvider } from './context/ChecklistContext';
 import { ChatProvider } from './context/ChatContext';
 import Navbar from './components/Navbar';
+import Version from './components/Version';
 import Dashboard from './pages/Dashboard';
 import Motoristas from './pages/Motoristas';
 import Veiculos from './pages/Veiculos';
@@ -59,6 +60,7 @@ function App() {
                           </Routes>
                         </div>
                       </main>
+                      <Version />
                       <Toaster 
                         position="top-right"
                         toastOptions={{
