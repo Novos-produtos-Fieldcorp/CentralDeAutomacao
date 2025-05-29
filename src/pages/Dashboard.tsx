@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Truck, Users, Gauge, ClipboardCheck, Store, FileDown, Lock } from 'lucide-react';
+import { Truck, Users, Gauge, ClipboardCheck, Store, FileDown, Lock, ClipboardList } from 'lucide-react';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import ImportExportModal from '../components/ImportExportModal';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -123,6 +123,13 @@ const Dashboard = () => {
       link: "/clientes",
       description: "Gerencie os clientes da sua empresa",
       enabled: moduleAccess.clientes
+    },
+    {
+      title: "Resumos em Grupo",
+      icon: ClipboardList,
+      link: "",
+      description: "Em Breve",
+      enabled: true
     }
   ];
 
