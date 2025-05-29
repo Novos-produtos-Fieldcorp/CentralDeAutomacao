@@ -385,45 +385,41 @@ const AgregadosLista = () => {
   const fetchCities = async () => {
     try {
       const { data, error } = await supabase
-        .from('cidade')
+        .from('vw_agregados_completo')
         .select(`
-          cidade,
-          estado (
-            sigla_estado
-          )
+          nome_cidade,
+          sigla_estado
         `)
-        .order('cidade');
+        .eq('company_id', companyId)
+        .eq('funcao', 'Agregado')
+        .not('nome_cidade', 'is', null)
+        .not('nome_cidade', 'eq', '')
+        .order('nome_cidade');
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
-      // Process cities to handle case-insensitive matching
-      const uniqueCities = new Map<string, City>();
+      // Get unique cities with their states
+      const uniqueCities = new Map<string, { cidade: string; estado: { sigla_estado: string } }>();
       
-      data?.forEach((city: any) => {
-        if (!city.cidade || !city.estado?.sigla_estado) return;
+      data?.forEach((item: any) => {
+        if (!item.nome_cidade || !item.sigla_estado) return;
         
-        const lowerCaseCity = city.cidade.toLowerCase();
-        // If we already have this city (case-insensitive), keep the first occurrence
-        if (!uniqueCities.has(lowerCaseCity)) {
-          uniqueCities.set(lowerCaseCity, {
-            cidade: city.cidade,
+        const key = `${item.nome_cidade}-${item.sigla_estado}`;
+        if (!uniqueCities.has(key)) {
+          uniqueCities.set(key, {
+            cidade: item.nome_cidade,
             estado: {
-              sigla_estado: city.estado.sigla_estado
+              sigla_estado: item.sigla_estado
             }
           });
         }
       });
       
-      // Convert map to array with lowercase keys for filtering
-      const processedCities = Array.from(uniqueCities.entries()).map(([lowerCase, city]) => ({
-        ...city,
-        cidadeLowerCase: lowerCase
-      }));
-      
-      setCities(processedCities);
+      // Convert map to array
+      const citiesArray = Array.from(uniqueCities.values());
+      setCities(citiesArray);
     } catch (error) {
+      console.error('Error fetching cities:', error);
       toast.error('Erro ao carregar cidades');
     }
   };

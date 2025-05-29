@@ -113,6 +113,7 @@ const Contratados = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
   const [allMotoristas, setAllMotoristas] = useState<MotoristaWithAddress[]>([]);
+  const [vehicleTypes, setVehicleTypes] = useState<string[]>([]);
 
   const clientColors = [
     'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
@@ -194,8 +195,12 @@ const Contratados = () => {
         .from('vw_motoristas_completo')
         .select('*', { count: 'exact' })
         .eq('company_id', companyId)
-        .eq('funcao', 'Motorista')
         .eq('st_cadastro', 'contratado');
+
+      // Apply function filter if not 'todos'
+      if (funcaoFilter !== 'todos') {
+        query = query.eq('funcao', funcaoFilter);
+      }
 
       // Apply date range filter if dates are selected
       if (dateRange.startDate && dateRange.endDate) {
@@ -275,15 +280,14 @@ const Contratados = () => {
         .from('vw_motoristas_completo')
         .select('motorista_id')
         .eq('company_id', companyId)
-        .eq('funcao', 'Motorista');
-      
+        .eq('st_cadastro', 'contratado');
+
       if (allData) {
-        setAllMotoristas(allData as MotoristaWithAddress[]);
+        setAllMotoristas(allData as unknown as MotoristaWithAddress[]);
       }
     } catch (error) {
+      console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
-      setMotoristas([]);
-      setAllMotoristas([]);
     } finally {
       setLoading(false);
     }
@@ -333,6 +337,27 @@ const Contratados = () => {
     }
   };
 
+  const fetchVehicleTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('veiculo')
+        .select('tipologia')
+        .eq('company_id', companyId)
+        .not('tipologia', 'is', null)
+        .not('tipologia', 'eq', '')
+        .order('tipologia');
+
+      if (error) throw error;
+      
+      // Get unique tipologias and sort them
+      const uniqueTypes = [...new Set(data?.map((v: { tipologia: string }) => v.tipologia) || [])].sort();
+      setVehicleTypes(uniqueTypes);
+    } catch (error) {
+      console.error('Error fetching vehicle types:', error);
+      toast.error('Erro ao carregar tipos de veículos');
+    }
+  };
+
   // Initial data load
   useEffect(() => {
     if (companyId) {
@@ -342,7 +367,8 @@ const Contratados = () => {
           await Promise.all([
             fetchMotoristas(),
             fetchClientes(),
-            fetchCities()
+            fetchCities(),
+            fetchVehicleTypes()
           ]);
         } catch (error) {
           console.error('Error loading initial data:', error);
@@ -555,7 +581,8 @@ const Contratados = () => {
 
     try {
       // Get all vehicles associated with this motorista
-      const { data: vehicles, error: vehiclesError } = await query('veiculo')
+      const { data: vehicles, error: vehiclesError } = await supabase
+        .from('veiculo')
         .select('veiculo_id')
         .eq('motorista_id', selectedMotorista.motorista_id);
 
@@ -570,10 +597,10 @@ const Contratados = () => {
         if (updateError) throw updateError;
       }
 
-      // Update the motorista status to 'rejeitado' instead of deleting
+      // Update the motorista status to 'cadastrado' instead of 'rejeitado'
       const { error: motoristaError } = await supabase.from('motorista')
         .update({ 
-          st_cadastro: 'rejeitado',
+          st_cadastro: 'cadastrado',
           cliente_id: null
         })
         .eq('motorista_id', selectedMotorista.motorista_id);
@@ -582,11 +609,11 @@ const Contratados = () => {
 
       // Remove from the current list
       setMotoristas(motoristas.filter(m => m.motorista_id !== selectedMotorista.motorista_id));
-      toast.success('Motorista removido com sucesso');
+      toast.success('Contratado removido com sucesso');
       setIsDeleteModalOpen(false);
     } catch (error) {
       console.error('Error removing motorista:', error);
-      toast.error('Erro ao remover motorista');
+      toast.error('Erro ao remover contratado');
     }
   };
 
@@ -798,9 +825,9 @@ const Contratados = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="">Todos os tipos de veículo</option>
-              {VEHICLE_TYPES.map(type => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
+              {vehicleTypes.map(type => (
+                <option key={type} value={type}>
+                  {type}
                 </option>
               ))}
             </select>

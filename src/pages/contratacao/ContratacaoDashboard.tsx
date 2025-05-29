@@ -21,6 +21,9 @@ interface DashboardStats {
   clientesContratados: {
     nome: string;
     total: number;
+    motoristas: number;
+    agregados: number;
+    percentual: number;
   }[];
 }
 
@@ -55,46 +58,83 @@ const ContratacaoDashboard = () => {
       const endDate = today.toISOString().split('T')[0];
 
       // First, get total counts without date filtering
-      const { data: totalData, error: totalError } = await supabase
-        .from('vw_motoristas_completo')
-        .select('*')
-        .eq('company_id', companyId);
+      const [totalMotoristasResponse, totalAgregadosResponse] = await Promise.all([
+        supabase
+          .from('vw_motoristas_completo')
+          .select('*')
+          .eq('company_id', companyId),
+        supabase
+          .from('vw_agregados_completo')
+          .select('*')
+          .eq('company_id', companyId)
+      ]);
       
-      if (totalError) throw totalError;
+      if (totalMotoristasResponse.error) throw totalMotoristasResponse.error;
+      if (totalAgregadosResponse.error) throw totalAgregadosResponse.error;
+
+      const totalMotoristasData = totalMotoristasResponse.data || [];
+      const totalAgregadosData = totalAgregadosResponse.data || [];
 
       // Then get data for monthly registrations with date filter
-      const { data: motoristasData, error: motoristasError } = await supabase
-        .from('vw_motoristas_completo')
-        .select('*')
-        .eq('company_id', companyId)
-        .gte('data_cadastro', startDate)
-        .lte('data_cadastro', endDate);
+      const [motoristasDataResponse, agregadosDataResponse] = await Promise.all([
+        supabase
+          .from('vw_motoristas_completo')
+          .select('*')
+          .eq('company_id', companyId)
+          .gte('data_cadastro', startDate)
+          .lte('data_cadastro', endDate),
+        supabase
+          .from('vw_agregados_completo')
+          .select('*')
+          .eq('company_id', companyId)
+          .gte('data_cadastro', startDate)
+          .lte('data_cadastro', endDate)
+      ]);
       
-      if (motoristasError) throw motoristasError;
+      if (motoristasDataResponse.error) throw motoristasDataResponse.error;
+      if (agregadosDataResponse.error) throw agregadosDataResponse.error;
 
-      if (totalData && motoristasData) {
-        // Count by function and status using total data
-        const totalMotoristas = totalData.filter(m => m.funcao === 'Motorista').length;
-        const totalAgregados = totalData.filter(m => m.funcao === 'Agregado').length;
-        const documentacao = totalData.filter(m => m.st_cadastro === 'documentacao').length;
-        const qualificados = totalData.filter(m => m.st_cadastro === 'qualificado').length;
-        const contratosAtivos = totalData.filter(m => m.st_cadastro === 'contratado').length;
-        const rejeitados = totalData.filter(m => m.st_cadastro === 'rejeitado').length;
+      const motoristasData = motoristasDataResponse.data || [];
+      const agregadosData = agregadosDataResponse.data || [];
+
+      if (totalMotoristasData && totalAgregadosData && motoristasData && agregadosData) {
+        const totalMotoristas = totalMotoristasData.length;
+        const totalAgregados = totalAgregadosData.length;
+        const documentacao = [...totalMotoristasData, ...totalAgregadosData].filter(m => m.st_cadastro === 'documentacao').length;
+        const qualificados = [...totalMotoristasData, ...totalAgregadosData].filter(m => m.st_cadastro === 'qualificado').length;
+        const contratosAtivos = [...totalMotoristasData, ...totalAgregadosData].filter(m => m.st_cadastro === 'contratado').length;
+        const rejeitados = [...totalMotoristasData, ...totalAgregadosData].filter(m => m.st_cadastro === 'rejeitado').length;
 
         // Calculate monthly registrations using date-filtered data
-        const monthlyData = calculateMonthlyRegistrations(motoristasData);
+        const monthlyData = calculateMonthlyRegistrations([...motoristasData, ...agregadosData]);
 
         // Calculate contractors by client using total data
-        const clientesContratados = totalData
+        const clientesContratados = [...totalMotoristasData, ...totalAgregadosData]
           .filter(m => m.st_cadastro === 'contratado')
-          .reduce((acc: { [key: string]: number }, curr) => {
+          .reduce((acc: { [key: string]: { total: number, motoristas: number, agregados: number } }, curr) => {
             const clientName = curr.nome_cliente || 'Sem Cliente';
-            acc[clientName] = (acc[clientName] || 0) + 1;
+            if (!acc[clientName]) {
+              acc[clientName] = { total: 0, motoristas: 0, agregados: 0 };
+            }
+            acc[clientName].total++;
+            if (curr.funcao === 'Motorista') {
+              acc[clientName].motoristas++;
+            } else if (curr.funcao === 'Agregado') {
+              acc[clientName].agregados++;
+            }
             return acc;
           }, {});
 
+        const totalContratados = Object.values(clientesContratados).reduce((sum, client) => sum + client.total, 0);
+
         const clientesContratadosArray = Object.entries(clientesContratados)
-          .map(([nome, total]) => ({ nome, total }))
+          .map(([nome, data]) => ({ 
+            nome, 
+            total: data.total,
+            motoristas: data.motoristas,
+            agregados: data.agregados,
+            percentual: (data.total / totalContratados) * 100 
+          }))
           .sort((a, b) => b.total - a.total);
 
         setStats({
@@ -269,23 +309,27 @@ const ContratacaoDashboard = () => {
             <div className="space-y-4">
                 <div className="space-y-2">
                   <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    Total: {stats.contratosAtivos}
+                    Total: {stats.contratosAtivos} contratados
                   </p>
                 </div>
                 <div className="space-y-4">
                   {stats.clientesContratados.map((cliente, index) => (
                     <div key={index} className="space-y-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{cliente.nome}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                            style={{ width: `${(cliente.total / stats.contratosAtivos) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white min-w-[2.5rem] text-right">
-                          {cliente.total}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{cliente.nome}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {cliente.total} ({cliente.percentual.toFixed(1)}%)
                         </span>
+                      </div>
+                      <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
+                          style={{ width: `${cliente.percentual}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <span>Motoristas: {cliente.motoristas}</span>
+                        <span>Agregados: {cliente.agregados}</span>
                       </div>
                     </div>
                   ))}

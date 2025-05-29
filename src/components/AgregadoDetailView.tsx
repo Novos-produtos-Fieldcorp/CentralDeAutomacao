@@ -689,7 +689,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                       // This would update the document in a real implementation
                       toast.success('Comprovante enviado com sucesso');
                     }}
-                    label="Comprovante de Residência"
+                    label=""
                   />
                 </div>
               </div>
