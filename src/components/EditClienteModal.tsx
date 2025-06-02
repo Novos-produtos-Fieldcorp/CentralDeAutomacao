@@ -14,7 +14,7 @@ interface EditClienteModalProps {
 }
 
 const EditClienteModal = ({ isOpen, onClose, cliente, onSuccess }: EditClienteModalProps) => {
-    const { query } = useCompanyData();
+    const { query, companyId } = useCompanyData();
     const [loadingCep, setLoadingCep] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
@@ -188,13 +188,12 @@ const EditClienteModal = ({ isOpen, onClose, cliente, onSuccess }: EditClienteMo
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!cliente) return;
+        if (!cliente || !companyId) return;
 
         try {
             setSubmitting(true);
-
-            const { error } = await query('cliente')
+            const { error } = await supabase
+                .from('cliente')
                 .update({
                     nome: formData.nome,
                     cnpj: formData.cnpj,
@@ -202,139 +201,10 @@ const EditClienteModal = ({ isOpen, onClose, cliente, onSuccess }: EditClienteMo
                     telefone: formData.telefone || null,
                     st_cliente: formData.st_cliente
                 })
-                .eq('cliente_id', cliente.cliente_id);
+                .eq('cliente_id', cliente.cliente_id)
+                .eq('company_id', companyId);
 
             if (error) throw error;
-
-            // Update or create address
-            if (enderecoData.logradouro && enderecoData.cidade && enderecoData.estado) {
-                try {
-                    // First, check if cidade exists
-                    let cidadeId: number;
-                    const { data: cidadeData, error: cidadeError } = await supabase
-                        .from('cidade')
-                        .select('id_cidade')
-                        .eq('cidade', enderecoData.cidade)
-                        .eq('id_estado', parseInt(enderecoData.estado))
-                        .maybeSingle();
-
-                    if (cidadeError && cidadeError.code !== 'PGRST116') {
-                        throw cidadeError;
-                    }
-
-                    if (cidadeData) {
-                        cidadeId = cidadeData.id_cidade;
-                    } else {
-                        // Create cidade if it doesn't exist
-                        const { data: newCidade, error: newCidadeError } = await supabase
-                            .from('cidade')
-                            .insert({
-                                cidade: enderecoData.cidade,
-                                id_estado: parseInt(enderecoData.estado)
-                            })
-                            .select()
-                            .single();
-
-                        if (newCidadeError) throw newCidadeError;
-                        if (!newCidade) throw new Error('Erro ao criar cidade');
-                        cidadeId = newCidade.id_cidade;
-                    }
-
-                    // Check if bairro exists
-                    let bairroId: number;
-                    const { data: bairro, error: bairroError } = await supabase
-                        .from('bairro')
-                        .select('id_bairro')
-                        .eq('bairro', enderecoData.bairro)
-                        .eq('id_cidade', cidadeId)
-                        .maybeSingle();
-
-                    if (bairroError && bairroError.code !== 'PGRST116') {
-                        throw bairroError;
-                    }
-                    
-                    if (bairro) {
-                        bairroId = bairro.id_bairro;
-                    } else {
-                        // Create bairro if it doesn't exist
-                        const { data: newBairro, error: newBairroError } = await supabase
-                            .from('bairro')
-                            .insert({
-                                bairro: enderecoData.bairro,
-                                id_cidade: cidadeId
-                            })
-                            .select()
-                            .single();
-
-                        if (newBairroError) throw newBairroError;
-                        if (!newBairro) throw new Error('Erro ao criar bairro');
-                        bairroId = newBairro.id_bairro;
-                    }
-
-                    // Check if logradouro exists
-                    let logradouroId: number;
-                    const { data: logradouro, error: logradouroError } = await supabase
-                        .from('logradouro')
-                        .select('id_logradouro')
-                        .eq('logradouro', enderecoData.logradouro)
-                        .eq('nr_cep', enderecoData.cep)
-                        .eq('id_bairro', bairroId)
-                        .maybeSingle();
-
-                    if (logradouroError && logradouroError.code !== 'PGRST116') {
-                        throw logradouroError;
-                    }
-                    
-                    if (logradouro) {
-                        logradouroId = logradouro.id_logradouro;
-                    } else {
-                        // Create logradouro if it doesn't exist
-                        const { data: newLogradouro, error: newLogradouroError } = await supabase
-                            .from('logradouro')
-                            .insert({
-                                logradouro: enderecoData.logradouro,
-                                nr_cep: enderecoData.cep,
-                                id_bairro: bairroId
-                            })
-                            .select()
-                            .single();
-
-                        if (newLogradouroError) throw newLogradouroError;
-                        if (!newLogradouro) throw new Error('Erro ao criar logradouro');
-                        logradouroId = newLogradouro.id_logradouro;
-                    }
-
-                    // Update or create end_cliente
-                    if (endereco?.id_end_cliente) {
-                        // Update existing address
-                        const { error: enderecoError } = await supabase
-                            .from('end_cliente')
-                            .update({
-                                nr_end: enderecoData.numero ? parseInt(enderecoData.numero) : null,
-                                ds_complemento_end: enderecoData.complemento || null,
-                                id_logradouro: logradouroId
-                            })
-                            .eq('id_end_cliente', endereco.id_end_cliente);
-
-                        if (enderecoError) throw enderecoError;
-                    } else {
-                        // Create new address
-                        const { error: enderecoError } = await supabase
-                            .from('end_cliente')
-                            .insert({
-                                nr_end: enderecoData.numero ? parseInt(enderecoData.numero) : null,
-                                ds_complemento_end: enderecoData.complemento || null,
-                                cliente_id: cliente.cliente_id,
-                                id_logradouro: logradouroId
-                            });
-
-                        if (enderecoError) throw enderecoError;
-                    }
-                } catch (error) {
-                    console.error('Erro ao atualizar endereço:', error);
-                    toast.error('Erro ao atualizar endereço, mas os dados do cliente foram salvos');
-                }
-            }
 
             toast.success('Cliente atualizado com sucesso');
             onSuccess();

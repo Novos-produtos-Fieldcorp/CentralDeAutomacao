@@ -14,9 +14,18 @@ import CombinedVehicleModal from '../../components/veiculos/CombinedVehicleModal
 import { supabase } from '../../lib/supabase';
 import { useDebounce } from '../../hooks/useDebounce';
 
+interface VeiculoWithMotorista extends Veiculo {
+    motorista?: {
+        motorista_id: number;
+        nome: string;
+        cpf: string;
+        telefone: string;
+    } | null;
+}
+
 const VeiculosEmpresa = () => {
   const { query, companyId } = useCompanyData();
-  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
+  const [veiculos, setVeiculos] = useState<VeiculoWithMotorista[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,8 +39,12 @@ const VeiculosEmpresa = () => {
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
-  const [selectedVeiculo, setSelectedVeiculo] = useState<Veiculo | null>(null);
+  const [selectedVeiculo, setSelectedVeiculo] = useState<VeiculoWithMotorista | null>(null);
   const [missingDataCount, setMissingDataCount] = useState(0);
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof VeiculoWithMotorista;
+    direction: 'asc' | 'desc';
+  }>({ key: 'placa', direction: 'asc' });
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,7 +57,7 @@ const VeiculosEmpresa = () => {
     visible: boolean;
     x: number;
     y: number;
-    veiculo: Veiculo | null;
+    veiculo: VeiculoWithMotorista | null;
   }>({
     visible: false,
     x: 0,
@@ -95,90 +108,32 @@ const VeiculosEmpresa = () => {
   }, [contextMenu.visible]);
 
   const fetchVeiculos = async () => {
+    if (!companyId) return;
+    
     try {
       setLoading(true);
-      setError(null);
-      
-      const from = (currentPage - 1) * pageSize;
-      const to = from + pageSize - 1;
-      
-      let query = supabase
+      const { data, error } = await supabase
         .from('veiculo')
         .select(`
           *,
-          motorista:motorista_id (
+          motorista (
             motorista_id,
             nome,
             cpf,
-            telefone,
-            email,
-            st_cadastro,
-            documento_motorista (*)
-          ),
-          documento_veiculo (*)
-        `, { count: 'exact' })
-        .eq('status_veiculo', true)
-        .eq('motorista.st_cadastro', 'contratado')
-        .eq('motorista.company_id', companyId)
-        .eq('company_id', companyId);
+            telefone
+          )
+        `)
+        .eq('company_id', companyId)
+        .is('motorista_id', null);
 
-      const { data: veiculosData, count, error: veiculosError } = await query
-        .order('placa', { ascending: true })
-        .range(from, to);
+      if (error) throw error;
 
-      if (veiculosError) {
-        throw new Error(`Erro ao buscar veículos: ${veiculosError.message}`);
-      }
-
-      if (!veiculosData) {
-        setVeiculos([]);
-        setTotalCount(0);
-        setTotalPages(1);
-        return;
-      }
-
-      // Process the vehicles data
-      let processedVeiculos = veiculosData
-        .map(veiculo => ({
-          ...veiculo,
-          placa: veiculo.placa?.toUpperCase() || ''
-        }))
-        .sort((a, b) => (a.placa || '').localeCompare(b.placa || ''));
-
-      // Apply search filter on frontend
-      if (debouncedSearchTerm) {
-        const searchTermLower = debouncedSearchTerm.toLowerCase();
-        processedVeiculos = processedVeiculos.filter(veiculo => {
-          return (
-            veiculo.placa?.toLowerCase().includes(searchTermLower) ||
-            veiculo.marca?.toLowerCase().includes(searchTermLower) ||
-            veiculo.tipo?.toLowerCase().includes(searchTermLower) ||
-            veiculo.motorista?.nome?.toLowerCase().includes(searchTermLower) ||
-            veiculo.motorista?.cpf?.includes(searchTermLower)
-          );
-        });
-      }
-
-      // Apply phone filter on frontend
-      if (debouncedPhoneSearch) {
-        const phoneSearchLower = debouncedPhoneSearch.toLowerCase().replace(/[()\-\s]/g, '');
-        processedVeiculos = processedVeiculos.filter(veiculo => {
-          const phoneStr = veiculo.motorista?.telefone?.toString().replace(/[()\-\s]/g, '') || '';
-          return phoneStr.toLowerCase().includes(phoneSearchLower);
-        });
-      }
-
-      setVeiculos(processedVeiculos);
-      
-      // Update total count based on filtered results
-      const filteredCount = processedVeiculos.length;
-      setTotalCount(filteredCount);
-      setTotalPages(Math.max(1, Math.ceil(filteredCount / pageSize)));
+      const veiculosData = data || [];
+      setVeiculos(veiculosData);
+      setTotalCount(veiculosData.length);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar veículos';
-      console.error('Error fetching veiculos:', errorMessage);
-      setError(errorMessage);
-      toast.error(errorMessage);
+      console.error('Error fetching veiculos:', error);
+      toast.error('Erro ao carregar veículos');
       setVeiculos([]);
     } finally {
       setLoading(false);
@@ -209,7 +164,7 @@ const VeiculosEmpresa = () => {
     }
   };
 
-  const handleDelete = (veiculo: Veiculo) => {
+  const handleDelete = (veiculo: VeiculoWithMotorista) => {
     setSelectedVeiculo(veiculo);
     setIsDeleteModalOpen(true);
   };
@@ -232,7 +187,7 @@ const VeiculosEmpresa = () => {
     }
   };
 
-  const handleEdit = (veiculo: Veiculo) => {
+  const handleEdit = (veiculo: VeiculoWithMotorista) => {
     setSelectedVeiculo(veiculo);
     setIsEditModalOpen(true);
   };
@@ -284,12 +239,12 @@ const VeiculosEmpresa = () => {
     }
   };
 
-  const handleViewVehicle = (veiculo: Veiculo) => {
+  const handleViewVehicle = (veiculo: VeiculoWithMotorista) => {
     setSelectedVeiculo(veiculo);
     setIsCombinedModalOpen(true);
   };
 
-  const handleContextMenu = (e: React.MouseEvent, veiculo: Veiculo) => {
+  const handleContextMenu = (e: React.MouseEvent, veiculo: VeiculoWithMotorista) => {
     e.preventDefault();
     setContextMenu({
       visible: true,
@@ -308,9 +263,32 @@ const VeiculosEmpresa = () => {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  const hasMissingData = (veiculo: Veiculo) => {
+  const hasMissingData = (veiculo: VeiculoWithMotorista) => {
     return !veiculo.tipologia || !veiculo.peso || !veiculo.cubagem;
   };
+
+  const filteredVeiculos = veiculos
+    .filter(veiculo => {
+      const searchString = debouncedSearchTerm.toLowerCase();
+      return !debouncedSearchTerm || 
+        veiculo.placa.toLowerCase().includes(searchString) ||
+        veiculo.marca.toLowerCase().includes(searchString) ||
+        veiculo.tipo.toLowerCase().includes(searchString);
+    })
+    .sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return 1;
+      if (bValue === null) return -1;
+
+      const aStr = String(aValue);
+      const bStr = String(bValue);
+
+      const comparison = aStr.localeCompare(bStr);
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
 
   if (loading) {
     return (
@@ -426,7 +404,7 @@ const VeiculosEmpresa = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {veiculos.map((veiculo) => (
+                  {filteredVeiculos.map((veiculo) => (
                     <tr 
                       key={veiculo.veiculo_id} 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
@@ -532,7 +510,7 @@ const VeiculosEmpresa = () => {
             />
           </div>
         </div>
-        {veiculos.length === 0 ? (
+        {filteredVeiculos.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400">
               Nenhum veículo encontrado

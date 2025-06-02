@@ -14,9 +14,20 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
 import { supabase } from '../../lib/supabase';
+import { useDebounce } from '../../hooks/useDebounce';
 
 interface VeiculoWithMotorista extends Veiculo {
-  motorista?: Motorista;
+  motorista?: {
+    motorista_id: number;
+    nome: string;
+    cpf: string;
+    telefone: string;
+  } | null;
+  agregado?: {
+    agregado_id: number;
+    nome: string;
+    st_agregado: boolean;
+  } | null;
 }
 
 const VeiculosAgregados = () => {
@@ -26,12 +37,16 @@ const VeiculosAgregados = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [phoneSearch, setPhoneSearch] = useState('');
-  const [debouncedPhoneSearch, setDebouncedPhoneSearch] = useState('');
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof VeiculoWithMotorista;
+    direction: 'asc' | 'desc';
+  }>({ key: 'placa', direction: 'asc' });
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const debouncedPhoneSearch = useDebounce(phoneSearch, 500);
+
   const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
-  const phoneTimeoutRef = useRef<NodeJS.Timeout>();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -59,37 +74,6 @@ const VeiculosAgregados = () => {
     y: 0,
     veiculo: null,
   });
-
-  // Debounce search terms
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    searchTimeoutRef.current = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 800);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchTerm]);
-
-  useEffect(() => {
-    if (phoneTimeoutRef.current) {
-      clearTimeout(phoneTimeoutRef.current);
-    }
-    phoneTimeoutRef.current = setTimeout(() => {
-      setDebouncedPhoneSearch(phoneSearch);
-    }, 500);
-
-    return () => {
-      if (phoneTimeoutRef.current) {
-        clearTimeout(phoneTimeoutRef.current);
-      }
-    };
-  }, [phoneSearch]);
 
   useEffect(() => {
     const init = async () => {
@@ -122,90 +106,37 @@ const VeiculosAgregados = () => {
   }, [contextMenu.visible]);
 
   const fetchVeiculos = async () => {
+    if (!companyId) return;
+    
     try {
       setLoading(true);
-      setError(null);
-      
-      const from = (currentPage - 1) * pageSize;
-      const to = from + pageSize - 1;
-      
-      let query = supabase
+      const { data, error } = await supabase
         .from('veiculo')
         .select(`
           *,
-          motorista:motorista_id (
+          motorista (
             motorista_id,
             nome,
             cpf,
-            telefone,
-            email,
-            st_cadastro,
-            documento_motorista (*)
+            telefone
           ),
-          documento_veiculo (*)
-        `, { count: 'exact' })
-        .eq('status_veiculo', true)
-        .eq('motorista.st_cadastro', 'contratado')
-        .eq('motorista.company_id', companyId)
-        .eq('company_id', companyId);
+          agregado (
+            agregado_id,
+            nome,
+            st_agregado
+          )
+        `)
+        .eq('company_id', companyId)
+        .eq('agregado.st_agregado', true);
 
-      const { data: veiculosData, count, error: veiculosError } = await query
-        .order('placa', { ascending: true })
-        .range(from, to);
+      if (error) throw error;
 
-      if (veiculosError) {
-        throw new Error(`Erro ao buscar veículos: ${veiculosError.message}`);
-      }
-
-      if (!veiculosData) {
-        setVeiculos([]);
-        setTotalCount(0);
-        setTotalPages(1);
-        return;
-      }
-
-      // Process the vehicles data
-      let processedVeiculos = veiculosData
-        .map(veiculo => ({
-          ...veiculo,
-          placa: veiculo.placa?.toUpperCase() || ''
-        }))
-        .sort((a, b) => (a.placa || '').localeCompare(b.placa || ''));
-
-      // Apply search filter on frontend
-      if (debouncedSearchTerm) {
-        const searchTermLower = debouncedSearchTerm.toLowerCase();
-        processedVeiculos = processedVeiculos.filter(veiculo => {
-          return (
-            veiculo.placa?.toLowerCase().includes(searchTermLower) ||
-            veiculo.marca?.toLowerCase().includes(searchTermLower) ||
-            veiculo.tipo?.toLowerCase().includes(searchTermLower) ||
-            veiculo.motorista?.nome?.toLowerCase().includes(searchTermLower) ||
-            veiculo.motorista?.cpf?.includes(searchTermLower)
-          );
-        });
-      }
-
-      // Apply phone filter on frontend
-      if (debouncedPhoneSearch) {
-        const phoneSearchLower = debouncedPhoneSearch.toLowerCase().replace(/[()\-\s]/g, '');
-        processedVeiculos = processedVeiculos.filter(veiculo => {
-          const phoneStr = veiculo.motorista?.telefone?.toString().replace(/[()\-\s]/g, '') || '';
-          return phoneStr.toLowerCase().includes(phoneSearchLower);
-        });
-      }
-
-      setVeiculos(processedVeiculos);
-      
-      // Update total count based on filtered results
-      const filteredCount = processedVeiculos.length;
-      setTotalCount(filteredCount);
-      setTotalPages(Math.max(1, Math.ceil(filteredCount / pageSize)));
+      const veiculosData = data || [];
+      setVeiculos(veiculosData);
+      setTotalCount(veiculosData.length);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar veículos';
-      console.error('Error fetching veiculos:', errorMessage);
-      setError(errorMessage);
-      toast.error(errorMessage);
+      console.error('Error fetching veiculos:', error);
+      toast.error('Erro ao carregar veículos');
       setVeiculos([]);
     } finally {
       setLoading(false);
@@ -338,6 +269,38 @@ const VeiculosAgregados = () => {
     setCurrentPage(1);
   };
 
+  const filteredVeiculos = veiculos
+    .filter(veiculo => {
+      const searchString = debouncedSearchTerm.toLowerCase();
+      const phoneSearchString = debouncedPhoneSearch.toLowerCase();
+      
+      const matchesSearch = !debouncedSearchTerm || 
+        veiculo.placa.toLowerCase().includes(searchString) ||
+        veiculo.marca.toLowerCase().includes(searchString) ||
+        veiculo.tipo.toLowerCase().includes(searchString) ||
+        (veiculo.motorista?.nome?.toLowerCase().includes(searchString)) ||
+        (veiculo.motorista?.cpf?.includes(searchString));
+
+      const matchesPhone = !debouncedPhoneSearch ||
+        (veiculo.motorista?.telefone?.toLowerCase().includes(phoneSearchString));
+
+      return matchesSearch && matchesPhone;
+    })
+    .sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return 1;
+      if (bValue === null) return -1;
+
+      const aStr = String(aValue);
+      const bStr = String(bValue);
+
+      const comparison = aStr.localeCompare(bStr);
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -459,7 +422,7 @@ const VeiculosAgregados = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {veiculos.map((veiculo) => (
+                  {filteredVeiculos.map((veiculo) => (
                     <tr 
                       key={veiculo.veiculo_id} 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
@@ -572,7 +535,7 @@ const VeiculosAgregados = () => {
             />
           </div>
         </div>
-        {veiculos.length === 0 ? (
+        {filteredVeiculos.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400">
               Nenhum veículo encontrado

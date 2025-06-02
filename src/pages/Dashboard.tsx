@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Truck, Users, Gauge, ClipboardCheck, Store, FileDown, Lock, ClipboardList } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import ImportExportModal from '../components/ImportExportModal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useWiseAppAccess } from '../hooks/useWiseAppAccess';
 import WiseAppTokenModal from '../components/WiseAppTokenModal';
+import { toast } from 'react-hot-toast';
 
 interface MenuItem {
   title: string;
@@ -176,8 +178,14 @@ const Dashboard = () => {
         open={isTokenModalOpen}
         onClose={() => setIsTokenModalOpen(false)}
         onTokenSaved={(token) => {
-          localStorage.setItem('wiseapp_token', token); 
-          setIsTokenModalOpen(false);
+          try {
+            localStorage.setItem('wiseapp_token', token);
+            setIsTokenModalOpen(false);
+            toast.success('Token configurado com sucesso!');
+          } catch (error) {
+            console.error('Error saving token:', error);
+            toast.error('Erro ao salvar token. Por favor, tente novamente.');
+          }
         }}
         companyId={companyId}
       />

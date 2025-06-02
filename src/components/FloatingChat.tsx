@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {Send, Minimize2, Maximize2, Phone, Loader2, AlertCircle, WifiOff, X, Mic, Image, Paperclip } from 'lucide-react';
+import {Send, Minimize2, Maximize2, Phone, Loader2, AlertCircle, WifiOff, X, Mic, Image, Paperclip, Minus, Square, MessageSquare, File } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
@@ -34,22 +34,25 @@ type Contact = {
   }>;
 };
 
-type Message = {
+interface Message {
   id: number;
   content: string;
   created_at: string;
-  message_type: 'incoming' | 'outgoing';
-  sender?: {
-    name?: string;
-  };
-  content_type?: string;
-  status?: string;
-};
+  message_type: 'outgoing' | 'incoming';
+  content_type: 'text' | 'image' | 'file' | 'audio';
+  status: 'sending' | 'sent' | 'delivered' | 'read';
+}
 
 type Conversation = {
   id: number;
   messages: Message[];
 };
+
+interface FileWithPreview {
+  file: File;
+  preview: string;
+  type: 'image' | 'file';
+}
 
 const FloatingChat: React.FC<FloatingChatProps> = ({
   initialPhone,
@@ -75,7 +78,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const [chatInstance, setChatInstance] = useState<any | null>(null);
   const [conversationId, setConversationId] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [inboxes, setInboxes] = useState<any[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -110,25 +113,47 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   }, []);
 
   useEffect(() => {
-    const handleOnline = () => {
-      setNetworkError(false);
-      if (contact && activeConversation) {
-        userInChat(contact.phone_number, contact.name);
+    const checkNetwork = () => {
+      const isOnline = navigator.onLine;
+      setNetworkError(!isOnline);
+      if (!isOnline) {
+        setError('Sem conexão de rede disponível');
       }
     };
 
-    const handleOffline = () => {
-      setNetworkError(true);
-    };
+    window.addEventListener('online', checkNetwork);
+    window.addEventListener('offline', checkNetwork);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    // Initial check
+    checkNetwork();
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', checkNetwork);
+      window.removeEventListener('offline', checkNetwork);
     };
-  }, [contact, activeConversation]);
+  }, []);
+
+  useEffect(() => {
+    const loadSavedConversations = () => {
+      try {
+        const saved = localStorage.getItem('chat_conversations');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setStorageConversations(parsed);
+          } else {
+            // Invalid data, remove it
+            localStorage.removeItem('chat_conversations');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading saved conversations:', error);
+        localStorage.removeItem('chat_conversations');
+      }
+    };
+
+    loadSavedConversations();
+  }, []);
 
   useEffect(() => {
     if (messagesEndRef.current && showChat && !minimized) {
@@ -147,6 +172,35 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       userInChat(initialPhone, initialName);
     }
   }, [initialPhone, initialName]);
+
+  const handleError = (error: unknown) => {
+    console.error('Error:', error);
+    
+    if (error instanceof Error) {
+      if (error.message.includes('network') || error.message.includes('conexão')) {
+        setNetworkError(true);
+        setError('Sem conexão de rede disponível');
+      } else if (error.message.includes('auth') || error.message.includes('token')) {
+        setAuthError(true);
+        setError('Erro de autenticação. Por favor, verifique suas credenciais.');
+      } else {
+        setError(error.message);
+      }
+    } else if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        setAuthError(true);
+        setError('Erro de autenticação. Por favor, verifique suas credenciais.');
+      } else if (error.response?.status === 404) {
+        setError('Recurso não encontrado');
+      } else if (error.response?.status === 500) {
+        setError('Erro interno do servidor');
+      } else {
+        setError(error.response?.data?.message || error.message || 'Erro inesperado');
+      }
+    } else {
+      setError('Erro inesperado');
+    }
+  };
 
   const proxyRequest = async (request: any) => {
     try {
@@ -168,7 +222,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('API request failed:', error);
+      handleError(error);
       throw error;
     }
   };
@@ -493,6 +547,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       setAuthError(false);
       setNetworkError(false);
       setShowChat(true);
+      // Limpar estados anteriores
+      setActiveConversation(null);
+      setContact(null);
+      setMessages([]);
 
       if (!checkNetworkConnectivity()) {
         setNetworkError(true);
@@ -529,31 +587,14 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       // Configure axios instance
       const api = axios.create({
         baseURL: '/api',
-          headers: {
+        headers: {
           'api_access_token': apiKey,
-            'Content-Type': 'application/json',
+          'Content-Type': 'application/json',
           'Accept': 'application/json'
         }
       });
 
-      // Primeiro, verificar se já temos uma conversa ativa para este número
-      const existingConversation = storageConversations.find(
-        sc => sc.user.phone_number === formattedNumber
-      );
-
-      if (existingConversation) {
-        console.log('Found existing conversation in storage:', existingConversation);
-        setContact(existingConversation.user);
-        setActiveConversation({
-          id: existingConversation.conversationId,
-          messages: []
-        });
-        await loadConversationMessages(existingConversation.conversationId);
-        setLoading(false);
-        return;
-      }
-
-      // Se não encontrou na storage, buscar no servidor
+      // Buscar contato no servidor
       const contactsResponse = await api.post(`/api/v1/accounts/${accountId}/contacts/filter`, {
         payload: [
           {
@@ -564,93 +605,20 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         ]
       });
 
+      let contactData;
       if (contactsResponse.data?.payload?.[0]) {
         const user = contactsResponse.data.payload[0];
-        
-        const contactData = {
+        contactData = {
           id: user.id,
           name: user.name,
           phone_number: user.phone_number,
-          thumbnail: user.thumbnail || '',
+          thumbnail: user.avatar_url || user.thumbnail || '',
           source_id: user.contact_inboxes?.[0]?.source_id || '',
           availability_status: user.availability_status || 'offline',
           last_seen_at: user.last_activity_at ? new Date(user.last_activity_at * 1000).toISOString() : ''
         };
-        
-        console.log('Setting contact data:', contactData);
-        setContact(contactData);
-
-        // Buscar todas as conversas existentes para o contato no inbox selecionado
-        const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/conversations`, {
-          params: {
-            inbox_id: inboxId,
-            q: user.id
-          }
-        });
-
-        console.log('All conversations response:', conversationsResponse.data);
-
-        if (conversationsResponse.data?.payload?.length > 0) {
-          // Ordenar conversas por data de criação (mais recente primeiro)
-          const sortedConversations = conversationsResponse.data.payload.sort((a: any, b: any) => {
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-          });
-
-          // Usar a conversa mais recente
-          const latestConversation = sortedConversations[0];
-          console.log('Using latest conversation:', latestConversation.id);
-          
-          // Verificar se a conversa já existe na storage
-          const existingStorageConversation = storageConversations.find(
-            sc => sc.conversationId === latestConversation.id
-          );
-
-          if (!existingStorageConversation) {
-            setStorageConversations(prev => [
-              ...prev,
-              {
-                user: contactData,
-                conversationId: latestConversation.id
-              }
-            ]);
-          }
-
-          setActiveConversation({
-            id: latestConversation.id,
-            messages: []
-          });
-
-          // Carregar mensagens da conversa
-          await loadConversationMessages(latestConversation.id);
-        } else {
-          console.log('No existing conversation found, creating new one');
-          // Criar nova conversa
-          const conversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
-            source_id: contactData.phone_number,
-            inbox_id: inboxId.toString(),
-            contact_id: contactData.id.toString()
-          });
-
-          if (conversationResponse.data?.id) {
-            const conversation = conversationResponse.data;
-            console.log('Created new conversation:', conversation.id);
-            
-            setStorageConversations(prev => [
-              ...prev,
-              {
-                user: contactData,
-                conversationId: conversation.id
-              }
-            ]);
-
-            setActiveConversation({
-              id: conversation.id,
-              messages: []
-            });
-          }
-        }
       } else {
-        // Criar novo contato
+        // Criar novo contato se não existir
         const contactNumber = `+${formattedNumber}`;
         const contactNameToUse = additionalInfo?.name || contactName || formatPhoneNumber(formattedNumber);
         const contactEmail = additionalInfo?.email || initialEmail;
@@ -670,36 +638,76 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         
         if (newContactResponse.data) {
           const newContact = newContactResponse.data;
-          
-          const contactData = {
+          contactData = {
             id: newContact.id,
             name: newContact.name,
             phone_number: newContact.phone_number,
-            thumbnail: newContact.thumbnail || '',
+            thumbnail: newContact.avatar_url || newContact.thumbnail || '',
             source_id: newContact.contact_inboxes?.[0]?.source_id || '',
             availability_status: newContact.availability_status || 'offline',
             last_seen_at: newContact.last_activity_at ? new Date(newContact.last_activity_at * 1000).toISOString() : ''
           };
-          
-          console.log('Setting new contact data:', contactData);
-          setContact(contactData);
+        }
+      }
 
-          // Criar conversa para o novo contato
-          const conversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
-            source_id: contactNumber,
-            inbox_id: inboxId.toString(),
-            contact_id: newContact.id.toString()
+      if (contactData) {
+        console.log('Setting contact data:', contactData);
+        setContact(contactData);
+
+        // Buscar todas as conversas existentes para o contato
+        const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/conversations`, {
+          params: {
+            q: contactData.id
+          }
+        });
+
+        console.log('All conversations response:', conversationsResponse.data);
+
+        if (conversationsResponse.data?.payload?.length > 0) {
+          // Buscar mensagens para cada conversa
+          const conversationsWithMessages = await Promise.all(
+            conversationsResponse.data.payload.map(async (conversation: any) => {
+              const messagesResponse = await api.get(
+                `/api/v1/accounts/${accountId}/conversations/${conversation.id}/messages`
+              );
+              return {
+                ...conversation,
+                hasMessages: messagesResponse.data?.payload?.length > 0,
+                messageCount: messagesResponse.data?.payload?.length || 0
+              };
+            })
+          );
+
+          // Ordenar conversas por: 1) tem mensagens, 2) data de criação
+          const sortedConversations = conversationsWithMessages.sort((a, b) => {
+            if (a.hasMessages && !b.hasMessages) return -1;
+            if (!a.hasMessages && b.hasMessages) return 1;
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
           });
-          
+
+          // Usar a primeira conversa que tem mensagens ou a mais recente
+          const selectedConversation = sortedConversations[0];
+          console.log('Selected conversation:', selectedConversation);
+
+          setActiveConversation({
+            id: selectedConversation.id,
+            messages: []
+          });
+
+          // Carregar mensagens da conversa
+          await loadConversationMessages(selectedConversation.id);
+        } else {
+          console.log('No existing conversation found, creating new one');
+          // Criar nova conversa apenas se não existir nenhuma
+          const conversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
+            source_id: contactData.phone_number,
+            inbox_id: inboxId.toString(),
+            contact_id: contactData.id.toString()
+          });
+
           if (conversationResponse.data?.id) {
             const conversation = conversationResponse.data;
-        setStorageConversations(prev => [
-          ...prev,
-          {
-                user: contactData,
-                conversationId: conversation.id
-              }
-            ]);
+            console.log('Created new conversation:', conversation.id);
 
             setActiveConversation({
               id: conversation.id,
@@ -707,6 +715,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             });
           }
         }
+      } else {
+        throw new Error('Falha ao criar ou encontrar o contato');
       }
     } catch (error) {
       if (!checkNetworkConnectivity()) {
@@ -745,18 +755,14 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       
       if (response.data?.payload) {
         console.log('Messages loaded:', response.data.payload);
-        const formattedMessages = response.data.payload.map((msg: any) => {
-          console.log('Processing message:', msg);
-          return {
-            id: msg.id,
-            content: msg.content,
-            created_at: new Date(msg.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
-            message_type: msg.message_type,
-            sender: msg.sender,
-            content_type: msg.content_type,
-            status: msg.status
-          };
-        });
+        const formattedMessages = response.data.payload.map((msg: any) => ({
+          id: msg.id,
+          content: msg.content,
+          created_at: msg.created_at,
+          message_type: msg.message_type,
+          content_type: msg.content_type,
+          status: msg.status
+        }));
 
         console.log('Formatted messages:', formattedMessages);
         
@@ -766,7 +772,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           if (!prev) return null;
           return {
             ...prev,
-            messages: formattedMessages
+            messages: formattedMessages.map((msg: any) => ({
+              ...msg,
+              message_type: msg.message_type === 'outgoing' ? 'outgoing' : 'incoming'
+            }))
           };
         });
 
@@ -798,18 +807,35 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     return `${digits}`;
   };
 
+  const formatTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        console.error('Invalid date:', dateString);
+        return '';
+      }
+      return new Intl.DateTimeFormat('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Sao_Paulo',
+        hourCycle: 'h23'
+      }).format(date);
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return '';
+    }
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toISOString();
+  };
+
+  const createFile = (blob: Blob, filename: string, type: string): File => {
+    return new (File as any)([blob], filename, { type });
+  };
+
   const sendMessage = async () => {
-    console.log('Attempting to send message...');
-    console.log('Current state:', {
-      newMessage,
-      activeConversation,
-      contact,
-      accountId: searchParams.get('account_id') || localStorage.getItem('account_id'),
-      apiKey: localStorage.getItem('wiseapp_token')
-    });
-    
     if (!newMessage.trim()) {
-      console.log('Message is empty');
       return;
     }
 
@@ -830,6 +856,36 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         throw new Error('Configuração inválida');
       }
 
+      if (!activeConversation?.id) {
+        throw new Error('Conversa não encontrada');
+      }
+
+      const textData = newMessage.trim();
+      
+      // Add temporary message
+      const tempMessage: Message = {
+        id: Date.now(),
+        content: textData,
+        created_at: formatDate(new Date()),
+        message_type: 'outgoing',
+        content_type: 'text',
+        status: 'sending'
+      };
+
+      setActiveConversation(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          messages: [...prev.messages, tempMessage]
+        };
+      });
+
+      // Clear input immediately
+      setNewMessage('');
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
+
       const api = axios.create({
         baseURL: '/api',
         headers: {
@@ -839,120 +895,29 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
       });
 
-      let conversationId = activeConversation?.id;
-
-      // Se não houver conversa ativa, buscar ou criar uma
-      if (!conversationId && contact) {
-        console.log('No active conversation, searching for existing one...');
-        
-        // Buscar conversas existentes para o contato
-        const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/conversations`, {
-          params: {
-            inbox_id: selectedInboxId,
-            q: contact.id
-          }
-        });
-
-        if (conversationsResponse.data?.payload?.[0]) {
-          // Usar conversa existente
-          const existingConversation = conversationsResponse.data.payload[0];
-          conversationId = existingConversation.id;
-          console.log('Found existing conversation:', conversationId);
-
-          if (conversationId) {
-            setActiveConversation({
-              id: conversationId,
-              messages: []
-            });
-
-            // Atualizar storageConversations
-            setStorageConversations(prev => [
-              ...prev,
-              {
-                user: contact,
-                conversationId: conversationId
-              }
-            ]);
-
-            // Carregar mensagens existentes
-            await loadConversationMessages(conversationId);
-          }
-        } else {
-          console.log('No existing conversation found, creating new one...');
-          
-          // Criar nova conversa
-          const conversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
-            source_id: contact.phone_number,
-            inbox_id: selectedInboxId?.toString(),
-            contact_id: contact.id.toString()
-          });
-
-          if (conversationResponse.data?.id) {
-            conversationId = conversationResponse.data.id;
-            console.log('Created new conversation:', conversationId);
-
-            if (conversationId) {
-              setActiveConversation({
-                id: conversationId,
-                messages: []
-              });
-
-              // Atualizar storageConversations
-              setStorageConversations(prev => [
-                ...prev,
-                {
-                  user: contact,
-                  conversationId: conversationId
-                }
-              ]);
-            }
-          } else {
-            throw new Error('Falha ao criar conversa');
-          }
-        }
-      }
-
-      if (!conversationId) {
-        throw new Error('Não foi possível criar ou encontrar uma conversa');
-      }
-
-      const textData = newMessage;
-      console.log('Sending message:', textData);
-
-      // Adicionar mensagem temporária
-      const tempMessage: Message = {
-        id: Date.now(),
-        content: textData,
-        created_at: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
-        message_type: 'outgoing',
-      };
-
-      console.log('Adding temporary message:', tempMessage);
-              setActiveConversation(prev => ({
-                ...prev!,
-        messages: [...prev!.messages, tempMessage],
-      }));
-
-      // Enviar mensagem
-      console.log('Making API request to:', `/api/v1/accounts/${accountId}/conversations/${conversationId}/messages`);
-      const response = await api.post(`/api/v1/accounts/${accountId}/conversations/${conversationId}/messages`, {
+      const response = await api.post(`/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`, {
         content: textData,
         message_type: 'outgoing'
       });
 
-      console.log('Message sent successfully:', response.data);
-
-      // Limpar o input após o envio bem-sucedido
-      setNewMessage('');
-      if (inputRef.current) {
-        inputRef.current.value = '';
-      }
-
       if (response.data) {
-        // Recarregar mensagens após envio
-        await loadConversationMessages(conversationId);
+        // Update message status
+        setActiveConversation(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            messages: prev.messages.map(msg => 
+              msg.id === tempMessage.id 
+                ? { ...msg, id: response.data.id, status: 'sent' }
+                : msg
+            )
+          };
+        });
 
-        // Scroll para a última mensagem
+        // Reload messages to get final status
+        await loadConversationMessages(activeConversation.id);
+
+        // Scroll to last message
         setTimeout(() => {
           if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -962,17 +927,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
     } catch (error) {
       console.error('Error in sendMessage:', error);
-      let errorMessage = 'Falha ao enviar mensagem';
+      handleError(error);
       
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (axios.isAxiosError(error)) {
-        errorMessage = error.response?.data?.message || error.message;
-      }
-      
-      setError(errorMessage);
-      
-      // Remover mensagem temporária em caso de erro
+      // Remove temporary message on error
       setActiveConversation(prev => {
         if (!prev) return null;
         return {
@@ -987,26 +944,20 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     setMinimized(!minimized);
   };
 
-  const formatTime = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        timeZone: 'America/Sao_Paulo'
-      });
-    } catch (e) {
-      console.error('Error formatting time:', e);
-      return '';
-    }
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const uploadedFiles = event.target.files;
-    if (!uploadedFiles || !activeConversation) return;
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = event.target.files;
+    if (!selectedFiles || selectedFiles.length === 0) return;
 
     try {
+      setError(null);
+      setAuthError(false);
+      setNetworkError(false);
+
+      if (!checkNetworkConnectivity()) {
+        setNetworkError(true);
+        throw new Error('Sem conexão de rede disponível');
+      }
+
       const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
       const apiKey = localStorage.getItem('wiseapp_token');
 
@@ -1014,131 +965,206 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         throw new Error('Configuração inválida');
       }
 
-      const formData = new FormData();
-      formData.append('Url', `/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`);
-      formData.append('Method', 'POST');
-      formData.append('Headers[api_access_token]', apiKey);
-
-      Array.from(uploadedFiles).forEach(file => {
-        formData.append('Files', file);
-      });
-
-      if (newMessage.trim()) {
-        formData.append('Params[content]', newMessage.trim());
-        setNewMessage('');
+      if (!activeConversation?.id) {
+        throw new Error('Conversa não encontrada');
       }
+
+      const newFiles: FileWithPreview[] = Array.from(selectedFiles).map(file => ({
+        file,
+        preview: URL.createObjectURL(file),
+        type: file.type.startsWith('image/') ? 'image' : 'file'
+      }));
+
+      setFiles(prev => [...prev, ...newFiles]);
+
+      // Clear input
+      event.target.value = '';
+
+      // Upload files
+      const formData = new FormData();
+      newFiles.forEach(({ file }) => {
+        formData.append('attachments[]', file);
+      });
 
       const api = axios.create({
         baseURL: '/api',
         headers: {
           'api_access_token': apiKey,
-          'Content-Type': 'multipart/form-data',
           'Accept': 'application/json'
         }
       });
 
-      await api.post(`/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`, formData);
-      await loadConversationMessages(activeConversation.id);
-
-      // Limpar o input de arquivo
-      event.target.value = '';
-
-      // Scroll para a última mensagem
-      setTimeout(() => {
-        if (messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      const response = await api.post(
+        `/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
         }
-      }, 100);
+      );
+
+      if (response.data) {
+        // Add messages for each file
+        const messages: Message[] = newFiles.map(({ file }, index) => ({
+          id: response.data[index]?.id || Date.now() + index,
+          content: file.name,
+          created_at: formatDate(new Date()),
+          message_type: 'outgoing',
+          content_type: file.type.startsWith('image/') ? 'image' : 'file',
+          status: 'sent'
+        }));
+
+        setActiveConversation(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            messages: [...prev.messages, ...messages]
+          };
+        });
+
+        // Clear files
+        setFiles([]);
+
+        // Reload messages
+        await loadConversationMessages(activeConversation.id);
+
+        // Scroll to last message
+        setTimeout(() => {
+          if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
+      }
 
     } catch (error) {
       console.error('Error uploading files:', error);
-      setError('Falha ao enviar arquivo');
+      handleError(error);
+      
+      // Clear files on error
+      setFiles([]);
     }
   };
 
-  const startRecording = async () => {
+  const handleVoiceMessage = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      
-      const audioChunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
-      };
+      setError(null);
+      setAuthError(false);
+      setNetworkError(false);
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
-        const apiKey = localStorage.getItem('wiseapp_token');
-
-        if (!accountId || !apiKey || !activeConversation) return;
-
-        try {
-          const formData = new FormData();
-          formData.append('Url', `/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`);
-          formData.append('Method', 'POST');
-          formData.append('Headers[api_access_token]', apiKey);
-          formData.append('Files', audioBlob, 'audio.wav');
-
-          if (newMessage.trim()) {
-            formData.append('Params[content]', newMessage.trim());
-            setNewMessage('');
-          }
-
-          const api = axios.create({
-            baseURL: '/api',
-            headers: {
-              'api_access_token': apiKey,
-              'Content-Type': 'multipart/form-data',
-              'Accept': 'application/json'
-            }
-          });
-
-          await api.post(`/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`, formData);
-          await loadConversationMessages(activeConversation.id);
-
-          // Limpar estado de gravação
-          setIsRecording(false);
-          setRecordingTime(0);
-          if (recordingIntervalRef.current) {
-            clearInterval(recordingIntervalRef.current);
-          }
-
-          // Scroll para a última mensagem
-          setTimeout(() => {
-            if (messagesEndRef.current) {
-              messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-            }
-          }, 100);
-
-        } catch (error) {
-          console.error('Error sending audio:', error);
-          setError('Falha ao enviar áudio');
-        }
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
-      
-      recordingIntervalRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      setError('Falha ao iniciar gravação');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      setIsRecording(false);
-      if (recordingIntervalRef.current) {
-        clearInterval(recordingIntervalRef.current);
+      if (!checkNetworkConnectivity()) {
+        setNetworkError(true);
+        throw new Error('Sem conexão de rede disponível');
       }
+
+      const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
+      const apiKey = localStorage.getItem('wiseapp_token');
+
+      if (!accountId || !apiKey) {
+        throw new Error('Configuração inválida');
+      }
+
+      if (!activeConversation?.id) {
+        throw new Error('Conversa não encontrada');
+      }
+
+      if (!mediaRecorderRef.current) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = recorder;
+
+        recorder.ondataavailable = async (event) => {
+          if (event.data.size > 0) {
+            const audioBlob = new Blob([event.data], { type: 'audio/webm' });
+            const audioFile = createFile(audioBlob, 'audio-message.webm', 'audio/webm');
+
+            // Add temporary message
+            const tempMessage: Message = {
+              id: Date.now(),
+              content: 'Mensagem de voz',
+              created_at: formatDate(new Date()),
+              message_type: 'outgoing',
+              content_type: 'audio',
+              status: 'sending'
+            };
+
+            setActiveConversation(prev => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                messages: [...prev.messages, tempMessage]
+              };
+            });
+
+            // Upload audio file
+            const formData = new FormData();
+            formData.append('attachments[]', audioFile);
+
+            const api = axios.create({
+              baseURL: '/api',
+              headers: {
+                'api_access_token': apiKey,
+                'Accept': 'application/json'
+              }
+            });
+
+            const response = await api.post(
+              `/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`,
+              formData,
+              {
+                headers: {
+                  'Content-Type': 'multipart/form-data'
+                }
+              }
+            );
+
+            if (response.data) {
+              // Update message status
+              setActiveConversation(prev => {
+                if (!prev) return null;
+                return {
+                  ...prev,
+                  messages: prev.messages.map(msg => 
+                    msg.id === tempMessage.id 
+                      ? { ...msg, id: response.data.id, status: 'sent' }
+                      : msg
+                  )
+                };
+              });
+
+              // Reload messages
+              await loadConversationMessages(activeConversation.id);
+
+              // Scroll to last message
+              setTimeout(() => {
+                if (messagesEndRef.current) {
+                  messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                }
+              }, 100);
+            }
+          }
+        };
+
+        recorder.start();
+        setIsRecording(true);
+      } else {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+        mediaRecorderRef.current = null;
+      }
+
+    } catch (error) {
+      console.error('Error handling voice message:', error);
+      handleError(error);
+      
+      // Cleanup on error
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        mediaRecorderRef.current = null;
+      }
+      setIsRecording(false);
     }
   };
 
@@ -1153,17 +1179,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       (window as any).userInChat = userInChat;
     }
 
-    // Carregar conversas salvas do localStorage
-    const savedConversations = localStorage.getItem('chat_conversations');
-    if (savedConversations) {
-      try {
-        const parsedConversations = JSON.parse(savedConversations);
-        setStorageConversations(parsedConversations);
-      } catch (error) {
-        console.error('Error loading saved conversations:', error);
-      }
-    }
-
     return () => {
       if (typeof window !== 'undefined') {
         delete (window as any).userInChat;
@@ -1171,19 +1186,55 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     };
   }, []);
 
-  // Salvar conversas no localStorage quando houver mudanças
-  useEffect(() => {
-    if (storageConversations.length > 0) {
-      localStorage.setItem('chat_conversations', JSON.stringify(storageConversations));
-    }
-  }, [storageConversations]);
-
   useEffect(() => {
     if (activeConversation?.id) {
       console.log('Conversation changed, loading messages for:', activeConversation.id);
       loadConversationMessages(activeConversation.id);
     }
   }, [activeConversation?.id]);
+
+  useEffect(() => {
+    // Save conversations to localStorage when they change
+    if (storageConversations.length > 0) {
+      try {
+        localStorage.setItem('chat_conversations', JSON.stringify(storageConversations));
+      } catch (error) {
+        console.error('Error saving conversations:', error);
+      }
+    }
+  }, [storageConversations]);
+
+  useEffect(() => {
+    // Cleanup function for media recorder
+    return () => {
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        mediaRecorderRef.current = null;
+      }
+      setIsRecording(false);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Cleanup function for file previews
+    return () => {
+      files.forEach(file => {
+        if (file.preview) {
+          URL.revokeObjectURL(file.preview);
+        }
+      });
+    };
+  }, [files]);
+
+  useEffect(() => {
+    // Cleanup function for intervals
+    return () => {
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+    };
+  }, []);
 
   if (!showChat) return null;
 
@@ -1254,326 +1305,223 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   console.log('Current contact state:', contact);
 
   return (
-    <div
-      className={`fixed z-[9999] transition-all duration-300 ${
-        minimized
-          ? 'bottom-4 right-4 w-auto h-auto'
-          : 'bottom-4 right-4 w-[320px] h-[480px] sm:w-[350px] sm:h-[500px] md:w-[380px] md:h-[550px] lg:w-[400px] lg:h-[600px]'
-      }`}
-    >
-      {showInboxSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 w-[90%] max-w-md">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-              Selecione o Canal de Atendimento
-            </h3>
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {availableInboxes.map((inbox) => (
-                <button
-                  key={inbox.id}
-                  onClick={() => handleInboxSelection(inbox.id)}
-                  className={`w-full p-3 rounded-lg text-left transition-colors ${
-                    inbox.isOpen
-                      ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-                      : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700/70'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {inbox.avatar_url ? (
-                      <img
-                        src={inbox.avatar_url}
-                        alt={inbox.name}
-                        className="w-10 h-10 rounded-full"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                        <span className="text-lg font-semibold text-gray-600 dark:text-gray-300">
-                          {inbox.name[0]}
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end">
+      {!minimized && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-96 h-[600px] flex flex-col mb-4">
+          {/* Header */}
+          <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden">
+                {contact?.thumbnail ? (
+                  <img 
+                    src={contact.thumbnail} 
+                    alt={contact.name || 'Avatar'} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  contact?.name?.[0]?.toUpperCase() || 'C'
+                )}
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900 dark:text-white">
+                  {contact?.name || 'Chat'}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {contact?.phone_number || 'Selecione um contato'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setMinimized(true)}
+                className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                title="Minimizar"
+              >
+                <Minus className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setShowChat(false)}
+                className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                title="Fechar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Inbox Selector Modal */}
+          {showInboxSelector && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                  Selecione um Inbox
+                </h3>
+                <div className="space-y-3">
+                  {availableInboxes.map((inbox) => (
+                    <button
+                      key={inbox.id}
+                      onClick={() => handleInboxSelection(inbox.id)}
+                      className="w-full p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {inbox.name}
                         </span>
-                      </div>
-                    )}
-                    <div className="flex-grow">
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {inbox.name}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         {inbox.isOpen ? (
-                          <span className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-green-500 rounded-full" />
+                          <span className="text-green-600 dark:text-green-400 text-sm">
                             Aberto
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                          <span className="text-red-600 dark:text-red-400 text-sm">
                             Fechado
                           </span>
                         )}
                       </div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {minimized ? (
-        <button
-          onClick={toggleMinimize}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
-        >
-          <Phone className="w-5 h-5" />
-          <span className="max-w-[150px] truncate">{contact?.name || formatPhoneNumber(contact?.phone_number || '') || 'Chat'}</span>
-          <Maximize2 className="w-4 h-4 ml-1" />
-        </button>
-      ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 flex flex-col h-full overflow-hidden">
-          <div className="flex items-center justify-between p-2.5 sm:p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                {contact?.thumbnail ? (
-                  <img
-                    src={contact.thumbnail}
-                    alt={contact.name || 'Avatar'}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="text-base sm:text-lg font-semibold text-gray-500 dark:text-gray-400">
-                    {contact?.name?.[0]?.toUpperCase() || contact?.phone_number?.[0] || '?'}
-                  </div>
-                )}
-                {contact?.availability_status === 'online' && (
-                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
-                )}
-              </div>
-              <div className="min-w-0">
-                <div className="font-medium text-gray-900 dark:text-white text-sm sm:text-base truncate">
-                  {contact?.name || formatPhoneNumber(contact?.phone_number || '') || 'Chat'}
+                    </button>
+                  ))}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 sm:gap-2">
-                  {contact?.phone_number && (
-                    <span className="flex items-center">
-                      <Phone className="w-3 h-3 mr-1" />
-                      <span className="truncate">{formatPhoneNumber(contact.phone_number)}</span>
-                    </span>
-                  )}
-                  {contact?.availability_status === 'online' ? (
-                    <span className="flex items-center text-green-500">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1" />
-                      Online
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full mr-1" />
-                      Offline
-                    </span>
-                )}
               </div>
             </div>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <button
-                onClick={toggleMinimize}
-                className="p-1 sm:p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-                aria-label="Minimize"
-              >
-                <Minimize2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setShowChat(false)}
-                className="p-1 sm:p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          )}
 
-          <div className="flex-grow overflow-y-auto p-3 sm:p-4 bg-gray-50 dark:bg-gray-900">
-            {loading ? (
-              <div className="flex justify-center items-center h-full">
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-              </div>
-            ) : error ? (
-              <div className="flex flex-col items-center justify-center h-full text-red-500 dark:text-red-400 p-3 sm:p-4 text-center">
-                <p className="font-medium">Erro</p>
-                <p className="text-sm mt-1">{error}</p>
-                <button
-                  onClick={() => {
-                    if (contact) {
-                      userInChat(contact.phone_number, contact.name);
-                    }
-                  }}
-                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Tentar Novamente
-                </button>
-              </div>
-            ) : activeConversation?.messages &&
-              activeConversation.messages.length > 0 ? (
-              activeConversation.messages.map((msg, i) => {
-                const isOutgoing = msg.message_type === 'outgoing';
-                return (
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={messagesEndRef}>
+            {activeConversation?.messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.message_type === 'outgoing' ? 'justify-end' : 'justify-start'}`}
+              >
                 <div
-                  key={msg.id || i}
-                    className={`mb-3 sm:mb-4 flex ${
-                      isOutgoing ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    <div className={`max-w-[85%] sm:max-w-[80%] flex flex-col ${
-                      isOutgoing ? 'items-end' : 'items-start'
-                    }`}>
-                      <div
-                        className={`rounded-2xl px-4 py-2.5 text-sm sm:text-base relative ${
-                          isOutgoing
-                            ? 'bg-blue-600 text-white rounded-tr-none'
-                            : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-tl-none shadow-sm'
-                        }`}
-                      >
-                        {msg.content_type === 'audio' ? (
-                          <div className="flex items-center gap-2 min-w-[200px]">
-                            <audio controls className="w-full">
-                              <source src={msg.content} type="audio/wav" />
-                              Seu navegador não suporta o elemento de áudio.
-                            </audio>
-                          </div>
-                        ) : (
-                          <div className="whitespace-pre-wrap break-words">{msg.content}</div>
-                        )}
-                  </div>
-                  <div
-                        className={`text-xs mt-1 flex items-center gap-1 ${
-                          isOutgoing
-                            ? 'text-gray-500 dark:text-gray-400'
-                        : 'text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                        <span>{formatTime(msg.created_at)}</span>
-                        {isOutgoing && (
-                          <span className="flex items-center">
-                            {msg.status === 'sent' && (
-                              <span className="text-gray-400">✓</span>
-                            )}
-                            {msg.status === 'delivered' && (
-                              <span className="text-gray-400">✓✓</span>
-                            )}
-                            {msg.status === 'read' && (
-                              <span className="text-blue-500">✓✓</span>
-                            )}
-                          </span>
-                        )}
-                  </div>
+                  className={`max-w-[80%] rounded-lg p-3 ${
+                    message.message_type === 'outgoing'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                  }`}
+                >
+                  {message.content_type === 'image' ? (
+                    <img
+                      src={message.content}
+                      alt="Imagem"
+                      className="max-w-full rounded-lg"
+                      loading="lazy"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'https://via.placeholder.com/150?text=Imagem+não+encontrada';
+                      }}
+                    />
+                  ) : message.content_type === 'file' ? (
+                    <a
+                      href={message.content}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-2 text-blue-500 hover:text-blue-600"
+                    >
+                      <File className="w-5 h-5" />
+                      <span>{message.content}</span>
+                    </a>
+                  ) : message.content_type === 'audio' ? (
+                    <audio controls className="w-full">
+                      <source src={message.content} type="audio/webm" />
+                      Seu navegador não suporta o elemento de áudio.
+                    </audio>
+                  ) : (
+                    <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                  )}
+                  <span className="text-xs opacity-75 mt-1 block">
+                    {formatTime(message.created_at)}
+                  </span>
                 </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm sm:text-base">
-                <p>Nenhuma mensagem ainda</p>
-                <p className="text-xs sm:text-sm mt-1">
-                  Envie uma mensagem para iniciar a conversa
-                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Input */}
+          <div className="p-4 border-t dark:border-gray-700">
+            {error && (
+              <div className="mb-2 p-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 rounded text-sm">
+                {error}
               </div>
             )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="p-2.5 sm:p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                console.log('Form submitted');
-                if (newMessage.trim()) {
-                sendMessage();
-                }
-              }}
-              className="flex items-center gap-2"
-            >
-              <div className="flex-grow flex items-center gap-1.5 sm:gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-2 min-w-0">
+            {networkError && (
+              <div className="mb-2 p-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-100 rounded text-sm">
+                Sem conexão de rede disponível
+              </div>
+            )}
+            {authError && (
+              <div className="mb-2 p-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 rounded text-sm">
+                Erro de autenticação. Por favor, verifique suas credenciais.
+              </div>
+            )}
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={() => document.getElementById('fileInput')?.click()}
+                className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                title="Anexar arquivo"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
               <input
-                ref={inputRef}
+                type="file"
+                multiple
+                onChange={handleFileSelect}
+                className="hidden"
+                id="fileInput"
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+              />
+              <button
+                type="button"
+                onClick={handleVoiceMessage}
+                className={`p-1.5 ${
+                  isRecording
+                    ? 'text-red-500 hover:text-red-700 dark:hover:text-red-400'
+                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+                title={isRecording ? 'Parar gravação' : 'Gravar áudio'}
+              >
+                {isRecording ? (
+                  <Square className="w-5 h-5" />
+                ) : (
+                  <Mic className="w-5 h-5" />
+                )}
+              </button>
+              <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      console.log('Enter pressed');
-                      if (newMessage.trim()) {
-                        sendMessage();
-                      }
-                    }
-                  }}
+                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                 placeholder="Digite sua mensagem..."
-                  className="flex-grow bg-transparent border-none focus:outline-none focus:ring-0 dark:text-white text-sm sm:text-base min-w-0"
-                />
-                <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                  <input
-                    type="file"
-                    multiple
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="fileInput"
-                    accept="image/*"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById('fileInput')?.click()}
-                    className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 shrink-0"
-                    title="Enviar imagem"
-                  >
-                    <Image className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById('fileInput')?.click()}
-                    className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 shrink-0"
-                    title="Enviar arquivo"
-                  >
-                    <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
-                  {isRecording ? (
-                    <button
-                      type="button"
-                      onClick={stopRecording}
-                      className="p-1.5 sm:p-2 text-red-500 hover:text-red-700 dark:hover:text-red-400 shrink-0"
-                      title="Parar gravação"
-                    >
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-xs">{formatRecordingTime(recordingTime)}</span>
-                      </div>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={startRecording}
-                      className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 shrink-0"
-                      title="Gravar áudio"
-                    >
-                      <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
-                  )}
-                </div>
-              </div>
+                className="flex-1 p-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                disabled={!activeConversation || networkError || authError}
+              />
               <button
-                type="submit"
-                disabled={!newMessage.trim()}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (newMessage.trim()) {
-                    sendMessage();
-                  }
-                }}
-                className="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shrink-0 min-w-[40px]"
+                type="button"
+                onClick={sendMessage}
+                disabled={!newMessage.trim() || !activeConversation || networkError || authError}
+                className={`p-2 rounded-full ${
+                  !newMessage.trim() || !activeConversation || networkError || authError
+                    ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
+                    : 'bg-blue-500 hover:bg-blue-600'
+                }`}
+                title="Enviar mensagem"
               >
-                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Send className="w-5 h-5 text-white" />
               </button>
-            </form>
+            </div>
           </div>
         </div>
       )}
+
+      {/* Chat Button */}
+      <button
+        onClick={() => setMinimized(false)}
+        className={`p-4 rounded-full shadow-lg ${
+          minimized ? 'bg-blue-500 hover:bg-blue-600' : 'hidden'
+        }`}
+        title="Abrir chat"
+      >
+        <MessageSquare className="w-6 h-6 text-white" />
+      </button>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, FileText, Camera, ExternalLink, Upload, Loader2 } from 'lucide-react';
 import type { DocumentoVeiculo } from '../../types/database';
 import { supabase } from '../../lib/supabase';
@@ -20,6 +20,7 @@ const VehicleDocumentsModal = ({ isOpen, onClose, documento, placa, marca, tipo,
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(documento?.foto_crv || null);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   if (!isOpen) return null;
 
@@ -51,89 +52,51 @@ const VehicleDocumentsModal = ({ isOpen, onClose, documento, placa, marca, tipo,
     setFile(selectedFile);
   };
 
-  const uploadDocument = async () => {
-    if (!file || !veiculo_id) return;
-    
+  const uploadDocument = async (file: File, type: 'crv' | 'antt' | 'seguro') => {
+    if (!veiculo_id) return;
+
     try {
       setUploading(true);
-      
-      // Create a unique file name
       const fileExt = file.name.split('.').pop();
-      const fileName = `${veiculo_id}_crv_${Date.now()}.${fileExt}`;
+      const fileName = `${veiculo_id}/${type}_${Date.now()}.${fileExt}`;
+      const filePath = `${veiculo_id}/${fileName}`;
 
-      // For PDF files, we need to convert to base64 and then to blob to ensure proper MIME type
-      let fileToUpload = file;
-      if (fileExt?.toLowerCase() === 'pdf') {
-        // Convert to base64 and back to blob to ensure proper MIME type
-        const reader = new FileReader();
-        const dataPromise = new Promise<File>((resolve, reject) => {
-          reader.onload = () => {
-            try {
-              // Create a new blob with the correct MIME type
-              const blob = new Blob([reader.result as ArrayBuffer], { type: 'application/pdf' });
-              // Convert blob to File
-              const newFile = new File([blob], file.name, { type: 'application/pdf' });
-              resolve(newFile);
-            } catch (err) {
-              reject(err);
-            }
-          };
-          reader.onerror = reject;
-          reader.readAsArrayBuffer(file);
-        });
-        
-        fileToUpload = await dataPromise;
-      }
+      // Upload file to storage
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file);
 
-      // Upload to Supabase Storage
-      const { data, error: uploadError } = await supabase.storage
-        .from('imagensdocs')
-        .upload(fileName, fileToUpload, {
-          cacheControl: '3600',
-          upsert: true,
-          contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
-        });
+      if (uploadError) throw uploadError;
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw new Error(`Erro ao fazer upload: ${uploadError.message}`);
-      }
-
-      // Get the public URL
+      // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('imagensdocs')
-        .getPublicUrl(fileName);
+        .from('documents')
+        .getPublicUrl(filePath);
 
-      // Update or create documento_veiculo record
-      if (documento) {
-        // Update existing record
-        const { error } = await supabase
-          .from('documento_veiculo')
-          .update({ foto_crv: publicUrl })
-          .eq('id_documento_veiculo', documento.id_documento_veiculo);
-          
-        if (error) throw error;
-      } else if (veiculo_id) {
-        // Create new record
-        const { error } = await supabase
-          .from('documento_veiculo')
-          .insert({ 
-            veiculo_id, 
-            foto_crv: publicUrl 
-          });
-          
-        if (error) throw error;
+      // Update or create document record
+      const { error: docError } = await supabase
+        .from('documento_veiculo')
+        .upsert({
+          veiculo_id,
+          tipo_documento: type,
+          url_documento: publicUrl,
+          nome_arquivo: fileName
+        });
+
+      if (docError) throw docError;
+
+      // Update preview URL
+      setPreviewUrl(publicUrl);
+      setFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
 
-      // Update preview after successful database update
-      setPreviewUrl(publicUrl);
-      setFile(null); // Clear the file input
-      
       toast.success('Documento enviado com sucesso');
       if (onUploadSuccess) onUploadSuccess();
     } catch (error) {
       console.error('Error uploading document:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao enviar documento');
+      toast.error('Erro ao enviar documento');
     } finally {
       setUploading(false);
     }
@@ -260,6 +223,7 @@ const VehicleDocumentsModal = ({ isOpen, onClose, documento, placa, marca, tipo,
                                    hover:file:bg-blue-100 dark:hover:file:bg-blue-900/30
                                    border border-gray-300 dark:border-gray-600 rounded-lg
                                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          ref={fileInputRef}
                         />
                         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                           JPEG, PNG ou PDF (máx. 15MB)
@@ -267,7 +231,7 @@ const VehicleDocumentsModal = ({ isOpen, onClose, documento, placa, marca, tipo,
                       </div>
                       
                       <button
-                        onClick={uploadDocument}
+                        onClick={() => uploadDocument(file!, 'crv')}
                         disabled={!file || uploading}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 

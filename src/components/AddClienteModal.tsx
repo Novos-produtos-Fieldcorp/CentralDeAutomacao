@@ -12,7 +12,7 @@ interface AddClienteModalProps {
 }
 
 const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) => {
-  const { query } = useCompanyData();
+  const { query, companyId } = useCompanyData();
   const [submitting, setSubmitting] = useState(false); 
   const [loadingCep, setLoadingCep] = useState(false);
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
@@ -97,148 +97,28 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (!companyId) return;
+
     try {
       setSubmitting(true);
-
-      // Insert cliente
-      const { data: cliente, error: clienteError } = await query('cliente')
-        .insert({
-          nome: formData.nome,
-          cnpj: formData.cnpj,
-          email: formData.email || null,
-          telefone: formData.telefone || null,
-          st_cliente: formData.st_cliente
-        })
+      const { data, error } = await supabase
+        .from('cliente')
+        .insert([{
+          ...formData,
+          company_id: companyId,
+          st_cliente: true
+        }])
         .select()
         .single();
 
-      if (clienteError) throw clienteError;
+      if (error) throw error;
 
-      // Insert address if all required fields are filled
-      if (formData.logradouro && formData.cidade && formData.estado) {
-        try {
-          // First, check if cidade exists
-          let cidadeId: number;
-          const { data: cidadeData, error: cidadeError } = await supabase
-            .from('cidade')
-            .select('id_cidade')
-            .eq('cidade', formData.cidade)
-            .eq('id_estado', formData.estado)
-            .maybeSingle();
-
-          if (cidadeError && cidadeError.code !== 'PGRST116') {
-            throw cidadeError;
-          }
-
-          if (cidadeData) {
-            cidadeId = cidadeData.id_cidade;
-          } else {
-            // Create cidade if it doesn't exist
-            const { data: newCidade, error: newCidadeError } = await supabase
-              .from('cidade')
-              .insert({
-                cidade: formData.cidade,
-                id_estado: parseInt(formData.estado)
-              })
-              .select()
-              .single();
-
-            if (newCidadeError) throw newCidadeError;
-            if (!newCidade) throw new Error('Erro ao criar cidade');
-            cidadeId = newCidade.id_cidade;
-          }
-
-          // Check if bairro exists
-          let bairroId: number;
-          const { data: bairro, error: bairroError } = await supabase
-            .from('bairro')
-            .select('id_bairro')
-            .eq('bairro', formData.bairro)
-            .eq('id_cidade', cidadeId)
-            .maybeSingle();
-
-          if (bairroError && bairroError.code !== 'PGRST116') {
-            throw bairroError;
-          }
-          
-          if (bairro) {
-            bairroId = bairro.id_bairro;
-          } else {
-            // Create bairro if it doesn't exist
-            const { data: newBairro, error: newBairroError } = await supabase
-              .from('bairro')
-              .insert({
-                bairro: formData.bairro,
-                id_cidade: cidadeId
-              })
-              .select()
-              .single();
-
-            if (newBairroError) throw newBairroError;
-            if (!newBairro) throw new Error('Erro ao criar bairro');
-            bairroId = newBairro.id_bairro;
-          }
-
-          // Check if logradouro exists
-          let logradouroId: number;
-          const { data: logradouro, error: logradouroError } = await supabase
-            .from('logradouro')
-            .select('id_logradouro')
-            .eq('logradouro', formData.logradouro)
-            .eq('nr_cep', formData.cep)
-            .eq('id_bairro', bairroId)
-            .maybeSingle();
-
-          if (logradouroError && logradouroError.code !== 'PGRST116') {
-            throw logradouroError;
-          }
-          
-          if (logradouro) {
-            logradouroId = logradouro.id_logradouro;
-          } else {
-            // Create logradouro if it doesn't exist
-            const { data: newLogradouro, error: newLogradouroError } = await supabase
-              .from('logradouro')
-              .insert({
-                logradouro: formData.logradouro,
-                nr_cep: formData.cep,
-                id_bairro: bairroId
-              })
-              .select()
-              .single();
-
-            if (newLogradouroError) throw newLogradouroError;
-            if (!newLogradouro) throw new Error('Erro ao criar logradouro');
-            logradouroId = newLogradouro.id_logradouro;
-          }
-
-          // Create end_cliente
-          const { error: enderecoError } = await supabase
-            .from('end_cliente')
-            .insert({
-              nr_end: formData.numero ? parseInt(formData.numero) : null,
-              ds_complemento_end: formData.complemento || null,
-              cliente_id: cliente.cliente_id,
-              id_logradouro: logradouroId
-            });
-
-          if (enderecoError) throw enderecoError;
-        } catch (error) {
-          console.error('Erro ao cadastrar endereço:', error);
-          // Don't throw here, as address is optional
-          toast.error('Erro ao cadastrar endereço, mas o cliente foi cadastrado');
-        }
-      }
-
-      if (clienteError) throw clienteError;
-
-      toast.success('Cliente cadastrado com sucesso');
+      toast.success('Cliente adicionado com sucesso');
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Error creating cliente:', error);
-      toast.error('Erro ao cadastrar cliente');
+      console.error('Error adding cliente:', error);
+      toast.error('Erro ao adicionar cliente');
     } finally {
       setSubmitting(false);
     }
