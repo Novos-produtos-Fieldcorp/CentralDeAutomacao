@@ -84,7 +84,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const [showInboxSelector, setShowInboxSelector] = useState(false);
   const [availableInboxes, setAvailableInboxes] = useState<any[]>([]);
   const [selectedInboxId, setSelectedInboxId] = useState<number | null>(null);
-  const [audioPreview, setAudioPreview] = useState<string | null>(null);
 
   const checkNetworkConnectivity = () => {
     return navigator.onLine;
@@ -530,9 +529,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       // Configure axios instance
       const api = axios.create({
         baseURL: '/api',
-        headers: {
+          headers: {
           'api_access_token': apiKey,
-          'Content-Type': 'application/json',
+            'Content-Type': 'application/json',
           'Accept': 'application/json'
         }
       });
@@ -694,9 +693,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           
           if (conversationResponse.data?.id) {
             const conversation = conversationResponse.data;
-            setStorageConversations(prev => [
-              ...prev,
-              {
+        setStorageConversations(prev => [
+          ...prev,
+          {
                 user: contactData,
                 conversationId: conversation.id
               }
@@ -791,11 +790,11 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   const formatPhoneNumber = (phone: string): string => {
     const digits = phone.replace(/\D/g, '');
-    
+
     if (!digits.startsWith('55') && digits.length <= 11) {
       return `55${digits}`;
     }
-    
+
     return `${digits}`;
   };
 
@@ -929,8 +928,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       };
 
       console.log('Adding temporary message:', tempMessage);
-      setActiveConversation(prev => ({
-        ...prev!,
+              setActiveConversation(prev => ({
+                ...prev!,
         messages: [...prev!.messages, tempMessage],
       }));
 
@@ -1059,74 +1058,63 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   const startRecording = async () => {
     try {
-      // Clear previous audio state
-      setAudioPreview(null);
-      const audioChunks: Blob[] = [];
-      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       
+      const audioChunks: Blob[] = [];
       mediaRecorder.ondataavailable = (event) => {
         audioChunks.push(event.data);
       };
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setAudioPreview(audioUrl);
-        
-        // Send the audio message
-        if (activeConversation?.id) {
-          try {
-            const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
-            const apiKey = localStorage.getItem('wiseapp_token');
+        const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
+        const apiKey = localStorage.getItem('wiseapp_token');
 
-            if (!accountId || !apiKey) {
-              throw new Error('Configuração inválida');
-            }
+        if (!accountId || !apiKey || !activeConversation) return;
 
-            const formData = new FormData();
-            formData.append('Url', `/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`);
-            formData.append('Method', 'POST');
-            formData.append('Headers[api_access_token]', apiKey);
-            formData.append('Files', audioBlob, 'audio.wav');
+        try {
+          const formData = new FormData();
+          formData.append('Url', `/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`);
+          formData.append('Method', 'POST');
+          formData.append('Headers[api_access_token]', apiKey);
+          formData.append('Files', audioBlob, 'audio.wav');
 
-            if (newMessage.trim()) {
-              formData.append('Params[content]', newMessage.trim());
-              setNewMessage('');
-            }
-
-            const api = axios.create({
-              baseURL: '/api',
-              headers: {
-                'api_access_token': apiKey,
-                'Content-Type': 'multipart/form-data',
-                'Accept': 'application/json'
-              }
-            });
-
-            await api.post(`/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`, formData);
-            await loadConversationMessages(activeConversation.id);
-
-            // Clear recording state
-            setIsRecording(false);
-            setRecordingTime(0);
-            if (recordingIntervalRef.current) {
-              clearInterval(recordingIntervalRef.current);
-            }
-            setAudioPreview(null);
-
-            // Scroll to the last message
-            setTimeout(() => {
-              if (messagesEndRef.current) {
-                messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-              }
-            }, 100);
-          } catch (error) {
-            console.error('Error sending audio:', error);
-            setError('Falha ao enviar áudio');
+          if (newMessage.trim()) {
+            formData.append('Params[content]', newMessage.trim());
+            setNewMessage('');
           }
+
+          const api = axios.create({
+            baseURL: '/api',
+            headers: {
+              'api_access_token': apiKey,
+              'Content-Type': 'multipart/form-data',
+              'Accept': 'application/json'
+            }
+          });
+
+          await api.post(`/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`, formData);
+          await loadConversationMessages(activeConversation.id);
+
+          // Limpar estado de gravação
+          setIsRecording(false);
+          setRecordingTime(0);
+          if (recordingIntervalRef.current) {
+            clearInterval(recordingIntervalRef.current);
+          }
+
+          // Scroll para a última mensagem
+          setTimeout(() => {
+            if (messagesEndRef.current) {
+              messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            }
+          }, 100);
+
+        } catch (error) {
+          console.error('Error sending audio:', error);
+          setError('Falha ao enviar áudio');
         }
       };
 
@@ -1137,28 +1125,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
-
-      // Add sound wave animation
-      const soundWave = document.querySelector('.sound-wave-float');
-      if (soundWave) {
-        soundWave.querySelectorAll('.bar-scale1, .bar-scale2, .bar-scale3').forEach(bar => {
-          bar.classList.remove('stop-animation');
-        });
-      }
-
-      // Set timeout for animation
-      setTimeout(() => {
-        if (soundWave) {
-          soundWave.querySelectorAll('.bar-scale1, .bar-scale2, .bar-scale3').forEach(bar => {
-            bar.classList.add('stop-animation');
-          });
-        }
-      }, 4000);
-
     } catch (error) {
       console.error('Error starting recording:', error);
       setError('Falha ao iniciar gravação');
-      setIsRecording(false);
     }
   };
 
@@ -1170,23 +1139,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
       }
-
-      // Stop sound wave animation
-      const soundWave = document.querySelector('.sound-wave-float');
-      if (soundWave) {
-        soundWave.querySelectorAll('.bar-scale1, .bar-scale2, .bar-scale3').forEach(bar => {
-          bar.classList.add('stop-animation');
-        });
-      }
-    }
-  };
-
-  const removeAudio = () => {
-    setAudioPreview(null);
-    setIsRecording(false);
-    setRecordingTime(0);
-    if (recordingIntervalRef.current) {
-      clearInterval(recordingIntervalRef.current);
     }
   };
 
@@ -1232,64 +1184,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       loadConversationMessages(activeConversation.id);
     }
   }, [activeConversation?.id]);
-
-  // Add sound wave animation styles
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      .sound-wave-float .bar-scale1,
-      .sound-wave-float .bar-scale2,
-      .sound-wave-float .bar-scale3 {
-        animation: sound-wave 1s ease-in-out infinite;
-      }
-      .sound-wave-float .stop-animation {
-        animation: none;
-      }
-      @keyframes sound-wave {
-        0% { transform: scaleY(0.5); }
-        50% { transform: scaleY(1); }
-        100% { transform: scaleY(0.5); }
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
-
-  // Update the recording button UI
-  const renderRecordingButton = () => {
-    if (isRecording) {
-      return (
-        <button
-          type="button"
-          onClick={stopRecording}
-          className="p-1.5 sm:p-2 text-red-500 hover:text-red-700 dark:hover:text-red-400 shrink-0"
-          title="Parar gravação"
-        >
-          <div className="flex items-center gap-1">
-            <div className="sound-wave-float flex items-center gap-1">
-              <div className="bar-scale1 w-1 h-4 bg-red-500 rounded-full" />
-              <div className="bar-scale2 w-1 h-4 bg-red-500 rounded-full" />
-              <div className="bar-scale3 w-1 h-4 bg-red-500 rounded-full" />
-            </div>
-            <span className="text-xs">{formatRecordingTime(recordingTime)}</span>
-          </div>
-        </button>
-      );
-    }
-
-    return (
-      <button
-        type="button"
-        onClick={startRecording}
-        className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 shrink-0"
-        title="Gravar áudio"
-      >
-        <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
-      </button>
-    );
-  };
 
   if (!showChat) return null;
 
@@ -1474,9 +1368,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                       <div className="w-2 h-2 bg-gray-400 rounded-full mr-1" />
                       Offline
                     </span>
-                  )}
-                </div>
+                )}
               </div>
+            </div>
             </div>
             <div className="flex items-center gap-1 sm:gap-2">
               <button
@@ -1521,8 +1415,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               activeConversation.messages.map((msg, i) => {
                 const isOutgoing = msg.message_type === 'outgoing';
                 return (
-                  <div
-                    key={msg.id || i}
+                <div
+                  key={msg.id || i}
                     className={`mb-3 sm:mb-4 flex ${
                       isOutgoing ? 'justify-end' : 'justify-start'
                     }`}
@@ -1539,24 +1433,22 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                       >
                         {msg.content_type === 'audio' ? (
                           <div className="flex items-center gap-2 min-w-[200px]">
-                            {audioPreview && (
-                              <audio controls className="w-full">
-                                <source src={audioPreview} type="audio/wav" />
-                                Seu navegador não suporta o elemento de áudio.
-                              </audio>
-                            )}
+                            <audio controls className="w-full">
+                              <source src={msg.content} type="audio/wav" />
+                              Seu navegador não suporta o elemento de áudio.
+                            </audio>
                           </div>
                         ) : (
                           <div className="whitespace-pre-wrap break-words">{msg.content}</div>
                         )}
-                      </div>
-                      <div
+                  </div>
+                  <div
                         className={`text-xs mt-1 flex items-center gap-1 ${
                           isOutgoing
                             ? 'text-gray-500 dark:text-gray-400'
-                            : 'text-gray-500 dark:text-gray-400'
-                        }`}
-                      >
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
                         <span>{formatTime(msg.created_at)}</span>
                         {isOutgoing && (
                           <span className="flex items-center">
@@ -1571,8 +1463,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                             )}
                           </span>
                         )}
-                      </div>
-                    </div>
+                  </div>
+                </div>
                   </div>
                 );
               })
@@ -1593,17 +1485,17 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                 e.preventDefault();
                 console.log('Form submitted');
                 if (newMessage.trim()) {
-                  sendMessage();
+                sendMessage();
                 }
               }}
               className="flex items-center gap-2"
             >
               <div className="flex-grow flex items-center gap-1.5 sm:gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-2 min-w-0">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+              <input
+                ref={inputRef}
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -1613,7 +1505,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                       }
                     }
                   }}
-                  placeholder="Digite sua mensagem..."
+                placeholder="Digite sua mensagem..."
                   className="flex-grow bg-transparent border-none focus:outline-none focus:ring-0 dark:text-white text-sm sm:text-base min-w-0"
                 />
                 <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
@@ -1641,7 +1533,28 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                   >
                     <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
-                  {renderRecordingButton()}
+                  {isRecording ? (
+                    <button
+                      type="button"
+                      onClick={stopRecording}
+                      className="p-1.5 sm:p-2 text-red-500 hover:text-red-700 dark:hover:text-red-400 shrink-0"
+                      title="Parar gravação"
+                    >
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                        <span className="text-xs">{formatRecordingTime(recordingTime)}</span>
+                      </div>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 shrink-0"
+                      title="Gravar áudio"
+                    >
+                      <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
               <button

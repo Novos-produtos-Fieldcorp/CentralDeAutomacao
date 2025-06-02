@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Edit2, Trash2, Search, Plus, FilePen, FileText } from 'lucide-react';
+import { Edit2, Trash2, Search, Plus, FilePen, FileText, Phone } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Veiculo, Motorista } from '../../types/database';
 import AddVeiculoModal from '../../components/veiculos/AddVeiculoModal';
@@ -26,6 +26,12 @@ const VeiculosAgregados = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [phoneSearch, setPhoneSearch] = useState('');
+  const [debouncedPhoneSearch, setDebouncedPhoneSearch] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+  const phoneTimeoutRef = useRef<NodeJS.Timeout>();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -54,19 +60,53 @@ const VeiculosAgregados = () => {
     veiculo: null,
   });
 
+  // Debounce search terms
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 800);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (phoneTimeoutRef.current) {
+      clearTimeout(phoneTimeoutRef.current);
+    }
+    phoneTimeoutRef.current = setTimeout(() => {
+      setDebouncedPhoneSearch(phoneSearch);
+    }, 500);
+
+    return () => {
+      if (phoneTimeoutRef.current) {
+        clearTimeout(phoneTimeoutRef.current);
+      }
+    };
+  }, [phoneSearch]);
+
   useEffect(() => {
     const init = async () => {
       try {
+        setIsSearching(true);
         await fetchVeiculos();
         await fetchMotoristas();
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao inicializar';
         setError(errorMessage);
         toast.error(errorMessage);
+      } finally {
+        setIsSearching(false);
       }
     };
     init();
-  }, [currentPage, pageSize, searchTerm]);
+  }, [currentPage, pageSize, debouncedSearchTerm, debouncedPhoneSearch]);
 
   useEffect(() => {
     const handleClick = () => {
@@ -106,12 +146,8 @@ const VeiculosAgregados = () => {
         `, { count: 'exact' })
         .eq('status_veiculo', true)
         .eq('motorista.st_cadastro', 'contratado')
-        .eq('motorista.company_id', companyId);
-
-      // Only add search filter if searchTerm exists
-      if (searchTerm) {
-        query = query.or(`placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%`);
-      }
+        .eq('motorista.company_id', companyId)
+        .eq('company_id', companyId);
 
       const { data: veiculosData, count, error: veiculosError } = await query
         .order('placa', { ascending: true })
@@ -129,19 +165,42 @@ const VeiculosAgregados = () => {
       }
 
       // Process the vehicles data
-      const processedVeiculos = veiculosData
+      let processedVeiculos = veiculosData
         .map(veiculo => ({
           ...veiculo,
           placa: veiculo.placa?.toUpperCase() || ''
         }))
         .sort((a, b) => (a.placa || '').localeCompare(b.placa || ''));
 
+      // Apply search filter on frontend
+      if (debouncedSearchTerm) {
+        const searchTermLower = debouncedSearchTerm.toLowerCase();
+        processedVeiculos = processedVeiculos.filter(veiculo => {
+          return (
+            veiculo.placa?.toLowerCase().includes(searchTermLower) ||
+            veiculo.marca?.toLowerCase().includes(searchTermLower) ||
+            veiculo.tipo?.toLowerCase().includes(searchTermLower) ||
+            veiculo.motorista?.nome?.toLowerCase().includes(searchTermLower) ||
+            veiculo.motorista?.cpf?.includes(searchTermLower)
+          );
+        });
+      }
+
+      // Apply phone filter on frontend
+      if (debouncedPhoneSearch) {
+        const phoneSearchLower = debouncedPhoneSearch.toLowerCase().replace(/[()\-\s]/g, '');
+        processedVeiculos = processedVeiculos.filter(veiculo => {
+          const phoneStr = veiculo.motorista?.telefone?.toString().replace(/[()\-\s]/g, '') || '';
+          return phoneStr.toLowerCase().includes(phoneSearchLower);
+        });
+      }
+
       setVeiculos(processedVeiculos);
       
-      // Ensure we have a valid count and calculate total pages correctly
-      const safeCount = count || processedVeiculos.length;
-      setTotalCount(safeCount);
-      setTotalPages(Math.max(1, Math.ceil(safeCount / pageSize)));
+      // Update total count based on filtered results
+      const filteredCount = processedVeiculos.length;
+      setTotalCount(filteredCount);
+      setTotalPages(Math.max(1, Math.ceil(filteredCount / pageSize)));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar veículos';
       console.error('Error fetching veiculos:', errorMessage);
@@ -319,19 +378,41 @@ const VeiculosAgregados = () => {
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:w-auto flex-1">
-            <input
-              type="text"
-              placeholder="Buscar por placa, marca, modelo ou motorista..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100"
-            />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar por placa, marca, modelo, nome ou CPF..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+              {isSearching ? (
+                <div className="absolute left-3 top-2.5">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                </div>
+              ) : (
+                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              )}
+            </div>
+          </div>
+
+          <div className="relative w-full md:w-auto flex-1">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar por telefone..."
+                value={phoneSearch}
+                onChange={(e) => setPhoneSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+              {isSearching ? (
+                <div className="absolute left-3 top-2.5">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                </div>
+              ) : (
+                <Phone className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              )}
+            </div>
           </div>
 
           <div className="flex gap-2">

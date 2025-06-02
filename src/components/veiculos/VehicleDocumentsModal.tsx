@@ -66,12 +66,14 @@ const VehicleDocumentsModal = ({ isOpen, onClose, documento, placa, marca, tipo,
       if (fileExt?.toLowerCase() === 'pdf') {
         // Convert to base64 and back to blob to ensure proper MIME type
         const reader = new FileReader();
-        const dataPromise = new Promise<Blob>((resolve, reject) => {
+        const dataPromise = new Promise<File>((resolve, reject) => {
           reader.onload = () => {
             try {
               // Create a new blob with the correct MIME type
               const blob = new Blob([reader.result as ArrayBuffer], { type: 'application/pdf' });
-              resolve(blob);
+              // Convert blob to File
+              const newFile = new File([blob], file.name, { type: 'application/pdf' });
+              resolve(newFile);
             } catch (err) {
               reject(err);
             }
@@ -102,9 +104,6 @@ const VehicleDocumentsModal = ({ isOpen, onClose, documento, placa, marca, tipo,
         .from('imagensdocs')
         .getPublicUrl(fileName);
 
-      // Update preview
-      setPreviewUrl(publicUrl);
-      
       // Update or create documento_veiculo record
       if (documento) {
         // Update existing record
@@ -125,6 +124,10 @@ const VehicleDocumentsModal = ({ isOpen, onClose, documento, placa, marca, tipo,
           
         if (error) throw error;
       }
+
+      // Update preview after successful database update
+      setPreviewUrl(publicUrl);
+      setFile(null); // Clear the file input
       
       toast.success('Documento enviado com sucesso');
       if (onUploadSuccess) onUploadSuccess();

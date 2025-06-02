@@ -158,19 +158,18 @@ const Clientes = () => {
         
         try {
             setLoading(true);
-            const { data, error } = await supabase.from('cliente')
+            const { data, error } = await supabase
+                .from('cliente')
                 .select('*')
                 .eq('company_id', companyId);
 
-            if (error) {
-                throw error;
-            }
+            if (error) throw error;
 
             const clientesData = data || [];
             
             // Fetch addresses for each client
             const clientesWithAddress = await Promise.all(
-                clientesData.map(async (cliente: { cliente_id: any; }) => {
+                clientesData.map(async (cliente) => {
                     try {
                         const { data: enderecoData, error: enderecoError } = await supabase
                             .from('end_cliente')
@@ -202,14 +201,14 @@ const Clientes = () => {
                             ...cliente,
                             isExpanded: false,
                             endereco: enderecoData || null
-                        };
+                        } as ClienteWithAddress;
                     } catch (error) {
                         console.error('Error processing client address:', error);
                         return {
                             ...cliente,
                             isExpanded: false,
                             endereco: null
-                        };
+                        } as ClienteWithAddress;
                     }
                 })
             );
@@ -249,18 +248,15 @@ const Clientes = () => {
         
         try {
             setUpdatingStatus(cliente.cliente_id);
-            const { error } = await query('cliente')
+            const { error } = await supabase
+                .from('cliente')
                 .update({
                     st_cliente: !cliente.st_cliente
                 })
                 .eq('cliente_id', cliente.cliente_id)
                 .eq('company_id', companyId);
 
-            if (error) {
-                console.error('Error updating client status:', error);
-                toast.error('Erro ao atualizar status do cliente');
-                return;
-            }
+            if (error) throw error;
 
             setClientes(prevClientes =>
                 prevClientes.map(c =>
@@ -281,7 +277,8 @@ const Clientes = () => {
         if (!selectedCliente || !companyId) return;
 
         try {
-            const { error } = await query('cliente')
+            const { error } = await supabase
+                .from('cliente')
                 .delete()
                 .eq('cliente_id', selectedCliente.cliente_id)
                 .eq('company_id', companyId);
@@ -293,7 +290,7 @@ const Clientes = () => {
             setIsDeleteModalOpen(false);
         } catch (error) {
             console.error('Error deleting cliente:', error);
-            toast.error('Erro ao excluir cliente');
+            toast.error('Erro ao excluir cliente. Verifique se não há registros vinculados.');
         }
     };
 
@@ -324,14 +321,13 @@ const Clientes = () => {
         
         try {
             // Delete all selected items
-            for (const id of selectedItems) {
-                const { error } = await query('cliente')
-                    .delete()
-                    .eq('cliente_id', id)
-                    .eq('company_id', companyId);
+            const { error } = await supabase
+                .from('cliente')
+                .delete()
+                .in('cliente_id', Array.from(selectedItems))
+                .eq('company_id', companyId);
 
-                if (error) throw error;
-            }
+            if (error) throw error;
 
             // Update the list
             setClientes(clientes.filter(c => !selectedItems.has(c.cliente_id)));
@@ -343,7 +339,7 @@ const Clientes = () => {
             setIsBulkDeleteModalOpen(false);
         } catch (error) {
             console.error('Error deleting clientes:', error);
-            toast.error('Erro ao excluir clientes');
+            toast.error('Erro ao excluir clientes. Verifique se não há registros vinculados.');
         }
     };
 
