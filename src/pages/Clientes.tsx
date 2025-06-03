@@ -157,7 +157,7 @@ const Clientes = () => {
         try {
             setLoading(true);
             const { data, error } = await supabase
-                .from('vw_clientes')
+                .from('cliente')
                 .select('*')
                 .eq('company_id', companyId)
                 .order('nome');

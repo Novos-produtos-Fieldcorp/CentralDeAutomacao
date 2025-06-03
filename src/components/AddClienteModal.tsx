@@ -101,17 +101,74 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
 
     try {
       setSubmitting(true);
-      const { data, error } = await supabase
+
+      // First, insert the client
+      const { data: clienteData, error: clienteError } = await supabase
         .from('cliente')
         .insert([{
-          ...formData,
+          nome: formData.nome,
+          cnpj: formData.cnpj,
+          email: formData.email,
+          telefone: formData.telefone,
           company_id: companyId,
           st_cliente: true
         }])
         .select()
         .single();
 
-      if (error) throw error;
+      if (clienteError) throw clienteError;
+
+      // If we have address data, insert it
+      if (formData.cep || formData.logradouro || formData.bairro || formData.cidade || formData.estado) {
+        // First, get or create the cidade
+        const { data: cidadeData, error: cidadeError } = await supabase
+          .from('cidade')
+          .insert([{
+            cidade: formData.cidade,
+            id_estado: parseInt(formData.estado)
+          }])
+          .select()
+          .single();
+
+        if (cidadeError) throw cidadeError;
+
+        // Then, get or create the bairro
+        const { data: bairroData, error: bairroError } = await supabase
+          .from('bairro')
+          .insert([{
+            bairro: formData.bairro,
+            id_cidade: cidadeData.id_cidade
+          }])
+          .select()
+          .single();
+
+        if (bairroError) throw bairroError;
+
+        // Then, create the logradouro
+        const { data: logradouroData, error: logradouroError } = await supabase
+          .from('logradouro')
+          .insert([{
+            logradouro: formData.logradouro,
+            nr_cep: formData.cep,
+            id_bairro: bairroData.id_bairro
+          }])
+          .select()
+          .single();
+
+        if (logradouroError) throw logradouroError;
+
+        // Finally, create the end_cliente entry
+        const { error: endClienteError } = await supabase
+          .from('end_cliente')
+          .insert([{
+            cliente_id: clienteData.cliente_id,
+            id_logradouro: logradouroData.id_logradouro,
+            nr_end: formData.numero ? parseInt(formData.numero) : null,
+            ds_complemento_end: formData.complemento || null
+          }]);
+
+        if (endClienteError) throw endClienteError;
+      }
 
       toast.success('Cliente adicionado com sucesso');
       onSuccess();
