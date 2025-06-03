@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import type { Motorista, Veiculo } from '../types/database';
+import type { Motorista, Veiculo, MotoristaWithAddress } from '../types/database';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { formatCEP } from '../utils/format';
@@ -9,7 +9,7 @@ import { formatCEP } from '../utils/format';
 interface EditMotoristaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  motorista: Motorista | null;
+  motorista: MotoristaWithAddress | null;
   onUpdate: () => void;
 }
 
@@ -248,7 +248,10 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
       // Update motorista data
       const { error: motoristaError } = await supabase
         .from('motorista')
-        .update(formData)
+        .update({
+          ...formData,
+          telefone: formData.telefone ? Number(formData.telefone.replace(/\D/g, '')) : null
+        })
         .eq('motorista_id', motorista.motorista_id);
 
       if (motoristaError) throw motoristaError;
@@ -259,7 +262,11 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
           // Update existing vehicle
           const { error: veiculoError } = await supabase
             .from('veiculo')
-            .update(veiculoData)
+            .update({
+              ...veiculoData,
+              motorista_id: motorista.motorista_id,
+              status_veiculo: true
+            })
             .eq('veiculo_id', veiculo.veiculo_id);
 
           if (veiculoError) throw veiculoError;
@@ -277,144 +284,12 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
         }
       }
 
-      // Update or create address
-      if (enderecoData.logradouro && enderecoData.cidade && enderecoData.estado) {
-        try {
-          // First, check if cidade exists
-          let cidadeId: number;
-          const { data: cidade, error: cidadeError } = await supabase
-            .from('cidade')
-            .select('id_cidade')
-            .eq('cidade', enderecoData.cidade)
-            .eq('id_estado', parseInt(enderecoData.estado))
-            .maybeSingle();
-
-          if (cidadeError && cidadeError.code !== 'PGRST116') {
-            throw cidadeError;
-          }
-
-          if (cidade) {
-            cidadeId = cidade.id_cidade;
-          } else {
-            // Create cidade if it doesn't exist
-            const { data: newCidade, error: newCidadeError } = await supabase
-              .from('cidade')
-              .insert({
-                cidade: enderecoData.cidade,
-                id_estado: parseInt(enderecoData.estado)
-              })
-              .select()
-              .single();
-
-            if (newCidadeError) throw newCidadeError;
-            if (!newCidade) throw new Error('Erro ao criar cidade');
-            cidadeId = newCidade.id_cidade;
-          }
-
-          // Check if bairro exists
-          let bairroId: number;
-          const { data: bairro, error: bairroError } = await supabase
-            .from('bairro')
-            .select('id_bairro')
-            .eq('bairro', enderecoData.bairro)
-            .eq('id_cidade', cidadeId)
-            .maybeSingle();
-
-          if (bairroError && bairroError.code !== 'PGRST116') {
-            throw bairroError;
-          }
-          
-          if (bairro) {
-            bairroId = bairro.id_bairro;
-          } else {
-            // Create bairro if it doesn't exist
-            const { data: newBairro, error: newBairroError } = await supabase
-              .from('bairro')
-              .insert({
-                bairro: enderecoData.bairro,
-                id_cidade: cidadeId
-              })
-              .select()
-              .single();
-
-            if (newBairroError) throw newBairroError;
-            if (!newBairro) throw new Error('Erro ao criar bairro');
-            bairroId = newBairro.id_bairro;
-          }
-
-          // Check if logradouro exists
-          let logradouroId: number;
-          const { data: logradouro, error: logradouroError } = await supabase
-            .from('logradouro')
-            .select('id_logradouro')
-            .eq('logradouro', enderecoData.logradouro)
-            .eq('nr_cep', enderecoData.cep)
-            .eq('id_bairro', bairroId)
-            .maybeSingle();
-
-          if (logradouroError && logradouroError.code !== 'PGRST116') {
-            throw logradouroError;
-          }
-          
-          if (logradouro) {
-            logradouroId = logradouro.id_logradouro;
-          } else {
-            // Create logradouro if it doesn't exist
-            const { data: newLogradouro, error: newLogradouroError } = await supabase
-              .from('logradouro')
-              .insert({
-                logradouro: enderecoData.logradouro,
-                nr_cep: enderecoData.cep,
-                id_bairro: bairroId
-              })
-              .select()
-              .single();
-
-            if (newLogradouroError) throw newLogradouroError;
-            if (!newLogradouro) throw new Error('Erro ao criar logradouro');
-            logradouroId = newLogradouro.id_logradouro;
-          }
-
-          // Update or create end_motorista
-          if (endereco) {
-            // Update existing address
-            const { error: enderecoError } = await supabase
-              .from('end_motorista')
-              .update({
-                nr_end: enderecoData.numero ? parseInt(enderecoData.numero) : null,
-                ds_complemento_end: enderecoData.complemento || null,
-                id_logradouro: logradouroId,
-                st_end: true
-              })
-              .eq('id_end_motorista', endereco.id_end_motorista);
-
-            if (enderecoError) throw enderecoError;
-          } else {
-            // Create new address
-            const { error: enderecoError } = await supabase
-              .from('end_motorista')
-              .insert({
-                nr_end: enderecoData.numero ? parseInt(enderecoData.numero) : null,
-                ds_complemento_end: enderecoData.complemento || null,
-                id_motorista: motorista.motorista_id,
-                id_logradouro: logradouroId,
-                st_end: true
-              });
-
-            if (enderecoError) throw enderecoError;
-          }
-        } catch (error) {
-          console.error('Erro ao atualizar endereço:', error);
-          toast.error('Erro ao atualizar endereço, mas os outros dados foram salvos');
-        }
-      }
-
-      toast.success('Dados atualizados com sucesso');
+      toast.success('Motorista atualizado com sucesso');
       onUpdate();
       onClose();
     } catch (error) {
-      console.error('Erro ao atualizar dados:', error);
-      toast.error('Erro ao atualizar dados');
+      console.error('Erro ao atualizar motorista:', error);
+      toast.error('Erro ao atualizar motorista');
     } finally {
       setSubmitting(false);
     }

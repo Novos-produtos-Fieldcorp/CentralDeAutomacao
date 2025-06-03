@@ -14,7 +14,6 @@ import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import AgregadoDetailView from '../../components/AgregadoDetailView';
 import { useFloatingChat } from '../../hooks/useFloatingChat';
 import BulkActionsModal from '../../components/BulkActionsModal';
-import { VEHICLE_TYPES } from '../../constants/vehicleTypes';
 import MassMessageModal from '../../components/MassMessageModal';
 
 interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'cidade' | 'estado'> {
@@ -23,6 +22,12 @@ interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'cidade' | '
   estado: string;
   cidadeLowerCase: string;
   nome_cliente?: string | null;
+  veiculo?: Array<{
+    placa: string;
+    marca: string;
+    tipo: string;
+    tipologia: string;
+  }>;
 }
 
 interface ViewMotorista {
@@ -44,6 +49,21 @@ interface ViewMotorista {
   nome_cidade: string | null;
   sigla_estado: string | null;
   nome_cliente: string | null;
+  tipologia?: string;
+}
+
+interface City {
+  cidade: string;
+  estado: {
+    sigla_estado: string;
+  };
+}
+
+interface CityResponse {
+  cidade: string;
+  estado: {
+    sigla_estado: string;
+  };
 }
 
 interface DashboardData {
@@ -69,7 +89,7 @@ const Contratados = () => {
     startDate: null,
     endDate: null
   });
-  const [cities, setCities] = useState<{ cidade: string; estado: { sigla_estado: string } }[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isAgregadoDetailOpen, setIsAgregadoDetailOpen] = useState(false);
@@ -229,6 +249,10 @@ const Contratados = () => {
         query = query.eq('cliente_id', selectedClient);
       }
 
+      if (selectedVehicleType) {
+        query = query.eq('tipologia', selectedVehicleType);
+      }
+
       // Execute the query
       const { data, error, count } = await query.order('data_cadastro', { ascending: false });
 
@@ -254,7 +278,13 @@ const Contratados = () => {
         cidade: motorista.nome_cidade || 'Não informada',
         cidadeLowerCase: motorista.nome_cidade?.toLowerCase() || '',
         estado: motorista.sigla_estado || '',
-        nome_cliente: motorista.nome_cliente
+        nome_cliente: motorista.nome_cliente,
+        veiculo: motorista.tipologia ? [{
+          placa: '',
+          marca: '',
+          tipo: '',
+          tipologia: motorista.tipologia
+        }] : undefined
       })) as unknown as MotoristaWithAddress[];
 
       // Apply phone filter on frontend
@@ -315,7 +345,7 @@ const Contratados = () => {
         .from('cidade')
         .select(`
           cidade,
-          estado (
+          estado!inner (
             sigla_estado
           )
         `)
@@ -326,9 +356,9 @@ const Contratados = () => {
       const typedData = data.map(city => ({
         cidade: city.cidade,
         estado: {
-          sigla_estado: city.estado?.sigla_estado || ''
+          sigla_estado: Array.isArray(city.estado) ? city.estado[0]?.sigla_estado || '' : city.estado?.sigla_estado || ''
         }
-      })) as { cidade: string; estado: { sigla_estado: string } }[];
+      })) as City[];
       
       setCities(typedData);
     } catch (error) {
@@ -349,7 +379,6 @@ const Contratados = () => {
 
       if (error) throw error;
       
-      // Get unique tipologias and sort them
       const uniqueTypes = [...new Set(data?.map((v: { tipologia: string }) => v.tipologia) || [])].sort();
       setVehicleTypes(uniqueTypes);
     } catch (error) {
@@ -358,7 +387,6 @@ const Contratados = () => {
     }
   };
 
-  // Initial data load
   useEffect(() => {
     if (companyId) {
       const loadInitialData = async () => {
@@ -507,6 +535,7 @@ const Contratados = () => {
         telefone: motorista.telefone?.toString(),
         dt_nascimento: motorista.dt_nascimento,
         endereco: null,
+        veiculo: null,
         st_cadastro: motorista.st_cadastro
       });
       
@@ -557,6 +586,7 @@ const Contratados = () => {
         telefone: motorista.telefone?.toString(),
         dt_nascimento: motorista.dt_nascimento,
         endereco: enderecoResponse.data,
+        veiculo: null,
         st_cadastro: motorista.st_cadastro
       });
     } catch (error) {
@@ -819,7 +849,7 @@ const Contratados = () => {
               value={selectedVehicleType}
               onChange={(e) => {
                 setSelectedVehicleType(e.target.value);
-                setCurrentPage(1); // Reset to first page on filter change
+                setCurrentPage(1);
                 handleSearch();
               }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -841,7 +871,7 @@ const Contratados = () => {
               key={button.value}
               onClick={() => {
                 setFuncaoFilter(button.value as 'todos' | 'Motorista' | 'Agregado');
-                setCurrentPage(1); // Reset to first page on filter change
+                setCurrentPage(1);
                 handleSearch();
               }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -1180,7 +1210,7 @@ const Contratados = () => {
       <AgregadoDetailView
         isOpen={isAgregadoDetailOpen}
         onClose={() => setIsAgregadoDetailOpen(false)}
-        agregado={selectedDocumento.agregado}
+        agregado={selectedDocumento.agregado as unknown as Motorista}
         documento={selectedDocumento.documento}
         veiculo={selectedDocumento.veiculo}
         endereco={selectedDocumento.endereco}
@@ -1189,7 +1219,7 @@ const Contratados = () => {
       <EditMotoristaModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        motorista={selectedMotorista}
+        motorista={selectedMotorista as unknown as Motorista}
         onUpdate={fetchMotoristas}
       />
 

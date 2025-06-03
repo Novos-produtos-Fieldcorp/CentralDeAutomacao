@@ -154,70 +154,30 @@ const Clientes = () => {
     }, [contextMenu.visible]);
 
     const fetchClientes = async () => {
-        if (!companyId) return;
-        
         try {
             setLoading(true);
             const { data, error } = await supabase
-                .from('cliente')
+                .from('vw_clientes')
                 .select('*')
-                .eq('company_id', companyId);
+                .eq('company_id', companyId)
+                .order('nome');
 
             if (error) throw error;
 
-            const clientesData = data || [];
-            
-            // Fetch addresses for each client
-            const clientesWithAddress = await Promise.all(
-                clientesData.map(async (cliente) => {
-                    try {
-                        const { data: enderecoData, error: enderecoError } = await supabase
-                            .from('end_cliente')
-                            .select(`
-                                nr_end,
-                                ds_complemento_end,
-                                logradouro (
-                                    logradouro,
-                                    nr_cep,
-                                    bairro (
-                                        bairro,
-                                        cidade (
-                                            cidade,
-                                            estado (
-                                                sigla_estado
-                                            )
-                                        )
-                                    )
-                                )
-                            `)
-                            .eq('cliente_id', cliente.cliente_id)
-                            .maybeSingle();
+            // Ensure we have unique clients by cliente_id
+            const uniqueClients = data.reduce((acc: any[], current: any) => {
+                const x = acc.find(item => item.cliente_id === current.cliente_id);
+                if (!x) {
+                    return acc.concat([current]);
+                } else {
+                    return acc;
+                }
+            }, []);
 
-                        if (enderecoError && enderecoError.code !== 'PGRST116') {
-                            console.error('Error fetching address:', enderecoError);
-                        }
-
-                        return {
-                            ...cliente,
-                            isExpanded: false,
-                            endereco: enderecoData || null
-                        } as ClienteWithAddress;
-                    } catch (error) {
-                        console.error('Error processing client address:', error);
-                        return {
-                            ...cliente,
-                            isExpanded: false,
-                            endereco: null
-                        } as ClienteWithAddress;
-                    }
-                })
-            );
-
-            setClientes(clientesWithAddress);
+            setClientes(uniqueClients);
         } catch (error) {
             console.error('Error fetching clientes:', error);
             toast.error('Erro ao carregar clientes');
-            setClientes([]);
         } finally {
             setLoading(false);
         }

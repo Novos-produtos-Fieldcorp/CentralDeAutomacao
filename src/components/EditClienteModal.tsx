@@ -13,49 +13,91 @@ interface EditClienteModalProps {
     onSuccess: () => void;
 }
 
-const EditClienteModal = ({ isOpen, onClose, cliente, onSuccess }: EditClienteModalProps) => {
+interface FormData {
+    nome: string;
+    cnpj: string;
+    email: string;
+    telefone: string;
+    st_cliente: boolean;
+}
+
+interface Endereco {
+    id_end_cliente?: number;
+    nr_end?: number;
+    ds_complemento_end?: string;
+    logradouro?: {
+        id_logradouro?: number;
+        logradouro?: string;
+        nr_cep?: string;
+        bairro?: {
+            id_bairro?: number;
+            bairro?: string;
+            cidade?: {
+                id_cidade?: number;
+                cidade?: string;
+                estado?: {
+                    id_estado?: number;
+                    sigla_estado?: string;
+                };
+            };
+        };
+    };
+}
+
+interface EnderecoData {
+    cep: string;
+    logradouro: string;
+    numero: string;
+    complemento: string;
+    bairro: string;
+    cidade: string;
+    estado: string;
+}
+
+interface SupabaseEndereco {
+    id_end_cliente: number;
+    nr_end: number;
+    ds_complemento_end: string;
+    logradouro: {
+        id_logradouro: number;
+        logradouro: string;
+        nr_cep: string;
+        bairro: {
+            id_bairro: number;
+            bairro: string;
+            cidade: {
+                id_cidade: number;
+                cidade: string;
+                estado: {
+                    id_estado: number;
+                    sigla_estado: string;
+                };
+            };
+        };
+    };
+}
+
+const EditClienteModal: React.FC<EditClienteModalProps> = ({ isOpen, onClose, cliente, onSuccess }) => {
     const { query, companyId } = useCompanyData();
     const [loadingCep, setLoadingCep] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
-    const [endereco, setEndereco] = useState<{
-        id_end_cliente?: number;
-        nr_end?: number;
-        ds_complemento_end?: string;
-        logradouro?: {
-            id_logradouro?: number;
-            logradouro?: string;
-            nr_cep?: string;
-            bairro?: {
-                id_bairro?: number;
-                bairro?: string;
-                cidade?: {
-                    id_cidade?: number;
-                    cidade?: string;
-                    estado?: {
-                        id_estado?: number;
-                        sigla_estado?: string;
-                    };
-                };
-            };
-        };
-    } | null>(null);
-    const [formData, setFormData] = useState({
-        nome: '',
-        cnpj: '',
-        email: '',
-        telefone: '',
-        st_cliente: true
+    const [endereco, setEndereco] = useState<Endereco | null>(null);
+    const [formData, setFormData] = useState<FormData>({
+        nome: cliente?.nome || '',
+        cnpj: cliente?.cnpj || '',
+        email: cliente?.email || '',
+        telefone: cliente?.telefone?.toString() || '',
+        st_cliente: cliente?.st_cliente || false
     });
-    
-    const [enderecoData, setEnderecoData] = useState({
+    const [enderecoData, setEnderecoData] = useState<EnderecoData>({
         cep: '',
-        estado: '',
-        cidade: '',
-        bairro: '',
         logradouro: '',
         numero: '',
-        complemento: ''
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        estado: ''
     });
 
     useEffect(() => {
@@ -71,7 +113,7 @@ const EditClienteModal = ({ isOpen, onClose, cliente, onSuccess }: EditClienteMo
                 cnpj: cliente.cnpj || '',
                 email: cliente.email || '',
                 telefone: cliente.telefone?.toString() || '',
-                st_cliente: cliente.st_cliente
+                st_cliente: cliente.st_cliente || false
             });
             fetchEndereco(cliente.cliente_id);
         }
@@ -124,17 +166,28 @@ const EditClienteModal = ({ isOpen, onClose, cliente, onSuccess }: EditClienteMo
             if (error) throw error;
 
             if (data) {
-                setEndereco(data);
+                const logradouro = Array.isArray(data.logradouro) ? data.logradouro[0] : data.logradouro;
+                const bairro = Array.isArray(logradouro?.bairro) ? logradouro.bairro[0] : logradouro?.bairro;
+                
+                const enderecoData = {
+                    ...data,
+                    logradouro: logradouro ? {
+                        ...logradouro,
+                        bairro: bairro
+                    } : null
+                } as unknown as SupabaseEndereco;
+                
+                setEndereco(enderecoData);
                 
                 // Update form data with address
                 setEnderecoData({
-                    cep: data.logradouro?.nr_cep || '',
-                    estado: data.logradouro?.bairro?.cidade?.estado?.id_estado?.toString() || '',
-                    cidade: data.logradouro?.bairro?.cidade?.cidade || '',
-                    bairro: data.logradouro?.bairro?.bairro || '',
-                    logradouro: data.logradouro?.logradouro || '',
-                    numero: data.nr_end?.toString() || '',
-                    complemento: data.ds_complemento_end || ''
+                    cep: enderecoData.logradouro?.nr_cep || '',
+                    estado: enderecoData.logradouro?.bairro?.cidade?.estado?.id_estado?.toString() || '',
+                    cidade: enderecoData.logradouro?.bairro?.cidade?.cidade || '',
+                    bairro: enderecoData.logradouro?.bairro?.bairro || '',
+                    logradouro: enderecoData.logradouro?.logradouro || '',
+                    numero: enderecoData.nr_end?.toString() || '',
+                    complemento: enderecoData.ds_complemento_end || ''
                 });
             }
         } catch (error) {
@@ -192,7 +245,9 @@ const EditClienteModal = ({ isOpen, onClose, cliente, onSuccess }: EditClienteMo
 
         try {
             setSubmitting(true);
-            const { error } = await supabase
+            
+            // First, update the client data
+            const { error: clienteError } = await supabase
                 .from('cliente')
                 .update({
                     nome: formData.nome,
@@ -204,7 +259,62 @@ const EditClienteModal = ({ isOpen, onClose, cliente, onSuccess }: EditClienteMo
                 .eq('cliente_id', cliente.cliente_id)
                 .eq('company_id', companyId);
 
-            if (error) throw error;
+            if (clienteError) throw clienteError;
+
+            // If there's address data, update it
+            if (enderecoData.cep) {
+                // First, check if we need to create or update the logradouro
+                let logradouroId = endereco?.logradouro?.id_logradouro;
+                
+                if (!logradouroId) {
+                    // Create new logradouro
+                    const { data: newLogradouro, error: logradouroError } = await supabase
+                        .from('logradouro')
+                        .insert({
+                            logradouro: enderecoData.logradouro,
+                            nr_cep: enderecoData.cep,
+                            bairro: {
+                                bairro: enderecoData.bairro,
+                                cidade: {
+                                    cidade: enderecoData.cidade,
+                                    estado: {
+                                        id_estado: parseInt(enderecoData.estado)
+                                    }
+                                }
+                            }
+                        })
+                        .select('id_logradouro')
+                        .single();
+
+                    if (logradouroError) throw logradouroError;
+                    logradouroId = newLogradouro.id_logradouro;
+                }
+
+                // Then update or create the end_cliente record
+                if (endereco?.id_end_cliente) {
+                    const { error: enderecoError } = await supabase
+                        .from('end_cliente')
+                        .update({
+                            nr_end: parseInt(enderecoData.numero) || null,
+                            ds_complemento_end: enderecoData.complemento || null,
+                            id_logradouro: logradouroId
+                        })
+                        .eq('id_end_cliente', endereco.id_end_cliente);
+
+                    if (enderecoError) throw enderecoError;
+                } else {
+                    const { error: enderecoError } = await supabase
+                        .from('end_cliente')
+                        .insert({
+                            cliente_id: cliente.cliente_id,
+                            nr_end: parseInt(enderecoData.numero) || null,
+                            ds_complemento_end: enderecoData.complemento || null,
+                            id_logradouro: logradouroId
+                        });
+
+                    if (enderecoError) throw enderecoError;
+                }
+            }
 
             toast.success('Cliente atualizado com sucesso');
             onSuccess();

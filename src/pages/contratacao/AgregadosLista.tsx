@@ -264,12 +264,12 @@ const AgregadosLista = () => {
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
       
-      // Build the query with filters using the view
+      // Build the base query
       let query = supabase
         .from('vw_agregados_completo')
-        .select('*', { count: 'exact' })
+        .select('*')
         .eq('company_id', companyId)
-        .eq('funcao', 'Agregado'); // Always filter by Agregado function
+        .eq('funcao', 'Agregado');
 
       // Apply date range filter if dates are selected
       if (dateRange.startDate && dateRange.endDate) {
@@ -280,7 +280,12 @@ const AgregadosLista = () => {
 
       // Apply search filter if provided
       if (debouncedSearchTerm) {
-        query = query.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%,placa.ilike.%${debouncedSearchTerm}%,marca_veiculo.ilike.%${debouncedSearchTerm}%`);
+        query = query.or(
+          `nome_motorista.ilike.%${debouncedSearchTerm}%,` +
+          `cpf.ilike.%${debouncedSearchTerm}%,` +
+          `placa.ilike.%${debouncedSearchTerm}%,` +
+          `marca_veiculo.ilike.%${debouncedSearchTerm}%`
+        );
       }
 
       // Apply status filter if selected
@@ -303,10 +308,34 @@ const AgregadosLista = () => {
         query = query.eq('cliente_id', selectedClient);
       }
 
+      // Log the filter values and query
+      console.log('Filter values:', {
+        searchTerm: debouncedSearchTerm,
+        status: selectedStatus,
+        city: selectedCity,
+        vehicleType: selectedVehicleType,
+        client: selectedClient,
+        dateRange: dateRange
+      });
+
       // Execute the query
       const { data, error, count } = await query.order('data_cadastro', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Query error:', error);
+        throw error;
+      }
+
+      // Log the raw data returned
+      console.log('Raw data returned:', data);
+
+      // Check for duplicates in raw data
+      const motoristaIds = data?.map(m => m.motorista_id) || [];
+      const duplicates = motoristaIds.filter((id, index) => motoristaIds.indexOf(id) !== index);
+      if (duplicates.length > 0) {
+        console.log('Found duplicate motorista_ids:', duplicates);
+        console.log('Duplicate entries:', data?.filter(m => duplicates.includes(m.motorista_id)));
+      }
 
       // Process the data - map view fields to component fields
       let motoristasData = (data as ViewAgregado[])?.map(motorista => ({
@@ -345,6 +374,9 @@ const AgregadosLista = () => {
         }] : []
       })) as unknown as MotoristaWithAddress[];
 
+      // Log the processed data
+      console.log('Processed data:', motoristasData);
+
       // Apply phone filter on frontend
       if (debouncedPhoneSearch) {
         const phoneSearchLower = debouncedPhoneSearch.toLowerCase().replace(/[()\-\s]/g, '');
@@ -353,6 +385,9 @@ const AgregadosLista = () => {
           return phoneStr.toLowerCase().includes(phoneSearchLower);
         });
       }
+
+      // Log the final filtered data
+      console.log('Final filtered data:', motoristasData);
 
       // Update total count based on filtered data
       const filteredCount = motoristasData.length;
@@ -371,9 +406,11 @@ const AgregadosLista = () => {
         .eq('funcao', 'Agregado');
       
       if (allData) {
-        setAllMotoristas(allData as MotoristaWithAddress[]);
+        const uniqueAllIds = [...new Set(allData.map(item => item.motorista_id))];
+        setAllMotoristas(uniqueAllIds.map(id => ({ motorista_id: id })) as MotoristaWithAddress[]);
       }
     } catch (error) {
+      console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
       setMotoristas([]);
       setAllMotoristas([]);
@@ -869,9 +906,9 @@ const AgregadosLista = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {motoristas.map((motorista) => (
+                  {motoristas.map((motorista, index) => (
                     <tr 
-                      key={`${motorista.motorista_id}-${motorista.cpf}`}
+                      key={`${motorista.motorista_id}-${motorista.cpf}-${index}`}
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
                         selectedItems.has(motorista.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
@@ -1159,7 +1196,7 @@ const AgregadosLista = () => {
       <EditMotoristaModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        motorista={selectedMotorista as unknown as Motorista}
+        motorista={selectedMotorista}
         onUpdate={fetchMotoristas}
       />
 

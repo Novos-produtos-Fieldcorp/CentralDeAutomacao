@@ -106,37 +106,125 @@ const VeiculosAgregados = () => {
   }, [contextMenu.visible]);
 
   const fetchVeiculos = async () => {
-    if (!companyId) return;
-    
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      setError(null);
+      
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+      
+      let countQuery = supabase
+        .from('motorista')
+        .select('motorista_id', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('st_cadastro', 'contratado');
+      
+      const { count: motoristaCount, error: motoristaCountError } = await countQuery;
+
+      if (motoristaCountError) {
+        throw new Error(`Erro ao buscar motoristas: ${motoristaCountError.message}`);
+      }
+
+      if (!motoristaCount || motoristaCount === 0) {
+        setVeiculos([]);
+        setTotalCount(0);
+        setTotalPages(1);
+        return;
+      }
+
+      const { data: motoristasData, error: motoristasError } = await supabase
+        .from('motorista')
+        .select('motorista_id')
+        .eq('company_id', companyId)
+        .eq('st_cadastro', 'contratado');
+
+      if (motoristasError) {
+        throw new Error(`Erro ao buscar motoristas: ${motoristasError.message}`);
+      }
+
+      if (!motoristasData || motoristasData.length === 0) {
+        setVeiculos([]);
+        setTotalCount(0);
+        setTotalPages(1);
+        return;
+      }
+
+      const motoristaIds = motoristasData.map(m => m.motorista_id);
+
+      let vehicleCountQuery = supabase
+        .from('veiculo')
+        .select('veiculo_id', { count: 'exact', head: true })
+        .eq('status_veiculo', true)
+        .in('motorista_id', motoristaIds);
+      
+      if (searchTerm) {
+        vehicleCountQuery = vehicleCountQuery.or(
+          `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%,motorista.nome.ilike.%${searchTerm}%,motorista.cpf.ilike.%${searchTerm}%`
+        );
+      }
+      
+      const { count: vehicleCount, error: vehicleCountError } = await vehicleCountQuery;
+      
+      if (vehicleCountError) {
+        throw new Error(`Erro ao contar veículos: ${vehicleCountError.message}`);
+      }
+      
+      setTotalCount(vehicleCount || 0);
+      setTotalPages(Math.max(1, Math.ceil((vehicleCount || 0) / pageSize)));
+
+      let dataQuery = supabase
         .from('veiculo')
         .select(`
           *,
-          motorista (
+          motorista:motorista_id (
             motorista_id,
             nome,
             cpf,
-            telefone
+            telefone,
+            email,
+            st_cadastro,
+            documento_motorista (*)
           ),
-          agregado (
-            agregado_id,
-            nome,
-            st_agregado
-          )
+          documento_veiculo (*)
         `)
-        .eq('company_id', companyId)
-        .eq('agregado.st_agregado', true);
+        .eq('status_veiculo', true)
+        .in('motorista_id', motoristaIds);
+      
+      if (searchTerm) {
+        dataQuery = dataQuery.or(
+          `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%`
+        );
+      }
+      
+      dataQuery = dataQuery
+        .order('placa', { ascending: true })
+        .range(from, to);
+      
+      const { data: veiculosData, error: veiculosError } = await dataQuery;
 
-      if (error) throw error;
+      if (veiculosError) {
+        throw new Error(`Erro ao buscar veículos: ${veiculosError.message}`);
+      }
 
-      const veiculosData = data || [];
-      setVeiculos(veiculosData);
-      setTotalCount(veiculosData.length);
+      if (!veiculosData) {
+        setVeiculos([]);
+        return;
+      }
+
+      const veiculosContratados = veiculosData
+        .filter(veiculo => veiculo.motorista?.st_cadastro === 'contratado')
+        .map(veiculo => ({
+          ...veiculo,
+          placa: veiculo.placa?.toUpperCase() || ''
+        }))
+        .sort((a, b) => (a.placa || '').localeCompare(b.placa || ''));
+
+      setVeiculos(veiculosContratados);
     } catch (error) {
-      console.error('Error fetching veiculos:', error);
-      toast.error('Erro ao carregar veículos');
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar veículos';
+      console.error('Error fetching veiculos:', errorMessage);
+      setError(errorMessage);
+      toast.error(errorMessage);
       setVeiculos([]);
     } finally {
       setLoading(false);

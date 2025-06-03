@@ -655,6 +655,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         setContact(contactData);
 
         // Buscar todas as conversas existentes para o contato
+        console.log('Fetching conversations for contact ID:', contactData.id);
         const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/conversations`, {
           params: {
             q: contactData.id
@@ -811,15 +812,17 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) {
-        console.error('Invalid date:', dateString);
+        console.error('Invalid date string for formatTime:', dateString);
         return '';
       }
-      return new Intl.DateTimeFormat('pt-BR', {
+      const formattedTime = new Intl.DateTimeFormat('pt-BR', {
         hour: '2-digit',
         minute: '2-digit',
         timeZone: 'America/Sao_Paulo',
-        hourCycle: 'h23'
+        hourCycle: 'h23' // Use 24-hour format
       }).format(date);
+      console.log(`Formatting date: ${dateString} -> ${formattedTime}`);
+      return formattedTime;
     } catch (error) {
       console.error('Error formatting date:', error);
       return '';
@@ -901,21 +904,18 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       });
 
       if (response.data) {
-        // Update message status
+        // Update message status and ID using server response
         setActiveConversation(prev => {
           if (!prev) return null;
           return {
             ...prev,
-            messages: prev.messages.map(msg => 
-              msg.id === tempMessage.id 
+            messages: prev.messages.map(msg =>
+              msg.id === tempMessage.id
                 ? { ...msg, id: response.data.id, status: 'sent' }
                 : msg
             )
           };
         });
-
-        // Reload messages to get final status
-        await loadConversationMessages(activeConversation.id);
 
         // Scroll to last message
         setTimeout(() => {

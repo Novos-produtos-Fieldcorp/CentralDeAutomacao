@@ -57,7 +57,15 @@ const ContratacaoDashboard = () => {
       const startDate = sixMonthsAgo.toISOString().split('T')[0];
       const endDate = today.toISOString().split('T')[0];
 
-      // First, get total counts without date filtering
+      // First, get all clients for the company
+      const { data: clientesData, error: clientesError } = await supabase
+        .from('cliente')
+        .select('cliente_id, nome')
+        .eq('company_id', companyId);
+
+      if (clientesError) throw clientesError;
+
+      // Then get motoristas and agregados data
       const [totalMotoristasResponse, totalAgregadosResponse] = await Promise.all([
         supabase
           .from('vw_motoristas_completo')
@@ -108,22 +116,40 @@ const ContratacaoDashboard = () => {
         // Calculate monthly registrations using date-filtered data
         const monthlyData = calculateMonthlyRegistrations([...motoristasData, ...agregadosData]);
 
+        // Initialize clientesContratados with all clients
+        const clientesContratados = (clientesData || []).reduce((acc: { [key: string]: { total: number, motoristas: number, agregados: number, cliente_id: number } }, cliente) => {
+          acc[cliente.nome] = { 
+            total: 0, 
+            motoristas: 0, 
+            agregados: 0,
+            cliente_id: cliente.cliente_id
+          };
+          return acc;
+        }, {});
+
+        // Add "Sem Cliente" category
+        clientesContratados['Sem Cliente'] = { total: 0, motoristas: 0, agregados: 0, cliente_id: 0 };
+
         // Calculate contractors by client using total data
-        const clientesContratados = [...totalMotoristasData, ...totalAgregadosData]
+        [...totalMotoristasData, ...totalAgregadosData]
           .filter(m => m.st_cadastro === 'contratado')
-          .reduce((acc: { [key: string]: { total: number, motoristas: number, agregados: number } }, curr) => {
+          .forEach(curr => {
             const clientName = curr.nome_cliente || 'Sem Cliente';
-            if (!acc[clientName]) {
-              acc[clientName] = { total: 0, motoristas: 0, agregados: 0 };
+            if (!clientesContratados[clientName]) {
+              clientesContratados[clientName] = { 
+                total: 0, 
+                motoristas: 0, 
+                agregados: 0,
+                cliente_id: curr.cliente_id || 0
+              };
             }
-            acc[clientName].total++;
+            clientesContratados[clientName].total++;
             if (curr.funcao === 'Motorista') {
-              acc[clientName].motoristas++;
+              clientesContratados[clientName].motoristas++;
             } else if (curr.funcao === 'Agregado') {
-              acc[clientName].agregados++;
+              clientesContratados[clientName].agregados++;
             }
-            return acc;
-          }, {});
+          });
 
         const totalContratados = Object.values(clientesContratados).reduce((sum, client) => sum + client.total, 0);
 
@@ -133,7 +159,8 @@ const ContratacaoDashboard = () => {
             total: data.total,
             motoristas: data.motoristas,
             agregados: data.agregados,
-            percentual: (data.total / totalContratados) * 100 
+            cliente_id: data.cliente_id,
+            percentual: totalContratados > 0 ? (data.total / totalContratados) * 100 : 0
           }))
           .sort((a, b) => b.total - a.total);
 
@@ -307,33 +334,33 @@ const ContratacaoDashboard = () => {
           </div>
           <div className="space-y-6">
             <div className="space-y-4">
-                <div className="space-y-2">
-                  <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    Total: {stats.contratosAtivos} contratados
-                  </p>
-                </div>
-                <div className="space-y-4">
-                  {stats.clientesContratados.map((cliente, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">{cliente.nome}</span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {cliente.total} ({cliente.percentual.toFixed(1)}%)
-                        </span>
-                      </div>
-                      <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
-                          style={{ width: `${cliente.percentual}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                        <span>Motoristas: {cliente.motoristas}</span>
-                        <span>Agregados: {cliente.agregados}</span>
-                      </div>
+              <div className="space-y-2">
+                <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  Total: {stats.contratosAtivos} contratados
+                </p>
+              </div>
+              <div className="space-y-4">
+                {stats.clientesContratados.map((cliente, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{cliente.nome}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {cliente.total} ({cliente.percentual.toFixed(1)}%)
+                      </span>
                     </div>
-                  ))}
-                </div>
+                    <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
+                        style={{ width: `${cliente.percentual}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <span>Motoristas: {cliente.motoristas}</span>
+                      <span>Agregados: {cliente.agregados}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
