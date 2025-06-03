@@ -637,6 +637,7 @@ const AgregadosLista = () => {
     { value: 'cadastrado', label: 'Cadastrado' },
     { value: 'qualificado', label: 'Qualificado' },
     { value: 'documentacao', label: 'Documentação' },
+    { value: 'gr', label: 'Gestão de Risco' },
     { value: 'contrato_enviado', label: 'Contrato Enviado' },
     { value: 'contratado', label: 'Contratado' },
     { value: 'repescagem', label: 'Repescagem' },
@@ -654,6 +655,8 @@ const AgregadosLista = () => {
         return `${baseStyle} bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200`;
       case 'documentacao':
         return `${baseStyle} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200`;
+      case 'gr':
+        return `${baseStyle} bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200`;
       case 'contrato_enviado':
         return `${baseStyle} bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200`;
       case 'contratado':

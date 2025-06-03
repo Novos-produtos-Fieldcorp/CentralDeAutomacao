@@ -76,6 +76,17 @@ const ContratacaoKanban = () => {
       loading: false
     },
     { 
+      id: 'gr', 
+      title: 'Gestão de Risco', 
+      color: 'bg-pink-50/80 dark:bg-pink-900/30',
+      borderColor: 'border-pink-100 dark:border-pink-800/40',
+      motoristas: [],
+      totalCount: 0,
+      currentPage: 1,
+      totalPages: 1,
+      loading: false
+    },
+    { 
       id: 'contrato_enviado', 
       title: 'Contrato Enviado', 
       color: 'bg-indigo-50/80 dark:bg-indigo-900/20',

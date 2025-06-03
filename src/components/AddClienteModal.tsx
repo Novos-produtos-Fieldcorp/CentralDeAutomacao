@@ -99,6 +99,16 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
     e.preventDefault();
     if (!companyId) return;
 
+    // Validate required fields
+    if (!formData.nome.trim()) {
+      toast.error('Nome é obrigatório');
+      return;
+    }
+    if (!formData.cnpj.trim()) {
+      toast.error('CNPJ é obrigatório');
+      return;
+    }
+
     try {
       setSubmitting(true);
 
@@ -106,10 +116,10 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
       const { data: clienteData, error: clienteError } = await supabase
         .from('cliente')
         .insert([{
-          nome: formData.nome,
-          cnpj: formData.cnpj,
-          email: formData.email,
-          telefone: formData.telefone,
+          nome: formData.nome.trim(),
+          cnpj: formData.cnpj.trim(),
+          email: formData.email.trim() || null,
+          telefone: formData.telefone.trim() || null,
           company_id: companyId,
           st_cliente: true
         }])
@@ -124,7 +134,7 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
         const { data: cidadeData, error: cidadeError } = await supabase
           .from('cidade')
           .insert([{
-            cidade: formData.cidade,
+            cidade: formData.cidade.trim(),
             id_estado: parseInt(formData.estado)
           }])
           .select()
@@ -136,7 +146,7 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
         const { data: bairroData, error: bairroError } = await supabase
           .from('bairro')
           .insert([{
-            bairro: formData.bairro,
+            bairro: formData.bairro.trim(),
             id_cidade: cidadeData.id_cidade
           }])
           .select()
@@ -148,8 +158,8 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
         const { data: logradouroData, error: logradouroError } = await supabase
           .from('logradouro')
           .insert([{
-            logradouro: formData.logradouro,
-            nr_cep: formData.cep,
+            logradouro: formData.logradouro.trim(),
+            nr_cep: formData.cep.trim(),
             id_bairro: bairroData.id_bairro
           }])
           .select()
@@ -157,25 +167,25 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
 
         if (logradouroError) throw logradouroError;
 
-        // Finally, create the end_cliente entry
-        const { error: endClienteError } = await supabase
+        // Finally, create the endereco
+        const { error: enderecoError } = await supabase
           .from('end_cliente')
           .insert([{
-            cliente_id: clienteData.cliente_id,
+            id_cliente: clienteData.cliente_id,
             id_logradouro: logradouroData.id_logradouro,
             nr_end: formData.numero ? parseInt(formData.numero) : null,
-            ds_complemento_end: formData.complemento || null
+            ds_complemento_end: formData.complemento.trim() || null
           }]);
 
-        if (endClienteError) throw endClienteError;
+        if (enderecoError) throw enderecoError;
       }
 
-      toast.success('Cliente adicionado com sucesso');
+      toast.success('Cliente cadastrado com sucesso');
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Error adding cliente:', error);
-      toast.error('Erro ao adicionar cliente');
+      console.error('Error creating cliente:', error);
+      toast.error('Erro ao cadastrar cliente');
     } finally {
       setSubmitting(false);
     }
