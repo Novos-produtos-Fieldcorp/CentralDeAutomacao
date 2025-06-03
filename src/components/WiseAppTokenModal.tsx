@@ -180,10 +180,10 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     </ol>
 
     <div className="w-full rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
-      <img
-        src="/src/styles/Tutorial.gif"
-        alt="Tutorial de obtenção do token"
-        className="w-full h-auto object-contain"
+      <img 
+        src="https://ohmoxsvwjvohmqqgxjhb.supabase.co/storage/v1/object/public/imagensdocs//Tutorial.gif" 
+        alt="Tutorial WiseApp" 
+        className="w-full h-auto rounded-lg"
       />
     </div>
 
