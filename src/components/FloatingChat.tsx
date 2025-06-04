@@ -616,8 +616,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           availability_status: user.availability_status || 'offline',
           last_seen_at: user.last_activity_at ? new Date(user.last_activity_at * 1000).toISOString() : ''
         };
-
-        // Buscar todas as conversas do contato
+        
         console.log('Fetching all conversations for contact:', user.id);
         const conversationsResponse = await api.get(
           `/api/v1/accounts/${accountId}/contacts/${user.id}/conversations`
