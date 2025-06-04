@@ -60,27 +60,43 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
 
       // Upload file to storage
       const { error: uploadError } = await supabase.storage
-        .from('documents')
+        .from('imagensdocs')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('documents')
+        .from('imagensdocs')
         .getPublicUrl(filePath);
 
-      // Update or create document record
-      const { error: docError } = await supabase
+      const { data: existingDoc } = await supabase
         .from('documento_veiculo')
-        .upsert({
-          veiculo_id: veiculo.veiculo_id,
-          tipo_documento: type,
-          url_documento: publicUrl,
-          nome_arquivo: fileName
-        });
+        .select('*')
+        .eq('veiculo_id', veiculo.veiculo_id)
+        .single();
 
-      if (docError) throw docError;
+      if (existingDoc) {
+        // If document exists, update it
+        const { error: updateError } = await supabase
+          .from('documento_veiculo')
+          .update({
+            foto_crv: publicUrl
+          })
+          .eq('id_documento_veiculo', existingDoc.id_documento_veiculo);
+
+        if (updateError) throw updateError;
+      } else {
+        // If no document exists, create a new one
+        const { error: insertError } = await supabase
+          .from('documento_veiculo')
+          .insert({
+            veiculo_id: veiculo.veiculo_id,
+            foto_crv: publicUrl
+          });
+
+        if (insertError) throw insertError;
+      }
 
       // Update preview URL
       setPreviewUrl(publicUrl);
