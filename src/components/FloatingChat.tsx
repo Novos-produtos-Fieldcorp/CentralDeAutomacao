@@ -507,7 +507,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           } else {
             // Criar nova conversa
             const conversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
-              source_id: contactToUse.phone_number,
               inbox_id: inboxId.toString(),
               contact_id: contactToUse.id.toString()
             });
@@ -584,9 +583,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         return;
       }
 
-      const formattedNumber = formatPhoneNumber(phoneNumber);
-
-
+      // Configure axios instance
       const api = axios.create({
         baseURL: '/api',
         headers: {
@@ -596,135 +593,100 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
       });
 
-      // Buscar contato no servidor
-      const contactsResponse = await api.post(`/api/v1/accounts/${accountId}/contacts/filter`, {
-        payload: [
-          {
-            attribute_key: "phone_number",
-            filter_operator: "equal_to",
-            values: [formattedNumber]
-          }
-        ]
+      const formattedNumber = formatPhoneNumber(phoneNumber);
+      console.log('Searching for contact with number:', formattedNumber);
+
+      const searchResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/search`, {
+        params: {
+          q: formattedNumber
+        }
       });
 
-      let contactData;
-      if (contactsResponse.data?.payload?.[0]) {
-        const user = contactsResponse.data.payload[0];
-        contactData = {
+      console.log('Contact search response:', searchResponse.data);
+
+      if (searchResponse.data?.payload?.[0]) {
+        const user = searchResponse.data.payload[0];
+        console.log('Found contact:', user);
+
+        const contactData = {
           id: user.id,
           name: user.name,
           phone_number: user.phone_number,
           thumbnail: user.avatar_url || user.thumbnail || '',
-          source_id: user.contact_inboxes?.[0]?.source_id || '',
           availability_status: user.availability_status || 'offline',
           last_seen_at: user.last_activity_at ? new Date(user.last_activity_at * 1000).toISOString() : ''
         };
-      } else {
-        // Criar novo contato se não existir
-        const contactNumber = `+${formattedNumber}`;
-        const contactNameToUse = additionalInfo?.name || contactName || formatPhoneNumber(formattedNumber);
-        const contactEmail = additionalInfo?.email || initialEmail;
 
-        const newContactResponse = await api.post(`/api/v1/accounts/${accountId}/contacts`, {
-          name: contactNameToUse,
-          email: contactEmail,
-          inbox_id: inboxId,
-          source_id: contactNumber,
-          phone_number: contactNumber,
-          custom_attributes: {
-            source: "web_chat",
-            source_type: sourceType || 'web',
-            ...additionalInfo
-          }
-        });
-        
-        if (newContactResponse.data) {
-          const newContact = newContactResponse.data;
-          contactData = {
-            id: newContact.id,
-            name: newContact.name,
-            phone_number: newContact.phone_number,
-            thumbnail: newContact.avatar_url || newContact.thumbnail || '',
-            source_id: newContact.contact_inboxes?.[0]?.source_id || '',
-            availability_status: newContact.availability_status || 'offline',
-            last_seen_at: newContact.last_activity_at ? new Date(newContact.last_activity_at * 1000).toISOString() : ''
-          };
-        }
-      }
+        // Buscar todas as conversas do contato
+        console.log('Fetching all conversations for contact:', user.id);
+        const conversationsResponse = await api.get(
+          `/api/v1/accounts/${accountId}/contacts/${user.id}/conversations`
+        );
 
-      if (contactData) {
-        console.log('Setting contact data:', contactData);
-        setContact(contactData);
-
-        // Buscar todas as conversas existentes para o contato
-        console.log('Fetching conversations for contact ID:', contactData.id);
-        const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/conversations`, {
-          params: {
-            q: contactData.id,
-            inbox_id: inboxId
-          }
-        });
-
-        console.log('All conversations response:', conversationsResponse.data);
+        console.log('All contact conversations:', conversationsResponse.data);
 
         if (conversationsResponse.data?.payload?.length > 0) {
-          // Buscar mensagens para cada conversa
-          const conversationsWithMessages = await Promise.all(
-            conversationsResponse.data.payload.map(async (conversation: any) => {
-              const messagesResponse = await api.get(
-                `/api/v1/accounts/${accountId}/conversations/${conversation.id}/messages`
-              );
-              return {
-                ...conversation,
-                hasMessages: messagesResponse.data?.payload?.length > 0,
-                messageCount: messagesResponse.data?.payload?.length || 0
-              };
-            })
-          );
-
-          // Ordenar conversas por: 1) tem mensagens, 2) data de criação
-          const sortedConversations = conversationsWithMessages.sort((a, b) => {
-            if (a.hasMessages && !b.hasMessages) return -1;
-            if (!a.hasMessages && b.hasMessages) return 1;
+          // Ordenar conversas por data de criação (mais recente primeiro)
+          const sortedConversations = conversationsResponse.data.payload.sort((a: any, b: any) => {
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
           });
 
-          // Usar a primeira conversa que tem mensagens ou a mais recente
-          const selectedConversation = sortedConversations[0];
-          console.log('Selected conversation:', selectedConversation);
+          // Usar a conversa mais recente
+          const conversation = sortedConversations[0];
+          console.log('Using most recent conversation:', conversation.id);
 
+          // Armazenar a conversa
+          setStorageConversations(prev => [
+            ...prev,
+            {
+              user: contactData,
+              conversationId: conversation.id
+            }
+          ]);
+
+          setContact(contactData);
           setActiveConversation({
-            id: selectedConversation.id,
+            id: conversation.id,
             messages: []
           });
 
-          // Carregar mensagens da conversa
-          await loadConversationMessages(selectedConversation.id);
-        } else {
-          console.log('No existing conversation found, creating new one');
-          // Criar nova conversa apenas se não existir nenhuma
-          const conversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
-            source_id: contactData.phone_number,
-            inbox_id: inboxId.toString(),
-            contact_id: contactData.id.toString()
-          });
-
-          if (conversationResponse.data?.id) {
-            const conversation = conversationResponse.data;
-            console.log('Created new conversation:', conversation.id);
-
-            setActiveConversation({
-              id: conversation.id,
-              messages: []
-            });
-          }
+          await loadConversationMessages(conversation.id);
+          setLoading(false);
+          return;
         }
 
-        // Carregar histórico de conversas
-        await loadPreviousConversations();
+        // Se não encontrou conversa, criar uma nova
+        console.log('No existing conversation found, creating new one');
+        const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
+          inbox_id: inboxId.toString(),
+          contact_id: user.id.toString()
+        });
+
+        if (newConversationResponse.data?.id) {
+          const conversation = newConversationResponse.data;
+          console.log('Created new conversation:', conversation.id);
+
+          // Armazenar a nova conversa
+          setStorageConversations(prev => [
+            ...prev,
+            {
+              user: contactData,
+              conversationId: conversation.id
+            }
+          ]);
+
+          setContact(contactData);
+          setActiveConversation({
+            id: conversation.id,
+            messages: []
+          });
+        }
       } else {
-        throw new Error('Falha ao criar ou encontrar o contato');
+        throw new Error('Contato não encontrado');
       }
+
+      // Carregar histórico de conversas
+      await loadPreviousConversations();
     } catch (error) {
       if (!checkNetworkConnectivity()) {
         setNetworkError(true);
