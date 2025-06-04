@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   BarChart2, TrendingUp, AlertTriangle, CheckCircle2, 
   Download, Truck, Users, FileCheck, FileX, Store, Battery,
-  Calendar, Gauge, XCircle, Clock, BarChart, PieChart
+  Calendar, Gauge, XCircle, Clock, BarChart, PieChart, 
+  ArrowUp, ArrowDown, Zap, Activity
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
@@ -389,25 +390,25 @@ const HodometrosDashboard = () => {
       {/* Top Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <StatCard
-          title="Total de Leituras"
+          title="QTD DE LEITURAS REALIZADAS"
           value={stats.totalLeituras}
           icon={Gauge}
           variant="blue"
         />
         <StatCard
-          title="Leituras Hoje"
+          title="LEITURAS REALIZADAS HOJE"
           value={stats.leiturasHoje}
           icon={Clock}
           variant="green"
         />
         <StatCard
-          title="KM Total Rodado"
+          title="KM TOTAL RODADO"
           value={`${Math.round(stats.kmTotalRodado).toLocaleString('pt-BR')} km`}
-          icon={Truck}
+          icon={Activity}
           variant="purple"
         />
         <StatCard
-          title="Média KM/Veículo"
+          title="MÉDIA KM/VEÍCULO"
           value={`${Math.round(stats.kmMediaPorVeiculo).toLocaleString('pt-BR')} km`}
           icon={TrendingUp}
           variant="amber"
@@ -421,7 +422,7 @@ const HodometrosDashboard = () => {
           <div className="flex items-center gap-2 mb-6">
             <Store className="text-blue-500 dark:text-blue-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              Quilometragem por Operação
+              KM POR OPERAÇÃO
             </h3>
           </div>
           <div className="space-y-4">
@@ -439,19 +440,17 @@ const HodometrosDashboard = () => {
                       {operacao.nome}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {operacao.percentual.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-3 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                        style={{ width: `${operacao.percentual}%` }}
-                      />
-                    </div>
-                    <span className="w-24 text-right text-sm font-medium text-gray-900 dark:text-white">
                       {Math.round(operacao.km_total).toLocaleString('pt-BR')} km
                     </span>
+                  </div>
+                  <div className="h-2.5 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
+                      style={{ width: `${operacao.percentual}%` }}
+                    />
+                  </div>
+                  <div className="text-xs text-right text-gray-500 dark:text-gray-400">
+                    {operacao.percentual.toFixed(1)}%
                   </div>
                 </div>
               ))
@@ -464,7 +463,7 @@ const HodometrosDashboard = () => {
           <div className="flex items-center gap-2 mb-6">
             <Users className="text-purple-500 dark:text-purple-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              Número de Leituras por Motorista
+              NÚMERO DE LEITURAS POR MOTORISTA
             </h3>
           </div>
           <div className="space-y-4">
@@ -485,13 +484,11 @@ const HodometrosDashboard = () => {
                       {motorista.leituras} leituras
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-3 bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-purple-500 dark:bg-purple-400 rounded-full"
-                        style={{ width: `${(motorista.leituras / Math.max(...stats.kmPorMotorista.map(m => m.leituras))) * 100}%` }}
-                      />
-                    </div>
+                  <div className="h-2.5 bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-purple-500 dark:bg-purple-400 rounded-full transition-all duration-300"
+                      style={{ width: `${(motorista.leituras / Math.max(...stats.kmPorMotorista.map(m => m.leituras))) * 100}%` }}
+                    />
                   </div>
                 </div>
               ))
@@ -504,7 +501,7 @@ const HodometrosDashboard = () => {
           <div className="flex items-center gap-2 mb-6">
             <AlertTriangle className="text-amber-500 dark:text-amber-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              Leituras Inconsistentes
+              LEITURAS INCONSISTENTES
             </h3>
           </div>
           
@@ -567,10 +564,10 @@ const HodometrosDashboard = () => {
           <div className="flex items-center gap-2 mb-6">
             <FileCheck className="text-green-500 dark:text-green-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              Verificação por IA ({stats.totalLeituras} leituras)
+              VERIFICAÇÃO POR IA ({stats.totalLeituras} leituras)
             </h3>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -618,7 +615,7 @@ const HodometrosDashboard = () => {
           <div className="flex items-center gap-2 mb-6">
             <FileX className="text-amber-500 dark:text-amber-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              Consistência das Leituras
+              CONSISTÊNCIA DAS LEITURAS
             </h3>
           </div>
           <div className="space-y-6">
@@ -658,7 +655,7 @@ const HodometrosDashboard = () => {
           <div className="flex items-center gap-2 mb-6">
             <Users className="text-indigo-500 dark:text-indigo-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              Quilometragem por Motorista
+              KM POR MOTORISTA
             </h3>
           </div>
           <div className="space-y-4">
@@ -679,13 +676,11 @@ const HodometrosDashboard = () => {
                       {Math.round(motorista.km_total).toLocaleString('pt-BR')} km
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-3 bg-indigo-100 dark:bg-indigo-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full"
-                        style={{ width: `${(motorista.km_total / (stats.kmPorMotorista[0]?.km_total || 1)) * 100}%` }}
-                      />
-                    </div>
+                  <div className="h-2.5 bg-indigo-100 dark:bg-indigo-900/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full"
+                      style={{ width: `${(motorista.km_total / (stats.kmPorMotorista[0]?.km_total || 1)) * 100}%` }}
+                    />
                   </div>
                 </div>
               ))
@@ -698,7 +693,7 @@ const HodometrosDashboard = () => {
           <div className="flex items-center gap-2 mb-6">
             <Truck className="text-teal-500 dark:text-teal-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              Quilometragem por Veículo
+              KM POR VEÍCULO
             </h3>
           </div>
           <div className="space-y-4">
@@ -726,15 +721,13 @@ const HodometrosDashboard = () => {
                       {Math.round(veiculo.km_total).toLocaleString('pt-BR')} km
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-3 bg-teal-100 dark:bg-teal-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-teal-500 dark:bg-teal-400 rounded-full"
-                        style={{ 
-                          width: `${(veiculo.km_total / (filteredVehicleData()[0]?.km_total || 1)) * 100}%` 
-                        }}
-                      />
-                    </div>
+                  <div className="h-2.5 bg-teal-100 dark:bg-teal-900/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-teal-500 dark:bg-teal-400 rounded-full"
+                      style={{ 
+                        width: `${(veiculo.km_total / (filteredVehicleData()[0]?.km_total || 1)) * 100}%` 
+                      }}
+                    />
                   </div>
                   {veiculo.is_electric && veiculo.bateria !== null && veiculo.bateria !== undefined && (
                     <div className="flex items-center gap-2 mt-1">
@@ -754,9 +747,9 @@ const HodometrosDashboard = () => {
         {stats.totalVeiculosEletricos > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md lg:col-span-2">
             <div className="flex items-center gap-2 mb-6">
-              <Battery className="text-green-500 dark:text-green-400" size={20} />
+              <Zap className="text-green-500 dark:text-green-400" size={20} />
               <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                Ciclomotores Elétricos
+                CICLOMOTORES ELÉTRICOS
               </h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -836,43 +829,49 @@ const StatCard = ({
   const variants = {
     'blue': {
       icon: 'text-blue-500 dark:text-blue-400',
-      bg: 'bg-blue-50 dark:bg-blue-900/20'
+      bg: 'bg-blue-50 dark:bg-blue-900/20',
+      border: 'border-blue-100 dark:border-blue-800/30'
     },
     'green': {
       icon: 'text-green-500 dark:text-green-400',
-      bg: 'bg-green-50 dark:bg-green-900/20'
+      bg: 'bg-green-50 dark:bg-green-900/20',
+      border: 'border-green-100 dark:border-green-800/30'
     },
     'purple': {
       icon: 'text-purple-500 dark:text-purple-400',
-      bg: 'bg-purple-50 dark:bg-purple-900/20'
+      bg: 'bg-purple-50 dark:bg-purple-900/20',
+      border: 'border-purple-100 dark:border-purple-800/30'
     },
     'amber': {
       icon: 'text-amber-500 dark:text-amber-400',
-      bg: 'bg-amber-50 dark:bg-amber-900/20'
+      bg: 'bg-amber-50 dark:bg-amber-900/20',
+      border: 'border-amber-100 dark:border-amber-800/30'
     },
     'teal': {
       icon: 'text-teal-500 dark:text-teal-400',
-      bg: 'bg-teal-50 dark:bg-teal-900/20'
+      bg: 'bg-teal-50 dark:bg-teal-900/20',
+      border: 'border-teal-100 dark:border-teal-800/30'
     },
     'indigo': {
       icon: 'text-indigo-500 dark:text-indigo-400',
-      bg: 'bg-indigo-50 dark:bg-indigo-900/20'
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      border: 'border-indigo-100 dark:border-indigo-800/30'
     }
   };
 
   const style = variants[variant];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
-      <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400 mb-4">
-        <div className={`p-2 rounded-lg ${style.bg}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-md border ${style.border} p-6 transition-all duration-300 hover:shadow-lg`}>
+      <div className="flex flex-col items-center text-center">
+        <div className={`p-3 rounded-full ${style.bg} mb-4`}>
           <Icon className={`w-6 h-6 ${style.icon}`} />
         </div>
-        <span className="text-sm font-medium">{title}</span>
+        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">{title}</p>
+        <span className="text-3xl font-bold text-gray-900 dark:text-white">
+          {value}
+        </span>
       </div>
-      <span className="text-2xl font-bold text-gray-900 dark:text-white">
-        {value}
-      </span>
     </div>
   );
 };
