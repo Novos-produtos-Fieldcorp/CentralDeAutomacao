@@ -87,6 +87,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const [showInboxSelector, setShowInboxSelector] = useState(false);
   const [availableInboxes, setAvailableInboxes] = useState<any[]>([]);
   const [selectedInboxId, setSelectedInboxId] = useState<number | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [previousConversations, setPreviousConversations] = useState<any[]>([]);
 
   const checkNetworkConnectivity = () => {
     return navigator.onLine;
@@ -584,7 +586,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
       const formattedNumber = formatPhoneNumber(phoneNumber);
 
-      // Configure axios instance
+
       const api = axios.create({
         baseURL: '/api',
         headers: {
@@ -658,7 +660,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         console.log('Fetching conversations for contact ID:', contactData.id);
         const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/conversations`, {
           params: {
-            q: contactData.id
+            q: contactData.id,
+            inbox_id: inboxId
           }
         });
 
@@ -716,6 +719,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             });
           }
         }
+
+        // Carregar histórico de conversas
+        await loadPreviousConversations();
       } else {
         throw new Error('Falha ao criar ou encontrar o contato');
       }
@@ -1236,6 +1242,140 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     };
   }, []);
 
+  // Add this function to load previous conversations
+  const loadPreviousConversations = async () => {
+    try {
+      const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
+      const apiKey = localStorage.getItem('wiseapp_token');
+
+      if (!accountId || !apiKey) {
+        throw new Error('Configuração inválida');
+      }
+
+      const api = axios.create({
+        baseURL: '/api',
+        headers: {
+          'api_access_token': apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      // Buscar conversas do inbox selecionado
+      const response = await api.get(`/api/v1/accounts/${accountId}/conversations`, {
+        params: {
+          inbox_id: selectedInboxId
+        }
+      });
+      
+      if (response.data?.payload) {
+        const conversations = await Promise.all(
+          response.data.payload.map(async (conv: any) => {
+            // Get contact details
+            const contactResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${conv.contact_id}`);
+            const contact = contactResponse.data;
+            
+            // Get last message
+            const messagesResponse = await api.get(
+              `/api/v1/accounts/${accountId}/conversations/${conv.id}/messages?page=1&per_page=1`
+            );
+            const lastMessage = messagesResponse.data?.payload?.[0];
+
+            return {
+              id: conv.id,
+              contact: {
+                id: contact.id,
+                name: contact.name,
+                phone_number: contact.phone_number,
+                thumbnail: contact.thumbnail || contact.avatar_url
+              },
+              lastMessage: lastMessage ? {
+                content: lastMessage.content,
+                created_at: lastMessage.created_at,
+                message_type: lastMessage.message_type
+              } : null,
+              unread_count: conv.unread_count || 0
+            };
+          })
+        );
+
+        // Sort conversations by last message date
+        conversations.sort((a, b) => {
+          if (!a.lastMessage) return 1;
+          if (!b.lastMessage) return -1;
+          return new Date(b.lastMessage.created_at).getTime() - new Date(a.lastMessage.created_at).getTime();
+        });
+
+        setPreviousConversations(conversations);
+      }
+    } catch (error) {
+      console.error('Error loading previous conversations:', error);
+    }
+  };
+
+  // Add this effect to load conversations when chat is opened
+  useEffect(() => {
+    if (showChat && !minimized) {
+      loadPreviousConversations();
+    }
+  }, [showChat, minimized]);
+
+  // Add this function to switch conversations
+  const switchConversation = async (conversationId: number) => {
+    try {
+      setLoading(true);
+      const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
+      const apiKey = localStorage.getItem('wiseapp_token');
+
+      if (!accountId || !apiKey) {
+        throw new Error('Configuração inválida');
+      }
+
+      if (!selectedInboxId) {
+        throw new Error('Nenhum inbox selecionado');
+      }
+
+      const api = axios.create({
+        baseURL: '/api',
+        headers: {
+          'api_access_token': apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      const response = await api.get(`/api/v1/accounts/${accountId}/conversations/${conversationId}`);
+      
+      if (response.data) {
+        const conversation = response.data;
+        const contactResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${conversation.contact_id}`);
+        
+        setContact({
+          id: contactResponse.data.id,
+          name: contactResponse.data.name,
+          phone_number: contactResponse.data.phone_number,
+          thumbnail: contactResponse.data.thumbnail || contactResponse.data.avatar_url,
+          source_id: contactResponse.data.contact_inboxes?.[0]?.source_id || '',
+          availability_status: contactResponse.data.availability_status || 'offline',
+          last_seen_at: contactResponse.data.last_activity_at ? new Date(contactResponse.data.last_activity_at * 1000).toISOString() : ''
+        });
+
+        setActiveConversation({
+          id: conversation.id,
+          messages: []
+        });
+
+        await loadConversationMessages(conversation.id);
+        setShowHistory(false);
+      }
+    } catch (error) {
+      console.error('Error switching conversation:', error);
+      handleError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!showChat) return null;
 
   if (loading) {
@@ -1307,206 +1447,293 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end">
       {!minimized && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-96 h-[600px] flex flex-col mb-4">
-          {/* Header */}
-          <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden">
-                {contact?.thumbnail ? (
-                  <img 
-                    src={contact.thumbnail} 
-                    alt={contact.name || 'Avatar'} 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  contact?.name?.[0]?.toUpperCase() || 'C'
-                )}
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white">
-                  {contact?.name || 'Chat'}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {contact?.phone_number || 'Selecione um contato'}
-                </p>
-              </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-[800px] h-[600px] flex mb-4">
+          {/* History Sidebar */}
+          <div className={`w-64 border-r dark:border-gray-700 flex flex-col ${showHistory ? 'block' : 'hidden'}`}>
+            <div className="p-4 border-b dark:border-gray-700">
+              <h3 className="font-medium text-gray-900 dark:text-white">Conversas</h3>
             </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setMinimized(true)}
-                className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                title="Minimizar"
-              >
-                <Minus className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setShowChat(false)}
-                className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                title="Fechar"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Inbox Selector Modal */}
-          {showInboxSelector && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                  Selecione um Inbox
-                </h3>
-                <div className="space-y-3">
-                  {availableInboxes.map((inbox) => (
-                    <button
-                      key={inbox.id}
-                      onClick={() => handleInboxSelection(inbox.id)}
-                      className="w-full p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {inbox.name}
-                        </span>
-                        {inbox.isOpen ? (
-                          <span className="text-green-600 dark:text-green-400 text-sm">
-                            Aberto
-                          </span>
-                        ) : (
-                          <span className="text-red-600 dark:text-red-400 text-sm">
-                            Fechado
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={messagesEndRef}>
-            {activeConversation?.messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.message_type === 'outgoing' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    message.message_type === 'outgoing'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+            <div className="flex-1 overflow-y-auto">
+              {previousConversations.map((conv) => (
+                <button
+                  key={conv.id}
+                  onClick={() => switchConversation(conv.id)}
+                  className={`w-full p-4 text-left border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                    activeConversation?.id === conv.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                   }`}
                 >
-                  {message.content_type === 'image' ? (
-                    <img
-                      src={message.content}
-                      alt="Imagem"
-                      className="max-w-full rounded-lg"
-                      loading="lazy"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = 'https://via.placeholder.com/150?text=Imagem+não+encontrada';
-                      }}
-                    />
-                  ) : message.content_type === 'file' ? (
-                    <a
-                      href={message.content}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center space-x-2 text-blue-500 hover:text-blue-600"
-                    >
-                      <File className="w-5 h-5" />
-                      <span>{message.content}</span>
-                    </a>
-                  ) : message.content_type === 'audio' ? (
-                    <audio controls className="w-full">
-                      <source src={message.content} type="audio/webm" />
-                      Seu navegador não suporta o elemento de áudio.
-                    </audio>
-                  ) : (
-                    <p className="whitespace-pre-wrap break-words">{message.content}</p>
-                  )}
-                  <span className="text-xs opacity-75 mt-1 block">
-                    {formatTime(message.created_at)}
-                  </span>
-                </div>
-              </div>
-            ))}
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden">
+                      {conv.contact.thumbnail ? (
+                        <img 
+                          src={conv.contact.thumbnail} 
+                          alt={conv.contact.name || 'Avatar'} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        conv.contact.name?.[0]?.toUpperCase() || 'C'
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 dark:text-white truncate">
+                        {conv.contact.name || conv.contact.phone_number}
+                      </p>
+                      {conv.lastMessage && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          {conv.lastMessage.content}
+                        </p>
+                      )}
+                    </div>
+                    {conv.unread_count > 0 && (
+                      <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                        {conv.unread_count}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Input */}
-          <div className="p-4 border-t dark:border-gray-700">
-            {error && (
-              <div className="mb-2 p-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 rounded text-sm">
-                {error}
+          {/* Main Chat Area */}
+          <div className="flex-1 flex flex-col">
+            {/* Header */}
+            <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  title={showHistory ? "Ocultar histórico" : "Mostrar histórico"}
+                >
+                  <MessageSquare className="w-5 h-5" />
+                </button>
+                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden">
+                  {contact?.thumbnail ? (
+                    <img 
+                      src={contact.thumbnail} 
+                      alt={contact.name || 'Avatar'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    contact?.name?.[0]?.toUpperCase() || 'C'
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900 dark:text-white">
+                    {contact?.name || 'Chat'}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {contact?.phone_number || 'Selecione um contato'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setMinimized(true)}
+                  className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  title="Minimizar"
+                >
+                  <Minus className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setShowChat(false)}
+                  className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  title="Fechar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Inbox Selector Modal */}
+            {showInboxSelector && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    Selecione um Inbox
+                  </h3>
+                  <div className="space-y-3">
+                    {availableInboxes.map((inbox) => (
+                      <button
+                        key={inbox.id}
+                        onClick={() => handleInboxSelection(inbox.id)}
+                        className="w-full p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {inbox.name}
+                          </span>
+                          {inbox.isOpen ? (
+                            <span className="text-green-600 dark:text-green-400 text-sm">
+                              Aberto
+                            </span>
+                          ) : (
+                            <span className="text-red-600 dark:text-red-400 text-sm">
+                              Fechado
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
-            {networkError && (
-              <div className="mb-2 p-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-100 rounded text-sm">
-                Sem conexão de rede disponível
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={messagesEndRef}>
+              {activeConversation?.messages.map((message, index) => {
+                // Check if we should show date separator
+                const showDateSeparator = index === 0 || 
+                  new Date(message.created_at).toDateString() !== 
+                  new Date(activeConversation.messages[index - 1].created_at).toDateString();
+
+                return (
+                  <div key={message.id} className="space-y-2">
+                    {/* Date Separator */}
+                    {showDateSeparator && (
+                      <div className="flex justify-center my-4">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+                          {new Date(message.created_at).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Message */}
+                    <div
+                      className={`flex ${message.message_type === 'outgoing' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-lg p-3 ${
+                          message.message_type === 'outgoing'
+                            ? 'bg-blue-500 text-white ml-auto'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                        }`}
+                      >
+                        {message.content_type === 'image' ? (
+                          <img
+                            src={message.content}
+                            alt="Imagem"
+                            className="max-w-full rounded-lg"
+                            loading="lazy"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = 'https://via.placeholder.com/150?text=Imagem+não+encontrada';
+                            }}
+                          />
+                        ) : message.content_type === 'file' ? (
+                          <a
+                            href={message.content}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center space-x-2 text-blue-500 hover:text-blue-600"
+                          >
+                            <File className="w-5 h-5" />
+                            <span>{message.content}</span>
+                          </a>
+                        ) : message.content_type === 'audio' ? (
+                          <audio controls className="w-full">
+                            <source src={message.content} type="audio/webm" />
+                            Seu navegador não suporta o elemento de áudio.
+                          </audio>
+                        ) : (
+                          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                        )}
+                        <span className={`text-xs mt-1 block ${
+                          message.message_type === 'outgoing' 
+                            ? 'text-blue-100' 
+                            : 'text-gray-500 dark:text-gray-400'
+                        }`}>
+                          {new Date(message.created_at).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Input */}
+            <div className="p-4 border-t dark:border-gray-700">
+              {error && (
+                <div className="mb-2 p-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 rounded text-sm">
+                  {error}
+                </div>
+              )}
+              {networkError && (
+                <div className="mb-2 p-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-100 rounded text-sm">
+                  Sem conexão de rede disponível
+                </div>
+              )}
+              {authError && (
+                <div className="mb-2 p-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 rounded text-sm">
+                  Erro de autenticação. Por favor, verifique suas credenciais.
+                </div>
+              )}
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('fileInput')?.click()}
+                  className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  title="Anexar arquivo"
+                >
+                  <Paperclip className="w-5 h-5" />
+                </button>
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="fileInput"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                />
+                <button
+                  type="button"
+                  onClick={handleVoiceMessage}
+                  className={`p-1.5 ${
+                    isRecording
+                      ? 'text-red-500 hover:text-red-700 dark:hover:text-red-400'
+                      : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
+                  title={isRecording ? 'Parar gravação' : 'Gravar áudio'}
+                >
+                  {isRecording ? (
+                    <Square className="w-5 h-5" />
+                  ) : (
+                    <Mic className="w-5 h-5" />
+                  )}
+                </button>
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  placeholder="Digite sua mensagem..."
+                  className="flex-1 p-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  disabled={!activeConversation || networkError || authError}
+                />
+                <button
+                  type="button"
+                  onClick={sendMessage}
+                  disabled={!newMessage.trim() || !activeConversation || networkError || authError}
+                  className={`p-2 rounded-full ${
+                    !newMessage.trim() || !activeConversation || networkError || authError
+                      ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
+                      : 'bg-blue-500 hover:bg-blue-600'
+                  }`}
+                  title="Enviar mensagem"
+                >
+                  <Send className="w-5 h-5 text-white" />
+                </button>
               </div>
-            )}
-            {authError && (
-              <div className="mb-2 p-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 rounded text-sm">
-                Erro de autenticação. Por favor, verifique suas credenciais.
-              </div>
-            )}
-            <div className="flex items-center space-x-2">
-              <button
-                type="button"
-                onClick={() => document.getElementById('fileInput')?.click()}
-                className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                title="Anexar arquivo"
-              >
-                <Paperclip className="w-5 h-5" />
-              </button>
-              <input
-                type="file"
-                multiple
-                onChange={handleFileSelect}
-                className="hidden"
-                id="fileInput"
-                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-              />
-              <button
-                type="button"
-                onClick={handleVoiceMessage}
-                className={`p-1.5 ${
-                  isRecording
-                    ? 'text-red-500 hover:text-red-700 dark:hover:text-red-400'
-                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-                title={isRecording ? 'Parar gravação' : 'Gravar áudio'}
-              >
-                {isRecording ? (
-                  <Square className="w-5 h-5" />
-                ) : (
-                  <Mic className="w-5 h-5" />
-                )}
-              </button>
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Digite sua mensagem..."
-                className="flex-1 p-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                disabled={!activeConversation || networkError || authError}
-              />
-              <button
-                type="button"
-                onClick={sendMessage}
-                disabled={!newMessage.trim() || !activeConversation || networkError || authError}
-                className={`p-2 rounded-full ${
-                  !newMessage.trim() || !activeConversation || networkError || authError
-                    ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
-                    : 'bg-blue-500 hover:bg-blue-600'
-                }`}
-                title="Enviar mensagem"
-              >
-                <Send className="w-5 h-5 text-white" />
-              </button>
             </div>
           </div>
         </div>
