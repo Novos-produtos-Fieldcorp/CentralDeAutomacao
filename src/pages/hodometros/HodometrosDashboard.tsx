@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   BarChart2, TrendingUp, AlertTriangle, CheckCircle2, 
-  Download, Truck, Users, FileCheck, FileX, Store, Battery
+  Download, Truck, Users, FileCheck, FileX, Store, Battery,
+  Calendar, Gauge, XCircle, Clock, BarChart, PieChart
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
@@ -36,6 +37,7 @@ interface DashboardStats {
     nome: string;
     km_total: number;
     data: string;
+    leituras: number;
   }[];
   kmPorCliente: {
     nome: string;
@@ -47,6 +49,18 @@ interface DashboardStats {
     km_total: number;
     percentual: number;
   }[];
+  leiturasInconsistentes: {
+    hod_lido: number;
+    hod_informado: number;
+    nome: string;
+    data: string;
+    placa: string;
+  }[];
+}
+
+interface VehicleTypeFilter {
+  value: string;
+  label: string;
 }
 
 const HodometrosDashboard = () => {
@@ -69,10 +83,18 @@ const HodometrosDashboard = () => {
     kmPorVeiculo: [],
     kmPorMotorista: [],
     kmPorCliente: [],
-    kmPorOperacao: []
+    kmPorOperacao: [],
+    leiturasInconsistentes: []
   });
   const [loading, setLoading] = useState(true);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>('all');
+
+  const vehicleTypeOptions: VehicleTypeFilter[] = [
+    { value: 'all', label: 'Todos os veículos' },
+    { value: 'electric', label: 'Ciclomotores elétricos' },
+    { value: 'regular', label: 'Veículos regulares' }
+  ];
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -81,7 +103,7 @@ const HodometrosDashboard = () => {
         .select(`
           *,
           motorista:motorista_id (nome),
-          veiculo:veiculo_id (placa),
+          veiculo:veiculo_id (placa, marca, tipo),
           cliente:cliente_id (nome)
         `)
         .eq('company_id', companyId)
@@ -175,9 +197,14 @@ const HodometrosDashboard = () => {
         hodometros.forEach(h => {
           if (!h.motorista?.nome || !h.km_rodado) return;
           
-          const current = motoristasMap.get(h.motorista.nome) || { km_total: 0, data: h.data };
+          const current = motoristasMap.get(h.motorista.nome) || { 
+            km_total: 0, 
+            data: h.data,
+            leituras: 0
+          };
           current.km_total += h.km_rodado;
           current.data = h.data;
+          current.leituras += 1;
           motoristasMap.set(h.motorista.nome, current);
         });
 
@@ -185,7 +212,8 @@ const HodometrosDashboard = () => {
           .map(([nome, data]) => ({
             nome,
             km_total: data.km_total,
-            data: data.data
+            data: data.data,
+            leituras: data.leituras
           }))
           .sort((a, b) => b.km_total - a.km_total);
 
@@ -242,6 +270,19 @@ const HodometrosDashboard = () => {
           }))
           .sort((a, b) => b.km_total - a.km_total);
 
+        // Leituras inconsistentes
+        const leiturasInconsistentes = hodometros
+          .filter(h => h.comparacao_leitura === false && h.hod_lido !== null && h.hod_informado !== null)
+          .map(h => ({
+            hod_lido: h.hod_lido || 0,
+            hod_informado: h.hod_informado || 0,
+            nome: h.motorista?.nome || 'Desconhecido',
+            data: h.data,
+            placa: h.veiculo?.placa?.toUpperCase() || 'Desconhecido'
+          }))
+          .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+          .slice(0, 5); // Mostrar apenas as 5 mais recentes
+
         // Calculate averages
         const regularVehicles = veiculosMap.size - totalVeiculosEletricos;
         const kmMediaPorVeiculo = regularVehicles > 0 
@@ -266,7 +307,8 @@ const HodometrosDashboard = () => {
           kmPorVeiculo,
           kmPorMotorista,
           kmPorCliente,
-          kmPorOperacao
+          kmPorOperacao,
+          leiturasInconsistentes
         });
       }
     } catch (error) {
@@ -275,7 +317,7 @@ const HodometrosDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [dateRange]);
+  }, [dateRange, companyId]);
 
   useEffect(() => {
     let mounted = true;
@@ -293,169 +335,239 @@ const HodometrosDashboard = () => {
     };
   }, [fetchDashboardData]);
 
+  const filteredVehicleData = () => {
+    if (vehicleTypeFilter === 'all') {
+      return stats.kmPorVeiculo;
+    } else if (vehicleTypeFilter === 'electric') {
+      return stats.kmPorVeiculo.filter(v => v.is_electric);
+    } else {
+      return stats.kmPorVeiculo.filter(v => !v.is_electric);
+    }
+  };
+
   if (loading) {
-    return (
-      <LoadingSpinner />
-    );
+    return <LoadingSpinner />;
   }
+
+  const formatDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  };
 
   return (
     <div className="space-y-6">
-      {/* Period Selector */}
+      {/* Filters Section */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <PeriodSelector
-          periodType={periodType}
-          dateRange={dateRange}
-          onPeriodChange={updatePeriod}
-          onDateRangeChange={setDateRange}
-        />
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex items-center gap-2">
+            <Calendar className="text-gray-400 w-5 h-5" />
+            <PeriodSelector
+              periodType={periodType}
+              dateRange={dateRange}
+              onPeriodChange={updatePeriod}
+              onDateRangeChange={setDateRange}
+            />
+          </div>
+          
+          <div className="flex items-center gap-2 ml-auto">
+            <Truck className="text-gray-400 w-5 h-5" />
+            <select
+              value={vehicleTypeFilter}
+              onChange={(e) => setVehicleTypeFilter(e.target.value)}
+              className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              {vehicleTypeOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
-      {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Top Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <StatCard
           title="Total de Leituras"
           value={stats.totalLeituras}
-          icon={BarChart2}
+          icon={Gauge}
           variant="blue"
         />
         <StatCard
           title="Leituras Hoje"
           value={stats.leiturasHoje}
-          icon={TrendingUp}
-          variant="blue-light"
+          icon={Clock}
+          variant="green"
         />
         <StatCard
           title="KM Total Rodado"
           value={`${Math.round(stats.kmTotalRodado).toLocaleString('pt-BR')} km`}
           icon={Truck}
-          variant="blue"
+          variant="purple"
         />
         <StatCard
           title="Média KM/Veículo"
           value={`${Math.round(stats.kmMediaPorVeiculo).toLocaleString('pt-BR')} km`}
           icon={TrendingUp}
-          variant="blue-light"
+          variant="amber"
         />
       </div>
 
-      {/* KM por Operação */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
-        <div className="flex items-center gap-2 mb-6">
-          <Store className="text-blue-500 dark:text-blue-400" size={20} />
-          <h3 className="text-base font-bold text-gray-900 dark:text-white">
-            Quilometragem por Operação
-          </h3>
-        </div>
-        <div className="space-y-4">
-          {stats.kmPorOperacao.length === 0 ? (
-            <div className="text-center py-4">
-              <p className="text-gray-500 dark:text-gray-400">
-                Nenhum dado disponível para o período selecionado
-              </p>
-            </div>
-          ) : (
-            stats.kmPorOperacao.map((operacao, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {operacao.nome}
-                  </span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {operacao.percentual.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                      style={{ width: `${operacao.percentual}%` }}
-                    />
-                  </div>
-                  <span className="w-24 text-right text-sm font-medium text-gray-900 dark:text-white">
-                    {Math.round(operacao.km_total).toLocaleString('pt-BR')} km
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Electric Vehicle Stats */}
-      {stats.totalVeiculosEletricos > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
-            <div className="flex items-center gap-2 mb-6">
-              <Battery className="text-green-500 dark:text-green-400" size={20} />
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                Ciclomotores Elétricos
-              </h3>
-            </div>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
-                <div className="text-sm text-green-600 dark:text-green-400 mb-1">Total de Registros</div>
-                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                  {stats.totalRegistrosCiclomotores}
-                </div>
-              </div>
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
-                <div className="text-sm text-green-600 dark:text-green-400 mb-1">Bateria Utilizada</div>
-                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                  {Math.round(stats.totalBateriaUtilizada)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
-            <div className="flex items-center gap-2 mb-6">
-              <Battery className="text-green-500 dark:text-green-400" size={20} />
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                Ciclomotores por Bateria
-              </h3>
-            </div>
-            <div className="space-y-4">
-              {stats.kmPorVeiculo
-                .filter(v => v.is_electric)
-                .slice(0, 5)
-                .map((veiculo, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {veiculo.placa.toUpperCase()}
-                      </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        Bateria: {veiculo.bateria}
-                      </span>
-                    </div>
-                    <div className="h-2 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-green-500 dark:bg-green-400 rounded-full"
-                        style={{ width: `${(veiculo.bateria || 0)}%` }}
-                      />
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 text-right">
-                      Bateria utilizada: {typeof veiculo.bateria === 'number' ? (100 - veiculo.bateria) : 0}
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Verification and Consistency Stats */}
+      {/* Main Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Verificação IA */}
+        {/* KM por Operação */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
-            <FileCheck className="text-blue-500 dark:text-blue-400" size={20} />
+            <Store className="text-blue-500 dark:text-blue-400" size={20} />
+            <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              Quilometragem por Operação
+            </h3>
+          </div>
+          <div className="space-y-4">
+            {stats.kmPorOperacao.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-gray-500 dark:text-gray-400">
+                  Nenhum dado disponível para o período selecionado
+                </p>
+              </div>
+            ) : (
+              stats.kmPorOperacao.slice(0, 5).map((operacao, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {operacao.nome}
+                    </span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {operacao.percentual.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-3 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
+                        style={{ width: `${operacao.percentual}%` }}
+                      />
+                    </div>
+                    <span className="w-24 text-right text-sm font-medium text-gray-900 dark:text-white">
+                      {Math.round(operacao.km_total).toLocaleString('pt-BR')} km
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Leituras por Motorista */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+          <div className="flex items-center gap-2 mb-6">
+            <Users className="text-purple-500 dark:text-purple-400" size={20} />
+            <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              Número de Leituras por Motorista
+            </h3>
+          </div>
+          <div className="space-y-4">
+            {stats.kmPorMotorista.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-gray-500 dark:text-gray-400">
+                  Nenhum dado disponível para o período selecionado
+                </p>
+              </div>
+            ) : (
+              stats.kmPorMotorista.slice(0, 5).map((motorista, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {motorista.nome}
+                    </span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {motorista.leituras} leituras
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-3 bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-purple-500 dark:bg-purple-400 rounded-full"
+                        style={{ width: `${(motorista.leituras / Math.max(...stats.kmPorMotorista.map(m => m.leituras))) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Leituras Inconsistentes */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md lg:col-span-2">
+          <div className="flex items-center gap-2 mb-6">
+            <AlertTriangle className="text-amber-500 dark:text-amber-400" size={20} />
+            <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              Leituras Inconsistentes
+            </h3>
+          </div>
+          
+          <div className="overflow-x-auto">
+            {stats.leiturasInconsistentes.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-gray-500 dark:text-gray-400">
+                  Nenhuma leitura inconsistente encontrada no período selecionado
+                </p>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Hodômetro Lido
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Hodômetro Informado
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Motorista
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Data
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Placa
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {stats.leiturasInconsistentes.map((leitura, index) => (
+                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                        {leitura.hod_lido.toLocaleString('pt-BR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                        {leitura.hod_informado.toLocaleString('pt-BR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                        {leitura.nome}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                        {formatDate(leitura.data)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                        {leitura.placa}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        {/* Verification and Consistency Stats */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+          <div className="flex items-center gap-2 mb-6">
+            <FileCheck className="text-green-500 dark:text-green-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
               Verificação por IA ({stats.totalLeituras} leituras)
-              <span className="block text-xs font-normal text-gray-500 dark:text-gray-400 mt-1">
-                Comparação entre a leitura da IA e a informada pelo motorista
-              </span>
             </h3>
           </div>
           <div className="space-y-4">
@@ -464,20 +576,17 @@ const HodometrosDashboard = () => {
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-500" />
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Leituras Confirmadas pela IA
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
-                    (IA = Motorista)
+                    Leituras Confirmadas
                   </span>
                 </div>
                 <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {stats.verificacaoTrue} ({Math.round((stats.verificacaoTrue / stats.totalLeituras) * 100)}%)
+                  {stats.verificacaoTrue} ({Math.round((stats.verificacaoTrue / (stats.totalLeituras || 1)) * 100)}%)
                 </span>
               </div>
               <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-green-500 dark:bg-green-400 rounded-full"
-                  style={{ width: `${(stats.verificacaoTrue / stats.totalLeituras) * 100}%` }}
+                  style={{ width: `${(stats.verificacaoTrue / (stats.totalLeituras || 1)) * 100}%` }}
                 />
               </div>
             </div>
@@ -485,22 +594,19 @@ const HodometrosDashboard = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  <XCircle className="w-4 h-4 text-red-500" />
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Leituras Reprovadas pela IA
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
-                    (IA ≠ Motorista)
+                    Leituras Reprovadas
                   </span>
                 </div>
                 <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {stats.verificacaoFalse} ({Math.round((stats.verificacaoFalse / stats.totalLeituras) * 100)}%)
+                  {stats.verificacaoFalse} ({Math.round((stats.verificacaoFalse / (stats.totalLeituras || 1)) * 100)}%)
                 </span>
               </div>
               <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-red-500 dark:bg-red-400 rounded-full"
-                  style={{ width: `${(stats.verificacaoFalse / stats.totalLeituras) * 100}%` }}
+                  style={{ width: `${(stats.verificacaoFalse / (stats.totalLeituras || 1)) * 100}%` }}
                 />
               </div>
             </div>
@@ -510,7 +616,7 @@ const HodometrosDashboard = () => {
         {/* Consistency Stats */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
-            <FileX className="text-blue-500 dark:text-blue-400" size={20} />
+            <FileX className="text-amber-500 dark:text-amber-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
               Consistência das Leituras
             </h3>
@@ -520,13 +626,13 @@ const HodometrosDashboard = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Consistentes</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {stats.comparacaoTrue} leituras
+                  {stats.comparacaoTrue} leituras ({Math.round((stats.comparacaoTrue / (stats.totalLeituras || 1)) * 100)}%)
                 </span>
               </div>
-              <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+              <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                  style={{ width: `${(stats.comparacaoTrue / stats.totalLeituras) * 100}%` }}
+                  className="h-full bg-green-500 dark:bg-green-400 rounded-full"
+                  style={{ width: `${(stats.comparacaoTrue / (stats.totalLeituras || 1)) * 100}%` }}
                 />
               </div>
             </div>
@@ -534,58 +640,52 @@ const HodometrosDashboard = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Inconsistentes</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {stats.comparacaoFalse} leituras
+                  {stats.comparacaoFalse} leituras ({Math.round((stats.comparacaoFalse / (stats.totalLeituras || 1)) * 100)}%)
                 </span>
               </div>
-              <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+              <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                  style={{ width: `${(stats.comparacaoFalse / stats.totalLeituras) * 100}%` }}
+                  className="h-full bg-amber-500 dark:bg-amber-400 rounded-full"
+                  style={{ width: `${(stats.comparacaoFalse / (stats.totalLeituras || 1)) * 100}%` }}
                 />
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* KM Stats Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* KM por Cliente */}
+        {/* KM por Motorista */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
-            <Store className="text-blue-500 dark:text-blue-400" size={20} />
+            <Users className="text-indigo-500 dark:text-indigo-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              Quilometragem por Cliente
+              Quilometragem por Motorista
             </h3>
           </div>
           <div className="space-y-4">
-            {stats.kmPorCliente.length === 0 ? (
+            {stats.kmPorMotorista.length === 0 ? (
               <div className="text-center py-4">
                 <p className="text-gray-500 dark:text-gray-400">
                   Nenhum dado disponível para o período selecionado
                 </p>
               </div>
             ) : (
-              stats.kmPorCliente.map((cliente, index) => (
+              stats.kmPorMotorista.slice(0, 5).map((motorista, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {cliente.nome}
+                      {motorista.nome}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(cliente.data).toLocaleDateString('pt-BR')}
+                      {Math.round(motorista.km_total).toLocaleString('pt-BR')} km
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                    <div className="flex-1 h-3 bg-indigo-100 dark:bg-indigo-900/20 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                        style={{ width: `${(cliente.km_total / stats.kmPorCliente[0].km_total) * 100}%` }}
+                        className="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full"
+                        style={{ width: `${(motorista.km_total / (stats.kmPorMotorista[0]?.km_total || 1)) * 100}%` }}
                       />
                     </div>
-                    <span className="w-24 text-right text-sm font-medium text-gray-900 dark:text-white">
-                      {Math.round(cliente.km_total).toLocaleString('pt-BR')} km
-                    </span>
                   </div>
                 </div>
               ))
@@ -596,76 +696,127 @@ const HodometrosDashboard = () => {
         {/* KM por Veículo */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
-            <Truck className="text-blue-500 dark:text-blue-400" size={20} />
+            <Truck className="text-teal-500 dark:text-teal-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
               Quilometragem por Veículo
             </h3>
           </div>
           <div className="space-y-4">
-            {stats.kmPorVeiculo
-              .filter(v => !v.is_electric)
-              .map((veiculo, index) => (
+            {filteredVehicleData().length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-gray-500 dark:text-gray-400">
+                  Nenhum dado disponível para o período selecionado
+                </p>
+              </div>
+            ) : (
+              filteredVehicleData().slice(0, 5).map((veiculo, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {veiculo.placa.toUpperCase()}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(veiculo.data).toLocaleDateString('pt-BR')}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                        style={{ 
-                          width: `${(veiculo.km_total / Math.max(...stats.kmPorVeiculo.filter(v => !v.is_electric).map(v => v.km_total))) * 100}%` 
-                        }}
-                      />
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {veiculo.placa.toUpperCase()}
+                      </span>
+                      {veiculo.is_electric && (
+                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">
+                          Elétrico
+                        </span>
+                      )}
                     </div>
-                    <span className="w-24 text-right text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
                       {Math.round(veiculo.km_total).toLocaleString('pt-BR')} km
                     </span>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-3 bg-teal-100 dark:bg-teal-900/20 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-teal-500 dark:bg-teal-400 rounded-full"
+                        style={{ 
+                          width: `${(veiculo.km_total / (filteredVehicleData()[0]?.km_total || 1)) * 100}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                  {veiculo.is_electric && veiculo.bateria !== null && veiculo.bateria !== undefined && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Battery className="w-4 h-4 text-green-500" />
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Bateria: {veiculo.bateria}%
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
+              ))
+            )}
           </div>
         </div>
 
-        {/* KM por Motorista */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
-          <div className="flex items-center gap-2 mb-6">
-            <Users className="text-blue-500 dark:text-blue-400" size={20} />
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              Quilometragem por Motorista
-            </h3>
-          </div>
-          <div className="space-y-4">
-            {stats.kmPorMotorista.map((motorista, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {motorista.nome}
-                  </span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(motorista.data).toLocaleDateString('pt-BR')}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                      style={{ width: `${(motorista.km_total / stats.kmPorMotorista[0].km_total) * 100}%` }}
-                    />
-                  </div>
-                  <span className="w-24 text-right text-sm font-medium text-gray-900 dark:text-white">
-                    {Math.round(motorista.km_total).toLocaleString('pt-BR')} km
-                  </span>
+        {/* Electric Vehicle Stats */}
+        {stats.totalVeiculosEletricos > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md lg:col-span-2">
+            <div className="flex items-center gap-2 mb-6">
+              <Battery className="text-green-500 dark:text-green-400" size={20} />
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                Ciclomotores Elétricos
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
+                <div className="text-sm text-green-600 dark:text-green-400 mb-1">Total de Veículos</div>
+                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  {stats.totalVeiculosEletricos}
                 </div>
               </div>
-            ))}
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
+                <div className="text-sm text-green-600 dark:text-green-400 mb-1">Total de Registros</div>
+                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  {stats.totalRegistrosCiclomotores}
+                </div>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
+                <div className="text-sm text-green-600 dark:text-green-400 mb-1">Média de Bateria</div>
+                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  {Math.round(stats.mediaBateria)}%
+                </div>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
+                <div className="text-sm text-green-600 dark:text-green-400 mb-1">Bateria Utilizada</div>
+                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  {Math.round(stats.totalBateriaUtilizada)}%
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {stats.kmPorVeiculo
+                .filter(v => v.is_electric)
+                .slice(0, 4)
+                .map((veiculo, index) => (
+                  <div key={index} className="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {veiculo.placa.toUpperCase()}
+                      </span>
+                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">
+                        Bateria: {veiculo.bateria}%
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-green-500 dark:bg-green-400 rounded-full"
+                          style={{ width: `${(veiculo.bateria || 0)}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <span>Autonomia: {Math.round(veiculo.km_total).toLocaleString('pt-BR')} km</span>
+                        <span>Bateria utilizada: {typeof veiculo.bateria === 'number' ? (100 - veiculo.bateria) : 0}%</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -680,16 +831,32 @@ const StatCard = ({
   title: string;
   value: string | number;
   icon: any;
-  variant?: 'blue' | 'blue-light';
+  variant?: 'blue' | 'green' | 'purple' | 'amber' | 'teal' | 'indigo';
 }) => {
   const variants = {
     'blue': {
       icon: 'text-blue-500 dark:text-blue-400',
       bg: 'bg-blue-50 dark:bg-blue-900/20'
     },
-    'blue-light': {
-      icon: 'text-blue-400 dark:text-blue-300',
-      bg: 'bg-blue-50/80 dark:bg-blue-900/10'
+    'green': {
+      icon: 'text-green-500 dark:text-green-400',
+      bg: 'bg-green-50 dark:bg-green-900/20'
+    },
+    'purple': {
+      icon: 'text-purple-500 dark:text-purple-400',
+      bg: 'bg-purple-50 dark:bg-purple-900/20'
+    },
+    'amber': {
+      icon: 'text-amber-500 dark:text-amber-400',
+      bg: 'bg-amber-50 dark:bg-amber-900/20'
+    },
+    'teal': {
+      icon: 'text-teal-500 dark:text-teal-400',
+      bg: 'bg-teal-50 dark:bg-teal-900/20'
+    },
+    'indigo': {
+      icon: 'text-indigo-500 dark:text-indigo-400',
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20'
     }
   };
 
