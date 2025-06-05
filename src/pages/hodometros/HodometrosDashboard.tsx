@@ -236,9 +236,23 @@ const HodometrosDashboard = () => {
               const { readings, isElectric } = vehicleData;
               
               if (isElectric) {
-                // For electric vehicles, sum up trip_lida values
+                // For electric vehicles, sum up trip_lida values or use trip_informada as fallback
                 const tripTotal = readings.reduce((sum: number, reading: any) => {
-                  return sum + (reading.trip_lida || 0);
+                  let currentTripValue = 0;
+                  
+                  // Try to get trip_lida first
+                  if (reading.trip_lida !== null && reading.trip_lida !== undefined && !isNaN(reading.trip_lida)) {
+                    currentTripValue = reading.trip_lida;
+                  } 
+                  // If trip_lida is invalid, try trip_informada
+                  else if (reading.trip_informada !== null && reading.trip_informada !== undefined) {
+                    const parsedValue = parseFloat(reading.trip_informada);
+                    if (!isNaN(parsedValue)) {
+                      currentTripValue = parsedValue;
+                    }
+                  }
+                  
+                  return sum + currentTripValue;
                 }, 0);
                 
                 kmTotalRodado += tripTotal;
@@ -251,10 +265,24 @@ const HodometrosDashboard = () => {
                 const firstReading = sortedReadings[0];
                 const lastReading = sortedReadings[sortedReadings.length - 1];
                 
-                // Calculate difference if both have valid hodometer readings
-                if (firstReading.hod_lido !== null && lastReading.hod_lido !== null && 
-                    lastReading.hod_lido > firstReading.hod_lido) {
-                  kmTotalRodado += (lastReading.hod_lido - firstReading.hod_lido);
+                // Get hodometer values with fallbacks
+                let firstHodValue = 0;
+                if (firstReading.hod_lido !== null && firstReading.hod_lido !== undefined && !isNaN(firstReading.hod_lido)) {
+                  firstHodValue = firstReading.hod_lido;
+                } else if (firstReading.hod_informado !== null && firstReading.hod_informado !== undefined && !isNaN(firstReading.hod_informado)) {
+                  firstHodValue = firstReading.hod_informado;
+                }
+                
+                let lastHodValue = 0;
+                if (lastReading.hod_lido !== null && lastReading.hod_lido !== undefined && !isNaN(lastReading.hod_lido)) {
+                  lastHodValue = lastReading.hod_lido;
+                } else if (lastReading.hod_informado !== null && lastReading.hod_informado !== undefined && !isNaN(lastReading.hod_informado)) {
+                  lastHodValue = lastReading.hod_informado;
+                }
+                
+                // Calculate difference if last value is greater than first
+                if (lastHodValue > firstHodValue) {
+                  kmTotalRodado += (lastHodValue - firstHodValue);
                 }
               }
             });
