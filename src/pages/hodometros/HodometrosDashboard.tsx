@@ -33,12 +33,14 @@ interface DashboardStats {
     data: string;
     is_electric?: boolean;
     bateria?: number | null;
+    trip_total?: number;
   }[];
   kmPorMotorista: {
     nome: string;
     km_total: number;
     data: string;
     leituras: number;
+    trip_total?: number;
   }[];
   kmPorCliente: {
     nome: string;
@@ -231,7 +233,8 @@ const HodometrosDashboard = () => {
             km_total: data.is_electric ? data.trip_total || data.km_total : data.km_total,
             data: data.data,
             is_electric: data.is_electric,
-            bateria: data.bateria
+            bateria: data.bateria,
+            trip_total: data.trip_total
           }))
           .sort((a, b) => b.km_total - a.km_total);
 
@@ -379,14 +382,19 @@ const HodometrosDashboard = () => {
         // Leituras inconsistentes
         const leiturasInconsistentes = hodometros
           .filter(h => {
+            // Remove any dots or commas before comparing
+            const cleanHodLido = h.hod_lido ? String(h.hod_lido).replace(/[.,]/g, '') : '';
+            const cleanHodInformado = h.hod_informado ? String(h.hod_informado).replace(/[.,]/g, '') : '';
+            const cleanTripLida = h.trip_lida ? String(h.trip_lida).replace(/[.,]/g, '') : '';
+            const cleanTripInformada = h.trip_informada ? String(h.trip_informada).replace(/[.,]/g, '') : '';
+            
             // Para automóveis (sem bateria), verificar hod_lido e hod_informado
             if (h.bateria === null) {
-              return h.hod_lido !== null && h.hod_informado !== null && h.hod_lido !== h.hod_informado;
+              return cleanHodLido !== '' && cleanHodInformado !== '' && cleanHodLido !== cleanHodInformado;
             }
             // Para ciclomotores (com bateria), verificar trip_lida e trip_informada
             else {
-              return h.trip_lida !== null && h.trip_informada !== null && 
-                     h.trip_lida.toString() !== h.trip_informada.toString();
+              return cleanTripLida !== '' && cleanTripInformada !== '' && cleanTripLida !== cleanTripInformada;
             }
           })
           .map(h => ({
