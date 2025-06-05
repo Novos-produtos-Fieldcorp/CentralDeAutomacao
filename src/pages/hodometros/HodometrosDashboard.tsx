@@ -241,7 +241,7 @@ const HodometrosDashboard = () => {
                   let currentTripValue = 0;
                   
                   // Try to get trip_lida first
-                  if (reading.trip_lida !== null && reading.trip_lida !== undefined && !isNaN(reading.trip_lida)) {
+                  if (typeof reading.trip_lida === 'number' && !isNaN(reading.trip_lida)) {
                     currentTripValue = reading.trip_lida;
                   } 
                   // If trip_lida is invalid, try trip_informada
@@ -267,16 +267,16 @@ const HodometrosDashboard = () => {
                 
                 // Get hodometer values with fallbacks
                 let firstHodValue = 0;
-                if (firstReading.hod_lido !== null && firstReading.hod_lido !== undefined && !isNaN(firstReading.hod_lido)) {
+                if (typeof firstReading.hod_lido === 'number' && !isNaN(firstReading.hod_lido)) {
                   firstHodValue = firstReading.hod_lido;
-                } else if (firstReading.hod_informado !== null && firstReading.hod_informado !== undefined && !isNaN(firstReading.hod_informado)) {
+                } else if (typeof firstReading.hod_informado === 'number' && !isNaN(firstReading.hod_informado)) {
                   firstHodValue = firstReading.hod_informado;
                 }
                 
                 let lastHodValue = 0;
-                if (lastReading.hod_lido !== null && lastReading.hod_lido !== undefined && !isNaN(lastReading.hod_lido)) {
+                if (typeof lastReading.hod_lido === 'number' && !isNaN(lastReading.hod_lido)) {
                   lastHodValue = lastReading.hod_lido;
-                } else if (lastReading.hod_informado !== null && lastReading.hod_informado !== undefined && !isNaN(lastReading.hod_informado)) {
+                } else if (typeof lastReading.hod_informado === 'number' && !isNaN(lastReading.hod_informado)) {
                   lastHodValue = lastReading.hod_informado;
                 }
                 
