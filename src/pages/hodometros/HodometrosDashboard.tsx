@@ -59,6 +59,8 @@ interface DashboardStats {
     isElectric: boolean;
     foto_hodometro?: string | null;
     id_hodometro: number;
+    trip_lida?: number | null;
+    trip_informada?: string | null;
   }[];
   totalInconsistencias: number;
 }
@@ -196,10 +198,23 @@ const HodometrosDashboard = () => {
             km_total: 0, 
             data: h.data, 
             is_electric: isElectric,
-            bateria: isElectric ? h.bateria : null
+            bateria: isElectric ? h.bateria : null,
+            trip_total: 0
           };
           
-          current.km_total += h.km_rodado || 0;
+          // For electric vehicles, use trip_lida if available
+          if (isElectric) {
+            // Add trip_lida to trip_total
+            if (h.trip_lida !== null && h.trip_lida !== undefined) {
+              current.trip_total += h.trip_lida;
+            }
+            // Also add km_rodado to km_total
+            current.km_total += h.km_rodado || 0;
+          } else {
+            // For regular vehicles, just add km_rodado
+            current.km_total += h.km_rodado || 0;
+          }
+          
           current.data = h.data;
           
           // Update battery info for electric vehicles
@@ -213,7 +228,7 @@ const HodometrosDashboard = () => {
         const kmPorVeiculo = Array.from(veiculosMap.entries())
           .map(([placa, data]) => ({
             placa,
-            km_total: data.km_total,
+            km_total: data.is_electric ? data.trip_total || data.km_total : data.km_total,
             data: data.data,
             is_electric: data.is_electric,
             bateria: data.bateria
@@ -223,14 +238,29 @@ const HodometrosDashboard = () => {
         // KM por motorista
         const motoristasMap = new Map();
         hodometros.forEach(h => {
-          if (!h.motorista?.nome || !h.km_rodado) return;
+          if (!h.motorista?.nome) return;
           
+          const isElectric = h.bateria !== null && h.bateria !== undefined;
           const current = motoristasMap.get(h.motorista.nome) || { 
             km_total: 0, 
             data: h.data,
-            leituras: 0
+            leituras: 0,
+            trip_total: 0
           };
-          current.km_total += h.km_rodado;
+          
+          // For electric vehicles, use trip_lida if available
+          if (isElectric) {
+            // Add trip_lida to trip_total
+            if (h.trip_lida !== null && h.trip_lida !== undefined) {
+              current.trip_total += h.trip_lida;
+            }
+            // Also add km_rodado to km_total
+            current.km_total += h.km_rodado || 0;
+          } else {
+            // For regular vehicles, just add km_rodado
+            current.km_total += h.km_rodado || 0;
+          }
+          
           current.data = h.data;
           current.leituras += 1;
           motoristasMap.set(h.motorista.nome, current);
@@ -239,7 +269,7 @@ const HodometrosDashboard = () => {
         const kmPorMotorista = Array.from(motoristasMap.entries())
           .map(([nome, data]) => ({
             nome,
-            km_total: data.km_total,
+            km_total: vehicleCategory === 'ciclomotores' ? data.trip_total || data.km_total : data.km_total,
             data: data.data,
             leituras: data.leituras
           }))
@@ -248,10 +278,28 @@ const HodometrosDashboard = () => {
         // KM por cliente
         const clientesMap = new Map();
         hodometros.forEach(h => {
-          if (!h.cliente?.nome || !h.km_rodado) return;
+          if (!h.cliente?.nome) return;
           
-          const current = clientesMap.get(h.cliente.nome) || { km_total: 0, data: h.data };
-          current.km_total += h.km_rodado;
+          const isElectric = h.bateria !== null && h.bateria !== undefined;
+          const current = clientesMap.get(h.cliente.nome) || { 
+            km_total: 0, 
+            data: h.data,
+            trip_total: 0
+          };
+          
+          // For electric vehicles, use trip_lida if available
+          if (isElectric) {
+            // Add trip_lida to trip_total
+            if (h.trip_lida !== null && h.trip_lida !== undefined) {
+              current.trip_total += h.trip_lida;
+            }
+            // Also add km_rodado to km_total
+            current.km_total += h.km_rodado || 0;
+          } else {
+            // For regular vehicles, just add km_rodado
+            current.km_total += h.km_rodado || 0;
+          }
+          
           current.data = h.data;
           clientesMap.set(h.cliente.nome, current);
         });
@@ -259,7 +307,7 @@ const HodometrosDashboard = () => {
         const kmPorCliente = Array.from(clientesMap.entries())
           .map(([nome, data]) => ({
             nome,
-            km_total: data.km_total,
+            km_total: vehicleCategory === 'ciclomotores' ? data.trip_total || data.km_total : data.km_total,
             data: data.data
           }))
           .sort((a, b) => b.km_total - a.km_total);
@@ -270,7 +318,14 @@ const HodometrosDashboard = () => {
         // Primeiro, adicionar "Sem operação" para leituras sem cliente
         const semOperacaoKm = hodometros
           .filter(h => !h.cliente_id)
-          .reduce((sum, h) => sum + (h.km_rodado || 0), 0);
+          .reduce((sum, h) => {
+            const isElectric = h.bateria !== null && h.bateria !== undefined;
+            if (isElectric && vehicleCategory === 'ciclomotores') {
+              return sum + (h.trip_lida || 0);
+            } else {
+              return sum + (h.km_rodado || 0);
+            }
+          }, 0);
         
         if (semOperacaoKm > 0) {
           operacoesMap.set('Sem operação', { km_total: semOperacaoKm });
@@ -278,22 +333,45 @@ const HodometrosDashboard = () => {
         
         // Depois, agrupar por cliente
         hodometros.forEach(h => {
-          if (!h.cliente?.nome || !h.km_rodado) return;
+          if (!h.cliente?.nome) return;
           
-          const current = operacoesMap.get(h.cliente.nome) || { km_total: 0 };
-          current.km_total += h.km_rodado;
+          const isElectric = h.bateria !== null && h.bateria !== undefined;
+          const current = operacoesMap.get(h.cliente.nome) || { 
+            km_total: 0,
+            trip_total: 0
+          };
+          
+          // For electric vehicles, use trip_lida if available
+          if (isElectric) {
+            // Add trip_lida to trip_total
+            if (h.trip_lida !== null && h.trip_lida !== undefined) {
+              current.trip_total += h.trip_lida;
+            }
+            // Also add km_rodado to km_total
+            current.km_total += h.km_rodado || 0;
+          } else {
+            // For regular vehicles, just add km_rodado
+            current.km_total += h.km_rodado || 0;
+          }
+          
           operacoesMap.set(h.cliente.nome, current);
         });
         
         // Calcular o total para percentuais
         const totalKmOperacoes = Array.from(operacoesMap.values())
-          .reduce((sum, op) => sum + op.km_total, 0);
+          .reduce((sum, op) => {
+            if (vehicleCategory === 'ciclomotores') {
+              return sum + (op.trip_total || op.km_total);
+            } else {
+              return sum + op.km_total;
+            }
+          }, 0);
         
         // Formatar dados de operações com percentuais
         const kmPorOperacao = Array.from(operacoesMap.entries())
           .map(([nome, data]) => ({
-            nome,
-            km_total: data.km_total,
+            nome, 
+            km_total: vehicleCategory === 'ciclomotores' ? (data.trip_total || data.km_total) : data.km_total,
             percentual: totalKmOperacoes > 0 ? (data.km_total / totalKmOperacoes) * 100 : 0
           }))
           .sort((a, b) => b.km_total - a.km_total);
@@ -314,6 +392,8 @@ const HodometrosDashboard = () => {
           .map(h => ({
             hod_lido: h.hod_lido || 0,
             hod_informado: h.hod_informado || 0,
+            trip_lida: h.trip_lida,
+            trip_informada: h.trip_informada,
             nome: h.motorista?.nome || 'Desconhecido',
             data: h.data,
             placa: h.veiculo?.placa?.toUpperCase() || 'Desconhecido',
@@ -641,12 +721,12 @@ const HodometrosDashboard = () => {
                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
                         {leitura.isElectric 
-                          ? '-'
+                          ? leitura.trip_lida?.toLocaleString('pt-BR') || '-'
                           : leitura.hod_lido.toLocaleString('pt-BR')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
                         {leitura.isElectric 
-                          ? '-'
+                          ? leitura.trip_informada || '-'
                           : leitura.hod_informado.toLocaleString('pt-BR')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
