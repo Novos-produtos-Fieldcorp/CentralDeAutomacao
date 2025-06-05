@@ -53,14 +53,14 @@ interface DashboardStats {
   leiturasInconsistentes: {
     hod_lido: number;
     hod_informado: number;
+    trip_lida?: number | null;
+    trip_informada?: string | null;
     nome: string;
     data: string;
     placa: string;
     isElectric: boolean;
     foto_hodometro?: string | null;
     id_hodometro: number;
-    trip_lida?: number | null;
-    trip_informada?: string | null;
   }[];
   totalInconsistencias: number;
 }
@@ -597,24 +597,21 @@ const HodometrosDashboard = () => {
                 </p>
               </div>
             ) : (
-              stats.kmPorOperacao.slice(0, 5).map((operacao, index) => (
+              stats.kmPorOperacao.slice(0, 5).map((item, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {operacao.nome}
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {item.nome}
                     </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {Math.round(operacao.km_total).toLocaleString('pt-BR')} km
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {Math.round(item.km_total).toLocaleString('pt-BR')} km
                     </span>
                   </div>
                   <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
-                      style={{ width: `${operacao.percentual}%` }}
+                      style={{ width: `${item.percentual}%` }}
                     />
-                  </div>
-                  <div className="text-xs text-right text-gray-500 dark:text-gray-400">
-                    {operacao.percentual.toFixed(1)}%
                   </div>
                 </div>
               ))
@@ -644,7 +641,7 @@ const HodometrosDashboard = () => {
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
                       {motorista.nome}
                     </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
                       {motorista.leituras} leituras
                     </span>
                   </div>
