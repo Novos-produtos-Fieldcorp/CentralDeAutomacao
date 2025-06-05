@@ -370,7 +370,7 @@ const HodometrosDashboard = () => {
             data: data.data,
             leituras: data.leituras
           }))
-          .sort((a, b) => b.km_total - a.km_total);
+          .sort((a, b) => b.leituras - a.leituras); // Sort by number of readings (most to least)
 
         // KM por cliente
         const clientesMap = new Map();

@@ -292,7 +292,7 @@ const HodometrosRelatorio = () => {
                   {report.veiculos.map((veiculo, index) => (
                     <tr key={`${report.motorista_id}-${veiculo.placa}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       {index === 0 ? (
-                        <td className="px-6 py-4 whitespace-nowrap" rowSpan={report.veiculos.length}>
+                        <td className="px-6 py-4 whitespace-nowrap\" rowSpan={report.veiculos.length}>
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {report.nome}
                           </div>
