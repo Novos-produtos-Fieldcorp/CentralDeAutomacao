@@ -187,8 +187,23 @@ const HodometrosDashboard = () => {
           });
         }
 
-        // Total KM
-        const kmTotalRodado = hodometros.reduce((acc, curr) => acc + (curr.km_rodado || 0), 0);
+        // Total KM - separate calculations for regular and electric vehicles
+        let kmTotalRodado = 0;
+        
+        // For regular vehicles (non-electric)
+        const regularVehicleReadings = hodometros.filter(h => h.bateria === null);
+        kmTotalRodado += regularVehicleReadings.reduce((acc, curr) => acc + (curr.km_rodado || 0), 0);
+        
+        // For electric vehicles, we'll add their trip_lida values to the total
+        const electricKmTotal = electricVehicleReadings.reduce((acc, curr) => {
+          // For electric vehicles, use trip_lida if available, otherwise km_rodado
+          return acc + (curr.trip_lida || curr.km_rodado || 0);
+        }, 0);
+        
+        // Add electric vehicle KM to total if we're including them in the current category
+        if (vehicleCategory !== 'automoveis') {
+          kmTotalRodado += electricKmTotal;
+        }
 
         // KM por veículo
         const veiculosMap = new Map();
@@ -326,7 +341,7 @@ const HodometrosDashboard = () => {
           }, 0);
         
         if (semOperacaoKm > 0) {
-          operacoesMap.set('Sem operação', { km_total: semOperacaoKm });
+          operacoesMap.set('Sem operação', { km_total: semOperacaoKm, trip_total: 0 });
         }
         
         // Depois, agrupar por cliente
@@ -370,7 +385,7 @@ const HodometrosDashboard = () => {
           .map(([nome, data]) => ({
             nome, 
             km_total: vehicleCategory === 'ciclomotores' ? (data.trip_total || data.km_total) : data.km_total,
-            percentual: totalKmOperacoes > 0 ? (data.km_total / totalKmOperacoes) * 100 : 0
+            percentual: totalKmOperacoes > 0 ? ((vehicleCategory === 'ciclomotores' ? (data.trip_total || data.km_total) : data.km_total) / totalKmOperacoes) * 100 : 0
           }))
           .sort((a, b) => b.km_total - a.km_total);
 
@@ -409,13 +424,51 @@ const HodometrosDashboard = () => {
         const totalInconsistencias = leiturasInconsistentes.length;
 
         // Calculate averages
-        const regularVehicles = veiculosMap.size - totalVeiculosEletricos;
-        const kmMediaPorVeiculo = regularVehicles > 0 
-          ? kmTotalRodado / regularVehicles 
-          : 0;
-        const kmMediaPorMotorista = motoristasMap.size > 0 
-          ? kmTotalRodado / motoristasMap.size 
-          : 0;
+        // Count unique vehicles (excluding electric ones if filtering for automobiles only)
+        const uniqueVehicles = new Set();
+        hodometros.forEach(h => {
+          if (h.veiculo?.placa) {
+            if (vehicleCategory === 'automoveis' && h.bateria !== null) {
+              // Skip electric vehicles when only showing automobiles
+              return;
+            }
+            if (vehicleCategory === 'ciclomotores' && h.bateria === null) {
+              // Skip regular vehicles when only showing electric ones
+              return;
+            }
+            uniqueVehicles.add(h.veiculo.placa);
+          }
+        });
+        
+        const uniqueVehicleCount = uniqueVehicles.size;
+        
+        // Calculate KM per vehicle based on the filtered category
+        let categoryKmTotal = 0;
+        if (vehicleCategory === 'automoveis') {
+          // Only regular vehicles
+          categoryKmTotal = regularVehicleReadings.reduce((acc, curr) => acc + (curr.km_rodado || 0), 0);
+        } else if (vehicleCategory === 'ciclomotores') {
+          // Only electric vehicles - use trip_lida values
+          categoryKmTotal = electricVehicleReadings.reduce((acc, curr) => acc + (curr.trip_lida || curr.km_rodado || 0), 0);
+        } else {
+          // All vehicles
+          categoryKmTotal = kmTotalRodado;
+        }
+        
+        const kmMediaPorVeiculo = uniqueVehicleCount > 0 ? categoryKmTotal / uniqueVehicleCount : 0;
+        
+        // Count unique drivers
+        const uniqueDrivers = new Set();
+        hodometros.forEach(h => {
+          if (h.motorista_id) {
+            if (vehicleCategory === 'automoveis' && h.bateria !== null) return;
+            if (vehicleCategory === 'ciclomotores' && h.bateria === null) return;
+            uniqueDrivers.add(h.motorista_id);
+          }
+        });
+        
+        const uniqueDriverCount = uniqueDrivers.size;
+        const kmMediaPorMotorista = uniqueDriverCount > 0 ? categoryKmTotal / uniqueDriverCount : 0;
 
         setStats({
           totalLeituras,
