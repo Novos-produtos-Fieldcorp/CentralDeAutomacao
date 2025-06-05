@@ -187,23 +187,53 @@ const HodometrosDashboard = () => {
           });
         }
 
-        // Total KM - separate calculations for regular and electric vehicles
-        let kmTotalRodado = 0;
-        
-        // For regular vehicles (non-electric)
+        // Calculate KM total rodado
+        // 1. Group readings by vehicle and date to calculate daily differences for regular vehicles
         const regularVehicleReadings = hodometros.filter(h => h.bateria === null);
-        kmTotalRodado += regularVehicleReadings.reduce((acc, curr) => acc + (curr.km_rodado || 0), 0);
+        const vehicleDailyReadings = new Map<string, Map<string, number[]>>();
         
-        // For electric vehicles, we'll add their trip_lida values to the total
-        const electricKmTotal = electricVehicleReadings.reduce((acc, curr) => {
-          // For electric vehicles, use trip_lida if available, otherwise km_rodado
-          return acc + (curr.trip_lida || curr.km_rodado || 0);
+        // Group readings by vehicle and date
+        regularVehicleReadings.forEach(reading => {
+          if (!reading.veiculo?.placa) return;
+          
+          const vehiclePlate = reading.veiculo.placa;
+          const date = reading.data;
+          
+          if (!vehicleDailyReadings.has(vehiclePlate)) {
+            vehicleDailyReadings.set(vehiclePlate, new Map<string, number[]>());
+          }
+          
+          const vehicleMap = vehicleDailyReadings.get(vehiclePlate)!;
+          if (!vehicleMap.has(date)) {
+            vehicleMap.set(date, []);
+          }
+          
+          if (reading.hod_lido !== null && reading.hod_lido !== undefined) {
+            vehicleMap.get(date)!.push(reading.hod_lido);
+          }
+        });
+        
+        // Calculate KM for regular vehicles (difference between max and min readings per day)
+        let regularVehiclesKmTotal = 0;
+        vehicleDailyReadings.forEach(dateMap => {
+          dateMap.forEach(readings => {
+            if (readings.length >= 2) {
+              // Sort readings to find min and max
+              const sortedReadings = [...readings].sort((a, b) => a - b);
+              const minReading = sortedReadings[0];
+              const maxReading = sortedReadings[sortedReadings.length - 1];
+              regularVehiclesKmTotal += (maxReading - minReading);
+            }
+          });
+        });
+        
+        // 2. Sum all trip_lida values for electric vehicles
+        const electricVehiclesKmTotal = electricVehicleReadings.reduce((sum, reading) => {
+          return sum + (reading.trip_lida || 0);
         }, 0);
         
-        // Add electric vehicle KM to total if we're including them in the current category
-        if (vehicleCategory !== 'automoveis') {
-          kmTotalRodado += electricKmTotal;
-        }
+        // 3. Combine both totals
+        const kmTotalRodado = regularVehiclesKmTotal + electricVehiclesKmTotal;
 
         // KM por veículo
         const veiculosMap = new Map();
@@ -423,7 +453,6 @@ const HodometrosDashboard = () => {
           
         const totalInconsistencias = leiturasInconsistentes.length;
 
-        // Calculate averages
         // Count unique vehicles (excluding electric ones if filtering for automobiles only)
         const uniqueVehicles = new Set();
         hodometros.forEach(h => {
@@ -446,10 +475,10 @@ const HodometrosDashboard = () => {
         let categoryKmTotal = 0;
         if (vehicleCategory === 'automoveis') {
           // Only regular vehicles
-          categoryKmTotal = regularVehicleReadings.reduce((acc, curr) => acc + (curr.km_rodado || 0), 0);
+          categoryKmTotal = regularVehiclesKmTotal;
         } else if (vehicleCategory === 'ciclomotores') {
           // Only electric vehicles - use trip_lida values
-          categoryKmTotal = electricVehicleReadings.reduce((acc, curr) => acc + (curr.trip_lida || curr.km_rodado || 0), 0);
+          categoryKmTotal = electricVehiclesKmTotal;
         } else {
           // All vehicles
           categoryKmTotal = kmTotalRodado;
