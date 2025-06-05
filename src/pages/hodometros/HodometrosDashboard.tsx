@@ -650,7 +650,7 @@ const HodometrosDashboard = () => {
                   </div>
                   <div className="h-2 bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-purple-500 dark:bg-purple-400 rounded-full transition-all duration-300"
+                      className="h-full bg-purple-500 dark:bg-purple-400 rounded-full"
                       style={{ width: `${(motorista.leituras / Math.max(...stats.kmPorMotorista.map(m => m.leituras))) * 100}%` }}
                     />
                   </div>
@@ -907,8 +907,7 @@ const HodometrosDashboard = () => {
                         />
                       </div>
                       <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                        <span>Autonomia: {Math.round(veiculo.km_total).toLocaleString('pt-BR')} km</span>
-                        <span>Bateria utilizada: {typeof veiculo.bateria === 'number' ? (100 - veiculo.bateria) : 0}%</span>
+                        <span>KM Total: {Math.round(veiculo.km_total).toLocaleString('pt-BR')} km</span>
                       </div>
                     </div>
                   </div>
