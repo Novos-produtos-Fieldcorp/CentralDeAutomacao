@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Gauge, Clock, Activity, TrendingUp, Store, Users, 
-  Calendar, Filter, AlertCircle, Search
+  Calendar, Filter, AlertCircle, Search, Camera, X
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
@@ -39,6 +39,8 @@ interface DashboardStats {
     data: string;
     placa: string;
     isElectric: boolean;
+    foto_hodometro?: string | null;
+    id_hodometro: number;
   }[];
   totalInconsistencias: number;
 }
@@ -62,6 +64,8 @@ const HodometrosDashboard = () => {
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('1month');
   const [vehicleCategory, setVehicleCategory] = useState<VehicleCategory>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -208,7 +212,9 @@ const HodometrosDashboard = () => {
             nome: h.motorista?.nome || 'Desconhecido',
             data: h.data,
             placa: h.veiculo?.placa?.toUpperCase() || 'Desconhecido',
-            isElectric: h.bateria !== null
+            isElectric: h.bateria !== null,
+            foto_hodometro: h.foto_hodometro,
+            id_hodometro: h.id_hodometro
           }))
           .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
         
@@ -250,6 +256,15 @@ const HodometrosDashboard = () => {
       item.placa.toLowerCase().includes(searchLower)
     );
   });
+
+  const handleShowPhoto = (photo: string | null | undefined) => {
+    if (photo) {
+      setSelectedPhoto(photo);
+      setShowPhotoModal(true);
+    } else {
+      toast.error('Nenhuma foto disponível');
+    }
+  };
 
   if (loading) {
     return <LoadingSpinner />;
@@ -460,6 +475,9 @@ const HodometrosDashboard = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Placa
                     </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Foto
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -483,6 +501,16 @@ const HodometrosDashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
                         {leitura.placa}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleShowPhoto(leitura.foto_hodometro)}
+                          className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                   transition-colors ${!leitura.foto_hodometro && 'opacity-50 cursor-not-allowed'}`}
+                          title={leitura.foto_hodometro ? "Ver foto do hodômetro" : "Sem foto disponível"}
+                        >
+                          <Camera size={18} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -530,6 +558,38 @@ const HodometrosDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Photo Modal */}
+      {showPhotoModal && selectedPhoto && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowPhotoModal(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                Foto do Hodômetro
+              </h3>
+              <button
+                onClick={() => setShowPhotoModal(false)}
+                className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="relative aspect-video">
+              <img
+                src={selectedPhoto}
+                alt="Foto do Hodômetro"
+                className="absolute inset-0 w-full h-full object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
