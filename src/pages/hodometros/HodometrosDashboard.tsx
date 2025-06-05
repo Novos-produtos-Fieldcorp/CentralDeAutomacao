@@ -31,11 +31,14 @@ interface DashboardStats {
     percentual: number;
   }[];
   leiturasInconsistentes: {
-    hod_lido: number;
-    hod_informado: number;
+    hod_lido?: number | null;
+    hod_informado?: number | null;
+    trip_lida?: number | null;
+    trip_informada?: string | null;
     nome: string;
     data: string;
     placa: string;
+    isElectric: boolean;
   }[];
   totalInconsistencias: number;
 }
@@ -186,13 +189,26 @@ const HodometrosDashboard = () => {
         
         // Leituras inconsistentes
         const leiturasInconsistentes = hodometros
-          .filter(h => h.comparacao_leitura === false && h.hod_lido !== null && h.hod_informado !== null)
+          .filter(h => {
+            // Para automóveis (sem bateria), verificar hod_lido e hod_informado
+            if (h.bateria === null) {
+              return h.hod_lido !== null && h.hod_informado !== null && h.hod_lido !== h.hod_informado;
+            }
+            // Para ciclomotores (com bateria), verificar trip_lida e trip_informada
+            else {
+              return h.trip_lida !== null && h.trip_informada !== null && 
+                     h.trip_lida.toString() !== h.trip_informada.toString();
+            }
+          })
           .map(h => ({
-            hod_lido: h.hod_lido || 0,
-            hod_informado: h.hod_informado || 0,
+            hod_lido: h.hod_lido,
+            hod_informado: h.hod_informado,
+            trip_lida: h.trip_lida,
+            trip_informada: h.trip_informada,
             nome: h.motorista?.nome || 'Desconhecido',
             data: h.data,
-            placa: h.veiculo?.placa?.toUpperCase() || 'Desconhecido'
+            placa: h.veiculo?.placa?.toUpperCase() || 'Desconhecido',
+            isElectric: h.bateria !== null
           }))
           .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
         
@@ -430,10 +446,10 @@ const HodometrosDashboard = () => {
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Hodômetro Lido
+                      {vehicleCategory === 'ciclomotores' ? 'Trip Lida' : 'Hodômetro Lido'}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Hodômetro Informado
+                      {vehicleCategory === 'ciclomotores' ? 'Trip Informada' : 'Hodômetro Informado'}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Motorista
@@ -450,10 +466,14 @@ const HodometrosDashboard = () => {
                   {filteredInconsistencias.map((leitura, index) => (
                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                        {leitura.hod_lido.toLocaleString('pt-BR')}
+                        {leitura.isElectric 
+                          ? (leitura.trip_lida?.toLocaleString('pt-BR') || '-')
+                          : (leitura.hod_lido?.toLocaleString('pt-BR') || '-')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                        {leitura.hod_informado.toLocaleString('pt-BR')}
+                        {leitura.isElectric 
+                          ? (leitura.trip_informada || '-')
+                          : (leitura.hod_informado?.toLocaleString('pt-BR') || '-')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
                         {leitura.nome}
