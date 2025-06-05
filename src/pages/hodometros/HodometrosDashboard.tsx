@@ -219,11 +219,6 @@ const HodometrosDashboard = () => {
           
           current.data = h.data;
           
-          // Update battery info for electric vehicles
-          if (isElectric) {
-            current.bateria = h.bateria;
-          }
-          
           veiculosMap.set(h.veiculo.placa, current);
         });
 
@@ -587,7 +582,7 @@ const HodometrosDashboard = () => {
         />
       </div>
 
-      {/* Main Dashboard Grid */}
+      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* KM por Operação */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
