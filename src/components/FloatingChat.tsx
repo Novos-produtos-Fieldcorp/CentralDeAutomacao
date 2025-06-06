@@ -41,6 +41,13 @@ interface Message {
   message_type: 'outgoing' | 'incoming';
   content_type: 'text' | 'image' | 'file' | 'audio';
   status: 'sending' | 'sent' | 'delivered' | 'read';
+  sender?: {
+    type: 'agent_bot' | 'user';
+    phone_number?: string;
+    avatar_url?: string;
+    thumbnail?: string;
+    name?: string;
+  };
 }
 
 interface Conversation {
@@ -635,7 +642,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           message_type: msg.message_type,
           content_type: msg.content_type || 'text',
           status: msg.status || 'sent',
-          attachments: msg.attachments || []
+          attachments: msg.attachments || [],
+          sender: msg.sender
         }));
         
         setMessages(prevMessages => {
@@ -1645,11 +1653,24 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
                     {/* Message */}
                     <div
-                      className={`flex ${message.message_type === 'incoming' ? 'justify-end' : 'justify-start'}`}
+                      className={`flex items-start gap-2 ${message.sender?.type === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
+                      {message.sender?.type !== 'user' && (
+                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
+                          {message.sender?.avatar_url || message.sender?.thumbnail ? (
+                            <img 
+                              src={message.sender.avatar_url || message.sender.thumbnail} 
+                              alt={message.sender.name || 'Avatar'} 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            message.sender?.name?.[0]?.toUpperCase() || 'A'
+                          )}
+                        </div>
+                      )}
                       <div
                         className={`max-w-[80%] rounded-lg p-3 ${
-                          message.message_type === 'incoming'
+                          message.sender?.type === 'user'
                             ? 'bg-blue-500 text-white ml-auto'
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
                         }`}
@@ -1683,14 +1704,34 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                         ) : (
                           <p className="whitespace-pre-wrap break-words">{message.content}</p>
                         )}
-                        <span className={`text-xs mt-1 block ${
-                          message.message_type === 'incoming' 
-                            ? 'text-blue-100' 
-                            : 'text-gray-500 dark:text-gray-400'
-                        }`}>
-                          {formatTime(message.created_at)}
-                        </span>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className={`text-xs ${
+                            message.sender?.type === 'user'
+                              ? 'text-blue-100' 
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}>
+                            {formatTime(message.created_at)}
+                          </span>
+                          {message.sender?.type !== 'user' && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                              {message.sender?.name}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      {message.sender?.type === 'user' && (
+                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
+                          {message.sender?.avatar_url || message.sender?.thumbnail ? (
+                            <img 
+                              src={message.sender.avatar_url || message.sender.thumbnail} 
+                              alt={message.sender.name || 'Avatar'} 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            message.sender?.name?.[0]?.toUpperCase() || 'U'
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
