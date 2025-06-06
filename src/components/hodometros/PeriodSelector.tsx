@@ -1,5 +1,5 @@
-import React from 'react';
-import { Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, ChevronDown } from 'lucide-react';
 
 export interface DateRange {
   startDate: string;
@@ -19,81 +19,128 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   onPeriodChange,
   onDateRangeChange
 }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const getPeriodLabel = () => {
+    switch (periodType) {
+      case '1day': return 'Hoje';
+      case '15days': return 'Últimos 15 dias';
+      case '30days': return 'Últimos 30 dias';
+      case 'all': return 'Todos';
+      case 'custom': return 'Personalizado';
+      default: return 'Selecionar período';
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => onPeriodChange('1day')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            periodType === '1day'
-              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-          }`}
-        >
-          Hoje
-        </button>
-        <button
-          onClick={() => onPeriodChange('15days')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            periodType === '15days'
-              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-          }`}
-        >
-          Últimos 15 dias
-        </button>
-        <button
-          onClick={() => onPeriodChange('30days')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            periodType === '30days'
-              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-          }`}
-        >
-          Últimos 30 dias
-        </button>
-        <button
-          onClick={() => onPeriodChange('all')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            periodType === 'all'
-              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-          }`}
-        >
-          Todos
-        </button>
-        <button
-          onClick={() => onPeriodChange('custom')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            periodType === 'custom'
-              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-          }`}
-        >
-          Personalizado
-        </button>
-      </div>
+    <div className="relative">
+      <button
+        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+        className="w-full flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100"
+      >
+        <div className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-gray-400" />
+          <span>{getPeriodLabel()}</span>
+          {periodType === 'custom' && (
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              ({dateRange.startDate.split('-').reverse().join('/')} - {dateRange.endDate.split('-').reverse().join('/')})
+            </span>
+          )}
+        </div>
+        <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
+      </button>
+
+      {isDropdownOpen && (
+        <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+          <div className="p-2 space-y-1">
+            <button
+              onClick={() => {
+                onPeriodChange('1day');
+                setIsDropdownOpen(false);
+              }}
+              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                periodType === '1day'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Hoje
+            </button>
+            <button
+              onClick={() => {
+                onPeriodChange('15days');
+                setIsDropdownOpen(false);
+              }}
+              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                periodType === '15days'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Últimos 15 dias
+            </button>
+            <button
+              onClick={() => {
+                onPeriodChange('30days');
+                setIsDropdownOpen(false);
+              }}
+              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                periodType === '30days'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Últimos 30 dias
+            </button>
+            <button
+              onClick={() => {
+                onPeriodChange('all');
+                setIsDropdownOpen(false);
+              }}
+              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                periodType === 'all'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => {
+                onPeriodChange('custom');
+                setIsDropdownOpen(false);
+              }}
+              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                periodType === 'custom'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Personalizado
+            </button>
+          </div>
+        </div>
+      )}
 
       {periodType === 'custom' && (
-        <div className="flex items-center gap-2">
-          <Calendar className="text-gray-400" size={18} />
-          <div className="flex items-center gap-2">
+        <div className="mt-2 flex items-center gap-2 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">
+          <div className="flex items-center gap-2 w-full">
             <input
               type="date"
               value={dateRange.startDate}
               onChange={(e) => onDateRangeChange({ ...dateRange, startDate: e.target.value })}
               className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg 
                        focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 w-full"
             />
-            <span className="text-gray-500">até</span>
+            <span className="text-gray-500 dark:text-gray-400">até</span>
             <input
               type="date"
               value={dateRange.endDate}
               onChange={(e) => onDateRangeChange({ ...dateRange, endDate: e.target.value })}
               className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg 
                        focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 w-full"
             />
           </div>
         </div>
