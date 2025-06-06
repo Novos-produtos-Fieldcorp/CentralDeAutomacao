@@ -566,67 +566,76 @@ const HodometrosLista = () => {
                             </div>
                             
                             <div className="overflow-x-auto">
-                              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead className="bg-gray-100 dark:bg-gray-800">
-                                  <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hora</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                  {data.hodometros.map((hodometro) => (
-                                    <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                        {new Date(hodometro.data).toLocaleDateString('pt-BR')}
-                                      </td>
-                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                        {hodometro.hora}
-                                      </td>
-                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                        {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                                          <span>Bateria: {hodometro.bateria}%</span>
-                                        ) : (
-                                          <span>{hodometro.hod_lido?.toLocaleString('pt-BR')} km</span>
-                                        )}
-                                      </td>
-                                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
-                                        {hodometro.km_rodado?.toLocaleString('pt-BR')} km
-                                      </td>
-                                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex items-center justify-end space-x-3">
-                                          <button
-                                            onClick={(e) => handleShowPhoto(e, hodometro.foto_hodometro)}
-                                            className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                                                     transition-colors ${!hodometro.foto_hodometro && 'opacity-50 cursor-not-allowed'}`}
-                                            title={hodometro.foto_hodometro ? "Ver foto do hodômetro" : "Sem foto disponível"}
-                                          >
-                                            <Camera size={18} />
-                                          </button>
-                                          <button
-                                            onClick={(e) => handleEdit(e, hodometro)}
-                                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 
-                                                     transition-colors"
-                                            title="Editar"
-                                          >
-                                            <Edit2 size={18} />
-                                          </button>
-                                          <button
-                                            onClick={(e) => handleDelete(e, hodometro)}
-                                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                                                     transition-colors"
-                                            title="Excluir"
-                                          >
-                                            <Trash2 size={18} />
-                                          </button>
-                                        </div>
-                                      </td>
+                              <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                  <thead className="bg-gray-100 dark:bg-gray-800 rounded-t-xl">
+                                    <tr>
+                                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tl-xl">Data</th>
+                                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hora</th>
+                                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
+                                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
+                                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tr-xl">Ações</th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                  </thead>
+                                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    {data.hodometros.map((hodometro, index) => (
+                                      <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                          {new Date(hodometro.data).toLocaleDateString('pt-BR')}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                          {hodometro.hora}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                          {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
+                                            <span>Bateria: {hodometro.bateria}%</span>
+                                          ) : (
+                                            <span>{hodometro.hod_lido?.toLocaleString('pt-BR')} km</span>
+                                          )}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
+                                          {hodometro.km_rodado?.toLocaleString('pt-BR')} km
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                          <div className="flex items-center justify-end space-x-3">
+                                            <button
+                                              onClick={(e) => handleShowPhoto(e, hodometro.foto_hodometro)}
+                                              className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                                       transition-colors ${!hodometro.foto_hodometro && 'opacity-50 cursor-not-allowed'}`}
+                                              title={hodometro.foto_hodometro ? "Ver foto do hodômetro" : "Sem foto disponível"}
+                                            >
+                                              <Camera size={18} />
+                                            </button>
+                                            <button
+                                              onClick={(e) => handleEdit(e, hodometro)}
+                                              className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 
+                                                       transition-colors"
+                                              title="Editar"
+                                            >
+                                              <Edit2 size={18} />
+                                            </button>
+                                            <button
+                                              onClick={(e) => handleDelete(e, hodometro)}
+                                              className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                                       transition-colors"
+                                              title="Excluir"
+                                            >
+                                              <Trash2 size={18} />
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                    {data.hodometros.length === 0 && (
+                                      <tr>
+                                        <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                          Nenhuma leitura encontrada
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
                             </div>
                           </div>
                         </td>
