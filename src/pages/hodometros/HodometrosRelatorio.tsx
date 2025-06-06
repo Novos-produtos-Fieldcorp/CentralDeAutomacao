@@ -8,7 +8,6 @@ import { useDateRange } from '../../hooks/useDateRange';
 import { formatCPF } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface MileageReport {
   motorista_id: number;
@@ -28,11 +27,6 @@ interface MileageReport {
   km_total_geral: number;
 }
 
-interface MonthlyData {
-  month: string;
-  km: number;
-}
-
 const HodometrosRelatorio = () => {
   const { query } = useCompanyData();
   const { companyId } = useAuth();
@@ -41,7 +35,6 @@ const HodometrosRelatorio = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
 
   const fetchMileageReports = useCallback(async () => {
     try {
@@ -82,7 +75,6 @@ const HodometrosRelatorio = () => {
 
       if (!hodometros || hodometros.length === 0) {
         setReports([]);
-        setMonthlyData([]);
         return;
       }
 
@@ -216,49 +208,13 @@ const HodometrosRelatorio = () => {
         .sort((a, b) => a.nome.localeCompare(b.nome));
 
       setReports(reportArray);
-
-      // Generate monthly data for chart
-      generateMonthlyData(hodometros);
     } catch (error) {
       console.error('Error fetching mileage reports:', error);
       toast.error('Erro ao carregar relatório de quilometragem');
     } finally {
       setLoading(false);
     }
-  }, [dateRange, companyId, selectedClientFilter]);
-
-  const generateMonthlyData = (hodometros: any[]) => {
-    // Group by month
-    const monthlyData: Record<string, number> = {};
-    
-    hodometros.forEach(hodometro => {
-      const date = new Date(hodometro.data);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-      
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = 0;
-      }
-      
-      monthlyData[monthKey] += hodometro.km_rodado || 0;
-    });
-    
-    // Convert to array and sort by month
-    const result = Object.entries(monthlyData).map(([key, km]) => {
-      const [year, month] = key.split('-');
-      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-      return {
-        month: date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
-        km: Math.round(km)
-      };
-    }).sort((a, b) => {
-      const dateA = new Date(a.month.replace('de', '').trim());
-      const dateB = new Date(b.month.replace('de', '').trim());
-      return dateA.getTime() - dateB.getTime();
-    });
-    
-    setMonthlyData(result);
-  };
+  }, [dateRange]);
 
   useEffect(() => {
     fetchMileageReports();
@@ -277,20 +233,6 @@ const HodometrosRelatorio = () => {
   const maxKmTotal = Math.max(...reports.flatMap(report => 
     report.veiculos.map(veiculo => veiculo.km_total)
   ), 0); // Add 0 as fallback to prevent -Infinity if array is empty
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md">
-          <p className="font-medium text-gray-900 dark:text-white">{label}</p>
-          <p className="text-blue-600 dark:text-blue-400">
-            {payload[0].value.toLocaleString('pt-BR')} km
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   if (loading) {
     return (
@@ -317,61 +259,17 @@ const HodometrosRelatorio = () => {
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
-          {/* Period Selector */}
-          <div>
-            <PeriodSelector
-              periodType={periodType}
-              dateRange={dateRange}
-              onPeriodChange={updatePeriod}
-              onDateRangeChange={setDateRange}
-            />
-          </div>
+          {/* Export Button */}
         </div>
-      </div>
 
-      {/* Monthly Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-          Quilometragem Mensal
-        </h3>
-        
-        <div className="h-80">
-          {monthlyData.length > 0 ? (
-            <ResponsiveContainer width="100%\" height="100%">
-              <BarChart
-                data={monthlyData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
-                />
-                <YAxis 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
-                  tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar 
-                  dataKey="km" 
-                  fill="#3b82f6" 
-                  radius={[4, 4, 0, 0]}
-                  barSize={40}
-                  animationDuration={1500}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-gray-500 dark:text-gray-400">
-                Nenhum dado disponível para o período selecionado
-              </p>
-            </div>
-          )}
+        {/* Period Selector */}
+        <div className="mt-4">
+          <PeriodSelector
+            periodType={periodType}
+            dateRange={dateRange}
+            onPeriodChange={updatePeriod}
+            onDateRangeChange={setDateRange}
+          />
         </div>
       </div>
 
