@@ -1,13 +1,13 @@
 import { useState, useCallback } from 'react';
 
-type PeriodType = '1month' | '15days' | '1day' | 'custom' | 'all';
+type PeriodType = '30days' | '15days' | '1day' | 'custom' | 'all';
 
 interface DateRange {
   startDate: string;
   endDate: string;
 }
 
-export const useDateRange = (initialPeriod: PeriodType = '1month') => {
+export const useDateRange = (initialPeriod: PeriodType = '1day') => {
   const [periodType, setPeriodType] = useState<PeriodType>(initialPeriod);
   
   const calculateDateRange = useCallback((type: PeriodType): DateRange => {
@@ -24,8 +24,8 @@ export const useDateRange = (initialPeriod: PeriodType = '1month') => {
     }
 
     switch (type) {
-      case '1month':
-        start.setMonth(end.getMonth() - 1);
+      case '30days':
+        start.setDate(end.getDate() - 30);
         break;
       case '15days':
         start.setDate(end.getDate() - 15);

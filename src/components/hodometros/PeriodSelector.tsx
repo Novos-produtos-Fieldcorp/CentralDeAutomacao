@@ -7,9 +7,9 @@ export interface DateRange {
 }
 
 export interface PeriodSelectorProps {
-  periodType: '1month' | '15days' | '1day' | 'custom' | 'all';
+  periodType: '30days' | '15days' | '1day' | 'custom' | 'all';
   dateRange: DateRange;
-  onPeriodChange: (type: '1month' | '15days' | '1day' | 'custom' | 'all') => void;
+  onPeriodChange: (type: '30days' | '15days' | '1day' | 'custom' | 'all') => void;
   onDateRangeChange: (range: DateRange) => void;
 }
 
@@ -23,24 +23,14 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         <button
-          onClick={() => onPeriodChange('all')}
+          onClick={() => onPeriodChange('1day')}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            periodType === 'all'
+            periodType === '1day'
               ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
           }`}
         >
-          Todos
-        </button>
-        <button
-          onClick={() => onPeriodChange('1month')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            periodType === '1month'
-              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-          }`}
-        >
-          1 mês
+          Hoje
         </button>
         <button
           onClick={() => onPeriodChange('15days')}
@@ -50,17 +40,27 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
           }`}
         >
-          15 dias
+          Últimos 15 dias
         </button>
         <button
-          onClick={() => onPeriodChange('1day')}
+          onClick={() => onPeriodChange('30days')}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            periodType === '1day'
+            periodType === '30days'
               ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
           }`}
         >
-          1 dia
+          Últimos 30 dias
+        </button>
+        <button
+          onClick={() => onPeriodChange('all')}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            periodType === 'all'
+              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+          }`}
+        >
+          Todos
         </button>
         <button
           onClick={() => onPeriodChange('custom')}

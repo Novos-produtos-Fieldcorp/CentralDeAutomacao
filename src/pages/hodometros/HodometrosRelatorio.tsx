@@ -34,7 +34,7 @@ const HodometrosRelatorio = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
+  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
 
   const fetchMileageReports = useCallback(async () => {
     try {

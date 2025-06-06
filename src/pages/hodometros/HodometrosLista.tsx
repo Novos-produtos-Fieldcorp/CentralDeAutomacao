@@ -67,7 +67,7 @@ const HodometrosLista = () => {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [showChartModal, setShowChartModal] = useState(false);
   const [selectedDriverName, setSelectedDriverName] = useState<string>('');
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('1month');
+  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('1day');
   const tableRef = React.useRef<HTMLDivElement>(null);
 
   const fetchHodometros = useCallback(async () => {
