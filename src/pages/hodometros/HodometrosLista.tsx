@@ -499,7 +499,7 @@ const HodometrosLista = () => {
                         <td className="px-2 py-4 whitespace-nowrap">
                           <div className="flex items-center justify-center">
                             {item.isExpanded ? (
-                              <ChevronUp className="text-gray-400" size={16} />
+                              <ChevronUp className="text-gray-400\" size={16} />
                             ) : (
                               <ChevronDown className="text-gray-400" size={16} />
                             )}
