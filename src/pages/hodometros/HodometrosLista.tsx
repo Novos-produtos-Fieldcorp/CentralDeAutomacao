@@ -213,6 +213,8 @@ const HodometrosLista = () => {
     const monthlyData: Record<string, number> = {};
     
     hodometros.forEach(hodometro => {
+      if (!hodometro.data) return;
+      
       const date = new Date(hodometro.data);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
@@ -233,12 +235,33 @@ const HodometrosLista = () => {
         km: Math.round(km)
       };
     }).sort((a, b) => {
-      const dateA = new Date(a.month);
-      const dateB = new Date(b.month);
-      return dateA.getTime() - dateB.getTime();
+      const monthA = a.month.split(' ')[0];
+      const yearA = a.month.split(' ')[1];
+      const monthB = b.month.split(' ')[0];
+      const yearB = b.month.split(' ')[1];
+      
+      if (yearA !== yearB) {
+        return parseInt(yearA) - parseInt(yearB);
+      }
+      
+      const months = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
+      return months.indexOf(monthA) - months.indexOf(monthB);
     });
     
-    setMonthlyData(result);
+    // Create sample data if no data exists
+    if (result.length === 0) {
+      const sampleData = [
+        { month: 'jan. 2025', km: 0 },
+        { month: 'fev. 2025', km: 0 },
+        { month: 'mar. 2025', km: 0 },
+        { month: 'abr. 2025', km: 0 },
+        { month: 'mai. 2025', km: 0 },
+        { month: 'jun. 2025', km: 0 }
+      ];
+      setMonthlyData(sampleData);
+    } else {
+      setMonthlyData(result);
+    }
   };
 
   const handleEdit = (e: React.MouseEvent, hodometro: Hodometro) => {
@@ -561,7 +584,7 @@ const HodometrosLista = () => {
                             {/* Monthly data as Recharts bar chart */}
                             <div className="h-40 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
                               {monthlyData.length > 0 ? (
-                                <ResponsiveContainer width="100%\" height="100%">
+                                <ResponsiveContainer width="100%" height="100%">
                                   <BarChart
                                     data={monthlyData}
                                     margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
@@ -582,14 +605,8 @@ const HodometrosLista = () => {
                                       dataKey="km" 
                                       radius={[4, 4, 0, 0]}
                                       barSize={30}
-                                    >
-                                      {monthlyData.map((entry, index) => (
-                                        <Cell 
-                                          key={`cell-${index}`} 
-                                          fill="#3B82F6" 
-                                        />
-                                      ))}
-                                    </Bar>
+                                      fill="#3B82F6"
+                                    />
                                   </BarChart>
                                 </ResponsiveContainer>
                               ) : (
@@ -749,7 +766,7 @@ const HodometrosLista = () => {
             <div className="p-6">
               <div className="h-80 w-full">
                 {monthlyData.length > 0 ? (
-                  <ResponsiveContainer width="100%\" height="100%">
+                  <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={monthlyData}
                       margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
@@ -772,14 +789,8 @@ const HodometrosLista = () => {
                         name="Quilometragem"
                         radius={[4, 4, 0, 0]}
                         barSize={60}
-                      >
-                        {monthlyData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill="#3B82F6" 
-                          />
-                        ))}
-                      </Bar>
+                        fill="#3B82F6"
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
