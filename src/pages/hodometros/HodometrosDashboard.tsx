@@ -141,7 +141,7 @@ const HodometrosDashboard = () => {
         // Filter hodometros based on vehicle category
         let hodometros = allHodometros;
         if (vehicleCategory === 'ciclomotores') {
-          hodometros = allHodometros.filter(h => h.bateria !== null);
+          hodometros = allHodometros.filter(h => h.bateria !== null && h.bateria !== undefined);
         } else if (vehicleCategory === 'automoveis') {
           hodometros = allHodometros.filter(h => h.bateria === null);
         }
@@ -305,7 +305,7 @@ const HodometrosDashboard = () => {
           
           // For electric vehicles, use trip_lida if available
           if (isElectric) {
-            // Add trip_lida to trip_total
+            // Add trip_lida to trip_total if it's a valid number
             if (typeof h.trip_lida === 'number' && !isNaN(h.trip_lida)) {
               current.trip_total += h.trip_lida;
             }
@@ -996,7 +996,7 @@ const HodometrosDashboard = () => {
                   <div className="h-2 bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-purple-500 dark:bg-purple-400 rounded-full"
-                      style={{ width: `${(motorista.leituras / Math.max(...stats.kmPorMotorista.map(m => m.leituras))) * 100}%` }}
+                      style={{ width: `${(motorista.leituras / Math.max(...stats.kmPorMotorista.map(m => m.leituras), 1)) * 100}%` }}
                     />
                   </div>
                 </div>
