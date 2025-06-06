@@ -13,7 +13,6 @@ import DeleteHodometroModal from '../../components/hodometros/DeleteHodometroMod
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface MileageData {
   motorista_id: number;
@@ -33,21 +32,6 @@ interface MonthlyData {
   month: string;
   km: number;
 }
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
-        <p className="text-sm font-medium text-gray-900 dark:text-white">{label}</p>
-        <p className="text-sm text-blue-600 dark:text-blue-400">
-          {`${payload[0].value.toLocaleString('pt-BR')} km`}
-        </p>
-      </div>
-    );
-  }
-
-  return null;
-};
 
 const HodometrosLista = () => {
   const { query } = useCompanyData();
@@ -213,8 +197,6 @@ const HodometrosLista = () => {
     const monthlyData: Record<string, number> = {};
     
     hodometros.forEach(hodometro => {
-      if (!hodometro.data) return;
-      
       const date = new Date(hodometro.data);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
@@ -235,33 +217,12 @@ const HodometrosLista = () => {
         km: Math.round(km)
       };
     }).sort((a, b) => {
-      const monthA = a.month.split(' ')[0];
-      const yearA = a.month.split(' ')[1];
-      const monthB = b.month.split(' ')[0];
-      const yearB = b.month.split(' ')[1];
-      
-      if (yearA !== yearB) {
-        return parseInt(yearA) - parseInt(yearB);
-      }
-      
-      const months = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
-      return months.indexOf(monthA) - months.indexOf(monthB);
+      const dateA = new Date(a.month);
+      const dateB = new Date(b.month);
+      return dateA.getTime() - dateB.getTime();
     });
     
-    // Create sample data if no data exists
-    if (result.length === 0) {
-      const sampleData = [
-        { month: 'jan. 2025', km: 0 },
-        { month: 'fev. 2025', km: 0 },
-        { month: 'mar. 2025', km: 0 },
-        { month: 'abr. 2025', km: 0 },
-        { month: 'mai. 2025', km: 0 },
-        { month: 'jun. 2025', km: 0 }
-      ];
-      setMonthlyData(sampleData);
-    } else {
-      setMonthlyData(result);
-    }
+    setMonthlyData(result);
   };
 
   const handleEdit = (e: React.MouseEvent, hodometro: Hodometro) => {
@@ -581,39 +542,33 @@ const HodometrosLista = () => {
                               </button>
                             </div>
                             
-                            {/* Monthly data as Recharts bar chart */}
+                            {/* Monthly data as bars */}
                             <div className="h-40 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                              {monthlyData.length > 0 ? (
-                                <ResponsiveContainer width="100%\" height="100%">
-                                  <BarChart
-                                    data={monthlyData}
-                                    margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
-                                  >
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                                    <XAxis 
-                                      dataKey="month" 
-                                      tick={{ fontSize: 12 }}
-                                      axisLine={false}
-                                      tickLine={false}
-                                    />
-                                    <YAxis 
-                                      hide 
-                                      domain={[0, 'dataMax']}
-                                    />
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Bar 
-                                      dataKey="km" 
-                                      radius={[4, 4, 0, 0]}
-                                      barSize={30}
-                                      fill="#3B82F6"
-                                    />
-                                  </BarChart>
-                                </ResponsiveContainer>
-                              ) : (
-                                <div className="h-full flex items-center justify-center">
-                                  <p className="text-gray-500 dark:text-gray-400">Sem dados para o período selecionado</p>
-                                </div>
-                              )}
+                              <div className="flex h-full items-end space-x-4">
+                                {monthlyData.map((item, index) => {
+                                  const maxValue = Math.max(...monthlyData.map(d => d.km));
+                                  const percentage = (item.km / maxValue) * 100;
+                                  
+                                  return (
+                                    <div key={index} className="flex-1 flex flex-col items-center">
+                                      <div className="w-full flex justify-center mb-1">
+                                        <span className="text-xs font-medium text-gray-900 dark:text-white">
+                                          {item.km.toLocaleString('pt-BR')}
+                                        </span>
+                                      </div>
+                                      <div 
+                                        className="w-full bg-blue-500 dark:bg-blue-400 rounded-t-lg transition-all duration-500"
+                                        style={{ height: `${Math.max(5, percentage)}%` }}
+                                      />
+                                      <div className="w-full text-center mt-2">
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                          {item.month}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
                             
                             <div className="overflow-x-auto">
@@ -765,39 +720,32 @@ const HodometrosLista = () => {
             </div>
             <div className="p-6">
               <div className="h-80 w-full">
-                {monthlyData.length > 0 ? (
-                  <ResponsiveContainer width="100%\" height="100%">
-                    <BarChart
-                      data={monthlyData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis 
-                        dataKey="month" 
-                        tick={{ fontSize: 12 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis 
-                        tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar 
-                        dataKey="km" 
-                        name="Quilometragem"
-                        radius={[4, 4, 0, 0]}
-                        barSize={60}
-                        fill="#3B82F6"
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center">
-                    <p className="text-gray-500 dark:text-gray-400">Sem dados para o período selecionado</p>
-                  </div>
-                )}
+                {/* Bar chart with monthly data */}
+                <div className="flex h-full items-end space-x-4">
+                  {monthlyData.map((item, index) => {
+                    const maxValue = Math.max(...monthlyData.map(d => d.km));
+                    const percentage = (item.km / maxValue) * 100;
+                    
+                    return (
+                      <div key={index} className="flex-1 flex flex-col items-center">
+                        <div className="w-full flex justify-center mb-2">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {item.km.toLocaleString('pt-BR')}
+                          </span>
+                        </div>
+                        <div 
+                          className="w-full bg-blue-500 dark:bg-blue-400 rounded-t-lg transition-all duration-500"
+                          style={{ height: `${Math.max(5, percentage)}%` }}
+                        />
+                        <div className="w-full text-center mt-2">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {item.month}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
