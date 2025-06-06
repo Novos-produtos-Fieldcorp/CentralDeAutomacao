@@ -332,9 +332,17 @@ const HodometrosLista = () => {
         };
       })
       .sort((a, b) => {
-        const dateA = new Date(a.month);
-        const dateB = new Date(b.month);
-        return dateA.getTime() - dateB.getTime();
+        const monthA = a.month.split(' ')[0];
+        const yearA = a.month.split(' ')[1];
+        const monthB = b.month.split(' ')[0];
+        const yearB = b.month.split(' ')[1];
+        
+        if (yearA !== yearB) {
+          return parseInt(yearA) - parseInt(yearB);
+        }
+        
+        const monthOrder = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
+        return monthOrder.indexOf(monthA) - monthOrder.indexOf(monthB);
       });
     
     setSelectedDriverData({
@@ -420,7 +428,7 @@ const HodometrosLista = () => {
             >
               <option value="">Todos os clientes</option>
               {clients.map(client => (
-                <option key={client.cliente_id} value={client.nome}>
+                <option key={client.id} value={client.nome}>
                   {client.nome}
                 </option>
               ))}
@@ -717,7 +725,7 @@ const HodometrosLista = () => {
                 </div>
               ) : (
                 <div className="h-64">
-                  <div className="flex h-full items-end">
+                  <div className="flex h-full items-end space-x-2">
                     {selectedDriverData.monthlyData.map((data, i) => {
                       const maxKm = Math.max(...selectedDriverData.monthlyData.map(d => d.km));
                       const percentage = (data.km / maxKm) * 100;
