@@ -720,7 +720,100 @@ const HodometrosDashboard = () => {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* KM por Operação */}
+        {/* KM por Motorista - MOVED FROM BELOW */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+          <div className="flex items-center gap-2 mb-6">
+            <Users className="text-indigo-500 dark:text-indigo-400" size={20} />
+            <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              KM POR MOTORISTA
+            </h3>
+          </div>
+          <div className="space-y-4">
+            {stats.kmPorMotorista.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-gray-500 dark:text-gray-400">
+                  Nenhum dado disponível para o período selecionado
+                </p>
+              </div>
+            ) : (
+              stats.kmPorMotorista.slice(0, 5).map((motorista, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {motorista.nome}
+                    </span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {Math.round(motorista.km_total).toLocaleString('pt-BR')} km
+                    </span>
+                  </div>
+                  <div className="h-2.5 bg-indigo-100 dark:bg-indigo-900/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full"
+                      style={{ width: `${(motorista.km_total / (stats.kmPorMotorista[0]?.km_total || 1)) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* KM por Veículo - MOVED FROM BELOW */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+          <div className="flex items-center gap-2 mb-6">
+            <Truck className="text-teal-500 dark:text-teal-400" size={20} />
+            <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              KM POR VEÍCULO
+            </h3>
+          </div>
+          <div className="space-y-4">
+            {filteredVehicleData().length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-gray-500 dark:text-gray-400">
+                  Nenhum dado disponível para o período selecionado
+                </p>
+              </div>
+            ) : (
+              filteredVehicleData().slice(0, 5).map((veiculo, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {veiculo.placa.toUpperCase()}
+                      </span>
+                      {veiculo.is_electric && (
+                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">
+                          Elétrico
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {Math.round(veiculo.km_total).toLocaleString('pt-BR')} km
+                    </span>
+                  </div>
+                  <div className="h-2.5 bg-teal-100 dark:bg-teal-900/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-teal-500 dark:bg-teal-400 rounded-full"
+                      style={{ 
+                        width: `${(veiculo.km_total / (filteredVehicleData()[0]?.km_total || 1)) * 100}%` 
+                      }}
+                    />
+                  </div>
+                  {veiculo.is_electric && veiculo.bateria !== null && veiculo.bateria !== undefined && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Battery className="w-4 h-4 text-green-500" />
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Bateria: {veiculo.bateria}%
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* KM por Operação - MOVED FROM ABOVE */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
             <Store className="text-blue-500 dark:text-blue-400" size={20} />
@@ -758,7 +851,7 @@ const HodometrosDashboard = () => {
           </div>
         </div>
 
-        {/* Leituras por Motorista */}
+        {/* Leituras por Motorista - MOVED FROM ABOVE */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
             <Users className="text-purple-500 dark:text-purple-400" size={20} />
@@ -888,99 +981,6 @@ const HodometrosDashboard = () => {
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
-        </div>
-
-        {/* KM por Motorista */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
-          <div className="flex items-center gap-2 mb-6">
-            <Users className="text-indigo-500 dark:text-indigo-400" size={20} />
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              KM POR MOTORISTA
-            </h3>
-          </div>
-          <div className="space-y-4">
-            {stats.kmPorMotorista.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500 dark:text-gray-400">
-                  Nenhum dado disponível para o período selecionado
-                </p>
-              </div>
-            ) : (
-              stats.kmPorMotorista.slice(0, 5).map((motorista, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {motorista.nome}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {Math.round(motorista.km_total).toLocaleString('pt-BR')} km
-                    </span>
-                  </div>
-                  <div className="h-2.5 bg-indigo-100 dark:bg-indigo-900/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full"
-                      style={{ width: `${(motorista.km_total / (stats.kmPorMotorista[0]?.km_total || 1)) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* KM por Veículo */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
-          <div className="flex items-center gap-2 mb-6">
-            <Truck className="text-teal-500 dark:text-teal-400" size={20} />
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              KM POR VEÍCULO
-            </h3>
-          </div>
-          <div className="space-y-4">
-            {filteredVehicleData().length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500 dark:text-gray-400">
-                  Nenhum dado disponível para o período selecionado
-                </p>
-              </div>
-            ) : (
-              filteredVehicleData().slice(0, 5).map((veiculo, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {veiculo.placa.toUpperCase()}
-                      </span>
-                      {veiculo.is_electric && (
-                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">
-                          Elétrico
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {Math.round(veiculo.km_total).toLocaleString('pt-BR')} km
-                    </span>
-                  </div>
-                  <div className="h-2.5 bg-teal-100 dark:bg-teal-900/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-teal-500 dark:bg-teal-400 rounded-full"
-                      style={{ 
-                        width: `${(veiculo.km_total / (filteredVehicleData()[0]?.km_total || 1)) * 100}%` 
-                      }}
-                    />
-                  </div>
-                  {veiculo.is_electric && veiculo.bateria !== null && veiculo.bateria !== undefined && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <Battery className="w-4 h-4 text-green-500" />
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        Bateria: {veiculo.bateria}%
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
             )}
           </div>
         </div>
