@@ -470,13 +470,12 @@ const HodometrosLista = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leitura Final</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total KM</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredData.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                    <td colSpan={8} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                       <div className="flex flex-col items-center justify-center">
                         <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-full mb-4">
                           <Truck className="w-8 h-8 text-gray-400 dark:text-gray-500" />
@@ -558,26 +557,12 @@ const HodometrosLista = () => {
                             {formatDate(item.ultima_data)}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                showMonthlyKmChart(item.motorista_id, item.motorista_nome);
-                              }}
-                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                              title="Ver gráfico de KM por mês"
-                            >
-                              <BarChart2 size={18} />
-                            </button>
-                          </div>
-                        </td>
                       </tr>
                       
                       {/* Expanded Details */}
                       {item.isExpanded && (
                         <tr className="bg-gray-50 dark:bg-gray-700/20">
-                          <td colSpan={9} className="px-6 py-4">
+                          <td colSpan={8} className="px-6 py-4">
                             <div className="overflow-x-auto">
                               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead className="bg-gray-100 dark:bg-gray-700">
