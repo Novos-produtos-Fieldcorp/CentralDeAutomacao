@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Eye, ChevronDown, ChevronUp, Edit2, Trash2, Camera, X, BarChart2, Calendar, Filter } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Eye, ChevronDown, ChevronUp, Edit2, Trash2, Camera, X, BarChart2, Filter } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -12,11 +12,12 @@ import EditHodometroModal from '../../components/hodometros/EditHodometroModal';
 import DeleteHodometroModal from '../../components/hodometros/DeleteHodometroModal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
+import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 
 interface MileageData {
   motorista_id: number;
   nome: string;
-  foto?: string;
+  cpf: string;
   placa: string;
   cliente: string;
   leitura_inicial: number;
@@ -24,6 +25,7 @@ interface MileageData {
   km_total: number;
   ultima_data: string;
   hodometros: Hodometro[];
+  isElectric: boolean;
 }
 
 interface MonthlyData {
@@ -42,6 +44,7 @@ const HodometrosLista = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedHodometro, setSelectedHodometro] = useState<Hodometro | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
@@ -51,6 +54,7 @@ const HodometrosLista = () => {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [showChartModal, setShowChartModal] = useState(false);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('1month');
+  const tableRef = React.useRef<HTMLDivElement>(null);
 
   const fetchHodometros = useCallback(async () => {
     try {
@@ -170,14 +174,15 @@ const HodometrosLista = () => {
       processedData.push({
         motorista_id: firstReading.motorista_id,
         nome: firstReading.motorista.nome,
-        foto: `https://ui-avatars.com/api/?name=${encodeURIComponent(firstReading.motorista.nome)}&background=random&color=fff&size=128`,
+        cpf: firstReading.motorista.cpf,
         placa: firstReading.veiculo.placa.toUpperCase(),
         cliente: firstReading.cliente?.nome || 'Sem cliente',
         leitura_inicial: isElectric ? 0 : (firstReading.hod_lido || 0),
         leitura_final: isElectric ? 0 : (lastReading.hod_lido || 0),
         km_total: totalKm,
         ultima_data: formattedDate,
-        hodometros: sortedGroup
+        hodometros: sortedGroup,
+        isElectric
       });
     });
 
@@ -269,6 +274,18 @@ const HodometrosLista = () => {
       newSelectedItems.add(id);
     }
     setSelectedItems(newSelectedItems);
+    
+    // Update selectAll state
+    setSelectAll(newSelectedItems.size === mileageData.length);
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(mileageData.map(m => m.motorista_id)));
+    }
+    setSelectAll(!selectAll);
   };
 
   const handleBulkDelete = async () => {
@@ -301,7 +318,6 @@ const HodometrosLista = () => {
       const selectedData = mileageData.find(data => data.motorista_id === motorista_id);
       if (selectedData) {
         generateMonthlyData(selectedData.hodometros);
-        setShowChartModal(true);
       }
     }
   };
@@ -394,198 +410,254 @@ const HodometrosLista = () => {
         </div>
       </div>
 
-      {/* Mileage List */}
-      <div className="space-y-4">
-        {filteredData.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center shadow-md border border-gray-200 dark:border-gray-700">
-            <div className="flex flex-col items-center justify-center">
-              <Calendar className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-              <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
-                Nenhuma leitura encontrada
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-md">
-                Não foram encontradas leituras para o período e filtros selecionados. Tente ajustar os filtros ou selecionar um período diferente.
-              </p>
-            </div>
+      {/* Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              checked={selectAll}
+              onChange={handleSelectAll}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+            />
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {selectedItems.size > 0 ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}` : 'Selecionar todos'}
+            </span>
           </div>
-        ) : (
-          filteredData.map((data) => (
-            <div 
-              key={`${data.motorista_id}_${data.placa}`} 
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden"
-            >
-              <div 
-                className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                onClick={() => toggleExpand(data.motorista_id)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <img 
-                      src={data.foto} 
-                      alt={data.nome} 
-                      className="w-12 h-12 rounded-full object-cover border-2 border-blue-500 dark:border-blue-400"
-                    />
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">{data.nome}</h3>
-                      <div className="flex items-center mt-1 space-x-2">
-                        <span className="text-blue-600 dark:text-blue-400 font-medium">{data.placa}</span>
-                        <span className="text-gray-500 dark:text-gray-400">•</span>
-                        <span className="text-gray-600 dark:text-gray-300">{data.cliente}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-8">
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Leitura Inicial</div>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {data.leitura_inicial.toLocaleString('pt-BR')} km
-                      </div>
-                    </div>
-                    
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Leitura Final</div>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {data.leitura_final.toLocaleString('pt-BR')} km
-                      </div>
-                    </div>
-                    
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Total KM</div>
-                      <div className="font-semibold text-blue-600 dark:text-blue-400">
-                        {data.km_total.toLocaleString('pt-BR')} km
-                      </div>
-                    </div>
-                    
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Última Leitura</div>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {data.ultima_data}
-                      </div>
-                    </div>
-                    
-                    <button 
-                      className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleExpand(data.motorista_id);
-                      }}
+        </div>
+        
+        <div className="relative">
+          <div ref={tableRef} className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"></th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leitura Inicial</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leitura Final</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Total</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Última Leitura</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredData.map((data) => (
+                  <React.Fragment key={`${data.motorista_id}_${data.placa}`}>
+                    <tr 
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
+                        selectedItems.has(data.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                      }`}
+                      onClick={() => toggleExpand(data.motorista_id)}
                     >
-                      {expandedItem === data.motorista_id ? (
-                        <ChevronUp className="w-5 h-5" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              {expandedItem === data.motorista_id && (
-                <div className="bg-gray-50 dark:bg-gray-700/30 p-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                      <BarChart2 className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-                      Quilometragem Mensal
-                    </h4>
-                    <button
-                      onClick={() => setShowChartModal(true)}
-                      className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
-                    >
-                      Ver gráfico completo
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {monthlyData.map((item, index) => (
-                      <div key={index} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {item.month}
-                          </span>
-                          <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                            {item.km.toLocaleString('pt-BR')} km
-                          </span>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.has(data.motorista_id)}
+                          onChange={() => handleSelectItem(data.motorista_id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
+                            {data.nome.charAt(0)}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {data.nome}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {formatCPF(data.cpf)}
+                            </div>
+                          </div>
                         </div>
-                        <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                            style={{ 
-                              width: `${Math.max(5, (item.km / Math.max(...monthlyData.map(d => d.km), 1)) * 100)}%` 
-                            }}
-                          />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                          {data.placa}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="mt-6 overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                      <thead className="bg-gray-50 dark:bg-gray-800">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hora</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {data.hodometros.map((hodometro) => (
-                          <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                              {new Date(hodometro.data).toLocaleDateString('pt-BR')}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                              {hodometro.hora}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                              {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                                <span>Bateria: {hodometro.bateria}%</span>
-                              ) : (
-                                <span>{hodometro.hod_lido?.toLocaleString('pt-BR')} km</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
-                              {hodometro.km_rodado?.toLocaleString('pt-BR')} km
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <div className="flex items-center justify-end space-x-3">
-                                <button
-                                  onClick={(e) => handleShowPhoto(e, hodometro.foto_hodometro)}
-                                  className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                                           transition-colors ${!hodometro.foto_hodometro && 'opacity-50 cursor-not-allowed'}`}
-                                  title={hodometro.foto_hodometro ? "Ver foto do hodômetro" : "Sem foto disponível"}
-                                >
-                                  <Camera size={18} />
-                                </button>
-                                <button
-                                  onClick={(e) => handleEdit(e, hodometro)}
-                                  className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 
-                                           transition-colors"
-                                  title="Editar"
-                                >
-                                  <Edit2 size={18} />
-                                </button>
-                                <button
-                                  onClick={(e) => handleDelete(e, hodometro)}
-                                  className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                                           transition-colors"
-                                  title="Excluir"
-                                >
-                                  <Trash2 size={18} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {data.cliente}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {data.isElectric ? (
+                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200 rounded-full">
+                              Veículo Elétrico
+                            </span>
+                          ) : (
+                            `${data.leitura_inicial.toLocaleString('pt-BR')} km`
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {data.isElectric ? (
+                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200 rounded-full">
+                              Veículo Elétrico
+                            </span>
+                          ) : (
+                            `${data.leitura_final.toLocaleString('pt-BR')} km`
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                          {data.km_total.toLocaleString('pt-BR')} km
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {data.ultima_data}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <button 
+                          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpand(data.motorista_id);
+                            if (data.motorista_id !== expandedItem) {
+                              generateMonthlyData(data.hodometros);
+                            }
+                          }}
+                        >
+                          {expandedItem === data.motorista_id ? (
+                            <ChevronUp className="w-5 h-5" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5" />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                    
+                    {expandedItem === data.motorista_id && (
+                      <tr>
+                        <td colSpan={9} className="px-0 py-0 border-b border-gray-200 dark:border-gray-700">
+                          <div className="bg-gray-50 dark:bg-gray-700/30 p-4">
+                            <div className="flex justify-between items-center mb-4">
+                              <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                <BarChart2 className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                                Quilometragem Mensal
+                              </h4>
+                              <button
+                                onClick={() => setShowChartModal(true)}
+                                className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
+                              >
+                                Ver gráfico completo
+                              </button>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+                              {monthlyData.map((item, index) => (
+                                <div key={index} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                      {item.month}
+                                    </span>
+                                    <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                                      {item.km.toLocaleString('pt-BR')} km
+                                    </span>
+                                  </div>
+                                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                                    <div 
+                                      className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
+                                      style={{ 
+                                        width: `${Math.max(5, (item.km / Math.max(...monthlyData.map(d => d.km), 1)) * 100)}%` 
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead className="bg-gray-100 dark:bg-gray-800">
+                                  <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hora</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                  {data.hodometros.map((hodometro) => (
+                                    <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                        {new Date(hodometro.data).toLocaleDateString('pt-BR')}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                        {hodometro.hora}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                        {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
+                                          <span>Bateria: {hodometro.bateria}%</span>
+                                        ) : (
+                                          <span>{hodometro.hod_lido?.toLocaleString('pt-BR')} km</span>
+                                        )}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
+                                        {hodometro.km_rodado?.toLocaleString('pt-BR')} km
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div className="flex items-center justify-end space-x-3">
+                                          <button
+                                            onClick={(e) => handleShowPhoto(e, hodometro.foto_hodometro)}
+                                            className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                                     transition-colors ${!hodometro.foto_hodometro && 'opacity-50 cursor-not-allowed'}`}
+                                            title={hodometro.foto_hodometro ? "Ver foto do hodômetro" : "Sem foto disponível"}
+                                          >
+                                            <Camera size={18} />
+                                          </button>
+                                          <button
+                                            onClick={(e) => handleEdit(e, hodometro)}
+                                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 
+                                                     transition-colors"
+                                            title="Editar"
+                                          >
+                                            <Edit2 size={18} />
+                                          </button>
+                                          <button
+                                            onClick={(e) => handleDelete(e, hodometro)}
+                                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                                     transition-colors"
+                                            title="Excluir"
+                                          >
+                                            <Trash2 size={18} />
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ScrollableTableIndicator containerRef={tableRef} />
+        </div>
+        
+        {filteredData.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500 dark:text-gray-400">
+              Nenhuma leitura encontrada para o período selecionado
+            </p>
+          </div>
         )}
       </div>
 
