@@ -584,7 +584,7 @@ const HodometrosLista = () => {
                             {/* Monthly data as Recharts bar chart */}
                             <div className="h-40 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
                               {monthlyData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%\" height="100%">
                                   <BarChart
                                     data={monthlyData}
                                     margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
@@ -766,7 +766,7 @@ const HodometrosLista = () => {
             <div className="p-6">
               <div className="h-80 w-full">
                 {monthlyData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%\" height="100%">
                     <BarChart
                       data={monthlyData}
                       margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
