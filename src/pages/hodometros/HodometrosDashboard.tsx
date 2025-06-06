@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart2, TrendingUp, Calendar, Truck, User, MapPin, Filter, Search } from 'lucide-react';
+import { BarChart2, TrendingUp, Calendar, Truck, User, MapPin, Filter, Search, ChevronDown } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
