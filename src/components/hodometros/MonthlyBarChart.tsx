@@ -45,7 +45,7 @@ const MonthlyBarChart: React.FC<MonthlyBarChartProps> = ({
         data={data}
         margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
       >
-        {showGrid && <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />}
+        {showGrid && <CartesianGrid strokeDasharray="3 3\" vertical={false} stroke="#e5e7eb" />}
         <XAxis 
           dataKey="month" 
           axisLine={false}
