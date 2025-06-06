@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Download, Eye, ChevronDown, ChevronUp, Edit2, Trash2, Camera, X, BarChart2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Download, Eye, ChevronDown, ChevronUp, Edit2, Trash2, Camera, X } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -21,11 +21,6 @@ interface DailyTotal {
   isExpanded: boolean;
 }
 
-interface MonthlyKmData {
-  month: string;
-  km: number;
-}
-
 const HodometrosLista = () => {
   const { query } = useCompanyData();
   const { companyId } = useAuth();
@@ -43,9 +38,6 @@ const HodometrosLista = () => {
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-  const [showKmChartModal, setShowKmChartModal] = useState(false);
-  const [selectedMotoristaNome, setSelectedMotoristaNome] = useState<string>('');
-  const [monthlyKmData, setMonthlyKmData] = useState<MonthlyKmData[]>([]);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
 
   const fetchHodometros = useCallback(async () => {
@@ -221,77 +213,6 @@ const HodometrosLista = () => {
     }
   };
 
-  const showKmChart = async (motorista_id: number, nome: string) => {
-    try {
-      // Fetch all hodometros for this driver in the last 6 months
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const startDate = sixMonthsAgo.toISOString().split('T')[0];
-      
-      const { data, error } = await supabase
-        .from('hodometro')
-        .select('*')
-        .eq('motorista_id', motorista_id)
-        .gte('data', startDate)
-        .order('data', { ascending: true });
-        
-      if (error) throw error;
-      
-      if (!data || data.length === 0) {
-        toast.error('Não há dados suficientes para gerar o gráfico');
-        return;
-      }
-      
-      // Group by month and calculate total KM
-      const monthlyData: Record<string, number> = {};
-      
-      data.forEach(hodometro => {
-        const date = new Date(hodometro.data);
-        const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        
-        if (!monthlyData[monthYear]) {
-          monthlyData[monthYear] = 0;
-        }
-        
-        monthlyData[monthYear] += hodometro.km_rodado || 0;
-      });
-      
-      // Convert to array format for chart
-      const chartData = Object.entries(monthlyData).map(([monthYear, km]) => {
-        const [year, month] = monthYear.split('-');
-        const date = new Date(parseInt(year), parseInt(month) - 1);
-        const monthName = date.toLocaleString('pt-BR', { month: 'short' });
-        
-        return {
-          month: `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`,
-          km: Math.round(km)
-        };
-      });
-      
-      // Sort by date
-      chartData.sort((a, b) => {
-        const monthA = a.month.split(' ')[0];
-        const yearA = a.month.split(' ')[1];
-        const monthB = b.month.split(' ')[0];
-        const yearB = b.month.split(' ')[1];
-        
-        if (yearA !== yearB) {
-          return parseInt(yearA) - parseInt(yearB);
-        }
-        
-        const monthOrder = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        return monthOrder.indexOf(monthA) - monthOrder.indexOf(monthB);
-      });
-      
-      setMonthlyKmData(chartData);
-      setSelectedMotoristaNome(nome);
-      setShowKmChartModal(true);
-    } catch (error) {
-      console.error('Error generating chart data:', error);
-      toast.error('Erro ao gerar dados do gráfico');
-    }
-  };
-
   const filteredTotals = dailyTotals.filter(total => {
     const searchString = searchTerm.toLowerCase();
     return total.hodometros.some(h => 
@@ -361,158 +282,166 @@ const HodometrosLista = () => {
         </div>
       </div>
 
-      {/* List View */}
+      {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="overflow-hidden">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Leituras de Hodômetro</h3>
-          </div>
-          
-          {filteredTotals.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">
-                Nenhuma leitura encontrada para o período selecionado
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredTotals.map((total) => (
-                <div key={total.date} className="bg-white dark:bg-gray-800">
-                  {/* Date Header */}
-                  <div 
-                    className="p-4 cursor-pointer bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 flex justify-between items-center"
-                    onClick={() => toggleExpand(total.date)}
-                  >
-                    <div className="flex items-center gap-4">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead>
+            <tr className="bg-gray-50 dark:bg-gray-800">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total KM</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Detalhes</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            {filteredTotals.map((total) => (
+              <React.Fragment key={total.date}>
+                {/* Daily Total Row */}
+                <tr 
+                  className="bg-gray-50 dark:bg-gray-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                  onClick={() => toggleExpand(total.date)}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap relative">
+                    {/* Progress Bar */}
+                    <div 
+                      className="absolute left-0 top-0 h-full bg-blue-100 dark:bg-blue-900/20 transition-all duration-300"
+                      style={{ width: `${(total.totalKm / maxDailyKm) * 100}%`, zIndex: 0 }}
+                    />
+                    <div className="relative z-10">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
                         {total.date.split('-').reverse().join('/')}
                       </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap relative">
+                    <div className="relative z-10">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
                         {Math.round(total.totalKm).toLocaleString('pt-BR')} km
                       </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap relative">
+                    <div className="relative z-10">
                       <div className="text-sm text-gray-500 dark:text-gray-400">
                         {total.hodometros.length} leituras
                       </div>
                     </div>
-                    <button className="text-gray-500 dark:text-gray-400">
-                      {total.isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                    </button>
-                  </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right relative">
+                    <div className="relative z-10">
+                      <button className="text-gray-500 dark:text-gray-400">
+                        {total.isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
 
-                  {/* Expanded Readings */}
-                  {total.isExpanded && (
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                      {total.hodometros.map((hodometro) => (
-                        <div 
-                          key={hodometro.id_hodometro}
-                          className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
-                          onClick={() => showKmChart(hodometro.motorista_id, hodometro.motorista?.nome || 'Motorista')}
-                        >
-                          <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
-                            {/* Motorista */}
-                            <div className="flex items-center gap-3 md:col-span-2">
-                              <div className="flex-shrink-0 h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                                <span className="text-lg font-medium text-gray-600 dark:text-gray-300">
-                                  {hodometro.motorista?.nome?.charAt(0) || 'M'}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="font-medium text-gray-900 dark:text-white">
-                                  {hodometro.motorista?.nome || 'Motorista não informado'}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  {hodometro.veiculo?.placa?.toUpperCase() || 'Sem placa'} • {hodometro.hora}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Cliente */}
-                            <div className="md:col-span-1">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
-                                {hodometro.cliente?.nome || 'Sem cliente'}
-                              </span>
-                            </div>
-
-                            {/* Leitura */}
-                            <div className="md:col-span-1">
-                              {hodometro.bateria ? (
-                                <div className="text-sm text-gray-900 dark:text-white">
-                                  Bateria: {hodometro.bateria}%
-                                </div>
-                              ) : (
-                                <div className="text-sm text-gray-900 dark:text-white">
-                                  {hodometro.hod_lido?.toLocaleString('pt-BR')} km
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Trip */}
-                            <div className="md:col-span-1">
-                              <div className="text-sm text-gray-900 dark:text-white">
-                                Trip: {hodometro.trip_lida?.toLocaleString('pt-BR') || 'N/A'}
-                              </div>
-                            </div>
-
-                            {/* KM Rodado */}
-                            <div className="md:col-span-1">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {hodometro.km_rodado?.toLocaleString('pt-BR')} km
-                              </div>
-                              {hodometro.comparacao_leitura !== null && (
-                                <div className={`text-xs px-2 py-0.5 rounded-full font-medium inline-block ${
-                                  hodometro.comparacao_leitura
-                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
-                                }`}>
-                                  {hodometro.comparacao_leitura ? 'Leitura OK' : 'Divergente'}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex items-center justify-end space-x-3 md:col-span-1">
-                              <button
-                                onClick={(e) => handleShowPhoto(e, hodometro.foto_hodometro)}
-                                className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                                         transition-colors ${!hodometro.foto_hodometro && 'opacity-50 cursor-not-allowed'}`}
-                                title={hodometro.foto_hodometro ? "Ver foto do hodômetro" : "Sem foto disponível"}
-                              >
-                                <Camera size={18} />
-                              </button>
-                              <button
-                                onClick={(e) => handleEdit(e, hodometro)}
-                                className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 
-                                         transition-colors"
-                                title="Editar"
-                              >
-                                <Edit2 size={18} />
-                              </button>
-                              <button
-                                onClick={(e) => handleDelete(e, hodometro)}
-                                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                                         transition-colors"
-                                title="Excluir"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                              <input
-                                type="checkbox"
-                                checked={selectedItems.has(hodometro.id_hodometro)}
-                                onChange={() => handleSelectItem(hodometro.id_hodometro)}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </div>
+                {/* Individual Entries */}
+                {total.isExpanded && total.hodometros.map((hodometro) => (
+                  <tr 
+                    key={hodometro.id_hodometro}
+                    className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    onClick={(e) => {
+                      // Don't toggle selection when clicking on action buttons
+                      if ((e.target as HTMLElement).closest('button')) return;
+                      handleSelectItem(hodometro.id_hodometro);
+                    }}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap pl-12 relative">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.has(hodometro.id_hodometro)}
+                        onChange={() => handleSelectItem(hodometro.id_hodometro)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 absolute left-4 top-1/2 transform -translate-y-1/2"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      {/* Progress Bar */}
+                      <div 
+                        className="absolute left-0 top-0 h-full bg-blue-50 dark:bg-blue-900/10 transition-all duration-300"
+                        style={{ width: `${((hodometro.hod_lido || 0) / maxIndividualKm) * 100}%`, zIndex: 0 }}
+                      />
+                      <div className="relative z-10">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {hodometro.hora}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap relative">
+                      <div className="relative z-10">
+                        {hodometro.bateria ? (
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            Bateria: {hodometro.bateria}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {hodometro.hod_lido?.toLocaleString('pt-BR')} km
+                          </div>
+                        )}
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          Trip: {hodometro.trip_lida?.toLocaleString('pt-BR') || 'N/A'}
+                        </div>
+                        {hodometro.comparacao_leitura !== null && (
+                          <div className={`text-xs px-2 py-1 rounded-full font-medium mt-1 inline-block ${
+                            hodometro.comparacao_leitura
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
+                          }`}>
+                            {hodometro.comparacao_leitura ? 'Leitura OK' : 'Leitura Divergente'}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 relative">
+                      <div className="relative z-10">
+                        <div className="text-sm">
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {hodometro.motorista?.nome}
+                          </div>
+                          <div className="text-gray-500 dark:text-gray-400">
+                            {hodometro.veiculo?.placa}
+                          </div>
+                          <div className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200 rounded-full inline-block mt-1">
+                            Operação: {hodometro.cliente?.nome || 'Sem operação'}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right relative">
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-end space-x-3">
+                          <button
+                            onClick={(e) => handleShowPhoto(e, hodometro.foto_hodometro)}
+                            className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                     transition-colors ${!hodometro.foto_hodometro && 'opacity-50 cursor-not-allowed'}`}
+                            title={hodometro.foto_hodometro ? "Ver foto do hodômetro" : "Sem foto disponível"}
+                          >
+                            <Camera size={18} />
+                          </button>
+                          <button
+                            onClick={(e) => handleEdit(e, hodometro)}
+                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 
+                                     transition-colors"
+                            title="Editar"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete(e, hodometro)}
+                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                     transition-colors"
+                            title="Excluir"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Photo Modal */}
@@ -542,79 +471,6 @@ const HodometrosLista = () => {
                 alt="Foto do Hodômetro"
                 className="absolute inset-0 w-full h-full object-contain"
               />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* KM Chart Modal */}
-      {showKmChartModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowKmChartModal(false)}
-        >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Quilometragem Mensal - {selectedMotoristaNome}
-              </h3>
-              <button
-                onClick={() => setShowKmChartModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-6">
-              {monthlyKmData.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Não há dados suficientes para gerar o gráfico
-                  </p>
-                </div>
-              ) : (
-                <div className="h-80">
-                  <div className="flex h-full items-end space-x-2">
-                    {monthlyKmData.map((item, index) => {
-                      const maxKm = Math.max(...monthlyKmData.map(d => d.km));
-                      const percentage = (item.km / maxKm) * 100;
-                      
-                      return (
-                        <div key={index} className="flex-1 flex flex-col items-center">
-                          <div className="w-full text-center mb-2">
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">
-                              {item.km.toLocaleString('pt-BR')} km
-                            </span>
-                          </div>
-                          <div 
-                            className="w-full bg-blue-500 dark:bg-blue-600 rounded-t-lg transition-all duration-500"
-                            style={{ height: `${Math.max(5, percentage)}%` }}
-                          ></div>
-                          <div className="w-full text-center mt-2">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {item.month}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setShowKmChartModal(false)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                           transition-colors"
-                >
-                  Fechar
-                </button>
-              </div>
             </div>
           </div>
         </div>
