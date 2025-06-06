@@ -501,7 +501,7 @@ const HodometrosLista = () => {
                             {item.isExpanded ? (
                               <ChevronUp className="text-gray-400\" size={16} />
                             ) : (
-                              <ChevronDown className="text-gray-400" size={16} />
+                              <ChevronDown className="text-gray-400\" size={16} />
                             )}
                           </div>
                         </td>
