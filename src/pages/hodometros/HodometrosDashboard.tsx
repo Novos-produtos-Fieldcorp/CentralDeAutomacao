@@ -74,6 +74,49 @@ interface VehicleTypeFilter {
 
 type VehicleCategory = 'all' | 'automoveis' | 'ciclomotores';
 
+// Interface for a single hodometro reading
+interface HodometroReading {
+  id_hodometro: number;
+  data: string;
+  hora: string;
+  hod_informado: number | null;
+  hod_lido: number | null;
+  trip_lida: number | null;
+  trip_informada: string | null;
+  km_rodado: number | null;
+  bateria: number | null;
+  motorista_id: number;
+  veiculo_id: number;
+  cliente_id: number | null;
+  timestamp?: number; // Added for sorting
+  motorista?: {
+    nome: string;
+    cpf: string;
+  };
+  veiculo?: {
+    placa: string;
+    marca: string;
+    tipo: string;
+  };
+  cliente?: {
+    nome: string;
+  };
+}
+
+// Interface for daily KM calculation result
+interface DailyKmResult {
+  motorista_id: number;
+  veiculo_id: number;
+  data: string;
+  km_total: number;
+  is_electric: boolean;
+  motorista_nome?: string;
+  veiculo_placa?: string;
+  cliente_id?: number | null;
+  cliente_nome?: string;
+  bateria_final?: number | null;
+}
+
 const HodometrosDashboard = () => {
   const { query } = useCompanyData();
   const { companyId } = useAuth();
@@ -110,6 +153,78 @@ const HodometrosDashboard = () => {
     { value: 'automoveis', label: 'Automóveis' },
     { value: 'ciclomotores', label: 'Ciclomotores elétricos' }
   ];
+
+  /**
+   * Calculate daily KM for a group of hodometro readings
+   * For electric vehicles: uses the difference between first and last trip_lida
+   * For regular vehicles: uses the difference between first and last hod_lido
+   */
+  const calculateDailyKm = (readings: HodometroReading[]): number => {
+    if (!readings || readings.length === 0) return 0;
+    
+    // Sort readings by timestamp (earliest first)
+    const sortedReadings = [...readings].sort((a, b) => {
+      const timeA = a.timestamp || new Date(`${a.data}T${a.hora}`).getTime();
+      const timeB = b.timestamp || new Date(`${b.data}T${b.hora}`).getTime();
+      return timeA - timeB;
+    });
+    
+    const firstReading = sortedReadings[0];
+    const lastReading = sortedReadings[sortedReadings.length - 1];
+    
+    // Check if it's an electric vehicle
+    const isElectric = firstReading.bateria !== null && firstReading.bateria !== undefined;
+    
+    if (isElectric) {
+      // For electric vehicles, calculate the difference between first and last trip_lida
+      const firstTripValue = typeof firstReading.trip_lida === 'number' && !isNaN(firstReading.trip_lida) 
+        ? firstReading.trip_lida 
+        : 0;
+        
+      const lastTripValue = typeof lastReading.trip_lida === 'number' && !isNaN(lastReading.trip_lida) 
+        ? lastReading.trip_lida 
+        : 0;
+      
+      // If we have valid readings, return the difference
+      if (lastTripValue >= firstTripValue && firstTripValue > 0) {
+        return lastTripValue - firstTripValue;
+      }
+      
+      // Fallback: sum km_rodado values if trip_lida calculation isn't possible
+      return sortedReadings.reduce((sum, reading) => {
+        const kmValue = typeof reading.km_rodado === 'number' && !isNaN(reading.km_rodado) 
+          ? reading.km_rodado 
+          : 0;
+        return sum + kmValue;
+      }, 0);
+    } else {
+      // For regular vehicles, calculate the difference between first and last hod_lido
+      const firstHodValue = typeof firstReading.hod_lido === 'number' && !isNaN(firstReading.hod_lido) 
+        ? firstReading.hod_lido 
+        : (typeof firstReading.hod_informado === 'number' && !isNaN(firstReading.hod_informado) 
+          ? firstReading.hod_informado 
+          : 0);
+          
+      const lastHodValue = typeof lastReading.hod_lido === 'number' && !isNaN(lastReading.hod_lido) 
+        ? lastReading.hod_lido 
+        : (typeof lastReading.hod_informado === 'number' && !isNaN(lastReading.hod_informado) 
+          ? lastReading.hod_informado 
+          : 0);
+      
+      // If we have valid readings, return the difference
+      if (lastHodValue >= firstHodValue && firstHodValue > 0) {
+        return lastHodValue - firstHodValue;
+      }
+      
+      // Fallback: sum km_rodado values if hodometer calculation isn't possible
+      return sortedReadings.reduce((sum, reading) => {
+        const kmValue = typeof reading.km_rodado === 'number' && !isNaN(reading.km_rodado) 
+          ? reading.km_rodado 
+          : 0;
+        return sum + kmValue;
+      }, 0);
+    }
+  };
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -187,9 +302,8 @@ const HodometrosDashboard = () => {
           });
         }
 
-        // Calculate KM total rodado by person and date
         // Group readings by motorista, date, and vehicle
-        const motoristaDateVehicleReadings = new Map<string, Map<string, Map<number, { readings: any[], isElectric: boolean }>>>();
+        const motoristaDateVehicleReadings = new Map<string, Map<string, Map<number, HodometroReading[]>>>();
         
         // First, group all readings by motorista, date, and vehicle
         hodometros.forEach(h => {
@@ -198,7 +312,6 @@ const HodometrosDashboard = () => {
           const motoristaKey = h.motorista_id.toString();
           const dateKey = h.data;
           const vehicleKey = h.veiculo_id;
-          const isElectric = h.bateria !== null && h.bateria !== undefined;
           
           // Create motorista map if it doesn't exist
           if (!motoristaDateVehicleReadings.has(motoristaKey)) {
@@ -214,121 +327,99 @@ const HodometrosDashboard = () => {
           // Create vehicle map if it doesn't exist
           const dateMap = motoristaMap.get(dateKey)!;
           if (!dateMap.has(vehicleKey)) {
-            dateMap.set(vehicleKey, { 
-              readings: [],
-              isElectric
-            });
+            dateMap.set(vehicleKey, []);
           }
           
-          // Add reading to the list
-          dateMap.get(vehicleKey)!.readings.push({
+          // Add reading to the list with timestamp for sorting
+          const readingWithTimestamp = {
             ...h,
             timestamp: new Date(`${h.data}T${h.hora}`).getTime()
-          });
+          };
+          
+          dateMap.get(vehicleKey)!.push(readingWithTimestamp);
         });
+        
+        // Array to store daily KM calculations
+        const dailyKmResults: DailyKmResult[] = [];
         
         // Calculate total KM based on first and last readings for each motorista, date, and vehicle
         let kmTotalRodado = 0;
         
-        motoristaDateVehicleReadings.forEach(motoristaMap => {
-          motoristaMap.forEach(dateMap => {
-            dateMap.forEach(vehicleData => {
-              const { readings, isElectric } = vehicleData;
+        motoristaDateVehicleReadings.forEach((motoristaMap, motoristaId) => {
+          motoristaMap.forEach((dateMap, date) => {
+            dateMap.forEach((readings, vehicleId) => {
+              // Calculate daily KM for this group of readings
+              const dailyKm = calculateDailyKm(readings);
               
-              if (isElectric) {
-                // For electric vehicles, sum up trip_lida values or use trip_informada as fallback
-                const tripTotal = readings.reduce((sum: number, reading: any) => {
-                  let currentTripValue = 0;
-                  
-                  // Try to get trip_lida first
-                  if (typeof reading.trip_lida === 'number' && !isNaN(reading.trip_lida)) {
-                    currentTripValue = reading.trip_lida;
-                  } 
-                  // If trip_lida is invalid, try trip_informada
-                  else if (reading.trip_informada !== null && reading.trip_informada !== undefined) {
-                    const parsedValue = parseFloat(reading.trip_informada);
-                    if (!isNaN(parsedValue)) {
-                      currentTripValue = parsedValue;
-                    }
-                  }
-                  
-                  return sum + currentTripValue;
-                }, 0);
-                
-                kmTotalRodado += tripTotal;
-              } else if (readings.length >= 2) {
-                // For regular vehicles, find first and last readings
-                // Sort by timestamp
-                const sortedReadings = [...readings].sort((a, b) => a.timestamp - b.timestamp);
-                
-                // Get first and last readings
-                const firstReading = sortedReadings[0];
-                const lastReading = sortedReadings[sortedReadings.length - 1];
-                
-                // Get hodometer values with fallbacks
-                let firstHodValue = 0;
-                if (typeof firstReading.hod_lido === 'number' && !isNaN(firstReading.hod_lido)) {
-                  firstHodValue = firstReading.hod_lido;
-                } else if (typeof firstReading.hod_informado === 'number' && !isNaN(firstReading.hod_informado)) {
-                  firstHodValue = firstReading.hod_informado;
-                }
-                
-                let lastHodValue = 0;
-                if (typeof lastReading.hod_lido === 'number' && !isNaN(lastReading.hod_lido)) {
-                  lastHodValue = lastReading.hod_lido;
-                } else if (typeof lastReading.hod_informado === 'number' && !isNaN(lastReading.hod_informado)) {
-                  lastHodValue = lastReading.hod_informado;
-                }
-                
-                // Calculate difference if last value is greater than first
-                if (lastHodValue > firstHodValue) {
-                  kmTotalRodado += (lastHodValue - firstHodValue);
-                }
-              }
+              // Add to total
+              kmTotalRodado += dailyKm;
+              
+              // Get additional info for the result
+              const isElectric = readings[0].bateria !== null && readings[0].bateria !== undefined;
+              
+              // Sort readings by timestamp to get the last one for battery level
+              const sortedReadings = [...readings].sort((a, b) => 
+                (b.timestamp || 0) - (a.timestamp || 0)
+              );
+              
+              // Store the result
+              dailyKmResults.push({
+                motorista_id: parseInt(motoristaId),
+                veiculo_id: vehicleId,
+                data: date,
+                km_total: dailyKm,
+                is_electric: isElectric,
+                motorista_nome: readings[0].motorista?.nome,
+                veiculo_placa: readings[0].veiculo?.placa,
+                cliente_id: readings[0].cliente_id,
+                cliente_nome: readings[0].cliente?.nome,
+                bateria_final: isElectric ? sortedReadings[0].bateria : null
+              });
             });
           });
         });
 
-        // KM por veículo
-        const veiculosMap = new Map();
-        hodometros.forEach(h => {
-          if (!h.veiculo?.placa) return;
+        // KM por veículo - using daily KM results
+        const veiculosMap = new Map<string, {
+          km_total: number;
+          data: string;
+          is_electric: boolean;
+          bateria: number | null;
+          trip_total: number;
+          placa: string;
+        }>();
+        
+        dailyKmResults.forEach(result => {
+          if (!result.veiculo_placa) return;
           
-          const isElectric = h.bateria !== null && h.bateria !== undefined;
-          const current = veiculosMap.get(h.veiculo.placa) || { 
-            km_total: 0, 
-            data: h.data, 
-            is_electric: isElectric,
-            bateria: isElectric ? h.bateria : null,
-            trip_total: 0
+          const placa = result.veiculo_placa;
+          const current = veiculosMap.get(placa) || {
+            km_total: 0,
+            data: result.data,
+            is_electric: result.is_electric,
+            bateria: result.bateria_final,
+            trip_total: 0,
+            placa
           };
           
-          // For electric vehicles, use trip_lida if available
-          if (isElectric) {
-            // Add trip_lida to trip_total if it's a valid number
-            if (typeof h.trip_lida === 'number' && !isNaN(h.trip_lida)) {
-              current.trip_total += h.trip_lida;
-            }
-            // Also add km_rodado to km_total if it's a valid number
-            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
-              current.km_total += h.km_rodado;
-            }
-          } else {
-            // For regular vehicles, just add km_rodado if it's a valid number
-            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
-              current.km_total += h.km_rodado;
+          // Add the daily KM to the total
+          current.km_total += result.km_total;
+          
+          // Update the date if this result is more recent
+          if (new Date(result.data) > new Date(current.data)) {
+            current.data = result.data;
+            if (result.is_electric) {
+              current.bateria = result.bateria_final;
             }
           }
           
-          current.data = h.data;
-          
-          veiculosMap.set(h.veiculo.placa, current);
+          veiculosMap.set(placa, current);
         });
-
-        const kmPorVeiculo = Array.from(veiculosMap.entries())
-          .map(([placa, data]) => ({
-            placa,
-            km_total: data.is_electric ? data.trip_total || data.km_total : data.km_total,
+        
+        const kmPorVeiculo = Array.from(veiculosMap.values())
+          .map(data => ({
+            placa: data.placa,
+            km_total: data.km_total,
             data: data.data,
             is_electric: data.is_electric,
             bateria: data.bateria,
@@ -336,158 +427,123 @@ const HodometrosDashboard = () => {
           }))
           .sort((a, b) => b.km_total - a.km_total);
 
-        // KM por motorista
-        const motoristasMap = new Map();
-        hodometros.forEach(h => {
-          if (!h.motorista?.nome) return;
+        // KM por motorista - using daily KM results
+        const motoristasMap = new Map<string, {
+          nome: string;
+          km_total: number;
+          data: string;
+          leituras: number;
+          trip_total: number;
+        }>();
+        
+        dailyKmResults.forEach(result => {
+          if (!result.motorista_nome) return;
           
-          const isElectric = h.bateria !== null && h.bateria !== undefined;
-          const current = motoristasMap.get(h.motorista.nome) || { 
-            km_total: 0, 
-            data: h.data,
+          const nome = result.motorista_nome;
+          const current = motoristasMap.get(nome) || {
+            nome,
+            km_total: 0,
+            data: result.data,
             leituras: 0,
             trip_total: 0
           };
           
-          // For electric vehicles, use trip_lida if available
-          if (isElectric) {
-            // Add trip_lida to trip_total if it's a valid number
-            if (typeof h.trip_lida === 'number' && !isNaN(h.trip_lida)) {
-              current.trip_total += h.trip_lida;
-            }
-            // Also add km_rodado to km_total if it's a valid number
-            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
-              current.km_total += h.km_rodado;
-            }
-          } else {
-            // For regular vehicles, just add km_rodado if it's a valid number
-            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
-              current.km_total += h.km_rodado;
-            }
+          // Add the daily KM to the total
+          current.km_total += result.km_total;
+          
+          // Count this as one reading (one day)
+          current.leituras += 1;
+          
+          // Update the date if this result is more recent
+          if (new Date(result.data) > new Date(current.data)) {
+            current.data = result.data;
           }
           
-          current.data = h.data;
-          current.leituras += 1;
-          motoristasMap.set(h.motorista.nome, current);
+          motoristasMap.set(nome, current);
         });
+        
+        const kmPorMotorista = Array.from(motoristasMap.values())
+          .sort((a, b) => b.leituras - a.leituras);
 
-        const kmPorMotorista = Array.from(motoristasMap.entries())
-          .map(([nome, data]) => ({
-            nome,
-            km_total: vehicleCategory === 'ciclomotores' ? data.trip_total || data.km_total : data.km_total,
-            data: data.data,
-            leituras: data.leituras
-          }))
-          .sort((a, b) => b.leituras - a.leituras); // Sort by number of readings (most to least)
-
-        // KM por cliente
-        const clientesMap = new Map();
-        hodometros.forEach(h => {
-          if (!h.cliente?.nome) return;
+        // KM por cliente - using daily KM results
+        const clientesMap = new Map<string, {
+          nome: string;
+          km_total: number;
+          data: string;
+        }>();
+        
+        // First add "Sem cliente" for readings without a client
+        clientesMap.set('Sem cliente', {
+          nome: 'Sem cliente',
+          km_total: dailyKmResults
+            .filter(r => !r.cliente_id)
+            .reduce((sum, r) => sum + r.km_total, 0),
+          data: new Date().toISOString().split('T')[0]
+        });
+        
+        // Then add KM for each client
+        dailyKmResults.forEach(result => {
+          if (!result.cliente_nome) return;
           
-          const isElectric = h.bateria !== null && h.bateria !== undefined;
-          const current = clientesMap.get(h.cliente.nome) || { 
-            km_total: 0, 
-            data: h.data,
-            trip_total: 0
+          const nome = result.cliente_nome;
+          const current = clientesMap.get(nome) || {
+            nome,
+            km_total: 0,
+            data: result.data
           };
           
-          // For electric vehicles, use trip_lida if available
-          if (isElectric) {
-            // Add trip_lida to trip_total if it's a valid number
-            if (typeof h.trip_lida === 'number' && !isNaN(h.trip_lida)) {
-              current.trip_total += h.trip_lida;
-            }
-            // Also add km_rodado to km_total if it's a valid number
-            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
-              current.km_total += h.km_rodado;
-            }
-          } else {
-            // For regular vehicles, just add km_rodado if it's a valid number
-            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
-              current.km_total += h.km_rodado;
-            }
+          // Add the daily KM to the total
+          current.km_total += result.km_total;
+          
+          // Update the date if this result is more recent
+          if (new Date(result.data) > new Date(current.data)) {
+            current.data = result.data;
           }
           
-          current.data = h.data;
-          clientesMap.set(h.cliente.nome, current);
+          clientesMap.set(nome, current);
         });
-
-        const kmPorCliente = Array.from(clientesMap.entries())
-          .map(([nome, data]) => ({
-            nome,
-            km_total: vehicleCategory === 'ciclomotores' ? data.trip_total || data.km_total : data.km_total,
-            data: data.data
-          }))
+        
+        const kmPorCliente = Array.from(clientesMap.values())
+          .filter(client => client.km_total > 0) // Only include clients with KM
           .sort((a, b) => b.km_total - a.km_total);
 
-        // KM por operação (agrupado por cliente_id)
-        const operacoesMap = new Map();
+        // KM por operação (agrupado por cliente_id) - using daily KM results
+        const operacoesMap = new Map<string, {
+          km_total: number;
+        }>();
         
-        // Primeiro, adicionar "Sem operação" para leituras sem cliente
-        const semOperacaoKm = hodometros
-          .filter(h => !h.cliente_id)
-          .reduce((sum, h) => {
-            const isElectric = h.bateria !== null && h.bateria !== undefined;
-            if (isElectric && vehicleCategory === 'ciclomotores') {
-              // Only add trip_lida if it's a valid number
-              return sum + (typeof h.trip_lida === 'number' && !isNaN(h.trip_lida) ? h.trip_lida : 0);
-            } else {
-              // Only add km_rodado if it's a valid number
-              return sum + (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado) ? h.km_rodado : 0);
-            }
-          }, 0);
+        // First, add "Sem operação" for readings without a client
+        const semOperacaoKm = dailyKmResults
+          .filter(r => !r.cliente_id)
+          .reduce((sum, r) => sum + r.km_total, 0);
         
         if (semOperacaoKm > 0) {
-          operacoesMap.set('Sem operação', { km_total: semOperacaoKm, trip_total: 0 });
+          operacoesMap.set('Sem operação', { km_total: semOperacaoKm });
         }
         
-        // Depois, agrupar por cliente
-        hodometros.forEach(h => {
-          if (!h.cliente?.nome) return;
+        // Then add KM for each client
+        dailyKmResults.forEach(result => {
+          if (!result.cliente_nome) return;
           
-          const isElectric = h.bateria !== null && h.bateria !== undefined;
-          const current = operacoesMap.get(h.cliente.nome) || { 
-            km_total: 0,
-            trip_total: 0
-          };
+          const nome = result.cliente_nome;
+          const current = operacoesMap.get(nome) || { km_total: 0 };
           
-          // For electric vehicles, use trip_lida if available
-          if (isElectric) {
-            // Add trip_lida to trip_total if it's a valid number
-            if (typeof h.trip_lida === 'number' && !isNaN(h.trip_lida)) {
-              current.trip_total += h.trip_lida;
-            }
-            // Also add km_rodado to km_total if it's a valid number
-            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
-              current.km_total += h.km_rodado;
-            }
-          } else {
-            // For regular vehicles, just add km_rodado if it's a valid number
-            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
-              current.km_total += h.km_rodado;
-            }
-          }
+          // Add the daily KM to the total
+          current.km_total += result.km_total;
           
-          operacoesMap.set(h.cliente.nome, current);
+          operacoesMap.set(nome, current);
         });
         
-        // Calcular o total para percentuais
+        // Calculate total for percentages
         const totalKmOperacoes = Array.from(operacoesMap.values())
-          .reduce((sum, op) => {
-            if (vehicleCategory === 'ciclomotores') {
-              return sum + (op.trip_total || op.km_total);
-            } else {
-              return sum + op.km_total;
-            }
-          }, 0);
+          .reduce((sum, op) => sum + op.km_total, 0);
         
-        // Formatar dados de operações com percentuais
+        // Format operations data with percentages
         const kmPorOperacao = Array.from(operacoesMap.entries())
           .map(([nome, data]) => ({
-            nome, 
-            km_total: vehicleCategory === 'ciclomotores' ? (data.trip_total || data.km_total) : data.km_total,
-            percentual: totalKmOperacoes > 0 ? ((vehicleCategory === 'ciclomotores' ? (data.trip_total || data.km_total) : data.km_total) / totalKmOperacoes) * 100 : 0
+            nome,
+            km_total: data.km_total,
+            percentual: totalKmOperacoes > 0 ? (data.km_total / totalKmOperacoes) * 100 : 0
           }))
           .sort((a, b) => b.km_total - a.km_total);
 
@@ -547,10 +603,14 @@ const HodometrosDashboard = () => {
         let categoryKmTotal = 0;
         if (vehicleCategory === 'automoveis') {
           // Only regular vehicles
-          categoryKmTotal = kmTotalRodado;
+          categoryKmTotal = dailyKmResults
+            .filter(r => !r.is_electric)
+            .reduce((sum, r) => sum + r.km_total, 0);
         } else if (vehicleCategory === 'ciclomotores') {
-          // Only electric vehicles - use trip_lida values
-          categoryKmTotal = kmTotalRodado;
+          // Only electric vehicles
+          categoryKmTotal = dailyKmResults
+            .filter(r => r.is_electric)
+            .reduce((sum, r) => sum + r.km_total, 0);
         } else {
           // All vehicles
           categoryKmTotal = kmTotalRodado;
