@@ -542,27 +542,33 @@ const HodometrosLista = () => {
                               </button>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-                              {monthlyData.map((item, index) => (
-                                <div key={index} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                      {item.month}
-                                    </span>
-                                    <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                                      {item.km.toLocaleString('pt-BR')} km
-                                    </span>
-                                  </div>
-                                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                                    <div 
-                                      className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                                      style={{ 
-                                        width: `${Math.max(5, (item.km / Math.max(...monthlyData.map(d => d.km), 1)) * 100)}%` 
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              ))}
+                            {/* Monthly data as bars */}
+                            <div className="h-40 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                              <div className="flex h-full items-end space-x-4">
+                                {monthlyData.map((item, index) => {
+                                  const maxValue = Math.max(...monthlyData.map(d => d.km));
+                                  const percentage = (item.km / maxValue) * 100;
+                                  
+                                  return (
+                                    <div key={index} className="flex-1 flex flex-col items-center">
+                                      <div className="w-full flex justify-center mb-1">
+                                        <span className="text-xs font-medium text-gray-900 dark:text-white">
+                                          {item.km.toLocaleString('pt-BR')}
+                                        </span>
+                                      </div>
+                                      <div 
+                                        className="w-full bg-blue-500 dark:bg-blue-400 rounded-t-lg transition-all duration-500"
+                                        style={{ height: `${Math.max(5, percentage)}%` }}
+                                      />
+                                      <div className="w-full text-center mt-2">
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                          {item.month}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
                             
                             <div className="overflow-x-auto">
@@ -714,7 +720,8 @@ const HodometrosLista = () => {
             </div>
             <div className="p-6">
               <div className="h-80 w-full">
-                <div className="flex h-full items-end space-x-2">
+                {/* Bar chart with monthly data */}
+                <div className="flex h-full items-end space-x-4">
                   {monthlyData.map((item, index) => {
                     const maxValue = Math.max(...monthlyData.map(d => d.km));
                     const percentage = (item.km / maxValue) * 100;
