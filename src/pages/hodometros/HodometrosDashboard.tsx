@@ -171,7 +171,7 @@ const HodometrosDashboard = () => {
           let batterySum = 0;
           
           electricVehicleReadings.forEach(reading => {
-            if (typeof reading.bateria === 'number') {
+            if (typeof reading.bateria === 'number' && !isNaN(reading.bateria)) {
               batterySum += reading.bateria;
               validBatteryReadings++;
             }
@@ -181,7 +181,7 @@ const HodometrosDashboard = () => {
           
           // Calculate total battery used
           electricVehicleReadings.forEach(reading => {
-            if (typeof reading.bateria === 'number') {
+            if (typeof reading.bateria === 'number' && !isNaN(reading.bateria)) {
               totalBateriaUtilizada += (100 - reading.bateria);
             }
           });
@@ -306,14 +306,18 @@ const HodometrosDashboard = () => {
           // For electric vehicles, use trip_lida if available
           if (isElectric) {
             // Add trip_lida to trip_total
-            if (h.trip_lida !== null && h.trip_lida !== undefined) {
+            if (typeof h.trip_lida === 'number' && !isNaN(h.trip_lida)) {
               current.trip_total += h.trip_lida;
             }
-            // Also add km_rodado to km_total
-            current.km_total += h.km_rodado || 0;
+            // Also add km_rodado to km_total if it's a valid number
+            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
+              current.km_total += h.km_rodado;
+            }
           } else {
-            // For regular vehicles, just add km_rodado
-            current.km_total += h.km_rodado || 0;
+            // For regular vehicles, just add km_rodado if it's a valid number
+            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
+              current.km_total += h.km_rodado;
+            }
           }
           
           current.data = h.data;
@@ -347,15 +351,19 @@ const HodometrosDashboard = () => {
           
           // For electric vehicles, use trip_lida if available
           if (isElectric) {
-            // Add trip_lida to trip_total
-            if (h.trip_lida !== null && h.trip_lida !== undefined) {
+            // Add trip_lida to trip_total if it's a valid number
+            if (typeof h.trip_lida === 'number' && !isNaN(h.trip_lida)) {
               current.trip_total += h.trip_lida;
             }
-            // Also add km_rodado to km_total
-            current.km_total += h.km_rodado || 0;
+            // Also add km_rodado to km_total if it's a valid number
+            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
+              current.km_total += h.km_rodado;
+            }
           } else {
-            // For regular vehicles, just add km_rodado
-            current.km_total += h.km_rodado || 0;
+            // For regular vehicles, just add km_rodado if it's a valid number
+            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
+              current.km_total += h.km_rodado;
+            }
           }
           
           current.data = h.data;
@@ -386,15 +394,19 @@ const HodometrosDashboard = () => {
           
           // For electric vehicles, use trip_lida if available
           if (isElectric) {
-            // Add trip_lida to trip_total
-            if (h.trip_lida !== null && h.trip_lida !== undefined) {
+            // Add trip_lida to trip_total if it's a valid number
+            if (typeof h.trip_lida === 'number' && !isNaN(h.trip_lida)) {
               current.trip_total += h.trip_lida;
             }
-            // Also add km_rodado to km_total
-            current.km_total += h.km_rodado || 0;
+            // Also add km_rodado to km_total if it's a valid number
+            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
+              current.km_total += h.km_rodado;
+            }
           } else {
-            // For regular vehicles, just add km_rodado
-            current.km_total += h.km_rodado || 0;
+            // For regular vehicles, just add km_rodado if it's a valid number
+            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
+              current.km_total += h.km_rodado;
+            }
           }
           
           current.data = h.data;
@@ -418,9 +430,11 @@ const HodometrosDashboard = () => {
           .reduce((sum, h) => {
             const isElectric = h.bateria !== null && h.bateria !== undefined;
             if (isElectric && vehicleCategory === 'ciclomotores') {
-              return sum + (h.trip_lida || 0);
+              // Only add trip_lida if it's a valid number
+              return sum + (typeof h.trip_lida === 'number' && !isNaN(h.trip_lida) ? h.trip_lida : 0);
             } else {
-              return sum + (h.km_rodado || 0);
+              // Only add km_rodado if it's a valid number
+              return sum + (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado) ? h.km_rodado : 0);
             }
           }, 0);
         
@@ -440,15 +454,19 @@ const HodometrosDashboard = () => {
           
           // For electric vehicles, use trip_lida if available
           if (isElectric) {
-            // Add trip_lida to trip_total
-            if (h.trip_lida !== null && h.trip_lida !== undefined) {
+            // Add trip_lida to trip_total if it's a valid number
+            if (typeof h.trip_lida === 'number' && !isNaN(h.trip_lida)) {
               current.trip_total += h.trip_lida;
             }
-            // Also add km_rodado to km_total
-            current.km_total += h.km_rodado || 0;
+            // Also add km_rodado to km_total if it's a valid number
+            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
+              current.km_total += h.km_rodado;
+            }
           } else {
-            // For regular vehicles, just add km_rodado
-            current.km_total += h.km_rodado || 0;
+            // For regular vehicles, just add km_rodado if it's a valid number
+            if (typeof h.km_rodado === 'number' && !isNaN(h.km_rodado)) {
+              current.km_total += h.km_rodado;
+            }
           }
           
           operacoesMap.set(h.cliente.nome, current);
@@ -538,6 +556,7 @@ const HodometrosDashboard = () => {
           categoryKmTotal = kmTotalRodado;
         }
         
+        // Avoid division by zero
         const kmMediaPorVeiculo = uniqueVehicleCount > 0 ? categoryKmTotal / uniqueVehicleCount : 0;
         
         // Count unique drivers
@@ -551,6 +570,7 @@ const HodometrosDashboard = () => {
         });
         
         const uniqueDriverCount = uniqueDrivers.size;
+        // Avoid division by zero
         const kmMediaPorMotorista = uniqueDriverCount > 0 ? categoryKmTotal / uniqueDriverCount : 0;
 
         setStats({
