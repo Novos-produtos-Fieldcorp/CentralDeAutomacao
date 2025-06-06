@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Calendar, BarChart2, User, Truck, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Calendar, BarChart2, User, Truck, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -27,7 +27,6 @@ interface MileageReport {
     cliente?: string | null;
   }[];
   km_total_geral: number;
-  isExpanded?: boolean;
   monthlyData?: {
     month: string;
     km: number;
@@ -44,6 +43,7 @@ const HodometrosRelatorio = () => {
   const [clients, setClients] = useState<string[]>([]);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
   const [selectedReport, setSelectedReport] = useState<MileageReport | null>(null);
+  const [showChartModal, setShowChartModal] = useState(false);
 
   const fetchMileageReports = useCallback(async () => {
     try {
@@ -329,18 +329,9 @@ const HodometrosRelatorio = () => {
     fetchMileageReports();
   }, [fetchMileageReports]);
 
-  const toggleExpand = (motorista_id: number) => {
-    setReports(prev => 
-      prev.map(report => 
-        report.motorista_id === motorista_id 
-          ? { ...report, isExpanded: !report.isExpanded } 
-          : report
-      )
-    );
-  };
-
   const handleReportClick = (report: MileageReport) => {
     setSelectedReport(report);
+    setShowChartModal(true);
   };
 
   const filteredReports = reports.filter(report => {
@@ -414,85 +405,217 @@ const HodometrosRelatorio = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Report List */}
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <Truck className="w-5 h-5 text-blue-500" />
-            Relatório de Quilometragem
-          </h2>
-          
-          {filteredReports.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center border border-gray-200 dark:border-gray-700">
-              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-500 dark:text-gray-400">
-                Nenhum registro encontrado para o período selecionado
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredReports.map((report) => (
-                <div 
-                  key={report.motorista_id}
-                  className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm transition-all duration-200 ${
-                    selectedReport?.motorista_id === report.motorista_id ? 'ring-2 ring-blue-500' : ''
-                  }`}
-                >
-                  {/* Driver Info Header */}
-                  <div 
-                    className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    onClick={() => handleReportClick(report)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <img 
-                        src={report.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(report.nome)}&background=random&color=fff&size=128`} 
-                        alt={report.nome}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                              {report.nome}
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {formatCPF(report.cpf)}
-                            </p>
+      {/* Report Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leitura Inicial</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leitura Final</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total KM</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {filteredReports.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                    <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                    <p>Nenhum registro encontrado para o período selecionado</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredReports.map((report) => (
+                  report.veiculos.map((veiculo, vIndex) => (
+                    <tr 
+                      key={`${report.motorista_id}-${veiculo.placa}-${vIndex}`}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                      onClick={() => handleReportClick(report)}
+                    >
+                      {vIndex === 0 ? (
+                        <td className="px-6 py-4 whitespace-nowrap" rowSpan={report.veiculos.length}>
+                          <div className="flex items-center">
+                            <img 
+                              src={report.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(report.nome)}&background=random&color=fff&size=128`} 
+                              alt={report.nome}
+                              className="w-10 h-10 rounded-full object-cover mr-3"
+                            />
+                            <div>
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {report.nome}
+                              </div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                {formatCPF(report.cpf)}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                              {report.km_total_geral.toLocaleString('pt-BR')} km
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {report.veiculos.length} veículo{report.veiculos.length !== 1 ? 's' : ''}
-                            </div>
+                        </td>
+                      ) : null}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase">
+                          {veiculo.placa}
+                        </div>
+                        {veiculo.is_electric && (
+                          <div className="text-xs px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200 rounded-full inline-block mt-1">
+                            Elétrico
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {veiculo.cliente || 'Sem cliente'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        {veiculo.is_electric ? (
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            Ciclomotor elétrico
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {veiculo.km_inicial.toLocaleString('pt-BR')} km
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        {veiculo.is_electric ? (
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            Bateria: {veiculo.bateria}%
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {veiculo.km_final.toLocaleString('pt-BR')} km
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {veiculo.km_total.toLocaleString('pt-BR')} km
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {formatDate(veiculo.data_final)}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Monthly Chart Modal */}
+      {showChartModal && selectedReport && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-200 dark:border-gray-700">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <BarChart2 className="w-5 h-5 text-blue-500" />
+                Quilometragem Mensal
+              </h3>
+              <button
+                onClick={() => setShowChartModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <img 
+                  src={selectedReport.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedReport.nome)}&background=random&color=fff&size=128`} 
+                  alt={selectedReport.nome}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    {selectedReport.nome}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {formatCPF(selectedReport.cpf)}
+                  </p>
+                </div>
+                <div className="ml-auto text-right">
+                  <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                    {selectedReport.km_total_geral.toLocaleString('pt-BR')} km
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Total no período
+                  </div>
+                </div>
+              </div>
+              
+              {selectedReport.monthlyData && selectedReport.monthlyData.length > 0 ? (
+                <div className="space-y-6">
+                  <h4 className="text-base font-medium text-gray-900 dark:text-white">
+                    Distribuição Mensal
+                  </h4>
+                  
+                  <div className="space-y-4">
+                    {selectedReport.monthlyData.map((data, index) => (
+                      <div key={index} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {data.month}
+                          </span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {data.km.toLocaleString('pt-BR')} km
+                          </span>
+                        </div>
+                        <div className="h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-500 dark:bg-blue-400 rounded-lg transition-all duration-300 flex items-center"
+                            style={{ width: `${Math.max(5, (data.km / maxKmValue) * 100)}%` }}
+                          >
+                            <span className="text-xs font-medium text-white px-2 truncate">
+                              {data.km.toLocaleString('pt-BR')} km
+                            </span>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                  
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h4 className="text-base font-medium text-gray-900 dark:text-white mb-3">
+                      Detalhes dos Veículos
+                    </h4>
                     
-                    {/* Vehicle Summary */}
-                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {report.veiculos.map((veiculo, idx) => (
+                    <div className="space-y-3">
+                      {selectedReport.veiculos.map((veiculo, idx) => (
                         <div 
-                          key={`${report.motorista_id}-${veiculo.placa}-${idx}`}
-                          className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg flex items-center gap-3"
+                          key={idx}
+                          className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg"
                         >
-                          <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
-                            <Truck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between">
-                              <div className="font-medium text-gray-900 dark:text-white">
-                                {veiculo.placa.toUpperCase()}
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
+                                <Truck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                               </div>
-                              <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                                {veiculo.km_total.toLocaleString('pt-BR')} km
+                              <div>
+                                <div className="font-medium text-gray-900 dark:text-white uppercase">
+                                  {veiculo.placa}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  {veiculo.cliente || 'Sem cliente'}
+                                </div>
                               </div>
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 flex justify-between">
-                              <span>{veiculo.cliente || 'Sem cliente'}</span>
-                              <span>{formatDate(veiculo.data_final)}</span>
+                            <div className="text-right">
+                              <div className="font-medium text-gray-900 dark:text-white">
+                                {veiculo.km_total.toLocaleString('pt-BR')} km
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {formatDate(veiculo.data_final)}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -500,78 +623,19 @@ const HodometrosRelatorio = () => {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Monthly Chart */}
-        <div className="lg:col-span-1">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 h-full">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-              <BarChart2 className="w-5 h-5 text-blue-500" />
-              Quilometragem Mensal
-            </h2>
-            
-            {selectedReport ? (
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <img 
-                    src={selectedReport.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedReport.nome)}&background=random&color=fff&size=128`} 
-                    alt={selectedReport.nome}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                  <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">
-                      {selectedReport.nome}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Total: {selectedReport.km_total_geral.toLocaleString('pt-BR')} km
-                    </p>
-                  </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Calendar className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400 max-w-md">
+                    Não há dados mensais disponíveis para este motorista no período selecionado.
+                    Tente selecionar um período maior ou verificar se existem leituras registradas.
+                  </p>
                 </div>
-                
-                {selectedReport.monthlyData && selectedReport.monthlyData.length > 0 ? (
-                  <div className="space-y-4">
-                    {selectedReport.monthlyData.map((data, index) => (
-                      <div key={index} className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {data.month}
-                          </span>
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {data.km.toLocaleString('pt-BR')} km
-                          </span>
-                        </div>
-                        <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
-                            style={{ width: `${(data.km / maxKmValue) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-64 text-center">
-                    <Calendar className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-2" />
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Não há dados mensais disponíveis para este motorista no período selecionado
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-64 text-center">
-                <User className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-2" />
-                <p className="text-gray-500 dark:text-gray-400">
-                  Selecione um motorista para visualizar o gráfico de quilometragem mensal
-                </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
