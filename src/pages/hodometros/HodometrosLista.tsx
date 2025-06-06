@@ -500,7 +500,7 @@ const HodometrosLista = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             {item.isExpanded ? (
-                              <ChevronUp className="text-gray-400" size={20} />
+                              <ChevronUp className="text-gray-400\" size={20} />
                             ) : (
                               <ChevronDown className="text-gray-400" size={20} />
                             )}
