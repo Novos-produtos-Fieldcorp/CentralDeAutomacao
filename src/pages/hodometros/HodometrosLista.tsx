@@ -563,22 +563,27 @@ const HodometrosLista = () => {
                       {item.isExpanded && (
                         <tr className="bg-gray-50 dark:bg-gray-700/20">
                           <td colSpan={8} className="px-6 py-4">
-                            <div className="overflow-x-auto">
+                            <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
                               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead className="bg-gray-100 dark:bg-gray-700">
+                                <thead className="bg-gray-100 dark:bg-gray-700 rounded-t-xl">
                                   <tr>
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-10"></th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-8 rounded-tl-xl"></th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hora</th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
-                                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tr-xl">Ações</th>
                                   </tr>
                                 </thead>
                                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                  {item.hodometros.map((hodometro) => (
-                                    <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                      <td className="px-4 py-3 whitespace-nowrap">
+                                  {item.hodometros.map((hodometro, idx) => (
+                                    <tr 
+                                      key={hodometro.id_hodometro} 
+                                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+                                        idx === item.hodometros.length - 1 ? 'rounded-b-xl' : ''
+                                      }`}
+                                    >
+                                      <td className={`px-4 py-3 whitespace-nowrap ${idx === item.hodometros.length - 1 ? 'rounded-bl-xl' : ''}`}>
                                         <input
                                           type="checkbox"
                                           checked={selectedItems.has(hodometro.id_hodometro)}
@@ -603,7 +608,7 @@ const HodometrosLista = () => {
                                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                         {hodometro.km_rodado?.toLocaleString('pt-BR')} km
                                       </td>
-                                      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                      <td className={`px-4 py-3 whitespace-nowrap text-right text-sm font-medium ${idx === item.hodometros.length - 1 ? 'rounded-br-xl' : ''}`}>
                                         <div className="flex items-center justify-end space-x-2">
                                           <button
                                             onClick={(e) => handleShowPhoto(e, hodometro.foto_hodometro)}
