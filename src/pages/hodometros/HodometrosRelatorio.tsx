@@ -437,7 +437,7 @@ const HodometrosRelatorio = () => {
                       onClick={() => handleReportClick(report)}
                     >
                       {vIndex === 0 ? (
-                        <td className="px-6 py-4 whitespace-nowrap" rowSpan={report.veiculos.length}>
+                        <td className="px-6 py-4 whitespace-nowrap\" rowSpan={report.veiculos.length}>
                           <div className="flex items-center">
                             <img 
                               src={report.foto_perfil || `https://ui-avatars.com/api/?name=${encodeURIComponent(report.nome)}&background=random&color=fff&size=128`} 
