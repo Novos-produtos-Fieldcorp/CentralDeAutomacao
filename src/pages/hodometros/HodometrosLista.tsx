@@ -13,6 +13,19 @@ import DeleteHodometroModal from '../../components/hodometros/DeleteHodometroMod
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
+import DriverMileageChart from '../../components/hodometros/DriverMileageChart';
+import MileageChartModal from '../../components/hodometros/MileageChartModal';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer,
+  Cell
+} from 'recharts';
 
 interface MileageData {
   motorista_id: number;
@@ -53,6 +66,7 @@ const HodometrosLista = () => {
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [showChartModal, setShowChartModal] = useState(false);
+  const [selectedDriverName, setSelectedDriverName] = useState<string>('');
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('1month');
   const tableRef = React.useRef<HTMLDivElement>(null);
 
@@ -217,9 +231,17 @@ const HodometrosLista = () => {
         km: Math.round(km)
       };
     }).sort((a, b) => {
-      const dateA = new Date(a.month);
-      const dateB = new Date(b.month);
-      return dateA.getTime() - dateB.getTime();
+      const monthA = a.month.split(' ')[0];
+      const yearA = a.month.split(' ')[1];
+      const monthB = b.month.split(' ')[0];
+      const yearB = b.month.split(' ')[1];
+      
+      if (yearA !== yearB) {
+        return parseInt(yearA) - parseInt(yearB);
+      }
+      
+      const months = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
+      return months.indexOf(monthA) - months.indexOf(monthB);
     });
     
     setMonthlyData(result);
@@ -309,17 +331,23 @@ const HodometrosLista = () => {
     }
   };
 
-  const toggleExpand = (motorista_id: number) => {
+  const toggleExpand = (motorista_id: number, driverName: string) => {
     if (expandedItem === motorista_id) {
       setExpandedItem(null);
     } else {
       setExpandedItem(motorista_id);
+      setSelectedDriverName(driverName);
       // Generate monthly data for the selected motorista
       const selectedData = mileageData.find(data => data.motorista_id === motorista_id);
       if (selectedData) {
         generateMonthlyData(selectedData.hodometros);
       }
     }
+  };
+
+  const openChartModal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowChartModal(true);
   };
 
   const filteredData = mileageData.filter(data => {
@@ -448,7 +476,7 @@ const HodometrosLista = () => {
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
                         selectedItems.has(data.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
-                      onClick={() => toggleExpand(data.motorista_id)}
+                      onClick={() => toggleExpand(data.motorista_id, data.nome)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -535,40 +563,58 @@ const HodometrosLista = () => {
                                 Quilometragem Mensal
                               </h4>
                               <button
-                                onClick={() => setShowChartModal(true)}
-                                className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
+                                onClick={openChartModal}
+                                className="text-blue-600 dark:text-blue-400 text-sm hover:underline flex items-center gap-1"
                               >
+                                <Eye size={16} />
                                 Ver gráfico completo
                               </button>
                             </div>
                             
-                            {/* Monthly data as bars */}
-                            <div className="h-40 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                              <div className="flex h-full items-end space-x-4">
-                                {monthlyData.map((item, index) => {
-                                  const maxValue = Math.max(...monthlyData.map(d => d.km));
-                                  const percentage = (item.km / maxValue) * 100;
-                                  
-                                  return (
-                                    <div key={index} className="flex-1 flex flex-col items-center">
-                                      <div className="w-full flex justify-center mb-1">
-                                        <span className="text-xs font-medium text-gray-900 dark:text-white">
-                                          {item.km.toLocaleString('pt-BR')}
-                                        </span>
-                                      </div>
-                                      <div 
-                                        className="w-full bg-blue-500 dark:bg-blue-400 rounded-t-lg transition-all duration-500"
-                                        style={{ height: `${Math.max(5, percentage)}%` }}
+                            {/* Recharts Bar Chart */}
+                            <div className="h-64 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                  data={monthlyData}
+                                  margin={{ top: 10, right: 30, left: 0, bottom: 30 }}
+                                >
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                                  <XAxis 
+                                    dataKey="month" 
+                                    angle={-45} 
+                                    textAnchor="end" 
+                                    height={60} 
+                                    tick={{ fontSize: 12 }}
+                                    stroke="#9CA3AF"
+                                  />
+                                  <YAxis 
+                                    tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
+                                    stroke="#9CA3AF"
+                                  />
+                                  <Tooltip 
+                                    formatter={(value: any) => [`${value.toLocaleString('pt-BR')} km`, 'Quilômetros']}
+                                    contentStyle={{ 
+                                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                      borderRadius: '0.5rem',
+                                      border: '1px solid #e5e7eb',
+                                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                    }}
+                                  />
+                                  <Bar 
+                                    dataKey="km" 
+                                    fill="#3B82F6" 
+                                    radius={[4, 4, 0, 0]}
+                                    animationDuration={1500}
+                                  >
+                                    {monthlyData.map((entry, index) => (
+                                      <Cell 
+                                        key={`cell-${index}`} 
+                                        fill={`rgba(59, 130, 246, ${0.5 + (index * 0.05)})`} 
                                       />
-                                      <div className="w-full text-center mt-2">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                                          {item.month}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
+                                    ))}
+                                  </Bar>
+                                </BarChart>
+                              </ResponsiveContainer>
                             </div>
                             
                             <div className="overflow-x-auto">
@@ -697,60 +743,12 @@ const HodometrosLista = () => {
       )}
 
       {/* Chart Modal */}
-      {showChartModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowChartModal(false)}
-        >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                <BarChart2 className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-                Quilometragem Mensal
-              </h3>
-              <button
-                onClick={() => setShowChartModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-6">
-              <div className="h-80 w-full">
-                {/* Bar chart with monthly data */}
-                <div className="flex h-full items-end space-x-4">
-                  {monthlyData.map((item, index) => {
-                    const maxValue = Math.max(...monthlyData.map(d => d.km));
-                    const percentage = (item.km / maxValue) * 100;
-                    
-                    return (
-                      <div key={index} className="flex-1 flex flex-col items-center">
-                        <div className="w-full flex justify-center mb-2">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {item.km.toLocaleString('pt-BR')}
-                          </span>
-                        </div>
-                        <div 
-                          className="w-full bg-blue-500 dark:bg-blue-400 rounded-t-lg transition-all duration-500"
-                          style={{ height: `${Math.max(5, percentage)}%` }}
-                        />
-                        <div className="w-full text-center mt-2">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {item.month}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <MileageChartModal
+        isOpen={showChartModal}
+        onClose={() => setShowChartModal(false)}
+        data={monthlyData}
+        driverName={selectedDriverName}
+      />
 
       <EditHodometroModal
         isOpen={isEditModalOpen}
