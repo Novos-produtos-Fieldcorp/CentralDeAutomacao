@@ -439,7 +439,6 @@ const HodometrosLista = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leitura Final</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Total</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Última Leitura</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -452,13 +451,20 @@ const HodometrosLista = () => {
                       onClick={() => toggleExpand(data.motorista_id)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.has(data.motorista_id)}
-                          onChange={() => handleSelectItem(data.motorista_id)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedItems.has(data.motorista_id)}
+                            onChange={() => handleSelectItem(data.motorista_id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                          />
+                          {expandedItem === data.motorista_id ? (
+                            <ChevronUp className="w-5 h-5 text-gray-400" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-gray-400" />
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -517,29 +523,11 @@ const HodometrosLista = () => {
                           {data.ultima_data}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <button 
-                          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleExpand(data.motorista_id);
-                            if (data.motorista_id !== expandedItem) {
-                              generateMonthlyData(data.hodometros);
-                            }
-                          }}
-                        >
-                          {expandedItem === data.motorista_id ? (
-                            <ChevronUp className="w-5 h-5" />
-                          ) : (
-                            <ChevronDown className="w-5 h-5" />
-                          )}
-                        </button>
-                      </td>
                     </tr>
                     
                     {expandedItem === data.motorista_id && (
                       <tr>
-                        <td colSpan={9} className="px-0 py-0 border-b border-gray-200 dark:border-gray-700">
+                        <td colSpan={8} className="px-0 py-0 border-b border-gray-200 dark:border-gray-700">
                           <div className="bg-gray-50 dark:bg-gray-700/30 p-4">
                             <div className="flex justify-between items-center mb-4">
                               <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
