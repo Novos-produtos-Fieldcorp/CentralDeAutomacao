@@ -13,6 +13,7 @@ import DeleteHodometroModal from '../../components/hodometros/DeleteHodometroMod
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
+import MonthlyBarChart from '../../components/hodometros/MonthlyBarChart';
 
 interface MileageData {
   motorista_id: number;
@@ -535,40 +536,19 @@ const HodometrosLista = () => {
                                 Quilometragem Mensal
                               </h4>
                               <button
-                                onClick={() => setShowChartModal(true)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowChartModal(true);
+                                }}
                                 className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
                               >
                                 Ver gráfico completo
                               </button>
                             </div>
                             
-                            {/* Monthly data as bars */}
-                            <div className="h-40 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                              <div className="flex h-full items-end space-x-4">
-                                {monthlyData.map((item, index) => {
-                                  const maxValue = Math.max(...monthlyData.map(d => d.km));
-                                  const percentage = (item.km / maxValue) * 100;
-                                  
-                                  return (
-                                    <div key={index} className="flex-1 flex flex-col items-center">
-                                      <div className="w-full flex justify-center mb-1">
-                                        <span className="text-xs font-medium text-gray-900 dark:text-white">
-                                          {item.km.toLocaleString('pt-BR')}
-                                        </span>
-                                      </div>
-                                      <div 
-                                        className="w-full bg-blue-500 dark:bg-blue-400 rounded-t-lg transition-all duration-500"
-                                        style={{ height: `${Math.max(5, percentage)}%` }}
-                                      />
-                                      <div className="w-full text-center mt-2">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                                          {item.month}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
+                            {/* Monthly data chart using Recharts */}
+                            <div className="h-60 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                              <MonthlyBarChart data={monthlyData} height={200} showGrid={false} />
                             </div>
                             
                             <div className="overflow-x-auto">
@@ -720,32 +700,7 @@ const HodometrosLista = () => {
             </div>
             <div className="p-6">
               <div className="h-80 w-full">
-                {/* Bar chart with monthly data */}
-                <div className="flex h-full items-end space-x-4">
-                  {monthlyData.map((item, index) => {
-                    const maxValue = Math.max(...monthlyData.map(d => d.km));
-                    const percentage = (item.km / maxValue) * 100;
-                    
-                    return (
-                      <div key={index} className="flex-1 flex flex-col items-center">
-                        <div className="w-full flex justify-center mb-2">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {item.km.toLocaleString('pt-BR')}
-                          </span>
-                        </div>
-                        <div 
-                          className="w-full bg-blue-500 dark:bg-blue-400 rounded-t-lg transition-all duration-500"
-                          style={{ height: `${Math.max(5, percentage)}%` }}
-                        />
-                        <div className="w-full text-center mt-2">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {item.month}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <MonthlyBarChart data={monthlyData} height={320} />
               </div>
             </div>
           </div>
