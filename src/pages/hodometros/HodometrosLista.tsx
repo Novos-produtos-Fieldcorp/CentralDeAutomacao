@@ -462,7 +462,7 @@ const HodometrosLista = () => {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-10"></th>
+                  <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-8"></th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
@@ -496,12 +496,12 @@ const HodometrosLista = () => {
                         }`}
                         onClick={() => toggleExpand(index)}
                       >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
+                        <td className="px-2 py-4 whitespace-nowrap">
+                          <div className="flex items-center justify-center">
                             {item.isExpanded ? (
-                              <ChevronUp className="text-gray-400\" size={20} />
+                              <ChevronUp className="text-gray-400" size={16} />
                             ) : (
-                              <ChevronDown className="text-gray-400\" size={20} />
+                              <ChevronDown className="text-gray-400" size={16} />
                             )}
                           </div>
                         </td>
