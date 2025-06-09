@@ -3,7 +3,6 @@ import { X, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Hodometro, Motorista, Veiculo } from '../../types/database';
 import toast from 'react-hot-toast';
-import { formatKilometers, formatPercentage } from '../../utils/format';
 
 interface EditHodometroModalProps {
   isOpen: boolean;

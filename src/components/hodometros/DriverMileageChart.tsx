@@ -35,7 +35,7 @@ const DriverMileageChart: React.FC<DriverMileageChartProps> = ({ data, driverNam
         <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <p className="text-sm font-medium text-gray-900 dark:text-white">{label}</p>
           <p className="text-sm text-blue-600 dark:text-blue-400">
-            {`${payload[0].value.toLocaleString('pt-BR')} km`}
+            {`${payload[0].value.toLocaleString('pt-BR')}`}
           </p>
         </div>
       );

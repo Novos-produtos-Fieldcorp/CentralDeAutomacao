@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import { useDateRange } from '../../hooks/useDateRange';
-import { formatCPF, formatKilometers, formatPercentage } from '../../utils/format';
+import { formatCPF } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as XLSX from 'xlsx';
@@ -113,7 +113,7 @@ const HodometrosRelatorio = () => {
         'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
         'Placa': h.veiculo?.placa.toUpperCase() || '',
         'Veículo': `${h.veiculo?.marca || ''} ${h.veiculo?.tipo || ''}`,
-        'Hodômetro': h.bateria !== null ? `Bateria: ${formatPercentage(h.bateria)}` : formatKilometers(h.hod_lido)
+        'Hodômetro': h.bateria !== null ? `Bateria: ${h.bateria}%` : h.hod_lido?.toLocaleString('pt-BR')
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -253,11 +253,11 @@ const HodometrosRelatorio = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
                       <div className="text-sm text-gray-900 dark:text-white">
-                        Bateria: {formatPercentage(hodometro.bateria)}
+                        Bateria: {hodometro.bateria}%
                       </div>
                     ) : (
                       <div className="text-sm text-gray-900 dark:text-white">
-                        {formatKilometers(hodometro.hod_lido)}
+                        {hodometro.hod_lido?.toLocaleString('pt-BR')}
                       </div>
                     )}
                   </td>
