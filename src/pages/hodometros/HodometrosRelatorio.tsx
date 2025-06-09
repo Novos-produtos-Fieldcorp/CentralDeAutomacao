@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, Camera, X, Download, FileText } from 'lucide-react';
+import { Search, Eye, Camera, X, Download, FileText, AlertCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -21,6 +21,7 @@ interface HodometroReading {
   foto_hodometro: string | null;
   trip_lida: number | null;
   trip_informada: string | null;
+  comparacao_leitura: boolean | null;
   motorista: {
     motorista_id: number;
     nome: string;
@@ -66,6 +67,7 @@ const HodometrosRelatorio = () => {
           foto_hodometro,
           trip_lida,
           trip_informada,
+          comparacao_leitura,
           motorista:motorista_id (
             motorista_id,
             nome,
@@ -117,6 +119,14 @@ const HodometrosRelatorio = () => {
     return dateStr;
   };
 
+  // Format number with dot as thousands separator
+  const formatNumber = (num: number | null | undefined): string => {
+    if (num === null || num === undefined) return '-';
+    
+    // Convert to string with dots as thousands separators
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
   const exportToExcel = () => {
     try {
       const exportData = filteredHodometros.map(h => ({
@@ -126,10 +136,12 @@ const HodometrosRelatorio = () => {
         'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
         'Placa': h.veiculo?.placa.toUpperCase() || '',
         'Veículo': `${h.veiculo?.marca || ''} ${h.veiculo?.tipo || ''}`,
-        'Hodômetro Informado': h.hod_informado?.toLocaleString('pt-BR') || '',
-        'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : h.hod_lido?.toLocaleString('pt-BR'),
+        'Hodômetro Informado': h.hod_informado !== null ? formatNumber(h.hod_informado) : '',
+        'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : formatNumber(h.hod_lido),
         'Trip Informada': h.trip_informada || '',
-        'Trip Lida': h.trip_lida?.toLocaleString('pt-BR') || ''
+        'Trip Lida': h.trip_lida !== null ? formatNumber(h.trip_lida) : '',
+        'Leitura Divergente': h.comparacao_leitura === false ? 'Sim' : 'Não',
+        'Trip Divergente': hasTripDiscrepancy(h) ? 'Sim' : 'Não'
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -147,7 +159,9 @@ const HodometrosRelatorio = () => {
         { wch: 18 }, // Hodômetro Informado
         { wch: 15 }, // Hodômetro Lido
         { wch: 15 }, // Trip Informada
-        { wch: 12 }  // Trip Lida
+        { wch: 12 },  // Trip Lida
+        { wch: 15 },  // Leitura Divergente
+        { wch: 15 }   // Trip Divergente
       ];
       ws['!cols'] = colWidths;
       
@@ -157,6 +171,41 @@ const HodometrosRelatorio = () => {
       console.error('Error exporting to Excel:', error);
       toast.error('Erro ao exportar para Excel');
     }
+  };
+
+  // Check if there's a discrepancy between reported and read values
+  const hasDiscrepancy = (hodometro: HodometroReading): boolean => {
+    // If comparacao_leitura is explicitly false, there's a discrepancy
+    if (hodometro.comparacao_leitura === false) return true;
+    
+    // For electric vehicles (with battery), we can't compare hodometer values
+    if (hodometro.bateria !== null && hodometro.bateria !== undefined) return false;
+    
+    // For regular vehicles, check if values are different
+    if (hodometro.hod_informado !== null && hodometro.hod_lido !== null) {
+      // Allow a small tolerance (e.g., 1% difference)
+      const tolerance = hodometro.hod_informado * 0.01;
+      return Math.abs(hodometro.hod_informado - hodometro.hod_lido) > tolerance;
+    }
+    
+    return false;
+  };
+
+  // Check if there's a discrepancy between trip values
+  const hasTripDiscrepancy = (hodometro: HodometroReading): boolean => {
+    // If trip_informada is a number string and trip_lida exists, compare them
+    if (hodometro.trip_informada && hodometro.trip_lida !== null) {
+      const tripInformada = parseFloat(hodometro.trip_informada.replace(/[^\d.,]/g, '').replace(',', '.'));
+      
+      // If we can parse trip_informada as a number, compare with trip_lida
+      if (!isNaN(tripInformada)) {
+        // Allow a small tolerance (e.g., 5% difference)
+        const tolerance = tripInformada * 0.05;
+        return Math.abs(tripInformada - hodometro.trip_lida) > tolerance;
+      }
+    }
+    
+    return false;
   };
 
   const filteredHodometros = hodometros.filter(hodometro => {
@@ -276,20 +325,30 @@ const HodometrosRelatorio = () => {
                       {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
                         <span>-</span>
                       ) : (
-                        <span>{hodometro.hod_informado?.toLocaleString('pt-BR') || '-'}</span>
+                        <span>{hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        Bateria: {hodometro.bateria}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {hodometro.hod_lido?.toLocaleString('pt-BR') || '-'}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          Bateria: {hodometro.bateria}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
+                        </div>
+                      )}
+                      
+                      {/* Discrepancy tag */}
+                      {hasDiscrepancy(hodometro) && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Divergente
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
@@ -298,9 +357,19 @@ const HodometrosRelatorio = () => {
                           Informada: {hodometro.trip_informada}
                         </div>
                       )}
-                      {hodometro.trip_lida ? (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          Lida: {hodometro.trip_lida.toLocaleString('pt-BR')}
+                      {hodometro.trip_lida !== null ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-900 dark:text-white">
+                            Lida: {formatNumber(hodometro.trip_lida)}
+                          </span>
+                          
+                          {/* Trip discrepancy tag */}
+                          {hasTripDiscrepancy(hodometro) && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              Divergente
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <span>-</span>
