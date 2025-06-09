@@ -69,8 +69,10 @@ const getStatusText = (statusId: number, key: string, section: string): string =
   if (statusId === 1) {
     // Status OK
     if (section === 'Fluidos') return 'No nível';
-    if (section === 'Iluminação') return 'Funcionando';
-    if (key === 'lanterna_traseira') return 'Sim';
+    if (section === 'Iluminação') {
+      if (key === 'lanterna_traseira') return 'Sim';
+      return 'Funcionando';
+    }
     if (key.includes('pneu')) return 'Bom';
     if (key.includes('limpeza')) return 'Boa';
     if (key.includes('freio')) return 'Bom';
@@ -85,8 +87,10 @@ const getStatusText = (statusId: number, key: string, section: string): string =
   if (statusId === 2) {
     // Status Not OK
     if (section === 'Fluidos') return 'Abaixo do nível';
-    if (section === 'Iluminação') return 'Queimado';
-    if (key === 'lanterna_traseira') return 'Não';
+    if (section === 'Iluminação') {
+      if (key === 'lanterna_traseira') return 'Não';
+      return 'Queimado';
+    }
     if (key.includes('pneu')) return 'Ruim';
     if (key.includes('limpeza')) return 'Ruim';
     if (key.includes('freio')) return 'Ruim';
