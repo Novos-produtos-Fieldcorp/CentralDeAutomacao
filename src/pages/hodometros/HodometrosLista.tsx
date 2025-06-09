@@ -201,7 +201,7 @@ const HodometrosLista = () => {
           // For electric vehicles, use the sum of km_rodado values
           totalKm = sortedHodometros.reduce((sum, reading) => sum + (reading.km_rodado || 0), 0);
         } else {
-          // For regular vehicles, use the difference between first and last readings
+          // For regular vehicles, use the difference between last and first readings
           const firstHodLido = firstReading.hod_lido || 0;
           const lastHodLido = lastReading.hod_lido || 0;
           totalKm = Math.max(0, lastHodLido - firstHodLido);

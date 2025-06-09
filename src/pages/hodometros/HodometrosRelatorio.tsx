@@ -14,8 +14,8 @@ interface HodometroReading {
   id_hodometro: number;
   data: string;
   hora: string;
-  hod_lido: number | null;
   hod_informado: number | null;
+  hod_lido: number | null;
   km_rodado: number | null;
   bateria: number | null;
   foto_hodometro: string | null;
