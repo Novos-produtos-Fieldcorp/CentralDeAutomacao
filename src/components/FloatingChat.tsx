@@ -200,6 +200,12 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   }, [showChat, minimized]);
 
   useEffect(() => {
+    if (showChat && !minimized && !activeConversation && selectedInboxId) {
+      loadPreviousConversations();
+    }
+  }, [showChat, minimized, activeConversation, selectedInboxId]);
+
+  useEffect(() => {
     if (initialPhone) {
       userInChat(initialPhone, initialName);
     }
@@ -443,7 +449,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   const handleInboxSelection = async (inboxId: number) => {
     try {
-      let conversationToUse = null;
       setLoading(true);
       setSelectedInboxId(inboxId);
       setShowInboxSelector(false);
@@ -452,91 +457,111 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         throw new Error('Configuração inválida');
       }
 
-      if (contact?.phone_number) {
-        const formattedNumber = formatPhoneNumber(contact.phone_number);
-        
-        const updatedContact = await loadContactInfo(contact.id);
-        
-        const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contact.id}/conversations`);
-
-        if (conversationsResponse.data?.payload?.length > 0) {
-          const sortedConversations = conversationsResponse.data.payload.sort((a: any, b: any) => {
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-          });
-
-          const inboxConversations = sortedConversations.filter(
-            (conv: any) => conv.inbox_id === inboxId
-          );
-          if (inboxConversations.length > 0) {
-            conversationToUse = inboxConversations[0];
-          }
-
-          const formattedConversations = await Promise.all(sortedConversations.map(async (conv: any) => {
-            const inboxResponse = await api.get(`/api/v1/accounts/${accountId}/inboxes/${conv.inbox_id}`);
-            const inbox = inboxResponse.data;
-            const contactForConvs = updatedContact || contact;
-
-            return {
-              id: conv.id,
-              contact: {
-                id: contactForConvs.id,
-                name: contactForConvs.name,
-                phone_number: contactForConvs.phone_number,
-                thumbnail: contactForConvs.thumbnail
-              },
-              lastMessage: conv.last_non_activity_message ? {
-                content: conv.last_non_activity_message.content,
-                created_at: conv.last_non_activity_message.created_at,
-                message_type: conv.last_non_activity_message.message_type
-              } : null,
-              unread_count: conv.unread_count || 0,
-              status: conv.status,
-              inbox_id: conv.inbox_id,
-              inbox_name: inbox.name,
-              created_at: conv.created_at,
-              meta: conv.meta
-            };
-          }));
-
-          setPreviousConversations(formattedConversations);
-        }
-      } else if (initialPhone) {
+      if (initialPhone) {
         const formattedNumber = formatPhoneNumber(initialPhone);
         
-        const contactsResponse = await api.post(`/api/v1/accounts/${accountId}/contacts/filter`, {
-          payload: [
-            {
-              attribute_key: "phone_number",
-              filter_operator: "equal_to",
-              values: [formattedNumber]
-            }
-          ]
+        // Buscar contato existente
+        const searchResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/search`, {
+          params: {
+            q: formattedNumber
+          }
         });
 
         let contactToUse;
 
-        if (contactsResponse.data?.payload?.[0]) {
-          const existingContact = contactsResponse.data.payload[0];
+        if (searchResponse.data?.payload?.[0]) {
+          // Usar contato existente
+          const existingContact = searchResponse.data.payload[0];
           contactToUse = {
             id: existingContact.id,
             name: existingContact.name,
             phone_number: existingContact.phone_number,
-            thumbnail: existingContact.thumbnail || '',
-            source_id: existingContact.contact_inboxes?.[0]?.source_id || '',
-            availability_status: existingContact.availability_status || 'offline',
-            last_seen_at: existingContact.last_activity_at ? new Date(existingContact.last_activity_at * 1000).toISOString() : ''
+            thumbnail: existingContact.avatar_url || existingContact.thumbnail || ''
           };
+
+          // Buscar conversas do contato
+          const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contactToUse.id}/conversations`);
+
+          if (conversationsResponse.data?.payload?.length > 0) {
+            // Filtrar conversas pelo inbox selecionado
+            const inboxConversations = conversationsResponse.data.payload.filter(
+              (conv: any) => conv.inbox_id === inboxId
+            );
+
+            if (inboxConversations.length > 0) {
+              // Usar a conversa mais recente do inbox selecionado
+              const conversationToUse = inboxConversations[0];
+              
+              setContact(contactToUse);
+              setActiveConversation({
+                id: conversationToUse.id,
+                messages: []
+              });
+
+              // Carregar mensagens apenas uma vez
+              const messagesResponse = await api.get(`/api/v1/accounts/${accountId}/conversations/${conversationToUse.id}/messages`, {
+                params: {
+                  page: 1,
+                  per_page: 20
+                }
+              });
+
+              if (messagesResponse.data?.payload) {
+                setActiveConversation(prev => ({
+                  ...prev!,
+                  messages: messagesResponse.data.payload.map((msg: any) => ({
+                    id: msg.id,
+                    content: msg.content,
+                    created_at: msg.created_at,
+                    message_type: msg.message_type === 1 ? 'incoming' : 'outgoing',
+                    content_type: msg.content_type || 'text',
+                    status: msg.status || 'sent',
+                    sender: msg.sender || {
+                      type: msg.message_type === 1 ? 'agent_bot' : 'user',
+                      name: msg.sender?.name || (msg.message_type === 1 ? 'Agente' : 'Você')
+                    }
+                  }))
+                }));
+              }
+            } else {
+              // Criar nova conversa no inbox selecionado
+              const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
+                inbox_id: inboxId.toString(),
+                contact_id: contactToUse.id.toString()
+              });
+
+              if (newConversationResponse.data) {
+                setContact(contactToUse);
+                setActiveConversation({
+                  id: newConversationResponse.data.id,
+                  messages: []
+                });
+              }
+            }
+          } else {
+            // Criar nova conversa para o contato existente
+            const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
+              inbox_id: inboxId.toString(),
+              contact_id: contactToUse.id.toString()
+            });
+
+            if (newConversationResponse.data) {
+              setContact(contactToUse);
+              setActiveConversation({
+                id: newConversationResponse.data.id,
+                messages: []
+              });
+            }
+          }
         } else {
-          const contactNumber = `+${formattedNumber}`;
-          const contactNameToUse = additionalInfo?.name || initialName || formattedNumber;
-          const contactEmail = additionalInfo?.email || initialEmail;
+          // Criar novo contato
+          const contactNameToUse = initialName || additionalInfo?.name || 'Novo Contato';
+          const contactEmail = initialEmail || additionalInfo?.email;
 
           const newContactResponse = await api.post(`/api/v1/accounts/${accountId}/contacts`, {
             name: contactNameToUse,
+            phone_number: formattedNumber,
             email: contactEmail,
-            inbox_id: inboxId,
-            source_id: contactNumber,
-            phone_number: contactNumber,
             custom_attributes: {
               source: "web_chat",
               source_type: sourceType || 'web',
@@ -549,59 +574,22 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               id: newContactResponse.data.id,
               name: newContactResponse.data.name,
               phone_number: newContactResponse.data.phone_number,
-              thumbnail: newContactResponse.data.thumbnail || '',
-              source_id: newContactResponse.data.contact_inboxes?.[0]?.source_id || '',
-              availability_status: newContactResponse.data.availability_status || 'offline',
-              last_seen_at: newContactResponse.data.last_activity_at ? new Date(newContactResponse.data.last_activity_at * 1000).toISOString() : ''
+              thumbnail: newContactResponse.data.avatar_url || newContactResponse.data.thumbnail || ''
             };
-          }
-        }
 
-        if (contactToUse) {
-          setContact(contactToUse);
-
-          const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contactToUse.id}/conversations`);
-
-          if (conversationsResponse.data?.payload?.length > 0) {
-            const sortedConversations = conversationsResponse.data.payload.sort((a: any, b: any) => {
-              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            // Criar nova conversa para o novo contato
+            const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
+              inbox_id: inboxId.toString(),
+              contact_id: contactToUse.id.toString()
             });
 
-            const inboxConversations = sortedConversations.filter(
-              (conv: any) => conv.inbox_id === inboxId
-            );
-            if (inboxConversations.length > 0) {
-              conversationToUse = inboxConversations[0];
+            if (newConversationResponse.data) {
+              setContact(contactToUse);
+              setActiveConversation({
+                id: newConversationResponse.data.id,
+                messages: []
+              });
             }
-
-            const formattedConversations = await Promise.all(sortedConversations.map(async (conv: any) => {
-              const inboxResponse = await api.get(`/api/v1/accounts/${accountId}/inboxes/${conv.inbox_id}`);
-              const inbox = inboxResponse.data;
-              const contactForConvs = contactToUse;
-
-              return {
-                id: conv.id,
-                contact: {
-                  id: contactForConvs.id,
-                  name: contactForConvs.name,
-                  phone_number: contactForConvs.phone_number,
-                  thumbnail: contactForConvs.thumbnail
-                },
-                lastMessage: conv.last_non_activity_message ? {
-                  content: conv.last_non_activity_message.content,
-                  created_at: conv.last_non_activity_message.created_at,
-                  message_type: conv.last_non_activity_message.message_type
-                } : null,
-                unread_count: conv.unread_count || 0,
-                status: conv.status,
-                inbox_id: conv.inbox_id,
-                inbox_name: inbox.name,
-                created_at: conv.created_at,
-                meta: conv.meta
-              };
-            }));
-
-            setPreviousConversations(formattedConversations);
           }
         }
       } else {
@@ -885,7 +873,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           contact_id: user.id.toString()
         });
 
-        if (newConversationResponse.data?.id) {
+        if (newConversationResponse.data) {
           conversationToUse = newConversationResponse.data;
         }
       }
@@ -1241,12 +1229,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   }, []);
 
   useEffect(() => {
-    if (activeConversation?.id) {
-      loadConversationMessages(activeConversation.id);
-    }
-  }, [activeConversation?.id]);
-
-  useEffect(() => {
     if (storageConversations.length > 0) {
       try {
         localStorage.setItem('chat_conversations', JSON.stringify(storageConversations));
@@ -1290,63 +1272,167 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   const loadPreviousConversations = async (page: number = 1) => {
     try {
+      if (!accountId || !apiKey || !selectedInboxId) {
+        return;
+      }
+
       const params: any = {
         page,
         status: 'open',
         assignee_type: 'all',
-        per_page: 20
+        per_page: 20,
+        inbox_id: selectedInboxId
       };
-
-      if (selectedInboxId) {
-        params.inbox_id = selectedInboxId;
-      }
 
       const response = await api.get(`/api/v1/accounts/${accountId}/conversations`, { params });
 
-      if (response.data?.payload) {
-        const conversations = await Promise.all(
-          response.data.payload.map(async (conv: any) => {
-            const contactResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${conv.contact_id}`);
-            const contact = contactResponse.data;
-            
-            const messagesResponse = await api.get(
-              `/api/v1/accounts/${accountId}/conversations/${conv.id}/messages?page=1&per_page=1`
-            );
-            const lastMessage = messagesResponse.data?.payload?.[0];
+      if (response.data?.payload?.[0]) {
+        const conv = response.data.payload[0];
+        try {
+          const contactResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${conv.contact_id}`);
+          const contact = contactResponse.data;
 
-            return {
-              id: conv.id,
-              contact: {
-                id: contact.id,
-                name: contact.name,
-                phone_number: contact.phone_number,
-                thumbnail: contact.avatar_url || contact.thumbnail || ''
-              },
-              lastMessage: lastMessage ? {
-                content: lastMessage.content,
-                created_at: lastMessage.created_at,
-                message_type: lastMessage.message_type
-              } : null,
-              unread_count: conv.unread_count || 0,
-              status: conv.status,
-              inbox_id: conv.inbox_id,
-              created_at: conv.created_at
+          const conversation = {
+            id: conv.id,
+            contact: {
+              id: contact.id,
+              name: contact.name,
+              phone_number: contact.phone_number,
+              thumbnail: contact.avatar_url || contact.thumbnail || ''
+            },
+            lastMessage: conv.last_non_activity_message ? {
+              content: conv.last_non_activity_message.content,
+              created_at: conv.last_non_activity_message.created_at,
+              message_type: conv.last_non_activity_message.message_type
+            } : null,
+            unread_count: conv.unread_count || 0,
+            status: conv.status,
+            inbox_id: conv.inbox_id,
+            created_at: conv.created_at
+          };
+
+          setContact(conversation.contact);
+          setActiveConversation({
+            id: conversation.id,
+            messages: []
+          });
+
+          // Carregar mensagens apenas uma vez
+          const messagesResponse = await api.get(`/api/v1/accounts/${accountId}/conversations/${conv.id}/messages`, {
+            params: {
+              page: 1,
+              per_page: 20
+            }
+          });
+
+          if (messagesResponse.data?.payload) {
+            setActiveConversation(prev => ({
+              ...prev!,
+              messages: messagesResponse.data.payload.map((msg: any) => ({
+                id: msg.id,
+                content: msg.content,
+                created_at: msg.created_at,
+                message_type: msg.message_type === 1 ? 'incoming' : 'outgoing',
+                content_type: msg.content_type || 'text',
+                status: msg.status || 'sent',
+                sender: msg.sender || {
+                  type: msg.message_type === 1 ? 'agent_bot' : 'user',
+                  name: msg.sender?.name || (msg.message_type === 1 ? 'Agente' : 'Você')
+                }
+              }))
+            }));
+          }
+
+          setPreviousConversations([conversation]);
+
+          return {
+            meta: response.data.meta,
+            hasMore: response.data.payload.length === params.per_page
+          };
+        } catch (error) {
+          console.error('Error loading contact:', error);
+          handleError(error);
+        }
+      } else if (initialPhone) {
+        // Se não houver conversas e tiver um número inicial, criar novo contato
+        try {
+          const formattedNumber = formatPhoneNumber(initialPhone);
+          
+          // Buscar contato existente
+          const searchResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/search`, {
+            params: {
+              q: formattedNumber
+            }
+          });
+
+          let contactToUse;
+
+          if (searchResponse.data?.payload?.[0]) {
+            // Usar contato existente
+            const existingContact = searchResponse.data.payload[0];
+            contactToUse = {
+              id: existingContact.id,
+              name: existingContact.name,
+              phone_number: existingContact.phone_number,
+              thumbnail: existingContact.avatar_url || existingContact.thumbnail || ''
             };
-          })
-        );
+          } else {
+            // Criar novo contato
+            const contactNameToUse = initialName || additionalInfo?.name || 'Novo Contato';
+            const contactEmail = initialEmail || additionalInfo?.email;
 
-        conversations.sort((a, b) => {
-          if (!a.lastMessage) return 1;
-          if (!b.lastMessage) return -1;
-          return new Date(b.lastMessage.created_at).getTime() - new Date(a.lastMessage.created_at).getTime();
-        });
+            const newContactResponse = await api.post(`/api/v1/accounts/${accountId}/contacts`, {
+              name: contactNameToUse,
+              phone_number: formattedNumber,
+              email: contactEmail,
+              custom_attributes: {
+                source: "web_chat",
+                source_type: sourceType || 'web',
+                ...additionalInfo
+              }
+            });
 
-        setPreviousConversations(conversations);
+            if (newContactResponse.data) {
+              contactToUse = {
+                id: newContactResponse.data.id,
+                name: newContactResponse.data.name,
+                phone_number: newContactResponse.data.phone_number,
+                thumbnail: newContactResponse.data.avatar_url || newContactResponse.data.thumbnail || ''
+              };
+            }
+          }
 
-        return {
-          meta: response.data.meta,
-          hasMore: response.data.payload.length === params.per_page
-        };
+          if (contactToUse) {
+            // Criar nova conversa para o contato
+            const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
+              inbox_id: selectedInboxId?.toString() || '1',
+              contact_id: contactToUse.id.toString()
+            });
+
+            if (newConversationResponse.data) {
+              const newConversation = {
+                id: newConversationResponse.data.id,
+                contact: contactToUse,
+                lastMessage: null,
+                unread_count: 0,
+                status: 'open',
+                inbox_id: selectedInboxId || 1,
+                created_at: new Date().toISOString()
+              };
+
+              setContact(newConversation.contact);
+              setActiveConversation({
+                id: newConversation.id,
+                messages: []
+              });
+
+              setPreviousConversations([newConversation]);
+            }
+          }
+        } catch (error) {
+          console.error('Error handling contact:', error);
+          handleError(error);
+        }
       }
     } catch (error) {
       console.error('Error loading previous conversations:', error);
@@ -1365,12 +1451,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       loadMoreConversations();
     }
   };
-
-  useEffect(() => {
-    if (showChat && !minimized) {
-      loadPreviousConversations();
-    }
-  }, [showChat, minimized]);
 
   const switchConversation = async (conversationId: number) => {
     try {
