@@ -75,7 +75,8 @@ const HodometroCard: React.FC<HodometroCardProps> = ({
             <div className="text-sm font-medium text-gray-900 dark:text-white">
               {hodometro.bateria !== null && hodometro.bateria !== undefined 
                 ? `${hodometro.bateria}` 
-                : `${hodometro.hod_lido?.toLocaleString('pt-BR')} km`}
+                : hodometro.hod_lido?.toLocaleString('pt-BR')
+              }
             </div>
           </div>
         </div>
@@ -84,7 +85,7 @@ const HodometroCard: React.FC<HodometroCardProps> = ({
           <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
             <div className="text-xs text-gray-500 dark:text-gray-400">Trip</div>
             <div className="text-sm font-medium text-gray-900 dark:text-white">
-              {hodometro.trip_lida?.toLocaleString('pt-BR') || 'N/A'}
+              {hodometro.trip_lida ? hodometro.trip_lida.toLocaleString('pt-BR') : 'N/A'}
             </div>
           </div>
           <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
@@ -92,7 +93,7 @@ const HodometroCard: React.FC<HodometroCardProps> = ({
               {hodometro.bateria !== null && hodometro.bateria !== undefined ? 'Autonomia' : 'KM rodado'}
             </div>
             <div className="text-sm font-medium text-gray-900 dark:text-white">
-              {hodometro.km_rodado?.toLocaleString('pt-BR')} km
+              {hodometro.km_rodado?.toLocaleString('pt-BR')}
             </div>
           </div>
         </div>

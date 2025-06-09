@@ -113,7 +113,7 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
                         {item.month}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600 dark:text-blue-400">
-                        {item.km.toLocaleString('pt-BR')} km
+                        {item.km.toLocaleString('pt-BR')}
                       </td>
                     </tr>
                   ))}
@@ -122,7 +122,7 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
                       Total
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600 dark:text-blue-400">
-                      {data.reduce((sum, item) => sum + item.km, 0).toLocaleString('pt-BR')} km
+                      {data.reduce((sum, item) => sum + item.km, 0).toLocaleString('pt-BR')}
                     </td>
                   </tr>
                 </tbody>

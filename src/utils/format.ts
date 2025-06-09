@@ -83,3 +83,15 @@ export const getCurrentDate = (): string => {
   
   return `${year}-${month}-${day}`;
 };
+
+// Format kilometer values with proper thousand separators and 'km' suffix
+export const formatKilometers = (value: number | null | undefined): string => {
+  if (value === null || value === undefined) return '-';
+  return `${value.toLocaleString('pt-BR')} km`;
+};
+
+// Format percentage values to avoid double % signs
+export const formatPercentage = (value: number | null | undefined): string => {
+  if (value === null || value === undefined) return 'N/A';
+  return `${value}%`;
+};

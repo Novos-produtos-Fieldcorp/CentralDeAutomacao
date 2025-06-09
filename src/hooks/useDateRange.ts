@@ -7,7 +7,7 @@ interface DateRange {
   endDate: string;
 }
 
-export const useDateRange = (initialPeriod: PeriodType = '1day') => {
+export const useDateRange = (initialPeriod: PeriodType = '30days') => {
   const [periodType, setPeriodType] = useState<PeriodType>(initialPeriod);
   
   const calculateDateRange = useCallback((type: PeriodType): DateRange => {
