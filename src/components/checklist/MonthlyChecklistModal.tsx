@@ -322,7 +322,8 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         id_tipo_checklist: 1, // Monthly
         motorista_id: parseInt(formData.motorista_id),
         veiculo_id: parseInt(formData.veiculo_id),
-        company_id: companyId
+        company_id: companyId,
+        status: false // Default to not verified
       };
 
       let checklistResponse;
@@ -427,10 +428,18 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         .from('acessorios_veiculos')
         .insert({
           checklist_id: checklistId,
-          pneu: getStatusId(formData.acessorios.pneu, 'pneu'),
-          pneu_ruim: formData.acessorios.pneu_ruim,
-          documento_veicular: getStatusId(formData.acessorios.documento_veicular, 'accessory'),
-          carrinho_carga: getStatusId(formData.acessorios.carrinho_carga, 'accessory')
+          pneu: formData.acessorios.pneu,
+          estepe: formData.acessorios.estepe,
+          macaco: formData.acessorios.macaco,
+          extintor: formData.acessorios.extintor,
+          cartao_combustivel: formData.acessorios.cartao_combustivel,
+          cadeado: formData.acessorios.cadeado,
+          chave_reserva: formData.acessorios.chave_reserva,
+          carrinho_carga: formData.acessorios.carrinho_carga,
+          documento_veicular: formData.acessorios.documento_veicular,
+          manual_veiculo: formData.acessorios.manual_veiculo,
+          triangulo: formData.acessorios.triangulo,
+          chave_roda: formData.acessorios.chave_roda
         });
 
       if (acessoriosError) throw acessoriosError;
@@ -447,9 +456,25 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         .from('componentes_gerais')
         .insert({
           checklist_id: checklistId,
-          freio_estacionamento: getStatusId(formData.componentes.freio, 'component'),
-          pedal: getStatusId(formData.componentes.pedal, 'component'),
-          limpeza_interna: getStatusId(formData.componentes.limpeza_interna, 'component')
+          buzina: formData.componentes.buzina,
+          ar_condicionado: formData.componentes.ar_condicionado,
+          freio_estacionamento: formData.componentes.freio_estacionamento,
+          pedal: formData.componentes.pedal,
+          retrovisor: formData.componentes.retrovisor,
+          parabrisa_dianteiro: formData.componentes.parabrisa_dianteiro,
+          limpador_parabrisa: formData.componentes.limpador_parabrisa,
+          vidros_laterais: formData.componentes.vidros_laterais,
+          bateria: formData.componentes.bateria,
+          banco: formData.componentes.banco,
+          forro_interno: formData.componentes.forro_interno,
+          tampa_tanque: formData.componentes.tampa_tanque,
+          estrutura_bau: formData.componentes.estrutura_bau,
+          fechadura_porta: formData.componentes.fechadura_porta,
+          limpeza_interna: formData.componentes.limpeza_interna,
+          limpeza_externa: formData.componentes.limpeza_externa,
+          sistema_freio: formData.componentes.sistema_freio,
+          tapete: formData.componentes.tapete,
+          cinto_seguranca: formData.componentes.cinto_seguranca
         });
 
       if (componentesError) throw componentesError;
@@ -466,12 +491,12 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         .from('farol_veiculo')
         .insert({
           checklist_id: checklistId,
-          dianteiro: getStatusId(formData.farol.dianteiro, 'light'),
-          auxiliar: getStatusId(formData.farol.auxiliar, 'light'),
-          lanterna_traseira: getStatusId(formData.farol.lanterna_traseira, 'lanterna'),
-          pisca_dianteiro: getStatusId(formData.farol.pisca_dianteiro, 'light'),
-          pisca_traseiro: getStatusId(formData.farol.pisca_traseiro, 'light'),
-          luz_placa: getStatusId(formData.farol.luz_placa, 'light'),
+          dianteiro: formData.farol.dianteiro,
+          auxiliar: formData.farol.auxiliar,
+          pisca_dianteiro: formData.farol.pisca_dianteiro,
+          pisca_traseiro: formData.farol.pisca_traseiro,
+          lanterna_traseira: formData.farol.lanterna_traseira,
+          luz_placa: formData.farol.luz_placa,
           luz_indicador_painel: formData.farol.luz_indicador_painel
         });
 
@@ -489,12 +514,12 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         .from('fluido_veiculo')
         .insert({
           checklist_id: checklistId,
-          agua_radiador: getStatusId(formData.fluidos.agua_radiador, 'fluid'),
-          oleo_motor: getStatusId(formData.fluidos.oleo_motor, 'fluid'),
-          oleo_hidraulico: getStatusId(formData.fluidos.oleo_hidraulico, 'fluid'),
-          fluido_freio: getStatusId(formData.fluidos.fluido_freio, 'fluid'),
-          liq_arrefecimento: getStatusId(formData.fluidos.liq_arrefecimento, 'fluid'),
-          agua_parabrisa: getStatusId(formData.fluidos.agua_parabrisa, 'fluid')
+          agua_radiador: formData.fluidos.agua_radiador,
+          oleo_motor: formData.fluidos.oleo_motor,
+          oleo_hidraulico: formData.fluidos.oleo_hidraulico,
+          fluido_freio: formData.fluidos.fluido_freio,
+          liq_arrefecimento: formData.fluidos.liq_arrefecimento,
+          agua_parabrisa: formData.fluidos.agua_parabrisa
         });
 
       if (fluidosError) throw fluidosError;
