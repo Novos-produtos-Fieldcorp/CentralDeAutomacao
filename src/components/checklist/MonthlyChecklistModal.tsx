@@ -322,6 +322,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         id_tipo_checklist: 1, // Monthly
         motorista_id: parseInt(formData.motorista_id),
         veiculo_id: parseInt(formData.veiculo_id),
+        status: false, // Default to false for new checklists
         company_id: companyId
       };
 
@@ -373,48 +374,6 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         if (fotosError) throw fotosError;
       }
 
-      // Find status IDs based on the form values
-      const getStatusId = (value: string, type: string) => {
-        // Default mappings
-        if (type === 'fluid') {
-          if (value === 'No nível') return 1;
-          if (value === 'Abaixo do nível') return 2;
-          if (value === 'Acima do nível') return 3;
-          return 1;
-        }
-        
-        if (type === 'light') {
-          if (value === 'Funcionando') return 1;
-          if (value === 'Queimado') return 2;
-          return 1;
-        }
-        
-        if (type === 'lanterna') {
-          if (value === 'Sim') return 1;
-          if (value === 'Não') return 2;
-          return 1;
-        }
-        
-        if (type === 'component') {
-          if (value === 'Bom' || value === 'Boa') return 1;
-          if (value === 'Ruim') return 2;
-          return 1;
-        }
-        
-        if (type === 'accessory') {
-          if (value === 'Sim') return 1;
-          if (value === 'Não') return 2;
-          return 1;
-        }
-        
-        // For pneu
-        if (value === 'Bom') return 1;
-        if (value === 'Ruim') return 2;
-        
-        // Default to OK if no match
-        return 1;
-      };
-
       // Insert acessorios
       if (checklist) {
         await supabase
@@ -427,10 +386,18 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         .from('acessorios_veiculos')
         .insert({
           checklist_id: checklistId,
-          pneu: getStatusId(formData.acessorios.pneu, 'pneu'),
-          pneu_ruim: formData.acessorios.pneu_ruim,
-          documento_veicular: getStatusId(formData.acessorios.documento_veicular, 'accessory'),
-          carrinho_carga: getStatusId(formData.acessorios.carrinho_carga, 'accessory')
+          pneu: formData.acessorios.pneu,
+          estepe: formData.acessorios.estepe,
+          macaco: formData.acessorios.macaco,
+          extintor: formData.acessorios.extintor,
+          cartao_combustivel: formData.acessorios.cartao_combustivel,
+          cadeado: formData.acessorios.cadeado,
+          chave_reserva: formData.acessorios.chave_reserva,
+          carrinho_carga: formData.acessorios.carrinho_carga,
+          documento_veicular: formData.acessorios.documento_veicular,
+          manual_veiculo: formData.acessorios.manual_veiculo,
+          triangulo: formData.acessorios.triangulo,
+          chave_roda: formData.acessorios.chave_roda
         });
 
       if (acessoriosError) throw acessoriosError;
@@ -447,9 +414,25 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         .from('componentes_gerais')
         .insert({
           checklist_id: checklistId,
-          freio_estacionamento: getStatusId(formData.componentes.freio, 'component'),
-          pedal: getStatusId(formData.componentes.pedal, 'component'),
-          limpeza_interna: getStatusId(formData.componentes.limpeza_interna, 'component')
+          buzina: formData.componentes.buzina,
+          ar_condicionado: formData.componentes.ar_condicionado,
+          freio_estacionamento: formData.componentes.freio_estacionamento,
+          pedal: formData.componentes.pedal,
+          retrovisor: formData.componentes.retrovisor,
+          parabrisa_dianteiro: formData.componentes.parabrisa_dianteiro,
+          limpador_parabrisa: formData.componentes.limpador_parabrisa,
+          vidros_laterais: formData.componentes.vidros_laterais,
+          bateria: formData.componentes.bateria,
+          banco: formData.componentes.banco,
+          forro_interno: formData.componentes.forro_interno,
+          tampa_tanque: formData.componentes.tampa_tanque,
+          estrutura_bau: formData.componentes.estrutura_bau,
+          fechadura_porta: formData.componentes.fechadura_porta,
+          limpeza_interna: formData.componentes.limpeza_interna,
+          limpeza_externa: formData.componentes.limpeza_externa,
+          sistema_freio: formData.componentes.sistema_freio,
+          tapete: formData.componentes.tapete,
+          cinto_seguranca: formData.componentes.cinto_seguranca
         });
 
       if (componentesError) throw componentesError;
@@ -466,12 +449,12 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         .from('farol_veiculo')
         .insert({
           checklist_id: checklistId,
-          dianteiro: getStatusId(formData.farol.dianteiro, 'light'),
-          auxiliar: getStatusId(formData.farol.auxiliar, 'light'),
-          lanterna_traseira: getStatusId(formData.farol.lanterna_traseira, 'lanterna'),
-          pisca_dianteiro: getStatusId(formData.farol.pisca_dianteiro, 'light'),
-          pisca_traseiro: getStatusId(formData.farol.pisca_traseiro, 'light'),
-          luz_placa: getStatusId(formData.farol.luz_placa, 'light'),
+          dianteiro: formData.farol.dianteiro,
+          auxiliar: formData.farol.auxiliar,
+          pisca_dianteiro: formData.farol.pisca_dianteiro,
+          pisca_traseiro: formData.farol.pisca_traseiro,
+          lanterna_traseira: formData.farol.lanterna_traseira,
+          luz_placa: formData.farol.luz_placa,
           luz_indicador_painel: formData.farol.luz_indicador_painel
         });
 
@@ -489,12 +472,12 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         .from('fluido_veiculo')
         .insert({
           checklist_id: checklistId,
-          agua_radiador: getStatusId(formData.fluidos.agua_radiador, 'fluid'),
-          oleo_motor: getStatusId(formData.fluidos.oleo_motor, 'fluid'),
-          oleo_hidraulico: getStatusId(formData.fluidos.oleo_hidraulico, 'fluid'),
-          fluido_freio: getStatusId(formData.fluidos.fluido_freio, 'fluid'),
-          liq_arrefecimento: getStatusId(formData.fluidos.liq_arrefecimento, 'fluid'),
-          agua_parabrisa: getStatusId(formData.fluidos.agua_parabrisa, 'fluid')
+          agua_radiador: formData.fluidos.agua_radiador,
+          oleo_motor: formData.fluidos.oleo_motor,
+          oleo_hidraulico: formData.fluidos.oleo_hidraulico,
+          fluido_freio: formData.fluidos.fluido_freio,
+          liq_arrefecimento: formData.fluidos.liq_arrefecimento,
+          agua_parabrisa: formData.fluidos.agua_parabrisa
         });
 
       if (fluidosError) throw fluidosError;
@@ -679,7 +662,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
                       <div className="flex items-center gap-4">
                         <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
                           <Camera className="w-5 h-5" />
-                          <span>Adicionar Foto</span>
+                          <span>{value ? 'Alterar Foto' : 'Adicionar Foto'}</span>
                           <input
                             type="file"
                             accept="image/*"
@@ -688,11 +671,26 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
                           />
                         </label>
                         {value && (
-                          <img
-                            src={value}
-                            alt={key}
-                            className="w-16 h-16 object-cover rounded-lg shadow-md"
-                          />
+                          <div className="relative">
+                            <img
+                              src={value}
+                              alt={key}
+                              className="w-16 h-16 object-cover rounded-lg shadow-md"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({
+                                ...prev,
+                                fotos: {
+                                  ...prev.fotos,
+                                  [key]: ''
+                                }
+                              }))}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>

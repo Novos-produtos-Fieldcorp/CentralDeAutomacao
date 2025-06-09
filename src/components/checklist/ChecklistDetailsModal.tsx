@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Camera, Loader2, AlertCircle } from 'lucide-react';
+import { X, Download, Camera, Loader2, AlertCircle, Edit2, Save, ArrowLeft } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { exportChecklistToPDF } from '../../utils/export';
 import { getStatusInfo } from '../../utils/checklistStatus';
@@ -7,19 +7,42 @@ import type { Checklist } from '../../types/database';
 import LoadingSpinner from '../LoadingSpinner';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { ChecklistSection } from './ChecklistSection';
+import toast from 'react-hot-toast';
 
 interface ChecklistDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   checklist: Checklist | null;
+  onEdit?: (checklist: Checklist) => void;
 }
 
-const ChecklistDetailsModal = ({ isOpen, onClose, checklist }: ChecklistDetailsModalProps) => {
+const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: ChecklistDetailsModalProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checklistDetails, setChecklistDetails] = useState<any>(null);
   const [statusItems, setStatusItems] = useState<{ status_id: number; status: string }[]>([]);
   const retryTimeoutRef = useRef<number>();
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  // Form state for editing
+  const [formData, setFormData] = useState({
+    data: '',
+    hora: '',
+    quilometragem: '',
+    observacoes: '',
+    motorista_id: '',
+    veiculo_id: '',
+    status: false
+  });
+
+  // State for editing components
+  const [editComponents, setEditComponents] = useState<any>({
+    fluidos: {},
+    farol: {},
+    componentes: {},
+    acessorios: {}
+  });
 
   useEffect(() => {
     fetchStatusItems();
@@ -33,8 +56,32 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist }: ChecklistDetailsM
   useEffect(() => {
     if (isOpen && checklist) {
       fetchChecklistDetails();
+      setIsEditing(false);
     }
   }, [isOpen, checklist]);
+
+  useEffect(() => {
+    if (checklistDetails) {
+      // Initialize form data from checklist details
+      setFormData({
+        data: checklistDetails.data || '',
+        hora: checklistDetails.hora || '',
+        quilometragem: checklistDetails.quilometragem?.toString() || '',
+        observacoes: checklistDetails.observacoes || '',
+        motorista_id: checklistDetails.motorista_id?.toString() || '',
+        veiculo_id: checklistDetails.veiculo_id?.toString() || '',
+        status: checklistDetails.status || false
+      });
+
+      // Initialize component data
+      setEditComponents({
+        fluidos: checklistDetails.fluidos || {},
+        farol: checklistDetails.farol || {},
+        componentes: checklistDetails.componentes || {},
+        acessorios: checklistDetails.acessorios || {}
+      });
+    }
+  }, [checklistDetails]);
 
   const fetchStatusItems = async (retryCount = 0) => {
     try {
@@ -117,6 +164,98 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist }: ChecklistDetailsM
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleComponentChange = (section: string, field: string, value: any) => {
+    setEditComponents(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSave = async () => {
+    if (!checklist) return;
+    
+    try {
+      setSaving(true);
+      
+      // Update main checklist data
+      const { error: checklistError } = await supabase
+        .from('checklist')
+        .update({
+          data: formData.data,
+          hora: formData.hora,
+          quilometragem: parseFloat(formData.quilometragem),
+          observacoes: formData.observacoes,
+          status: formData.status
+        })
+        .eq('checklist_id', checklist.checklist_id);
+        
+      if (checklistError) throw checklistError;
+      
+      // Update fluidos
+      if (editComponents.fluidos && Object.keys(editComponents.fluidos).length > 0) {
+        const { error: fluidosError } = await supabase
+          .from('fluido_veiculo')
+          .update(editComponents.fluidos)
+          .eq('checklist_id', checklist.checklist_id);
+          
+        if (fluidosError) throw fluidosError;
+      }
+      
+      // Update farol
+      if (editComponents.farol && Object.keys(editComponents.farol).length > 0) {
+        const { error: farolError } = await supabase
+          .from('farol_veiculo')
+          .update(editComponents.farol)
+          .eq('checklist_id', checklist.checklist_id);
+          
+        if (farolError) throw farolError;
+      }
+      
+      // Update componentes
+      if (editComponents.componentes && Object.keys(editComponents.componentes).length > 0) {
+        const { error: componentesError } = await supabase
+          .from('componentes_gerais')
+          .update(editComponents.componentes)
+          .eq('checklist_id', checklist.checklist_id);
+          
+        if (componentesError) throw componentesError;
+      }
+      
+      // Update acessorios
+      if (editComponents.acessorios && Object.keys(editComponents.acessorios).length > 0) {
+        const { error: acessoriosError } = await supabase
+          .from('acessorios_veiculos')
+          .update(editComponents.acessorios)
+          .eq('checklist_id', checklist.checklist_id);
+          
+        if (acessoriosError) throw acessoriosError;
+      }
+      
+      toast.success('Checklist atualizado com sucesso');
+      fetchChecklistDetails(); // Refresh data
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving checklist:', error);
+      toast.error('Erro ao salvar checklist');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const renderPhotos = (fotos: Record<string, any>) => {
     if (!fotos) {
       return (
@@ -155,6 +294,69 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist }: ChecklistDetailsM
             label={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
           />
         ))}
+      </div>
+    );
+  };
+
+  const renderEditableChecklistSection = (
+    title: string, 
+    section: string, 
+    items: any, 
+    excludeKeys: string[] = ['id', 'checklist_id']
+  ) => {
+    if (!items) return null;
+    
+    const filteredKeys = Object.keys(items).filter(key => 
+      !excludeKeys.some(exclude => key.includes(exclude))
+    );
+    
+    return (
+      <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          {title}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredKeys.map(key => {
+            const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            // Special handling for text fields
+            if (key === 'luz_indicador_painel' || key === 'pneu_ruim') {
+              return (
+                <div key={key} className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {key === 'pneu_ruim' ? 'Pneu com Problema' : label}
+                  </label>
+                  <input
+                    type="text"
+                    value={editComponents[section][key] || ''}
+                    onChange={(e) => handleComponentChange(section, key, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+              );
+            }
+            
+            // For status fields
+            return (
+              <div key={key}>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {label}
+                </label>
+                <select
+                  value={editComponents[section][key] || 1}
+                  onChange={(e) => handleComponentChange(section, key, parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  {statusItems.map(item => (
+                    <option key={item.status_id} value={item.status_id}>
+                      {item.status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };
@@ -216,7 +418,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist }: ChecklistDetailsM
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Overlay background */}
-      <div className="fixed inset-0 bg-black/50" onClick={onClose}></div>
+      <div className="fixed inset-0 bg-black/50" onClick={isEditing ? undefined : onClose}></div>
       
       {/* Modal container */}
       <div className="fixed inset-0 overflow-y-auto">
@@ -233,15 +435,54 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist }: ChecklistDetailsM
                 </span>
               </div>
               <div className="flex items-center gap-4">
+                {isEditing ? (
+                  <>
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                      disabled={saving}
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={saving}
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Salvar
+                        </>
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      Editar
+                    </button>
+                    <button
+                      onClick={handleExportPDF}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
+                    >
+                      <Download className="w-4 h-4" />
+                      Exportar PDF
+                    </button>
+                  </>
+                )}
                 <button
-                  onClick={handleExportPDF}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
-                >
-                  <Download className="w-4 h-4" />
-                  Exportar PDF
-                </button>
-                <button
-                  onClick={onClose}
+                  onClick={isEditing ? () => setIsEditing(false) : onClose}
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
                 >
                   <X size={20} />
@@ -256,116 +497,234 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist }: ChecklistDetailsM
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     Informações Básicas
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div>
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Data:</span>
-                      <p className="mt-1 text-base text-gray-900 dark:text-white">
-                        {formatDate(details.data)}
-                      </p>
+                  
+                  {isEditing ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Data
+                        </label>
+                        <input
+                          type="date"
+                          name="data"
+                          value={formData.data}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Hora
+                        </label>
+                        <input
+                          type="time"
+                          name="hora"
+                          value={formData.hora}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Quilometragem
+                        </label>
+                        <input
+                          type="number"
+                          name="quilometragem"
+                          value={formData.quilometragem}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          step="0.1"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Status
+                        </label>
+                        <div className="flex items-center mt-2">
+                          <input
+                            type="checkbox"
+                            name="status"
+                            checked={formData.status}
+                            onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.checked }))}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            Verificado
+                          </span>
+                        </div>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Observações
+                        </label>
+                        <textarea
+                          name="observacoes"
+                          value={formData.observacoes}
+                          onChange={handleInputChange}
+                          rows={4}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Hora:</span>
-                      <p className="mt-1 text-base text-gray-900 dark:text-white">{details.hora}</p>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      <div>
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Data:</span>
+                        <p className="mt-1 text-base text-gray-900 dark:text-white">
+                          {formatDate(details.data)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Hora:</span>
+                        <p className="mt-1 text-base text-gray-900 dark:text-white">{details.hora}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Motorista:</span>
+                        <p className="mt-1 text-base text-gray-900 dark:text-white font-medium">
+                          {details.motorista?.nome}
+                        </p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Veículo:</span>
+                        <p className="mt-1 text-base text-gray-900 dark:text-white">
+                          {details.veiculo?.placa.toUpperCase()} - {details.veiculo?.marca} {details.veiculo?.tipo}
+                        </p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Quilometragem:</span>
+                        <p className="mt-1 text-base text-gray-900 dark:text-white">
+                          {details.quilometragem?.toLocaleString('pt-BR')} km
+                        </p>
+                      </div>
                     </div>
-                    <div className="md:col-span-2">
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Motorista:</span>
-                      <p className="mt-1 text-base text-gray-900 dark:text-white font-medium">
-                        {details.motorista?.nome}
-                      </p>
-                    </div>
-                    <div className="md:col-span-2">
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Veículo:</span>
-                      <p className="mt-1 text-base text-gray-900 dark:text-white">
-                        {details.veiculo?.placa.toUpperCase()} - {details.veiculo?.marca} {details.veiculo?.tipo}
-                      </p>
-                    </div>
-                    <div className="md:col-span-2">
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Quilometragem:</span>
-                      <p className="mt-1 text-base text-gray-900 dark:text-white">
-                        {details.quilometragem?.toLocaleString('pt-BR')} km
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Status Sections */}
                 <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Fluids Section */}
-                    {details.fluidos && (
-                      <ChecklistSection 
-                        title="Níveis de Fluidos"
-                        items={details.fluidos}
-                        excludeKeys={['id_fluido_veiculo', 'checklist_id']}
-                        statusItems={statusItems}
-                      />
-                    )}
-
-                    {/* Lights Section */}
-                    {details.farol && (
-                      <ChecklistSection 
-                        title="Sistema de Iluminação"
-                        items={details.farol}
-                        excludeKeys={['id_farol_veiculo', 'checklist_id']}
-                        statusItems={statusItems}
-                        specialTextKey="luz_indicador_painel"
-                      />
-                    )}
-                  </div>
-
-                  {/* Components Section */}
-                  {details.componentes && (
-                    <div className="mt-6">
-                      <ChecklistSection 
-                        title="Componentes Gerais"
-                        items={details.componentes}
-                        excludeKeys={['id_componentes_gerais', 'checklist_id']}
-                        statusItems={statusItems}
-                        filterKeys={!isMonthlyChecklist ? ['pedal', 'limpeza_interna', 'sistema_freio'] : undefined}
-                        gridCols={2}
-                      />
+                  {isEditing ? (
+                    <div className="space-y-6">
+                      {/* Editable Fluids Section */}
+                      {editComponents.fluidos && Object.keys(editComponents.fluidos).length > 0 && (
+                        renderEditableChecklistSection(
+                          "Níveis de Fluidos", 
+                          "fluidos", 
+                          editComponents.fluidos, 
+                          ['id_fluido_veiculo', 'checklist_id']
+                        )
+                      )}
+                      
+                      {/* Editable Lights Section */}
+                      {editComponents.farol && Object.keys(editComponents.farol).length > 0 && (
+                        renderEditableChecklistSection(
+                          "Sistema de Iluminação", 
+                          "farol", 
+                          editComponents.farol, 
+                          ['id_farol_veiculo', 'checklist_id']
+                        )
+                      )}
+                      
+                      {/* Editable Components Section */}
+                      {editComponents.componentes && Object.keys(editComponents.componentes).length > 0 && (
+                        renderEditableChecklistSection(
+                          "Componentes Gerais", 
+                          "componentes", 
+                          editComponents.componentes, 
+                          ['id_componentes_gerais', 'checklist_id']
+                        )
+                      )}
+                      
+                      {/* Editable Accessories Section */}
+                      {editComponents.acessorios && Object.keys(editComponents.acessorios).length > 0 && (
+                        renderEditableChecklistSection(
+                          "Acessórios", 
+                          "acessorios", 
+                          editComponents.acessorios, 
+                          ['id_acessorio', 'checklist_id']
+                        )
+                      )}
                     </div>
-                  )}
+                  ) : (
+                    <div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Fluids Section */}
+                        {details.fluidos && (
+                          <ChecklistSection 
+                            title="Níveis de Fluidos"
+                            items={details.fluidos}
+                            excludeKeys={['id_fluido_veiculo', 'checklist_id']}
+                            statusItems={statusItems}
+                          />
+                        )}
 
-                  {/* Accessories Section */}
-                  {details.acessorios && (
-                    <div className="mt-6">
-                      <ChecklistSection 
-                        title="Acessórios"
-                        items={details.acessorios}
-                        excludeKeys={['id_acessorio', 'checklist_id']}
-                        statusItems={statusItems}
-                        filterKeys={!isMonthlyChecklist ? ['pneu', 'documento_veicular', 'carrinho_carga'] : undefined}
-                        gridCols={2}
-                        specialTextKey="pneu_ruim"
-                        specialTextLabel="Pneu com Problema"
-                      />
-                    </div>
-                  )}
-
-                  {/* Photos Section - Only show for monthly checklist */}
-                  {isMonthlyChecklist && (
-                    <div className="mt-6">
-                      <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                          Fotos do Veículo
-                        </h3>
-                        {renderPhotos(details.fotos)}
+                        {/* Lights Section */}
+                        {details.farol && (
+                          <ChecklistSection 
+                            title="Sistema de Iluminação"
+                            items={details.farol}
+                            excludeKeys={['id_farol_veiculo', 'checklist_id']}
+                            statusItems={statusItems}
+                            specialTextKey="luz_indicador_painel"
+                          />
+                        )}
                       </div>
-                    </div>
-                  )}
 
-                  {/* Observations */}
-                  {details.observacoes && (
-                    <div className="mt-6">
-                      <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                          Observações
-                        </h3>
-                        <p className="text-base text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                          {details.observacoes}
-                        </p>
-                      </div>
+                      {/* Components Section */}
+                      {details.componentes && (
+                        <div className="mt-6">
+                          <ChecklistSection 
+                            title="Componentes Gerais"
+                            items={details.componentes}
+                            excludeKeys={['id_componentes_gerais', 'checklist_id']}
+                            statusItems={statusItems}
+                            filterKeys={!isMonthlyChecklist ? ['pedal', 'limpeza_interna', 'sistema_freio'] : undefined}
+                            gridCols={2}
+                          />
+                        </div>
+                      )}
+
+                      {/* Accessories Section */}
+                      {details.acessorios && (
+                        <div className="mt-6">
+                          <ChecklistSection 
+                            title="Acessórios"
+                            items={details.acessorios}
+                            excludeKeys={['id_acessorio', 'checklist_id']}
+                            statusItems={statusItems}
+                            filterKeys={!isMonthlyChecklist ? ['pneu', 'documento_veicular', 'carrinho_carga'] : undefined}
+                            gridCols={2}
+                            specialTextKey="pneu_ruim"
+                            specialTextLabel="Pneu com Problema"
+                          />
+                        </div>
+                      )}
+
+                      {/* Photos Section - Only show for monthly checklist */}
+                      {isMonthlyChecklist && details.fotos && (
+                        <div className="mt-6">
+                          <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                              Fotos do Veículo
+                            </h3>
+                            {renderPhotos(details.fotos)}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Observations */}
+                      {details.observacoes && (
+                        <div className="mt-6">
+                          <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                              Observações
+                            </h3>
+                            <p className="text-base text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                              {details.observacoes}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
