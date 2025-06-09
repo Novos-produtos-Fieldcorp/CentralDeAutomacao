@@ -113,7 +113,7 @@ const HodometrosRelatorio = () => {
         'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
         'Placa': h.veiculo?.placa.toUpperCase() || '',
         'Veículo': `${h.veiculo?.marca || ''} ${h.veiculo?.tipo || ''}`,
-        'Hodômetro': h.bateria !== null ? `Bateria: ${h.bateria}%` : h.hod_lido?.toLocaleString('pt-BR')
+        'Hodômetro': h.bateria !== null ? `Bateria: ${h.bateria}` : h.hod_lido?.toLocaleString('pt-BR')
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -253,7 +253,7 @@ const HodometrosRelatorio = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
                       <div className="text-sm text-gray-900 dark:text-white">
-                        Bateria: {hodometro.bateria}%
+                        Bateria: {hodometro.bateria}
                       </div>
                     ) : (
                       <div className="text-sm text-gray-900 dark:text-white">
