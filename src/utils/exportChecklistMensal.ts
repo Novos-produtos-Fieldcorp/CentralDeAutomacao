@@ -41,7 +41,7 @@ export const formatChecklistMensalPDF = (checklist: any) => {
   
   // Add photos section
   if (checklist.fotos) {
-    yPos = addPhotosSection(doc, checklist.fotos, yPos);
+    yPos = addPhotosSection(doc, checklist.fotos, yPos, pageWidth);
   }
   
   // Add observations if they exist
@@ -302,7 +302,7 @@ const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number): numbe
 };
 
 // Improved function to add photos section to the PDF with proper line breaks
-const addPhotosSection = (doc: jsPDF, fotos: any, yPos: number): number => {
+const addPhotosSection = (doc: jsPDF, fotos: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
