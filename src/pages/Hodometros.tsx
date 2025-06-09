@@ -42,7 +42,7 @@ const Hodometros = () => {
 
   const tabs = [
     { path: '/hodometros/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/hodometros/lista', icon: ClipboardList, label: 'Relatório de Km' },
+    { path: '/hodometros/lista', icon: ClipboardList, label: 'Relatório' },
     { path: '/hodometros/relatorio', icon: Gauge, label: 'Leituras' }
   ];
 
@@ -87,7 +87,7 @@ const Hodometros = () => {
 
         <div className="p-6 min-h-[calc(100vh-16rem)]">
           <Routes>
-            <Route index element={<Navigate to="/hodometros/dashboard\" replace />} />
+            <Route index element={<Navigate to="/hodometros/dashboard" replace />} />
             <Route path="dashboard" element={<HodometrosDashboard />} />
             <Route path="lista" element={<HodometrosRelatorio />} />
             <Route path="relatorio" element={<HodometrosLista />} />
