@@ -21,22 +21,22 @@ export const formatChecklistMensalPDF = (checklist: any) => {
   
   // Add fluids section
   if (checklist.fluidos) {
-    yPos = addFluidsSection(doc, checklist.fluidos, yPos);
+    yPos = addFluidsSection(doc, checklist.fluidos, yPos, pageWidth);
   }
   
   // Add lights section
   if (checklist.farol) {
-    yPos = addLightsSection(doc, checklist.farol, yPos);
+    yPos = addLightsSection(doc, checklist.farol, yPos, pageWidth);
   }
   
   // Add components section
   if (checklist.componentes) {
-    yPos = addComponentsSection(doc, checklist.componentes, yPos);
+    yPos = addComponentsSection(doc, checklist.componentes, yPos, pageWidth);
   }
   
   // Add accessories section
   if (checklist.acessorios) {
-    yPos = addAccessoriesSection(doc, checklist.acessorios, yPos);
+    yPos = addAccessoriesSection(doc, checklist.acessorios, yPos, pageWidth);
   }
   
   // Add photos section
@@ -66,10 +66,7 @@ const formatDate = (date: string): string => {
 
 // Function to get the status text from the status_id
 const getStatusText = (statusId: number, key: string, section: string): string => {
-  // Make sure we're dealing with a number
-  const status = Number(statusId);
-  
-  if (status === 1) {
+  if (statusId === 1) {
     // Status OK
     if (section === 'Fluidos') return 'No nível';
     if (section === 'Iluminação') {
@@ -87,7 +84,7 @@ const getStatusText = (statusId: number, key: string, section: string): string =
     return 'Bom';
   }
   
-  if (status === 2) {
+  if (statusId === 2) {
     // Status Not OK
     if (section === 'Fluidos') return 'Abaixo do nível';
     if (section === 'Iluminação') {
@@ -105,12 +102,12 @@ const getStatusText = (statusId: number, key: string, section: string): string =
     return 'Ruim';
   }
   
-  if (status === 3) return 'N/A';
+  if (statusId === 3) return 'N/A';
   
   return 'Não informado';
 };
 
-const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number): number => {
+const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -140,10 +137,12 @@ const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number): number => {
     
     // Get status text based on the value and item type
     let statusText;
-    if (value !== null && value !== undefined) {
+    if (typeof value === 'number') {
       statusText = getStatusText(value, key, 'Fluidos');
-    } else {
+    } else if (value === null || value === undefined) {
       statusText = 'Não informado';
+    } else {
+      statusText = String(value);
     }
     
     doc.text(`${label}: ${statusText}`, 20, yPos);
@@ -153,7 +152,7 @@ const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number): number => {
   return yPos + 5;
 };
 
-const addLightsSection = (doc: jsPDF, farol: any, yPos: number): number => {
+const addLightsSection = (doc: jsPDF, farol: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -187,10 +186,12 @@ const addLightsSection = (doc: jsPDF, farol: any, yPos: number): number => {
     } else {
       // Get status text based on the value and item type
       let statusText;
-      if (value !== null && value !== undefined) {
+      if (typeof value === 'number') {
         statusText = getStatusText(value, key, 'Iluminação');
-      } else {
+      } else if (value === null || value === undefined) {
         statusText = 'Não informado';
+      } else {
+        statusText = String(value);
       }
       
       doc.text(`${label}: ${statusText}`, 20, yPos);
@@ -202,7 +203,7 @@ const addLightsSection = (doc: jsPDF, farol: any, yPos: number): number => {
   return yPos + 5;
 };
 
-const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number): number => {
+const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -232,10 +233,12 @@ const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number): numbe
     
     // Get status text based on the value and item type
     let statusText;
-    if (value !== null && value !== undefined) {
+    if (typeof value === 'number') {
       statusText = getStatusText(value, key, 'Componentes');
-    } else {
+    } else if (value === null || value === undefined) {
       statusText = 'Não informado';
+    } else {
+      statusText = String(value);
     }
     
     doc.text(`${label}: ${statusText}`, 20, yPos);
@@ -251,7 +254,7 @@ const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number): numbe
   return yPos + 5;
 };
 
-const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number): number => {
+const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -281,10 +284,12 @@ const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number): numbe
     
     // Get status text based on the value and item type
     let statusText;
-    if (value !== null && value !== undefined) {
+    if (typeof value === 'number') {
       statusText = getStatusText(value, key, 'Acessórios');
-    } else {
+    } else if (value === null || value === undefined) {
       statusText = 'Não informado';
+    } else {
+      statusText = String(value);
     }
     
     doc.text(`${label}: ${statusText}`, 20, yPos);
@@ -300,7 +305,7 @@ const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number): numbe
   return yPos + 5;
 };
 
-// Improved function to add photos section to the PDF with proper line breaks
+// Function to add photos section to the PDF
 const addPhotosSection = (doc: jsPDF, fotos: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
@@ -326,40 +331,28 @@ const addPhotosSection = (doc: jsPDF, fotos: any, yPos: number, pageWidth: numbe
     return yPos + 10;
   }
   
-  // Add photo URLs to the PDF with proper line breaks
+  // Add photo URLs to the PDF
   photoKeys.forEach(key => {
     if (fotos[key]) {
       const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       doc.text(`${label}:`, 20, yPos);
       yPos += 5;
       
-      // Add the URL with smaller font and proper line breaks
+      // Add the URL with smaller font and word wrapping
       doc.setFontSize(8);
       
       // Split long URLs to fit within page width
       const maxWidth = pageWidth - 40; // 20px margin on each side
       const url = fotos[key];
       
-      // Calculate how many characters can fit on one line (approximate)
-      const charWidth = doc.getStringUnitWidth('a') * 8 / doc.internal.scaleFactor;
-      const charsPerLine = Math.floor(maxWidth / charWidth);
+      // Use splitTextToSize to handle line breaks
+      const splitUrl = doc.splitTextToSize(url, maxWidth);
+      doc.text(splitUrl, 25, yPos);
       
-      // Split URL into chunks of appropriate length
-      for (let i = 0; i < url.length; i += charsPerLine) {
-        const chunk = url.substring(i, i + charsPerLine);
-        doc.text(chunk, 25, yPos);
-        yPos += 4;
-        
-        // Check if we need a new page
-        if (yPos > 280) {
-          doc.addPage();
-          yPos = 20;
-        }
-      }
+      // Adjust yPos based on number of lines
+      yPos += (splitUrl.length * 3) + 5;
       
-      // Reset font size and add some space after the URL
       doc.setFontSize(10);
-      yPos += 4;
       
       // Check if we need a new page
       if (yPos > 280) {
