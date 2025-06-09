@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Camera, Loader2, AlertCircle } from 'lucide-react';
+import { X, Download, Camera, Loader2, AlertCircle, Edit2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { exportChecklistToPDF } from '../../utils/export';
 import { getStatusInfo } from '../../utils/checklistStatus';
@@ -12,9 +12,10 @@ interface ChecklistDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   checklist: Checklist | null;
+  onEdit?: (checklist: Checklist) => void;
 }
 
-const ChecklistDetailsModal = ({ isOpen, onClose, checklist }: ChecklistDetailsModalProps) => {
+const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: ChecklistDetailsModalProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checklistDetails, setChecklistDetails] = useState<any>(null);
@@ -114,6 +115,13 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist }: ChecklistDetailsM
   const handleExportPDF = () => {
     if (checklistDetails) {
       exportChecklistToPDF(checklistDetails);
+    }
+  };
+
+  const handleEdit = () => {
+    if (onEdit && checklist) {
+      onEdit(checklist);
+      onClose();
     }
   };
 
@@ -233,6 +241,13 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist }: ChecklistDetailsM
                 </span>
               </div>
               <div className="flex items-center gap-4">
+                <button
+                  onClick={handleEdit}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-yellow-500 rounded-xl hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors shadow-sm"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Editar
+                </button>
                 <button
                   onClick={handleExportPDF}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"

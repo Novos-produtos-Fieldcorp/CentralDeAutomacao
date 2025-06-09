@@ -31,6 +31,7 @@ const ChecklistSemanal = () => {
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -42,7 +43,6 @@ const ChecklistSemanal = () => {
     y: 0,
     checklist: null,
   });
-  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
 
   useEffect(() => {
     fetchChecklists();
@@ -424,17 +424,6 @@ const ChecklistSemanal = () => {
                         >
                           <Eye size={18} />
                         </button>
-                        <button
-                          onClick={() => {
-                            setSelectedChecklist(checklist);
-                            setIsNewModalOpen(true);
-                          }}
-                          className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 
-                                   transition-colors"
-                          title="Editar"
-                        >
-                          <Edit2 size={18} />
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -547,6 +536,10 @@ const ChecklistSemanal = () => {
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         checklist={selectedChecklist}
+        onEdit={(checklist) => {
+          setSelectedChecklist(checklist);
+          setIsNewModalOpen(true);
+        }}
       />
     </div>
   );
