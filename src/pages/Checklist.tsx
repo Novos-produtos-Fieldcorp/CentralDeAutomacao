@@ -77,7 +77,7 @@ const Checklist = () => {
   };
 
   if (!moduleAccess.checklist) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/\" replace />;
   }
 
   return (
@@ -125,10 +125,10 @@ const Checklist = () => {
 
         <div className="p-6">
           <Routes>
-            <Route index element={<Navigate to="/checklist/dashboard" replace />} />
+            <Route index element={<Navigate to="/checklist/dashboard\" replace />} />
             <Route path="semanal" element={<ChecklistSemanal />} />
             <Route path="mensal" element={<ChecklistMensal />} />
-            <Route path="infinito" element={<Navigate to="/checklist/mensal" replace />} />
+            <Route path="infinito" element={<Navigate to="/checklist/mensal\" replace />} />
             <Route path="dashboard" element={<ChecklistDashboard />} />
             <Route path="manutencao" element={<ChecklistManutencao />} />
           </Routes>
