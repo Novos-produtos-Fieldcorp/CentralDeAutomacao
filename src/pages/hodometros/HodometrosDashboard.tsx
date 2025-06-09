@@ -1,237 +1,212 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, Truck, Users, Gauge, TrendingUp, BarChart2, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Gauge, Calendar, BarChart2, TrendingUp, Users, Truck, ArrowUp, ArrowDown } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer,
+  Cell
+} from 'recharts';
 
 interface DashboardStats {
+  totalReadings: number;
   totalKm: number;
-  totalVehicles: number;
-  totalDrivers: number;
-  avgKmPerVehicle: number;
-  topDrivers: {
-    nome: string;
+  averageKmPerVehicle: number;
+  topDriver: {
+    name: string;
+    km: number;
+  };
+  topVehicle: {
+    plate: string;
+    km: number;
+  };
+  kmByDriver: {
+    name: string;
     km: number;
   }[];
-  topVehicles: {
-    placa: string;
+  kmByVehicle: {
+    plate: string;
     km: number;
   }[];
-  dailyKm: {
-    date: string;
+  kmByMonth: {
+    month: string;
     km: number;
   }[];
 }
 
 const HodometrosDashboard = () => {
-  const { query } = useCompanyData();
+  const { query, companyId } = useCompanyData();
   const [stats, setStats] = useState<DashboardStats>({
+    totalReadings: 0,
     totalKm: 0,
-    totalVehicles: 0,
-    totalDrivers: 0,
-    avgKmPerVehicle: 0,
-    topDrivers: [],
-    topVehicles: [],
-    dailyKm: []
+    averageKmPerVehicle: 0,
+    topDriver: { name: '', km: 0 },
+    topVehicle: { plate: '', km: 0 },
+    kmByDriver: [],
+    kmByVehicle: [],
+    kmByMonth: []
   });
   const [loading, setLoading] = useState(true);
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [dateRange]);
+  // Format number with dot as thousands separator
+  const formatNumber = (num: number | null | undefined): string => {
+    if (num === null || num === undefined) return '-';
+    
+    // Convert to string with dots as thousands separators
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-
-      // Fetch all hodometro readings within the date range
-      const { data: hodometros, error: hodometrosError } = await supabase
+      
+      // Get all hodometro readings for the period
+      const { data: hodometros, error } = await supabase
         .from('hodometro')
         .select(`
           id_hodometro,
           data,
           hora,
-          hod_lido,
           hod_informado,
-          trip_lida,
-          trip_informada,
+          hod_lido,
           km_rodado,
           bateria,
-          motorista_id,
-          veiculo_id,
           motorista:motorista_id (
             motorista_id,
             nome
           ),
           veiculo:veiculo_id (
             veiculo_id,
-            placa,
-            marca,
-            tipo
+            placa
           )
         `)
+        .eq('company_id', companyId)
         .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate)
-        .order('data', { ascending: true })
-        .order('hora', { ascending: true });
+        .lte('data', dateRange.endDate);
 
-      if (hodometrosError) throw hodometrosError;
+      if (error) throw error;
 
       // Process the data
-      const processedData = processHodometrosData(hodometros || []);
-      setStats(processedData);
+      if (hodometros) {
+        // Calculate total KM
+        const totalKm = hodometros.reduce((sum, h) => sum + (h.km_rodado || 0), 0);
+        
+        // Group by motorista
+        const kmByDriver: Record<string, number> = {};
+        hodometros.forEach(h => {
+          if (h.motorista?.nome && h.km_rodado) {
+            if (!kmByDriver[h.motorista.nome]) {
+              kmByDriver[h.motorista.nome] = 0;
+            }
+            kmByDriver[h.motorista.nome] += h.km_rodado;
+          }
+        });
+        
+        // Group by vehicle
+        const kmByVehicle: Record<string, number> = {};
+        hodometros.forEach(h => {
+          if (h.veiculo?.placa && h.km_rodado) {
+            if (!kmByVehicle[h.veiculo.placa]) {
+              kmByVehicle[h.veiculo.placa] = 0;
+            }
+            kmByVehicle[h.veiculo.placa] += h.km_rodado;
+          }
+        });
+        
+        // Group by month
+        const kmByMonth: Record<string, number> = {};
+        hodometros.forEach(h => {
+          if (h.data && h.km_rodado) {
+            const date = new Date(h.data);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+            
+            if (!kmByMonth[monthName]) {
+              kmByMonth[monthName] = 0;
+            }
+            kmByMonth[monthName] += h.km_rodado;
+          }
+        });
+        
+        // Find top driver
+        let topDriver = { name: '', km: 0 };
+        Object.entries(kmByDriver).forEach(([name, km]) => {
+          if (km > topDriver.km) {
+            topDriver = { name, km };
+          }
+        });
+        
+        // Find top vehicle
+        let topVehicle = { plate: '', km: 0 };
+        Object.entries(kmByVehicle).forEach(([plate, km]) => {
+          if (km > topVehicle.km) {
+            topVehicle = { plate, km };
+          }
+        });
+        
+        // Calculate average KM per vehicle
+        const vehicleCount = Object.keys(kmByVehicle).length;
+        const averageKmPerVehicle = vehicleCount > 0 ? totalKm / vehicleCount : 0;
+        
+        // Format data for charts
+        const kmByDriverArray = Object.entries(kmByDriver)
+          .map(([name, km]) => ({ name, km }))
+          .sort((a, b) => b.km - a.km);
+        
+        const kmByVehicleArray = Object.entries(kmByVehicle)
+          .map(([plate, km]) => ({ plate, km }))
+          .sort((a, b) => b.km - a.km);
+        
+        const kmByMonthArray = Object.entries(kmByMonth)
+          .map(([month, km]) => ({ month, km }))
+          .sort((a, b) => {
+            const monthA = new Date(a.month.split(' ')[1] + '-' + getMonthNumber(a.month.split(' ')[0]) + '-01');
+            const monthB = new Date(b.month.split(' ')[1] + '-' + getMonthNumber(b.month.split(' ')[0]) + '-01');
+            return monthA.getTime() - monthB.getTime();
+          });
+        
+        setStats({
+          totalReadings: hodometros.length,
+          totalKm,
+          averageKmPerVehicle,
+          topDriver,
+          topVehicle,
+          kmByDriver: kmByDriverArray,
+          kmByVehicle: kmByVehicleArray,
+          kmByMonth: kmByMonthArray
+        });
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       toast.error('Erro ao carregar dados do dashboard');
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange, companyId]);
 
-  const processHodometrosData = (hodometros: any[]) => {
-    // Group readings by motorista_id, veiculo_id, and date
-    const groupedByMotoristaVeiculoDate: Record<string, any[]> = {};
-    
-    hodometros.forEach(hodometro => {
-      if (!hodometro.motorista_id || !hodometro.veiculo_id || !hodometro.data) return;
-      
-      const key = `${hodometro.motorista_id}_${hodometro.veiculo_id}_${hodometro.data}`;
-      if (!groupedByMotoristaVeiculoDate[key]) {
-        groupedByMotoristaVeiculoDate[key] = [];
-      }
-      groupedByMotoristaVeiculoDate[key].push(hodometro);
-    });
-    
-    // Calculate km driven for each motorista-veiculo-date combination
-    const kmByMotoristaVeiculoDate: Record<string, number> = {};
-    
-    Object.entries(groupedByMotoristaVeiculoDate).forEach(([key, readings]) => {
-      if (readings.length < 2) return; // Need at least 2 readings to calculate difference
-      
-      // Sort readings by time
-      readings.sort((a, b) => {
-        const timeA = `${a.data} ${a.hora}`;
-        const timeB = `${b.data} ${b.hora}`;
-        return timeA.localeCompare(timeB);
-      });
-      
-      const firstReading = readings[0];
-      const lastReading = readings[readings.length - 1];
-      
-      // Check if it's an electric vehicle (has battery readings)
-      const isElectric = firstReading.bateria !== null && firstReading.bateria !== undefined;
-      
-      let kmDriven = 0;
-      if (isElectric) {
-        // For electric vehicles, use trip_lida
-        const firstTrip = firstReading.trip_lida || 0;
-        const lastTrip = lastReading.trip_lida || 0;
-        kmDriven = Math.max(0, lastTrip - firstTrip);
-      } else {
-        // For regular vehicles, use hod_lido
-        const firstHod = firstReading.hod_lido || 0;
-        const lastHod = lastReading.hod_lido || 0;
-        kmDriven = Math.max(0, lastHod - firstHod);
-      }
-      
-      kmByMotoristaVeiculoDate[key] = kmDriven;
-    });
-    
-    // Calculate total km driven
-    const totalKm = Object.values(kmByMotoristaVeiculoDate).reduce((sum, km) => sum + km, 0);
-    
-    // Calculate km by motorista
-    const kmByMotorista: Record<number, { nome: string; km: number }> = {};
-    
-    Object.entries(kmByMotoristaVeiculoDate).forEach(([key, km]) => {
-      const [motoristaId] = key.split('_');
-      const motorista = hodometros.find(h => h.motorista_id === parseInt(motoristaId))?.motorista;
-      
-      if (motorista) {
-        if (!kmByMotorista[motorista.motorista_id]) {
-          kmByMotorista[motorista.motorista_id] = { nome: motorista.nome, km: 0 };
-        }
-        kmByMotorista[motorista.motorista_id].km += km;
-      }
-    });
-    
-    // Calculate km by veiculo
-    const kmByVeiculo: Record<number, { placa: string; km: number }> = {};
-    
-    Object.entries(kmByMotoristaVeiculoDate).forEach(([key, km]) => {
-      const [_, veiculoId] = key.split('_');
-      const veiculo = hodometros.find(h => h.veiculo_id === parseInt(veiculoId))?.veiculo;
-      
-      if (veiculo) {
-        if (!kmByVeiculo[veiculo.veiculo_id]) {
-          kmByVeiculo[veiculo.veiculo_id] = { placa: veiculo.placa.toUpperCase(), km: 0 };
-        }
-        kmByVeiculo[veiculo.veiculo_id].km += km;
-      }
-    });
-    
-    // Calculate km by date
-    const kmByDate: Record<string, number> = {};
-    
-    Object.entries(kmByMotoristaVeiculoDate).forEach(([key, km]) => {
-      const [_, __, date] = key.split('_');
-      
-      if (!kmByDate[date]) {
-        kmByDate[date] = 0;
-      }
-      kmByDate[date] += km;
-    });
-    
-    // Get unique vehicles and drivers
-    const uniqueVehicles = new Set(hodometros.map(h => h.veiculo_id).filter(Boolean));
-    const uniqueDrivers = new Set(hodometros.map(h => h.motorista_id).filter(Boolean));
-    
-    // Calculate average km per vehicle
-    const avgKmPerVehicle = uniqueVehicles.size > 0 ? totalKm / uniqueVehicles.size : 0;
-    
-    // Get top drivers
-    const topDrivers = Object.values(kmByMotorista)
-      .sort((a, b) => b.km - a.km)
-      .slice(0, 5);
-    
-    // Get top vehicles
-    const topVehicles = Object.values(kmByVeiculo)
-      .sort((a, b) => b.km - a.km)
-      .slice(0, 5);
-    
-    // Format daily km data for chart
-    const dailyKm = Object.entries(kmByDate)
-      .map(([date, km]) => ({ date, km }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-    
-    return {
-      totalKm,
-      totalVehicles: uniqueVehicles.size,
-      totalDrivers: uniqueDrivers.size,
-      avgKmPerVehicle,
-      topDrivers,
-      topVehicles,
-      dailyKm
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // Helper function to get month number from Portuguese month name
+  const getMonthNumber = (monthName: string): string => {
+    const months: Record<string, string> = {
+      'jan.': '01', 'fev.': '02', 'mar.': '03', 'abr.': '04',
+      'mai.': '05', 'jun.': '06', 'jul.': '07', 'ago.': '08',
+      'set.': '09', 'out.': '10', 'nov.': '11', 'dez.': '12'
     };
-  };
-
-  const toggleSection = (section: string) => {
-    if (expandedSection === section) {
-      setExpandedSection(null);
-    } else {
-      setExpandedSection(section);
-    }
-  };
-
-  const formatNumber = (num: number) => {
-    return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    return months[monthName.toLowerCase()] || '01';
   };
 
   if (loading) {
@@ -251,195 +226,256 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         <StatCard
-          title="Total KM Rodado"
-          value={formatNumber(stats.totalKm)}
+          title="Total de Leituras"
+          value={stats.totalReadings}
           icon={Gauge}
           color="blue"
         />
         <StatCard
-          title="Veículos Ativos"
-          value={formatNumber(stats.totalVehicles)}
-          icon={Truck}
+          title="KM Total Rodado"
+          value={formatNumber(stats.totalKm)}
+          suffix="km"
+          icon={TrendingUp}
           color="green"
         />
         <StatCard
-          title="Motoristas Ativos"
-          value={formatNumber(stats.totalDrivers)}
-          icon={Users}
+          title="Média KM/Veículo"
+          value={formatNumber(Math.round(stats.averageKmPerVehicle))}
+          suffix="km"
+          icon={Truck}
           color="purple"
         />
         <StatCard
-          title="Média KM/Veículo"
-          value={formatNumber(stats.avgKmPerVehicle)}
-          icon={TrendingUp}
-          color="amber"
+          title="Motorista com Maior KM"
+          value={stats.topDriver.name}
+          subvalue={formatNumber(stats.topDriver.km) + " km"}
+          icon={Users}
+          color="indigo"
+        />
+        <StatCard
+          title="Veículo com Maior KM"
+          value={stats.topVehicle.plate.toUpperCase()}
+          subvalue={formatNumber(stats.topVehicle.km) + " km"}
+          icon={Truck}
+          color="pink"
         />
       </div>
 
-      {/* Top Drivers */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div 
-          className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center cursor-pointer"
-          onClick={() => toggleSection('drivers')}
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-              <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Top Motoristas por KM
-            </h3>
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* KM by Month */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+            Quilometragem por Mês
+          </h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={stats.kmByMonth}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                <XAxis 
+                  dataKey="month" 
+                  angle={-45} 
+                  textAnchor="end" 
+                  height={60} 
+                  tick={{ fontSize: 12 }}
+                  stroke="#9CA3AF"
+                />
+                <YAxis 
+                  tickFormatter={(value) => formatNumber(value)}
+                  stroke="#9CA3AF"
+                />
+                <Tooltip 
+                  formatter={(value: any) => [formatNumber(value) + " km", "Quilometragem"]}
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #e5e7eb',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Bar 
+                  dataKey="km" 
+                  fill="#3B82F6" 
+                  radius={[4, 4, 0, 0]}
+                >
+                  {stats.kmByMonth.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={`rgba(59, 130, 246, ${0.5 + (index * 0.05)})`} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-          {expandedSection === 'drivers' ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
-          )}
         </div>
-        
-        {(expandedSection === 'drivers' || expandedSection === null) && (
-          <div className="p-4">
-            {stats.topDrivers.length > 0 ? (
-              <div className="space-y-4">
-                {stats.topDrivers.map((driver, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {driver.nome}
-                      </span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {formatNumber(driver.km)} km
-                      </span>
-                    </div>
-                    <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                        style={{ width: `${(driver.km / stats.topDrivers[0].km) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                Nenhum dado disponível para o período selecionado
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
-      {/* Top Vehicles */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div 
-          className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center cursor-pointer"
-          onClick={() => toggleSection('vehicles')}
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
-              <Truck className="w-5 h-5 text-green-600 dark:text-green-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Top Veículos por KM
-            </h3>
+        {/* KM by Driver */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+            Quilometragem por Motorista
+          </h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={stats.kmByDriver.slice(0, 10)}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                <XAxis 
+                  type="number"
+                  tickFormatter={(value) => formatNumber(value)}
+                  stroke="#9CA3AF"
+                />
+                <YAxis 
+                  dataKey="name" 
+                  type="category" 
+                  width={150}
+                  tick={{ fontSize: 12 }}
+                  stroke="#9CA3AF"
+                />
+                <Tooltip 
+                  formatter={(value: any) => [formatNumber(value) + " km", "Quilometragem"]}
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #e5e7eb',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Bar 
+                  dataKey="km" 
+                  fill="#8B5CF6" 
+                  radius={[0, 4, 4, 0]}
+                >
+                  {stats.kmByDriver.slice(0, 10).map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={`rgba(139, 92, 246, ${0.5 + (index * 0.05)})`} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-          {expandedSection === 'vehicles' ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
-          )}
         </div>
-        
-        {(expandedSection === 'vehicles' || expandedSection === null) && (
-          <div className="p-4">
-            {stats.topVehicles.length > 0 ? (
-              <div className="space-y-4">
-                {stats.topVehicles.map((vehicle, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {vehicle.placa}
-                      </span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {formatNumber(vehicle.km)} km
-                      </span>
-                    </div>
-                    <div className="h-2 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-green-500 dark:bg-green-400 rounded-full"
-                        style={{ width: `${(vehicle.km / stats.topVehicles[0].km) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                Nenhum dado disponível para o período selecionado
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
-      {/* Daily KM Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div 
-          className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center cursor-pointer"
-          onClick={() => toggleSection('daily')}
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
-              <BarChart2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              KM Rodado por Dia
-            </h3>
+        {/* KM by Vehicle */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Truck className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+            Quilometragem por Veículo
+          </h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={stats.kmByVehicle.slice(0, 10)}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                <XAxis 
+                  type="number"
+                  tickFormatter={(value) => formatNumber(value)}
+                  stroke="#9CA3AF"
+                />
+                <YAxis 
+                  dataKey="plate" 
+                  type="category" 
+                  width={80}
+                  tick={{ fontSize: 12 }}
+                  stroke="#9CA3AF"
+                />
+                <Tooltip 
+                  formatter={(value: any) => [formatNumber(value) + " km", "Quilometragem"]}
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #e5e7eb',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Bar 
+                  dataKey="km" 
+                  fill="#EC4899" 
+                  radius={[0, 4, 4, 0]}
+                >
+                  {stats.kmByVehicle.slice(0, 10).map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={`rgba(236, 72, 153, ${0.5 + (index * 0.05)})`} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-          {expandedSection === 'daily' ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
-          )}
         </div>
-        
-        {(expandedSection === 'daily' || expandedSection === null) && (
-          <div className="p-4">
-            {stats.dailyKm.length > 0 ? (
-              <div className="space-y-4">
-                {stats.dailyKm.map((day, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
+
+        {/* Monthly Trend */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <BarChart2 className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+            Tendência de Quilometragem
+          </h3>
+          
+          <div className="space-y-6">
+            {stats.kmByMonth.map((month, index) => {
+              // Calculate percentage change from previous month
+              const prevMonth = index > 0 ? stats.kmByMonth[index - 1].km : null;
+              const percentChange = prevMonth ? ((month.km - prevMonth) / prevMonth) * 100 : 0;
+              const isIncrease = percentChange > 0;
+              
+              return (
+                <div key={month.month} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {month.month}
+                    </span>
+                    <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {format(parseISO(day.date), 'dd/MM/yyyy', { locale: ptBR })}
+                        {formatNumber(month.km)} km
                       </span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {formatNumber(day.km)} km
-                      </span>
-                    </div>
-                    <div className="h-2 bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-purple-500 dark:bg-purple-400 rounded-full"
-                        style={{ 
-                          width: `${Math.max(
-                            5, 
-                            (day.km / Math.max(...stats.dailyKm.map(d => d.km), 1)) * 100
-                          )}%` 
-                        }}
-                      />
+                      {index > 0 && (
+                        <span className={`text-xs flex items-center ${
+                          isIncrease 
+                            ? 'text-green-600 dark:text-green-400' 
+                            : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {isIncrease ? (
+                            <ArrowUp className="w-3 h-3 mr-1" />
+                          ) : (
+                            <ArrowDown className="w-3 h-3 mr-1" />
+                          )}
+                          {Math.abs(percentChange).toFixed(1)}%
+                        </span>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                Nenhum dado disponível para o período selecionado
-              </div>
-            )}
+                  <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Math.max(
+                          5, 
+                          (month.km / Math.max(...stats.kmByMonth.map(m => m.km), 1)) * 100
+                        )}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -447,33 +483,46 @@ const HodometrosDashboard = () => {
 
 interface StatCardProps {
   title: string;
-  value: string;
+  value: string | number;
+  suffix?: string;
+  subvalue?: string;
   icon: React.FC<{ className?: string }>;
-  color: 'blue' | 'green' | 'purple' | 'amber';
+  color: 'blue' | 'green' | 'purple' | 'indigo' | 'pink';
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color }) => {
+const StatCard: React.FC<StatCardProps> = ({ 
+  title, 
+  value, 
+  suffix, 
+  subvalue, 
+  icon: Icon,
+  color
+}) => {
   const colorClasses = {
     blue: {
-      bg: 'bg-blue-100 dark:bg-blue-900/20',
+      bg: 'bg-blue-50 dark:bg-blue-900/20',
       text: 'text-blue-600 dark:text-blue-400'
     },
     green: {
-      bg: 'bg-green-100 dark:bg-green-900/20',
+      bg: 'bg-green-50 dark:bg-green-900/20',
       text: 'text-green-600 dark:text-green-400'
     },
     purple: {
-      bg: 'bg-purple-100 dark:bg-purple-900/20',
+      bg: 'bg-purple-50 dark:bg-purple-900/20',
       text: 'text-purple-600 dark:text-purple-400'
     },
-    amber: {
-      bg: 'bg-amber-100 dark:bg-amber-900/20',
-      text: 'text-amber-600 dark:text-amber-400'
+    indigo: {
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      text: 'text-indigo-600 dark:text-indigo-400'
+    },
+    pink: {
+      bg: 'bg-pink-50 dark:bg-pink-900/20',
+      text: 'text-pink-600 dark:text-pink-400'
     }
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
       <div className="flex items-center gap-4">
         <div className={`p-3 rounded-lg ${colorClasses[color].bg}`}>
           <Icon className={`w-6 h-6 ${colorClasses[color].text}`} />
@@ -482,9 +531,17 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color }) 
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
             {title}
           </h3>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-            {value}
-          </p>
+          <div className="mt-1 flex items-center">
+            <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+              {value}
+              {suffix && <span className="ml-1 text-lg">{suffix}</span>}
+            </p>
+          </div>
+          {subvalue && (
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {subvalue}
+            </p>
+          )}
         </div>
       </div>
     </div>
