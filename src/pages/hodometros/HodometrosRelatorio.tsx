@@ -1,48 +1,42 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, Camera, X, Download, FileText } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import { useDateRange } from '../../hooks/useDateRange';
-import { formatCPF, formatKilometers, formatPercentage } from '../../utils/format';
+import { formatCPF } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import * as XLSX from 'xlsx';
 
-interface HodometroReading {
-  id_hodometro: number;
-  data: string;
-  hora: string;
-  hod_lido: number | null;
-  hod_informado: number | null;
-  km_rodado: number | null;
-  bateria: number | null;
-  foto_hodometro: string | null;
-  motorista: {
-    motorista_id: number;
-    nome: string;
-    cpf: string;
-  };
-  veiculo: {
-    veiculo_id: number;
+interface MileageReport {
+  motorista_id: number;
+  nome: string;
+  cpf: string;
+  veiculos: {
     placa: string;
-    marca: string;
-    tipo: string;
-  };
+    km_inicial: number;
+    km_final: number;
+    km_total: number;
+    data_inicial: string;
+    data_final: string;
+    total_leituras: number;
+    bateria?: number | null;
+    is_electric?: boolean;
+  }[];
+  km_total_geral: number;
 }
 
 const HodometrosRelatorio = () => {
   const { query } = useCompanyData();
   const { companyId } = useAuth();
-  const [hodometros, setHodometros] = useState<HodometroReading[]>([]);
+  const [reports, setReports] = useState<MileageReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('1day');
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
 
-  const fetchHodometros = useCallback(async () => {
+  const fetchMileageReports = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -52,16 +46,9 @@ const HodometrosRelatorio = () => {
       }
 
       // Get all readings in the period
-      const { data, error } = await supabase.from('hodometro')
+      const { data: hodometros, error: hodometrosError } = await supabase.from('hodometro')
         .select(`
-          id_hodometro,
-          data,
-          hora,
-          hod_lido,
-          hod_informado,
-          km_rodado,
-          bateria,
-          foto_hodometro,
+          *,
           motorista:motorista_id (
             motorista_id,
             nome,
@@ -72,85 +59,180 @@ const HodometrosRelatorio = () => {
             placa,
             marca,
             tipo
+          ),
+          cliente:cliente_id (
+            cliente_id,
+            nome
           )
         `)
         .eq('company_id', companyId)
         .gte('data', dateRange.startDate)
         .lte('data', dateRange.endDate)
-        .order('data', { ascending: false })
-        .order('hora', { ascending: false });
+        .order('data', { ascending: true })
+        .order('hora', { ascending: true });
 
-      if (error) throw error;
+      if (hodometrosError) throw hodometrosError;
 
-      setHodometros(data || []);
+      if (!hodometros || hodometros.length === 0) {
+        setReports([]);
+        return;
+      }
+
+      // Group readings by driver
+      const reportMap = new Map<number, MileageReport>();
+
+      // Group readings by motorista and veiculo
+      const groupedReadings = hodometros.reduce((acc, hodometro) => {
+        if (!hodometro.motorista || !hodometro.veiculo) return acc;
+
+        const key = `${hodometro.motorista_id}_${hodometro.veiculo_id}`;
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(hodometro);
+        return acc;
+      }, {} as Record<string, typeof hodometros>);
+
+      // Process each group
+      for (const readings of Object.values(groupedReadings)) {
+        if (!readings || readings.length === 0) continue;
+        
+        // Sort readings by date and time
+        const sortedReadings = [...readings].sort((a, b) => {
+          const dateA = new Date(`${a.data}T${a.hora}`);
+          const dateB = new Date(`${b.data}T${b.hora}`);
+          return dateA.getTime() - dateB.getTime();
+        });
+        
+        const firstReading = sortedReadings[0]; // First reading (earliest date/time)
+        const lastReading = sortedReadings[sortedReadings.length - 1]; // Last reading (latest date/time)
+        
+        // Check if it's an electric vehicle (has battery readings)
+        const isElectric = firstReading.bateria !== null && firstReading.bateria !== undefined;
+        
+        // Calculate total KM
+        let totalKm = 0;
+        if (isElectric) {
+          // For electric vehicles, use the sum of km_rodado values
+          totalKm = sortedReadings.reduce((sum, reading) => {
+            // Ensure km_rodado is a valid number
+            const kmValue = typeof reading.km_rodado === 'number' && !isNaN(reading.km_rodado) 
+              ? reading.km_rodado 
+              : 0;
+            return sum + kmValue;
+          }, 0);
+        } else {
+          // For regular vehicles, use the difference between first and last readings
+          // Ensure hod_lido values are valid numbers
+          const firstHodLido = typeof firstReading.hod_lido === 'number' && !isNaN(firstReading.hod_lido) 
+            ? firstReading.hod_lido 
+            : 0;
+            
+          const lastHodLido = typeof lastReading.hod_lido === 'number' && !isNaN(lastReading.hod_lido) 
+            ? lastReading.hod_lido 
+            : 0;
+            
+          totalKm = Math.max(0, lastHodLido - firstHodLido);
+        }
+
+        if (!firstReading.motorista || !firstReading.veiculo) continue;
+
+        const motorista = reportMap.get(firstReading.motorista_id);
+
+        if (motorista) {
+          // Find vehicle in driver's vehicles array
+          const veiculo = motorista.veiculos.find(v => v.placa === firstReading.veiculo.placa);
+
+          if (veiculo) {
+            // Update existing vehicle stats
+            veiculo.km_total += totalKm;
+            veiculo.total_leituras += readings.length;
+
+            // Update with first and last readings
+            if (isElectric) {
+              veiculo.is_electric = true;
+              veiculo.bateria = lastReading.bateria;
+            } else {
+              // Ensure hod_lido values are valid numbers
+              veiculo.km_inicial = typeof firstReading.hod_lido === 'number' && !isNaN(firstReading.hod_lido) 
+                ? firstReading.hod_lido 
+                : 0;
+                
+              veiculo.km_final = typeof lastReading.hod_lido === 'number' && !isNaN(lastReading.hod_lido) 
+                ? lastReading.hod_lido 
+                : 0;
+            }
+            veiculo.data_inicial = firstReading.data;
+            veiculo.data_final = lastReading.data;
+          } else {
+            // Add new vehicle to driver's vehicles array
+            motorista.veiculos.push({
+              placa: firstReading.veiculo.placa,
+              km_inicial: isElectric ? 0 : (typeof firstReading.hod_lido === 'number' && !isNaN(firstReading.hod_lido) ? firstReading.hod_lido : 0),
+              km_final: isElectric ? 0 : (typeof lastReading.hod_lido === 'number' && !isNaN(lastReading.hod_lido) ? lastReading.hod_lido : 0),
+              km_total: totalKm,
+              data_inicial: firstReading.data,
+              data_final: lastReading.data,
+              total_leituras: readings.length,
+              bateria: isElectric ? lastReading.bateria : null,
+              is_electric: isElectric
+            });
+          }
+
+          // Update total KM for driver
+          motorista.km_total_geral += totalKm;
+        } else {
+          // Create new driver entry
+          reportMap.set(firstReading.motorista_id, {
+            motorista_id: firstReading.motorista_id,
+            nome: firstReading.motorista.nome,
+            cpf: firstReading.motorista.cpf,
+            veiculos: [{
+              placa: firstReading.veiculo.placa,
+              km_inicial: isElectric ? 0 : (typeof firstReading.hod_lido === 'number' && !isNaN(firstReading.hod_lido) ? firstReading.hod_lido : 0),
+              km_final: isElectric ? 0 : (typeof lastReading.hod_lido === 'number' && !isNaN(lastReading.hod_lido) ? lastReading.hod_lido : 0),
+              km_total: totalKm,
+              data_inicial: firstReading.data,
+              data_final: lastReading.data,
+              total_leituras: readings.length,
+              bateria: isElectric ? lastReading.bateria : null,
+              is_electric: isElectric
+            }],
+            km_total_geral: totalKm
+          });
+        }
+      }
+
+      // Convert map to array and sort by driver name
+      const reportArray = Array.from(reportMap.values())
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+
+      setReports(reportArray);
     } catch (error) {
-      console.error('Error fetching hodometros:', error);
-      toast.error('Erro ao carregar leituras de hodômetro');
+      console.error('Error fetching mileage reports:', error);
+      toast.error('Erro ao carregar relatório de quilometragem');
     } finally {
       setLoading(false);
     }
-  }, [dateRange, companyId]);
+  }, [dateRange]);
 
   useEffect(() => {
-    fetchHodometros();
-  }, [fetchHodometros]);
+    fetchMileageReports();
+  }, [fetchMileageReports]);
 
-  const handleShowPhoto = (photo: string | null) => {
-    if (photo) {
-      setSelectedPhoto(photo);
-      setShowPhotoModal(true);
-    } else {
-      toast.error('Nenhuma foto disponível');
-    }
-  };
-
-  const exportToExcel = () => {
-    try {
-      const exportData = filteredHodometros.map(h => ({
-        'Data': new Date(h.data).toLocaleDateString('pt-BR'),
-        'Hora': h.hora,
-        'Motorista': h.motorista?.nome || '',
-        'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
-        'Placa': h.veiculo?.placa.toUpperCase() || '',
-        'Veículo': `${h.veiculo?.marca || ''} ${h.veiculo?.tipo || ''}`,
-        'Hodômetro': h.bateria !== null ? `Bateria: ${formatPercentage(h.bateria)}` : formatKilometers(h.hod_lido)
-      }));
-
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Hodometros');
-      
-      // Auto-size columns
-      const colWidths = [
-        { wch: 12 }, // Data
-        { wch: 8 },  // Hora
-        { wch: 25 }, // Motorista
-        { wch: 15 }, // CPF
-        { wch: 10 }, // Placa
-        { wch: 20 }, // Veículo
-        { wch: 15 }  // Hodômetro
-      ];
-      ws['!cols'] = colWidths;
-      
-      XLSX.writeFile(wb, `relatorio_hodometros_${new Date().toISOString().split('T')[0]}.xlsx`);
-      toast.success('Relatório exportado com sucesso');
-    } catch (error) {
-      console.error('Error exporting to Excel:', error);
-      toast.error('Erro ao exportar para Excel');
-    }
-  };
-
-  const filteredHodometros = hodometros.filter(hodometro => {
+  const filteredReports = reports.filter(report => {
     const searchString = searchTerm.toLowerCase();
     return (
-      !searchTerm ||
-      (hodometro.motorista?.nome && hodometro.motorista.nome.toLowerCase().includes(searchString)) ||
-      (hodometro.motorista?.cpf && hodometro.motorista.cpf.includes(searchString)) ||
-      (hodometro.veiculo?.placa && hodometro.veiculo.placa.toLowerCase().includes(searchString)) ||
-      (hodometro.veiculo?.marca && hodometro.veiculo.marca.toLowerCase().includes(searchString)) ||
-      (hodometro.veiculo?.tipo && hodometro.veiculo.tipo.toLowerCase().includes(searchString))
+      report.nome.toLowerCase().includes(searchString) ||
+      report.cpf.includes(searchString) ||
+      report.veiculos.some(v => v.placa.toLowerCase().includes(searchString))
     );
   });
+
+  // Find the maximum KM total across all vehicles
+  const maxKmTotal = Math.max(...reports.flatMap(report => 
+    report.veiculos.map(veiculo => veiculo.km_total)
+  ), 0); // Add 0 as fallback to prevent -Infinity if array is empty
 
   if (loading) {
     return (
@@ -178,18 +260,6 @@ const HodometrosRelatorio = () => {
           </div>
 
           {/* Export Button */}
-          <div className="flex justify-end">
-            <button
-              onClick={exportToExcel}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                       transition-colors flex items-center gap-2"
-              disabled={filteredHodometros.length === 0}
-            >
-              <Download className="w-5 h-5" />
-              Exportar Excel
-            </button>
-          </div>
         </div>
 
         {/* Period Selector */}
@@ -203,7 +273,7 @@ const HodometrosRelatorio = () => {
         </div>
       </div>
 
-      {/* Readings Table */}
+      {/* Report Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -211,131 +281,92 @@ const HodometrosRelatorio = () => {
               <tr className="bg-gray-50 dark:bg-gray-800">
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leitura</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leitura Inicial</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leitura Final</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total KM</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredHodometros.map((hodometro) => (
-                <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
-                        {hodometro.motorista?.nome?.charAt(0) || '?'}
-                      </div>
-                      <div className="ml-4">
+              {filteredReports.map((report) => (
+                <React.Fragment key={report.motorista_id}>
+                  {report.veiculos.map((veiculo, index) => (
+                    <tr key={`${report.motorista_id}-${veiculo.placa}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      {index === 0 ? (
+                        <td className="px-6 py-4 whitespace-nowrap\" rowSpan={report.veiculos.length}>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {report.nome}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {formatCPF(report.cpf)}
+                          </div>
+                          <div className="text-sm font-medium text-blue-600 dark:text-blue-400 mt-1">
+                            Total: {report.km_total_geral.toLocaleString('pt-BR')} km
+                          </div>
+                        </td>
+                      ) : null}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white uppercase">
+                          {veiculo.placa}
+                        </div>
+                        {veiculo.is_electric && (
+                          <div className="text-xs px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200 rounded-full inline-block mt-1">
+                            Elétrico
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        {veiculo.is_electric ? (
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            Ciclomotor elétrico
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {veiculo.km_inicial.toLocaleString('pt-BR')} km
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(veiculo.data_inicial).toLocaleDateString('pt-BR')}
+                            </div>
+                          </>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        {veiculo.is_electric ? (
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            Bateria: {veiculo.bateria}%
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {veiculo.km_final.toLocaleString('pt-BR')} km
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(veiculo.data_final).toLocaleDateString('pt-BR')}
+                            </div>
+                          </>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {hodometro.motorista?.nome || 'Não informado'}
+                          {veiculo.km_total.toLocaleString('pt-BR')} km
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {hodometro.motorista?.cpf ? formatCPF(hodometro.motorista.cpf) : ''}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase">
-                      {hodometro.veiculo?.placa || 'Não informada'}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {hodometro.veiculo?.marca} {hodometro.veiculo?.tipo}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {new Date(hodometro.data).toLocaleDateString('pt-BR')}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {hodometro.hora}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        Bateria: {formatPercentage(hodometro.bateria)}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {formatKilometers(hodometro.hod_lido)}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    {hodometro.foto_hodometro ? (
-                      <button
-                        onClick={() => handleShowPhoto(hodometro.foto_hodometro)}
-                        className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                        title="Ver foto do hodômetro"
-                      >
-                        <Camera size={18} />
-                      </button>
-                    ) : (
-                      <span className="text-gray-400 dark:text-gray-600">
-                        <Camera size={18} className="inline-block opacity-50" />
-                      </span>
-                    )}
-                  </td>
-                </tr>
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
               ))}
-              {filteredHodometros.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    Nenhuma leitura encontrada para o período selecionado
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
-      </div>
 
-      {/* Photo Modal */}
-      {showPhotoModal && selectedPhoto && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowPhotoModal(false)}
-        >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Foto do Hodômetro
-              </h3>
-              <button
-                onClick={() => setShowPhotoModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="relative aspect-video">
-              <img
-                src={selectedPhoto}
-                alt="Foto do Hodômetro"
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-            </div>
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-              <a
-                href={selectedPhoto}
-                download="hodometro.jpg"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                         transition-colors flex items-center gap-2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Download size={16} />
-                Baixar Imagem
-              </a>
-            </div>
+        {filteredReports.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500 dark:text-gray-400">
+              Nenhum registro encontrado para o período selecionado
+            </p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

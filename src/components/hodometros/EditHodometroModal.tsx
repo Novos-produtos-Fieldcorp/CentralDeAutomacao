@@ -3,7 +3,6 @@ import { X, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Hodometro, Motorista, Veiculo } from '../../types/database';
 import toast from 'react-hot-toast';
-import { formatKilometers, formatPercentage } from '../../utils/format';
 
 interface EditHodometroModalProps {
   isOpen: boolean;
@@ -17,18 +16,20 @@ const EditHodometroModal = ({ isOpen, onClose, hodometro, onUpdate }: EditHodome
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [formData, setFormData] = useState({
-    data: '',
-    hora: '',
-    hod_informado: '',
-    hod_lido: '',
+    motorista_id: '',
+    veiculo_id: '',
+    quilometragem: '',
+    observacoes: '',
+    data: new Date().toISOString().split('T')[0],
+    hora: new Date().toTimeString().split(' ')[0].slice(0, 5),
     trip_lida: '',
     trip_informada: '',
     km_rodado: '',
     bateria: '',
     verificacao: false,
     comparacao_leitura: false,
-    motorista_id: '',
-    veiculo_id: ''
+    hod_informado: '',
+    hod_lido: ''
   });
 
   useEffect(() => {
@@ -41,18 +42,20 @@ const EditHodometroModal = ({ isOpen, onClose, hodometro, onUpdate }: EditHodome
   useEffect(() => {
     if (hodometro) {
       setFormData({
+        motorista_id: hodometro.motorista_id?.toString() || '',
+        veiculo_id: hodometro.veiculo_id?.toString() || '',
+        quilometragem: '',
+        observacoes: '',
         data: hodometro.data,
         hora: hodometro.hora,
-        hod_informado: hodometro.hod_informado?.toString() || '',
-        hod_lido: hodometro.hod_lido?.toString() || '',
         trip_lida: hodometro.trip_lida?.toString() || '',
         trip_informada: hodometro.trip_informada || '',
         km_rodado: hodometro.km_rodado?.toString() || '',
         bateria: hodometro.bateria?.toString() || '',
         verificacao: hodometro.verificacao || false,
         comparacao_leitura: hodometro.comparacao_leitura || false,
-        motorista_id: hodometro.motorista_id?.toString() || '',
-        veiculo_id: hodometro.veiculo_id?.toString() || ''
+        hod_informado: hodometro.hod_informado?.toString() || '',
+        hod_lido: hodometro.hod_lido?.toString() || ''
       });
     }
   }, [hodometro]);
@@ -86,12 +89,6 @@ const EditHodometroModal = ({ isOpen, onClose, hodometro, onUpdate }: EditHodome
       console.error('Error fetching veiculos:', error);
       toast.error('Erro ao carregar veículos');
     }
-  };
-
-  // Function to format percentage values to avoid double % signs
-  const formatPercentageInput = (value: number | null | undefined): string => {
-    if (value === null || value === undefined) return '';
-    return `${value}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -311,6 +308,7 @@ const EditHodometroModal = ({ isOpen, onClose, hodometro, onUpdate }: EditHodome
                 value={formData.trip_informada}
                 onChange={(e) => setFormData(prev => ({ ...prev, trip_informada: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                step="0.1"
               />
             </div>
 
