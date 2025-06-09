@@ -19,6 +19,8 @@ interface HodometroReading {
   km_rodado: number | null;
   bateria: number | null;
   foto_hodometro: string | null;
+  trip_lida: number | null;
+  trip_informada: string | null;
   motorista: {
     motorista_id: number;
     nome: string;
@@ -62,6 +64,8 @@ const HodometrosRelatorio = () => {
           km_rodado,
           bateria,
           foto_hodometro,
+          trip_lida,
+          trip_informada,
           motorista:motorista_id (
             motorista_id,
             nome,
@@ -122,7 +126,11 @@ const HodometrosRelatorio = () => {
         'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
         'Placa': h.veiculo?.placa.toUpperCase() || '',
         'Veículo': `${h.veiculo?.marca || ''} ${h.veiculo?.tipo || ''}`,
-        'Hodômetro': h.bateria !== null ? `Bateria: ${h.bateria}` : h.hod_lido?.toLocaleString('pt-BR')
+        'Hodômetro Informado': h.hod_informado?.toLocaleString('pt-BR') || '',
+        'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : h.hod_lido?.toLocaleString('pt-BR'),
+        'Trip Informada': h.trip_informada || '',
+        'Trip Lida': h.trip_lida?.toLocaleString('pt-BR') || '',
+        'KM Rodado': h.km_rodado?.toLocaleString('pt-BR') || ''
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -137,7 +145,11 @@ const HodometrosRelatorio = () => {
         { wch: 15 }, // CPF
         { wch: 10 }, // Placa
         { wch: 20 }, // Veículo
-        { wch: 15 }  // Hodômetro
+        { wch: 18 }, // Hodômetro Informado
+        { wch: 15 }, // Hodômetro Lido
+        { wch: 15 }, // Trip Informada
+        { wch: 12 }, // Trip Lida
+        { wch: 12 }  // KM Rodado
       ];
       ws['!cols'] = colWidths;
       
@@ -221,7 +233,10 @@ const HodometrosRelatorio = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leitura</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
               </tr>
             </thead>
@@ -259,16 +274,46 @@ const HodometrosRelatorio = () => {
                       {hodometro.hora}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900 dark:text-white">
+                      {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
+                        <span>-</span>
+                      ) : (
+                        <span>{hodometro.hod_informado?.toLocaleString('pt-BR') || '-'}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
                       <div className="text-sm text-gray-900 dark:text-white">
                         Bateria: {hodometro.bateria}
                       </div>
                     ) : (
                       <div className="text-sm text-gray-900 dark:text-white">
-                        {hodometro.hod_lido?.toLocaleString('pt-BR')}
+                        {hodometro.hod_lido?.toLocaleString('pt-BR') || '-'}
                       </div>
                     )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900 dark:text-white">
+                      {hodometro.trip_informada && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          Informada: {hodometro.trip_informada}
+                        </div>
+                      )}
+                      {hodometro.trip_lida ? (
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          Lida: {hodometro.trip_lida.toLocaleString('pt-BR')}
+                        </div>
+                      ) : (
+                        <span>-</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                      {hodometro.km_rodado?.toLocaleString('pt-BR') || '-'}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     {hodometro.foto_hodometro ? (
@@ -289,7 +334,7 @@ const HodometrosRelatorio = () => {
               ))}
               {filteredHodometros.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     Nenhuma leitura encontrada para o período selecionado
                   </td>
                 </tr>

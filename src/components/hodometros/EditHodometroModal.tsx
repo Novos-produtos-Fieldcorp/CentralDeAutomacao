@@ -87,12 +87,6 @@ const EditHodometroModal = ({ isOpen, onClose, hodometro, onUpdate }: EditHodome
     }
   };
 
-  // Function to format percentage values to avoid double % signs
-  const formatPercentageInput = (value: number | null | undefined): string => {
-    if (value === null || value === undefined) return '';
-    return `${value}`;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -116,6 +110,9 @@ const EditHodometroModal = ({ isOpen, onClose, hodometro, onUpdate }: EditHodome
       // Handle electric vehicles (with battery) vs regular vehicles
       if (formData.bateria) {
         updateData.bateria = parseInt(formData.bateria);
+        // For electric vehicles, also include trip data
+        updateData.trip_lida = formData.trip_lida ? parseFloat(formData.trip_lida) : null;
+        updateData.trip_informada = formData.trip_informada || null;
       } else {
         updateData.hod_informado = parseFloat(formData.hod_informado);
         updateData.hod_lido = parseFloat(formData.hod_lido);
@@ -253,7 +250,7 @@ const EditHodometroModal = ({ isOpen, onClose, hodometro, onUpdate }: EditHodome
             {isElectricVehicle ? (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Bateria (%) *
+                  Bateria *
                 </label>
                 <input
                   type="number"
