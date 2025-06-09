@@ -679,7 +679,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
                       <div className="flex items-center gap-4">
                         <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
                           <Camera className="w-5 h-5" />
-                          <span>Adicionar Foto</span>
+                          <span>{value ? 'Alterar Foto' : 'Adicionar Foto'}</span>
                           <input
                             type="file"
                             accept="image/*"
