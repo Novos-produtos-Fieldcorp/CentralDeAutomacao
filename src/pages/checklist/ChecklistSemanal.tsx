@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Calendar, Loader2, Eye, Plus, Edit2, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, Filter, Calendar, Loader2, Eye, Plus, Trash2, Edit2 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Checklist } from '../../types/database';
 import ChecklistCard from '../../components/checklist/ChecklistCard';
@@ -18,7 +18,7 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 
 const ChecklistSemanal = () => {
-  const { query, companyId } = useCompanyData();
+  const { query } = useCompanyData();
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,7 +31,6 @@ const ChecklistSemanal = () => {
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -64,8 +63,8 @@ const ChecklistSemanal = () => {
 
   const fetchChecklists = async () => {
     try {
-      setLoading(true);
-      let baseQuery = supabase.from('checklist')
+         setLoading(true);
+    let baseQuery = supabase.from('checklist')
       .select(`
         *,
         motorista:motorista_id (
@@ -80,7 +79,7 @@ const ChecklistSemanal = () => {
           tipo
         )
       `)
-        .eq('id_tipo_checklist', 2); // 2 = semanal
+      .eq('id_tipo_checklist', 2); // 2 = semanal
 
       // Add date range filter if dates are selected
       if (dateRange.startDate) {
@@ -165,42 +164,8 @@ const ChecklistSemanal = () => {
     }
   };
 
-  const handleToggleStatus = async (e: React.MouseEvent, checklist: Checklist) => {
-    e.stopPropagation();
-    try {
-      setUpdatingStatus(checklist.checklist_id);
-      
-      // Toggle the status
-      const newStatus = !checklist.status;
-      
-      const { error } = await supabase
-        .from('checklist')
-        .update({ status: newStatus })
-        .eq('checklist_id', checklist.checklist_id);
-        
-      if (error) throw error;
-      
-      // Update local state
-      setChecklists(prev => 
-        prev.map(c => 
-          c.checklist_id === checklist.checklist_id 
-            ? { ...c, status: newStatus } 
-            : c
-        )
-      );
-      
-      toast.success("Status atualizado!");
-    } catch (error) {
-      console.error('Error toggling checklist status:', error);
-      toast.error('Erro ao atualizar status do checklist');
-    } finally {
-      setUpdatingStatus(null);
-    }
-  };
-
   const handleContextMenu = (e: React.MouseEvent, checklist: Checklist) => {
     e.preventDefault();
-    setSelectedChecklist(checklist);
     setContextMenu({
       visible: true,
       x: e.clientX,
@@ -266,11 +231,7 @@ const ChecklistSemanal = () => {
                           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
                           transition-colors flex items-center gap-2"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 6h18"></path>
-                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                  </svg>
+                  <Trash2 className="w-5 h-5" />
                   Excluir Selecionados
                 </button>
               )}
@@ -389,29 +350,6 @@ const ChecklistSemanal = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-3">
                         <button
-                          onClick={(e) => handleToggleStatus(e, checklist)}
-                          disabled={updatingStatus === checklist.checklist_id}
-                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                            checklist.status 
-                              ? 'bg-green-500 dark:bg-green-600' 
-                              : 'bg-gray-200 dark:bg-gray-700'
-                          } ${updatingStatus === checklist.checklist_id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          role="switch"
-                          aria-checked={checklist.status}
-                          title={checklist.status ? "Marcar como não verificado" : "Marcar como verificado"}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                              checklist.status ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                          {updatingStatus === checklist.checklist_id && (
-                            <Loader2 
-                              className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
-                            />
-                          )}
-                        </button>
-                        <button
                           onClick={() => {
                             setSelectedChecklist(checklist);
                             setIsDetailsModalOpen(true);
@@ -421,6 +359,28 @@ const ChecklistSemanal = () => {
                           title="Visualizar"
                         >
                           <Eye size={18} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedChecklist(checklist);
+                            setIsNewModalOpen(true);
+                          }}
+                          className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 
+                                   transition-colors"
+                          title="Editar"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedChecklist(checklist);
+                            setIsDeleteModalOpen(true);
+                          }}
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                   transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </td>
@@ -472,12 +432,22 @@ const ChecklistSemanal = () => {
               color: 'text-gray-600 dark:text-gray-400'
             },
             {
-              icon: contextMenu.checklist.status ? <XCircle size={16} /> : <CheckCircle2 size={16} />,
-              label: contextMenu.checklist.status ? 'Marcar como não verificado' : 'Marcar como verificado',
-              onClick: (e) => {
-                handleToggleStatus(e as unknown as React.MouseEvent, contextMenu.checklist!);
+              icon: <Edit2 size={16} />,
+              label: 'Editar',
+              onClick: () => {
+                setSelectedChecklist(contextMenu.checklist);
+                setIsNewModalOpen(true);
               },
-              color: contextMenu.checklist.status ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+              color: 'text-yellow-500 dark:text-yellow-400'
+            },
+            {
+              icon: <Trash2 size={16} />,
+              label: 'Excluir',
+              onClick: () => {
+                setSelectedChecklist(contextMenu.checklist);
+                setIsDeleteModalOpen(true);
+              },
+              color: 'text-red-600 dark:text-red-400'
             }
           ]}
         />
@@ -533,10 +503,6 @@ const ChecklistSemanal = () => {
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         checklist={selectedChecklist}
-        onEdit={(checklist) => {
-          setSelectedChecklist(checklist);
-          setIsNewModalOpen(true);
-        }}
       />
     </div>
   );
