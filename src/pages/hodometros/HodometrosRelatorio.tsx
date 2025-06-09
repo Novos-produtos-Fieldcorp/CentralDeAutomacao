@@ -132,7 +132,8 @@ const HodometrosRelatorio = () => {
         'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : h.hod_lido?.toLocaleString('pt-BR'),
         'Trip Informada': h.trip_informada || '',
         'Trip Lida': h.trip_lida?.toLocaleString('pt-BR') || '',
-        'Leitura Divergente': h.comparacao_leitura === false ? 'Sim' : 'Não'
+        'Leitura Divergente': h.comparacao_leitura === false ? 'Sim' : 'Não',
+        'Trip Divergente': hasTripDiscrepancy(h) ? 'Sim' : 'Não'
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -151,7 +152,8 @@ const HodometrosRelatorio = () => {
         { wch: 15 }, // Hodômetro Lido
         { wch: 15 }, // Trip Informada
         { wch: 12 },  // Trip Lida
-        { wch: 15 }  // Leitura Divergente
+        { wch: 15 },  // Leitura Divergente
+        { wch: 15 }   // Trip Divergente
       ];
       ws['!cols'] = colWidths;
       
@@ -176,6 +178,23 @@ const HodometrosRelatorio = () => {
       // Allow a small tolerance (e.g., 1% difference)
       const tolerance = hodometro.hod_informado * 0.01;
       return Math.abs(hodometro.hod_informado - hodometro.hod_lido) > tolerance;
+    }
+    
+    return false;
+  };
+
+  // Check if there's a discrepancy between trip values
+  const hasTripDiscrepancy = (hodometro: HodometroReading): boolean => {
+    // If trip_informada is a number string and trip_lida exists, compare them
+    if (hodometro.trip_informada && hodometro.trip_lida !== null) {
+      const tripInformada = parseFloat(hodometro.trip_informada.replace(/[^\d.,]/g, '').replace(',', '.'));
+      
+      // If we can parse trip_informada as a number, compare with trip_lida
+      if (!isNaN(tripInformada)) {
+        // Allow a small tolerance (e.g., 5% difference)
+        const tolerance = tripInformada * 0.05;
+        return Math.abs(tripInformada - hodometro.trip_lida) > tolerance;
+      }
     }
     
     return false;
@@ -331,8 +350,18 @@ const HodometrosRelatorio = () => {
                         </div>
                       )}
                       {hodometro.trip_lida !== null ? (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          Lida: {hodometro.trip_lida.toLocaleString('pt-BR')}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-900 dark:text-white">
+                            Lida: {hodometro.trip_lida.toLocaleString('pt-BR')}
+                          </span>
+                          
+                          {/* Trip discrepancy tag */}
+                          {hasTripDiscrepancy(hodometro) && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              Divergente
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <span>-</span>
