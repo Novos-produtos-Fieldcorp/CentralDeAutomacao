@@ -374,48 +374,6 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         if (fotosError) throw fotosError;
       }
 
-      // Find status IDs based on the form values
-      const getStatusId = (value: string, type: string) => {
-        // Default mappings
-        if (type === 'fluid') {
-          if (value === 'No nível') return 1;
-          if (value === 'Abaixo do nível') return 2;
-          if (value === 'Acima do nível') return 3;
-          return 1;
-        }
-        
-        if (type === 'light') {
-          if (value === 'Funcionando') return 1;
-          if (value === 'Queimado') return 2;
-          return 1;
-        }
-        
-        if (type === 'lanterna') {
-          if (value === 'Sim') return 1;
-          if (value === 'Não') return 2;
-          return 1;
-        }
-        
-        if (type === 'component') {
-          if (value === 'Bom' || value === 'Boa') return 1;
-          if (value === 'Ruim') return 2;
-          return 1;
-        }
-        
-        if (type === 'accessory') {
-          if (value === 'Sim') return 1;
-          if (value === 'Não') return 2;
-          return 1;
-        }
-        
-        // For pneu
-        if (value === 'Bom') return 1;
-        if (value === 'Ruim') return 2;
-        
-        // Default to OK if no match
-        return 1;
-      };
-
       // Insert acessorios
       if (checklist) {
         await supabase
