@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Calendar, Loader2, Eye, Plus, Edit2, ChevronRight } from 'lucide-react';
+import { Search, Filter, Calendar, Loader2, Eye, Plus, Edit2, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Checklist } from '../../types/database';
 import ChecklistCard from '../../components/checklist/ChecklistCard';
@@ -165,17 +165,6 @@ const ChecklistMensal = () => {
     }
   };
 
-  const handleContextMenu = (e: React.MouseEvent, checklist: Checklist) => {
-    e.preventDefault();
-    setSelectedChecklist(checklist);
-    setContextMenu({
-      visible: true,
-      x: e.clientX,
-      y: e.clientY,
-      checklist,
-    });
-  };
-
   const handleToggleStatus = async (e: React.MouseEvent, checklist: Checklist) => {
     e.stopPropagation();
     try {
@@ -207,6 +196,17 @@ const ChecklistMensal = () => {
     } finally {
       setUpdatingStatus(null);
     }
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, checklist: Checklist) => {
+    e.preventDefault();
+    setSelectedChecklist(checklist);
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      checklist,
+    });
   };
 
   const filteredChecklists = checklists.filter(checklist => {
