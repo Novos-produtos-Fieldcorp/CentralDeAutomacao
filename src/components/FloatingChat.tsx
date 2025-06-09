@@ -785,17 +785,35 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
       const formattedNumber = formatPhoneNumber(phoneNumber);
 
+      // Buscar contato existente
       const searchResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/search`, {
         params: {
           q: formattedNumber
         }
       });
 
+      let user;
       if (!searchResponse.data?.payload?.[0]) {
-        throw new Error('Contato não encontrado');
-      }
+        // Criar novo contato
+        const contactNameToUse = contactName || 'Novo Contato';
+        const newContactResponse = await api.post(`/api/v1/accounts/${accountId}/contacts`, {
+          name: contactNameToUse,
+          phone_number: formattedNumber,
+          custom_attributes: {
+            source: "web_chat",
+            source_type: sourceType || 'web',
+            ...additionalInfo
+          }
+        });
 
-      const user = searchResponse.data.payload[0];
+        if (!newContactResponse.data) {
+          throw new Error('Não foi possível criar o contato');
+        }
+
+        user = newContactResponse.data;
+      } else {
+        user = searchResponse.data.payload[0];
+      }
 
       const contactResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${user.id}`);
 
