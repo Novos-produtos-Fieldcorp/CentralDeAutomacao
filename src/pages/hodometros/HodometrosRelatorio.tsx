@@ -127,7 +127,7 @@ const HodometrosRelatorio = () => {
         'Placa': h.veiculo?.placa.toUpperCase() || '',
         'Veículo': `${h.veiculo?.marca || ''} ${h.veiculo?.tipo || ''}`,
         'Hodômetro Informado': h.hod_informado?.toLocaleString('pt-BR') || '',
-        'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : h.hod_lido?.toLocaleString('pt-BR') || '',
+        'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : h.hod_lido?.toLocaleString('pt-BR'),
         'Trip Informada': h.trip_informada || '',
         'Trip Lida': h.trip_lida?.toLocaleString('pt-BR') || ''
       }));
