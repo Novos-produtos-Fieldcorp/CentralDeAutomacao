@@ -38,7 +38,6 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
       dianteiro: 'Funcionando',
       auxiliar: 'Funcionando',
       lanterna_traseira: 'Sim',
-      // Remove luz_freio as it doesn't exist in the schema
       pisca_dianteiro: 'Funcionando',
       pisca_traseiro: 'Funcionando',
       luz_placa: 'Funcionando',
