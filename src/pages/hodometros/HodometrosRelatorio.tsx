@@ -129,8 +129,7 @@ const HodometrosRelatorio = () => {
         'Hodômetro Informado': h.hod_informado?.toLocaleString('pt-BR') || '',
         'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : h.hod_lido?.toLocaleString('pt-BR'),
         'Trip Informada': h.trip_informada || '',
-        'Trip Lida': h.trip_lida?.toLocaleString('pt-BR') || '',
-        'KM Rodado': h.km_rodado?.toLocaleString('pt-BR') || ''
+        'Trip Lida': h.trip_lida?.toLocaleString('pt-BR') || ''
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -148,8 +147,7 @@ const HodometrosRelatorio = () => {
         { wch: 18 }, // Hodômetro Informado
         { wch: 15 }, // Hodômetro Lido
         { wch: 15 }, // Trip Informada
-        { wch: 12 }, // Trip Lida
-        { wch: 12 }  // KM Rodado
+        { wch: 12 }  // Trip Lida
       ];
       ws['!cols'] = colWidths;
       
@@ -236,7 +234,6 @@ const HodometrosRelatorio = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
               </tr>
             </thead>
@@ -310,11 +307,6 @@ const HodometrosRelatorio = () => {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                      {hodometro.km_rodado?.toLocaleString('pt-BR') || '-'}
-                    </div>
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     {hodometro.foto_hodometro ? (
                       <button
@@ -334,7 +326,7 @@ const HodometrosRelatorio = () => {
               ))}
               {filteredHodometros.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     Nenhuma leitura encontrada para o período selecionado
                   </td>
                 </tr>
