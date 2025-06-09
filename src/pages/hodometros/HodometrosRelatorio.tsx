@@ -298,7 +298,7 @@ const HodometrosRelatorio = () => {
                       {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
                         <span>-</span>
                       ) : (
-                        <span>{hodometro.hod_informado?.toLocaleString('pt-BR') || '-'}</span>
+                        <span>{hodometro.hod_informado !== null ? hodometro.hod_informado.toLocaleString('pt-BR') : '-'}</span>
                       )}
                     </div>
                   </td>
@@ -310,7 +310,7 @@ const HodometrosRelatorio = () => {
                         </div>
                       ) : (
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {hodometro.hod_lido?.toLocaleString('pt-BR') || '-'}
+                          {hodometro.hod_lido !== null ? hodometro.hod_lido.toLocaleString('pt-BR') : '-'}
                         </div>
                       )}
                       
@@ -330,7 +330,7 @@ const HodometrosRelatorio = () => {
                           Informada: {hodometro.trip_informada}
                         </div>
                       )}
-                      {hodometro.trip_lida ? (
+                      {hodometro.trip_lida !== null ? (
                         <div className="text-sm text-gray-900 dark:text-white">
                           Lida: {hodometro.trip_lida.toLocaleString('pt-BR')}
                         </div>
