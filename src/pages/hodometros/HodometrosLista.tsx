@@ -689,7 +689,7 @@ const HodometrosLista = () => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                               {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                                                <span>Bateria: {hodometro.bateria}%</span>
+                                                <span>Bateria: {hodometro.bateria}</span>
                                               ) : (
                                                 <span>{hodometro.hod_lido?.toLocaleString('pt-BR')} km</span>
                                               )}
@@ -749,7 +749,11 @@ const HodometrosLista = () => {
               </tbody>
             </table>
           </div>
-          <ScrollableTableIndicator containerRef={tableRef} />
+          
+          <ScrollableTableIndicator 
+            containerRef={tableRef} 
+            className="mr-2 ml-2"
+          />
         </div>
         
         {filteredData.length === 0 && (
