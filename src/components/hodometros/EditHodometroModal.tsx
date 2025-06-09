@@ -3,6 +3,7 @@ import { X, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Hodometro, Motorista, Veiculo } from '../../types/database';
 import toast from 'react-hot-toast';
+import { formatKilometers, formatPercentage } from '../../utils/format';
 
 interface EditHodometroModalProps {
   isOpen: boolean;
@@ -88,7 +89,7 @@ const EditHodometroModal = ({ isOpen, onClose, hodometro, onUpdate }: EditHodome
   };
 
   // Function to format percentage values to avoid double % signs
-  const formatPercentage = (value: number | null | undefined): string => {
+  const formatPercentageInput = (value: number | null | undefined): string => {
     if (value === null || value === undefined) return '';
     return `${value}`;
   };
@@ -310,7 +311,6 @@ const EditHodometroModal = ({ isOpen, onClose, hodometro, onUpdate }: EditHodome
                 value={formData.trip_informada}
                 onChange={(e) => setFormData(prev => ({ ...prev, trip_informada: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                step="0.1"
               />
             </div>
 

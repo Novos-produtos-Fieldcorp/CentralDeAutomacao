@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import { useDateRange } from '../../hooks/useDateRange';
-import { formatCPF } from '../../utils/format';
+import { formatCPF, formatKilometers, formatPercentage } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as XLSX from 'xlsx';
@@ -104,12 +104,6 @@ const HodometrosRelatorio = () => {
     }
   };
 
-  // Function to format percentage values to avoid double % signs
-  const formatPercentage = (value: number | null | undefined): string => {
-    if (value === null || value === undefined) return 'N/A';
-    return `${value}%`;
-  };
-
   const exportToExcel = () => {
     try {
       const exportData = filteredHodometros.map(h => ({
@@ -119,7 +113,7 @@ const HodometrosRelatorio = () => {
         'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
         'Placa': h.veiculo?.placa.toUpperCase() || '',
         'Veículo': `${h.veiculo?.marca || ''} ${h.veiculo?.tipo || ''}`,
-        'Hodômetro': h.bateria !== null ? `Bateria: ${h.bateria}%` : `${h.hod_lido?.toLocaleString('pt-BR') || ''} km`
+        'Hodômetro': h.bateria !== null ? `Bateria: ${formatPercentage(h.bateria)}` : formatKilometers(h.hod_lido)
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -263,7 +257,7 @@ const HodometrosRelatorio = () => {
                       </div>
                     ) : (
                       <div className="text-sm text-gray-900 dark:text-white">
-                        {hodometro.hod_lido?.toLocaleString('pt-BR')} km
+                        {formatKilometers(hodometro.hod_lido)}
                       </div>
                     )}
                   </td>

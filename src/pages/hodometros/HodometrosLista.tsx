@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import EditHodometroModal from '../../components/hodometros/EditHodometroModal';
 import DeleteHodometroModal from '../../components/hodometros/DeleteHodometroModal';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { formatCPF } from '../../utils/format';
+import { formatCPF, formatKilometers, formatPercentage } from '../../utils/format';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import DriverMileageChart from '../../components/hodometros/DriverMileageChart';
 import MileageChartModal from '../../components/hodometros/MileageChartModal';
@@ -134,12 +134,6 @@ const HodometrosLista = () => {
   useEffect(() => {
     fetchHodometros();
   }, [fetchHodometros]);
-
-  // Function to format percentage values to avoid double % signs
-  const formatPercentage = (value: number | null | undefined): string => {
-    if (value === null || value === undefined) return 'N/A';
-    return `${value}%`;
-  };
 
   const processHodometrosData = (data: Hodometro[]) => {
     // Group by motorista and veiculo
@@ -369,7 +363,9 @@ const HodometrosLista = () => {
   });
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <LoadingSpinner />
+    );
   }
 
   return (
@@ -532,7 +528,7 @@ const HodometrosLista = () => {
                               Veículo Elétrico
                             </span>
                           ) : (
-                            `${data.leitura_inicial.toLocaleString('pt-BR')} km`
+                            formatKilometers(data.leitura_inicial)
                           )}
                         </div>
                       </td>
@@ -543,13 +539,13 @@ const HodometrosLista = () => {
                               Veículo Elétrico
                             </span>
                           ) : (
-                            `${data.leitura_final.toLocaleString('pt-BR')} km`
+                            formatKilometers(data.leitura_final)
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                          {data.km_total.toLocaleString('pt-BR')} km
+                          {formatKilometers(data.km_total)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -647,7 +643,7 @@ const HodometrosLista = () => {
                                           {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
                                             <span>Bateria: {formatPercentage(hodometro.bateria)}</span>
                                           ) : (
-                                            <span>{hodometro.hod_lido?.toLocaleString('pt-BR')} km</span>
+                                            <span>{formatKilometers(hodometro.hod_lido)}</span>
                                           )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
