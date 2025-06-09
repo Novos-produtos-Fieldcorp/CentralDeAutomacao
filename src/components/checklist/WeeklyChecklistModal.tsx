@@ -328,7 +328,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
       const checklistId = checklist ? checklist.checklist_id : newChecklist.checklist_id;
 
       // Find status IDs based on the form values
-      const getStatusId = (value: string, type: string): number => {
+      const getStatusId = (value: string, type: string) => {
         // Default mappings
         if (type === 'fluid') {
           if (value === 'No nível') return 1;
