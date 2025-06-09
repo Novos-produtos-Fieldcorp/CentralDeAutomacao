@@ -52,8 +52,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
     acessorios: {
       pneu: 'Bom',
       pneu_ruim: '',
-      documento_veicular: 'Sim',
-      carrinho_carga: 'Sim'
+      documento_veicular: 'Sim'
     }
   });
 
@@ -190,8 +189,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
           const acessoriosData = {
             pneu: 'Bom',
             pneu_ruim: '',
-            documento_veicular: 'Sim',
-            carrinho_carga: 'Sim'
+            documento_veicular: 'Sim'
           };
           
           if (data.acessorios_veiculos?.[0]) {
@@ -212,13 +210,6 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
               acessoriosData.documento_veicular = 'Sim';
             } else if (acessorios.documento_veicular === 2) {
               acessoriosData.documento_veicular = 'Não';
-            }
-            
-            // Map carrinho_carga
-            if (acessorios.carrinho_carga === 1) {
-              acessoriosData.carrinho_carga = 'Sim';
-            } else if (acessorios.carrinho_carga === 2) {
-              acessoriosData.carrinho_carga = 'Não';
             }
           }
           
@@ -383,8 +374,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
           checklist_id: checklistId,
           pneu: getStatusId(formData.acessorios.pneu, 'pneu'),
           pneu_ruim: formData.acessorios.pneu_ruim,
-          documento_veicular: getStatusId(formData.acessorios.documento_veicular, 'accessory'),
-          carrinho_carga: getStatusId(formData.acessorios.carrinho_carga, 'accessory')
+          documento_veicular: getStatusId(formData.acessorios.documento_veicular, 'accessory')
         });
 
       if (acessoriosError) throw acessoriosError;
@@ -729,7 +719,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Only show pneu, pneu_ruim, documento_veicular, and carrinho_carga for weekly checklist */}
+              {/* Only show pneu, pneu_ruim, documento_veicular for weekly checklist */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Pneu
@@ -789,9 +779,6 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
                   <option value="Sim">Sim</option>
                   <option value="Não">Não</option>
                 </select>
-              </div>
-              
-              <div>
               </div>
             </div>
           </div>
