@@ -107,7 +107,7 @@ const HodometrosRelatorio = () => {
   const exportToExcel = () => {
     try {
       const exportData = filteredHodometros.map(h => ({
-        'Data': new Date(h.data).toLocaleDateString('pt-BR'),
+        'Data': h.data,
         'Hora': h.hora,
         'Motorista': h.motorista?.nome || '',
         'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
@@ -244,7 +244,7 @@ const HodometrosRelatorio = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {new Date(hodometro.data).toLocaleDateString('pt-BR')}
+                      {hodometro.data}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       {hodometro.hora}
