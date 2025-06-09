@@ -1,29 +1,43 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Camera, Loader2, AlertCircle, Edit2 } from 'lucide-react';
+import { X, Download, Camera, Loader2, AlertCircle, Save, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { exportChecklistToPDF } from '../../utils/export';
 import { getStatusInfo } from '../../utils/checklistStatus';
-import type { Checklist } from '../../types/database';
+import type { Checklist, Motorista, Veiculo } from '../../types/database';
 import LoadingSpinner from '../LoadingSpinner';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { ChecklistSection } from './ChecklistSection';
+import toast from 'react-hot-toast';
 
 interface ChecklistDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   checklist: Checklist | null;
-  onEdit?: (checklist: Checklist) => void;
 }
 
-const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: ChecklistDetailsModalProps) => {
+const ChecklistDetailsModal = ({ isOpen, onClose, checklist }: ChecklistDetailsModalProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checklistDetails, setChecklistDetails] = useState<any>(null);
   const [statusItems, setStatusItems] = useState<{ status_id: number; status: string }[]>([]);
   const retryTimeoutRef = useRef<number>();
+  const [isEditing, setIsEditing] = useState(false);
+  const [motoristas, setMotoristas] = useState<Motorista[]>([]);
+  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    motorista_id: '',
+    veiculo_id: '',
+    quilometragem: '',
+    observacoes: '',
+    data: '',
+    hora: ''
+  });
 
   useEffect(() => {
     fetchStatusItems();
+    fetchMotoristas();
+    fetchVeiculos();
     return () => {
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
@@ -36,6 +50,19 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       fetchChecklistDetails();
     }
   }, [isOpen, checklist]);
+
+  useEffect(() => {
+    if (checklistDetails) {
+      setEditFormData({
+        motorista_id: checklistDetails.motorista_id?.toString() || '',
+        veiculo_id: checklistDetails.veiculo_id?.toString() || '',
+        quilometragem: checklistDetails.quilometragem?.toString() || '',
+        observacoes: checklistDetails.observacoes || '',
+        data: checklistDetails.data || new Date().toISOString().split('T')[0],
+        hora: checklistDetails.hora || new Date().toTimeString().split(' ')[0].slice(0, 5)
+      });
+    }
+  }, [checklistDetails]);
 
   const fetchStatusItems = async (retryCount = 0) => {
     try {
@@ -64,6 +91,38 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
           fetchStatusItems(retryCount + 1);
         }, retryDelay);
       }
+    }
+  };
+
+  const fetchMotoristas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('motorista')
+        .select('*')
+        .eq('st_cadastro', 'contratado')
+        .order('nome');
+
+      if (error) throw error;
+      setMotoristas(data || []);
+    } catch (error) {
+      console.error('Error fetching motoristas:', error);
+      toast.error('Erro ao carregar motoristas');
+    }
+  };
+
+  const fetchVeiculos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('veiculo')
+        .select('*')
+        .eq('status_veiculo', true)
+        .order('placa');
+
+      if (error) throw error;
+      setVeiculos(data || []);
+    } catch (error) {
+      console.error('Error fetching veiculos:', error);
+      toast.error('Erro ao carregar veículos');
     }
   };
 
@@ -118,10 +177,53 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
     }
   };
 
-  const handleEdit = () => {
-    if (onEdit && checklist) {
-      onEdit(checklist);
-      onClose();
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSaveChanges = async () => {
+    if (!checklist) return;
+    
+    try {
+      setSaving(true);
+      
+      // Validate required fields
+      if (!editFormData.motorista_id || !editFormData.veiculo_id || !editFormData.quilometragem) {
+        toast.error('Preencha todos os campos obrigatórios');
+        return;
+      }
+
+      // Update checklist data
+      const { error } = await supabase
+        .from('checklist')
+        .update({
+          motorista_id: parseInt(editFormData.motorista_id),
+          veiculo_id: parseInt(editFormData.veiculo_id),
+          quilometragem: parseFloat(editFormData.quilometragem),
+          observacoes: editFormData.observacoes,
+          data: editFormData.data,
+          hora: editFormData.hora
+        })
+        .eq('checklist_id', checklist.checklist_id);
+
+      if (error) throw error;
+      
+      toast.success('Checklist atualizado com sucesso');
+      
+      // Refresh data
+      await fetchChecklistDetails();
+      
+      // Exit edit mode
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating checklist:', error);
+      toast.error('Erro ao atualizar checklist');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -242,12 +344,47 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
               </div>
               <div className="flex items-center gap-4">
                 <button
-                  onClick={handleEdit}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-yellow-500 rounded-xl hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors shadow-sm"
+                  onClick={() => setIsEditing(!isEditing)}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-colors shadow-sm
+                    ${isEditing 
+                      ? 'text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600' 
+                      : 'text-white bg-yellow-500 hover:bg-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2'
+                    }`}
                 >
-                  <Edit2 className="w-4 h-4" />
-                  Editar
+                  {isEditing ? (
+                    <>
+                      <X className="w-4 h-4" />
+                      Cancelar Edição
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                        <path d="m15 5 4 4"></path>
+                      </svg>
+                      Editar
+                    </>
+                  )}
                 </button>
+                {isEditing && (
+                  <button
+                    onClick={handleSaveChanges}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        Salvar
+                      </>
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={handleExportPDF}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
@@ -271,36 +408,131 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     Informações Básicas
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div>
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Data:</span>
-                      <p className="mt-1 text-base text-gray-900 dark:text-white">
-                        {formatDate(details.data)}
-                      </p>
+                  {isEditing ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Data *
+                        </label>
+                        <input
+                          type="date"
+                          name="data"
+                          value={editFormData.data}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Hora *
+                        </label>
+                        <input
+                          type="time"
+                          name="hora"
+                          value={editFormData.hora}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Quilometragem *
+                        </label>
+                        <input
+                          type="number"
+                          name="quilometragem"
+                          value={editFormData.quilometragem}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          required
+                          step="0.1"
+                        />
+                      </div>
+                      <div className="md:col-span-3">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Motorista *
+                        </label>
+                        <select
+                          name="motorista_id"
+                          value={editFormData.motorista_id}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          required
+                        >
+                          <option value="">Selecione um motorista</option>
+                          {motoristas.map(motorista => (
+                            <option key={motorista.motorista_id} value={motorista.motorista_id}>
+                              {motorista.nome}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="md:col-span-3">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Veículo *
+                        </label>
+                        <select
+                          name="veiculo_id"
+                          value={editFormData.veiculo_id}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          required
+                        >
+                          <option value="">Selecione um veículo</option>
+                          {veiculos.map(veiculo => (
+                            <option key={veiculo.veiculo_id} value={veiculo.veiculo_id}>
+                              {veiculo.placa} - {veiculo.marca} {veiculo.tipo}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="md:col-span-3">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Observações
+                        </label>
+                        <textarea
+                          name="observacoes"
+                          value={editFormData.observacoes}
+                          onChange={handleInputChange}
+                          rows={4}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Hora:</span>
-                      <p className="mt-1 text-base text-gray-900 dark:text-white">{details.hora}</p>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      <div>
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Data:</span>
+                        <p className="mt-1 text-base text-gray-900 dark:text-white">
+                          {formatDate(details.data)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Hora:</span>
+                        <p className="mt-1 text-base text-gray-900 dark:text-white">{details.hora}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Motorista:</span>
+                        <p className="mt-1 text-base text-gray-900 dark:text-white font-medium">
+                          {details.motorista?.nome}
+                        </p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Veículo:</span>
+                        <p className="mt-1 text-base text-gray-900 dark:text-white">
+                          {details.veiculo?.placa.toUpperCase()} - {details.veiculo?.marca} {details.veiculo?.tipo}
+                        </p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Quilometragem:</span>
+                        <p className="mt-1 text-base text-gray-900 dark:text-white">
+                          {details.quilometragem?.toLocaleString('pt-BR')} km
+                        </p>
+                      </div>
                     </div>
-                    <div className="md:col-span-2">
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Motorista:</span>
-                      <p className="mt-1 text-base text-gray-900 dark:text-white font-medium">
-                        {details.motorista?.nome}
-                      </p>
-                    </div>
-                    <div className="md:col-span-2">
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Veículo:</span>
-                      <p className="mt-1 text-base text-gray-900 dark:text-white">
-                        {details.veiculo?.placa.toUpperCase()} - {details.veiculo?.marca} {details.veiculo?.tipo}
-                      </p>
-                    </div>
-                    <div className="md:col-span-2">
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Quilometragem:</span>
-                      <p className="mt-1 text-base text-gray-900 dark:text-white">
-                        {details.quilometragem?.toLocaleString('pt-BR')} km
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Status Sections */}
@@ -371,7 +603,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                   )}
 
                   {/* Observations */}
-                  {details.observacoes && (
+                  {!isEditing && details.observacoes && (
                     <div className="mt-6">
                       <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
