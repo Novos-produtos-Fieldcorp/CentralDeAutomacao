@@ -512,7 +512,7 @@ const HodometrosDashboard = () => {
           
           <div className="h-80">
             {dailyMileage.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%\" height="100%">
                 <BarChart
                   data={dailyMileage.slice(0, 14).reverse()} // Show last 14 days in chronological order
                   margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
@@ -573,7 +573,7 @@ const HodometrosDashboard = () => {
           
           <div className="h-80">
             {driverMileage.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%\" height="100%">
                 <BarChart
                   data={driverMileage.slice(0, 10)} // Show top 10 drivers
                   layout="vertical"
