@@ -40,7 +40,7 @@ const HodometrosRelatorio = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
+  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('1day');
 
   const fetchHodometros = useCallback(async () => {
     try {
