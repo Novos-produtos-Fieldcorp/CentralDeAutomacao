@@ -198,8 +198,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
           data: formData.data,
           hora: formData.hora,
           quilometragem: parseFloat(formData.quilometragem),
-          observacoes: formData.observacoes,
-          status: formData.status
+          observacoes: formData.observacoes
         })
         .eq('checklist_id', checklist.checklist_id);
         
