@@ -69,10 +69,8 @@ const getStatusText = (statusId: number, key: string, section: string): string =
   if (statusId === 1) {
     // Status OK
     if (section === 'Fluidos') return 'No nível';
-    if (section === 'Iluminação') {
-      if (key === 'lanterna_traseira') return 'Sim';
-      return 'Funcionando';
-    }
+    if (section === 'Iluminação') return 'Funcionando';
+    if (key === 'lanterna_traseira') return 'Sim';
     if (key.includes('pneu')) return 'Bom';
     if (key.includes('limpeza')) return 'Boa';
     if (key.includes('freio')) return 'Bom';
@@ -87,10 +85,8 @@ const getStatusText = (statusId: number, key: string, section: string): string =
   if (statusId === 2) {
     // Status Not OK
     if (section === 'Fluidos') return 'Abaixo do nível';
-    if (section === 'Iluminação') {
-      if (key === 'lanterna_traseira') return 'Não';
-      return 'Queimado';
-    }
+    if (section === 'Iluminação') return 'Queimado';
+    if (key === 'lanterna_traseira') return 'Não';
     if (key.includes('pneu')) return 'Ruim';
     if (key.includes('limpeza')) return 'Ruim';
     if (key.includes('freio')) return 'Ruim';
@@ -305,7 +301,7 @@ const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number): numbe
   return yPos + 5;
 };
 
-// Function to add photos section to the PDF
+// Improved function to add photos section to the PDF with proper line breaks
 const addPhotosSection = (doc: jsPDF, fotos: any, yPos: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
@@ -331,18 +327,40 @@ const addPhotosSection = (doc: jsPDF, fotos: any, yPos: number): number => {
     return yPos + 10;
   }
   
-  // Add photo URLs to the PDF
+  // Add photo URLs to the PDF with proper line breaks
   photoKeys.forEach(key => {
     if (fotos[key]) {
       const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       doc.text(`${label}:`, 20, yPos);
       yPos += 5;
       
-      // Add the URL with smaller font
+      // Add the URL with smaller font and proper line breaks
       doc.setFontSize(8);
-      doc.text(fotos[key], 25, yPos);
+      
+      // Split long URLs to fit within page width
+      const maxWidth = pageWidth - 40; // 20px margin on each side
+      const url = fotos[key];
+      
+      // Calculate how many characters can fit on one line (approximate)
+      const charWidth = doc.getStringUnitWidth('a') * 8 / doc.internal.scaleFactor;
+      const charsPerLine = Math.floor(maxWidth / charWidth);
+      
+      // Split URL into chunks of appropriate length
+      for (let i = 0; i < url.length; i += charsPerLine) {
+        const chunk = url.substring(i, i + charsPerLine);
+        doc.text(chunk, 25, yPos);
+        yPos += 4;
+        
+        // Check if we need a new page
+        if (yPos > 280) {
+          doc.addPage();
+          yPos = 20;
+        }
+      }
+      
+      // Reset font size and add some space after the URL
       doc.setFontSize(10);
-      yPos += 8;
+      yPos += 4;
       
       // Check if we need a new page
       if (yPos > 280) {

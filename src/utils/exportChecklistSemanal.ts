@@ -64,30 +64,32 @@ const getStatusText = (statusId: number, key: string, section: string): string =
   if (statusId === 1) {
     // Status OK
     if (section === 'Fluidos') return 'No nível';
-    if (section === 'Iluminação') {
-      if (key === 'lanterna_traseira') return 'Sim';
-      return 'Funcionando';
-    }
+    if (section === 'Iluminação') return 'Funcionando';
+    if (key === 'lanterna_traseira') return 'Sim';
     if (key.includes('pneu')) return 'Bom';
     if (key.includes('limpeza')) return 'Boa';
     if (key.includes('freio')) return 'Bom';
     if (key.includes('pedal')) return 'Bom';
-    if (key.includes('documento') || key.includes('carrinho')) return 'Sim';
+    if (key.includes('documento') || key.includes('extintor') || key.includes('carrinho') || 
+        key.includes('cadeado') || key.includes('chave') || key.includes('macaco') || 
+        key.includes('estepe') || key.includes('triangulo') || key.includes('cartao') || 
+        key.includes('manual')) return 'Sim';
     return 'Bom';
   }
   
   if (statusId === 2) {
     // Status Not OK
     if (section === 'Fluidos') return 'Abaixo do nível';
-    if (section === 'Iluminação') {
-      if (key === 'lanterna_traseira') return 'Não';
-      return 'Queimado';
-    }
+    if (section === 'Iluminação') return 'Queimado';
+    if (key === 'lanterna_traseira') return 'Não';
     if (key.includes('pneu')) return 'Ruim';
     if (key.includes('limpeza')) return 'Ruim';
     if (key.includes('freio')) return 'Ruim';
     if (key.includes('pedal')) return 'Ruim';
-    if (key.includes('documento') || key.includes('carrinho')) return 'Não';
+    if (key.includes('documento') || key.includes('extintor') || key.includes('carrinho') || 
+        key.includes('cadeado') || key.includes('chave') || key.includes('macaco') || 
+        key.includes('estepe') || key.includes('triangulo') || key.includes('cartao') || 
+        key.includes('manual')) return 'Não';
     return 'Ruim';
   }
   
@@ -236,6 +238,12 @@ const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number): numbe
     
     doc.text(`${label}: ${statusText}`, 20, yPos);
     yPos += 6;
+    
+    // Check if we need a new page
+    if (yPos > 280) {
+      doc.addPage();
+      yPos = 20;
+    }
   });
   
   return yPos + 5;
@@ -255,7 +263,7 @@ const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number): numbe
   doc.setFontSize(10);
   
   // For weekly checklist, only show specific accessories
-  const weeklyAccessories = ['pneu', 'documento_veicular', 'carrinho_carga'];
+  const weeklyAccessories = ['pneu', 'pneu_ruim', 'documento_veicular', 'carrinho_carga'];
   
   // Skip id fields and pneu_ruim (handled separately)
   const accessoryKeys = Object.keys(acessorios).filter(key => 
