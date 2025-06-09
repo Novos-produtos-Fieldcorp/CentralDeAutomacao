@@ -794,7 +794,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
       let user;
       if (!searchResponse.data?.payload?.[0]) {
-        // Criar novo contato
         const contactNameToUse = contactName || 'Novo Contato';
         const newContactResponse = await api.post(`/api/v1/accounts/${accountId}/contacts`, {
           name: contactNameToUse,
@@ -854,6 +853,19 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       );
       if (inboxConversations.length > 0) {
         conversationToUse = inboxConversations[0];
+      } else if (sortedConversations.length === 0) {
+        // Criar nova conversa apenas se não houver nenhuma conversa existente
+        const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
+          inbox_id: inboxId.toString(),
+          contact_id: user.id.toString()
+        });
+
+        if (newConversationResponse.data) {
+          conversationToUse = newConversationResponse.data;
+        }
+      } else {
+        // Se houver conversas em outros inboxes, use a mais recente
+        conversationToUse = sortedConversations[0];
       }
 
       const formattedConversations = await Promise.all(sortedConversations.map(async (conv: any) => {
