@@ -43,7 +43,7 @@ const Hodometros = () => {
   const tabs = [
     { path: '/hodometros/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/hodometros/relatorio', icon: Gauge, label: 'Leituras' },
-    { path: '/hodometros/lista', icon: ClipboardList, label: 'Relatório' }
+    { path: '/hodometros/lista', icon: ClipboardList, label: 'Relatórios' }
   ];
 
   const isActive = (path: string) => {
