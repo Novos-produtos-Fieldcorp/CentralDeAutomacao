@@ -104,10 +104,19 @@ const HodometrosRelatorio = () => {
     }
   };
 
+  // Format date from YYYY-MM-DD to DD/MM/YYYY
+  const formatDateBR = (dateStr: string) => {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+
   const exportToExcel = () => {
     try {
       const exportData = filteredHodometros.map(h => ({
-        'Data': h.data,
+        'Data': formatDateBR(h.data),
         'Hora': h.hora,
         'Motorista': h.motorista?.nome || '',
         'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
@@ -244,7 +253,7 @@ const HodometrosRelatorio = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {hodometro.data}
+                      {formatDateBR(hodometro.data)}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       {hodometro.hora}
