@@ -59,22 +59,126 @@ const HodometrosLista = () => {
   const [mileageData, setMileageData] = useState<MileageData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [phoneSearch, setPhoneSearch] = useState('');
+  const [debouncedPhoneSearch, setDebouncedPhoneSearch] = useState('');
+  const [selectedVehicleType, setSelectedVehicleType] = useState<string>('');
+  const [selectedCity, setSelectedCity] = useState<string>('');
+  const [selectedClient, setSelectedClient] = useState<number>(0);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [dateRange, setDateRange] = useState<{ startDate: string | null; endDate: string | null }>({
+    startDate: null,
+    endDate: null
+  });
+  const [cities, setCities] = useState<City[]>([]);
+  const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
+  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [isAgregadoDetailOpen, setIsAgregadoDetailOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedHodometro, setSelectedHodometro] = useState<Hodometro | null>(null);
+  const [selectedMotorista, setSelectedMotorista] = useState<MotoristaWithAddress | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
-  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-  const [selectedClientFilter, setSelectedClientFilter] = useState<string>('');
-  const [clients, setClients] = useState<string[]>([]);
-  const [expandedItem, setExpandedItem] = useState<number | null>(null);
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
-  const [showChartModal, setShowChartModal] = useState(false);
-  const [selectedDriverName, setSelectedDriverName] = useState<string>('');
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
-  const tableRef = React.useRef<HTMLDivElement>(null);
+  const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
+  const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
+  const [isBulkClientModalOpen, setIsBulkClientModalOpen] = useState(false);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    motorista: MotoristaWithAddress | null;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    motorista: null,
+  });
+  const [selectedDocumento, setSelectedDocumento] = useState<{
+    documento: any | null;
+    nome: string;
+    cpf?: string;
+    email?: string;
+    telefone?: string;
+    dt_nascimento?: string;
+    endereco: any;
+    veiculo: any | null;
+    agregado?: MotoristaWithAddress | null;
+    st_cadastro?: string;
+  }>({ documento: null, nome: '', endereco: null, veiculo: null });
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isSearching, setIsSearching] = useState(false);
+  const [allMotoristas, setAllMotoristas] = useState<MotoristaWithAddress[]>([]);
+  const [vehicleTypes, setVehicleTypes] = useState<string[]>([]);
+
+  const clientColors = [
+    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
+    'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+    'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+    'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
+  ];
+
+  // Debounce search terms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedPhoneSearch(phoneSearch);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [phoneSearch]);
+
+  // Effect to handle search when debounced terms change
+  useEffect(() => {
+    if (companyId) {
+      const loadData = async () => {
+        try {
+          setIsSearching(true);
+          await fetchMotoristas();
+        } catch (error) {
+          console.error('Error loading data:', error);
+          toast.error('Erro ao carregar dados');
+        } finally {
+          setIsSearching(false);
+        }
+      };
+      loadData();
+    }
+  }, [companyId]); // Only depend on companyId for initial load
+
+  // Separate effect for filters
+  useEffect(() => {
+    if (companyId) {
+      const loadData = async () => {
+        try {
+          setIsSearching(true);
+          await fetchMotoristas();
+        } catch (error) {
+          console.error('Error loading data:', error);
+          toast.error('Erro ao carregar dados');
+        } finally {
+          setIsSearching(false);
+        }
+      };
+      loadData();
+    }
+  }, [debouncedSearchTerm, debouncedPhoneSearch, selectedClient, selectedCity, funcaoFilter, selectedVehicleType, currentPage, pageSize, dateRange]);
 
   const fetchHodometros = useCallback(async () => {
     try {
@@ -176,8 +280,8 @@ const HodometrosLista = () => {
       const veiculos = Object.entries(groupedByVeiculo).map(([veiculoId, hodometrosVeiculo]) => {
         // Sort by date (oldest first for initial reading, newest first for final reading)
         const sortedHodometros = [...hodometrosVeiculo].sort((a, b) => {
-          const dateA = new Date(`${a.data} ${a.hora}`);
-          const dateB = new Date(`${b.data} ${b.hora}`);
+          const dateA = new Date(`${a.data}`);
+          const dateB = new Date(`${b.data}`);
           return dateA.getTime() - dateB.getTime();
         });
         
@@ -199,9 +303,8 @@ const HodometrosLista = () => {
           totalKm = Math.max(0, lastHodLido - firstHodLido);
         }
 
-        // Format date
-        const lastDate = new Date(lastReading.data);
-        const formattedDate = lastDate.toLocaleDateString('pt-BR');
+        // Format date - use the original date format from the database (YYYY-MM-DD)
+        const lastDate = lastReading.data;
 
         return {
           placa: firstReading.veiculo.placa.toUpperCase(),
@@ -211,7 +314,7 @@ const HodometrosLista = () => {
           leitura_inicial: isElectric ? 0 : (firstReading.hod_lido || 0),
           leitura_final: isElectric ? 0 : (lastReading.hod_lido || 0),
           km_total: totalKm,
-          ultima_data: formattedDate,
+          ultima_data: lastDate,
           hodometros: sortedHodometros,
           isElectric
         };
@@ -563,7 +666,7 @@ const HodometrosLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {data.veiculos.length > 0 ? data.veiculos[0].ultima_data : "-"}
+                          {data.veiculos.length > 0 ? new Date(data.veiculos[0].ultima_data).toLocaleDateString('pt-BR') : "-"}
                         </div>
                       </td>
                     </tr>
@@ -682,7 +785,7 @@ const HodometrosLista = () => {
                                         {veiculo.hodometros.map((hodometro, index) => (
                                           <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                              {new Date(hodometro.data).toLocaleDateString('pt-BR')}
+                                              {hodometro.data}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                               {hodometro.hora}
