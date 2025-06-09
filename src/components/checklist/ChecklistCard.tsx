@@ -73,16 +73,16 @@ const ChecklistCard = ({
             onClick={handleToggleStatus}
             disabled={updatingStatus === checklist.checklist_id}
             className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-              checklist.verificacao 
+              checklist.status 
                 ? 'bg-green-500 dark:bg-green-600' 
                 : 'bg-gray-200 dark:bg-gray-700'
             } ${updatingStatus === checklist.checklist_id ? 'opacity-50 cursor-not-allowed' : ''}`}
             role="switch"
-            aria-checked={checklist.verificacao}
+            aria-checked={checklist.status}
           >
             <span
               className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                checklist.verificacao ? 'translate-x-5' : 'translate-x-0'
+                checklist.status ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
             {updatingStatus === checklist.checklist_id && (
@@ -94,11 +94,11 @@ const ChecklistCard = ({
         )}
         {!onToggleStatus && (
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            checklist.verificacao 
+            checklist.status 
               ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
               : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
           }`}>
-            {checklist.verificacao ? (
+            {checklist.status ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                 Verificado

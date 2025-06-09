@@ -141,7 +141,7 @@ export interface Checklist {
   data: string;
   hora: string;
   quilometragem: number;
-  verificacao: boolean;
+  status: boolean;
   observacoes: string;
   id_tipo_checklist: number;
   motorista_id: number;
