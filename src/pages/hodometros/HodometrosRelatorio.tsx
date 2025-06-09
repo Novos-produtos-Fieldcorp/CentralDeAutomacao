@@ -34,7 +34,7 @@ const HodometrosRelatorio = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
+  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
 
   const fetchMileageReports = useCallback(async () => {
     try {
@@ -97,8 +97,15 @@ const HodometrosRelatorio = () => {
       for (const readings of Object.values(groupedReadings)) {
         if (!readings || readings.length === 0) continue;
         
-        const firstReading = readings[0]; // First reading (earliest date/time)
-        const lastReading = readings[readings.length - 1]; // Last reading (latest date/time)
+        // Sort readings by date and time
+        const sortedReadings = [...readings].sort((a, b) => {
+          const dateA = new Date(`${a.data}T${a.hora}`);
+          const dateB = new Date(`${b.data}T${b.hora}`);
+          return dateA.getTime() - dateB.getTime();
+        });
+        
+        const firstReading = sortedReadings[0]; // First reading (earliest date/time)
+        const lastReading = sortedReadings[sortedReadings.length - 1]; // Last reading (latest date/time)
         
         // Check if it's an electric vehicle (has battery readings)
         const isElectric = firstReading.bateria !== null && firstReading.bateria !== undefined;
@@ -107,10 +114,25 @@ const HodometrosRelatorio = () => {
         let totalKm = 0;
         if (isElectric) {
           // For electric vehicles, use the sum of km_rodado values
-          totalKm = readings.reduce((sum, reading) => sum + (reading.km_rodado || 0), 0);
+          totalKm = sortedReadings.reduce((sum, reading) => {
+            // Ensure km_rodado is a valid number
+            const kmValue = typeof reading.km_rodado === 'number' && !isNaN(reading.km_rodado) 
+              ? reading.km_rodado 
+              : 0;
+            return sum + kmValue;
+          }, 0);
         } else {
           // For regular vehicles, use the difference between first and last readings
-          totalKm = (lastReading.hod_lido || 0) - (firstReading.hod_lido || 0);
+          // Ensure hod_lido values are valid numbers
+          const firstHodLido = typeof firstReading.hod_lido === 'number' && !isNaN(firstReading.hod_lido) 
+            ? firstReading.hod_lido 
+            : 0;
+            
+          const lastHodLido = typeof lastReading.hod_lido === 'number' && !isNaN(lastReading.hod_lido) 
+            ? lastReading.hod_lido 
+            : 0;
+            
+          totalKm = Math.max(0, lastHodLido - firstHodLido);
         }
 
         if (!firstReading.motorista || !firstReading.veiculo) continue;
@@ -131,8 +153,14 @@ const HodometrosRelatorio = () => {
               veiculo.is_electric = true;
               veiculo.bateria = lastReading.bateria;
             } else {
-              veiculo.km_inicial = firstReading.hod_lido ?? 0;
-              veiculo.km_final = lastReading.hod_lido ?? 0;
+              // Ensure hod_lido values are valid numbers
+              veiculo.km_inicial = typeof firstReading.hod_lido === 'number' && !isNaN(firstReading.hod_lido) 
+                ? firstReading.hod_lido 
+                : 0;
+                
+              veiculo.km_final = typeof lastReading.hod_lido === 'number' && !isNaN(lastReading.hod_lido) 
+                ? lastReading.hod_lido 
+                : 0;
             }
             veiculo.data_inicial = firstReading.data;
             veiculo.data_final = lastReading.data;
@@ -140,8 +168,8 @@ const HodometrosRelatorio = () => {
             // Add new vehicle to driver's vehicles array
             motorista.veiculos.push({
               placa: firstReading.veiculo.placa,
-              km_inicial: isElectric ? 0 : (firstReading.hod_lido ?? 0),
-              km_final: isElectric ? 0 : (lastReading.hod_lido ?? 0),
+              km_inicial: isElectric ? 0 : (typeof firstReading.hod_lido === 'number' && !isNaN(firstReading.hod_lido) ? firstReading.hod_lido : 0),
+              km_final: isElectric ? 0 : (typeof lastReading.hod_lido === 'number' && !isNaN(lastReading.hod_lido) ? lastReading.hod_lido : 0),
               km_total: totalKm,
               data_inicial: firstReading.data,
               data_final: lastReading.data,
@@ -161,8 +189,8 @@ const HodometrosRelatorio = () => {
             cpf: firstReading.motorista.cpf,
             veiculos: [{
               placa: firstReading.veiculo.placa,
-              km_inicial: isElectric ? 0 : (firstReading.hod_lido ?? 0),
-              km_final: isElectric ? 0 : (lastReading.hod_lido ?? 0),
+              km_inicial: isElectric ? 0 : (typeof firstReading.hod_lido === 'number' && !isNaN(firstReading.hod_lido) ? firstReading.hod_lido : 0),
+              km_final: isElectric ? 0 : (typeof lastReading.hod_lido === 'number' && !isNaN(lastReading.hod_lido) ? lastReading.hod_lido : 0),
               km_total: totalKm,
               data_inicial: firstReading.data,
               data_final: lastReading.data,
@@ -204,7 +232,7 @@ const HodometrosRelatorio = () => {
   // Find the maximum KM total across all vehicles
   const maxKmTotal = Math.max(...reports.flatMap(report => 
     report.veiculos.map(veiculo => veiculo.km_total)
-  ));
+  ), 0); // Add 0 as fallback to prevent -Infinity if array is empty
 
   if (loading) {
     return (
@@ -264,7 +292,7 @@ const HodometrosRelatorio = () => {
                   {report.veiculos.map((veiculo, index) => (
                     <tr key={`${report.motorista_id}-${veiculo.placa}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       {index === 0 ? (
-                        <td className="px-6 py-4 whitespace-nowrap" rowSpan={report.veiculos.length}>
+                        <td className="px-6 py-4 whitespace-nowrap\" rowSpan={report.veiculos.length}>
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {report.nome}
                           </div>

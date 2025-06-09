@@ -14,4 +14,4 @@ Funcionalidades ->
 Tecnologias utilizadas ->
 	•	Frontend: React, Vite, TypeScript, TailwindCSS
 	•	Backend e banco de dados: Supabase
-	•	Outros: React Hot Toast, Lucide React, ESLint, PostCSS
+	•	Outros: React Hot Toast, Lucide React, ESLint, PostCSS, Teste
