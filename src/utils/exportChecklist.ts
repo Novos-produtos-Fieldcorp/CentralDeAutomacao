@@ -21,27 +21,27 @@ export const formatChecklistPDF = (checklist: any) => {
   
   // Add fluids section
   if (checklist.fluidos) {
-    yPos = addFluidsSection(doc, checklist.fluidos, yPos);
+    yPos = addFluidsSection(doc, checklist.fluidos, yPos, pageWidth);
   }
   
   // Add lights section
   if (checklist.farol) {
-    yPos = addLightsSection(doc, checklist.farol, yPos);
+    yPos = addLightsSection(doc, checklist.farol, yPos, pageWidth);
   }
   
   // Add components section
   if (checklist.componentes) {
-    yPos = addComponentsSection(doc, checklist.componentes, yPos, checklist.id_tipo_checklist);
+    yPos = addComponentsSection(doc, checklist.componentes, yPos, checklist.id_tipo_checklist, pageWidth);
   }
   
   // Add accessories section
   if (checklist.acessorios) {
-    yPos = addAccessoriesSection(doc, checklist.acessorios, yPos, checklist.id_tipo_checklist);
+    yPos = addAccessoriesSection(doc, checklist.acessorios, yPos, checklist.id_tipo_checklist, pageWidth);
   }
   
   // Add photos section if it's a monthly checklist
   if (checklist.id_tipo_checklist === 1 && checklist.fotos) {
-    yPos = addPhotosSection(doc, checklist.fotos, yPos);
+    yPos = addPhotosSection(doc, checklist.fotos, yPos, pageWidth);
   }
   
   // Add observations if they exist
@@ -107,7 +107,7 @@ const getStatusText = (statusId: number, key: string, section: string): string =
   return 'Não informado';
 };
 
-const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number): number => {
+const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -152,7 +152,7 @@ const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number): number => {
   return yPos + 5;
 };
 
-const addLightsSection = (doc: jsPDF, farol: any, yPos: number): number => {
+const addLightsSection = (doc: jsPDF, farol: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -203,7 +203,7 @@ const addLightsSection = (doc: jsPDF, farol: any, yPos: number): number => {
   return yPos + 5;
 };
 
-const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, checklistType: number): number => {
+const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, checklistType: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -258,7 +258,7 @@ const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, checkl
   return yPos + 5;
 };
 
-const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, checklistType: number): number => {
+const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, checklistType: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -314,7 +314,7 @@ const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, checkl
 };
 
 // New function to add photos section to the PDF
-const addPhotosSection = (doc: jsPDF, fotos: any, yPos: number): number => {
+const addPhotosSection = (doc: jsPDF, fotos: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
