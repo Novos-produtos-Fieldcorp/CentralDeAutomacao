@@ -119,6 +119,14 @@ const HodometrosRelatorio = () => {
     return dateStr;
   };
 
+  // Format number with dot as thousands separator
+  const formatNumber = (num: number | null | undefined): string => {
+    if (num === null || num === undefined) return '-';
+    
+    // Convert to string with dots as thousands separators
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
   const exportToExcel = () => {
     try {
       const exportData = filteredHodometros.map(h => ({
@@ -128,10 +136,10 @@ const HodometrosRelatorio = () => {
         'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
         'Placa': h.veiculo?.placa.toUpperCase() || '',
         'Veículo': `${h.veiculo?.marca || ''} ${h.veiculo?.tipo || ''}`,
-        'Hodômetro Informado': h.hod_informado?.toLocaleString('pt-BR') || '',
-        'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : h.hod_lido?.toLocaleString('pt-BR'),
+        'Hodômetro Informado': h.hod_informado !== null ? formatNumber(h.hod_informado) : '',
+        'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : formatNumber(h.hod_lido),
         'Trip Informada': h.trip_informada || '',
-        'Trip Lida': h.trip_lida?.toLocaleString('pt-BR') || '',
+        'Trip Lida': h.trip_lida !== null ? formatNumber(h.trip_lida) : '',
         'Leitura Divergente': h.comparacao_leitura === false ? 'Sim' : 'Não',
         'Trip Divergente': hasTripDiscrepancy(h) ? 'Sim' : 'Não'
       }));
@@ -317,7 +325,7 @@ const HodometrosRelatorio = () => {
                       {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
                         <span>-</span>
                       ) : (
-                        <span>{hodometro.hod_informado !== null ? hodometro.hod_informado.toLocaleString('pt-BR') : '-'}</span>
+                        <span>{hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}</span>
                       )}
                     </div>
                   </td>
@@ -329,7 +337,7 @@ const HodometrosRelatorio = () => {
                         </div>
                       ) : (
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {hodometro.hod_lido !== null ? hodometro.hod_lido.toLocaleString('pt-BR') : '-'}
+                          {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
                         </div>
                       )}
                       
@@ -352,7 +360,7 @@ const HodometrosRelatorio = () => {
                       {hodometro.trip_lida !== null ? (
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-gray-900 dark:text-white">
-                            Lida: {hodometro.trip_lida.toLocaleString('pt-BR')}
+                            Lida: {formatNumber(hodometro.trip_lida)}
                           </span>
                           
                           {/* Trip discrepancy tag */}

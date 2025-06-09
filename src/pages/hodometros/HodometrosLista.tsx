@@ -141,6 +141,14 @@ const HodometrosLista = () => {
     fetchHodometros();
   }, [fetchHodometros]);
 
+  // Format number with dot as thousands separator
+  const formatNumber = (num: number | null | undefined): string => {
+    if (num === null || num === undefined) return '-';
+    
+    // Convert to string with dots as thousands separators
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
   const processHodometrosData = (data: Hodometro[]) => {
     // Group by motorista
     const groupedByMotorista: Record<number, Hodometro[]> = {};
@@ -558,7 +566,7 @@ const HodometrosLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                          {data.totalKm.toLocaleString('pt-BR')} km
+                          {formatNumber(data.totalKm)} km
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -603,11 +611,11 @@ const HodometrosLista = () => {
                                     stroke="#9CA3AF"
                                   />
                                   <YAxis 
-                                    tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
+                                    tickFormatter={(value) => formatNumber(value)}
                                     stroke="#9CA3AF"
                                   />
                                   <Tooltip 
-                                    formatter={(value: any) => [`${value.toLocaleString('pt-BR')} km`, 'Quilômetros']}
+                                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
                                     contentStyle={{ 
                                       backgroundColor: 'rgba(255, 255, 255, 0.9)',
                                       borderRadius: '0.5rem',
@@ -657,10 +665,10 @@ const HodometrosLista = () => {
                                     </div>
                                     <div className="text-right">
                                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                        Total: {veiculo.km_total.toLocaleString('pt-BR')} km
+                                        Total: {formatNumber(veiculo.km_total)} km
                                       </div>
                                       <div className="text-xs text-gray-500 dark:text-gray-400">
-                                        {veiculo.isElectric ? 'Veículo Elétrico' : `${veiculo.leitura_inicial.toLocaleString('pt-BR')} → ${veiculo.leitura_final.toLocaleString('pt-BR')} km`}
+                                        {veiculo.isElectric ? 'Veículo Elétrico' : `${formatNumber(veiculo.leitura_inicial)} → ${formatNumber(veiculo.leitura_final)} km`}
                                       </div>
                                     </div>
                                   </div>
@@ -690,7 +698,7 @@ const HodometrosLista = () => {
                                               {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
                                                 <span>Bateria: {hodometro.bateria}</span>
                                               ) : (
-                                                <span>{hodometro.hod_lido?.toLocaleString('pt-BR')} km</span>
+                                                <span>{formatNumber(hodometro.hod_lido)} km</span>
                                               )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
