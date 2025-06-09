@@ -21,27 +21,27 @@ export const formatChecklistPDF = (checklist: any) => {
   
   // Add fluids section
   if (checklist.fluidos) {
-    yPos = addFluidsSection(doc, checklist.fluidos, yPos, pageWidth);
+    yPos = addFluidsSection(doc, checklist.fluidos, yPos);
   }
   
   // Add lights section
   if (checklist.farol) {
-    yPos = addLightsSection(doc, checklist.farol, yPos, pageWidth);
+    yPos = addLightsSection(doc, checklist.farol, yPos);
   }
   
   // Add components section
   if (checklist.componentes) {
-    yPos = addComponentsSection(doc, checklist.componentes, yPos, checklist.id_tipo_checklist, pageWidth);
+    yPos = addComponentsSection(doc, checklist.componentes, yPos, checklist.id_tipo_checklist);
   }
   
   // Add accessories section
   if (checklist.acessorios) {
-    yPos = addAccessoriesSection(doc, checklist.acessorios, yPos, checklist.id_tipo_checklist, pageWidth);
+    yPos = addAccessoriesSection(doc, checklist.acessorios, yPos, checklist.id_tipo_checklist);
   }
   
   // Add photos section if it's a monthly checklist
   if (checklist.id_tipo_checklist === 1 && checklist.fotos) {
-    yPos = addPhotosSection(doc, checklist.fotos, yPos, pageWidth);
+    yPos = addPhotosSection(doc, checklist.fotos, yPos);
   }
   
   // Add observations if they exist
@@ -69,10 +69,8 @@ const getStatusText = (statusId: number, key: string, section: string): string =
   if (statusId === 1) {
     // Status OK
     if (section === 'Fluidos') return 'No nível';
-    if (section === 'Iluminação') {
-      if (key === 'lanterna_traseira') return 'Sim';
-      return 'Funcionando';
-    }
+    if (section === 'Iluminação') return 'Funcionando';
+    if (key === 'lanterna_traseira') return 'Sim';
     if (key.includes('pneu')) return 'Bom';
     if (key.includes('limpeza')) return 'Boa';
     if (key.includes('freio')) return 'Bom';
@@ -87,10 +85,8 @@ const getStatusText = (statusId: number, key: string, section: string): string =
   if (statusId === 2) {
     // Status Not OK
     if (section === 'Fluidos') return 'Abaixo do nível';
-    if (section === 'Iluminação') {
-      if (key === 'lanterna_traseira') return 'Não';
-      return 'Queimado';
-    }
+    if (section === 'Iluminação') return 'Queimado';
+    if (key === 'lanterna_traseira') return 'Não';
     if (key.includes('pneu')) return 'Ruim';
     if (key.includes('limpeza')) return 'Ruim';
     if (key.includes('freio')) return 'Ruim';
@@ -107,7 +103,7 @@ const getStatusText = (statusId: number, key: string, section: string): string =
   return 'Não informado';
 };
 
-const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number, pageWidth: number): number => {
+const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -152,7 +148,7 @@ const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number, pageWidth: num
   return yPos + 5;
 };
 
-const addLightsSection = (doc: jsPDF, farol: any, yPos: number, pageWidth: number): number => {
+const addLightsSection = (doc: jsPDF, farol: any, yPos: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -203,7 +199,7 @@ const addLightsSection = (doc: jsPDF, farol: any, yPos: number, pageWidth: numbe
   return yPos + 5;
 };
 
-const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, checklistType: number, pageWidth: number): number => {
+const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, checklistType: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -258,7 +254,7 @@ const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, checkl
   return yPos + 5;
 };
 
-const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, checklistType: number, pageWidth: number): number => {
+const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, checklistType: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -314,7 +310,7 @@ const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, checkl
 };
 
 // New function to add photos section to the PDF
-const addPhotosSection = (doc: jsPDF, fotos: any, yPos: number, pageWidth: number): number => {
+const addPhotosSection = (doc: jsPDF, fotos: any, yPos: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();

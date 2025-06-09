@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Truck, Users, FileText, Award, AlertTriangle, 
-  Calendar, MapPin, BarChart2, TrendingUp 
+  Users, Truck, FileText, Award, CheckCircle2, XCircle, 
+  Calendar, MapPin, BarChart2, TrendingUp, AlertTriangle 
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import toast from 'react-hot-toast';
@@ -33,8 +33,6 @@ interface DashboardStats {
   checklistsPorMotorista: {
     nome: string;
     total: number;
-    verificados: number;
-    pendentes: number;
   }[];
 }
 
@@ -224,17 +222,10 @@ const ChecklistDashboard = () => {
 
       const current = motoristasMap.get(motorista.nome) || {
         nome: motorista.nome,
-        total: 0,
-        verificados: 0,
-        pendentes: 0
+        total: 0
       };
 
       current.total++;
-      if (checklist.status === true) {
-        current.verificados++;
-      } else {
-        current.pendentes++;
-      }
 
       motoristasMap.set(motorista.nome, current);
     });
@@ -336,11 +327,17 @@ const ChecklistDashboard = () => {
                     Total: {motorista.total}
                   </span>
                 </div>
-                <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                    style={{ width: '100%' }}
-                  />
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-20 text-xs text-gray-500 dark:text-gray-400">Checklists:</span>
+                    <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
+                        style={{ width: `100%` }}
+                      />
+                    </div>
+                    <span className="w-8 text-right text-sm">{motorista.total}</span>
+                  </div>
                 </div>
               </div>
             ))}
