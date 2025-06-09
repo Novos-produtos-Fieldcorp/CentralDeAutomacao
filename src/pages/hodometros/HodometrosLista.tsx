@@ -135,6 +135,12 @@ const HodometrosLista = () => {
     fetchHodometros();
   }, [fetchHodometros]);
 
+  // Function to format percentage values to avoid double % signs
+  const formatPercentage = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return 'N/A';
+    return `${value}%`;
+  };
+
   const processHodometrosData = (data: Hodometro[]) => {
     // Group by motorista and veiculo
     const groupedData: Record<string, Hodometro[]> = {};
@@ -625,7 +631,6 @@ const HodometrosLista = () => {
                                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tl-xl">Data</th>
                                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hora</th>
                                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
-                                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
                                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tr-xl">Ações</th>
                                     </tr>
                                   </thead>
@@ -640,13 +645,10 @@ const HodometrosLista = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                           {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                                            <span>Bateria: {hodometro.bateria}%</span>
+                                            <span>Bateria: {formatPercentage(hodometro.bateria)}</span>
                                           ) : (
                                             <span>{hodometro.hod_lido?.toLocaleString('pt-BR')} km</span>
                                           )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
-                                          {hodometro.km_rodado?.toLocaleString('pt-BR')} km
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                           <div className="flex items-center justify-end space-x-3">

@@ -45,7 +45,7 @@ const EditHodometroModal = ({ isOpen, onClose, hodometro, onUpdate }: EditHodome
         hod_informado: hodometro.hod_informado?.toString() || '',
         hod_lido: hodometro.hod_lido?.toString() || '',
         trip_lida: hodometro.trip_lida?.toString() || '',
-        trip_informada: hodometro.trip_informada?.toString() || '',
+        trip_informada: hodometro.trip_informada || '',
         km_rodado: hodometro.km_rodado?.toString() || '',
         bateria: hodometro.bateria?.toString() || '',
         verificacao: hodometro.verificacao || false,
@@ -85,6 +85,12 @@ const EditHodometroModal = ({ isOpen, onClose, hodometro, onUpdate }: EditHodome
       console.error('Error fetching veiculos:', error);
       toast.error('Erro ao carregar veículos');
     }
+  };
+
+  // Function to format percentage values to avoid double % signs
+  const formatPercentage = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return '';
+    return `${value}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -104,6 +104,12 @@ const HodometrosRelatorio = () => {
     }
   };
 
+  // Function to format percentage values to avoid double % signs
+  const formatPercentage = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return 'N/A';
+    return `${value}%`;
+  };
+
   const exportToExcel = () => {
     try {
       const exportData = filteredHodometros.map(h => ({
@@ -253,7 +259,7 @@ const HodometrosRelatorio = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
                       <div className="text-sm text-gray-900 dark:text-white">
-                        Bateria: {hodometro.bateria}%
+                        Bateria: {formatPercentage(hodometro.bateria)}
                       </div>
                     ) : (
                       <div className="text-sm text-gray-900 dark:text-white">
