@@ -1,7 +1,7 @@
 import React from 'react';
 import { Edit2, Trash2, Camera } from 'lucide-react';
 import type { Hodometro } from '../../types/database';
-import { formatCPF } from '../../utils/format';
+import { formatCPF, formatKilometers, formatPercentage } from '../../utils/format';
 
 interface HodometroCardProps {
   hodometro: Hodometro;
@@ -74,8 +74,8 @@ const HodometroCard: React.FC<HodometroCardProps> = ({
             </div>
             <div className="text-sm font-medium text-gray-900 dark:text-white">
               {hodometro.bateria !== null && hodometro.bateria !== undefined 
-                ? `${hodometro.bateria}%` 
-                : `${hodometro.hod_lido?.toLocaleString('pt-BR')} km`}
+                ? formatPercentage(hodometro.bateria)
+                : formatKilometers(hodometro.hod_lido)}
             </div>
           </div>
         </div>
@@ -84,7 +84,7 @@ const HodometroCard: React.FC<HodometroCardProps> = ({
           <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
             <div className="text-xs text-gray-500 dark:text-gray-400">Trip</div>
             <div className="text-sm font-medium text-gray-900 dark:text-white">
-              {hodometro.trip_lida?.toLocaleString('pt-BR') || 'N/A'}
+              {hodometro.trip_lida ? formatKilometers(hodometro.trip_lida) : 'N/A'}
             </div>
           </div>
           <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
@@ -92,7 +92,7 @@ const HodometroCard: React.FC<HodometroCardProps> = ({
               {hodometro.bateria !== null && hodometro.bateria !== undefined ? 'Autonomia' : 'KM rodado'}
             </div>
             <div className="text-sm font-medium text-gray-900 dark:text-white">
-              {hodometro.km_rodado?.toLocaleString('pt-BR')} km
+              {formatKilometers(hodometro.km_rodado)}
             </div>
           </div>
         </div>

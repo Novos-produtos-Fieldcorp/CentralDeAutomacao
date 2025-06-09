@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import EditHodometroModal from '../../components/hodometros/EditHodometroModal';
 import DeleteHodometroModal from '../../components/hodometros/DeleteHodometroModal';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { formatCPF } from '../../utils/format';
+import { formatCPF, formatKilometers, formatPercentage } from '../../utils/format';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import DriverMileageChart from '../../components/hodometros/DriverMileageChart';
 import MileageChartModal from '../../components/hodometros/MileageChartModal';
@@ -363,7 +363,9 @@ const HodometrosLista = () => {
   });
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <LoadingSpinner />
+    );
   }
 
   return (
@@ -526,7 +528,7 @@ const HodometrosLista = () => {
                               Veículo Elétrico
                             </span>
                           ) : (
-                            `${data.leitura_inicial.toLocaleString('pt-BR')} km`
+                            formatKilometers(data.leitura_inicial)
                           )}
                         </div>
                       </td>
@@ -537,13 +539,13 @@ const HodometrosLista = () => {
                               Veículo Elétrico
                             </span>
                           ) : (
-                            `${data.leitura_final.toLocaleString('pt-BR')} km`
+                            formatKilometers(data.leitura_final)
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                          {data.km_total.toLocaleString('pt-BR')} km
+                          {formatKilometers(data.km_total)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -625,7 +627,6 @@ const HodometrosLista = () => {
                                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tl-xl">Data</th>
                                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hora</th>
                                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
-                                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
                                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tr-xl">Ações</th>
                                     </tr>
                                   </thead>
@@ -640,13 +641,10 @@ const HodometrosLista = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                           {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                                            <span>Bateria: {hodometro.bateria}%</span>
+                                            <span>Bateria: {formatPercentage(hodometro.bateria)}</span>
                                           ) : (
-                                            <span>{hodometro.hod_lido?.toLocaleString('pt-BR')} km</span>
+                                            <span>{formatKilometers(hodometro.hod_lido)}</span>
                                           )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
-                                          {hodometro.km_rodado?.toLocaleString('pt-BR')} km
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                           <div className="flex items-center justify-end space-x-3">

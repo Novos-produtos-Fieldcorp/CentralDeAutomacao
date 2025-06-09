@@ -3,6 +3,7 @@ import { X, BarChart2, Download } from 'lucide-react';
 import DriverMileageChart from './DriverMileageChart';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { formatKilometers } from '../../utils/format';
 
 interface MonthlyData {
   month: string;
@@ -113,7 +114,7 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
                         {item.month}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600 dark:text-blue-400">
-                        {item.km.toLocaleString('pt-BR')} km
+                        {formatKilometers(item.km)}
                       </td>
                     </tr>
                   ))}
@@ -122,7 +123,7 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
                       Total
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600 dark:text-blue-400">
-                      {data.reduce((sum, item) => sum + item.km, 0).toLocaleString('pt-BR')} km
+                      {formatKilometers(data.reduce((sum, item) => sum + item.km, 0))}
                     </td>
                   </tr>
                 </tbody>
