@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Link, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { Gauge, ClipboardList, LayoutDashboard, Loader as Road, ChevronRight } from 'lucide-react';
 import HodometrosDashboard from './hodometros/HodometrosDashboard';
@@ -42,8 +42,8 @@ const Hodometros = () => {
 
   const tabs = [
     { path: '/hodometros/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/hodometros/lista', icon: Gauge, label: 'Leituras' },
-    { path: '/hodometros/relatorio', icon: ClipboardList, label: 'Relatório' }
+    { path: '/hodometros/relatorio', icon: ClipboardList, label: 'Relatório de Km' },
+    { path: '/hodometros/lista', icon: Gauge, label: 'Leituras' }
   ];
 
   const isActive = (path: string) => {
@@ -87,10 +87,10 @@ const Hodometros = () => {
 
         <div className="p-6 min-h-[calc(100vh-16rem)]">
           <Routes>
-            <Route index element={<Navigate to="/hodometros/dashboard\" replace />} />
+            <Route index element={<Navigate to="/hodometros/dashboard" replace />} />
             <Route path="dashboard" element={<HodometrosDashboard />} />
-            <Route path="lista" element={<HodometrosRelatorio />} />
-            <Route path="relatorio" element={<HodometrosLista />} />
+            <Route path="relatorio" element={<HodometrosRelatorio />} />
+            <Route path="lista" element={<HodometrosLista />} />
           </Routes>
         </div>
       </div>
