@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Users, Truck, FileText, Award, CheckCircle2, XCircle, 
-  Calendar, MapPin, BarChart2, TrendingUp, AlertTriangle 
+  Truck, Users, FileText, Award, AlertTriangle, 
+  Calendar, MapPin, BarChart2, TrendingUp 
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import toast from 'react-hot-toast';
@@ -14,8 +14,6 @@ interface DashboardStats {
   totalChecklists: number;
   totalMensal: number;
   totalSemanal: number;
-  totalVerificados: number;
-  totalPendentes: number;
   totalProblemas: number;
   problemasPorCategoria: {
     categoria: string;
@@ -46,8 +44,6 @@ const ChecklistDashboard = () => {
     totalChecklists: 0,
     totalMensal: 0,
     totalSemanal: 0,
-    totalVerificados: 0,
-    totalPendentes: 0,
     totalProblemas: 0,
     problemasPorCategoria: [],
     veiculosComProblemas: [],
@@ -84,8 +80,6 @@ const ChecklistDashboard = () => {
         // Basic stats
         const totalMensal = checklists.filter(c => c.id_tipo_checklist === 1).length;
         const totalSemanal = checklists.filter(c => c.id_tipo_checklist === 2).length;
-        const totalVerificados = checklists.filter(c => c.verificacao === true).length;
-        const totalPendentes = checklists.filter(c => c.verificacao === false).length;
 
         // Process problems by category
         const problemasPorCategoria = processProblemasPorCategoria(checklists);
@@ -100,8 +94,6 @@ const ChecklistDashboard = () => {
           totalChecklists: checklists.length,
           totalMensal,
           totalSemanal,
-          totalVerificados,
-          totalPendentes,
           totalProblemas: problemasPorCategoria.reduce((acc, cat) => acc + cat.total, 0),
           problemasPorCategoria,
           veiculosComProblemas,
@@ -238,7 +230,7 @@ const ChecklistDashboard = () => {
       };
 
       current.total++;
-      if (checklist.verificacao === true) {
+      if (checklist.status === true) {
         current.verificados++;
       } else {
         current.pendentes++;
@@ -270,7 +262,7 @@ const ChecklistDashboard = () => {
       </div>
 
       {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <StatCard
           title="Total de Checklists"
           value={stats.totalChecklists}
@@ -285,16 +277,6 @@ const ChecklistDashboard = () => {
           title="Checklists Semanais"
           value={stats.totalSemanal}
           icon={FileText}
-        />
-        <StatCard
-          title="Verificados"
-          value={stats.totalVerificados}
-          icon={CheckCircle2}
-        />
-        <StatCard
-          title="Pendentes"
-          value={stats.totalPendentes}
-          icon={XCircle}
         />
         <StatCard
           title="Problemas"
@@ -354,27 +336,11 @@ const ChecklistDashboard = () => {
                     Total: {motorista.total}
                   </span>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 text-xs text-gray-500 dark:text-gray-400">Verificados:</span>
-                    <div className="flex-1 h-2 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-green-500 dark:bg-green-400 rounded-full"
-                        style={{ width: `${(motorista.verificados / motorista.total) * 100}%` }}
-                      />
-                    </div>
-                    <span className="w-8 text-right text-sm">{motorista.verificados}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 text-xs text-gray-500 dark:text-gray-400">Pendentes:</span>
-                    <div className="flex-1 h-2 bg-red-100 dark:bg-red-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-red-500 dark:bg-red-400 rounded-full"
-                        style={{ width: `${(motorista.pendentes / motorista.total) * 100}%` }}
-                      />
-                    </div>
-                    <span className="w-8 text-right text-sm">{motorista.pendentes}</span>
-                  </div>
+                <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
+                    style={{ width: '100%' }}
+                  />
                 </div>
               </div>
             ))}
