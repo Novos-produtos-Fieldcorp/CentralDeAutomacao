@@ -189,7 +189,7 @@ const ChecklistSemanal = () => {
         )
       );
       
-      toast.success(`Checklist ${newStatus ? 'verificado' : 'não verificado'}`);
+      toast.success("Status atualizado!");
     } catch (error) {
       console.error('Error toggling checklist status:', error);
       toast.error('Erro ao atualizar status do checklist');

@@ -171,11 +171,11 @@ const ChecklistMensal = () => {
       setUpdatingStatus(checklist.checklist_id);
       
       // Toggle the verificacao status
-      const newStatus = !checklist.verificacao;
+      const newStatus = !checklist.status;
       
       const { error } = await supabase
         .from('checklist')
-        .update({ verificacao: newStatus })
+        .update({ status: newStatus })
         .eq('checklist_id', checklist.checklist_id);
         
       if (error) throw error;
@@ -184,12 +184,12 @@ const ChecklistMensal = () => {
       setChecklists(prev => 
         prev.map(c => 
           c.checklist_id === checklist.checklist_id 
-            ? { ...c, verificacao: newStatus } 
+            ? { ...c, status: newStatus } 
             : c
         )
       );
       
-      toast.success(`Checklist ${newStatus ? 'verificado' : 'não verificado'}`);
+      toast.success("Status atualizado!");
     } catch (error) {
       console.error('Error toggling checklist status:', error);
       toast.error('Erro ao atualizar status do checklist');
@@ -200,7 +200,6 @@ const ChecklistMensal = () => {
 
   const handleContextMenu = (e: React.MouseEvent, checklist: Checklist) => {
     e.preventDefault();
-    setSelectedChecklist(checklist);
     setContextMenu({
       visible: true,
       x: e.clientX,
@@ -392,16 +391,16 @@ const ChecklistMensal = () => {
                         onClick={(e) => handleToggleStatus(e, checklist)}
                         disabled={updatingStatus === checklist.checklist_id}
                         className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                          checklist.verificacao 
+                          checklist.status 
                             ? 'bg-green-500 dark:bg-green-600' 
                             : 'bg-gray-200 dark:bg-gray-700'
                         } ${updatingStatus === checklist.checklist_id ? 'opacity-50 cursor-not-allowed' : ''}`}
                         role="switch"
-                        aria-checked={checklist.verificacao}
+                        aria-checked={checklist.status}
                       >
                         <span
                           className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                            checklist.verificacao ? 'translate-x-5' : 'translate-x-0'
+                            checklist.status ? 'translate-x-5' : 'translate-x-0'
                           }`}
                         />
                         {updatingStatus === checklist.checklist_id && (
