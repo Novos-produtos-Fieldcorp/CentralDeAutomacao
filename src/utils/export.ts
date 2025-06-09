@@ -2,7 +2,8 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Motorista, Veiculo, Cliente } from '../types/database';
 import { formatCPF, formatPhone, formatDate } from './format';
-import { formatChecklistPDF } from './exportChecklist';
+import { formatChecklistMensalPDF } from './exportChecklistMensal';
+import { formatChecklistSemanalPDF } from './exportChecklistSemanal';
 import * as XLSX from 'xlsx';
 
 export const downloadExcelTemplate = (type: 'motoristas' | 'clientes' | 'veiculos', fileName: string) => {
@@ -114,5 +115,12 @@ export const formatClienteData = (cliente: Cliente) => ({
 });
 
 export const exportChecklistToPDF = (checklist: any) => {
-  formatChecklistPDF(checklist);
+  // Determine if it's a monthly or weekly checklist
+  if (checklist.id_tipo_checklist === 1) {
+    // Monthly checklist
+    formatChecklistMensalPDF(checklist);
+  } else {
+    // Weekly checklist
+    formatChecklistSemanalPDF(checklist);
+  }
 };
