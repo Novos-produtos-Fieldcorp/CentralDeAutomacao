@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Calendar, Loader2, Eye, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Search, Filter, Calendar, Loader2, Eye, Plus, Edit2, ChevronRight } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Checklist } from '../../types/database';
 import ChecklistCard from '../../components/checklist/ChecklistCard';
@@ -18,7 +18,7 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 
 const ChecklistSemanal = () => {
-  const { query } = useCompanyData();
+  const { query, companyId } = useCompanyData();
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,6 +42,7 @@ const ChecklistSemanal = () => {
     y: 0,
     checklist: null,
   });
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
 
   useEffect(() => {
     fetchChecklists();
@@ -63,8 +64,8 @@ const ChecklistSemanal = () => {
 
   const fetchChecklists = async () => {
     try {
-         setLoading(true);
-    let baseQuery = supabase.from('checklist')
+      setLoading(true);
+      let baseQuery = supabase.from('checklist')
       .select(`
         *,
         motorista:motorista_id (
@@ -79,7 +80,7 @@ const ChecklistSemanal = () => {
           tipo
         )
       `)
-      .eq('id_tipo_checklist', 2); // 2 = semanal
+        .eq('id_tipo_checklist', 2); // 2 = semanal
 
       // Add date range filter if dates are selected
       if (dateRange.startDate) {
@@ -174,6 +175,39 @@ const ChecklistSemanal = () => {
     });
   };
 
+  const handleToggleStatus = async (e: React.MouseEvent, checklist: Checklist) => {
+    e.stopPropagation();
+    try {
+      setUpdatingStatus(checklist.checklist_id);
+      
+      // Toggle the verificacao status
+      const newStatus = !checklist.verificacao;
+      
+      const { error } = await supabase
+        .from('checklist')
+        .update({ verificacao: newStatus })
+        .eq('checklist_id', checklist.checklist_id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setChecklists(prev => 
+        prev.map(c => 
+          c.checklist_id === checklist.checklist_id 
+            ? { ...c, verificacao: newStatus } 
+            : c
+        )
+      );
+      
+      toast.success(`Checklist ${newStatus ? 'verificado' : 'não verificado'}`);
+    } catch (error) {
+      console.error('Error toggling checklist status:', error);
+      toast.error('Erro ao atualizar status do checklist');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   const filteredChecklists = checklists.filter(checklist => {
     const searchString = searchTerm.toLowerCase();
     return (
@@ -231,7 +265,11 @@ const ChecklistSemanal = () => {
                           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
                           transition-colors flex items-center gap-2"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 6h18"></path>
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                  </svg>
                   Excluir Selecionados
                 </button>
               )}
@@ -285,6 +323,7 @@ const ChecklistSemanal = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Quilometragem</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
@@ -347,6 +386,30 @@ const ChecklistSemanal = () => {
                         {checklist.quilometragem?.toLocaleString('pt-BR')} km
                       </div>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <button
+                        onClick={(e) => handleToggleStatus(e, checklist)}
+                        disabled={updatingStatus === checklist.checklist_id}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                          checklist.verificacao 
+                            ? 'bg-green-500 dark:bg-green-600' 
+                            : 'bg-gray-200 dark:bg-gray-700'
+                        } ${updatingStatus === checklist.checklist_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        role="switch"
+                        aria-checked={checklist.verificacao}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            checklist.verificacao ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                        {updatingStatus === checklist.checklist_id && (
+                          <Loader2 
+                            className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
+                          />
+                        )}
+                      </button>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-3">
                         <button
@@ -370,17 +433,6 @@ const ChecklistSemanal = () => {
                           title="Editar"
                         >
                           <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedChecklist(checklist);
-                            setIsDeleteModalOpen(true);
-                          }}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                                   transition-colors"
-                          title="Excluir"
-                        >
-                          <Trash2 size={18} />
                         </button>
                       </div>
                     </td>
@@ -439,15 +491,6 @@ const ChecklistSemanal = () => {
                 setIsNewModalOpen(true);
               },
               color: 'text-yellow-500 dark:text-yellow-400'
-            },
-            {
-              icon: <Trash2 size={16} />,
-              label: 'Excluir',
-              onClick: () => {
-                setSelectedChecklist(contextMenu.checklist);
-                setIsDeleteModalOpen(true);
-              },
-              color: 'text-red-600 dark:text-red-400'
             }
           ]}
         />

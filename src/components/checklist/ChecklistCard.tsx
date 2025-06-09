@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit2, Trash2, Eye } from 'lucide-react';
+import { Edit2, Eye } from 'lucide-react';
 import type { Checklist } from '../../types/database';
 import { formatCPF } from '../../utils/format';
 
@@ -74,17 +74,6 @@ const ChecklistCard = ({ checklist, onEdit, onDelete, onClick }: ChecklistCardPr
             title="Editar"
           >
             <Edit2 size={18} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(checklist);
-            }}
-            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                     transition-colors"
-            title="Excluir"
-          >
-            <Trash2 size={18} />
           </button>
         </div>
       </td>
