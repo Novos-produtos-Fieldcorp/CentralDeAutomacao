@@ -674,7 +674,6 @@ const HodometrosLista = () => {
                                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tl-xl">Data</th>
                                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hora</th>
                                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
-                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
                                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tr-xl">Ações</th>
                                         </tr>
                                       </thead>
@@ -693,9 +692,6 @@ const HodometrosLista = () => {
                                               ) : (
                                                 <span>{hodometro.hod_lido?.toLocaleString('pt-BR')} km</span>
                                               )}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
-                                              {hodometro.km_rodado?.toLocaleString('pt-BR')} km
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                               <div className="flex items-center justify-end space-x-3">
@@ -729,7 +725,7 @@ const HodometrosLista = () => {
                                         ))}
                                         {veiculo.hodometros.length === 0 && (
                                           <tr>
-                                            <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                            <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                                               Nenhuma leitura encontrada
                                             </td>
                                           </tr>
