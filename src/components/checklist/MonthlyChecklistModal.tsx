@@ -671,11 +671,26 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
                           />
                         </label>
                         {value && (
-                          <img
-                            src={value}
-                            alt={key}
-                            className="w-16 h-16 object-cover rounded-lg shadow-md"
-                          />
+                          <div className="relative">
+                            <img
+                              src={value}
+                              alt={key}
+                              className="w-16 h-16 object-cover rounded-lg shadow-md"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({
+                                ...prev,
+                                fotos: {
+                                  ...prev.fotos,
+                                  [key]: ''
+                                }
+                              }))}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
