@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, Camera, X, Download, FileText, AlertCircle } from 'lucide-react';
+import { Search, Eye, Camera, X, Download, FileText } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -21,7 +21,6 @@ interface HodometroReading {
   foto_hodometro: string | null;
   trip_lida: number | null;
   trip_informada: string | null;
-  comparacao_leitura: boolean | null;
   motorista: {
     motorista_id: number;
     nome: string;
@@ -33,6 +32,7 @@ interface HodometroReading {
     marca: string;
     tipo: string;
   };
+  comparacao_leitura: boolean | null;
 }
 
 const HodometrosRelatorio = () => {
@@ -131,8 +131,7 @@ const HodometrosRelatorio = () => {
         'Hodômetro Informado': h.hod_informado?.toLocaleString('pt-BR') || '',
         'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : h.hod_lido?.toLocaleString('pt-BR'),
         'Trip Informada': h.trip_informada || '',
-        'Trip Lida': h.trip_lida?.toLocaleString('pt-BR') || '',
-        'Leitura Divergente': h.comparacao_leitura === false ? 'Sim' : 'Não'
+        'Trip Lida': h.trip_lida?.toLocaleString('pt-BR') || ''
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -150,8 +149,7 @@ const HodometrosRelatorio = () => {
         { wch: 18 }, // Hodômetro Informado
         { wch: 15 }, // Hodômetro Lido
         { wch: 15 }, // Trip Informada
-        { wch: 12 },  // Trip Lida
-        { wch: 15 }  // Leitura Divergente
+        { wch: 12 }  // Trip Lida
       ];
       ws['!cols'] = colWidths;
       
@@ -161,24 +159,6 @@ const HodometrosRelatorio = () => {
       console.error('Error exporting to Excel:', error);
       toast.error('Erro ao exportar para Excel');
     }
-  };
-
-  // Check if there's a discrepancy between reported and read values
-  const hasDiscrepancy = (hodometro: HodometroReading): boolean => {
-    // If comparacao_leitura is explicitly false, there's a discrepancy
-    if (hodometro.comparacao_leitura === false) return true;
-    
-    // For electric vehicles (with battery), we can't compare hodometer values
-    if (hodometro.bateria !== null && hodometro.bateria !== undefined) return false;
-    
-    // For regular vehicles, check if values are different
-    if (hodometro.hod_informado !== null && hodometro.hod_lido !== null) {
-      // Allow a small tolerance (e.g., 1% difference)
-      const tolerance = hodometro.hod_informado * 0.01;
-      return Math.abs(hodometro.hod_informado - hodometro.hod_lido) > tolerance;
-    }
-    
-    return false;
   };
 
   const filteredHodometros = hodometros.filter(hodometro => {
@@ -303,25 +283,15 @@ const HodometrosRelatorio = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          Bateria: {hodometro.bateria}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {hodometro.hod_lido?.toLocaleString('pt-BR') || '-'}
-                        </div>
-                      )}
-                      
-                      {/* Discrepancy tag */}
-                      {hasDiscrepancy(hodometro) && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Divergente
-                        </span>
-                      )}
-                    </div>
+                    {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        Bateria: {hodometro.bateria}
+                      </div>
+                    ) : (
+                      <div className={`text-sm ${hodometro.comparacao_leitura === false ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-900 dark:text-white'}`}>
+                        {hodometro.hod_lido?.toLocaleString('pt-BR') || '-'}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
