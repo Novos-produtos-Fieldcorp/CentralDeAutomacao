@@ -323,7 +323,6 @@ const ChecklistMensal = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Quilometragem</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
@@ -386,32 +385,31 @@ const ChecklistMensal = () => {
                         {checklist.quilometragem?.toLocaleString('pt-BR')} km
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <button
-                        onClick={(e) => handleToggleStatus(e, checklist)}
-                        disabled={updatingStatus === checklist.checklist_id}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                          checklist.status 
-                            ? 'bg-green-500 dark:bg-green-600' 
-                            : 'bg-gray-200 dark:bg-gray-700'
-                        } ${updatingStatus === checklist.checklist_id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        role="switch"
-                        aria-checked={checklist.status}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                            checklist.status ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                        />
-                        {updatingStatus === checklist.checklist_id && (
-                          <Loader2 
-                            className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
-                          />
-                        )}
-                      </button>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-3">
+                        <button
+                          onClick={(e) => handleToggleStatus(e, checklist)}
+                          disabled={updatingStatus === checklist.checklist_id}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                            checklist.status 
+                              ? 'bg-green-500 dark:bg-green-600' 
+                              : 'bg-gray-200 dark:bg-gray-700'
+                          } ${updatingStatus === checklist.checklist_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          role="switch"
+                          aria-checked={checklist.status}
+                          title={checklist.status ? "Marcar como não verificado" : "Marcar como verificado"}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              checklist.status ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                          {updatingStatus === checklist.checklist_id && (
+                            <Loader2 
+                              className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
+                            />
+                          )}
+                        </button>
                         <button
                           onClick={() => {
                             setSelectedChecklist(checklist);
@@ -473,13 +471,12 @@ const ChecklistMensal = () => {
               color: 'text-gray-600 dark:text-gray-400'
             },
             {
-              icon: <Edit2 size={16} />,
-              label: 'Editar',
-              onClick: () => {
-                setSelectedChecklist(contextMenu.checklist);
-                setIsNewModalOpen(true);
+              icon: contextMenu.checklist.status ? <XCircle size={16} /> : <CheckCircle2 size={16} />,
+              label: contextMenu.checklist.status ? 'Marcar como não verificado' : 'Marcar como verificado',
+              onClick: (e) => {
+                handleToggleStatus(e as unknown as React.MouseEvent, contextMenu.checklist!);
               },
-              color: 'text-yellow-500 dark:text-yellow-400'
+              color: contextMenu.checklist.status ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
             }
           ]}
         />
