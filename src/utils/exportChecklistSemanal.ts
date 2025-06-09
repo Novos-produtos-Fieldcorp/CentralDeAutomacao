@@ -61,11 +61,16 @@ const formatDate = (date: string): string => {
 
 // Function to get the status text from the status_id
 const getStatusText = (statusId: number, key: string, section: string): string => {
-  if (statusId === 1) {
+  // Make sure we're dealing with a number
+  const status = Number(statusId);
+  
+  if (status === 1) {
     // Status OK
     if (section === 'Fluidos') return 'No nível';
-    if (section === 'Iluminação') return 'Funcionando';
-    if (key === 'lanterna_traseira') return 'Sim';
+    if (section === 'Iluminação') {
+      if (key === 'lanterna_traseira') return 'Sim';
+      return 'Funcionando';
+    }
     if (key.includes('pneu')) return 'Bom';
     if (key.includes('limpeza')) return 'Boa';
     if (key.includes('freio')) return 'Bom';
@@ -77,11 +82,13 @@ const getStatusText = (statusId: number, key: string, section: string): string =
     return 'Bom';
   }
   
-  if (statusId === 2) {
+  if (status === 2) {
     // Status Not OK
     if (section === 'Fluidos') return 'Abaixo do nível';
-    if (section === 'Iluminação') return 'Queimado';
-    if (key === 'lanterna_traseira') return 'Não';
+    if (section === 'Iluminação') {
+      if (key === 'lanterna_traseira') return 'Não';
+      return 'Queimado';
+    }
     if (key.includes('pneu')) return 'Ruim';
     if (key.includes('limpeza')) return 'Ruim';
     if (key.includes('freio')) return 'Ruim';
@@ -93,7 +100,7 @@ const getStatusText = (statusId: number, key: string, section: string): string =
     return 'Ruim';
   }
   
-  if (statusId === 3) return 'N/A';
+  if (status === 3) return 'N/A';
   
   return 'Não informado';
 };
@@ -128,12 +135,10 @@ const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number): number => {
     
     // Get status text based on the value and item type
     let statusText;
-    if (typeof value === 'number') {
+    if (value !== null && value !== undefined) {
       statusText = getStatusText(value, key, 'Fluidos');
-    } else if (value === null || value === undefined) {
-      statusText = 'Não informado';
     } else {
-      statusText = String(value);
+      statusText = 'Não informado';
     }
     
     doc.text(`${label}: ${statusText}`, 20, yPos);
@@ -177,12 +182,10 @@ const addLightsSection = (doc: jsPDF, farol: any, yPos: number): number => {
     } else {
       // Get status text based on the value and item type
       let statusText;
-      if (typeof value === 'number') {
+      if (value !== null && value !== undefined) {
         statusText = getStatusText(value, key, 'Iluminação');
-      } else if (value === null || value === undefined) {
-        statusText = 'Não informado';
       } else {
-        statusText = String(value);
+        statusText = 'Não informado';
       }
       
       doc.text(`${label}: ${statusText}`, 20, yPos);
@@ -228,12 +231,10 @@ const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number): numbe
     
     // Get status text based on the value and item type
     let statusText;
-    if (typeof value === 'number') {
+    if (value !== null && value !== undefined) {
       statusText = getStatusText(value, key, 'Componentes');
-    } else if (value === null || value === undefined) {
-      statusText = 'Não informado';
     } else {
-      statusText = String(value);
+      statusText = 'Não informado';
     }
     
     doc.text(`${label}: ${statusText}`, 20, yPos);
@@ -283,12 +284,10 @@ const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number): numbe
     
     // Get status text based on the value and item type
     let statusText;
-    if (typeof value === 'number') {
+    if (value !== null && value !== undefined) {
       statusText = getStatusText(value, key, 'Acessórios');
-    } else if (value === null || value === undefined) {
-      statusText = 'Não informado';
     } else {
-      statusText = String(value);
+      statusText = 'Não informado';
     }
     
     doc.text(`${label}: ${statusText}`, 20, yPos);
