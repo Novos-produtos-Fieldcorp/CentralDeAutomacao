@@ -234,7 +234,18 @@ const HodometrosDashboard = () => {
       setTotalKm(totalKilometers);
       setAverageKmPerDay(avgKmPerDay);
       setTotalReadings(hodometros?.length || 0);
-      setTodayReadings(todayReadingsCount);
+      
+      // Get today's readings count directly from the API
+      const { data: todayData, error: todayError } = await supabase
+        .from('hodometro')
+        .select('id_hodometro', { count: 'exact' })
+        .eq('company_id', companyId)
+        .eq('data', today);
+        
+      if (todayError) throw todayError;
+      
+      // Set today's readings count
+      setTodayReadings(todayData?.length || 0);
       
     } catch (error) {
       console.error('Error fetching hodometro data:', error);
@@ -650,19 +661,19 @@ const HodometrosDashboard = () => {
         {dailyMileage.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 rounded-lg overflow-hidden">
-              <thead className="bg-amber-50 dark:bg-amber-900/20">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Data
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Quilômetros Rodados
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {dailyMileage.map((item, index) => (
-                  <tr key={index} className="hover:bg-amber-50/50 dark:hover:bg-amber-900/10">
+                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       {item.formattedDate}
                     </td>
@@ -671,7 +682,7 @@ const HodometrosDashboard = () => {
                     </td>
                   </tr>
                 ))}
-                <tr className="bg-amber-50 dark:bg-amber-900/20">
+                <tr className="bg-gray-50 dark:bg-gray-800">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
                     Total
                   </td>
