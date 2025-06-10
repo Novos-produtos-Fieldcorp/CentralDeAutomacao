@@ -204,7 +204,6 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
             pneu: 'Bom',
             pneu_ruim: '',
             documento_veicular: 'Sim'
-            // Removed: triangulo, chave_roda, extintor, macaco, cadeado
           };
           
           if (data.acessorios_veiculos?.[0]) {
