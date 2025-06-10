@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertTriangle, Activity } from 'lucide-react';
+import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertTriangle, Activity, FileText } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -7,6 +7,7 @@ import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import DailyMileageTotal from '../../components/hodometros/DailyMileageTotal';
+import ReadingsPerDriverChart from '../../components/hodometros/ReadingsPerDriverChart';
 import { 
   BarChart, 
   Bar, 
@@ -37,12 +38,19 @@ interface VehicleMileage {
   totalKm: number;
 }
 
+interface DriverReadings {
+  motorista_id: number;
+  nome: string;
+  count: number;
+}
+
 const HodometrosDashboard = () => {
   const { query, companyId } = useCompanyData();
   const [loading, setLoading] = useState(true);
   const [dailyMileage, setDailyMileage] = useState<DailyMileage[]>([]);
   const [driverMileage, setDriverMileage] = useState<DriverMileage[]>([]);
   const [vehicleMileage, setVehicleMileage] = useState<VehicleMileage[]>([]);
+  const [driverReadings, setDriverReadings] = useState<DriverReadings[]>([]);
   const [totalKm, setTotalKm] = useState(0);
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
@@ -89,6 +97,7 @@ const HodometrosDashboard = () => {
       const dailyMileageMap = new Map<string, number>();
       const driverMileageMap = new Map<number, { nome: string; totalKm: number }>();
       const vehicleMileageMap = new Map<number, { placa: string; totalKm: number }>();
+      const driverReadingsMap = new Map<number, { nome: string; count: number }>();
       
       let totalKilometers = 0;
       
@@ -119,6 +128,15 @@ const HodometrosDashboard = () => {
           const driverData = driverMileageMap.get(driverId)!;
           driverData.totalKm += kmValue;
           driverMileageMap.set(driverId, driverData);
+          
+          // Count readings per driver
+          if (!driverReadingsMap.has(driverId)) {
+            driverReadingsMap.set(driverId, { nome: driverName, count: 0 });
+          }
+          
+          const driverReadingsData = driverReadingsMap.get(driverId)!;
+          driverReadingsData.count += 1;
+          driverReadingsMap.set(driverId, driverReadingsData);
         }
         
         // Add to vehicle mileage
@@ -168,6 +186,15 @@ const HodometrosDashboard = () => {
           totalKm: data.totalKm
         }))
         .sort((a, b) => b.totalKm - a.totalKm);
+        
+      // Convert driver readings map to array and sort by count (descending)
+      const driverReadingsArray: DriverReadings[] = Array.from(driverReadingsMap.entries())
+        .map(([motorista_id, data]) => ({
+          motorista_id,
+          nome: data.nome,
+          count: data.count
+        }))
+        .sort((a, b) => b.count - a.count);
       
       // Calculate average km per day
       const uniqueDays = new Set(dailyMileageArray.map(item => item.date)).size;
@@ -177,6 +204,7 @@ const HodometrosDashboard = () => {
       setDailyMileage(dailyMileageArray);
       setDriverMileage(driverMileageArray);
       setVehicleMileage(vehicleMileageArray);
+      setDriverReadings(driverReadingsArray);
       setTotalKm(totalKilometers);
       setAverageKmPerDay(avgKmPerDay);
       setTotalReadings(hodometros?.length || 0);
@@ -311,6 +339,25 @@ const HodometrosDashboard = () => {
         )}
       </div>
 
+      {/* Readings per Driver Chart */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <FileText className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+          Número de Leituras por Motorista
+        </h3>
+        
+        {driverReadings.length > 0 ? (
+          <div className="h-80">
+            <ReadingsPerDriverChart data={driverReadings} />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+          </div>
+        )}
+      </div>
+
       {/* Drivers and Vehicles Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* All Drivers */}
@@ -351,6 +398,10 @@ const HodometrosDashboard = () => {
                       border: '1px solid #e5e7eb',
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ bottom: 0 }}
+                    formatter={() => 'Quilômetros Rodados'}
                   />
                   <Bar 
                     dataKey="totalKm" 
@@ -414,6 +465,10 @@ const HodometrosDashboard = () => {
                       border: '1px solid #e5e7eb',
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ bottom: 0 }}
+                    formatter={() => 'Quilômetros Rodados'}
                   />
                   <Bar 
                     dataKey="totalKm" 
