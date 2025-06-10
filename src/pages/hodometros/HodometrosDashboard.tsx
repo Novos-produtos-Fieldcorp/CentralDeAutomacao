@@ -1,11 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertTriangle, Activity, ChevronDown } from 'lucide-react';
-import { useCompanyData } from '../../hooks/useCompanyData';
-import { supabase } from '../../lib/supabase';
-import toast from 'react-hot-toast';
-import { useDateRange } from '../../hooks/useDateRange';
-import PeriodSelector from '../../components/hodometros/PeriodSelector';
-import LoadingSpinner from '../../components/LoadingSpinner';
 import { 
   BarChart, 
   Bar, 
@@ -16,186 +9,303 @@ import {
   Legend, 
   ResponsiveContainer,
   Cell,
-  LineChart,
-  Line,
-  Area,
-  AreaChart
+  PieChart,
+  Pie,
+  Sector
 } from 'recharts';
+import { Gauge, Calendar, TrendingUp, Users, Truck, AlertTriangle, ChevronDown } from 'lucide-react';
+import { useCompanyData } from '../../hooks/useCompanyData';
+import { useDateRange } from '../../hooks/useDateRange';
+import PeriodSelector from '../../components/hodometros/PeriodSelector';
+import toast from 'react-hot-toast';
+import { supabase } from '../../lib/supabase';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
-interface DailyMileage {
-  date: string;
+interface DashboardData {
+  totalReadings: number;
   totalKm: number;
-  formattedDate: string;
-}
-
-interface DriverMileage {
-  motorista_id: number;
-  nome: string;
-  totalKm: number;
-}
-
-interface VehicleMileage {
-  veiculo_id: number;
-  placa: string;
-  totalKm: number;
+  totalVehicles: number;
+  totalDrivers: number;
+  averageKmPerDay: number;
+  topVehicles: {
+    placa: string;
+    km: number;
+    marca?: string;
+    tipo?: string;
+  }[];
+  topDrivers: {
+    nome: string;
+    km: number;
+  }[];
+  kmByMonth: {
+    month: string;
+    km: number;
+  }[];
+  vehicleTypeDistribution: {
+    name: string;
+    value: number;
+  }[];
 }
 
 const HodometrosDashboard = () => {
   const { query, companyId } = useCompanyData();
   const [loading, setLoading] = useState(true);
-  const [dailyMileage, setDailyMileage] = useState<DailyMileage[]>([]);
-  const [driverMileage, setDriverMileage] = useState<DriverMileage[]>([]);
-  const [vehicleMileage, setVehicleMileage] = useState<VehicleMileage[]>([]);
-  const [totalKm, setTotalKm] = useState(0);
-  const [averageKmPerDay, setAverageKmPerDay] = useState(0);
-  const [totalReadings, setTotalReadings] = useState(0);
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
+    totalReadings: 0,
+    totalKm: 0,
+    totalVehicles: 0,
+    totalDrivers: 0,
+    averageKmPerDay: 0,
+    topVehicles: [],
+    topDrivers: [],
+    kmByMonth: [],
+    vehicleTypeDistribution: []
+  });
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
-  const [topItemsCount, setTopItemsCount] = useState<number>(5);
+  const [activeVehicleIndex, setActiveVehicleIndex] = useState(0);
+  const [activeDriverIndex, setActiveDriverIndex] = useState(0);
+  const [topVehiclesCount, setTopVehiclesCount] = useState(5);
+  const [topDriversCount, setTopDriversCount] = useState(5);
 
   useEffect(() => {
-    fetchData();
-  }, [dateRange]);
+    fetchDashboardData();
+  }, [dateRange, topVehiclesCount, topDriversCount]);
 
-  const fetchData = async () => {
+  const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
-      // Fetch all hodometro readings within the date range
-      const { data: hodometros, error } = await supabase
+
+      // Fetch hodometro data with date range filter
+      const { data: hodometros, error: hodometrosError } = await supabase
         .from('hodometro')
         .select(`
           id_hodometro,
           data,
           hora,
-          km_rodado,
           hod_lido,
           hod_informado,
+          km_rodado,
           bateria,
-          motorista_id,
-          veiculo_id,
           motorista:motorista_id (
             motorista_id,
             nome
           ),
           veiculo:veiculo_id (
             veiculo_id,
-            placa
+            placa,
+            marca,
+            tipo,
+            tipologia
           )
         `)
-        .eq('company_id', companyId)
         .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate)
-        .order('data', { ascending: true });
+        .lte('data', dateRange.endDate);
 
-      if (error) throw error;
+      if (hodometrosError) throw hodometrosError;
 
-      // Process data for daily mileage
-      const dailyMileageMap = new Map<string, number>();
-      const driverMileageMap = new Map<number, { nome: string; totalKm: number }>();
-      const vehicleMileageMap = new Map<number, { placa: string; totalKm: number }>();
-      
-      let totalKilometers = 0;
-      
-      // Process each reading
-      hodometros?.forEach(hodometro => {
-        // Use km_rodado as the primary source of mileage data
-        const kmValue = hodometro.km_rodado || 0;
-        
-        // Skip invalid or zero values
-        if (kmValue <= 0) return;
-        
-        // Add to total kilometers
-        totalKilometers += kmValue;
-        
-        // Add to daily mileage
-        const dateKey = hodometro.data;
-        dailyMileageMap.set(dateKey, (dailyMileageMap.get(dateKey) || 0) + kmValue);
-        
-        // Add to driver mileage
-        if (hodometro.motorista_id && hodometro.motorista) {
-          const driverId = hodometro.motorista_id;
-          const driverName = hodometro.motorista.nome;
-          
-          if (!driverMileageMap.has(driverId)) {
-            driverMileageMap.set(driverId, { nome: driverName, totalKm: 0 });
-          }
-          
-          const driverData = driverMileageMap.get(driverId)!;
-          driverData.totalKm += kmValue;
-          driverMileageMap.set(driverId, driverData);
-        }
-        
-        // Add to vehicle mileage
-        if (hodometro.veiculo_id && hodometro.veiculo) {
-          const vehicleId = hodometro.veiculo_id;
-          const vehiclePlate = hodometro.veiculo.placa;
-          
-          if (!vehicleMileageMap.has(vehicleId)) {
-            vehicleMileageMap.set(vehicleId, { placa: vehiclePlate, totalKm: 0 });
-          }
-          
-          const vehicleData = vehicleMileageMap.get(vehicleId)!;
-          vehicleData.totalKm += kmValue;
-          vehicleMileageMap.set(vehicleId, vehicleData);
-        }
-      });
-      
-      // Convert daily mileage map to array and sort by date
-      const dailyMileageArray: DailyMileage[] = Array.from(dailyMileageMap.entries())
-        .map(([date, totalKm]) => {
-          // Format date for display (DD/MM/YYYY)
-          const [year, month, day] = date.split('-');
-          const formattedDate = `${day}/${month}/${year}`;
-          
-          return {
-            date,
-            totalKm,
-            formattedDate
-          };
-        })
-        .sort((a, b) => a.date.localeCompare(b.date));
-      
-      // Convert driver mileage map to array and sort by total km (descending)
-      const driverMileageArray: DriverMileage[] = Array.from(driverMileageMap.entries())
-        .map(([motorista_id, data]) => ({
-          motorista_id,
-          nome: data.nome,
-          totalKm: data.totalKm
-        }))
-        .sort((a, b) => b.totalKm - a.totalKm);
-      
-      // Convert vehicle mileage map to array and sort by total km (descending)
-      const vehicleMileageArray: VehicleMileage[] = Array.from(vehicleMileageMap.entries())
-        .map(([veiculo_id, data]) => ({
-          veiculo_id,
-          placa: data.placa.toUpperCase(),
-          totalKm: data.totalKm
-        }))
-        .sort((a, b) => b.totalKm - a.totalKm);
-      
-      // Calculate average km per day
-      const uniqueDays = new Set(dailyMileageArray.map(item => item.date)).size;
-      const avgKmPerDay = uniqueDays > 0 ? totalKilometers / uniqueDays : 0;
-      
-      // Update state with processed data
-      setDailyMileage(dailyMileageArray);
-      setDriverMileage(driverMileageArray);
-      setVehicleMileage(vehicleMileageArray);
-      setTotalKm(totalKilometers);
-      setAverageKmPerDay(avgKmPerDay);
-      setTotalReadings(hodometros?.length || 0);
-      
+      // Process dashboard data
+      const processedData = processDashboardData(hodometros || []);
+      setDashboardData(processedData);
     } catch (error) {
-      console.error('Error fetching hodometro data:', error);
-      toast.error('Erro ao carregar dados de hodômetro');
+      console.error('Error fetching dashboard data:', error);
+      toast.error('Erro ao carregar dados do dashboard');
     } finally {
       setLoading(false);
     }
   };
 
-  // Format number with dot as thousands separator
+  const processDashboardData = (hodometros: any[]): DashboardData => {
+    // Calculate total KM
+    const totalKm = hodometros.reduce((sum, h) => sum + (h.km_rodado || 0), 0);
+    
+    // Count unique vehicles and drivers
+    const uniqueVehicles = new Set(hodometros.map(h => h.veiculo_id));
+    const uniqueDrivers = new Set(hodometros.map(h => h.motorista_id));
+    
+    // Calculate average KM per day
+    const days = calculateDaysBetween(dateRange.startDate, dateRange.endDate);
+    const averageKmPerDay = days > 0 ? totalKm / days : 0;
+    
+    // Calculate top vehicles by KM
+    const vehicleMap = new Map<string, { km: number; placa: string; marca?: string; tipo?: string }>();
+    hodometros.forEach(h => {
+      if (!h.veiculo) return;
+      
+      const placa = h.veiculo.placa.toUpperCase();
+      if (!vehicleMap.has(placa)) {
+        vehicleMap.set(placa, { 
+          km: 0, 
+          placa, 
+          marca: h.veiculo.marca,
+          tipo: h.veiculo.tipo
+        });
+      }
+      vehicleMap.get(placa)!.km += h.km_rodado || 0;
+    });
+    
+    const topVehicles = Array.from(vehicleMap.values())
+      .sort((a, b) => b.km - a.km)
+      .slice(0, topVehiclesCount);
+    
+    // Calculate top drivers by KM
+    const driverMap = new Map<number, { km: number; nome: string }>();
+    hodometros.forEach(h => {
+      if (!h.motorista) return;
+      
+      const id = h.motorista.motorista_id;
+      if (!driverMap.has(id)) {
+        driverMap.set(id, { km: 0, nome: h.motorista.nome });
+      }
+      driverMap.get(id)!.km += h.km_rodado || 0;
+    });
+    
+    const topDrivers = Array.from(driverMap.values())
+      .sort((a, b) => b.km - a.km)
+      .slice(0, topDriversCount);
+    
+    // Calculate KM by month
+    const kmByMonth = calculateKmByMonth(hodometros);
+    
+    // Calculate vehicle type distribution
+    const vehicleTypeDistribution = calculateVehicleTypeDistribution(hodometros);
+    
+    return {
+      totalReadings: hodometros.length,
+      totalKm,
+      totalVehicles: uniqueVehicles.size,
+      totalDrivers: uniqueDrivers.size,
+      averageKmPerDay,
+      topVehicles,
+      topDrivers,
+      kmByMonth,
+      vehicleTypeDistribution
+    };
+  };
+
+  const calculateDaysBetween = (startDate: string, endDate: string): number => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1; // Ensure at least 1 day
+  };
+
+  const calculateKmByMonth = (hodometros: any[]): { month: string; km: number }[] => {
+    const monthMap = new Map<string, number>();
+    
+    hodometros.forEach(h => {
+      const date = new Date(h.data);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+      
+      if (!monthMap.has(monthKey)) {
+        monthMap.set(monthKey, 0);
+      }
+      
+      monthMap.set(monthKey, monthMap.get(monthKey)! + (h.km_rodado || 0));
+    });
+    
+    // Convert to array and sort by month
+    return Array.from(monthMap.entries())
+      .map(([key, km]) => {
+        const [year, month] = key.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+        return {
+          month: date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
+          km
+        };
+      })
+      .sort((a, b) => {
+        const monthA = a.month.split(' ')[0];
+        const yearA = a.month.split(' ')[1];
+        const monthB = b.month.split(' ')[0];
+        const yearB = b.month.split(' ')[1];
+        
+        if (yearA !== yearB) {
+          return parseInt(yearA) - parseInt(yearB);
+        }
+        
+        const months = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
+        return months.indexOf(monthA) - months.indexOf(monthB);
+      });
+  };
+
+  const calculateVehicleTypeDistribution = (hodometros: any[]): { name: string; value: number }[] => {
+    const typeMap = new Map<string, number>();
+    const vehicleSet = new Set<string>();
+    
+    hodometros.forEach(h => {
+      if (!h.veiculo || !h.veiculo.tipologia || vehicleSet.has(h.veiculo.placa)) return;
+      
+      vehicleSet.add(h.veiculo.placa);
+      
+      const type = h.veiculo.tipologia.toUpperCase();
+      if (!typeMap.has(type)) {
+        typeMap.set(type, 0);
+      }
+      
+      typeMap.set(type, typeMap.get(type)! + 1);
+    });
+    
+    // Convert to array and sort by count
+    return Array.from(typeMap.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  };
+
   const formatNumber = (num: number): string => {
     return num.toLocaleString('pt-BR');
+  };
+
+  const renderActiveShape = (props: any) => {
+    const RADIAN = Math.PI / 180;
+    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+    const sin = Math.sin(-RADIAN * midAngle);
+    const cos = Math.cos(-RADIAN * midAngle);
+    const sx = cx + (outerRadius + 10) * cos;
+    const sy = cy + (outerRadius + 10) * sin;
+    const mx = cx + (outerRadius + 30) * cos;
+    const my = cy + (outerRadius + 30) * sin;
+    const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+    const ey = my;
+    const textAnchor = cos >= 0 ? 'start' : 'end';
+  
+    return (
+      <g>
+        <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} className="text-sm">
+          {payload.name}
+        </text>
+        <Sector
+          cx={cx}
+          cy={cy}
+          innerRadius={innerRadius}
+          outerRadius={outerRadius}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          fill={fill}
+        />
+        <Sector
+          cx={cx}
+          cy={cy}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          innerRadius={outerRadius + 6}
+          outerRadius={outerRadius + 10}
+          fill={fill}
+        />
+        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
+        <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#333" className="text-xs">
+          {`${value} veículos`}
+        </text>
+        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#999" className="text-xs">
+          {`(${(percent * 100).toFixed(2)}%)`}
+        </text>
+      </g>
+    );
+  };
+
+  const onPieEnter = (_: any, index: number) => {
+    setActiveVehicleIndex(index);
   };
 
   if (loading) {
@@ -205,7 +315,7 @@ const HodometrosDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border-2 border-indigo-100 dark:border-indigo-900/30">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
@@ -215,80 +325,63 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-blue-500 dark:border-blue-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex flex-col items-center text-center">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl mb-3">
-              <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total Percorrido</h3>
-            <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-indigo-400">
-              {formatNumber(totalKm)} km
-            </p>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-green-500 dark:border-green-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex flex-col items-center text-center">
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl mb-3">
-              <Calendar className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Média Diária</h3>
-            <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent dark:from-green-400 dark:to-emerald-400">
-              {formatNumber(Math.round(averageKmPerDay))} km
-            </p>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-purple-500 dark:border-purple-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex flex-col items-center text-center">
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl mb-3">
-              <Activity className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total de Leituras</h3>
-            <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent dark:from-purple-400 dark:to-violet-400">
-              {formatNumber(totalReadings)}
-            </p>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Total de Leituras"
+          value={dashboardData.totalReadings}
+          icon={Gauge}
+          color="blue"
+        />
+        <StatCard
+          title="Quilômetros Rodados"
+          value={dashboardData.totalKm}
+          suffix="km"
+          icon={TrendingUp}
+          color="green"
+        />
+        <StatCard
+          title="Veículos Monitorados"
+          value={dashboardData.totalVehicles}
+          icon={Truck}
+          color="purple"
+        />
+        <StatCard
+          title="Motoristas Ativos"
+          value={dashboardData.totalDrivers}
+          icon={Users}
+          color="orange"
+        />
       </div>
 
-      {/* Daily Mileage Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-blue-100 dark:border-blue-900/30 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-          Quilometragem Diária
-        </h3>
-        
-        {dailyMileage.length > 0 ? (
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Monthly KM Chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+            Quilometragem Mensal
+          </h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={dailyMileage}
-                margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
+              <BarChart
+                data={dashboardData.kmByMonth}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
               >
-                <defs>
-                  <linearGradient id="colorKm" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
                 <XAxis 
-                  dataKey="formattedDate" 
+                  dataKey="month" 
                   angle={-45} 
                   textAnchor="end" 
-                  height={70} 
+                  height={60} 
                   tick={{ fontSize: 12 }}
                   stroke="#9CA3AF"
                 />
                 <YAxis 
-                  tickFormatter={(value) => formatNumber(value)}
+                  tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
                   stroke="#9CA3AF"
                 />
                 <Tooltip 
-                  formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                  labelFormatter={(label) => `Data: ${label}`}
+                  formatter={(value: any) => [value.toLocaleString('pt-BR') + ' km', 'Quilômetros']}
                   contentStyle={{ 
                     backgroundColor: 'rgba(255, 255, 255, 0.9)',
                     borderRadius: '0.5rem',
@@ -296,235 +389,264 @@ const HodometrosDashboard = () => {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                   }}
                 />
-                <Legend />
-                <Area 
-                  type="monotone" 
-                  dataKey="totalKm" 
-                  name="Quilômetros Rodados"
-                  stroke="#3B82F6" 
-                  fillOpacity={1}
-                  fill="url(#colorKm)"
-                  strokeWidth={2}
-                  activeDot={{ r: 6, fill: "#2563EB" }}
+                <Legend 
+                  wrapperStyle={{ bottom: 0 }}
+                  formatter={() => 'Quilômetros Rodados'}
                 />
-              </AreaChart>
+                <Bar 
+                  dataKey="km" 
+                  fill="#3B82F6" 
+                  radius={[4, 4, 0, 0]}
+                  animationDuration={1500}
+                >
+                  {dashboardData.kmByMonth.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={`rgba(59, 130, 246, ${0.5 + (index * 0.05)})`} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-          </div>
-        )}
-      </div>
+        </div>
 
-      {/* Top Drivers and Vehicles */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Vehicle Type Distribution */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+            Distribuição por Tipo de Veículo
+          </h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  activeIndex={activeVehicleIndex}
+                  activeShape={renderActiveShape}
+                  data={dashboardData.vehicleTypeDistribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  onMouseEnter={onPieEnter}
+                >
+                  {dashboardData.vehicleTypeDistribution.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={[
+                        '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', 
+                        '#10B981', '#6366F1', '#EF4444', '#14B8A6'
+                      ][index % 8]} 
+                    />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value: any) => [`${value} veículos`, 'Quantidade']}
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #e5e7eb',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Top Vehicles */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+              <Truck className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+              Top Veículos por KM
+            </h3>
+            <div className="relative">
+              <select
+                value={topVehiclesCount}
+                onChange={(e) => setTopVehiclesCount(Number(e.target.value))}
+                className="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value={3}>Top 3</option>
+                <option value={5}>Top 5</option>
+                <option value={10}>Top 10</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            </div>
+          </div>
+          <div className="space-y-4">
+            {dashboardData.topVehicles.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                Nenhum dado disponível
+              </div>
+            ) : (
+              dashboardData.topVehicles.map((vehicle, index) => (
+                <div key={index} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full text-blue-600 dark:text-blue-400 font-medium">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">
+                          {vehicle.placa}
+                        </h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {vehicle.marca} {vehicle.tipo}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                        {formatNumber(vehicle.km)} km
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                    <div 
+                      className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full" 
+                      style={{ width: `${(vehicle.km / dashboardData.topVehicles[0].km) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
         {/* Top Drivers */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-green-100 dark:border-green-900/30 hover:shadow-lg transition-all duration-300">
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+          <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
               <Users className="w-5 h-5 text-green-500 dark:text-green-400" />
-              Top Motoristas por Quilometragem
+              Top Motoristas por KM
             </h3>
-            
             <div className="relative">
               <select
-                value={topItemsCount}
-                onChange={(e) => setTopItemsCount(Number(e.target.value))}
-                className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                value={topDriversCount}
+                onChange={(e) => setTopDriversCount(Number(e.target.value))}
+                className="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value={3}>Top 3</option>
                 <option value={5}>Top 5</option>
                 <option value={10}>Top 10</option>
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                <ChevronDown className="w-4 h-4" />
-              </div>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             </div>
           </div>
-          
-          {driverMileage.length > 0 ? (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={driverMileage.slice(0, topItemsCount)}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                  <XAxis 
-                    type="number"
-                    tickFormatter={(value) => formatNumber(value)}
-                    stroke="#9CA3AF"
-                  />
-                  <YAxis 
-                    dataKey="nome" 
-                    type="category" 
-                    width={150}
-                    tick={{ fontSize: 12 }}
-                    stroke="#9CA3AF"
-                  />
-                  <Tooltip 
-                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #e5e7eb',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Bar 
-                    dataKey="totalKm" 
-                    name="Quilômetros Rodados"
-                    fill="#10B981"
-                    radius={[0, 4, 4, 0]}
-                  >
-                    {driverMileage.slice(0, topItemsCount).map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={`rgba(16, 185, 129, ${0.9 - (index * 0.07)})`} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-              <Users className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-            </div>
-          )}
-        </div>
-        
-        {/* Top Vehicles */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-purple-100 dark:border-purple-900/30 hover:shadow-lg transition-all duration-300">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
-              Top Veículos por Quilometragem
-            </h3>
-            
-            <div className="relative">
-              <select
-                value={topItemsCount}
-                onChange={(e) => setTopItemsCount(Number(e.target.value))}
-                className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-              >
-                <option value={3}>Top 3</option>
-                <option value={5}>Top 5</option>
-                <option value={10}>Top 10</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                <ChevronDown className="w-4 h-4" />
+          <div className="space-y-4">
+            {dashboardData.topDrivers.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                Nenhum dado disponível
               </div>
-            </div>
+            ) : (
+              dashboardData.topDrivers.map((driver, index) => (
+                <div key={index} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full text-green-600 dark:text-green-400 font-medium">
+                        {index + 1}
+                      </div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">
+                        {driver.nome}
+                      </h4>
+                    </div>
+                    <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                      {formatNumber(driver.km)} km
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                    <div 
+                      className="bg-green-600 dark:bg-green-500 h-2.5 rounded-full" 
+                      style={{ width: `${(driver.km / dashboardData.topDrivers[0].km) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          
-          {vehicleMileage.length > 0 ? (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={vehicleMileage.slice(0, topItemsCount)}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                  <XAxis 
-                    type="number"
-                    tickFormatter={(value) => formatNumber(value)}
-                    stroke="#9CA3AF"
-                  />
-                  <YAxis 
-                    dataKey="placa" 
-                    type="category" 
-                    width={80}
-                    tick={{ fontSize: 12 }}
-                    stroke="#9CA3AF"
-                  />
-                  <Tooltip 
-                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #e5e7eb',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Bar 
-                    dataKey="totalKm" 
-                    name="Quilômetros Rodados"
-                    fill="#8B5CF6"
-                    radius={[0, 4, 4, 0]}
-                  >
-                    {vehicleMileage.slice(0, topItemsCount).map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={`rgba(139, 92, 246, ${0.9 - (index * 0.07)})`} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-              <Truck className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Daily Mileage Table */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-amber-100 dark:border-amber-900/30 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-          Quilometragem Diária Detalhada
+      {/* Average KM per Day */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-orange-500 dark:text-orange-400" />
+          Média de Quilômetros por Dia
         </h3>
-        
-        {dailyMileage.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 rounded-lg overflow-hidden">
-              <thead className="bg-amber-50 dark:bg-amber-900/20">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-amber-700 dark:text-amber-300 uppercase tracking-wider">
-                    Data
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-amber-700 dark:text-amber-300 uppercase tracking-wider">
-                    Quilômetros Rodados
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {dailyMileage.map((item, index) => (
-                  <tr key={index} className="hover:bg-amber-50/50 dark:hover:bg-amber-900/10">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {item.formattedDate}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-amber-600 dark:text-amber-400">
-                      {formatNumber(item.totalKm)} km
-                    </td>
-                  </tr>
-                ))}
-                <tr className="bg-amber-50 dark:bg-amber-900/20">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
-                    Total
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-amber-600 dark:text-amber-400">
-                    {formatNumber(totalKm)} km
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        <div className="flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-orange-600 dark:text-orange-400">
+              {formatNumber(Math.round(dashboardData.averageKmPerDay))}
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              km/dia no período selecionado
+            </div>
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-40 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-          </div>
-        )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const StatCard = ({ 
+  title, 
+  value, 
+  suffix = '', 
+  icon: Icon,
+  color = 'blue'
+}: { 
+  title: string;
+  value: number;
+  suffix?: string;
+  icon: React.ElementType;
+  color?: 'blue' | 'green' | 'purple' | 'orange';
+}) => {
+  const colors = {
+    blue: {
+      bg: 'bg-blue-50 dark:bg-blue-900/20',
+      border: 'border-blue-200 dark:border-blue-800/30',
+      text: 'text-blue-600 dark:text-blue-400',
+      icon: 'text-blue-500 dark:text-blue-400',
+      iconBg: 'bg-blue-100 dark:bg-blue-900/30'
+    },
+    green: {
+      bg: 'bg-green-50 dark:bg-green-900/20',
+      border: 'border-green-200 dark:border-green-800/30',
+      text: 'text-green-600 dark:text-green-400',
+      icon: 'text-green-500 dark:text-green-400',
+      iconBg: 'bg-green-100 dark:bg-green-900/30'
+    },
+    purple: {
+      bg: 'bg-purple-50 dark:bg-purple-900/20',
+      border: 'border-purple-200 dark:border-purple-800/30',
+      text: 'text-purple-600 dark:text-purple-400',
+      icon: 'text-purple-500 dark:text-purple-400',
+      iconBg: 'bg-purple-100 dark:bg-purple-900/30'
+    },
+    orange: {
+      bg: 'bg-orange-50 dark:bg-orange-900/20',
+      border: 'border-orange-200 dark:border-orange-800/30',
+      text: 'text-orange-600 dark:text-orange-400',
+      icon: 'text-orange-500 dark:text-orange-400',
+      iconBg: 'bg-orange-100 dark:bg-orange-900/30'
+    }
+  };
+
+  const colorStyle = colors[color];
+
+  return (
+    <div className={`rounded-xl p-6 shadow-md ${colorStyle.bg} border ${colorStyle.border} flex flex-col items-center text-center`}>
+      <div className={`p-3 rounded-full ${colorStyle.iconBg} mb-4`}>
+        <Icon className={`w-6 h-6 ${colorStyle.icon}`} />
+      </div>
+      <h3 className="text-base font-medium text-gray-700 dark:text-gray-300 mb-3">
+        {title}
+      </h3>
+      <div className={`text-3xl font-bold ${colorStyle.text}`}>
+        {value.toLocaleString('pt-BR')}{suffix}
       </div>
     </div>
   );
