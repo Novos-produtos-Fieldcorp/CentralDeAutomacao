@@ -56,7 +56,7 @@ const applyRetryLogic = (queryBuilder: any, table: string) => {
     while (retries > 0) {
       try {
         const result = await operation();
-        if (result.error) throw result.error;
+        if (result && result.error) throw result.error;
         return result;
       } catch (error) {
         lastError = error;
@@ -229,7 +229,7 @@ export const createFilteredQuery = (table: string, companyId: number) => {
     while (retries > 0) {
       try {
         const result = await operation();
-        if (result.error) throw result.error;
+        if (result && result.error) throw result.error;
         return result;
       } catch (error) {
         lastError = error;
