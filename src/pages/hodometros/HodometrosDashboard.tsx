@@ -99,6 +99,15 @@ const HodometrosDashboard = () => {
     fetchInconsistencies();
   }, [dateRange, companyId]);
 
+  // Format date from YYYY-MM-DD to DD/MM/YYYY
+  const formatDateBR = (dateStr: string) => {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -209,7 +218,7 @@ const HodometrosDashboard = () => {
           return {
             date,
             totalKm,
-            formattedDate: date // Keep the original date format from the database
+            formattedDate: formatDateBR(date) // Format date as DD/MM/YYYY
           };
         })
         .sort((a, b) => a.date.localeCompare(b.date));
@@ -230,7 +239,7 @@ const HodometrosDashboard = () => {
             veiculo_id,
             placa: data.placa,
             totalKm: data.totalKm,
-            lastDate: data.lastDate // Keep the original date format from the database
+            lastDate: data.lastDate ? formatDateBR(data.lastDate) : undefined // Format date as DD/MM/YYYY
           };
         })
         .sort((a, b) => b.totalKm - a.totalKm);
@@ -455,7 +464,7 @@ const HodometrosDashboard = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 dark:text-white">
-                        {hodometro.data}
+                        {formatDateBR(hodometro.data)}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
                         {hodometro.hora}
@@ -861,7 +870,7 @@ const HodometrosDashboard = () => {
                 {dailyMileage.map((item, index) => (
                   <tr key={index} className="hover:bg-amber-50/50 dark:hover:bg-amber-900/10">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {item.date}
+                      {item.formattedDate}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-amber-600 dark:text-amber-400">
                       {formatNumber(item.totalKm)} km
