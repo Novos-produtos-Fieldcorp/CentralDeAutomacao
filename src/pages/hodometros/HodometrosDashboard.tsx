@@ -206,14 +206,10 @@ const HodometrosDashboard = () => {
       // Convert daily mileage map to array and sort by date
       const dailyMileageArray: DailyMileage[] = Array.from(dailyMileageMap.entries())
         .map(([date, totalKm]) => {
-          // Format date for display (DD/MM/YYYY)
-          const [year, month, day] = date.split('-');
-          const formattedDate = `${day}/${month}/${year}`;
-          
           return {
             date,
             totalKm,
-            formattedDate
+            formattedDate: date // Keep the original date format from the database
           };
         })
         .sort((a, b) => a.date.localeCompare(b.date));
@@ -230,18 +226,11 @@ const HodometrosDashboard = () => {
       // Convert vehicle mileage map to array and sort by total km (descending)
       const vehicleMileageArray: VehicleMileage[] = Array.from(vehicleMileageMap.entries())
         .map(([veiculo_id, data]) => {
-          // Format the last date
-          let formattedLastDate;
-          if (data.lastDate) {
-            const [year, month, day] = data.lastDate.split('-');
-            formattedLastDate = `${day}/${month}/${year}`;
-          }
-          
           return {
             veiculo_id,
             placa: data.placa,
             totalKm: data.totalKm,
-            lastDate: formattedLastDate
+            lastDate: data.lastDate // Keep the original date format from the database
           };
         })
         .sort((a, b) => b.totalKm - a.totalKm);
@@ -345,15 +334,6 @@ const HodometrosDashboard = () => {
     } else {
       toast.error('Nenhuma foto disponível');
     }
-  };
-
-  // Format date from YYYY-MM-DD to DD/MM/YYYY
-  const formatDateBR = (dateStr: string) => {
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return dateStr;
   };
 
   // Format number with dot as thousands separator
@@ -475,7 +455,7 @@ const HodometrosDashboard = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 dark:text-white">
-                        {formatDateBR(hodometro.data)}
+                        {hodometro.data}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
                         {hodometro.hora}
@@ -881,7 +861,7 @@ const HodometrosDashboard = () => {
                 {dailyMileage.map((item, index) => (
                   <tr key={index} className="hover:bg-amber-50/50 dark:hover:bg-amber-900/10">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {item.formattedDate}
+                      {item.date}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-amber-600 dark:text-amber-400">
                       {formatNumber(item.totalKm)} km
