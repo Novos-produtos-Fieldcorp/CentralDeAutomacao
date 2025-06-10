@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { FileText, Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Eye, Store, UserMinus, MessageCircle, MessageSquare, Users, Building2, Truck, Upload, FilePen } from 'lucide-react';
+import { Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Store, MessageCircle, MessageSquare, Users, Building2, Truck, FilePen } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import type { Motorista, Cliente, DocumentoMotorista } from '../../types/database';
@@ -87,38 +87,14 @@ interface City {
   };
 }
 
-interface UnifiedAgregadoModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  agregado: MotoristaWithAddress | null;
-  onSuccess: () => void;
-}
 
-interface EditMotoristaModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  motorista: MotoristaWithAddress | null;
-  onUpdate: () => void;
-}
 
-interface DocumentViewerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  documento: DocumentoMotorista | null;
-  nome: string;
-  cpf: string;
-  email?: string;
-  telefone?: string;
-  dt_nascimento?: string;
-  endereco?: string;
-  st_cadastro?: string;
-}
 
 const AgregadosLista = () => {
-  const { query, companyId } = useCompanyData();
+  const { companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
   const [motoristas, setMotoristas] = useState<MotoristaWithAddress[]>([]);
-  const [allMotoristas, setAllMotoristas] = useState<MotoristaWithAddress[]>([]);
+  const [, setAllMotoristas] = useState<MotoristaWithAddress[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -131,7 +107,7 @@ const AgregadosLista = () => {
   const [selectedVehicleType, setSelectedVehicleType] = useState('');
   const [vehicleTypes, setVehicleTypes] = useState<string[]>([]);
   const [cities, setCities] = useState<City[]>([]);
-  const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('Agregado');
+  const [] = useState<'todos' | 'Motorista' | 'Agregado'>('Agregado');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -156,7 +132,7 @@ const AgregadosLista = () => {
     y: 0,
     motorista: null,
   });
-  const [selectedDocumento, setSelectedDocumento] = useState<{
+  const [] = useState<{
     documento: any | null;
     nome: string;
     cpf?: string;
@@ -319,7 +295,7 @@ const AgregadosLista = () => {
       });
 
       // Execute the query
-      const { data, error, count } = await query.order('data_cadastro', { ascending: false });
+      const { data, error } = await query.order('data_cadastro', { ascending: false });
 
       if (error) {
         console.error('Query error:', error);
@@ -532,10 +508,6 @@ const AgregadosLista = () => {
     }
   };
 
-  const handleUploadDocuments = (motorista: MotoristaWithAddress) => {
-    setSelectedMotorista(motorista);
-    setIsDocumentUploadModalOpen(true);
-  };
 
   const handleEdit = (motorista: MotoristaWithAddress) => {
     setSelectedMotorista(motorista);
@@ -1027,7 +999,7 @@ const AgregadosLista = () => {
                           }`}
                         >
                           <option value="">Sem cliente</option>
-                          {clientes.map((cliente, index) => (
+                          {clientes.map((cliente) => (
                             <option 
                               key={cliente.cliente_id} 
                               value={cliente.cliente_id}
