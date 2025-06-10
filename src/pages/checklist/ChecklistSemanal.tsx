@@ -469,7 +469,7 @@ const ChecklistSemanal = () => {
                 setSelectedChecklist(contextMenu.checklist);
                 setIsDetailsModalOpen(true);
               },
-              color: 'text-gray-600 dark:text-gray-400'
+              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
             },
             {
               icon: contextMenu.checklist.status ? <XCircle size={16} /> : <CheckCircle2 size={16} />,
