@@ -70,7 +70,8 @@ const ChecklistDashboard = () => {
           fluido_veiculo!checklist_id(*)
         `)
         .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate);
+        .lte('data', dateRange.endDate)
+        .order('data', { ascending: false });
 
       if (checklistError) throw checklistError;
 
@@ -201,12 +202,21 @@ const ChecklistDashboard = () => {
       });
 
       if (problemas.length > 0) {
-        veiculosMap.set(veiculo.placa, {
-          placa: veiculo.placa,
-          marca: veiculo.marca,
-          tipo: veiculo.tipo,
-          problemas
-        });
+        // Group issues by vehicle
+        const existingItem = veiculosMap.get(veiculo.placa);
+
+        if (existingItem) {
+          // Add new issues to existing vehicle
+          existingItem.problemas.push(...problemas);
+        } else {
+          // Create new maintenance item
+          veiculosMap.set(veiculo.placa, {
+            placa: veiculo.placa.toUpperCase(),
+            marca: veiculo.marca,
+            tipo: veiculo.tipo,
+            problemas
+          });
+        }
       }
     });
 
@@ -253,26 +263,30 @@ const ChecklistDashboard = () => {
       </div>
 
       {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total de Checklists"
           value={stats.totalChecklists}
           icon={FileText}
+          color="blue"
         />
         <StatCard
           title="Checklists Mensais"
           value={stats.totalMensal}
           icon={Calendar}
+          color="green"
         />
         <StatCard
           title="Checklists Semanais"
           value={stats.totalSemanal}
           icon={FileText}
+          color="purple"
         />
         <StatCard
           title="Problemas"
           value={stats.totalProblemas}
           icon={AlertTriangle}
+          color="amber"
         />
       </div>
 
@@ -397,23 +411,64 @@ const ChecklistDashboard = () => {
 const StatCard = ({ 
   title, 
   value, 
-  icon: Icon
+  icon: Icon,
+  color = 'blue'
 }: { 
   title: string;
   value: number;
   icon: any;
+  color?: 'blue' | 'green' | 'purple' | 'amber';
 }) => {
+  // Define color variants
+  const colorVariants = {
+    blue: {
+      bgGradient: 'from-blue-500 to-blue-600',
+      darkBgGradient: 'dark:from-blue-600 dark:to-blue-700',
+      iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+      iconColor: 'text-blue-600 dark:text-blue-400',
+      shadow: 'shadow-blue-500/10'
+    },
+    green: {
+      bgGradient: 'from-green-500 to-green-600',
+      darkBgGradient: 'dark:from-green-600 dark:to-green-700',
+      iconBg: 'bg-green-100 dark:bg-green-900/30',
+      iconColor: 'text-green-600 dark:text-green-400',
+      shadow: 'shadow-green-500/10'
+    },
+    purple: {
+      bgGradient: 'from-purple-500 to-purple-600',
+      darkBgGradient: 'dark:from-purple-600 dark:to-purple-700',
+      iconBg: 'bg-purple-100 dark:bg-purple-900/30',
+      iconColor: 'text-purple-600 dark:text-purple-400',
+      shadow: 'shadow-purple-500/10'
+    },
+    amber: {
+      bgGradient: 'from-amber-500 to-amber-600',
+      darkBgGradient: 'dark:from-amber-600 dark:to-amber-700',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      shadow: 'shadow-amber-500/10'
+    }
+  };
+
+  const variant = colorVariants[color];
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
-      <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400 mb-4">
-        <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-          <Icon className="w-6 h-6 text-blue-500 dark:text-blue-400" />
+    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg border-l-4 border-${color}-500 dark:border-${color}-400 overflow-hidden ${variant.shadow} hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}>
+      <div className="p-6 flex flex-col items-center text-center">
+        <div className={`p-4 ${variant.iconBg} rounded-full mb-4`}>
+          <Icon className={`w-8 h-8 ${variant.iconColor}`} />
         </div>
-        <span className="text-sm font-medium">{title}</span>
+        
+        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
+          {title}
+        </h3>
+        
+        <div className="text-5xl font-bold bg-gradient-to-r text-transparent bg-clip-text mb-2 
+                      bg-gradient-to-r ${variant.bgGradient} ${variant.darkBgGradient}">
+          {value.toLocaleString('pt-BR')}
+        </div>
       </div>
-      <span className="text-2xl font-bold text-gray-900 dark:text-white">
-        {value}
-      </span>
     </div>
   );
 };
