@@ -424,7 +424,7 @@ const HodometrosDashboard = () => {
           <h3 className="text-lg font-medium text-white mb-4 uppercase">KM POR OPERAÇÃO</h3>
           <div className="h-64">
             {kmByOperation.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%\" height="100%">
                 <BarChart
                   data={kmByOperation}
                   margin={{ top: 10, right: 30, left: 20, bottom: 60 }}
@@ -474,7 +474,7 @@ const HodometrosDashboard = () => {
           <h3 className="text-lg font-medium text-white mb-4 uppercase">NÚMERO DE LEITURAS POR MOTORISTA</h3>
           <div className="h-64">
             {readingsByDriver.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%\" height="100%">
                 <BarChart
                   data={readingsByDriver}
                   margin={{ top: 10, right: 30, left: 20, bottom: 60 }}
@@ -567,7 +567,7 @@ const HodometrosDashboard = () => {
           <h3 className="text-lg font-medium text-white mb-4 uppercase">KM POR MOTORISTA</h3>
           <div className="h-64">
             {kmByDriver.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%\" height="100%">
                 <BarChart
                   data={kmByDriver}
                   margin={{ top: 10, right: 30, left: 20, bottom: 60 }}
