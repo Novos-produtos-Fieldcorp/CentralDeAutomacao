@@ -352,7 +352,7 @@ const ChecklistDashboard = () => {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="w-20 text-xs text-gray-500 dark:text-gray-400">Checklists:</span>
+                    <span className="w-20 text-xs text-gray-500 dark:text-gray-400"></span>
                     <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
