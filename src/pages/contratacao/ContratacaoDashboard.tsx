@@ -61,7 +61,8 @@ const ContratacaoDashboard = () => {
       const { data: clientesData, error: clientesError } = await supabase
         .from('cliente')
         .select('cliente_id, nome')
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .eq('st_cliente', true);
 
       if (clientesError) throw clientesError;
 
@@ -69,11 +70,11 @@ const ContratacaoDashboard = () => {
       const [totalMotoristasResponse, totalAgregadosResponse] = await Promise.all([
         supabase
           .from('vw_motoristas_completo')
-          .select('*')
+          .select('*, cliente(nome)')
           .eq('company_id', companyId),
         supabase
           .from('vw_agregados_completo')
-          .select('*')
+          .select('*, cliente(nome)')
           .eq('company_id', companyId)
       ]);
       
@@ -134,13 +135,15 @@ const ContratacaoDashboard = () => {
         [...totalMotoristasData, ...totalAgregadosData]
           .filter(m => m.st_cadastro === 'contratado')
           .forEach(curr => {
-            const clientName = curr.nome_cliente || 'Sem Cliente';
+            const clientName = curr.cliente?.nome || 'Sem Cliente';
+            const clientId = curr.cliente_id || 0;
+            
             if (!clientesContratados[clientName]) {
               clientesContratados[clientName] = { 
                 total: 0, 
                 motoristas: 0, 
                 agregados: 0,
-                cliente_id: curr.cliente_id || 0
+                cliente_id: clientId
               };
             }
             clientesContratados[clientName].total++;
@@ -150,6 +153,17 @@ const ContratacaoDashboard = () => {
               clientesContratados[clientName].agregados++;
             }
           });
+
+        // Remove clients with zero contractors
+        Object.keys(clientesContratados).forEach(key => {
+          if (clientesContratados[key].total === 0 && key !== 'Sem Cliente') {
+            delete clientesContratados[key];
+          }
+        });
+
+        console.log('Clientes Contratados:', clientesContratados);
+        console.log('Total Motoristas:', totalMotoristasData);
+        console.log('Total Agregados:', totalAgregadosData);
 
         const totalContratados = Object.values(clientesContratados).reduce((sum, client) => sum + client.total, 0);
 
