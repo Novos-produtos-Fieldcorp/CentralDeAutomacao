@@ -52,6 +52,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
       pneu: 'Bom',
       pneu_ruim: '',
       documento_veicular: 'Sim'
+      // Removed: triangulo, chave_roda, extintor, macaco, cadeado
     }
   });
 
@@ -68,6 +69,13 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
       }));
     }
   }, [checklist]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchMotoristas();
+      fetchVeiculos();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const fetchChecklistDetails = async () => {
@@ -196,6 +204,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
             pneu: 'Bom',
             pneu_ruim: '',
             documento_veicular: 'Sim'
+            // Removed: triangulo, chave_roda, extintor, macaco, cadeado
           };
           
           if (data.acessorios_veiculos?.[0]) {
@@ -246,13 +255,6 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
       fetchChecklistDetails();
     }
   }, [checklist]);
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchMotoristas();
-      fetchVeiculos();
-    }
-  }, [isOpen]);
 
   const fetchMotoristas = async () => {
     try {
@@ -388,6 +390,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
           pneu: getStatusId(formData.acessorios.pneu, 'pneu'),
           pneu_ruim: formData.acessorios.pneu_ruim,
           documento_veicular: getStatusId(formData.acessorios.documento_veicular, 'accessory')
+          // Removed: triangulo, chave_roda, extintor, macaco, cadeado
         });
 
       if (acessoriosError) throw acessoriosError;
