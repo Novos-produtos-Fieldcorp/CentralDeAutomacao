@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertTriangle, Activity, ChevronDown, Clock, FileText, PieChart } from 'lucide-react';
+import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertTriangle, Activity, ChevronDown, Clock, FileText } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -20,10 +20,7 @@ import {
   LineChart,
   Line,
   Area,
-  AreaChart,
-  PieChart as RechartsPieChart,
-  Pie,
-  Sector
+  AreaChart
 } from 'recharts';
 
 interface DailyMileage {
@@ -44,26 +41,18 @@ interface VehicleMileage {
   totalKm: number;
 }
 
-interface WeekdayMileage {
-  name: string;
-  value: number;
-  fill: string;
-}
-
 const HodometrosDashboard = () => {
   const { query, companyId } = useCompanyData();
   const [loading, setLoading] = useState(true);
   const [dailyMileage, setDailyMileage] = useState<DailyMileage[]>([]);
   const [driverMileage, setDriverMileage] = useState<DriverMileage[]>([]);
   const [vehicleMileage, setVehicleMileage] = useState<VehicleMileage[]>([]);
-  const [weekdayMileage, setWeekdayMileage] = useState<WeekdayMileage[]>([]);
   const [totalKm, setTotalKm] = useState(0);
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
   const [todayReadings, setTodayReadings] = useState(0);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
   const [topItemsCount, setTopItemsCount] = useState<number>(5);
-  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -106,13 +95,6 @@ const HodometrosDashboard = () => {
       const dailyMileageMap = new Map<string, number>();
       const driverMileageMap = new Map<number, { nome: string; totalKm: number }>();
       const vehicleMileageMap = new Map<number, { placa: string; totalKm: number }>();
-      const weekdayMap = new Map<number, { name: string; value: number }>();
-      
-      // Initialize weekday data
-      const weekdays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-      weekdays.forEach((name, index) => {
-        weekdayMap.set(index, { name, value: 0 });
-      });
       
       let totalKilometers = 0;
       const today = new Date().toISOString().split('T')[0];
@@ -137,14 +119,6 @@ const HodometrosDashboard = () => {
         // Add to daily mileage
         const dateKey = hodometro.data;
         dailyMileageMap.set(dateKey, (dailyMileageMap.get(dateKey) || 0) + kmValue);
-        
-        // Add to weekday mileage
-        const date = new Date(hodometro.data);
-        const weekday = date.getDay();
-        const weekdayData = weekdayMap.get(weekday);
-        if (weekdayData) {
-          weekdayMap.set(weekday, { ...weekdayData, value: weekdayData.value + kmValue });
-        }
         
         // Add to driver mileage
         if (hodometro.motorista_id && hodometro.motorista) {
@@ -208,19 +182,6 @@ const HodometrosDashboard = () => {
         }))
         .sort((a, b) => b.totalKm - a.totalKm);
       
-      // Convert weekday map to array
-      const weekdayColors = [
-        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#8AC249'
-      ];
-      
-      const weekdayMileageArray: WeekdayMileage[] = Array.from(weekdayMap.entries())
-        .map(([day, data], index) => ({
-          name: data.name,
-          value: data.value,
-          fill: weekdayColors[index % weekdayColors.length]
-        }))
-        .filter(item => item.value > 0); // Only include days with data
-      
       // Calculate average km per day
       const uniqueDays = new Set(dailyMileageArray.map(item => item.date)).size;
       const avgKmPerDay = uniqueDays > 0 ? totalKilometers / uniqueDays : 0;
@@ -229,7 +190,6 @@ const HodometrosDashboard = () => {
       setDailyMileage(dailyMileageArray);
       setDriverMileage(driverMileageArray);
       setVehicleMileage(vehicleMileageArray);
-      setWeekdayMileage(weekdayMileageArray);
       setTotalKm(totalKilometers);
       setAverageKmPerDay(avgKmPerDay);
       setTotalReadings(hodometros?.length || 0);
@@ -246,58 +206,6 @@ const HodometrosDashboard = () => {
   // Format number with dot as thousands separator
   const formatNumber = (num: number): string => {
     return num.toLocaleString('pt-BR');
-  };
-
-  const onPieEnter = (_: any, index: number) => {
-    setActiveIndex(index);
-  };
-
-  const renderActiveShape = (props: any) => {
-    const RADIAN = Math.PI / 180;
-    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
-    const sin = Math.sin(-RADIAN * midAngle);
-    const cos = Math.cos(-RADIAN * midAngle);
-    const sx = cx + (outerRadius + 10) * cos;
-    const sy = cy + (outerRadius + 10) * sin;
-    const mx = cx + (outerRadius + 30) * cos;
-    const my = cy + (outerRadius + 30) * sin;
-    const ex = mx + (cos >= 0 ? 1 : -1) * 22;
-    const ey = my;
-    const textAnchor = cos >= 0 ? 'start' : 'end';
-
-    return (
-      <g>
-        <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} className="text-sm">
-          {payload.name}
-        </text>
-        <Sector
-          cx={cx}
-          cy={cy}
-          innerRadius={innerRadius}
-          outerRadius={outerRadius}
-          startAngle={startAngle}
-          endAngle={endAngle}
-          fill={fill}
-        />
-        <Sector
-          cx={cx}
-          cy={cy}
-          startAngle={startAngle}
-          endAngle={endAngle}
-          innerRadius={outerRadius + 6}
-          outerRadius={outerRadius + 10}
-          fill={fill}
-        />
-        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
-        <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
-        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#333" className="text-xs">
-          {`${formatNumber(value)} km`}
-        </text>
-        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#999" className="text-xs">
-          {`(${(percent * 100).toFixed(2)}%)`}
-        </text>
-      </g>
-    );
   };
 
   if (loading) {
@@ -423,53 +331,6 @@ const HodometrosDashboard = () => {
                   activeDot={{ r: 6, fill: "#2563EB" }}
                 />
               </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-          </div>
-        )}
-      </div>
-
-      {/* Weekday Distribution Chart - New Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-indigo-100 dark:border-indigo-900/30 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <PieChart className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-          Distribuição por Dia da Semana
-        </h3>
-        
-        {weekdayMileage.length > 0 ? (
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <RechartsPieChart>
-                <Pie
-                  activeIndex={activeIndex}
-                  activeShape={renderActiveShape}
-                  data={weekdayMileage}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  dataKey="value"
-                  onMouseEnter={onPieEnter}
-                >
-                  {weekdayMileage.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #e5e7eb',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Legend />
-              </RechartsPieChart>
             </ResponsiveContainer>
           </div>
         ) : (
