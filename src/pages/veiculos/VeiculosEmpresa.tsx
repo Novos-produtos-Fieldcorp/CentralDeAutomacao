@@ -477,7 +477,7 @@ const VeiculosEmpresa = () => {
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Visualizar e Editar Veículo"
                           >
-                            <Eye size={18} />
+                            <FilePen size={18} />
                           </button>
                           <button 
                             onClick={() => handleDelete(veiculo)}
@@ -592,10 +592,10 @@ const VeiculosEmpresa = () => {
           onClose={() => setContextMenu({ ...contextMenu, visible: false })}
           actions={[
             {
-              icon: <Eye size={16} />,
+              icon: <FilePen size={16} />,
               label: 'Visualizar e Editar',
               onClick: () => handleViewVehicle(contextMenu.veiculo!),
-              color: 'text-blue-600 dark:text-blue-400'
+              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
             },
             {
               icon: <Trash2 size={16} />,
