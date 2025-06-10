@@ -16,9 +16,18 @@ const VehicleMileageChart: React.FC<VehicleMileageProps> = ({ data }) => {
 
   // Sort data by totalKm in descending order
   const sortedData = [...data].sort((a, b) => b.totalKm - a.totalKm);
+  
+  // Find max value for percentage calculation
+  const maxKm = Math.max(...data.map(v => v.totalKm), 1);
+
+  // Estilo fixo para o fundo escuro
+  const darkBackgroundStyle = {
+    backgroundColor: '#1B1F2B',
+    color: 'white'
+  };
 
   return (
-    <div className="w-full space-y-4 bg-gray-900 dark:bg-[#1B1F2B] p-6 rounded-xl">
+    <div style={darkBackgroundStyle} className="w-full space-y-4 p-6 rounded-xl">
       {sortedData.map((vehicle, index) => (
         <div key={index} className="relative">
           <div className="flex justify-between items-center mb-1">
@@ -38,13 +47,11 @@ const VehicleMileageChart: React.FC<VehicleMileageProps> = ({ data }) => {
           </div>
           <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
             <div 
-              className={`h-full rounded-full transition-all duration-300 ${
-                vehicle.totalKm > 0 ? 'bg-blue-500' : 'bg-gray-600'
-              }`}
+              className="h-full bg-blue-500 rounded-full transition-all duration-300"
               style={{ 
                 width: `${Math.max(
                   5, 
-                  (vehicle.totalKm / Math.max(...data.map(v => v.totalKm), 1)) * 100
+                  (vehicle.totalKm / maxKm) * 100
                 )}%` 
               }}
             />
