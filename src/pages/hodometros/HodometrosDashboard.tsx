@@ -302,7 +302,7 @@ const HodometrosDashboard = () => {
   const fetchInconsistencies = async () => {
     try {
       // Fetch all hodometer readings with inconsistencies (verificacao = false)
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from('hodometro')
         .select(`
           id_hodometro,
@@ -328,7 +328,7 @@ const HodometrosDashboard = () => {
             marca,
             tipo
           )
-        `)
+        `, { count: 'exact' })
         .eq('company_id', companyId)
         .eq('verificacao', false)
         .order('data', { ascending: false })
@@ -337,7 +337,7 @@ const HodometrosDashboard = () => {
       if (error) throw error;
       
       setHodometros(data || []);
-      setTotalInconsistencies(data?.length || 0);
+      setTotalInconsistencies(count || 0);
     } catch (error) {
       console.error('Error fetching inconsistencies:', error);
       toast.error('Erro ao carregar inconsistências');
