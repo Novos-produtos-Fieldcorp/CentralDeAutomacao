@@ -101,7 +101,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       if (error) throw error;
       
       if (data) {
-        setStatusItems(data);
+        setStatusItems(data || []);
       } else {
         throw new Error('No data received from status items query');
       }
@@ -204,7 +204,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       const fileName = `${checklist.checklist_id}_${photoField}_${Date.now()}.${fileExt}`;
       
       // Upload file to storage
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data } = await supabase.storage
         .from('checklist-photos')
         .upload(fileName, file);
         
@@ -462,13 +462,21 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
     title: string, 
     section: string, 
     items: any, 
-    excludeKeys: string[] = ['id', 'checklist_id']
+    excludeKeys: string[] = ['id', 'checklist_id'],
+    filterKeys?: string[]
   ) => {
     if (!items) return null;
     
-    const filteredKeys = Object.keys(items).filter(key => 
+    let filteredKeys = Object.keys(items).filter(key => 
       !excludeKeys.some(exclude => key.includes(exclude))
     );
+    
+    // Apply additional filtering for weekly checklist
+    if (filterKeys) {
+      filteredKeys = filteredKeys.filter(key => filterKeys.includes(key));
+    }
+    
+    if (filteredKeys.length === 0) return null;
     
     return (
       <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
@@ -556,6 +564,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   }
 
   const isMonthlyChecklist = checklist.id_tipo_checklist === 1;
+  const isWeeklyChecklist = checklist.id_tipo_checklist === 2;
   const details = checklistDetails || checklist;
 
   const formatDate = (date: string) => {
@@ -791,7 +800,8 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                           "Componentes Gerais", 
                           "componentes", 
                           editComponents.componentes, 
-                          ['id_componentes_gerais', 'checklist_id']
+                          ['id_componentes_gerais', 'checklist_id'],
+                          isWeeklyChecklist ? ['pedal', 'limpeza_interna', 'sistema_freio', 'freio_estacionamento'] : undefined
                         )
                       )}
                       
@@ -801,7 +811,8 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                           "Acessórios", 
                           "acessorios", 
                           editComponents.acessorios, 
-                          ['id_acessorio', 'checklist_id']
+                          ['id_acessorio', 'checklist_id'],
+                          isWeeklyChecklist ? ['pneu', 'pneu_ruim', 'documento_veicular', 'carrinho_carga'] : undefined
                         )
                       )}
                       
@@ -841,7 +852,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                             items={details.componentes}
                             excludeKeys={['id_componentes_gerais', 'checklist_id']}
                             statusItems={statusItems}
-                            filterKeys={!isMonthlyChecklist ? ['pedal', 'limpeza_interna', 'sistema_freio'] : undefined}
+                            filterKeys={!isMonthlyChecklist ? ['pedal', 'limpeza_interna', 'sistema_freio', 'freio_estacionamento'] : undefined}
                             gridCols={2}
                           />
                         </div>
@@ -855,7 +866,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                             items={details.acessorios}
                             excludeKeys={['id_acessorio', 'checklist_id']}
                             statusItems={statusItems}
-                            filterKeys={!isMonthlyChecklist ? ['pneu', 'documento_veicular', 'carrinho_carga'] : undefined}
+                            filterKeys={!isMonthlyChecklist ? ['pneu', 'pneu_ruim', 'documento_veicular', 'carrinho_carga'] : undefined}
                             gridCols={2}
                             specialTextKey="pneu_ruim"
                             specialTextLabel="Pneu com Problema"
