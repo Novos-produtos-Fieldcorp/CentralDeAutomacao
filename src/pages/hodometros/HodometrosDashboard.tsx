@@ -239,7 +239,7 @@ const HodometrosDashboard = () => {
       // Convert driver mileage map to array and sort by total km (descending)
       const driverMileageArray: DriverMileage[] = Array.from(driverMileageMap.entries())
         .map(([motorista_id, data]) => ({
-          motorista_id,
+          motorista_id: Number(motorista_id),
           nome: data.nome,
           totalKm: data.totalKm
         }))
@@ -458,7 +458,7 @@ const HodometrosDashboard = () => {
           </h3>
           
           {driverMileage.length > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
               {driverMileage.map((driver, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -499,7 +499,7 @@ const HodometrosDashboard = () => {
           </h3>
           
           {vehicleMileage.length > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
               {vehicleMileage.map((vehicle, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
