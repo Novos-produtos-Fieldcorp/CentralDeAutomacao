@@ -1,28 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { 
   BarChart2, Calendar, TrendingUp, Truck, Users, 
-  AlertCircle, Activity, FileText, Camera, X, Eye,
+  AlertTriangle, Activity, FileText, Camera, X, Eye,
   Gauge
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { supabase, createFilteredQuery } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  Cell
-} from 'recharts';
 
 interface DailyMileage {
   date: string;
@@ -103,6 +92,7 @@ const HodometrosDashboard = () => {
   const [totalReadings, setTotalReadings] = useState(0);
   const [todayReadings, setTodayReadings] = useState(0);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
+  const [topItemsCount, setTopItemsCount] = useState<number>(5);
   
   // Inconsistencies table state
   const [hodometros, setHodometros] = useState<HodometroReading[]>([]);
@@ -129,32 +119,35 @@ const HodometrosDashboard = () => {
     try {
       setLoading(true);
       
-      // Use the error handling wrapper for better network error handling
-      const hodometroQuery = createFilteredQuery('hodometro', companyId);
-      const { data: hodometros, error } = await hodometroQuery.select(`
-        id_hodometro,
-        data,
-        hora,
-        km_rodado,
-        hod_lido,
-        hod_informado,
-        bateria,
-        motorista_id,
-        veiculo_id,
-        cliente_id,
-        motorista:motorista_id (
+      // Fetch all hodometro readings within the date range
+      const { data: hodometros, error } = await supabase
+        .from('hodometro')
+        .select(`
+          id_hodometro,
+          data,
+          hora,
+          km_rodado,
+          hod_lido,
+          hod_informado,
+          bateria,
           motorista_id,
-          nome
-        ),
-        veiculo:veiculo_id (
           veiculo_id,
-          placa
-        ),
-        cliente:cliente_id (
           cliente_id,
-          nome
-        )
-      `).gte('data', dateRange.startDate)
+          motorista:motorista_id (
+            motorista_id,
+            nome
+          ),
+          veiculo:veiculo_id (
+            veiculo_id,
+            placa
+          ),
+          cliente:cliente_id (
+            cliente_id,
+            nome
+          )
+        `)
+        .eq('company_id', companyId)
+        .gte('data', dateRange.startDate)
         .lte('data', dateRange.endDate)
         .order('data', { ascending: true });
 
@@ -341,9 +334,10 @@ const HodometrosDashboard = () => {
       // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
       
-      // Use the error handling wrapper for better network error handling
-      const hodometroQuery = createFilteredQuery('hodometro', companyId);
-      const { data, error, count } = await hodometroQuery.select('id_hodometro', { count: 'exact' })
+      const { data, error, count } = await supabase
+        .from('hodometro')
+        .select('id_hodometro', { count: 'exact' })
+        .eq('company_id', companyId)
         .eq('data', today);
       
       if (error) throw error;
@@ -357,33 +351,34 @@ const HodometrosDashboard = () => {
 
   const fetchInconsistencies = async () => {
     try {
-      // Use the error handling wrapper for better network error handling
-      const hodometroQuery = createFilteredQuery('hodometro', companyId);
-      const { data, error, count } = await hodometroQuery.select(`
-        id_hodometro,
-        data,
-        hora,
-        hod_lido,
-        hod_informado,
-        km_rodado,
-        bateria,
-        foto_hodometro,
-        trip_lida,
-        trip_informada,
-        comparacao_leitura,
-        verificacao,
-        motorista:motorista_id (
-          motorista_id,
-          nome,
-          cpf
-        ),
-        veiculo:veiculo_id (
-          veiculo_id,
-          placa,
-          marca,
-          tipo
-        )
-      `, { count: 'exact' })
+      const { data, error, count } = await supabase
+        .from('hodometro')
+        .select(`
+          id_hodometro,
+          data,
+          hora,
+          hod_lido,
+          hod_informado,
+          km_rodado,
+          bateria,
+          foto_hodometro,
+          trip_lida,
+          trip_informada,
+          comparacao_leitura,
+          verificacao,
+          motorista:motorista_id (
+            motorista_id,
+            nome,
+            cpf
+          ),
+          veiculo:veiculo_id (
+            veiculo_id,
+            placa,
+            marca,
+            tipo
+          )
+        `, { count: 'exact' })
+        .eq('company_id', companyId)
         .eq('verificacao', false)
         .order('data', { ascending: false })
         .limit(10);
@@ -535,53 +530,30 @@ const HodometrosDashboard = () => {
         </h3>
         
         {operationMileage.length > 0 ? (
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={operationMileage}
-                margin={{ top: 5, right: 30, left: 20, bottom: 70 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                <XAxis 
-                  dataKey="name" 
-                  angle={-45} 
-                  textAnchor="end" 
-                  height={70} 
-                  tick={{ fontSize: 12 }}
-                  stroke="#9CA3AF"
-                />
-                <YAxis 
-                  tickFormatter={(value) => formatNumber(value)}
-                  stroke="#9CA3AF"
-                />
-                <Tooltip 
-                  formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #e5e7eb',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Legend />
-                <Bar 
-                  dataKey="value" 
-                  name="Quilômetros Rodados"
-                  fill="#F59E0B"
-                  radius={[4, 4, 0, 0]}
-                >
-                  {operationMileage.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={[
-                        '#F59E0B', '#EC4899', '#8B5CF6', '#3B82F6', 
-                        '#10B981', '#6366F1', '#EF4444', '#14B8A6'
-                      ][index % 8]} 
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="space-y-6">
+            {operationMileage.map((item, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {item.name}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {formatNumber(item.value)} km
+                  </span>
+                </div>
+                <div className="h-2 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-orange-500 dark:bg-orange-400 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${Math.max(
+                        5, 
+                        (item.value / Math.max(...operationMileage.map(m => m.value), 1)) * 100
+                      )}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
@@ -709,158 +681,24 @@ const HodometrosDashboard = () => {
         </h3>
         
         {dailyMileage.length > 0 ? (
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={dailyMileage}
-                margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                <XAxis 
-                  dataKey="formattedDate" 
-                  angle={-45} 
-                  textAnchor="end" 
-                  height={70} 
-                  tick={{ fontSize: 12 }}
-                  stroke="#9CA3AF"
-                />
-                <YAxis 
-                  tickFormatter={(value) => formatNumber(value)}
-                  stroke="#9CA3AF"
-                />
-                <Tooltip 
-                  formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                  labelFormatter={(label) => `Data: ${label}`}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #e5e7eb',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Legend />
-                <Bar 
-                  dataKey="totalKm" 
-                  name="Quilômetros Rodados"
-                  fill="#3B82F6"
-                  radius={[4, 4, 0, 0]}
-                >
-                  {dailyMileage.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={`rgba(59, 130, 246, ${0.5 + (index * 0.5 / dailyMileage.length)})`} 
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-          </div>
-        )}
-      </div>
-
-      {/* Readings per Driver Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-          Número de Leituras por Motorista
-        </h3>
-        
-        {driverReadings.length > 0 ? (
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={driverReadings}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                <XAxis 
-                  type="number"
-                  tickFormatter={formatNumber}
-                  stroke="#9CA3AF"
-                />
-                <YAxis 
-                  dataKey="nome" 
-                  type="category" 
-                  width={150}
-                  tick={{ fontSize: 12 }}
-                  stroke="#9CA3AF"
-                />
-                <Tooltip 
-                  formatter={(value: any) => [`${value} leituras`, 'Número de Leituras']}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #e5e7eb',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Legend 
-                  wrapperStyle={{ bottom: 0 }}
-                  formatter={() => 'Número de Leituras'}
-                />
-                <Bar 
-                  dataKey="count" 
-                  name="Número de Leituras"
-                  fill="#6366F1"
-                  radius={[0, 4, 4, 0]}
-                >
-                  {driverReadings.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={`rgba(99, 102, 241, ${0.9 - (index * 0.7 / Math.max(driverReadings.length, 1))})`} 
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-          </div>
-        )}
-      </div>
-
-      {/* Vehicle Mileage Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <Truck className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-          Quilometragem por Veículo
-        </h3>
-        
-        {vehicleMileage.length > 0 ? (
-          <div className="w-full space-y-4">
-            {vehicleMileage.map((vehicle, index) => (
-              <div key={index} className="relative mb-4">
-                <div className="flex justify-between items-center mb-1">
-                  <div className="font-medium text-gray-900 dark:text-white">
-                    {vehicle.placa}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {vehicle.lastDate && (
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {vehicle.lastDate}
-                      </span>
-                    )}
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {formatNumber(vehicle.totalKm)} km
-                    </span>
-                  </div>
+          <div className="space-y-6">
+            {dailyMileage.map((item, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {item.formattedDate}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {formatNumber(item.totalKm)} km
+                  </span>
                 </div>
-                <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                    className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
                     style={{ 
                       width: `${Math.max(
                         5, 
-                        (vehicle.totalKm / Math.max(...vehicleMileage.map(v => v.totalKm), 1)) * 100
+                        (item.totalKm / Math.max(...dailyMileage.map(m => m.totalKm), 1)) * 100
                       )}%` 
                     }}
                   />
@@ -876,66 +714,40 @@ const HodometrosDashboard = () => {
         )}
       </div>
 
-      {/* Drivers and Vehicles Charts */}
+      {/* Top Drivers and Vehicles */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* All Drivers */}
+        {/* Top Drivers */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-green-500 dark:text-green-400" />
-              Motoristas por Quilometragem
-            </h3>
-          </div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <Users className="w-5 h-5 text-green-500 dark:text-green-400" />
+            Top Motoristas por Quilometragem
+          </h3>
           
           {driverMileage.length > 0 ? (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={driverMileage}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                  <XAxis 
-                    type="number"
-                    tickFormatter={(value) => formatNumber(value)}
-                    stroke="#9CA3AF"
-                  />
-                  <YAxis 
-                    dataKey="nome" 
-                    type="category" 
-                    width={150}
-                    tick={{ fontSize: 12 }}
-                    stroke="#9CA3AF"
-                  />
-                  <Tooltip 
-                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #e5e7eb',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ bottom: 0 }}
-                    formatter={() => 'Quilômetros Rodados'}
-                  />
-                  <Bar 
-                    dataKey="totalKm" 
-                    name="Quilômetros Rodados"
-                    fill="#10B981"
-                    radius={[0, 4, 4, 0]}
-                  >
-                    {driverMileage.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={`rgba(16, 185, 129, ${0.9 - (index * 0.7 / driverMileage.length)})`} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="space-y-6">
+              {driverMileage.slice(0, topItemsCount).map((driver, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {driver.nome}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {formatNumber(driver.totalKm)} km
+                    </span>
+                  </div>
+                  <div className="h-2 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Math.max(
+                          5, 
+                          (driver.totalKm / Math.max(...driverMileage.slice(0, topItemsCount).map(d => d.totalKm), 1)) * 100
+                        )}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
@@ -945,64 +757,38 @@ const HodometrosDashboard = () => {
           )}
         </div>
         
-        {/* All Vehicles */}
+        {/* Top Vehicles */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
-              Veículos por Quilometragem
-            </h3>
-          </div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+            Top Veículos por Quilometragem
+          </h3>
           
           {vehicleMileage.length > 0 ? (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={vehicleMileage}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                  <XAxis 
-                    type="number"
-                    tickFormatter={(value) => formatNumber(value)}
-                    stroke="#9CA3AF"
-                  />
-                  <YAxis 
-                    dataKey="placa" 
-                    type="category" 
-                    width={80}
-                    tick={{ fontSize: 12 }}
-                    stroke="#9CA3AF"
-                  />
-                  <Tooltip 
-                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #e5e7eb',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ bottom: 0 }}
-                    formatter={() => 'Quilômetros Rodados'}
-                  />
-                  <Bar 
-                    dataKey="totalKm" 
-                    name="Quilômetros Rodados"
-                    fill="#8B5CF6"
-                    radius={[0, 4, 4, 0]}
-                  >
-                    {vehicleMileage.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={`rgba(139, 92, 246, ${0.9 - (index * 0.7 / vehicleMileage.length)})`} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="space-y-6">
+              {vehicleMileage.slice(0, topItemsCount).map((vehicle, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {vehicle.placa}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {formatNumber(vehicle.totalKm)} km
+                    </span>
+                  </div>
+                  <div className="h-2 bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-purple-500 dark:bg-purple-400 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Math.max(
+                          5, 
+                          (vehicle.totalKm / Math.max(...vehicleMileage.slice(0, topItemsCount).map(v => v.totalKm), 1)) * 100
+                        )}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
