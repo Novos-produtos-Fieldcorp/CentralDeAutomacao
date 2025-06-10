@@ -492,32 +492,32 @@ const HodometrosDashboard = () => {
           )}
         </div>
         
-        {/* Top Vehicles */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
-            Top Veículos por Quilometragem
+        {/* All Vehicles by Mileage */}
+        <div className="bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-700 hover:shadow-lg transition-all duration-300">
+          <h3 className="text-lg font-medium text-white mb-6 flex items-center gap-2">
+            <Truck className="w-5 h-5 text-purple-400" />
+            Veículos por Quilometragem
           </h3>
           
           {vehicleMileage.length > 0 ? (
             <div className="space-y-6">
-              {vehicleMileage.slice(0, topItemsCount).map((vehicle, index) => (
+              {vehicleMileage.map((vehicle, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-gray-300">
                       {vehicle.placa}
                     </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-white">
                       {formatNumber(vehicle.totalKm)} km
                     </span>
                   </div>
-                  <div className="h-2 bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-purple-500 dark:bg-purple-400 rounded-full transition-all duration-300"
+                      className="h-full bg-purple-500 rounded-full transition-all duration-300"
                       style={{ 
                         width: `${Math.max(
                           5, 
-                          (vehicle.totalKm / Math.max(...vehicleMileage.slice(0, topItemsCount).map(v => v.totalKm), 1)) * 100
+                          (vehicle.totalKm / Math.max(...vehicleMileage.map(v => v.totalKm), 1)) * 100
                         )}%` 
                       }}
                     />
@@ -526,9 +526,9 @@ const HodometrosDashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-              <Truck className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+            <div className="flex flex-col items-center justify-center h-60 bg-gray-800/50 rounded-xl">
+              <Truck className="w-12 h-12 text-gray-600 mb-4" />
+              <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
             </div>
           )}
         </div>
