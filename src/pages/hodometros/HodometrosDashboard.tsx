@@ -1,3 +1,4 @@
+// src/pages/hodometros/HodometrosDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import { Calendar, Truck, Users, TrendingUp, BarChart2, Filter } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
