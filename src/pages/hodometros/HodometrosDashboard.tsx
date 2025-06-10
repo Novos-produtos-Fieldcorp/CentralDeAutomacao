@@ -470,117 +470,34 @@ const HodometrosDashboard = () => {
         </div>
       </div>
 
-      {/* Top Drivers and Vehicles */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* All Motoristas por Quilometragem */}
-        <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Users className="w-5 h-5 text-green-600 dark:text-green-400" />
+      {/* Motoristas por Quilometragem - Matching the screenshot */}
+      <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <div className="flex items-center gap-2 mb-6">
+          <Users className="w-5 h-5 text-green-500 dark:text-green-400" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
             Motoristas por Quilometragem
           </h3>
-          
-          {driverMileage.length > 0 ? (
-            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-              {driverMileage.map((driver, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                      {driver.nome}
-                    </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {formatNumber(driver.totalKm)} km
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-green-500 dark:bg-green-500 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${Math.max(
-                          5, 
-                          (driver.totalKm / Math.max(...driverMileage.map(d => d.totalKm), 1)) * 100
-                        )}%` 
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-              <Users className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-            </div>
-          )}
         </div>
         
-        {/* All Vehicles by Mileage */}
-        <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Truck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            Veículos por Quilometragem
-          </h3>
-          
-          {vehicleMileage.length > 0 ? (
-            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-              {vehicleMileage.map((vehicle, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                      {vehicle.placa}
-                    </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {formatNumber(vehicle.totalKm)} km
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-purple-500 dark:bg-purple-500 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${Math.max(
-                          5, 
-                          (vehicle.totalKm / Math.max(...vehicleMileage.map(v => v.totalKm), 1)) * 100
-                        )}%` 
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-              <Truck className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Leituras por Motorista Chart */}
-      <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-          Leituras por Motorista
-        </h3>
-        
-        {driverReadings.length > 0 ? (
-          <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-            {driverReadings.map((driver, index) => (
+        {driverMileage.length > 0 ? (
+          <div className="space-y-6">
+            {driverMileage.map((driver, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
                     {driver.nome}
                   </span>
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {driver.count} {driver.count === 1 ? 'leitura' : 'leituras'}
+                    {formatNumber(driver.totalKm)} km
                   </span>
                 </div>
-                <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-amber-500 dark:bg-amber-500 rounded-full transition-all duration-300"
+                    className="h-full bg-green-500 dark:bg-green-500 rounded-full"
                     style={{ 
                       width: `${Math.max(
                         5, 
-                        (driver.count / Math.max(...driverReadings.map(d => d.count), 1)) * 100
+                        (driver.totalKm / Math.max(...driverMileage.map(d => d.totalKm), 1)) * 100
                       )}%` 
                     }}
                   />
@@ -590,38 +507,38 @@ const HodometrosDashboard = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-            <FileBarChart className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
+            <Users className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
             <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
           </div>
         )}
       </div>
 
-      {/* KM per Operation Chart */}
+      {/* Daily Mileage Chart */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <Gauge className="w-5 h-5 text-orange-500 dark:text-orange-400" />
-          Quilômetros por Operação
+          <TrendingUp className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+          Quilometragem Diária
         </h3>
         
-        {operationMileage.length > 0 ? (
+        {dailyMileage.length > 0 ? (
           <div className="space-y-6">
-            {operationMileage.map((item, index) => (
+            {dailyMileage.map((item, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {item.name}
+                    {item.formattedDate}
                   </span>
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {formatNumber(item.value)} km
+                    {formatNumber(item.totalKm)} km
                   </span>
                 </div>
-                <div className="h-2 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
+                <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-orange-500 dark:bg-orange-400 rounded-full transition-all duration-300"
+                    className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
                     style={{ 
                       width: `${Math.max(
                         5, 
-                        (item.value / Math.max(...operationMileage.map(m => m.value), 1)) * 100
+                        (item.totalKm / Math.max(...dailyMileage.map(m => m.totalKm), 1)) * 100
                       )}%` 
                     }}
                   />
@@ -631,118 +548,49 @@ const HodometrosDashboard = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
             <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
           </div>
         )}
       </div>
 
-      {/* Inconsistencies Table */}
+      {/* Top Vehicles */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Inconsistências de Hodômetro
-            </h3>
-          </div>
-          <div className="px-3 py-1 bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200 rounded-full text-sm font-medium">
-            {totalInconsistencies} {totalInconsistencies === 1 ? 'inconsistência' : 'inconsistências'}
-          </div>
-        </div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+          Veículos por Quilometragem
+        </h3>
         
-        {hodometros.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {hodometros.map((hodometro) => (
-                  <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {hodometro.motorista?.nome || 'Não informado'}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {hodometro.motorista?.cpf ? formatCPF(hodometro.motorista.cpf) : ''}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {formatDateBR(hodometro.data)}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {hodometro.hora}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase">
-                        {hodometro.veiculo?.placa || 'Não informada'}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {hodometro.veiculo?.marca} {hodometro.veiculo?.tipo}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                          <span>-</span>
-                        ) : (
-                          <span>{hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            Bateria: {hodometro.bateria}
-                          </div>
-                        ) : (
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
-                          </div>
-                        )}
-                        
-                        {/* Discrepancy tag */}
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Divergente
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {hodometro.foto_hodometro ? (
-                        <button
-                          onClick={() => handleShowPhoto(hodometro.foto_hodometro)}
-                          className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                          title="Ver foto do hodômetro"
-                        >
-                          <Camera size={18} />
-                        </button>
-                      ) : (
-                        <span className="text-gray-400 dark:text-gray-600">
-                          <Camera size={18} className="inline-block opacity-50" />
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {vehicleMileage.length > 0 ? (
+          <div className="space-y-6">
+            {vehicleMileage.map((vehicle, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {vehicle.placa}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {formatNumber(vehicle.totalKm)} km
+                  </span>
+                </div>
+                <div className="h-2 bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-purple-500 dark:bg-purple-400 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${Math.max(
+                        5, 
+                        (vehicle.totalKm / Math.max(...vehicleMileage.map(v => v.totalKm), 1)) * 100
+                      )}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-40 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <Eye className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhuma inconsistência encontrada</p>
+          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+            <Truck className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
           </div>
         )}
       </div>
