@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   BarChart2, Calendar, TrendingUp, Truck, Users, 
-  AlertCircle, Activity, FileText, Camera, X, Eye
+  AlertCircle, Activity, FileText, Camera, X, Eye,
+  Gauge
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase, createFilteredQuery } from '../../lib/supabase';
@@ -20,7 +21,10 @@ import {
   Tooltip, 
   Legend, 
   ResponsiveContainer,
-  Cell
+  Cell,
+  PieChart,
+  Pie,
+  Sector
 } from 'recharts';
 
 interface DailyMileage {
@@ -48,6 +52,11 @@ interface DriverReadings {
   count: number;
 }
 
+interface OperationMileage {
+  name: string;
+  value: number;
+}
+
 interface HodometroReading {
   id_hodometro: number;
   data: string;
@@ -72,6 +81,10 @@ interface HodometroReading {
     marca: string;
     tipo: string;
   };
+  cliente?: {
+    cliente_id: number;
+    nome: string;
+  } | null;
 }
 
 const HodometrosDashboard = () => {
@@ -81,6 +94,7 @@ const HodometrosDashboard = () => {
   const [driverMileage, setDriverMileage] = useState<DriverMileage[]>([]);
   const [vehicleMileage, setVehicleMileage] = useState<VehicleMileage[]>([]);
   const [driverReadings, setDriverReadings] = useState<DriverReadings[]>([]);
+  const [operationMileage, setOperationMileage] = useState<OperationMileage[]>([]);
   const [totalKm, setTotalKm] = useState(0);
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
@@ -92,6 +106,7 @@ const HodometrosDashboard = () => {
   const [totalInconsistencies, setTotalInconsistencies] = useState(0);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [activeOperationIndex, setActiveOperationIndex] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -124,6 +139,7 @@ const HodometrosDashboard = () => {
         bateria,
         motorista_id,
         veiculo_id,
+        cliente_id,
         motorista:motorista_id (
           motorista_id,
           nome
@@ -131,6 +147,10 @@ const HodometrosDashboard = () => {
         veiculo:veiculo_id (
           veiculo_id,
           placa
+        ),
+        cliente:cliente_id (
+          cliente_id,
+          nome
         )
       `).gte('data', dateRange.startDate)
         .lte('data', dateRange.endDate)
@@ -143,6 +163,7 @@ const HodometrosDashboard = () => {
       const driverMileageMap = new Map<number, { nome: string; totalKm: number }>();
       const vehicleMileageMap = new Map<number, { placa: string; totalKm: number; lastDate?: string }>();
       const driverReadingsMap = new Map<number, { nome: string; count: number }>();
+      const operationMileageMap = new Map<string, number>();
       
       let totalKilometers = 0;
       
@@ -210,6 +231,10 @@ const HodometrosDashboard = () => {
           
           vehicleMileageMap.set(vehicleId, vehicleData);
         }
+        
+        // Add to operation mileage
+        const operationName = hodometro.cliente?.nome || 'Sem cliente';
+        operationMileageMap.set(operationName, (operationMileageMap.get(operationName) || 0) + kmValue);
       });
       
       // Convert daily mileage map to array and sort by date
@@ -236,7 +261,7 @@ const HodometrosDashboard = () => {
       const vehicleMileageArray: VehicleMileage[] = Array.from(vehicleMileageMap.entries())
         .map(([veiculo_id, data]) => {
           return {
-            veiculo_id,
+            veiculo_id: Number(veiculo_id),
             placa: data.placa,
             totalKm: data.totalKm,
             lastDate: data.lastDate ? formatDateBR(data.lastDate) : undefined // Format date as DD/MM/YYYY
@@ -247,11 +272,19 @@ const HodometrosDashboard = () => {
       // Convert driver readings map to array and sort by count (descending)
       const driverReadingsArray: DriverReadings[] = Array.from(driverReadingsMap.entries())
         .map(([motorista_id, data]) => ({
-          motorista_id,
+          motorista_id: Number(motorista_id),
           nome: data.nome,
           count: data.count
         }))
         .sort((a, b) => b.count - a.count);
+        
+      // Convert operation mileage map to array and sort by total km (descending)
+      const operationMileageArray: OperationMileage[] = Array.from(operationMileageMap.entries())
+        .map(([name, value]) => ({
+          name,
+          value
+        }))
+        .sort((a, b) => b.value - a.value);
       
       // Calculate average km per day
       const uniqueDays = new Set(dailyMileageArray.map(item => item.date)).size;
@@ -262,6 +295,7 @@ const HodometrosDashboard = () => {
       setDriverMileage(driverMileageArray);
       setVehicleMileage(vehicleMileageArray);
       setDriverReadings(driverReadingsArray);
+      setOperationMileage(operationMileageArray);
       setTotalKm(totalKilometers);
       setAverageKmPerDay(avgKmPerDay);
       setTotalReadings(hodometros?.length || 0);
@@ -351,6 +385,54 @@ const HodometrosDashboard = () => {
     return num.toLocaleString('pt-BR');
   };
 
+  const renderActiveShape = (props: any) => {
+    const RADIAN = Math.PI / 180;
+    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+    const sin = Math.sin(-RADIAN * midAngle);
+    const cos = Math.cos(-RADIAN * midAngle);
+    const sx = cx + (outerRadius + 10) * cos;
+    const sy = cy + (outerRadius + 10) * sin;
+    const mx = cx + (outerRadius + 30) * cos;
+    const my = cy + (outerRadius + 30) * sin;
+    const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+    const ey = my;
+    const textAnchor = cos >= 0 ? 'start' : 'end';
+  
+    return (
+      <g>
+        <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} className="text-sm font-medium">
+          {payload.name}
+        </text>
+        <Sector
+          cx={cx}
+          cy={cy}
+          innerRadius={innerRadius}
+          outerRadius={outerRadius}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          fill={fill}
+        />
+        <Sector
+          cx={cx}
+          cy={cy}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          innerRadius={outerRadius + 6}
+          outerRadius={outerRadius + 10}
+          fill={fill}
+        />
+        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
+        <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#333" className="text-xs">
+          {`${formatNumber(value)} km`}
+        </text>
+        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#999" className="text-xs">
+          {`(${(percent * 100).toFixed(2)}%)`}
+        </text>
+      </g>
+    );
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -422,6 +504,66 @@ const HodometrosDashboard = () => {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* KM per Operation Chart */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <Gauge className="w-5 h-5 text-orange-500 dark:text-orange-400" />
+          Quilômetros por Operação
+        </h3>
+        
+        {operationMileage.length > 0 ? (
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  activeIndex={activeOperationIndex}
+                  activeShape={renderActiveShape}
+                  data={operationMileage}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  onMouseEnter={(_, index) => setActiveOperationIndex(index)}
+                >
+                  {operationMileage.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={[
+                        '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', 
+                        '#EC4899', '#6366F1', '#EF4444', '#14B8A6'
+                      ][index % 8]} 
+                    />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #e5e7eb',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Legend 
+                  formatter={(value, entry, index) => (
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {value} ({formatNumber(operationMileage[index]?.value || 0)} km)
+                    </span>
+                  )}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+            <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+          </div>
+        )}
       </div>
 
       {/* Inconsistencies Table */}
