@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { formatCPF } from '../../utils/format';
 import { 
   BarChart, 
   Bar, 
@@ -21,7 +22,6 @@ import {
   Area,
   AreaChart
 } from 'recharts';
-import { formatCPF } from '../../utils/format';
 
 interface DailyMileage {
   date: string;
@@ -92,6 +92,7 @@ const HodometrosDashboard = () => {
           bateria,
           motorista_id,
           veiculo_id,
+          verificacao,
           comparacao_leitura,
           foto_hodometro,
           motorista:motorista_id (
@@ -168,8 +169,8 @@ const HodometrosDashboard = () => {
           vehicleMileageMap.set(vehicleId, vehicleData);
         }
 
-        // Check for inconsistent readings
-        if (hodometro.comparacao_leitura === false && 
+        // Check for inconsistent readings (where verificacao is false)
+        if (hodometro.verificacao === false && 
             hodometro.hod_lido !== null && 
             hodometro.hod_informado !== null &&
             hodometro.motorista && 
@@ -204,7 +205,7 @@ const HodometrosDashboard = () => {
       // Convert driver mileage map to array and sort by total km (descending)
       const driverMileageArray: DriverMileage[] = Array.from(driverMileageMap.entries())
         .map(([motorista_id, data]) => ({
-          motorista_id,
+          motorista_id: Number(motorista_id),
           nome: data.nome,
           totalKm: data.totalKm
         }))
@@ -213,7 +214,7 @@ const HodometrosDashboard = () => {
       // Convert vehicle mileage map to array and sort by total km (descending)
       const vehicleMileageArray: VehicleMileage[] = Array.from(vehicleMileageMap.entries())
         .map(([veiculo_id, data]) => ({
-          veiculo_id,
+          veiculo_id: Number(veiculo_id),
           placa: data.placa.toUpperCase(),
           totalKm: data.totalKm
         }))
