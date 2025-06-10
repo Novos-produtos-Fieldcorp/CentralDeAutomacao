@@ -187,11 +187,6 @@ const VeiculosEmpresa = () => {
     }
   };
 
-  const handleEdit = (veiculo: VeiculoWithMotorista) => {
-    setSelectedVeiculo(veiculo);
-    setIsEditModalOpen(true);
-  };
-
   const handleSelectItem = (id: number) => {
     const newSelectedItems = new Set(selectedItems);
     if (selectedItems.has(id)) {
@@ -477,16 +472,9 @@ const VeiculosEmpresa = () => {
                           <button
                             onClick={() => handleViewVehicle(veiculo)}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                            title="Visualizar Detalhes e Documentos - Veja todas as informações do veículo e gerencie seus documentos"
+                            title="Visualizar e Editar Veículo"
                           >
                             <Eye size={18} />
-                          </button>
-                          <button 
-                            onClick={() => handleEdit(veiculo)}
-                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
-                            title="Editar Veículo - Altere informações como marca, modelo, características e rastreador"
-                          >
-                            <Edit2 size={18} />
                           </button>
                           <button 
                             onClick={() => handleDelete(veiculo)}
@@ -602,15 +590,9 @@ const VeiculosEmpresa = () => {
           actions={[
             {
               icon: <Eye size={16} />,
-              label: 'Visualizar Detalhes',
+              label: 'Visualizar e Editar',
               onClick: () => handleViewVehicle(contextMenu.veiculo!),
               color: 'text-blue-600 dark:text-blue-400'
-            },
-            {
-              icon: <Edit2 size={16} />,
-              label: 'Editar Veículo',
-              onClick: () => handleEdit(contextMenu.veiculo!),
-              color: 'text-yellow-500 dark:text-yellow-400'
             },
             {
               icon: <Trash2 size={16} />,
@@ -626,14 +608,6 @@ const VeiculosEmpresa = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={fetchVeiculos}
-        isEmpresa
-      />
-
-      <EditVeiculoModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        veiculo={selectedVeiculo}
-        onUpdate={fetchVeiculos}
         isEmpresa
       />
 
