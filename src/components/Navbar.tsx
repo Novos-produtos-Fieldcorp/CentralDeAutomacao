@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X } from 'lucide-react';
+import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
@@ -54,7 +54,7 @@ const Navbar = () => {
   };
 
   const menuItems = [
-    { path: '/', icon: Home, label: 'Menu', isTitle: false, enabled: true },
+    { path: '/', icon: Home, label: 'PanelLeftDashed', isTitle: false, enabled: true },
     { path: '/checklist', icon: ClipboardCheck, label: 'Checklists', needsAccess: true, enabled: moduleAccess.checklist },
     { path: '/motoristas', icon: Users, label: 'Contratações', needsAccess: true, enabled: moduleAccess.motoristas },
     { path: '/veiculos', icon: Truck, label: 'Veículos', needsAccess: false, enabled: moduleAccess.veiculos },
