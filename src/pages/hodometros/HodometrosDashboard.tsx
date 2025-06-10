@@ -437,9 +437,6 @@ const HodometrosDashboard = () => {
             <p className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400">
               {todayReadings}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
-              {new Date().toLocaleDateString('pt-BR')}
-            </p>
           </div>
         </div>
       </div>
