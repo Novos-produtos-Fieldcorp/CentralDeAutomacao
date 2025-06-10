@@ -431,7 +431,6 @@ const StatCard = ({
   // Define color variants based on the hodometros dashboard style
   const colorVariants = {
     blue: {
-      borderColor: 'border-blue-500 dark:border-blue-400',
       iconBg: 'bg-blue-100 dark:bg-blue-900/30',
       iconColor: 'text-blue-600 dark:text-blue-400',
       textColor: 'text-blue-600',
@@ -440,7 +439,6 @@ const StatCard = ({
       darkBgGradient: 'dark:from-blue-400 dark:to-indigo-400'
     },
     green: {
-      borderColor: 'border-green-500 dark:border-green-400',
       iconBg: 'bg-green-100 dark:bg-green-900/30',
       iconColor: 'text-green-600 dark:text-green-400',
       textColor: 'text-green-600',
@@ -449,7 +447,6 @@ const StatCard = ({
       darkBgGradient: 'dark:from-green-400 dark:to-emerald-400'
     },
     purple: {
-      borderColor: 'border-purple-500 dark:border-purple-400',
       iconBg: 'bg-purple-100 dark:bg-purple-900/30',
       iconColor: 'text-purple-600 dark:text-purple-400',
       textColor: 'text-purple-600',
@@ -458,7 +455,6 @@ const StatCard = ({
       darkBgGradient: 'dark:from-purple-400 dark:to-violet-400'
     },
     amber: {
-      borderColor: 'border-amber-500 dark:border-amber-400',
       iconBg: 'bg-amber-100 dark:bg-amber-900/30',
       iconColor: 'text-amber-600 dark:text-amber-400',
       textColor: 'text-amber-600',
@@ -471,7 +467,7 @@ const StatCard = ({
   const variant = colorVariants[color];
 
   return (
-    <div className={`bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 ${variant.borderColor} hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1`}>
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
       <div className="flex flex-col items-center text-center">
         <div className={`p-3 ${variant.iconBg} rounded-xl mb-3`}>
           <Icon className={`w-6 h-6 ${variant.iconColor}`} />
