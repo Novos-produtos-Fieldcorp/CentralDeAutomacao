@@ -43,11 +43,6 @@ interface OperationMileage {
   value: number;
 }
 
-interface MonthlyRegistration {
-  month: string;
-  registros: number;
-}
-
 interface HodometroReading {
   id_hodometro: number;
   data: string;
@@ -86,7 +81,6 @@ const HodometrosDashboard = () => {
   const [vehicleMileage, setVehicleMileage] = useState<VehicleMileage[]>([]);
   const [driverReadings, setDriverReadings] = useState<DriverReadings[]>([]);
   const [operationMileage, setOperationMileage] = useState<OperationMileage[]>([]);
-  const [monthlyRegistrations, setMonthlyRegistrations] = useState<MonthlyRegistration[]>([]);
   const [totalKm, setTotalKm] = useState(0);
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
@@ -159,7 +153,6 @@ const HodometrosDashboard = () => {
       const vehicleMileageMap = new Map<number, { placa: string; totalKm: number; lastDate?: string }>();
       const driverReadingsMap = new Map<number, { nome: string; count: number }>();
       const operationMileageMap = new Map<string, number>();
-      const monthlyRegistrationsMap = new Map<string, number>();
       
       let totalKilometers = 0;
       
@@ -231,14 +224,6 @@ const HodometrosDashboard = () => {
         // Add to operation mileage
         const operationName = hodometro.cliente?.nome || 'Sem cliente';
         operationMileageMap.set(operationName, (operationMileageMap.get(operationName) || 0) + kmValue);
-        
-        // Add to monthly registrations
-        const date = new Date(hodometro.data);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const monthName = date.toLocaleDateString('pt-BR', { month: 'short' }).charAt(0).toUpperCase() + 
-                         date.toLocaleDateString('pt-BR', { month: 'short' }).slice(1);
-        
-        monthlyRegistrationsMap.set(monthKey, (monthlyRegistrationsMap.get(monthKey) || 0) + 1);
       });
       
       // Convert daily mileage map to array and sort by date
@@ -290,22 +275,6 @@ const HodometrosDashboard = () => {
         }))
         .sort((a, b) => b.value - a.value);
       
-      // Process monthly registrations - get last 6 months
-      const last6Months: MonthlyRegistration[] = [];
-      const today = new Date();
-      
-      for (let i = 5; i >= 0; i--) {
-        const month = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
-        const monthName = month.toLocaleDateString('pt-BR', { month: 'short' }).charAt(0).toUpperCase() + 
-                         month.toLocaleDateString('pt-BR', { month: 'short' }).slice(1);
-        
-        last6Months.push({
-          month: monthName,
-          registros: monthlyRegistrationsMap.get(monthKey) || 0
-        });
-      }
-      
       // Calculate average km per day
       const uniqueDays = new Set(dailyMileageArray.map(item => item.date)).size;
       const avgKmPerDay = uniqueDays > 0 ? totalKilometers / uniqueDays : 0;
@@ -316,7 +285,6 @@ const HodometrosDashboard = () => {
       setVehicleMileage(vehicleMileageArray);
       setDriverReadings(driverReadingsArray);
       setOperationMileage(operationMileageArray);
-      setMonthlyRegistrations(last6Months);
       setTotalKm(totalKilometers);
       setAverageKmPerDay(avgKmPerDay);
       setTotalReadings(hodometros?.length || 0);
@@ -479,47 +447,6 @@ const HodometrosDashboard = () => {
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Monthly Registrations Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-          Registros nos Últimos 6 Meses
-        </h3>
-        
-        {monthlyRegistrations.length > 0 ? (
-          <div className="space-y-6">
-            {monthlyRegistrations.map((item, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {item.month}
-                  </span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {item.registros} registros
-                  </span>
-                </div>
-                <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${Math.max(
-                        5, 
-                        (item.registros / Math.max(...monthlyRegistrations.map(m => m.registros), 1)) * 100
-                      )}%` 
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-          </div>
-        )}
       </div>
 
       {/* KM per Operation Chart */}
