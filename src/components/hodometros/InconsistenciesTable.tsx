@@ -119,6 +119,11 @@ const InconsistenciesTable: React.FC = () => {
     return num.toLocaleString('pt-BR');
   };
 
+  // Check if it's an electric vehicle (ciclomotor)
+  const isElectricVehicle = (hodometro: HodometroReading): boolean => {
+    return hodometro.bateria !== null && hodometro.bateria !== undefined;
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
       <div className="flex items-center justify-between mb-6">
@@ -147,6 +152,7 @@ const InconsistenciesTable: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
               </tr>
             </thead>
@@ -179,7 +185,7 @@ const InconsistenciesTable: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
+                      {isElectricVehicle(hodometro) ? (
                         <span>-</span>
                       ) : (
                         <span>{hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}</span>
@@ -188,7 +194,7 @@ const InconsistenciesTable: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
-                      {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
+                      {isElectricVehicle(hodometro) ? (
                         <div className="text-sm text-gray-900 dark:text-white">
                           Bateria: {hodometro.bateria}
                         </div>
@@ -204,6 +210,24 @@ const InconsistenciesTable: React.FC = () => {
                         Divergente
                       </span>
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {isElectricVehicle(hodometro) ? (
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            Informada: {hodometro.trip_informada || '-'}
+                          </span>
+                          <span>
+                            Lida: {hodometro.trip_lida !== null ? formatNumber(hodometro.trip_lida) : '-'}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        -
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     {hodometro.foto_hodometro ? (
