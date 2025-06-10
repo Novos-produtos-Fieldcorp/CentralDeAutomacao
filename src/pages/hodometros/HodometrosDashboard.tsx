@@ -79,6 +79,9 @@ const HodometrosDashboard = () => {
     try {
       setLoading(true);
       
+      // Get current date in YYYY-MM-DD format for today's readings
+      const today = new Date().toISOString().split('T')[0];
+      
       // Fetch all hodometro readings within the date range
       const { data: hodometros, error } = await supabase
         .from('hodometro')
