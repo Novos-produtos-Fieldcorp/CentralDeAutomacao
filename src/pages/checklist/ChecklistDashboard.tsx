@@ -62,8 +62,17 @@ const ChecklistDashboard = () => {
       const { data: checklists, error: checklistError } = await supabase.from('checklist')
         .select(`
           *,
-          motorista:motorista_id (nome),
-          veiculo:veiculo_id (placa, marca, tipo),
+          motorista:motorista_id (
+            motorista_id,
+            nome,
+            cpf
+          ),
+          veiculo:veiculo_id (
+            veiculo_id,
+            placa,
+            marca,
+            tipo
+          ),
           acessorios_veiculos!checklist_id(*),
           componentes_gerais!checklist_id(*),
           farol_veiculo!checklist_id(*),
@@ -419,55 +428,62 @@ const StatCard = ({
   icon: any;
   color?: 'blue' | 'green' | 'purple' | 'amber';
 }) => {
-  // Define color variants
+  // Define color variants based on the hodometros dashboard style
   const colorVariants = {
     blue: {
-      bgGradient: 'from-blue-500 to-blue-600',
-      darkBgGradient: 'dark:from-blue-600 dark:to-blue-700',
+      borderColor: 'border-blue-500 dark:border-blue-400',
       iconBg: 'bg-blue-100 dark:bg-blue-900/30',
       iconColor: 'text-blue-600 dark:text-blue-400',
-      shadow: 'shadow-blue-500/10'
+      textColor: 'text-blue-600',
+      darkTextColor: 'dark:text-blue-400',
+      bgGradient: 'from-blue-600 to-indigo-600',
+      darkBgGradient: 'dark:from-blue-400 dark:to-indigo-400'
     },
     green: {
-      bgGradient: 'from-green-500 to-green-600',
-      darkBgGradient: 'dark:from-green-600 dark:to-green-700',
+      borderColor: 'border-green-500 dark:border-green-400',
       iconBg: 'bg-green-100 dark:bg-green-900/30',
       iconColor: 'text-green-600 dark:text-green-400',
-      shadow: 'shadow-green-500/10'
+      textColor: 'text-green-600',
+      darkTextColor: 'dark:text-green-400',
+      bgGradient: 'from-green-600 to-emerald-600',
+      darkBgGradient: 'dark:from-green-400 dark:to-emerald-400'
     },
     purple: {
-      bgGradient: 'from-purple-500 to-purple-600',
-      darkBgGradient: 'dark:from-purple-600 dark:to-purple-700',
+      borderColor: 'border-purple-500 dark:border-purple-400',
       iconBg: 'bg-purple-100 dark:bg-purple-900/30',
       iconColor: 'text-purple-600 dark:text-purple-400',
-      shadow: 'shadow-purple-500/10'
+      textColor: 'text-purple-600',
+      darkTextColor: 'dark:text-purple-400',
+      bgGradient: 'from-purple-600 to-violet-600',
+      darkBgGradient: 'dark:from-purple-400 dark:to-violet-400'
     },
     amber: {
-      bgGradient: 'from-amber-500 to-amber-600',
-      darkBgGradient: 'dark:from-amber-600 dark:to-amber-700',
+      borderColor: 'border-amber-500 dark:border-amber-400',
       iconBg: 'bg-amber-100 dark:bg-amber-900/30',
       iconColor: 'text-amber-600 dark:text-amber-400',
-      shadow: 'shadow-amber-500/10'
+      textColor: 'text-amber-600',
+      darkTextColor: 'dark:text-amber-400',
+      bgGradient: 'from-amber-600 to-orange-600',
+      darkBgGradient: 'dark:from-amber-400 dark:to-orange-400'
     }
   };
 
   const variant = colorVariants[color];
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg border-l-4 border-${color}-500 dark:border-${color}-400 overflow-hidden ${variant.shadow} hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}>
-      <div className="p-6 flex flex-col items-center text-center">
-        <div className={`p-4 ${variant.iconBg} rounded-full mb-4`}>
-          <Icon className={`w-8 h-8 ${variant.iconColor}`} />
+    <div className={`bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 ${variant.borderColor} hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1`}>
+      <div className="flex flex-col items-center text-center">
+        <div className={`p-3 ${variant.iconBg} rounded-xl mb-3`}>
+          <Icon className={`w-6 h-6 ${variant.iconColor}`} />
         </div>
         
-        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
+        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
           {title}
         </h3>
         
-        <div className="text-5xl font-bold bg-gradient-to-r text-transparent bg-clip-text mb-2 
-                      bg-gradient-to-r ${variant.bgGradient} ${variant.darkBgGradient}">
+        <p className={`text-4xl font-bold bg-gradient-to-r bg-clip-text text-transparent ${variant.bgGradient} ${variant.darkBgGradient}`}>
           {value.toLocaleString('pt-BR')}
-        </div>
+        </p>
       </div>
     </div>
   );
