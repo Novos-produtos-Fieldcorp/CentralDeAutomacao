@@ -216,38 +216,38 @@ const HodometrosDashboard = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-blue-500 dark:border-blue-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+          <div className="flex flex-col items-center text-center">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl mb-3">
               <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Percorrido</h3>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatNumber(totalKm)} km</p>
-            </div>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total Percorrido</h3>
+            <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-indigo-400">
+              {formatNumber(totalKm)} km
+            </p>
           </div>
         </div>
         
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-green-500 dark:border-green-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
+          <div className="flex flex-col items-center text-center">
+            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl mb-3">
               <Calendar className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Média Diária</h3>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatNumber(Math.round(averageKmPerDay))} km</p>
-            </div>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Média Diária</h3>
+            <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent dark:from-green-400 dark:to-emerald-400">
+              {formatNumber(Math.round(averageKmPerDay))} km
+            </p>
           </div>
         </div>
         
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-purple-500 dark:border-purple-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
+          <div className="flex flex-col items-center text-center">
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl mb-3">
               <Activity className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total de Leituras</h3>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatNumber(totalReadings)}</p>
-            </div>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total de Leituras</h3>
+            <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent dark:from-purple-400 dark:to-violet-400">
+              {formatNumber(totalReadings)}
+            </p>
           </div>
         </div>
       </div>
