@@ -86,7 +86,6 @@ const HodometrosDashboard = () => {
   const [totalReadings, setTotalReadings] = useState(0);
   const [todayReadings, setTodayReadings] = useState(0);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
-  const [topItemsCount, setTopItemsCount] = useState<number>(5);
   
   // Inconsistencies table state
   const [hodometros, setHodometros] = useState<HodometroReading[]>([]);
@@ -451,16 +450,16 @@ const HodometrosDashboard = () => {
 
       {/* Top Drivers and Vehicles */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Drivers */}
+        {/* All Motoristas por Quilometragem */}
         <div className="bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-700 hover:shadow-lg transition-all duration-300">
           <h3 className="text-lg font-medium text-white mb-6 flex items-center gap-2">
             <Users className="w-5 h-5 text-green-400" />
-            Top Motoristas por Quilometragem
+            Motoristas por Quilometragem
           </h3>
           
           {driverMileage.length > 0 ? (
             <div className="space-y-6">
-              {driverMileage.slice(0, topItemsCount).map((driver, index) => (
+              {driverMileage.map((driver, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-300">
@@ -476,7 +475,7 @@ const HodometrosDashboard = () => {
                       style={{ 
                         width: `${Math.max(
                           5, 
-                          (driver.totalKm / Math.max(...driverMileage.slice(0, topItemsCount).map(d => d.totalKm), 1)) * 100
+                          (driver.totalKm / Math.max(...driverMileage.map(d => d.totalKm), 1)) * 100
                         )}%` 
                       }}
                     />
