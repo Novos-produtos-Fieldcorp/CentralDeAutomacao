@@ -1,8 +1,9 @@
 import React from 'react';
 import { X, BarChart2, Download } from 'lucide-react';
-import DriverMileageChart from './DriverMileageChart';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import dynamic from 'next/dynamic';
+import { ApexOptions } from 'apexcharts';
 
 interface MonthlyData {
   month: string;
@@ -15,6 +16,9 @@ interface MileageChartModalProps {
   data: MonthlyData[];
   driverName: string;
 }
+
+// Dynamically import ApexCharts to avoid SSR issues
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 const MileageChartModal: React.FC<MileageChartModalProps> = ({ 
   isOpen, 
@@ -55,6 +59,95 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
     }
   };
 
+  // Format number with dot as thousands separator
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString('pt-BR');
+  };
+
+  // ApexCharts options
+  const chartOptions: ApexOptions = {
+    chart: {
+      type: 'bar',
+      height: 350,
+      toolbar: {
+        show: true,
+        tools: {
+          download: true,
+          selection: false,
+          zoom: false,
+          zoomin: false,
+          zoomout: false,
+          pan: false,
+          reset: false
+        }
+      },
+      background: 'transparent'
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 4,
+        columnWidth: '60%',
+      }
+    },
+    colors: ['#3B82F6'],
+    dataLabels: {
+      enabled: true,
+      formatter: function(val) {
+        return formatNumber(val as number);
+      },
+      style: {
+        colors: ['#fff'],
+        fontSize: '12px'
+      },
+      offsetY: -20
+    },
+    xaxis: {
+      categories: data.map(item => item.month),
+      labels: {
+        style: {
+          colors: '#9CA3AF'
+        },
+        rotate: -45,
+        rotateAlways: false,
+        hideOverlappingLabels: true,
+        trim: true,
+        maxHeight: 120
+      },
+      axisBorder: {
+        show: false
+      },
+      axisTicks: {
+        show: false
+      }
+    },
+    yaxis: {
+      labels: {
+        formatter: function(val) {
+          return formatNumber(val);
+        },
+        style: {
+          colors: '#9CA3AF'
+        }
+      }
+    },
+    grid: {
+      borderColor: '#374151',
+      opacity: 0.1,
+      strokeDashArray: 3
+    },
+    theme: {
+      mode: 'dark'
+    },
+    title: {
+      text: `Quilometragem Mensal: ${driverName}`,
+      align: 'center',
+      style: {
+        fontSize: '16px',
+        color: '#fff'
+      }
+    }
+  };
+
   return (
     <div 
       className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
@@ -87,7 +180,19 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
         </div>
         
         <div className="p-6" ref={chartRef}>
-          <DriverMileageChart data={data} driverName={driverName} />
+          <div className="h-64 w-full mb-6">
+            {data.length > 0 && (
+              <Chart
+                options={chartOptions}
+                series={[{
+                  name: 'Quilômetros',
+                  data: data.map(item => item.km)
+                }]}
+                type="bar"
+                height={350}
+              />
+            )}
+          </div>
           
           {/* Data table */}
           <div className="mt-8">
@@ -113,7 +218,7 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
                         {item.month}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600 dark:text-blue-400">
-                        {item.km.toLocaleString('pt-BR')}
+                        {formatNumber(item.km)}
                       </td>
                     </tr>
                   ))}
@@ -122,7 +227,7 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
                       Total
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600 dark:text-blue-400">
-                      {data.reduce((sum, item) => sum + item.km, 0).toLocaleString('pt-BR')}
+                      {formatNumber(data.reduce((sum, item) => sum + item.km, 0))}
                     </td>
                   </tr>
                 </tbody>

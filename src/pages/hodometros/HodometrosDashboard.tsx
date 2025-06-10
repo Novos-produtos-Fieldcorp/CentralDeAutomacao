@@ -7,20 +7,9 @@ import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  Cell,
-  PieChart,
-  Pie,
-  LabelList
-} from 'recharts';
+import dynamic from 'next/dynamic';
+import ReactApexChart from 'react-apexcharts';
+import { ApexOptions } from 'apexcharts';
 
 interface HodometroData {
   id_hodometro: number;
@@ -85,6 +74,9 @@ interface DriverReadingCount {
   nome: string;
   leituras: number;
 }
+
+// Dynamically import ApexCharts to avoid SSR issues
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 const HodometrosDashboard = () => {
   const { companyId } = useCompanyData();
@@ -351,6 +343,190 @@ const HodometrosDashboard = () => {
     return `${day}/${month}/${year}`;
   };
 
+  // ApexCharts options for KM by Operation
+  const kmByOperationOptions: ApexOptions = {
+    chart: {
+      type: 'bar',
+      height: 350,
+      toolbar: {
+        show: false
+      },
+      background: 'transparent'
+    },
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        borderRadius: 4,
+        dataLabels: {
+          position: 'top',
+        },
+      }
+    },
+    colors: ['#3B82F6'],
+    dataLabels: {
+      enabled: true,
+      formatter: function (val) {
+        return formatNumber(val as number) + ' km';
+      },
+      style: {
+        colors: ['#fff']
+      },
+      offsetX: 30
+    },
+    xaxis: {
+      categories: kmByOperation.map(item => item.name),
+      labels: {
+        formatter: function (val) {
+          return formatNumber(Number(val));
+        },
+        style: {
+          colors: '#9CA3AF'
+        }
+      },
+      axisBorder: {
+        show: false
+      },
+      axisTicks: {
+        show: false
+      }
+    },
+    yaxis: {
+      labels: {
+        style: {
+          colors: '#9CA3AF'
+        }
+      }
+    },
+    grid: {
+      borderColor: '#374151',
+      opacity: 0.1,
+      strokeDashArray: 3
+    },
+    theme: {
+      mode: 'dark'
+    }
+  };
+
+  // ApexCharts options for Readings by Driver
+  const readingsByDriverOptions: ApexOptions = {
+    chart: {
+      type: 'bar',
+      height: 350,
+      toolbar: {
+        show: false
+      },
+      background: 'transparent'
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 4,
+        columnWidth: '60%',
+      }
+    },
+    colors: ['#10B981'],
+    dataLabels: {
+      enabled: false
+    },
+    xaxis: {
+      categories: readingsByDriver.map(driver => driver.nome),
+      labels: {
+        style: {
+          colors: '#9CA3AF'
+        },
+        rotate: -45,
+        rotateAlways: false,
+        hideOverlappingLabels: true,
+        trim: true,
+        maxHeight: 120
+      },
+      axisBorder: {
+        show: false
+      },
+      axisTicks: {
+        show: false
+      }
+    },
+    yaxis: {
+      labels: {
+        style: {
+          colors: '#9CA3AF'
+        }
+      }
+    },
+    grid: {
+      borderColor: '#374151',
+      opacity: 0.1,
+      strokeDashArray: 3
+    },
+    theme: {
+      mode: 'dark'
+    }
+  };
+
+  // ApexCharts options for KM by Driver
+  const kmByDriverOptions: ApexOptions = {
+    chart: {
+      type: 'bar',
+      height: 350,
+      toolbar: {
+        show: false
+      },
+      background: 'transparent'
+    },
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        borderRadius: 4,
+        dataLabels: {
+          position: 'top',
+        },
+      }
+    },
+    colors: ['#EC4899'],
+    dataLabels: {
+      enabled: true,
+      formatter: function (val) {
+        return formatNumber(val as number) + ' km';
+      },
+      style: {
+        colors: ['#fff']
+      },
+      offsetX: 30
+    },
+    xaxis: {
+      categories: kmByDriver.map(driver => driver.nome),
+      labels: {
+        formatter: function (val) {
+          return formatNumber(Number(val));
+        },
+        style: {
+          colors: '#9CA3AF'
+        }
+      },
+      axisBorder: {
+        show: false
+      },
+      axisTicks: {
+        show: false
+      }
+    },
+    yaxis: {
+      labels: {
+        style: {
+          colors: '#9CA3AF'
+        }
+      }
+    },
+    grid: {
+      borderColor: '#374151',
+      opacity: 0.1,
+      strokeDashArray: 3
+    },
+    theme: {
+      mode: 'dark'
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -424,46 +600,21 @@ const HodometrosDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* KM por Operação */}
         <div className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
-          <h3 className="text-lg font-medium text-white mb-4 uppercase">KM POR OPERAÇÃO</h3>
+          <h3 className="text-lg font-medium text-white mb-4 uppercase flex items-center gap-2">
+            <BarChart2 className="text-blue-500" size={20} />
+            KM POR OPERAÇÃO
+          </h3>
           <div className="h-64">
             {kmByOperation.length > 0 ? (
-              <ResponsiveContainer width="100%\" height="100%">
-                <BarChart
-                  data={kmByOperation}
-                  margin={{ top: 10, right: 30, left: 20, bottom: 60 }}
-                  layout="vertical"
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} horizontal={false} />
-                  <XAxis type="number" tickFormatter={(value) => formatNumber(value)} />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
-                    width={150}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <Tooltip 
-                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(31, 41, 55, 0.9)',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #4B5563',
-                      color: 'white'
-                    }}
-                  />
-                  <Bar 
-                    dataKey="km" 
-                    fill="#3B82F6" 
-                    radius={[0, 4, 4, 0]}
-                  >
-                    {kmByOperation.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={`rgba(59, 130, 246, ${0.5 + (index * 0.05)})`} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <ReactApexChart 
+                options={kmByOperationOptions}
+                series={[{
+                  name: 'Quilômetros',
+                  data: kmByOperation.map(item => item.km)
+                }]}
+                type="bar"
+                height="100%"
+              />
             ) : (
               <div className="h-full flex items-center justify-center text-gray-400">
                 Nenhum dado disponível para o período selecionado
@@ -474,46 +625,21 @@ const HodometrosDashboard = () => {
 
         {/* Número de Leituras por Motorista */}
         <div className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
-          <h3 className="text-lg font-medium text-white mb-4 uppercase">NÚMERO DE LEITURAS POR MOTORISTA</h3>
+          <h3 className="text-lg font-medium text-white mb-4 uppercase flex items-center gap-2">
+            <Users className="text-blue-500" size={20} />
+            NÚMERO DE LEITURAS POR MOTORISTA
+          </h3>
           <div className="h-64">
             {readingsByDriver.length > 0 ? (
-              <ResponsiveContainer width="100%\" height="100%">
-                <BarChart
-                  data={readingsByDriver}
-                  margin={{ top: 10, right: 30, left: 20, bottom: 60 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                  <XAxis 
-                    dataKey="nome" 
-                    angle={-45} 
-                    textAnchor="end" 
-                    height={80} 
-                    tick={{ fontSize: 12 }}
-                  />
-                  <YAxis />
-                  <Tooltip 
-                    formatter={(value: any) => [value, 'Leituras']}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(31, 41, 55, 0.9)',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #4B5563',
-                      color: 'white'
-                    }}
-                  />
-                  <Bar 
-                    dataKey="leituras" 
-                    fill="#10B981" 
-                    radius={[4, 4, 0, 0]}
-                  >
-                    {readingsByDriver.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={`rgba(16, 185, 129, ${0.5 + (index * 0.05)})`} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <ReactApexChart 
+                options={readingsByDriverOptions}
+                series={[{
+                  name: 'Leituras',
+                  data: readingsByDriver.map(driver => driver.leituras)
+                }]}
+                type="bar"
+                height="100%"
+              />
             ) : (
               <div className="h-full flex items-center justify-center text-gray-400">
                 Nenhum dado disponível para o período selecionado
@@ -567,46 +693,21 @@ const HodometrosDashboard = () => {
 
         {/* KM por Motorista */}
         <div className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
-          <h3 className="text-lg font-medium text-white mb-4 uppercase">KM POR MOTORISTA</h3>
+          <h3 className="text-lg font-medium text-white mb-4 uppercase flex items-center gap-2">
+            <TrendingUp className="text-pink-500" size={20} />
+            KM POR MOTORISTA
+          </h3>
           <div className="h-64">
             {kmByDriver.length > 0 ? (
-              <ResponsiveContainer width="100%\" height="100%">
-                <BarChart
-                  data={kmByDriver}
-                  margin={{ top: 10, right: 30, left: 20, bottom: 60 }}
-                  layout="vertical"
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} horizontal={false} />
-                  <XAxis type="number" tickFormatter={(value) => formatNumber(value)} />
-                  <YAxis 
-                    type="category" 
-                    dataKey="nome" 
-                    width={150}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <Tooltip 
-                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(31, 41, 55, 0.9)',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #4B5563',
-                      color: 'white'
-                    }}
-                  />
-                  <Bar 
-                    dataKey="km" 
-                    fill="#EC4899" 
-                    radius={[0, 4, 4, 0]}
-                  >
-                    {kmByDriver.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={`rgba(236, 72, 153, ${0.5 + (index * 0.05)})`} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <ReactApexChart 
+                options={kmByDriverOptions}
+                series={[{
+                  name: 'Quilômetros',
+                  data: kmByDriver.map(driver => driver.km)
+                }]}
+                type="bar"
+                height="100%"
+              />
             ) : (
               <div className="h-full flex items-center justify-center text-gray-400">
                 Nenhum dado disponível para o período selecionado

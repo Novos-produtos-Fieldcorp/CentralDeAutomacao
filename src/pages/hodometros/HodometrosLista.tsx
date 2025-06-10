@@ -13,19 +13,9 @@ import DeleteHodometroModal from '../../components/hodometros/DeleteHodometroMod
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
-import DriverMileageChart from '../../components/hodometros/DriverMileageChart';
 import MileageChartModal from '../../components/hodometros/MileageChartModal';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  Cell
-} from 'recharts';
+import dynamic from 'next/dynamic';
+import { ApexOptions } from 'apexcharts';
 
 interface MileageData {
   motorista_id: number;
@@ -51,6 +41,9 @@ interface MonthlyData {
   month: string;
   km: number;
 }
+
+// Dynamically import ApexCharts to avoid SSR issues
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 const HodometrosLista = () => {
   const { query } = useCompanyData();
@@ -411,6 +404,65 @@ const HodometrosLista = () => {
     );
   });
 
+  // ApexCharts options for Monthly Data
+  const monthlyChartOptions: ApexOptions = {
+    chart: {
+      type: 'bar',
+      height: 350,
+      toolbar: {
+        show: false
+      },
+      background: 'transparent'
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 4,
+        columnWidth: '60%',
+      }
+    },
+    colors: ['#3B82F6'],
+    dataLabels: {
+      enabled: false
+    },
+    xaxis: {
+      categories: monthlyData.map(item => item.month),
+      labels: {
+        style: {
+          colors: '#9CA3AF'
+        },
+        rotate: -45,
+        rotateAlways: false,
+        hideOverlappingLabels: true,
+        trim: true,
+        maxHeight: 120
+      },
+      axisBorder: {
+        show: false
+      },
+      axisTicks: {
+        show: false
+      }
+    },
+    yaxis: {
+      labels: {
+        formatter: function(val) {
+          return formatNumber(val);
+        },
+        style: {
+          colors: '#9CA3AF'
+        }
+      }
+    },
+    grid: {
+      borderColor: '#374151',
+      opacity: 0.1,
+      strokeDashArray: 3
+    },
+    theme: {
+      mode: 'dark'
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -597,50 +649,74 @@ const HodometrosLista = () => {
                               </button>
                             </div>
                             
-                            {/* Recharts Bar Chart */}
+                            {/* ApexCharts Bar Chart */}
                             <div className="h-64 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                  data={monthlyData}
-                                  margin={{ top: 10, right: 30, left: 0, bottom: 30 }}
-                                >
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                                  <XAxis 
-                                    dataKey="month" 
-                                    angle={-45} 
-                                    textAnchor="end" 
-                                    height={60} 
-                                    tick={{ fontSize: 12 }}
-                                    stroke="#9CA3AF"
-                                  />
-                                  <YAxis 
-                                    tickFormatter={(value) => formatNumber(value)}
-                                    stroke="#9CA3AF"
-                                  />
-                                  <Tooltip 
-                                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                                    contentStyle={{ 
-                                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                      borderRadius: '0.5rem',
-                                      border: '1px solid #e5e7eb',
-                                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                    }}
-                                  />
-                                  <Bar 
-                                    dataKey="km" 
-                                    fill="#3B82F6" 
-                                    radius={[4, 4, 0, 0]}
-                                    animationDuration={1500}
-                                  >
-                                    {monthlyData.map((entry, index) => (
-                                      <Cell 
-                                        key={`cell-${index}`} 
-                                        fill={`rgba(59, 130, 246, ${0.5 + (index * 0.05)})`} 
-                                      />
-                                    ))}
-                                  </Bar>
-                                </BarChart>
-                              </ResponsiveContainer>
+                              {monthlyData.length > 0 && (
+                                <Chart
+                                  options={{
+                                    chart: {
+                                      type: 'bar',
+                                      toolbar: {
+                                        show: false
+                                      },
+                                      background: 'transparent'
+                                    },
+                                    plotOptions: {
+                                      bar: {
+                                        borderRadius: 4,
+                                        columnWidth: '60%',
+                                      }
+                                    },
+                                    colors: ['#3B82F6'],
+                                    dataLabels: {
+                                      enabled: false
+                                    },
+                                    xaxis: {
+                                      categories: monthlyData.map(item => item.month),
+                                      labels: {
+                                        style: {
+                                          colors: '#9CA3AF'
+                                        },
+                                        rotate: -45,
+                                        rotateAlways: false,
+                                        hideOverlappingLabels: true,
+                                        trim: true,
+                                        maxHeight: 120
+                                      },
+                                      axisBorder: {
+                                        show: false
+                                      },
+                                      axisTicks: {
+                                        show: false
+                                      }
+                                    },
+                                    yaxis: {
+                                      labels: {
+                                        formatter: function(val) {
+                                          return formatNumber(val);
+                                        },
+                                        style: {
+                                          colors: '#9CA3AF'
+                                        }
+                                      }
+                                    },
+                                    grid: {
+                                      borderColor: '#374151',
+                                      opacity: 0.1,
+                                      strokeDashArray: 3
+                                    },
+                                    theme: {
+                                      mode: 'dark'
+                                    }
+                                  }}
+                                  series={[{
+                                    name: 'Quilômetros',
+                                    data: monthlyData.map(item => item.km)
+                                  }]}
+                                  type="bar"
+                                  height="100%"
+                                />
+                              )}
                             </div>
                             
                             {/* Veículos e leituras */}
