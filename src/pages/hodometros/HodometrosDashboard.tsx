@@ -4,7 +4,7 @@ import {
   AlertCircle, Activity, FileText, Camera, X, Eye
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { supabase } from '../../lib/supabase';
+import { supabase, createFilteredQuery } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
@@ -103,29 +103,27 @@ const HodometrosDashboard = () => {
     try {
       setLoading(true);
       
-      // Fetch all hodometro readings within the date range
-      const { data: hodometros, error } = await supabase.from('hodometro')
-        .select(`
-          id_hodometro,
-          data,
-          hora,
-          km_rodado,
-          hod_lido,
-          hod_informado,
-          bateria,
+      // Use the error handling wrapper for better network error handling
+      const hodometroQuery = createFilteredQuery('hodometro', companyId);
+      const { data: hodometros, error } = await hodometroQuery.select(`
+        id_hodometro,
+        data,
+        hora,
+        km_rodado,
+        hod_lido,
+        hod_informado,
+        bateria,
+        motorista_id,
+        veiculo_id,
+        motorista:motorista_id (
           motorista_id,
+          nome
+        ),
+        veiculo:veiculo_id (
           veiculo_id,
-          motorista:motorista_id (
-            motorista_id,
-            nome
-          ),
-          veiculo:veiculo_id (
-            veiculo_id,
-            placa
-          )
-        `)
-        .eq('company_id', companyId)
-        .gte('data', dateRange.startDate)
+          placa
+        )
+      `).gte('data', dateRange.startDate)
         .lte('data', dateRange.endDate)
         .order('data', { ascending: true });
 
@@ -283,12 +281,10 @@ const HodometrosDashboard = () => {
       // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
       
-      // Fetch all hodometer readings for today
-      const { data, error, count } = await supabase
-        .from('hodometro')
-        .select('id_hodometro', { count: 'exact' })
-        .eq('data', today)
-        .eq('company_id', companyId);
+      // Use the error handling wrapper for better network error handling
+      const hodometroQuery = createFilteredQuery('hodometro', companyId);
+      const { data, error, count } = await hodometroQuery.select('id_hodometro', { count: 'exact' })
+        .eq('data', today);
       
       if (error) throw error;
       
@@ -301,35 +297,33 @@ const HodometrosDashboard = () => {
 
   const fetchInconsistencies = async () => {
     try {
-      // Fetch all hodometer readings with inconsistencies (verificacao = false)
-      const { data, error, count } = await supabase
-        .from('hodometro')
-        .select(`
-          id_hodometro,
-          data,
-          hora,
-          hod_lido,
-          hod_informado,
-          km_rodado,
-          bateria,
-          foto_hodometro,
-          trip_lida,
-          trip_informada,
-          comparacao_leitura,
-          verificacao,
-          motorista:motorista_id (
-            motorista_id,
-            nome,
-            cpf
-          ),
-          veiculo:veiculo_id (
-            veiculo_id,
-            placa,
-            marca,
-            tipo
-          )
-        `, { count: 'exact' })
-        .eq('company_id', companyId)
+      // Use the error handling wrapper for better network error handling
+      const hodometroQuery = createFilteredQuery('hodometro', companyId);
+      const { data, error, count } = await hodometroQuery.select(`
+        id_hodometro,
+        data,
+        hora,
+        hod_lido,
+        hod_informado,
+        km_rodado,
+        bateria,
+        foto_hodometro,
+        trip_lida,
+        trip_informada,
+        comparacao_leitura,
+        verificacao,
+        motorista:motorista_id (
+          motorista_id,
+          nome,
+          cpf
+        ),
+        veiculo:veiculo_id (
+          veiculo_id,
+          placa,
+          marca,
+          tipo
+        )
+      `, { count: 'exact' })
         .eq('verificacao', false)
         .order('data', { ascending: false })
         .limit(10);
