@@ -94,9 +94,11 @@ const HodometrosDashboard = () => {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchData();
-    fetchTodayReadings();
-    fetchInconsistencies();
+    if (companyId) {
+      fetchData();
+      fetchTodayReadings();
+      fetchInconsistencies();
+    }
   }, [dateRange, companyId]);
 
   // Format date from YYYY-MM-DD to DD/MM/YYYY
