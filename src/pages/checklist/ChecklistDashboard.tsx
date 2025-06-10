@@ -339,28 +339,23 @@ const ChecklistDashboard = () => {
               Checklists por Motorista
             </h3>
           </div>
-          <div className="space-y-6">
+          <div className="space-y-4">
             {stats.checklistsPorMotorista.slice(0, 5).map((motorista, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {motorista.nome}
-                  </span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    Total: {motorista.total}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 text-xs text-gray-500 dark:text-gray-400"></span>
-                    <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                        style={{ width: `100%` }}
-                      />
+              <div key={index} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                        {motorista.nome.charAt(0)}
+                      </span>
                     </div>
-                    <span className="w-8 text-right text-sm">{motorista.total}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {motorista.nome}
+                    </span>
                   </div>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {motorista.total}
+                  </span>
                 </div>
               </div>
             ))}
