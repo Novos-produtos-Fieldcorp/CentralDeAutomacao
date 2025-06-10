@@ -124,9 +124,9 @@ const Motoristas = () => {
 
         <div className="p-6">
           <Routes>
-            <Route index element={<Navigate to="/motoristas/dashboard" replace />} />
+            <Route index element={<Navigate to="/motoristas/dashboard\" replace />} />
             <Route path="lista" element={<MotoristasLista />} />
-            <Route path="lista-infinita" element={<Navigate to="/motoristas/lista" replace />} />
+            <Route path="lista-infinita" element={<Navigate to="/motoristas/lista\" replace />} />
             <Route path="agregados" element={<AgregadosLista />} />
             <Route path="contratados" element={<Contratados />} />
             <Route path="kanban" element={<ContratacaoKanban />} />
