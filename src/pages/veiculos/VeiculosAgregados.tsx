@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Edit2, Trash2, Search, Plus, FilePen, FileText, Phone } from 'lucide-react';
+import { Trash2, Search, Plus, FilePen, Phone } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Veiculo, Motorista } from '../../types/database';
 import AddVeiculoModal from '../../components/veiculos/AddVeiculoModal';
 import EditVeiculoModal from '../../components/veiculos/EditVeiculoModal';
-import VehicleDetailsModal from '../../components/veiculos/VehicleDetailsModal';
-import VehicleDocumentsModal from '../../components/veiculos/VehicleDocumentsModal';
+
 import DeleteVehicleModal from '../../components/veiculos/DeleteVehicleModal';
 import BulkDeleteConfirmationModal from '../../components/BulkDeleteConfirmationModal';
 import toast from 'react-hot-toast';
@@ -35,11 +34,12 @@ const VeiculosAgregados = () => {
   const { companyId } = useCompanyData();
   const [veiculos, setVeiculos] = useState<VeiculoWithMotorista[]>([]);
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [phoneSearch, setPhoneSearch] = useState('');
-  const [sortConfig, setSortConfig] = useState<{
+  const [sortConfig] = useState<{
     key: keyof VeiculoWithMotorista;
     direction: 'asc' | 'desc';
   }>({ key: 'placa', direction: 'asc' });
@@ -48,7 +48,7 @@ const VeiculosAgregados = () => {
   const debouncedSearchTerm = useDebounce(searchTerm, 1000);
   const debouncedPhoneSearch = useDebounce(phoneSearch, 1000);
 
-  const [isSearching, setIsSearching] = useState(false);
+  
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCombinedModalOpen, setIsCombinedModalOpen] = useState(false);
@@ -79,7 +79,7 @@ const VeiculosAgregados = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        setIsSearching(true);
+        setInitialLoading(true);
         await fetchVeiculos();
         await fetchMotoristas();
       } catch (err) {
@@ -87,10 +87,16 @@ const VeiculosAgregados = () => {
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
-        setIsSearching(false);
+        setInitialLoading(false);
       }
     };
-    init();
+    if (currentPage === 1 && pageSize === 100 && debouncedSearchTerm === '' && debouncedPhoneSearch === '') {
+      // Só mostra o loading inicial na primeira montagem
+      init();
+    } else {
+      fetchVeiculos();
+      fetchMotoristas();
+    }
   }, [currentPage, pageSize, debouncedSearchTerm, debouncedPhoneSearch]);
 
   useEffect(() => {
@@ -108,59 +114,42 @@ const VeiculosAgregados = () => {
 
   const fetchVeiculos = async () => {
     try {
-      setLoading(true);
+      
       setError(null);
       
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
       
-      let countQuery = supabase
-        .from('motorista')
-        .select('motorista_id', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .eq('st_cadastro', 'contratado');
-      
-      const { count: motoristaCount, error: motoristaCountError } = await countQuery;
-
-      if (motoristaCountError) {
-        throw new Error(`Erro ao buscar motoristas: ${motoristaCountError.message}`);
-      }
-
-      if (!motoristaCount || motoristaCount === 0) {
-        setVeiculos([]);
-        setTotalCount(0);
-        setTotalPages(1);
-        return;
-      }
-
-      const { data: motoristasData, error: motoristasError } = await supabase
+      // Buscar motoristas filtrando por telefone, se necessário
+      let motoristasQuery = supabase
         .from('motorista')
         .select('motorista_id')
         .eq('company_id', companyId)
         .eq('st_cadastro', 'contratado');
-
+      if (phoneSearch) {
+        motoristasQuery = motoristasQuery.ilike('telefone', `%${phoneSearch}%`);
+      }
+      const { data: motoristasData, error: motoristasError } = await motoristasQuery;
       if (motoristasError) {
         throw new Error(`Erro ao buscar motoristas: ${motoristasError.message}`);
       }
-
       if (!motoristasData || motoristasData.length === 0) {
         setVeiculos([]);
         setTotalCount(0);
         setTotalPages(1);
         return;
       }
-
       const motoristaIds = motoristasData.map(m => m.motorista_id);
 
+      // Contar veículos apenas com os IDs filtrados
       let vehicleCountQuery = supabase
         .from('veiculo')
         .select('veiculo_id', { count: 'exact', head: true })
         .eq('status_veiculo', true)
         .in('motorista_id', motoristaIds);
-      
       if (searchTerm) {
         vehicleCountQuery = vehicleCountQuery.or(
-          `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%,motorista.nome.ilike.%${searchTerm}%,motorista.cpf.ilike.%${searchTerm}%`
+          `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%`
         );
       }
       
@@ -196,6 +185,11 @@ const VeiculosAgregados = () => {
           `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%`
         );
       }
+      if (phoneSearch) {
+        dataQuery = dataQuery.or(
+          `motorista.telefone.ilike.%${phoneSearch}%`
+        );
+      }
       
       dataQuery = dataQuery
         .order('placa', { ascending: true })
@@ -228,7 +222,7 @@ const VeiculosAgregados = () => {
       toast.error(errorMessage);
       setVeiculos([]);
     } finally {
-      setLoading(false);
+      
     }
   };
 
@@ -280,10 +274,7 @@ const VeiculosAgregados = () => {
     }
   };
 
-  const handleEdit = (veiculo: Veiculo) => {
-    setSelectedVeiculo(veiculo);
-    setIsEditModalOpen(true);
-  };
+  
 
   const handleViewCombined = (veiculo: Veiculo) => {
     setSelectedVeiculo(veiculo);
@@ -353,39 +344,22 @@ const VeiculosAgregados = () => {
     setCurrentPage(1);
   };
 
-  const filteredVeiculos = veiculos
-    .filter(veiculo => {
-      const searchString = debouncedSearchTerm.toLowerCase();
-      const phoneSearchString = debouncedPhoneSearch.toLowerCase();
-      
-      const matchesSearch = !debouncedSearchTerm || 
-        veiculo.placa.toLowerCase().includes(searchString) ||
-        veiculo.marca.toLowerCase().includes(searchString) ||
-        veiculo.tipo.toLowerCase().includes(searchString) ||
-        (veiculo.motorista?.nome?.toLowerCase().includes(searchString)) ||
-        (veiculo.motorista?.cpf?.includes(searchString));
+  const sortedVeiculos = veiculos.sort((a, b) => {
+  const aValue = a[sortConfig.key];
+  const bValue = b[sortConfig.key];
 
-      const matchesPhone = !debouncedPhoneSearch ||
-        (veiculo.motorista?.telefone?.toLowerCase().includes(phoneSearchString));
+  if (aValue === null && bValue === null) return 0;
+  if (aValue === null) return 1;
+  if (bValue === null) return -1;
 
-      return matchesSearch && matchesPhone;
-    })
-    .sort((a, b) => {
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
+  const aStr = String(aValue);
+  const bStr = String(bValue);
 
-      if (aValue === null && bValue === null) return 0;
-      if (aValue === null) return 1;
-      if (bValue === null) return -1;
+  const comparison = aStr.localeCompare(bStr);
+  return sortConfig.direction === 'asc' ? comparison : -comparison;
+});
 
-      const aStr = String(aValue);
-      const bStr = String(bValue);
-
-      const comparison = aStr.localeCompare(bStr);
-      return sortConfig.direction === 'asc' ? comparison : -comparison;
-    });
-
-  if (loading) {
+  if (initialLoading) {
     return <LoadingSpinner />;
   }
 
@@ -434,13 +408,7 @@ const VeiculosAgregados = () => {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 autoComplete="off"
               />
-              {isSearching ? (
-                <div className="absolute left-3 top-2.5">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-                </div>
-              ) : (
-                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-              )}
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             </div>
           </div>
 
@@ -454,13 +422,7 @@ const VeiculosAgregados = () => {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 autoComplete="off"
               />
-              {isSearching ? (
-                <div className="absolute left-3 top-2.5">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-                </div>
-              ) : (
-                <Phone className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-              )}
+              <Phone className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             </div>
           </div>
 
@@ -508,7 +470,7 @@ const VeiculosAgregados = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredVeiculos.map((veiculo) => (
+                  {sortedVeiculos.map((veiculo) => (
                     <tr 
                       key={veiculo.veiculo_id} 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
@@ -607,7 +569,7 @@ const VeiculosAgregados = () => {
             />
           </div>
         </div>
-        {filteredVeiculos.length === 0 ? (
+        {sortedVeiculos.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400">
               Nenhum veículo encontrado

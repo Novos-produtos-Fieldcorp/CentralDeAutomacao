@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Edit2, Trash2, Search, Plus, Eye, FileText, FilePen, AlertCircle, Phone } from 'lucide-react';
+import { Edit2, Trash2, Search, Plus, Eye, FileText, FilePen, AlertCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Veiculo, Motorista } from '../../types/database';
 import AddVeiculoModal from '../../components/veiculos/AddVeiculoModal';
@@ -26,11 +26,10 @@ interface VeiculoWithMotorista extends Veiculo {
 const VeiculosEmpresa = () => {
   const { query, companyId } = useCompanyData();
   const [veiculos, setVeiculos] = useState<VeiculoWithMotorista[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [phoneSearch, setPhoneSearch] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -67,12 +66,11 @@ const VeiculosEmpresa = () => {
 
   // Aumentado o delay do debounce de 500ms para 1000ms para alinhar com outros componentes
   const debouncedSearchTerm = useDebounce(searchTerm, 1000);
-  const debouncedPhoneSearch = useDebounce(phoneSearch, 1000);
 
   useEffect(() => {
     const init = async () => {
       try {
-        setIsSearching(true);
+        setInitialLoading(true);
         await fetchVeiculos();
         await fetchMotoristas();
       } catch (err) {
@@ -80,11 +78,17 @@ const VeiculosEmpresa = () => {
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
-        setIsSearching(false);
+        setInitialLoading(false);
       }
     };
-    init();
-  }, [currentPage, pageSize, debouncedSearchTerm, debouncedPhoneSearch]);
+    if (currentPage === 1 && pageSize === 100 && debouncedSearchTerm === '') {
+      // Só mostra o loading inicial na primeira montagem
+      init();
+    } else {
+      fetchVeiculos();
+      fetchMotoristas();
+    }
+  }, [currentPage, pageSize, debouncedSearchTerm]);
 
   useEffect(() => {
     // Count vehicles with missing characteristics
@@ -112,7 +116,7 @@ const VeiculosEmpresa = () => {
     if (!companyId) return;
     
     try {
-      setLoading(true);
+      
       const { data, error } = await supabase
         .from('veiculo')
         .select(`
@@ -137,7 +141,7 @@ const VeiculosEmpresa = () => {
       toast.error('Erro ao carregar veículos');
       setVeiculos([]);
     } finally {
-      setLoading(false);
+      
     }
   };
 
@@ -286,7 +290,7 @@ const VeiculosEmpresa = () => {
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <LoadingSpinner />
     );
@@ -319,45 +323,19 @@ const VeiculosEmpresa = () => {
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:w-auto flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Buscar por placa, marca, modelo, nome ou CPF..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                autoComplete="off"
-              />
-              {isSearching ? (
-                <div className="absolute left-3 top-2.5">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-                </div>
-              ) : (
-                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-              )}
-            </div>
-          </div>
-
-          <div className="relative w-full md:w-auto flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Buscar por telefone..."
-                value={phoneSearch}
-                onChange={(e) => setPhoneSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                autoComplete="off"
-              />
-              {isSearching ? (
-                <div className="absolute left-3 top-2.5">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-                </div>
-              ) : (
-                <Phone className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-              )}
-            </div>
-          </div>
+  <div className="relative w-full flex-1">
+    <div className="relative">
+      <input
+        type="text"
+        placeholder="Buscar por placa, marca, modelo, nome ou CPF..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+        autoComplete="off"
+      />
+      <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+    </div>
+  </div>
 
           <div className="flex gap-2">
             <button
