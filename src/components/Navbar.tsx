@@ -74,17 +74,15 @@ const Navbar = () => {
           <div className="flex justify-between items-center">
             {isExpanded ? (
               <h2 className="w-full flex justify-center">
-                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400 truncate max-w-[200px]">
                   {companyName}
                 </span>
               </h2>
             ) : (
               <div className="w-full flex justify-center">
-                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                    {companyName}
-                  </span>
-                </div>
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  {companyName.substring(0, 1).toUpperCase()}
+                </span>
               </div>
             )}
           </div>
