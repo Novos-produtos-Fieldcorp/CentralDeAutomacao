@@ -62,6 +62,27 @@ const Navbar = () => {
     { path: '/clientes', icon: Store, label: 'Clientes', needsAccess: false, enabled: moduleAccess.clientes },
   ];
 
+  // Function to get company initials or abbreviation based on length
+  const getCompanyDisplay = () => {
+    if (!companyName) return '';
+    
+    // For very short names (1-2 chars), just return the name
+    if (companyName.length <= 2) return companyName;
+    
+    // For names with spaces, get first letter of each word
+    if (companyName.includes(' ')) {
+      return companyName
+        .split(' ')
+        .map(word => word.charAt(0))
+        .join('')
+        .toUpperCase()
+        .substring(0, 3); // Limit to 3 chars max
+    }
+    
+    // For single words, return first 2-3 chars based on length
+    return companyName.substring(0, Math.min(3, companyName.length)).toUpperCase();
+  };
+
   return (
     <nav 
       className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 shadow-lg z-50
@@ -82,7 +103,7 @@ const Navbar = () => {
               <div className="w-full flex justify-center">
                 <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                   <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                    {companyName}
+                    {getCompanyDisplay()}
                   </span>
                 </div>
               </div>
