@@ -71,25 +71,25 @@ const DailyMileageTotal: React.FC<DailyMileageProps> = ({ selectedDate }) => {
   }, [selectedDate, companyId]);
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border-l-4 border-blue-500 dark:border-blue-400 p-6 transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1">
+    <div className="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-800 p-6 rounded-xl shadow-lg border border-blue-400 dark:border-blue-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
       <div className="flex flex-col items-center text-center">
-        <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl mb-3">
-          <TrendingUp className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+        <div className="p-3 bg-white/20 rounded-xl mb-3">
+          <TrendingUp className="w-6 h-6 text-white" />
         </div>
         
-        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+        <h3 className="text-sm font-medium text-blue-100 mb-2">
           Quilometragem Total Diária
         </h3>
         
         {loading ? (
-          <div className="animate-pulse h-12 w-40 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+          <div className="animate-pulse h-12 w-40 bg-white/20 rounded-md"></div>
         ) : (
-          <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-indigo-400">
+          <p className="text-3xl font-bold text-white">
             {totalKm.toLocaleString('pt-BR')} km
           </p>
         )}
         
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-3 flex items-center justify-center">
+        <p className="text-sm text-blue-200 mt-3 flex items-center justify-center">
           <Calendar className="w-4 h-4 mr-1" />
           {selectedDate ? new Date(selectedDate).toLocaleDateString('pt-BR') : 'Hoje'}
         </p>
