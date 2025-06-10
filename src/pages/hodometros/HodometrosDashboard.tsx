@@ -16,7 +16,10 @@ import {
   Tooltip, 
   Legend, 
   ResponsiveContainer,
-  Cell
+  Cell,
+  PieChart,
+  Pie,
+  LabelList
 } from 'recharts';
 
 interface HodometroData {
