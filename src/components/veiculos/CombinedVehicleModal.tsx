@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Edit2, Save } from 'lucide-react';
 import type { Veiculo, DocumentoVeiculo } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
+import { VEHICLE_TYPES } from '../../constants/vehicleTypes';
 
 interface CombinedVehicleModalProps {
   isOpen: boolean;
@@ -18,6 +19,41 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
   const [previewUrl, setPreviewUrl] = useState<string | null>(veiculo?.documento_veiculo?.[0]?.foto_crv || null);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    placa: '',
+    marca: '',
+    tipo: '',
+    ano: '',
+    cor: '',
+    tipologia: '',
+    combustivel: '',
+    peso: '',
+    cubagem: '',
+    possui_rastreador: false,
+    marca_rastreador: ''
+  });
+
+  useEffect(() => {
+    if (veiculo) {
+      setFormData({
+        placa: veiculo.placa || '',
+        marca: veiculo.marca || '',
+        tipo: veiculo.tipo || '',
+        ano: veiculo.ano || '',
+        cor: veiculo.cor || '',
+        tipologia: veiculo.tipologia || '',
+        combustivel: veiculo.combustivel || '',
+        peso: veiculo.peso || '',
+        cubagem: veiculo.cubagem || '',
+        possui_rastreador: veiculo.possui_rastreador || false,
+        marca_rastreador: veiculo.marca_rastreador || ''
+      });
+      setPreviewUrl(veiculo.documento_veiculo?.[0]?.foto_crv || null);
+    }
+  }, [veiculo]);
 
   if (!isOpen || !veiculo) return null;
 
@@ -115,12 +151,56 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
     }
   };
 
+  const handleSaveChanges = async () => {
+    if (!veiculo) return;
+    
+    try {
+      setSaving(true);
+      
+      const { error } = await supabase
+        .from('veiculo')
+        .update({
+          ...formData,
+          placa: formData.placa.toUpperCase(),
+          tipologia: formData.tipologia.toUpperCase()
+        })
+        .eq('veiculo_id', veiculo.veiculo_id);
+        
+      if (error) throw error;
+      
+      toast.success('Veículo atualizado com sucesso');
+      setIsEditing(false);
+      if (onUploadSuccess) onUploadSuccess();
+    } catch (error) {
+      console.error('Error updating vehicle:', error);
+      toast.error('Erro ao atualizar veículo');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: (e.target as HTMLInputElement).checked
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
-          <div className="relative bg-white dark:bg-gray-800 rounded-2xl max-w-5xl w-full shadow-xl">
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg w-full max-w-5xl shadow-xl max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="border-b border-gray-200 dark:border-gray-700">
               <div className="p-6 flex justify-between items-center">
@@ -130,13 +210,45 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                     {veiculo.placa.toUpperCase()} - {veiculo.marca} {veiculo.tipo}
                   </h2>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
+                <div className="flex items-center gap-2">
+                  {!isEditing ? (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
+                               dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
+                               rounded-lg transition-colors flex items-center gap-1"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      Editar
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSaveChanges}
+                      disabled={saving}
+                      className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 
+                               rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Salvar
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
                            rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <X size={24} />
-                </button>
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -178,28 +290,96 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                         <Truck className="w-5 h-5 text-gray-400" />
                         Informações do Veículo
                       </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</span>
-                          <p className="text-lg font-semibold text-gray-900 dark:text-white uppercase">{veiculo.placa || 'Não informada'}</p>
+                      
+                      {isEditing ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Placa *
+                            </label>
+                            <input
+                              type="text"
+                              name="placa"
+                              value={formData.placa}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              required
+                              maxLength={7}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Marca
+                            </label>
+                            <input
+                              type="text"
+                              name="marca"
+                              value={formData.marca}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Modelo
+                            </label>
+                            <input
+                              type="text"
+                              name="tipo"
+                              value={formData.tipo}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Ano
+                            </label>
+                            <input
+                              type="text"
+                              name="ano"
+                              value={formData.ano}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Cor
+                            </label>
+                            <input
+                              type="text"
+                              name="cor"
+                              value={formData.cor}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca</span>
-                          <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculo.marca || 'Não informada'}</p>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</span>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white uppercase">{veiculo.placa || 'Não informada'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca</span>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculo.marca || 'Não informada'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Modelo</span>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculo.tipo || 'Não informado'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Ano</span>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculo.ano || 'Não informado'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Cor</span>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculo.cor || 'Não informada'}</p>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Modelo</span>
-                          <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculo.tipo || 'Não informado'}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Ano</span>
-                          <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculo.ano || 'Não informado'}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Cor</span>
-                          <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculo.cor || 'Não informada'}</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* Technical Specs */}
@@ -208,24 +388,85 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                         <Tool className="w-5 h-5 text-gray-400" />
                         Especificações Técnicas
                       </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Tipologia</span>
-                          <p className="text-base text-gray-900 dark:text-white">{veiculo.tipologia || 'Não informada'}</p>
+                      
+                      {isEditing ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Tipologia *
+                            </label>
+                            <select
+                              name="tipologia"
+                              value={formData.tipologia}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              required
+                            >
+                              <option value="">Selecione um tipo</option>
+                              {VEHICLE_TYPES.map(type => (
+                                <option key={type.value} value={type.value}>
+                                  {type.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Combustível
+                            </label>
+                            <input
+                              type="text"
+                              name="combustivel"
+                              value={formData.combustivel}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Peso (kg)
+                            </label>
+                            <input
+                              type="text"
+                              name="peso"
+                              value={formData.peso}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Cubagem (m³)
+                            </label>
+                            <input
+                              type="text"
+                              name="cubagem"
+                              value={formData.cubagem}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Combustível</span>
-                          <p className="text-base text-gray-900 dark:text-white">{veiculo.combustivel || 'Não informado'}</p>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Tipologia</span>
+                            <p className="text-base text-gray-900 dark:text-white">{veiculo.tipologia || 'Não informada'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Combustível</span>
+                            <p className="text-base text-gray-900 dark:text-white">{veiculo.combustivel || 'Não informado'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Peso</span>
+                            <p className="text-base text-gray-900 dark:text-white">{veiculo.peso ? `${veiculo.peso} kg` : 'Não informado'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Cubagem</span>
+                            <p className="text-base text-gray-900 dark:text-white">{veiculo.cubagem ? `${veiculo.cubagem} m³` : 'Não informada'}</p>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Peso</span>
-                          <p className="text-base text-gray-900 dark:text-white">{veiculo.peso ? `${veiculo.peso} kg` : 'Não informado'}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Cubagem</span>
-                          <p className="text-base text-gray-900 dark:text-white">{veiculo.cubagem ? `${veiculo.cubagem} m³` : 'Não informada'}</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
 
@@ -235,53 +476,86 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                       <MapPin className="w-5 h-5 text-gray-400" />
                       Rastreamento
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status do Rastreador</span>
-                        <div className="mt-2">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                            veiculo.possui_rastreador
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                          }`}>
-                            {veiculo.possui_rastreador ? (
-                              <>
-                                <CheckCircle2 className="w-4 h-4 mr-2" />
-                                Instalado
-                              </>
-                            ) : (
-                              <>
-                                <XCircle className="w-4 h-4 mr-2" />
-                                Não Instalado
-                              </>
-                            )}
-                          </span>
+                    
+                    {isEditing ? (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            <input
+                              type="checkbox"
+                              name="possui_rastreador"
+                              checked={formData.possui_rastreador}
+                              onChange={handleInputChange}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span>Possui Rastreador</span>
+                          </label>
                         </div>
+
+                        {formData.possui_rastreador && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Marca do Rastreador
+                            </label>
+                            <input
+                              type="text"
+                              name="marca_rastreador"
+                              value={formData.marca_rastreador}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            />
+                          </div>
+                        )}
                       </div>
-                      
-                      {veiculo.possui_rastreador && veiculo.marca_rastreador && (
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca do Rastreador</span>
-                          <p className="text-base text-gray-900 dark:text-white mt-1">{veiculo.marca_rastreador}</p>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status do Rastreador</span>
+                          <div className="mt-2">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                              veiculo.possui_rastreador
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                            }`}>
+                              {veiculo.possui_rastreador ? (
+                                <>
+                                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                                  Instalado
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="w-4 h-4 mr-2" />
+                                  Não Instalado
+                                </>
+                              )}
+                            </span>
+                          </div>
                         </div>
-                      )}
-                      
-                      {/* Add placeholder content when rastreador is false to maintain layout */}
-                      {!veiculo.possui_rastreador && (
-                        <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Observação</span>
-                          <p className="text-base text-gray-900 dark:text-white mt-1">Veículo sem rastreador instalado</p>
-                        </div>
-                      )}
-                      
-                      {/* Add placeholder content when rastreador is true but no brand */}
-                      {veiculo.possui_rastreador && !veiculo.marca_rastreador && (
-                        <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca do Rastreador</span>
-                          <p className="text-base text-gray-900 dark:text-white mt-1">Não informada</p>
-                        </div>
-                      )}
-                    </div>
+                        
+                        {veiculo.possui_rastreador && veiculo.marca_rastreador && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca do Rastreador</span>
+                            <p className="text-base text-gray-900 dark:text-white mt-1">{veiculo.marca_rastreador}</p>
+                          </div>
+                        )}
+                        
+                        {/* Add placeholder content when rastreador is false to maintain layout */}
+                        {!veiculo.possui_rastreador && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Observação</span>
+                            <p className="text-base text-gray-900 dark:text-white mt-1">Veículo sem rastreador instalado</p>
+                          </div>
+                        )}
+                        
+                        {/* Add placeholder content when rastreador is true but no brand */}
+                        {veiculo.possui_rastreador && !veiculo.marca_rastreador && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca do Rastreador</span>
+                            <p className="text-base text-gray-900 dark:text-white mt-1">Não informada</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </>
               )}
