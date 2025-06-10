@@ -82,7 +82,7 @@ const Navbar = () => {
               <div className="w-full flex justify-center">
                 <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                   <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                    {companyName.substring(0, 1).toUpperCase()}
+                    {companyName}
                   </span>
                 </div>
               </div>
