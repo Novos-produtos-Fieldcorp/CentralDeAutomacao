@@ -747,47 +747,6 @@ const HodometrosDashboard = () => {
         )}
       </div>
 
-      {/* Daily Mileage Table */}
-      <div className="bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-700 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-white mb-6 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-blue-400" />
-          Quilometragem Diária
-        </h3>
-        
-        {dailyMileage.length > 0 ? (
-          <div className="space-y-6">
-            {dailyMileage.map((item, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300">
-                    {item.formattedDate}
-                  </span>
-                  <span className="text-sm font-medium text-white">
-                    {formatNumber(item.totalKm)} km
-                  </span>
-                </div>
-                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${Math.max(
-                        5, 
-                        (item.totalKm / Math.max(...dailyMileage.map(m => m.totalKm), 1)) * 100
-                      )}%` 
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-60 bg-gray-800/50 rounded-xl">
-            <AlertCircle className="w-12 h-12 text-gray-600 mb-4" />
-            <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
-          </div>
-        )}
-      </div>
-
       {/* Photo Modal */}
       {showPhotoModal && selectedPhoto && (
         <div 
