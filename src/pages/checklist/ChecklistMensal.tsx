@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Calendar, Loader2, Eye, Plus, FilePen, Edit2, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, Loader2, Plus, FilePen, CheckCircle2, XCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Checklist } from '../../types/database';
-import ChecklistCard from '../../components/checklist/ChecklistCard';
+
 import ChecklistDetailsModal from '../../components/checklist/ChecklistDetailsModal';
 import MonthlyChecklistModal from '../../components/checklist/MonthlyChecklistModal';
 import DeleteChecklistModal from '../../components/checklist/DeleteChecklistModal';
@@ -18,7 +18,7 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 
 const ChecklistMensal = () => {
-  const { query, companyId } = useCompanyData();
+  const { query } = useCompanyData();
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -243,18 +243,16 @@ const ChecklistMensal = () => {
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row justify-between gap-4">
             {/* Search */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Buscar por motorista, CPF ou placa..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                         dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                         focus:border-blue-500 text-gray-900 dark:text-gray-100"
-              />
-              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            </div>
+            <div className="relative w-full md:w-96 flex-1">
+  <input
+    type="text"
+    placeholder="Buscar por motorista, CPF ou placa..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 transition-all"
+  />
+  <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+</div>
 
             {/* Export and New Checklist */}
             <div className="flex gap-2">
@@ -341,7 +339,7 @@ const ChecklistMensal = () => {
                         checked={selectedItems.has(checklist.checklist_id)}
                         onChange={() => handleSelectItem(checklist.checklist_id)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: React.MouseEvent<HTMLInputElement>) => e.stopPropagation()}
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap" onClick={() => {
@@ -415,8 +413,7 @@ const ChecklistMensal = () => {
                             setSelectedChecklist(checklist);
                             setIsDetailsModalOpen(true);
                           }}
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors 
-                                   transition-colors"
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                           title="Visualizar"
                         >
                           <FilePen size={18} />
@@ -474,7 +471,7 @@ const ChecklistMensal = () => {
               icon: contextMenu.checklist.status ? <XCircle size={16} /> : <CheckCircle2 size={16} />,
               label: contextMenu.checklist.status ? 'Marcar como não verificado' : 'Marcar como verificado',
               onClick: (e) => {
-                handleToggleStatus(e as unknown as React.MouseEvent, contextMenu.checklist!);
+                return handleToggleStatus(e as unknown as React.MouseEvent, contextMenu.checklist!);
               },
               color: contextMenu.checklist.status ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
             }

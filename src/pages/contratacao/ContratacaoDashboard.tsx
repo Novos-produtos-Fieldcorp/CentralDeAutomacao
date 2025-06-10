@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Users, Truck, FileText, Award, CheckCircle2, XCircle, Calendar, MapPin, BarChart2, TrendingUp, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Truck, FileText, Award, CheckCircle2, XCircle, Calendar, MapPin, BarChart2 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { format, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -28,7 +28,7 @@ interface DashboardStats {
 }
 
 const ContratacaoDashboard = () => {
-  const { query, companyId } = useCompanyData();
+  const { companyId } = useCompanyData();
   const [stats, setStats] = useState<DashboardStats>({
     totalMotoristas: 0,
     totalAgregados: 0,
@@ -230,10 +230,7 @@ const ContratacaoDashboard = () => {
                       (stats.contratosAtivos + stats.qualificados + stats.documentacao + stats.rejeitados);
     
   // Client distribution - using actual data
-  const contratadosMotoristas = stats.contratosAtivos > 0 ? 
-    Math.floor(stats.contratosAtivos * (stats.totalMotoristas / (stats.totalMotoristas + stats.totalAgregados || 1))) : 0;
   
-  const contratadosAgregados = stats.contratosAtivos - contratadosMotoristas;
   
   // Status distribution
   const statusDistribution = [

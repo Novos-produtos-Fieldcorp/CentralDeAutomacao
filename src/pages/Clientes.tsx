@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, AlertCircle, Loader2, ChevronDown, ChevronUp, Plus, MapPin, FilePen, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
+import { X, AlertCircle, Loader2, ChevronDown, ChevronUp, Plus, MapPin, FilePen, Trash2, CheckCircle2 } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import type { Cliente } from '../types/database';
 import toast from 'react-hot-toast';
@@ -104,7 +104,7 @@ const DeleteClienteModal = ({ isOpen, onClose, cliente, onConfirm }: DeleteClien
 };
 
 const Clientes = () => {
-    const { query, companyId } = useCompanyData();
+    const { companyId } = useCompanyData();
     const [clientes, setClientes] = useState<ClienteWithAddress[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -571,13 +571,10 @@ const Clientes = () => {
                                                     <div className="flex items-center justify-end space-x-3">
                                                         <button
                                                             onClick={() => handleEdit(cliente)}
-                                                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
+                                                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                                                             title="Editar"
                                                         >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                                                                <path d="m15 5 4 4"></path>
-                                                            </svg>
+                                                            <FilePen size={18} className="text-blue-600 dark:text-blue-400" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDelete(cliente)}
