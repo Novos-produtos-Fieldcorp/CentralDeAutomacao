@@ -1,21 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelRight } from 'lucide-react';
+import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, Building2 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
-import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { moduleAccess } = useModuleAccess();
+  const navRef = useRef<HTMLDivElement>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
-  const { loading, moduleAccess } = useModuleAccess();
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
   const { companyId } = useAuth();
   const [companyName, setCompanyName] = useState('');
-  const { query } = useCompanyData();
 
   const fetchCompanyName = useCallback(async () => {
     if (!companyId) return;
@@ -41,6 +42,36 @@ const Navbar = () => {
     fetchCompanyName();
   }, [fetchCompanyName]);
 
+  // Check if scrolling is needed and update indicator visibility
+  useEffect(() => {
+    const checkScroll = () => {
+      if (navRef.current) {
+        const { scrollWidth, clientWidth, scrollLeft } = navRef.current;
+        // Show indicator if there's more content to scroll AND we're not at the end
+        setShowScrollIndicator(scrollWidth > clientWidth && scrollLeft < scrollWidth - clientWidth - 1); // -1 for rounding errors
+      }
+    };
+
+    // Initial check
+    checkScroll();
+
+    // Add event listener
+    const navElement = navRef.current;
+    if (navElement) {
+      navElement.addEventListener('scroll', checkScroll);
+    }
+
+    // Check on window resize too
+    window.addEventListener('resize', checkScroll);
+
+    return () => {
+      if (navElement) {
+        navElement.removeEventListener('scroll', checkScroll);
+      }
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, []);
+
   const isActive = (path: string) => {
     if (path === '/') {
       return location.pathname === path;
@@ -64,7 +95,7 @@ const Navbar = () => {
 
   return (
     <nav 
-      className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 shadow-lg z-50
+      className={`fixed left-0 top-0 h-screen bg-[#1E2332] dark:bg-[#1E2332] shadow-lg z-50
                   transition-all duration-500 ease
                   ${isExpanded ? 'w-64' : 'w-20'}`}
     >
@@ -74,7 +105,7 @@ const Navbar = () => {
           <div className="flex justify-between items-center">
             {isExpanded ? (
               <h2 className="w-full flex justify-center">
-                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400 truncate">
                   {companyName}
                 </span>
               </h2>
@@ -100,7 +131,7 @@ const Navbar = () => {
             {isExpanded ? (
               <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             ) : (
-              <PanelRight className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <Menu className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             )}
           </button>
         </div>
