@@ -9,17 +9,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import DailyMileageTotal from '../../components/hodometros/DailyMileageTotal';
 import ReadingsPerDriverChart from '../../components/hodometros/ReadingsPerDriverChart';
 import VehicleMileageChart from '../../components/hodometros/VehicleMileageChart';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  Cell
-} from 'recharts';
+import DriverMileageChart from '../../components/hodometros/DriverMileageChart';
 
 interface DailyMileage {
   date: string;
@@ -265,17 +255,7 @@ const HodometrosDashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex flex-col items-center text-center">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl mb-3">
-              <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total Percorrido</h3>
-            <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-indigo-400">
-              {formatNumber(totalKm)} km
-            </p>
-          </div>
-        </div>
+        <DailyMileageTotal selectedDate={dateRange.startDate} />
         
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex flex-col items-center text-center">
@@ -302,87 +282,6 @@ const HodometrosDashboard = () => {
         </div>
       </div>
 
-      {/* Daily Mileage Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-          Quilometragem Diária
-        </h3>
-        
-        {dailyMileage.length > 0 ? (
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={dailyMileage}
-                margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                <XAxis 
-                  dataKey="formattedDate" 
-                  angle={-45} 
-                  textAnchor="end" 
-                  height={70} 
-                  tick={{ fontSize: 12 }}
-                  stroke="#9CA3AF"
-                />
-                <YAxis 
-                  tickFormatter={(value) => formatNumber(value)}
-                  stroke="#9CA3AF"
-                />
-                <Tooltip 
-                  formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                  labelFormatter={(label) => `Data: ${label}`}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #e5e7eb',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Legend />
-                <Bar 
-                  dataKey="totalKm" 
-                  name="Quilômetros Rodados"
-                  fill="#3B82F6"
-                  radius={[4, 4, 0, 0]}
-                >
-                  {dailyMileage.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={`rgba(59, 130, 246, ${0.5 + (index * 0.5 / dailyMileage.length)})`} 
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-          </div>
-        )}
-      </div>
-
-      {/* Readings per Driver Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-          Número de Leituras por Motorista
-        </h3>
-        
-        {driverReadings.length > 0 ? (
-          <div className="h-80">
-            <ReadingsPerDriverChart data={driverReadings} />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-          </div>
-        )}
-      </div>
-
       {/* Vehicle Mileage Chart */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
@@ -402,141 +301,42 @@ const HodometrosDashboard = () => {
         )}
       </div>
 
-      {/* Drivers and Vehicles Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* All Drivers */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-green-500 dark:text-green-400" />
-              Motoristas por Quilometragem
-            </h3>
-          </div>
-          
-          {driverMileage.length > 0 ? (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={driverMileage}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                  <XAxis 
-                    type="number"
-                    tickFormatter={(value) => formatNumber(value)}
-                    stroke="#9CA3AF"
-                  />
-                  <YAxis 
-                    dataKey="nome" 
-                    type="category" 
-                    width={150}
-                    tick={{ fontSize: 12 }}
-                    stroke="#9CA3AF"
-                  />
-                  <Tooltip 
-                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #e5e7eb',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ bottom: 0 }}
-                    formatter={() => 'Quilômetros Rodados'}
-                  />
-                  <Bar 
-                    dataKey="totalKm" 
-                    name="Quilômetros Rodados"
-                    fill="#10B981"
-                    radius={[0, 4, 4, 0]}
-                  >
-                    {driverMileage.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={`rgba(16, 185, 129, ${0.9 - (index * 0.7 / driverMileage.length)})`} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-              <Users className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-            </div>
-          )}
-        </div>
+      {/* Driver Mileage Chart */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <Users className="w-5 h-5 text-green-500 dark:text-green-400" />
+          Quilometragem por Motorista
+        </h3>
         
-        {/* All Vehicles */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
-              Veículos por Quilometragem
-            </h3>
+        {driverMileage.length > 0 ? (
+          <div className="h-auto">
+            <DriverMileageChart data={driverMileage} />
           </div>
-          
-          {vehicleMileage.length > 0 ? (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={vehicleMileage}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                  <XAxis 
-                    type="number"
-                    tickFormatter={(value) => formatNumber(value)}
-                    stroke="#9CA3AF"
-                  />
-                  <YAxis 
-                    dataKey="placa" 
-                    type="category" 
-                    width={80}
-                    tick={{ fontSize: 12 }}
-                    stroke="#9CA3AF"
-                  />
-                  <Tooltip 
-                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #e5e7eb',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ bottom: 0 }}
-                    formatter={() => 'Quilômetros Rodados'}
-                  />
-                  <Bar 
-                    dataKey="totalKm" 
-                    name="Quilômetros Rodados"
-                    fill="#8B5CF6"
-                    radius={[0, 4, 4, 0]}
-                  >
-                    {vehicleMileage.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={`rgba(139, 92, 246, ${0.9 - (index * 0.7 / vehicleMileage.length)})`} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-              <Truck className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-            </div>
-          )}
-        </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+          </div>
+        )}
+      </div>
+
+      {/* Readings per Driver Chart */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <FileText className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+          Número de Leituras por Motorista
+        </h3>
+        
+        {driverReadings.length > 0 ? (
+          <div className="h-auto">
+            <ReadingsPerDriverChart data={driverReadings} />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+          </div>
+        )}
       </div>
 
       {/* Daily Mileage Table */}

@@ -1,89 +1,61 @@
 import React from 'react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  Cell
-} from 'recharts';
-
-interface MonthlyData {
-  month: string;
-  km: number;
-}
 
 interface DriverMileageChartProps {
-  data: MonthlyData[];
-  driverName: string;
+  data: {
+    nome: string;
+    totalKm: number;
+  }[];
 }
 
-const DriverMileageChart: React.FC<DriverMileageChartProps> = ({ data, driverName }) => {
-  // Generate colors with a blue gradient
-  const colors = data.map((_, index) => {
-    const intensity = 40 + (index * 5);
-    return `rgba(59, 130, 246, ${0.5 + (index * 0.05)})`;
-  });
+const DriverMileageChart: React.FC<DriverMileageChartProps> = ({ data }) => {
+  // Format number with dot as thousands separator
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString('pt-BR');
+  };
 
-  // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
-          <p className="text-sm font-medium text-gray-900 dark:text-white">{label}</p>
-          <p className="text-sm text-blue-600 dark:text-blue-400">
-            {`${payload[0].value.toLocaleString('pt-BR')}`}
-          </p>
-        </div>
-      );
-    }
-    return null;
+  // Sort data by totalKm in descending order
+  const sortedData = [...data].sort((a, b) => b.totalKm - a.totalKm);
+  
+  // Find max value for percentage calculation
+  const maxKm = Math.max(...data.map(d => d.totalKm), 1);
+
+  // Estilo fixo para o fundo escuro
+  const darkBackgroundStyle = {
+    backgroundColor: '#1B1F2B',
+    color: 'white'
   };
 
   return (
-    <div className="w-full h-full">
-      <h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
-        Quilometragem Mensal: {driverName}
-      </h3>
-      <div className="h-[300px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={data}
-            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-            <XAxis 
-              dataKey="month" 
-              angle={-45} 
-              textAnchor="end" 
-              height={60} 
-              tick={{ fontSize: 12 }}
-              stroke="#9CA3AF"
+    <div style={darkBackgroundStyle} className="w-full space-y-4 p-6 rounded-xl">
+      {sortedData.map((driver, index) => (
+        <div key={index} className="relative">
+          <div className="flex justify-between items-center mb-1">
+            <div className="font-medium text-white">
+              {driver.nome}
+            </div>
+            <span className="font-medium text-white">
+              {formatNumber(driver.totalKm)} km
+            </span>
+          </div>
+          <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-green-500 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${Math.max(
+                  5, 
+                  (driver.totalKm / maxKm) * 100
+                )}%` 
+              }}
             />
-            <YAxis 
-              tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
-              stroke="#9CA3AF"
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend 
-              wrapperStyle={{ bottom: 0 }}
-              formatter={() => 'Quilômetros Rodados'}
-            />
-            <Bar 
-              dataKey="km" 
-              name="Quilômetros Rodados" 
-              radius={[4, 4, 0, 0]}
-            >
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+          </div>
+        </div>
+      ))}
+
+      {data.length === 0 && (
+        <div className="text-center py-4 text-gray-400">
+          Nenhum dado disponível para o período selecionado
+        </div>
+      )}
     </div>
   );
 };
