@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   BarChart2, Calendar, TrendingUp, Truck, Users, 
   AlertTriangle, Activity, FileText, Camera, X, Eye,
-  Gauge, AlertCircle
+  Gauge, AlertCircle, FileBarChart
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
@@ -531,6 +531,47 @@ const HodometrosDashboard = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Leituras por Motorista Chart */}
+      <div className="bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-700 hover:shadow-lg transition-all duration-300">
+        <h3 className="text-lg font-medium text-white mb-6 flex items-center gap-2">
+          <FileBarChart className="w-5 h-5 text-amber-400" />
+          Leituras por Motorista
+        </h3>
+        
+        {driverReadings.length > 0 ? (
+          <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+            {driverReadings.map((driver, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-300">
+                    {driver.nome}
+                  </span>
+                  <span className="text-sm font-medium text-white">
+                    {driver.count} {driver.count === 1 ? 'leitura' : 'leituras'}
+                  </span>
+                </div>
+                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${Math.max(
+                        5, 
+                        (driver.count / Math.max(...driverReadings.map(d => d.count), 1)) * 100
+                      )}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-60 bg-gray-800/50 rounded-xl">
+            <FileBarChart className="w-12 h-12 text-gray-600 mb-4" />
+            <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
+          </div>
+        )}
       </div>
 
       {/* KM per Operation Chart */}
