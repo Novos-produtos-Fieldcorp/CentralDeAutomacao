@@ -50,16 +50,13 @@ const VeiculosAgregados = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
+  const [isCombinedModalOpen, setIsCombinedModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [selectedVeiculo, setSelectedVeiculo] = useState<Veiculo | null>(null);
-  const [isCombinedModalOpen, setIsCombinedModalOpen] = useState(false);
   
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
@@ -287,7 +284,7 @@ const VeiculosAgregados = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleViewVehicle = (veiculo: Veiculo) => {
+  const handleViewCombined = (veiculo: Veiculo) => {
     setSelectedVeiculo(veiculo);
     setIsCombinedModalOpen(true);
   };
@@ -316,8 +313,9 @@ const VeiculosAgregados = () => {
   const handleBulkDelete = async () => {
     try {
       for (const id of selectedItems) {
-        const { error } = await query('veiculo')
-          .delete()
+        const { error } = await supabase
+          .from('veiculo')
+          .update({ status_veiculo: false })
           .eq('veiculo_id', id);
 
         if (error) throw error;
@@ -424,39 +422,43 @@ const VeiculosAgregados = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar por placa, marca, modelo, nome ou CPF..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
-            {isSearching ? (
-              <div className="absolute left-3 top-2.5">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
-              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            )}
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full md:w-auto flex-1">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar por placa, marca, modelo, nome ou CPF..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+              {isSearching ? (
+                <div className="absolute left-3 top-2.5">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                </div>
+              ) : (
+                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              )}
+            </div>
           </div>
 
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar por telefone..."
-              value={phoneSearch}
-              onChange={(e) => setPhoneSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
-            {isSearching ? (
-              <div className="absolute left-3 top-2.5">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
-              <Phone className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            )}
+          <div className="relative w-full md:w-auto flex-1">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar por telefone..."
+                value={phoneSearch}
+                onChange={(e) => setPhoneSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+              {isSearching ? (
+                <div className="absolute left-3 top-2.5">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                </div>
+              ) : (
+                <Phone className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              )}
+            </div>
           </div>
 
           <div className="flex gap-2">
@@ -575,16 +577,16 @@ const VeiculosAgregados = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-3">
                           <button
-                            onClick={() => handleViewVehicle(veiculo)}
+                            onClick={() => handleViewCombined(veiculo)}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                            title="Visualizar Detalhes e Documentos"
+                            title="Visualizar e Editar Veículo"
                           >
                             <FilePen size={18} />
                           </button>
                           <button 
                             onClick={() => handleDelete(veiculo)}
                             className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                            title="Excluir Veículo"
+                            title="Excluir Veículo - Remove permanentemente o veículo do sistema"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -596,7 +598,6 @@ const VeiculosAgregados = () => {
               </table>
             </div>
             
-            {/* Scroll indicators */}
             <ScrollableTableIndicator 
               containerRef={tableContainerRef} 
               className="mr-2 ml-2"
@@ -690,9 +691,9 @@ const VeiculosAgregados = () => {
           actions={[
             {
               icon: <FilePen size={16} />,
-              label: 'Visualizar Detalhes',
-              onClick: () => handleViewVehicle(contextMenu.veiculo!),
-              color: 'text-gray-600 dark:text-gray-400'
+              label: 'Visualizar e Editar',
+              onClick: () => handleViewCombined(contextMenu.veiculo!),
+              color: 'text-blue-600 dark:text-blue-400'
             },
             {
               icon: <Trash2 size={16} />,

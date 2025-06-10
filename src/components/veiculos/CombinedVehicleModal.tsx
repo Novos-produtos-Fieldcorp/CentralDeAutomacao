@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Edit2, Save } from 'lucide-react';
+import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Save, Edit2 } from 'lucide-react';
 import type { Veiculo, DocumentoVeiculo } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -16,12 +16,15 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
   const [activeTab, setActiveTab] = useState<'details' | 'documents'>('details');
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(veiculo?.documento_veiculo?.[0]?.foto_crv || null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  
+  const [veiculoData, setVeiculoData] = useState<Veiculo | null>(null);
+  const [documentoVeiculo, setDocumentoVeiculo] = useState<DocumentoVeiculo | null>(null);
+
+  // Form state for editing
   const [formData, setFormData] = useState({
     placa: '',
     marca: '',
@@ -37,23 +40,65 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
   });
 
   useEffect(() => {
-    if (veiculo) {
-      setFormData({
-        placa: veiculo.placa || '',
-        marca: veiculo.marca || '',
-        tipo: veiculo.tipo || '',
-        ano: veiculo.ano || '',
-        cor: veiculo.cor || '',
-        tipologia: veiculo.tipologia || '',
-        combustivel: veiculo.combustivel || '',
-        peso: veiculo.peso || '',
-        cubagem: veiculo.cubagem || '',
-        possui_rastreador: veiculo.possui_rastreador || false,
-        marca_rastreador: veiculo.marca_rastreador || ''
-      });
-      setPreviewUrl(veiculo.documento_veiculo?.[0]?.foto_crv || null);
+    if (isOpen && veiculo) {
+      fetchVehicleDetails();
     }
-  }, [veiculo]);
+  }, [isOpen, veiculo]);
+
+  useEffect(() => {
+    if (veiculoData) {
+      setFormData({
+        placa: veiculoData.placa || '',
+        marca: veiculoData.marca || '',
+        tipo: veiculoData.tipo || '',
+        ano: veiculoData.ano || '',
+        cor: veiculoData.cor || '',
+        tipologia: veiculoData.tipologia || '',
+        combustivel: veiculoData.combustivel || '',
+        peso: veiculoData.peso || '',
+        cubagem: veiculoData.cubagem || '',
+        possui_rastreador: veiculoData.possui_rastreador || false,
+        marca_rastreador: veiculoData.marca_rastreador || ''
+      });
+
+      // Set preview URL for document
+      if (documentoVeiculo?.foto_crv) {
+        setPreviewUrl(documentoVeiculo.foto_crv);
+      }
+    }
+  }, [veiculoData, documentoVeiculo]);
+
+  const fetchVehicleDetails = async () => {
+    if (!veiculo) return;
+
+    try {
+      // Fetch vehicle details
+      const { data: vehicleData, error: vehicleError } = await supabase
+        .from('veiculo')
+        .select('*')
+        .eq('veiculo_id', veiculo.veiculo_id)
+        .single();
+
+      if (vehicleError) throw vehicleError;
+      setVeiculoData(vehicleData);
+
+      // Fetch document details
+      const { data: documentData, error: documentError } = await supabase
+        .from('documento_veiculo')
+        .select('*')
+        .eq('veiculo_id', veiculo.veiculo_id)
+        .maybeSingle();
+
+      if (documentError && documentError.code !== 'PGRST116') throw documentError;
+      setDocumentoVeiculo(documentData || null);
+      if (documentData?.foto_crv) {
+        setPreviewUrl(documentData.foto_crv);
+      }
+    } catch (error) {
+      console.error('Error fetching vehicle details:', error);
+      toast.error('Erro ao carregar detalhes do veículo');
+    }
+  };
 
   if (!isOpen || !veiculo) return null;
 
@@ -141,6 +186,9 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
         fileInputRef.current.value = '';
       }
 
+      // Update document state
+      await fetchVehicleDetails();
+
       toast.success('Documento enviado com sucesso');
       if (onUploadSuccess) onUploadSuccess();
     } catch (error) {
@@ -151,7 +199,17 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
     }
   };
 
-  const handleSaveChanges = async () => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSave = async () => {
     if (!veiculo) return;
     
     try {
@@ -161,15 +219,21 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
         .from('veiculo')
         .update({
           ...formData,
-          placa: formData.placa.toUpperCase(),
-          tipologia: formData.tipologia.toUpperCase()
+          placa: formData.placa.toUpperCase()
         })
         .eq('veiculo_id', veiculo.veiculo_id);
         
       if (error) throw error;
       
       toast.success('Veículo atualizado com sucesso');
+      
+      // Refresh vehicle data
+      await fetchVehicleDetails();
+      
+      // Exit edit mode
       setIsEditing(false);
+      
+      // Call onUploadSuccess to refresh parent component if needed
       if (onUploadSuccess) onUploadSuccess();
     } catch (error) {
       console.error('Error updating vehicle:', error);
@@ -179,76 +243,28 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (type === 'checkbox') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: (e.target as HTMLInputElement).checked
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
-          <div className="relative bg-white dark:bg-gray-800 rounded-lg w-full max-w-5xl shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white dark:bg-gray-800 rounded-2xl max-w-5xl w-full shadow-xl">
             {/* Header */}
             <div className="border-b border-gray-200 dark:border-gray-700">
               <div className="p-6 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <Truck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    {veiculo.placa.toUpperCase()} - {veiculo.marca} {veiculo.tipo}
+                    {veiculoData?.placa.toUpperCase() || veiculo.placa.toUpperCase()} - {veiculoData?.marca || veiculo.marca} {veiculoData?.tipo || veiculo.tipo}
                   </h2>
                 </div>
-                <div className="flex items-center gap-2">
-                  {!isEditing ? (
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
-                               dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
-                               rounded-lg transition-colors flex items-center gap-1"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                      Editar
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleSaveChanges}
-                      disabled={saving}
-                      className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 
-                               rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {saving ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Salvando...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4" />
-                          Salvar
-                        </>
-                      )}
-                    </button>
-                  )}
-                  <button
-                    onClick={onClose}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
+                <button
+                  onClick={onClose}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
                            rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <X size={24} />
-                  </button>
-                </div>
+                >
+                  <X size={24} />
+                </button>
               </div>
             </div>
 
@@ -282,6 +298,41 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
             <div className="p-6 space-y-8 max-h-[calc(100vh-12rem)] overflow-y-auto">
               {activeTab === 'details' && (
                 <>
+                  {/* Edit/Save Button */}
+                  <div className="flex justify-end">
+                    {isEditing ? (
+                      <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                                 transition-colors flex items-center gap-2"
+                      >
+                        {saving ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-5 h-5" />
+                            Salvar
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                                 transition-colors flex items-center gap-2"
+                      >
+                        <Edit2 className="w-5 h-5" />
+                        Editar
+                      </button>
+                    )}
+                  </div>
+
                   {/* Basic Information */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Vehicle Info */}
@@ -360,23 +411,23 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</span>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white uppercase">{veiculo.placa || 'Não informada'}</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white uppercase">{veiculoData?.placa || veiculo.placa}</p>
                           </div>
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca</span>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculo.marca || 'Não informada'}</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculoData?.marca || veiculo.marca || 'Não informada'}</p>
                           </div>
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Modelo</span>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculo.tipo || 'Não informado'}</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculoData?.tipo || veiculo.tipo || 'Não informado'}</p>
                           </div>
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Ano</span>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculo.ano || 'Não informado'}</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculoData?.ano || veiculo.ano || 'Não informado'}</p>
                           </div>
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Cor</span>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculo.cor || 'Não informada'}</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{veiculoData?.cor || veiculo.cor || 'Não informada'}</p>
                           </div>
                         </div>
                       )}
@@ -451,19 +502,19 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Tipologia</span>
-                            <p className="text-base text-gray-900 dark:text-white">{veiculo.tipologia || 'Não informada'}</p>
+                            <p className="text-base text-gray-900 dark:text-white">{veiculoData?.tipologia || veiculo.tipologia || 'Não informada'}</p>
                           </div>
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Combustível</span>
-                            <p className="text-base text-gray-900 dark:text-white">{veiculo.combustivel || 'Não informado'}</p>
+                            <p className="text-base text-gray-900 dark:text-white">{veiculoData?.combustivel || veiculo.combustivel || 'Não informado'}</p>
                           </div>
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Peso</span>
-                            <p className="text-base text-gray-900 dark:text-white">{veiculo.peso ? `${veiculo.peso} kg` : 'Não informado'}</p>
+                            <p className="text-base text-gray-900 dark:text-white">{veiculoData?.peso ? `${veiculoData.peso} kg` : 'Não informado'}</p>
                           </div>
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Cubagem</span>
-                            <p className="text-base text-gray-900 dark:text-white">{veiculo.cubagem ? `${veiculo.cubagem} m³` : 'Não informada'}</p>
+                            <p className="text-base text-gray-900 dark:text-white">{veiculoData?.cubagem ? `${veiculoData.cubagem} m³` : 'Não informada'}</p>
                           </div>
                         </div>
                       )}
@@ -508,16 +559,16 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                         )}
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-4">
                         <div>
                           <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status do Rastreador</span>
                           <div className="mt-2">
                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                              veiculo.possui_rastreador
+                              veiculoData?.possui_rastreador
                                 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                 : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                             }`}>
-                              {veiculo.possui_rastreador ? (
+                              {veiculoData?.possui_rastreador ? (
                                 <>
                                   <CheckCircle2 className="w-4 h-4 mr-2" />
                                   Instalado
@@ -531,24 +582,21 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                             </span>
                           </div>
                         </div>
-                        
-                        {veiculo.possui_rastreador && veiculo.marca_rastreador && (
+                        {veiculoData?.possui_rastreador && veiculoData?.marca_rastreador && (
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca do Rastreador</span>
-                            <p className="text-base text-gray-900 dark:text-white mt-1">{veiculo.marca_rastreador}</p>
+                            <p className="text-base text-gray-900 dark:text-white mt-1">{veiculoData.marca_rastreador}</p>
                           </div>
                         )}
-                        
                         {/* Add placeholder content when rastreador is false to maintain layout */}
-                        {!veiculo.possui_rastreador && (
+                        {!veiculoData?.possui_rastreador && (
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Observação</span>
                             <p className="text-base text-gray-900 dark:text-white mt-1">Veículo sem rastreador instalado</p>
                           </div>
                         )}
-                        
                         {/* Add placeholder content when rastreador is true but no brand */}
-                        {veiculo.possui_rastreador && !veiculo.marca_rastreador && (
+                        {veiculoData?.possui_rastreador && !veiculoData?.marca_rastreador && (
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca do Rastreador</span>
                             <p className="text-base text-gray-900 dark:text-white mt-1">Não informada</p>
