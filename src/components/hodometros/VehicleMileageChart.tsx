@@ -18,27 +18,29 @@ const VehicleMileageChart: React.FC<VehicleMileageProps> = ({ data }) => {
   const sortedData = [...data].sort((a, b) => b.totalKm - a.totalKm);
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-4 bg-[#1B1F2B] p-6 rounded-xl">
       {sortedData.map((vehicle, index) => (
         <div key={index} className="relative">
           <div className="flex justify-between items-center mb-1">
-            <div className="font-medium text-gray-900 dark:text-white">
+            <div className="font-medium text-white">
               {vehicle.placa}
             </div>
             <div className="flex items-center gap-2">
               {vehicle.lastDate && (
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-gray-400">
                   {vehicle.lastDate}
                 </span>
               )}
-              <span className="font-medium text-blue-600 dark:text-blue-400">
+              <span className="font-medium text-white">
                 {formatNumber(vehicle.totalKm)} km
               </span>
             </div>
           </div>
-          <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
+              className={`h-full rounded-full transition-all duration-300 ${
+                vehicle.totalKm > 0 ? 'bg-blue-500' : 'bg-gray-600'
+              }`}
               style={{ 
                 width: `${Math.max(
                   5, 
@@ -51,7 +53,7 @@ const VehicleMileageChart: React.FC<VehicleMileageProps> = ({ data }) => {
       ))}
 
       {data.length === 0 && (
-        <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-4 text-gray-400">
           Nenhum dado disponível para o período selecionado
         </div>
       )}
