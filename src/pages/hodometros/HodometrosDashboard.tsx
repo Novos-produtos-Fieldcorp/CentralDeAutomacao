@@ -9,6 +9,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import DailyMileageTotal from '../../components/hodometros/DailyMileageTotal';
 import ReadingsPerDriverChart from '../../components/hodometros/ReadingsPerDriverChart';
 import VehicleMileageChart from '../../components/hodometros/VehicleMileageChart';
+import TodayReadingsCard from '../../components/hodometros/TodayReadingsCard';
 import { 
   BarChart, 
   Bar, 
@@ -264,7 +265,7 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex flex-col items-center text-center">
             <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl mb-3">
@@ -300,6 +301,9 @@ const HodometrosDashboard = () => {
             </p>
           </div>
         </div>
+        
+        {/* Novo card para leituras de hoje */}
+        <TodayReadingsCard />
       </div>
 
       {/* Daily Mileage Chart */}
