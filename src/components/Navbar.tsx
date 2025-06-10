@@ -54,7 +54,7 @@ const Navbar = () => {
   };
 
   const menuItems = [
-    { path: '/', icon: Home, label: 'PanelLeftDashed', isTitle: false, enabled: true },
+    { path: '/', icon: Home, label: 'Menu', isTitle: false, enabled: true },
     { path: '/checklist', icon: ClipboardCheck, label: 'Checklists', needsAccess: true, enabled: moduleAccess.checklist },
     { path: '/motoristas', icon: Users, label: 'Contratações', needsAccess: true, enabled: moduleAccess.motoristas },
     { path: '/veiculos', icon: Truck, label: 'Veículos', needsAccess: false, enabled: moduleAccess.veiculos },
@@ -100,7 +100,7 @@ const Navbar = () => {
             {isExpanded ? (
               <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             ) : (
-              <Menu className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <PanelLeftDashed className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             )}
           </button>
         </div>
