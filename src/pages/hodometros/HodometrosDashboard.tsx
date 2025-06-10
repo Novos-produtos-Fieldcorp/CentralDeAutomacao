@@ -16,11 +16,7 @@ import {
   Tooltip, 
   Legend, 
   ResponsiveContainer,
-  Cell,
-  LineChart,
-  Line,
-  Area,
-  AreaChart
+  Cell
 } from 'recharts';
 
 interface DailyMileage {
@@ -93,6 +89,8 @@ const HodometrosDashboard = () => {
           hod_lido,
           hod_informado,
           bateria,
+          trip_lida,
+          trip_informada,
           motorista_id,
           veiculo_id,
           verificacao,
@@ -256,7 +254,10 @@ const HodometrosDashboard = () => {
   };
 
   // Format number with dot as thousands separator
-  const formatNumber = (num: number): string => {
+  const formatNumber = (num: number | null | undefined): string => {
+    if (num === null || num === undefined) return '-';
+    
+    // Convert to string with dots as thousands separators
     return num.toLocaleString('pt-BR');
   };
 
@@ -435,20 +436,19 @@ const HodometrosDashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={driverMileage.slice(0, topItemsCount)}
-                  layout="vertical"
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
                   <XAxis 
-                    type="number"
-                    tickFormatter={(value) => formatNumber(value)}
+                    dataKey="nome" 
+                    tick={{ fontSize: 12 }}
                     stroke="#9CA3AF"
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
                   />
                   <YAxis 
-                    dataKey="nome" 
-                    type="category" 
-                    width={150}
-                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => formatNumber(value)}
                     stroke="#9CA3AF"
                   />
                   <Tooltip 
@@ -460,11 +460,12 @@ const HodometrosDashboard = () => {
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
                   />
+                  <Legend />
                   <Bar 
                     dataKey="totalKm" 
                     name="Quilômetros Rodados"
                     fill="#10B981"
-                    radius={[0, 4, 4, 0]}
+                    radius={[4, 4, 0, 0]}
                   >
                     {driverMileage.slice(0, topItemsCount).map((entry, index) => (
                       <Cell 
@@ -513,20 +514,19 @@ const HodometrosDashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={vehicleMileage.slice(0, topItemsCount)}
-                  layout="vertical"
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
                   <XAxis 
-                    type="number"
-                    tickFormatter={(value) => formatNumber(value)}
+                    dataKey="placa" 
+                    tick={{ fontSize: 12 }}
                     stroke="#9CA3AF"
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
                   />
                   <YAxis 
-                    dataKey="placa" 
-                    type="category" 
-                    width={80}
-                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => formatNumber(value)}
                     stroke="#9CA3AF"
                   />
                   <Tooltip 
@@ -538,11 +538,12 @@ const HodometrosDashboard = () => {
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
                   />
+                  <Legend />
                   <Bar 
                     dataKey="totalKm" 
                     name="Quilômetros Rodados"
                     fill="#8B5CF6"
-                    radius={[0, 4, 4, 0]}
+                    radius={[4, 4, 0, 0]}
                   >
                     {vehicleMileage.slice(0, topItemsCount).map((entry, index) => (
                       <Cell 
