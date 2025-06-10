@@ -27,6 +27,10 @@ import {
   Cell
 } from 'recharts';
 
+interface MotoristaWithDetails extends Motorista {
+  veiculo?: Veiculo[];
+}
+
 interface MileageData {
   motorista_id: number;
   nome: string;
@@ -81,24 +85,24 @@ const HodometrosLista = () => {
       setLoading(true);
       
       const baseQuery = supabase.from('hodometro')
-        .select(`
-          *,
-          motorista:motorista_id (
-            motorista_id,
-            nome,
-            cpf
-          ),
-          veiculo:veiculo_id (
-            veiculo_id,
-            placa,
-            marca,
-            tipo
-          ),
-          cliente:cliente_id (
-            cliente_id,
-            nome
-          )
-        `);
+      .select(`
+        *,
+        motorista:motorista_id (
+          motorista_id,
+          nome,
+          cpf
+        ),
+        veiculo:veiculo_id (
+          veiculo_id,
+          placa,
+          marca,
+          tipo
+        ),
+        cliente:cliente_id (
+          cliente_id,
+          nome
+        )
+      `);
 
       const { data, error } = await baseQuery
         .eq('company_id', companyId)
@@ -140,6 +144,15 @@ const HodometrosLista = () => {
   useEffect(() => {
     fetchHodometros();
   }, [fetchHodometros]);
+
+  // Format date from YYYY-MM-DD to DD/MM/YYYY
+  const formatDateBR = (dateStr: string) => {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
 
   // Format number with dot as thousands separator
   const formatNumber = (num: number | null | undefined): string => {
@@ -213,7 +226,7 @@ const HodometrosLista = () => {
 
         // Format date
         const lastDate = new Date(lastReading.data);
-        const formattedDate = lastDate.toLocaleDateString('pt-BR');
+        const formattedDate = formatDateBR(lastReading.data);
 
         return {
           placa: firstReading.veiculo.placa.toUpperCase(),
@@ -693,7 +706,7 @@ const HodometrosLista = () => {
                                         {veiculo.hodometros.map((hodometro, index) => (
                                           <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                              {new Date(hodometro.data).toLocaleDateString('pt-BR')}
+                                              {formatDateBR(hodometro.data)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                               {hodometro.hora}
