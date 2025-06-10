@@ -29,12 +29,14 @@ interface DriverMileage {
   motorista_id: number;
   nome: string;
   totalKm: number;
+  readingsCount: number;
 }
 
 interface VehicleMileage {
   veiculo_id: number;
   placa: string;
   totalKm: number;
+  readingsCount: number;
 }
 
 interface InconsistentReading {
@@ -57,6 +59,7 @@ const HodometrosDashboard = () => {
   const [dailyMileage, setDailyMileage] = useState<DailyMileage[]>([]);
   const [driverMileage, setDriverMileage] = useState<DriverMileage[]>([]);
   const [vehicleMileage, setVehicleMileage] = useState<VehicleMileage[]>([]);
+  const [driverReadings, setDriverReadings] = useState<DriverMileage[]>([]);
   const [inconsistentReadings, setInconsistentReadings] = useState<InconsistentReading[]>([]);
   const [totalKm, setTotalKm] = useState(0);
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
@@ -66,6 +69,7 @@ const HodometrosDashboard = () => {
   const [topItemsCount, setTopItemsCount] = useState<number>(5);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [chartView, setChartView] = useState<'km' | 'readings'>('km');
 
   useEffect(() => {
     fetchData();
@@ -114,8 +118,8 @@ const HodometrosDashboard = () => {
 
       // Process data for daily mileage
       const dailyMileageMap = new Map<string, number>();
-      const driverMileageMap = new Map<number, { nome: string; totalKm: number }>();
-      const vehicleMileageMap = new Map<number, { placa: string; totalKm: number }>();
+      const driverMileageMap = new Map<number, { nome: string; totalKm: number; readingsCount: number }>();
+      const vehicleMileageMap = new Map<number, { placa: string; totalKm: number; readingsCount: number }>();
       const inconsistentReadingsArray: InconsistentReading[] = [];
       
       let totalKilometers = 0;
@@ -147,11 +151,12 @@ const HodometrosDashboard = () => {
           const driverName = hodometro.motorista.nome;
           
           if (!driverMileageMap.has(driverId)) {
-            driverMileageMap.set(driverId, { nome: driverName, totalKm: 0 });
+            driverMileageMap.set(driverId, { nome: driverName, totalKm: 0, readingsCount: 0 });
           }
           
           const driverData = driverMileageMap.get(driverId)!;
           driverData.totalKm += kmValue;
+          driverData.readingsCount += 1;
           driverMileageMap.set(driverId, driverData);
         }
         
@@ -161,11 +166,12 @@ const HodometrosDashboard = () => {
           const vehiclePlate = hodometro.veiculo.placa;
           
           if (!vehicleMileageMap.has(vehicleId)) {
-            vehicleMileageMap.set(vehicleId, { placa: vehiclePlate, totalKm: 0 });
+            vehicleMileageMap.set(vehicleId, { placa: vehiclePlate, totalKm: 0, readingsCount: 0 });
           }
           
           const vehicleData = vehicleMileageMap.get(vehicleId)!;
           vehicleData.totalKm += kmValue;
+          vehicleData.readingsCount += 1;
           vehicleMileageMap.set(vehicleId, vehicleData);
         }
 
@@ -207,16 +213,22 @@ const HodometrosDashboard = () => {
         .map(([motorista_id, data]) => ({
           motorista_id: Number(motorista_id),
           nome: data.nome,
-          totalKm: data.totalKm
+          totalKm: data.totalKm,
+          readingsCount: data.readingsCount
         }))
         .sort((a, b) => b.totalKm - a.totalKm);
+      
+      // Create a separate array sorted by readings count
+      const driverReadingsArray: DriverMileage[] = [...driverMileageArray]
+        .sort((a, b) => b.readingsCount - a.readingsCount);
       
       // Convert vehicle mileage map to array and sort by total km (descending)
       const vehicleMileageArray: VehicleMileage[] = Array.from(vehicleMileageMap.entries())
         .map(([veiculo_id, data]) => ({
           veiculo_id: Number(veiculo_id),
           placa: data.placa.toUpperCase(),
-          totalKm: data.totalKm
+          totalKm: data.totalKm,
+          readingsCount: data.readingsCount
         }))
         .sort((a, b) => b.totalKm - a.totalKm);
       
@@ -227,6 +239,7 @@ const HodometrosDashboard = () => {
       // Update state with processed data
       setDailyMileage(dailyMileageArray);
       setDriverMileage(driverMileageArray);
+      setDriverReadings(driverReadingsArray);
       setVehicleMileage(vehicleMileageArray);
       setInconsistentReadings(inconsistentReadingsArray);
       setTotalKm(totalKilometers);
@@ -273,6 +286,43 @@ const HodometrosDashboard = () => {
       setShowPhotoModal(true);
     } else {
       toast.error('Nenhuma foto disponível');
+    }
+  };
+
+  // Get the appropriate driver data based on the current view
+  const getDriverData = () => {
+    if (chartView === 'km') {
+      return driverMileage.slice(0, topItemsCount).map(driver => ({
+        ...driver,
+        value: driver.totalKm,
+        label: 'Quilômetros'
+      }));
+    } else {
+      return driverReadings.slice(0, topItemsCount).map(driver => ({
+        ...driver,
+        value: driver.readingsCount,
+        label: 'Leituras'
+      }));
+    }
+  };
+
+  // Get the appropriate vehicle data based on the current view
+  const getVehicleData = () => {
+    if (chartView === 'km') {
+      return vehicleMileage.slice(0, topItemsCount).map(vehicle => ({
+        ...vehicle,
+        value: vehicle.totalKm,
+        label: 'Quilômetros'
+      }));
+    } else {
+      return [...vehicleMileage]
+        .sort((a, b) => b.readingsCount - a.readingsCount)
+        .slice(0, topItemsCount)
+        .map(vehicle => ({
+          ...vehicle,
+          value: vehicle.readingsCount,
+          label: 'Leituras'
+        }));
     }
   };
 
@@ -347,7 +397,7 @@ const HodometrosDashboard = () => {
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-          Quilometragem Diária
+          KM por Operação
         </h3>
         
         {dailyMileage.length > 0 ? (
@@ -412,21 +462,46 @@ const HodometrosDashboard = () => {
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
               <Users className="text-green-500 dark:text-green-400" size={20} />
-              Top Motoristas por Quilometragem
+              {chartView === 'km' ? 'KM por Motorista' : 'Leituras por Motorista'}
             </h3>
             
-            <div className="relative">
-              <select
-                value={topItemsCount}
-                onChange={(e) => setTopItemsCount(Number(e.target.value))}
-                className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
-              >
-                <option value={3}>Top 3</option>
-                <option value={5}>Top 5</option>
-                <option value={10}>Top 10</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                <ChevronDown className="w-4 h-4" />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                <button
+                  onClick={() => setChartView('km')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    chartView === 'km' 
+                      ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm' 
+                      : 'text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  KM
+                </button>
+                <button
+                  onClick={() => setChartView('readings')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    chartView === 'readings' 
+                      ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm' 
+                      : 'text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  Leituras
+                </button>
+              </div>
+              
+              <div className="relative">
+                <select
+                  value={topItemsCount}
+                  onChange={(e) => setTopItemsCount(Number(e.target.value))}
+                  className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                >
+                  <option value={3}>Top 3</option>
+                  <option value={5}>Top 5</option>
+                  <option value={10}>Top 10</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
               </div>
             </div>
           </div>
@@ -435,8 +510,8 @@ const HodometrosDashboard = () => {
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={driverMileage.slice(0, topItemsCount)}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  data={getDriverData()}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 70 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
                   <XAxis 
@@ -452,7 +527,10 @@ const HodometrosDashboard = () => {
                     stroke="#9CA3AF"
                   />
                   <Tooltip 
-                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
+                    formatter={(value: any) => [
+                      formatNumber(value) + (chartView === 'km' ? ' km' : ''),
+                      chartView === 'km' ? 'Quilômetros' : 'Leituras'
+                    ]}
                     contentStyle={{ 
                       backgroundColor: 'rgba(255, 255, 255, 0.9)',
                       borderRadius: '0.5rem',
@@ -462,12 +540,12 @@ const HodometrosDashboard = () => {
                   />
                   <Legend />
                   <Bar 
-                    dataKey="totalKm" 
-                    name="Quilômetros Rodados"
+                    dataKey="value" 
+                    name={chartView === 'km' ? "Quilômetros Rodados" : "Quantidade de Leituras"}
                     fill="#10B981"
                     radius={[4, 4, 0, 0]}
                   >
-                    {driverMileage.slice(0, topItemsCount).map((entry, index) => (
+                    {getDriverData().map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={`rgba(16, 185, 129, ${0.9 - (index * 0.07)})`} 
@@ -490,21 +568,46 @@ const HodometrosDashboard = () => {
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
               <Truck className="text-purple-500 dark:text-purple-400" size={20} />
-              Top Veículos por Quilometragem
+              {chartView === 'km' ? 'KM por Veículo' : 'Leituras por Veículo'}
             </h3>
             
-            <div className="relative">
-              <select
-                value={topItemsCount}
-                onChange={(e) => setTopItemsCount(Number(e.target.value))}
-                className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-              >
-                <option value={3}>Top 3</option>
-                <option value={5}>Top 5</option>
-                <option value={10}>Top 10</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                <ChevronDown className="w-4 h-4" />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                <button
+                  onClick={() => setChartView('km')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    chartView === 'km' 
+                      ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm' 
+                      : 'text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  KM
+                </button>
+                <button
+                  onClick={() => setChartView('readings')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    chartView === 'readings' 
+                      ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm' 
+                      : 'text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  Leituras
+                </button>
+              </div>
+              
+              <div className="relative">
+                <select
+                  value={topItemsCount}
+                  onChange={(e) => setTopItemsCount(Number(e.target.value))}
+                  className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                >
+                  <option value={3}>Top 3</option>
+                  <option value={5}>Top 5</option>
+                  <option value={10}>Top 10</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
               </div>
             </div>
           </div>
@@ -513,8 +616,8 @@ const HodometrosDashboard = () => {
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={vehicleMileage.slice(0, topItemsCount)}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  data={getVehicleData()}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 70 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
                   <XAxis 
@@ -530,7 +633,10 @@ const HodometrosDashboard = () => {
                     stroke="#9CA3AF"
                   />
                   <Tooltip 
-                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
+                    formatter={(value: any) => [
+                      formatNumber(value) + (chartView === 'km' ? ' km' : ''),
+                      chartView === 'km' ? 'Quilômetros' : 'Leituras'
+                    ]}
                     contentStyle={{ 
                       backgroundColor: 'rgba(255, 255, 255, 0.9)',
                       borderRadius: '0.5rem',
@@ -540,12 +646,12 @@ const HodometrosDashboard = () => {
                   />
                   <Legend />
                   <Bar 
-                    dataKey="totalKm" 
-                    name="Quilômetros Rodados"
+                    dataKey="value" 
+                    name={chartView === 'km' ? "Quilômetros Rodados" : "Quantidade de Leituras"}
                     fill="#8B5CF6"
                     radius={[4, 4, 0, 0]}
                   >
-                    {vehicleMileage.slice(0, topItemsCount).map((entry, index) => (
+                    {getVehicleData().map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={`rgba(139, 92, 246, ${0.9 - (index * 0.07)})`} 
