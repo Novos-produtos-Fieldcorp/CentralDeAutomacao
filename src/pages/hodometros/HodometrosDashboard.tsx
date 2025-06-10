@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertTriangle, Activity } from 'lucide-react';
+import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertTriangle, Activity, ChevronDown } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -50,6 +50,7 @@ const HodometrosDashboard = () => {
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
+  const [topItemsCount, setTopItemsCount] = useState<number>(5);
 
   useEffect(() => {
     fetchData();
@@ -321,16 +322,33 @@ const HodometrosDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Drivers */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-green-100 dark:border-green-900/30 hover:shadow-lg transition-all duration-300">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Users className="w-5 h-5 text-green-500 dark:text-green-400" />
-            Top Motoristas por Quilometragem
-          </h3>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-green-500 dark:text-green-400" />
+              Top Motoristas por Quilometragem
+            </h3>
+            
+            <div className="relative">
+              <select
+                value={topItemsCount}
+                onChange={(e) => setTopItemsCount(Number(e.target.value))}
+                className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+              >
+                <option value={3}>Top 3</option>
+                <option value={5}>Top 5</option>
+                <option value={10}>Top 10</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                <ChevronDown className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
           
           {driverMileage.length > 0 ? (
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={driverMileage.slice(0, 10)} // Show top 10
+                  data={driverMileage.slice(0, topItemsCount)}
                   layout="vertical"
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
@@ -362,7 +380,7 @@ const HodometrosDashboard = () => {
                     fill="#10B981"
                     radius={[0, 4, 4, 0]}
                   >
-                    {driverMileage.slice(0, 10).map((entry, index) => (
+                    {driverMileage.slice(0, topItemsCount).map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={`rgba(16, 185, 129, ${0.9 - (index * 0.07)})`} 
@@ -382,16 +400,33 @@ const HodometrosDashboard = () => {
         
         {/* Top Vehicles */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-purple-100 dark:border-purple-900/30 hover:shadow-lg transition-all duration-300">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
-            Top Veículos por Quilometragem
-          </h3>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+              <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+              Top Veículos por Quilometragem
+            </h3>
+            
+            <div className="relative">
+              <select
+                value={topItemsCount}
+                onChange={(e) => setTopItemsCount(Number(e.target.value))}
+                className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+              >
+                <option value={3}>Top 3</option>
+                <option value={5}>Top 5</option>
+                <option value={10}>Top 10</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                <ChevronDown className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
           
           {vehicleMileage.length > 0 ? (
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={vehicleMileage.slice(0, 10)} // Show top 10
+                  data={vehicleMileage.slice(0, topItemsCount)}
                   layout="vertical"
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
@@ -423,7 +458,7 @@ const HodometrosDashboard = () => {
                     fill="#8B5CF6"
                     radius={[0, 4, 4, 0]}
                   >
-                    {vehicleMileage.slice(0, 10).map((entry, index) => (
+                    {vehicleMileage.slice(0, topItemsCount).map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={`rgba(139, 92, 246, ${0.9 - (index * 0.07)})`} 
