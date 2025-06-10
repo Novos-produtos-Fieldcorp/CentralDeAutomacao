@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, Truck, Users, Filter, Search, BarChart2, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, Truck, Users, Filter, Search, BarChart2, TrendingUp, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -16,7 +16,10 @@ import {
   Tooltip, 
   Legend, 
   ResponsiveContainer,
-  Cell
+  Cell,
+  PieChart,
+  Pie,
+  LabelList
 } from 'recharts';
 
 interface HodometroData {
@@ -27,6 +30,9 @@ interface HodometroData {
   hod_lido: number | null;
   km_rodado: number | null;
   bateria: number | null;
+  trip_lida: number | null;
+  trip_informada: string | null;
+  comparacao_leitura: boolean | null;
   motorista_id: number;
   veiculo_id: number;
   motorista: {
@@ -46,56 +52,52 @@ interface HodometroData {
   } | null;
 }
 
-interface MotoristaStats {
+interface DailyKmData {
+  data: string;
+  total_km_dia: number;
+  motoristas: {
+    [motorista_id: number]: {
+      nome: string;
+      km_rodado: number;
+      veiculos: {
+        [veiculo_id: number]: {
+          placa: string;
+          tipo_veiculo: 'automovel' | 'ciclomotor';
+          km_rodado: number;
+        }
+      }
+    }
+  }
+}
+
+interface InconsistentReading {
+  id_hodometro: number;
+  hod_lido: number | null;
+  hod_informado: number | null;
+  nome: string;
+  data: string;
+  placa: string;
+  diferenca: number;
+}
+
+interface DriverReadingCount {
   motorista_id: number;
   nome: string;
-  cpf: string;
-  totalKm: number;
   leituras: number;
-  veiculos: {
-    [placa: string]: {
-      marca: string;
-      tipo: string;
-      totalKm: number;
-    }
-  };
-  cliente?: string;
-}
-
-interface VeiculoStats {
-  veiculo_id: number;
-  placa: string;
-  marca: string;
-  tipo: string;
-  totalKm: number;
-  leituras: number;
-  motoristas: {
-    [id: number]: {
-      nome: string;
-      totalKm: number;
-    }
-  };
-}
-
-interface MonthlyData {
-  month: string;
-  km: number;
 }
 
 const HodometrosDashboard = () => {
-  const { query, companyId } = useCompanyData();
+  const { companyId } = useCompanyData();
   const [hodometros, setHodometros] = useState<HodometroData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClient, setSelectedClient] = useState<string>('');
-  const [clients, setClients] = useState<string[]>([]);
-  const [expandedMotorista, setExpandedMotorista] = useState<number | null>(null);
-  const [expandedVeiculo, setExpandedVeiculo] = useState<number | null>(null);
+  const [selectedVehicleType, setSelectedVehicleType] = useState<'todos' | 'automovel' | 'ciclomotor'>('todos');
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
+  const [todayReadingsCount, setTodayReadingsCount] = useState(0);
 
   useEffect(() => {
     fetchHodometros();
-  }, [dateRange]);
+  }, [dateRange, selectedVehicleType]);
 
   const fetchHodometros = async () => {
     try {
@@ -130,14 +132,11 @@ const HodometrosDashboard = () => {
 
       setHodometros(data || []);
       
-      // Extract unique clients
-      const uniqueClients = Array.from(new Set(
-        data
-          ?.filter(h => h.cliente?.nome)
-          .map(h => h.cliente?.nome) || []
-      )).sort();
+      // Count today's readings
+      const today = new Date().toISOString().split('T')[0];
+      const todayReadings = data?.filter(h => h.data === today) || [];
+      setTodayReadingsCount(todayReadings.length);
       
-      setClients(uniqueClients as string[]);
     } catch (error) {
       console.error('Error fetching hodometros:', error);
       toast.error('Erro ao carregar hodômetros');
@@ -146,179 +145,210 @@ const HodometrosDashboard = () => {
     }
   };
 
-  // Process data for motoristas
-  const motoristasStats = useMemo(() => {
-    const stats: Record<number, MotoristaStats> = {};
+  // Calculate daily KM data based on the provided logic
+  const dailyKmData = useMemo(() => {
+    const result: Record<string, DailyKmData> = {};
     
-    // Group hodometros by motorista
+    // Group by date
     hodometros.forEach(hodometro => {
-      if (!hodometro.motorista) return;
+      if (!hodometro.data || !hodometro.motorista || !hodometro.veiculo) return;
       
+      const date = hodometro.data;
       const motoristaId = hodometro.motorista.motorista_id;
-      
-      if (!stats[motoristaId]) {
-        stats[motoristaId] = {
-          motorista_id: motoristaId,
-          nome: hodometro.motorista.nome,
-          cpf: hodometro.motorista.cpf,
-          totalKm: 0,
-          leituras: 0,
-          veiculos: {},
-          cliente: hodometro.cliente?.nome
-        };
-      }
-      
-      // Add vehicle if not already added
-      const placa = hodometro.veiculo?.placa.toUpperCase() || 'Desconhecido';
-      if (!stats[motoristaId].veiculos[placa]) {
-        stats[motoristaId].veiculos[placa] = {
-          marca: hodometro.veiculo?.marca || '',
-          tipo: hodometro.veiculo?.tipo || '',
-          totalKm: 0
-        };
-      }
-      
-      // Add km_rodado to total
-      if (hodometro.km_rodado) {
-        stats[motoristaId].totalKm += hodometro.km_rodado;
-        stats[motoristaId].veiculos[placa].totalKm += hodometro.km_rodado;
-      }
-      
-      stats[motoristaId].leituras++;
-    });
-    
-    // Convert to array and sort by total km (descending)
-    return Object.values(stats).sort((a, b) => b.totalKm - a.totalKm);
-  }, [hodometros]);
-
-  // Process data for veiculos
-  const veiculosStats = useMemo(() => {
-    const stats: Record<number, VeiculoStats> = {};
-    
-    // Group hodometros by veiculo
-    hodometros.forEach(hodometro => {
-      if (!hodometro.veiculo) return;
-      
       const veiculoId = hodometro.veiculo.veiculo_id;
       
-      if (!stats[veiculoId]) {
-        stats[veiculoId] = {
-          veiculo_id: veiculoId,
-          placa: hodometro.veiculo.placa.toUpperCase(),
-          marca: hodometro.veiculo.marca,
-          tipo: hodometro.veiculo.tipo,
-          totalKm: 0,
-          leituras: 0,
+      // Initialize date entry if it doesn't exist
+      if (!result[date]) {
+        result[date] = {
+          data: date,
+          total_km_dia: 0,
           motoristas: {}
         };
       }
       
-      // Add motorista if not already added
-      if (hodometro.motorista) {
-        const motoristaId = hodometro.motorista.motorista_id;
-        if (!stats[veiculoId].motoristas[motoristaId]) {
-          stats[veiculoId].motoristas[motoristaId] = {
-            nome: hodometro.motorista.nome,
-            totalKm: 0
+      // Initialize motorista entry if it doesn't exist
+      if (!result[date].motoristas[motoristaId]) {
+        result[date].motoristas[motoristaId] = {
+          nome: hodometro.motorista.nome,
+          km_rodado: 0,
+          veiculos: {}
+        };
+      }
+      
+      // Determine vehicle type (ciclomotor if it has battery reading)
+      const tipo_veiculo = hodometro.bateria !== null ? 'ciclomotor' : 'automovel';
+      
+      // Initialize vehicle entry if it doesn't exist
+      if (!result[date].motoristas[motoristaId].veiculos[veiculoId]) {
+        result[date].motoristas[motoristaId].veiculos[veiculoId] = {
+          placa: hodometro.veiculo.placa,
+          tipo_veiculo,
+          km_rodado: 0
+        };
+      }
+      
+      // Add km_rodado to the appropriate vehicle
+      if (hodometro.km_rodado && hodometro.km_rodado > 0) {
+        result[date].motoristas[motoristaId].veiculos[veiculoId].km_rodado += hodometro.km_rodado;
+      }
+    });
+    
+    // Calculate totals
+    Object.values(result).forEach(dayData => {
+      let dayTotal = 0;
+      
+      Object.values(dayData.motoristas).forEach(motorista => {
+        let motoristaTotal = 0;
+        
+        Object.values(motorista.veiculos).forEach(veiculo => {
+          // Apply vehicle type filter if selected
+          if (selectedVehicleType === 'todos' || veiculo.tipo_veiculo === selectedVehicleType) {
+            motoristaTotal += veiculo.km_rodado;
+          }
+        });
+        
+        motorista.km_rodado = motoristaTotal;
+        dayTotal += motoristaTotal;
+      });
+      
+      dayData.total_km_dia = dayTotal;
+    });
+    
+    // Convert to array and sort by date (newest first)
+    return Object.values(result)
+      .filter(day => day.total_km_dia > 0) // Only include days with KM
+      .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+  }, [hodometros, selectedVehicleType]);
+
+  // Calculate total KM
+  const totalKm = useMemo(() => {
+    return dailyKmData.reduce((sum, day) => sum + day.total_km_dia, 0);
+  }, [dailyKmData]);
+
+  // Calculate KM by operation (client)
+  const kmByOperation = useMemo(() => {
+    const operations: Record<string, number> = {};
+    
+    hodometros.forEach(hodometro => {
+      if (!hodometro.km_rodado || hodometro.km_rodado <= 0) return;
+      
+      // Apply vehicle type filter
+      const isElectric = hodometro.bateria !== null;
+      const vehicleType = isElectric ? 'ciclomotor' : 'automovel';
+      if (selectedVehicleType !== 'todos' && vehicleType !== selectedVehicleType) return;
+      
+      const clientName = hodometro.cliente?.nome || 'Sem cliente';
+      
+      if (!operations[clientName]) {
+        operations[clientName] = 0;
+      }
+      
+      operations[clientName] += hodometro.km_rodado;
+    });
+    
+    // Convert to array and sort by KM (descending)
+    return Object.entries(operations)
+      .map(([name, km]) => ({ name, km }))
+      .sort((a, b) => b.km - a.km);
+  }, [hodometros, selectedVehicleType]);
+
+  // Calculate readings by driver
+  const readingsByDriver = useMemo(() => {
+    const drivers: Record<number, DriverReadingCount> = {};
+    
+    hodometros.forEach(hodometro => {
+      if (!hodometro.motorista) return;
+      
+      // Apply vehicle type filter
+      const isElectric = hodometro.bateria !== null;
+      const vehicleType = isElectric ? 'ciclomotor' : 'automovel';
+      if (selectedVehicleType !== 'todos' && vehicleType !== selectedVehicleType) return;
+      
+      const motoristaId = hodometro.motorista.motorista_id;
+      
+      if (!drivers[motoristaId]) {
+        drivers[motoristaId] = {
+          motorista_id: motoristaId,
+          nome: hodometro.motorista.nome,
+          leituras: 0
+        };
+      }
+      
+      drivers[motoristaId].leituras++;
+    });
+    
+    // Convert to array and sort by reading count (descending)
+    return Object.values(drivers)
+      .sort((a, b) => b.leituras - a.leituras)
+      .slice(0, 10); // Top 10 drivers
+  }, [hodometros, selectedVehicleType]);
+
+  // Calculate KM by driver
+  const kmByDriver = useMemo(() => {
+    const drivers: Record<number, { motorista_id: number, nome: string, km: number }> = {};
+    
+    dailyKmData.forEach(day => {
+      Object.entries(day.motoristas).forEach(([motoristaId, motorista]) => {
+        const id = parseInt(motoristaId);
+        
+        if (!drivers[id]) {
+          drivers[id] = {
+            motorista_id: id,
+            nome: motorista.nome,
+            km: 0
           };
         }
         
-        // Add km_rodado to total
-        if (hodometro.km_rodado) {
-          stats[veiculoId].motoristas[motoristaId].totalKm += hodometro.km_rodado;
-        }
-      }
-      
-      // Add km_rodado to total
-      if (hodometro.km_rodado) {
-        stats[veiculoId].totalKm += hodometro.km_rodado;
-      }
-      
-      stats[veiculoId].leituras++;
+        drivers[id].km += motorista.km_rodado;
+      });
     });
     
-    // Convert to array and sort by total km (descending)
-    return Object.values(stats).sort((a, b) => b.totalKm - a.totalKm);
-  }, [hodometros]);
+    // Convert to array and sort by KM (descending)
+    return Object.values(drivers)
+      .sort((a, b) => b.km - a.km)
+      .slice(0, 10); // Top 10 drivers
+  }, [dailyKmData]);
 
-  // Calculate monthly data
-  const monthlyData = useMemo(() => {
-    const monthlyKm: Record<string, number> = {};
+  // Find inconsistent readings (where hod_lido and hod_informado differ significantly)
+  const inconsistentReadings = useMemo(() => {
+    const readings: InconsistentReading[] = [];
     
     hodometros.forEach(hodometro => {
-      if (!hodometro.km_rodado) return;
+      if (hodometro.bateria !== null) return; // Skip electric vehicles
+      if (hodometro.hod_lido === null || hodometro.hod_informado === null) return;
+      if (!hodometro.motorista || !hodometro.veiculo) return;
       
-      const date = new Date(hodometro.data);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+      // Calculate difference and percentage
+      const diferenca = Math.abs(hodometro.hod_lido - hodometro.hod_informado);
+      const percentDiff = (diferenca / hodometro.hod_lido) * 100;
       
-      if (!monthlyKm[monthKey]) {
-        monthlyKm[monthKey] = 0;
+      // Consider inconsistent if difference is more than 1% or 100 km
+      if (percentDiff > 1 || diferenca > 100) {
+        readings.push({
+          id_hodometro: hodometro.id_hodometro,
+          hod_lido: hodometro.hod_lido,
+          hod_informado: hodometro.hod_informado,
+          nome: hodometro.motorista.nome,
+          data: hodometro.data,
+          placa: hodometro.veiculo.placa,
+          diferenca
+        });
       }
-      
-      monthlyKm[monthKey] += hodometro.km_rodado;
     });
     
-    // Convert to array and sort by month
-    return Object.entries(monthlyKm).map(([key, km]) => {
-      const [year, month] = key.split('-');
-      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-      return {
-        month: date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
-        km: Math.round(km)
-      };
-    }).sort((a, b) => {
-      const monthA = a.month.split(' ')[0];
-      const yearA = a.month.split(' ')[1];
-      const monthB = b.month.split(' ')[0];
-      const yearB = b.month.split(' ')[1];
-      
-      if (yearA !== yearB) {
-        return parseInt(yearA) - parseInt(yearB);
-      }
-      
-      const months = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
-      return months.indexOf(monthA) - months.indexOf(monthB);
-    });
+    // Sort by difference (descending)
+    return readings.sort((a, b) => b.diferenca - a.diferenca).slice(0, 5); // Top 5 inconsistencies
   }, [hodometros]);
-
-  // Calculate total km
-  const totalKm = useMemo(() => {
-    return hodometros.reduce((sum, hodometro) => sum + (hodometro.km_rodado || 0), 0);
-  }, [hodometros]);
-
-  // Filter motoristas based on search term and selected client
-  const filteredMotoristasStats = useMemo(() => {
-    return motoristasStats.filter(motorista => {
-      const matchesSearch = !searchTerm || 
-        motorista.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        motorista.cpf.includes(searchTerm) ||
-        Object.keys(motorista.veiculos).some(placa => 
-          placa.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      
-      const matchesClient = !selectedClient || motorista.cliente === selectedClient;
-      
-      return matchesSearch && matchesClient;
-    });
-  }, [motoristasStats, searchTerm, selectedClient]);
-
-  // Filter veiculos based on search term
-  const filteredVeiculosStats = useMemo(() => {
-    return veiculosStats.filter(veiculo => {
-      return !searchTerm || 
-        veiculo.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        veiculo.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        veiculo.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        Object.values(veiculo.motoristas).some(motorista => 
-          motorista.nome.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    });
-  }, [veiculosStats, searchTerm]);
 
   // Format number with dot as thousands separator
   const formatNumber = (num: number): string => {
     return num.toLocaleString('pt-BR');
+  };
+
+  // Format date to DD/MM/YYYY
+  const formatDate = (dateStr: string): string => {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
   };
 
   if (loading) {
@@ -328,32 +358,31 @@ const HodometrosDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Filters Section */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-gray-800 p-4 rounded-xl shadow-md border border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar por motorista, CPF ou placa..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <select
+              value={selectedVehicleType}
+              onChange={(e) => setSelectedVehicleType(e.target.value as 'todos' | 'automovel' | 'ciclomotor')}
+              className="w-full pl-10 pr-4 py-2 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-800 text-white appearance-none"
+            >
+              <option value="todos">Todos os veículos</option>
+              <option value="automovel">Automóveis</option>
+              <option value="ciclomotor">Ciclomotores</option>
+            </select>
+            <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
           <div className="relative">
-            <select
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-            >
-              <option value="">Todos os clientes</option>
-              {clients.map((client, index) => (
-                <option key={index} value={client}>{client}</option>
-              ))}
-            </select>
-            <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar por motorista ou placa..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-800 text-white"
+            />
+            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
           <div>
@@ -369,335 +398,268 @@ const HodometrosDashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Quilometragem Total
-            </h3>
-          </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">
-            {formatNumber(totalKm)} km
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            {hodometros.length} leituras no período
-          </p>
+        <div className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700 text-center">
+          <p className="text-gray-400 uppercase text-sm font-medium mb-2">QTD DE LEITURAS REALIZADAS</p>
+          <h2 className="text-4xl font-bold text-white">
+            {hodometros.length}
+          </h2>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Motoristas Ativos
-            </h3>
-          </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">
-            {motoristasStats.length}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            motoristas com leituras no período
-          </p>
+        <div className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700 text-center">
+          <p className="text-gray-400 uppercase text-sm font-medium mb-2">QTD DE LEITURAS REALIZADAS HOJE</p>
+          <h2 className="text-4xl font-bold text-white">
+            {todayReadingsCount}
+          </h2>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Truck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Veículos Ativos
-            </h3>
-          </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">
-            {veiculosStats.length}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            veículos com leituras no período
-          </p>
+        <div className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700 text-center">
+          <p className="text-gray-400 uppercase text-sm font-medium mb-2">KM TOTAL RODADO</p>
+          <h2 className="text-4xl font-bold text-white">
+            {formatNumber(totalKm)}
+          </h2>
         </div>
       </div>
 
-      {/* Monthly Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-            <BarChart2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-            Quilometragem Mensal
-          </h3>
-        </div>
-        
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={monthlyData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-              <XAxis 
-                dataKey="month" 
-                angle={-45} 
-                textAnchor="end" 
-                height={60} 
-                tick={{ fontSize: 12 }}
-                stroke="#9CA3AF"
-              />
-              <YAxis 
-                tickFormatter={(value) => `${formatNumber(value)}`}
-                stroke="#9CA3AF"
-              />
-              <Tooltip 
-                formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                contentStyle={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                }}
-              />
-              <Legend />
-              <Bar 
-                dataKey="km" 
-                name="Quilômetros Rodados" 
-                fill="#3B82F6" 
-                radius={[4, 4, 0, 0]}
-              >
-                {monthlyData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={`rgba(59, 130, 246, ${0.5 + (index * 0.05)})`} 
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* KM por Operação */}
+        <div className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
+          <h3 className="text-lg font-medium text-white mb-4 uppercase">KM POR OPERAÇÃO</h3>
+          <div className="h-64">
+            {kmByOperation.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={kmByOperation}
+                  margin={{ top: 10, right: 30, left: 20, bottom: 60 }}
+                  layout="vertical"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} horizontal={false} />
+                  <XAxis type="number" tickFormatter={(value) => formatNumber(value)} />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    width={150}
+                    tick={{ fontSize: 12 }}
                   />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+                  <Tooltip 
+                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(31, 41, 55, 0.9)',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #4B5563',
+                      color: 'white'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="km" 
+                    fill="#3B82F6" 
+                    radius={[0, 4, 4, 0]}
+                  >
+                    {kmByOperation.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={`rgba(59, 130, 246, ${0.5 + (index * 0.05)})`} 
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400">
+                Nenhum dado disponível para o período selecionado
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Número de Leituras por Motorista */}
+        <div className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
+          <h3 className="text-lg font-medium text-white mb-4 uppercase">NÚMERO DE LEITURAS POR MOTORISTA</h3>
+          <div className="h-64">
+            {readingsByDriver.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={readingsByDriver}
+                  margin={{ top: 10, right: 30, left: 20, bottom: 60 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                  <XAxis 
+                    dataKey="nome" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={80} 
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value: any) => [value, 'Leituras']}
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(31, 41, 55, 0.9)',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #4B5563',
+                      color: 'white'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="leituras" 
+                    fill="#10B981" 
+                    radius={[4, 4, 0, 0]}
+                  >
+                    {readingsByDriver.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={`rgba(16, 185, 129, ${0.5 + (index * 0.05)})`} 
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400">
+                Nenhum dado disponível para o período selecionado
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Motoristas Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Quilometragem por Motorista
-            </h3>
-          </div>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículos</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leituras</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Total</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredMotoristasStats.map((motorista) => (
-                <React.Fragment key={motorista.motorista_id}>
-                  <tr 
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                    onClick={() => setExpandedMotorista(
-                      expandedMotorista === motorista.motorista_id ? null : motorista.motorista_id
-                    )}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
-                          {motorista.nome.charAt(0)}
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {motorista.nome}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatCPF(motorista.cpf)}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {motorista.cliente || "Sem cliente"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {Object.keys(motorista.veiculos).length} veículo(s)
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {motorista.leituras}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex items-center justify-end">
-                        <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                          {formatNumber(motorista.totalKm)} km
-                        </div>
-                        {expandedMotorista === motorista.motorista_id ? (
-                          <ChevronUp className="ml-2 h-5 w-5 text-gray-400" />
-                        ) : (
-                          <ChevronDown className="ml-2 h-5 w-5 text-gray-400" />
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                  
-                  {/* Expanded view with vehicles */}
-                  {expandedMotorista === motorista.motorista_id && (
-                    <tr className="bg-gray-50 dark:bg-gray-700/30">
-                      <td colSpan={5} className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                          Veículos utilizados:
-                        </div>
-                        <div className="space-y-3">
-                          {Object.entries(motorista.veiculos).map(([placa, veiculo]) => (
-                            <div key={placa} className="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
-                              <div>
-                                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {placa}
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {veiculo.marca} {veiculo.tipo}
-                                </div>
-                              </div>
-                              <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                                {formatNumber(veiculo.totalKm)} km
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-              
-              {filteredMotoristasStats.length === 0 && (
+      {/* Leituras Inconsistentes e KM por Motorista */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Leituras Inconsistentes */}
+        <div className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
+          <h3 className="text-lg font-medium text-white mb-4 uppercase flex items-center gap-2">
+            <AlertCircle className="text-amber-500" size={20} />
+            LEITURAS INCONSISTENTES
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-white">
+              <thead className="text-gray-400 border-b border-gray-700">
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                    Nenhum motorista encontrado para o período selecionado
-                  </td>
+                  <th className="py-2">HOD LIDO</th>
+                  <th className="py-2">HOD INFORMADO</th>
+                  <th className="py-2">NOME</th>
+                  <th className="py-2">DATA</th>
+                  <th className="py-2">PLACA</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {inconsistentReadings.length > 0 ? (
+                  inconsistentReadings.map((reading) => (
+                    <tr key={reading.id_hodometro} className="border-b border-gray-700">
+                      <td className="py-2">{formatNumber(reading.hod_lido || 0)}</td>
+                      <td className="py-2">{formatNumber(reading.hod_informado || 0)}</td>
+                      <td className="py-2">{reading.nome}</td>
+                      <td className="py-2">{formatDate(reading.data)}</td>
+                      <td className="py-2">{reading.placa.toUpperCase()}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-4 text-center text-gray-400">
+                      Nenhuma leitura inconsistente encontrada
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* KM por Motorista */}
+        <div className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
+          <h3 className="text-lg font-medium text-white mb-4 uppercase">KM POR MOTORISTA</h3>
+          <div className="h-64">
+            {kmByDriver.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={kmByDriver}
+                  margin={{ top: 10, right: 30, left: 20, bottom: 60 }}
+                  layout="vertical"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} horizontal={false} />
+                  <XAxis type="number" tickFormatter={(value) => formatNumber(value)} />
+                  <YAxis 
+                    type="category" 
+                    dataKey="nome" 
+                    width={150}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <Tooltip 
+                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(31, 41, 55, 0.9)',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #4B5563',
+                      color: 'white'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="km" 
+                    fill="#EC4899" 
+                    radius={[0, 4, 4, 0]}
+                  >
+                    {kmByDriver.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={`rgba(236, 72, 153, ${0.5 + (index * 0.05)})`} 
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400">
+                Nenhum dado disponível para o período selecionado
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Veiculos Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Truck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Quilometragem por Veículo
-            </h3>
-          </div>
-        </div>
-        
+      {/* Daily KM Table */}
+      <div className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
+        <h3 className="text-lg font-medium text-white mb-4 uppercase flex items-center gap-2">
+          <Calendar className="text-blue-500" size={20} />
+          QUILOMETRAGEM DIÁRIA
+        </h3>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-800">
+          <table className="w-full text-sm text-left text-white">
+            <thead className="text-gray-400 border-b border-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motoristas</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leituras</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Total</th>
+                <th className="py-2">DATA</th>
+                <th className="py-2">TOTAL KM</th>
+                <th className="py-2">MOTORISTAS</th>
+                <th className="py-2">DETALHES</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredVeiculosStats.map((veiculo) => (
-                <React.Fragment key={veiculo.veiculo_id}>
-                  <tr 
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                    onClick={() => setExpandedVeiculo(
-                      expandedVeiculo === veiculo.veiculo_id ? null : veiculo.veiculo_id
-                    )}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
-                          {veiculo.placa.charAt(0)}
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {veiculo.placa}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {veiculo.marca} {veiculo.tipo}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {Object.keys(veiculo.motoristas).length} motorista(s)
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {veiculo.leituras}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex items-center justify-end">
-                        <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                          {formatNumber(veiculo.totalKm)} km
-                        </div>
-                        {expandedVeiculo === veiculo.veiculo_id ? (
-                          <ChevronUp className="ml-2 h-5 w-5 text-gray-400" />
-                        ) : (
-                          <ChevronDown className="ml-2 h-5 w-5 text-gray-400" />
+            <tbody>
+              {dailyKmData.length > 0 ? (
+                dailyKmData.map((day) => (
+                  <tr key={day.data} className="border-b border-gray-700">
+                    <td className="py-2">{formatDate(day.data)}</td>
+                    <td className="py-2 font-medium text-blue-400">{formatNumber(day.total_km_dia)} km</td>
+                    <td className="py-2">{Object.keys(day.motoristas).length}</td>
+                    <td className="py-2">
+                      <div className="text-xs text-gray-400">
+                        {Object.values(day.motoristas)
+                          .sort((a, b) => b.km_rodado - a.km_rodado)
+                          .slice(0, 3)
+                          .map((motorista, index) => (
+                            <div key={index}>
+                              {motorista.nome}: {formatNumber(motorista.km_rodado)} km
+                            </div>
+                          ))}
+                        {Object.keys(day.motoristas).length > 3 && (
+                          <div>+ {Object.keys(day.motoristas).length - 3} motoristas</div>
                         )}
                       </div>
                     </td>
                   </tr>
-                  
-                  {/* Expanded view with motoristas */}
-                  {expandedVeiculo === veiculo.veiculo_id && (
-                    <tr className="bg-gray-50 dark:bg-gray-700/30">
-                      <td colSpan={4} className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                          Motoristas que utilizaram este veículo:
-                        </div>
-                        <div className="space-y-3">
-                          {Object.entries(veiculo.motoristas).map(([id, motorista]) => (
-                            <div key={id} className="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {motorista.nome}
-                              </div>
-                              <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                                {formatNumber(motorista.totalKm)} km
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-              
-              {filteredVeiculosStats.length === 0 && (
+                ))
+              ) : (
                 <tr>
-                  <td colSpan={4} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                    Nenhum veículo encontrado para o período selecionado
+                  <td colSpan={4} className="py-4 text-center text-gray-400">
+                    Nenhum dado disponível para o período selecionado
                   </td>
                 </tr>
               )}
