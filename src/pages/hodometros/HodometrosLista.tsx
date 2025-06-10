@@ -202,7 +202,6 @@ const HodometrosLista = () => {
           totalKm = sortedHodometros.reduce((sum, reading) => sum + (reading.km_rodado || 0), 0);
         } else {
           // For regular vehicles, use the difference between last and first readings
-          // FIXED: Ensure we subtract in the correct order (last - first) for positive values
           const firstHodLido = firstReading.hod_lido || 0;
           const lastHodLido = lastReading.hod_lido || 0;
           
