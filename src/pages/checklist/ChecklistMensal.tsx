@@ -462,7 +462,7 @@ const ChecklistMensal = () => {
           onClose={() => setContextMenu({ ...contextMenu, visible: false })}
           actions={[
             {
-              icon: <Eye size={16} />,
+              icon: <FilePen size={16} />,
               label: 'Visualizar',
               onClick: () => {
                 setSelectedChecklist(contextMenu.checklist);
