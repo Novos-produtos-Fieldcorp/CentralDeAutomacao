@@ -18,7 +18,7 @@ const VehicleMileageChart: React.FC<VehicleMileageProps> = ({ data }) => {
   const sortedData = [...data].sort((a, b) => b.totalKm - a.totalKm);
 
   return (
-    <div className="w-full space-y-4 bg-[#1B1F2B] p-6 rounded-xl">
+    <div className="w-full space-y-4 bg-gray-900 dark:bg-[#1B1F2B] p-6 rounded-xl">
       {sortedData.map((vehicle, index) => (
         <div key={index} className="relative">
           <div className="flex justify-between items-center mb-1">
