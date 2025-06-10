@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed } from 'lucide-react';
+import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelRight } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
@@ -100,7 +100,7 @@ const Navbar = () => {
             {isExpanded ? (
               <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             ) : (
-              <PanelLeftDashed className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <PanelRight className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             )}
           </button>
         </div>
