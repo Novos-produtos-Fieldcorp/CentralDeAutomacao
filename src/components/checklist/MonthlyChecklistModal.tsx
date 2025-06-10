@@ -280,7 +280,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
       const { error: uploadError, data } = await supabase.storage
         .from('checklist-photos')
         .upload(filePath, file);
-
+        
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage

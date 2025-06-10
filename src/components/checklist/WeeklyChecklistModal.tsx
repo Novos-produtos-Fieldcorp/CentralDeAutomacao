@@ -56,11 +56,18 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
   });
 
   useEffect(() => {
-    if (isOpen) {
-      fetchMotoristas();
-      fetchVeiculos();
+    if (checklist) {
+      setFormData(prev => ({
+        ...prev,
+        motorista_id: checklist.motorista_id?.toString() || '',
+        veiculo_id: checklist.veiculo_id?.toString() || '',
+        quilometragem: checklist.quilometragem?.toString() || '',
+        observacoes: checklist.observacoes || '',
+        data: checklist.data || new Date().toISOString().split('T')[0],
+        hora: checklist.hora || new Date().toTimeString().split(' ')[0].slice(0, 5)
+      }));
     }
-  }, [isOpen]);
+  }, [checklist]);
 
   useEffect(() => {
     const fetchChecklistDetails = async () => {
@@ -240,6 +247,13 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
     }
   }, [checklist]);
 
+  useEffect(() => {
+    if (isOpen) {
+      fetchMotoristas();
+      fetchVeiculos();
+    }
+  }, [isOpen]);
+
   const fetchMotoristas = async () => {
     try {
       const { data, error } = await supabase
@@ -317,7 +331,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
       
       const checklistId = checklist ? checklist.checklist_id : newChecklist.checklist_id;
 
-      // Find status IDs based on the form values
+      // Get status IDs based on the form values
       const getStatusId = (value: string, type: string) => {
         // Default mappings
         if (type === 'fluid') {
@@ -793,7 +807,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={submitting}
             >
               {submitting ? (
