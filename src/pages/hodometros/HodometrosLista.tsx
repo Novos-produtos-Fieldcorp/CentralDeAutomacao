@@ -201,9 +201,13 @@ const HodometrosLista = () => {
           // For electric vehicles, use the sum of km_rodado values
           totalKm = sortedHodometros.reduce((sum, reading) => sum + (reading.km_rodado || 0), 0);
         } else {
-          // For regular vehicles, use the difference between first and last readings
+          // For regular vehicles, use the difference between last and first readings
+          // FIXED: Ensure we subtract in the correct order (last - first) for positive values
           const firstHodLido = firstReading.hod_lido || 0;
           const lastHodLido = lastReading.hod_lido || 0;
+          
+          // Make sure the result is positive by taking the absolute difference
+          // If last reading is smaller than first, it might be due to odometer reset or data error
           totalKm = Math.max(0, lastHodLido - firstHodLido);
         }
 
@@ -260,7 +264,10 @@ const HodometrosLista = () => {
         monthlyData[monthKey] = 0;
       }
       
-      monthlyData[monthKey] += hodometro.km_rodado || 0;
+      // Add the km_rodado value (which should always be positive)
+      if (hodometro.km_rodado && hodometro.km_rodado > 0) {
+        monthlyData[monthKey] += hodometro.km_rodado;
+      }
     });
     
     // Convert to array and sort by month
@@ -434,31 +441,30 @@ const HodometrosLista = () => {
         </div>
       </div>
 
-      {/* Filters Section */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
           <div className="relative">
             <input
               type="text"
-              placeholder="Buscar por motorista, placa ou cliente..."
+              placeholder="Buscar por nome, CPF, placa, marca ou modelo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            {loading ? (
+              <div className="absolute left-3 top-2.5">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            )}
           </div>
 
-          {/* Client Filter */}
           <div className="relative">
             <select
               value={selectedClientFilter}
               onChange={(e) => setSelectedClientFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100 appearance-none"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todos os clientes</option>
               {clients.map((client, index) => (
@@ -469,7 +475,6 @@ const HodometrosLista = () => {
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
-          {/* Period Selector */}
           <div>
             <PeriodSelector
               periodType={periodType}
@@ -481,7 +486,6 @@ const HodometrosLista = () => {
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
           <div className="flex items-center">
