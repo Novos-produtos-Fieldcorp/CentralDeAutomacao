@@ -301,6 +301,17 @@ const HodometrosDashboard = () => {
       // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
       
+      // Check if today is within the selected date range
+      const startDate = dateRange.startDate ? new Date(dateRange.startDate) : null;
+      const endDate = dateRange.endDate ? new Date(dateRange.endDate) : null;
+      const todayDate = new Date(today);
+      
+      // If today is not in the selected range, set todayReadings to 0
+      if ((startDate && todayDate < startDate) || (endDate && todayDate > endDate)) {
+        setTodayReadings(0);
+        return;
+      }
+      
       const { data, error, count } = await supabase
         .from('hodometro')
         .select('id_hodometro', { count: 'exact' })
@@ -318,7 +329,8 @@ const HodometrosDashboard = () => {
 
   const fetchInconsistencies = async () => {
     try {
-      const { data, error, count } = await supabase
+      // Build the query with date range filter
+      let query = supabase
         .from('hodometro')
         .select(`
           id_hodometro,
@@ -346,7 +358,17 @@ const HodometrosDashboard = () => {
           )
         `, { count: 'exact' })
         .eq('company_id', companyId)
-        .eq('verificacao', false)
+        .eq('verificacao', false);
+      
+      // Apply date range filter
+      if (dateRange.startDate) {
+        query = query.gte('data', dateRange.startDate);
+      }
+      if (dateRange.endDate) {
+        query = query.lte('data', dateRange.endDate);
+      }
+      
+      const { data, error, count } = await query
         .order('data', { ascending: false })
         .limit(10);
       
