@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertTriangle, Activity, FileText } from 'lucide-react';
+import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertCircle, Activity, FileText } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -10,6 +10,7 @@ import DailyMileageTotal from '../../components/hodometros/DailyMileageTotal';
 import ReadingsPerDriverChart from '../../components/hodometros/ReadingsPerDriverChart';
 import VehicleMileageChart from '../../components/hodometros/VehicleMileageChart';
 import TodayReadingsCard from '../../components/hodometros/TodayReadingsCard';
+import InconsistenciesTable from '../../components/hodometros/InconsistenciesTable';
 import { 
   BarChart, 
   Bar, 
@@ -306,6 +307,9 @@ const HodometrosDashboard = () => {
         <TodayReadingsCard />
       </div>
 
+      {/* Inconsistencies Table */}
+      <InconsistenciesTable />
+
       {/* Daily Mileage Chart */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
@@ -362,7 +366,7 @@ const HodometrosDashboard = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
             <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
           </div>
         )}
@@ -381,7 +385,7 @@ const HodometrosDashboard = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
             <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
           </div>
         )}
@@ -400,7 +404,7 @@ const HodometrosDashboard = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
             <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
           </div>
         )}
@@ -587,7 +591,7 @@ const HodometrosDashboard = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-40 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
             <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
           </div>
         )}
