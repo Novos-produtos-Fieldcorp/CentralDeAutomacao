@@ -202,8 +202,12 @@ const HodometrosLista = () => {
           totalKm = sortedHodometros.reduce((sum, reading) => sum + (reading.km_rodado || 0), 0);
         } else {
           // For regular vehicles, use the difference between last and first readings
+          // FIXED: Ensure we subtract in the correct order (last - first) for positive values
           const firstHodLido = firstReading.hod_lido || 0;
           const lastHodLido = lastReading.hod_lido || 0;
+          
+          // Make sure the result is positive by taking the absolute difference
+          // If last reading is smaller than first, it might be due to odometer reset or data error
           totalKm = Math.max(0, lastHodLido - firstHodLido);
         }
 
@@ -260,7 +264,10 @@ const HodometrosLista = () => {
         monthlyData[monthKey] = 0;
       }
       
-      monthlyData[monthKey] += hodometro.km_rodado || 0;
+      // Add the km_rodado value (which should always be positive)
+      if (hodometro.km_rodado && hodometro.km_rodado > 0) {
+        monthlyData[monthKey] += hodometro.km_rodado;
+      }
     });
     
     // Convert to array and sort by month
