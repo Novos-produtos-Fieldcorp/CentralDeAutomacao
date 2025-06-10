@@ -6,7 +6,6 @@ import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import DailyMileageTotal from '../../components/hodometros/DailyMileageTotal';
 import { 
   BarChart, 
   Bar, 
@@ -226,7 +225,7 @@ const HodometrosDashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-blue-500 dark:border-blue-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex flex-col items-center text-center">
             <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl mb-3">
               <TrendingUp className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -238,7 +237,7 @@ const HodometrosDashboard = () => {
           </div>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-green-500 dark:border-green-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex flex-col items-center text-center">
             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl mb-3">
               <Calendar className="w-8 h-8 text-green-600 dark:text-green-400" />
@@ -250,7 +249,7 @@ const HodometrosDashboard = () => {
           </div>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-purple-500 dark:border-purple-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex flex-col items-center text-center">
             <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl mb-3">
               <Activity className="w-8 h-8 text-purple-600 dark:text-purple-400" />
@@ -262,7 +261,7 @@ const HodometrosDashboard = () => {
           </div>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-amber-500 dark:border-amber-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex flex-col items-center text-center">
             <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl mb-3">
               <Clock className="w-8 h-8 text-amber-600 dark:text-amber-400" />
@@ -271,13 +270,12 @@ const HodometrosDashboard = () => {
             <p className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent dark:from-amber-400 dark:to-orange-400">
               {formatNumber(todayReadings)}
             </p>
-            <DailyMileageTotal selectedDate={new Date().toISOString().split('T')[0]} />
           </div>
         </div>
       </div>
 
       {/* Daily Mileage Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-blue-100 dark:border-blue-900/30 hover:shadow-lg transition-all duration-300">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-blue-500 dark:text-blue-400" />
           Quilometragem Diária
@@ -344,7 +342,7 @@ const HodometrosDashboard = () => {
       {/* Top Drivers and Vehicles */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Drivers */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-green-100 dark:border-green-900/30 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
               <Users className="w-5 h-5 text-green-500 dark:text-green-400" />
@@ -422,7 +420,7 @@ const HodometrosDashboard = () => {
         </div>
         
         {/* Top Vehicles */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-purple-100 dark:border-purple-900/30 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
               <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
@@ -501,7 +499,7 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* Daily Mileage Table */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-amber-100 dark:border-amber-900/30 hover:shadow-lg transition-all duration-300">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
             <FileText className="w-5 h-5 text-amber-500 dark:text-amber-400" />
