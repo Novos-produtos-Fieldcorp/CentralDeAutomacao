@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Calendar, Loader2, Eye, Plus, Edit2, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, Filter, Calendar, Loader2, Eye, Plus, Edit2, ChevronRight, CheckCircle2, XCircle, FilePen } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Checklist } from '../../types/database';
 import ChecklistCard from '../../components/checklist/ChecklistCard';
@@ -416,11 +416,11 @@ const ChecklistSemanal = () => {
                             setSelectedChecklist(checklist);
                             setIsDetailsModalOpen(true);
                           }}
-                          className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors
                                    transition-colors"
                           title="Visualizar"
                         >
-                          <Eye size={18} />
+                          <FilePen size={18} />
                         </button>
                       </div>
                     </td>
@@ -463,13 +463,13 @@ const ChecklistSemanal = () => {
           onClose={() => setContextMenu({ ...contextMenu, visible: false })}
           actions={[
             {
-              icon: <Eye size={16} />,
+              icon: <FilePen size={16} />,
               label: 'Visualizar',
               onClick: () => {
                 setSelectedChecklist(contextMenu.checklist);
                 setIsDetailsModalOpen(true);
               },
-              color: 'text-gray-600 dark:text-gray-400'
+              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
             },
             {
               icon: contextMenu.checklist.status ? <XCircle size={16} /> : <CheckCircle2 size={16} />,

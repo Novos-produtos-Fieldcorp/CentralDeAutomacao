@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, AlertCircle, Loader2, ChevronDown, ChevronUp, Plus, MapPin, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
+import { X, AlertCircle, Loader2, ChevronDown, ChevronUp, Plus, MapPin, FilePen, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import type { Cliente } from '../types/database';
 import toast from 'react-hot-toast';
@@ -661,10 +661,10 @@ const Clientes = () => {
                     onClose={() => setContextMenu({ ...contextMenu, visible: false })}
                     actions={[
                         {
-                            icon: <Edit2 size={16} />,
+                            icon: <FilePen size={16} />,
                             label: 'Editar Cliente',
                             onClick: () => handleEdit(contextMenu.cliente!),
-                            color: 'text-yellow-500 dark:text-yellow-400'
+                            color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
                         },
                         {
                             icon: <Trash2 size={16} />,

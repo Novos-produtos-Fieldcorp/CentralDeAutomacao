@@ -15,6 +15,7 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 import { supabase } from '../../lib/supabase';
 import { useDebounce } from '../../hooks/useDebounce';
+import CombinedVehicleModal from '../../components/veiculos/CombinedVehicleModal';
 
 interface VeiculoWithMotorista extends Veiculo {
   motorista?: {
@@ -43,14 +44,14 @@ const VeiculosAgregados = () => {
     direction: 'asc' | 'desc';
   }>({ key: 'placa', direction: 'asc' });
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
-  const debouncedPhoneSearch = useDebounce(phoneSearch, 500);
+  // Aumentado o delay do debounce de 500ms para 1000ms para alinhar com outros componentes
+  const debouncedSearchTerm = useDebounce(searchTerm, 1000);
+  const debouncedPhoneSearch = useDebounce(phoneSearch, 1000);
 
   const [isSearching, setIsSearching] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
+  const [isCombinedModalOpen, setIsCombinedModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
@@ -284,14 +285,9 @@ const VeiculosAgregados = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleViewDetails = (veiculo: Veiculo) => {
+  const handleViewCombined = (veiculo: Veiculo) => {
     setSelectedVeiculo(veiculo);
-    setIsDetailsModalOpen(true);
-  };
-
-  const handleViewDocuments = (veiculo: Veiculo) => {
-    setSelectedVeiculo(veiculo);
-    setIsDocumentsModalOpen(true);
+    setIsCombinedModalOpen(true);
   };
 
   const handleSelectItem = (id: number) => {
@@ -436,6 +432,7 @@ const VeiculosAgregados = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                autoComplete="off"
               />
               {isSearching ? (
                 <div className="absolute left-3 top-2.5">
@@ -455,6 +452,7 @@ const VeiculosAgregados = () => {
                 value={phoneSearch}
                 onChange={(e) => setPhoneSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                autoComplete="off"
               />
               {isSearching ? (
                 <div className="absolute left-3 top-2.5">
@@ -582,25 +580,11 @@ const VeiculosAgregados = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-3">
                           <button
-                            onClick={() => handleViewDetails(veiculo)}
-                            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
-                            title="Visualizar Detalhes - Veja todas as informações do veículo, incluindo especificações técnicas"
+                            onClick={() => handleViewCombined(veiculo)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            title="Visualizar e Editar Veículo"
                           >
                             <FilePen size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleViewDocuments(veiculo)}
-                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                            title="Documentos do Veículo - Visualize e faça upload do CRV e outros documentos"
-                          >
-                            <FileText size={18} />
-                          </button>
-                          <button 
-                            onClick={() => handleEdit(veiculo)}
-                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
-                            title="Editar Veículo - Altere informações como marca, modelo, características e rastreador"
-                          >
-                            <Edit2 size={18} />
                           </button>
                           <button 
                             onClick={() => handleDelete(veiculo)}
@@ -710,21 +694,9 @@ const VeiculosAgregados = () => {
           actions={[
             {
               icon: <FilePen size={16} />,
-              label: 'Visualizar Detalhes',
-              onClick: () => handleViewDetails(contextMenu.veiculo!),
-              color: 'text-gray-600 dark:text-gray-400'
-            },
-            {
-              icon: <FileText size={16} />,
-              label: 'Documentos do Veículo',
-              onClick: () => handleViewDocuments(contextMenu.veiculo!),
+              label: 'Visualizar e Editar',
+              onClick: () => handleViewCombined(contextMenu.veiculo!),
               color: 'text-blue-600 dark:text-blue-400'
-            },
-            {
-              icon: <Edit2 size={16} />,
-              label: 'Editar Veículo',
-              onClick: () => handleEdit(contextMenu.veiculo!),
-              color: 'text-yellow-500 dark:text-yellow-400'
             },
             {
               icon: <Trash2 size={16} />,
@@ -751,20 +723,10 @@ const VeiculosAgregados = () => {
         motoristas={motoristas}
       />
 
-      <VehicleDetailsModal
-        isOpen={isDetailsModalOpen}
-        onClose={() => setIsDetailsModalOpen(false)}
+      <CombinedVehicleModal
+        isOpen={isCombinedModalOpen}
+        onClose={() => setIsCombinedModalOpen(false)}
         veiculo={selectedVeiculo}
-      />
-
-      <VehicleDocumentsModal
-        isOpen={isDocumentsModalOpen}
-        onClose={() => setIsDocumentsModalOpen(false)}
-        documento={selectedVeiculo?.documento_veiculo?.[0] || null}
-        placa={selectedVeiculo?.placa || ''}
-        marca={selectedVeiculo?.marca || ''}
-        tipo={selectedVeiculo?.tipo || ''}
-        veiculo_id={selectedVeiculo?.veiculo_id}
         onUploadSuccess={fetchVeiculos}
       />
 

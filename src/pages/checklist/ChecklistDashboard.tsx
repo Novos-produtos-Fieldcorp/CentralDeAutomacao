@@ -62,15 +62,25 @@ const ChecklistDashboard = () => {
       const { data: checklists, error: checklistError } = await supabase.from('checklist')
         .select(`
           *,
-          motorista:motorista_id (nome),
-          veiculo:veiculo_id (placa, marca, tipo),
+          motorista:motorista_id (
+            motorista_id,
+            nome,
+            cpf
+          ),
+          veiculo:veiculo_id (
+            veiculo_id,
+            placa,
+            marca,
+            tipo
+          ),
           acessorios_veiculos!checklist_id(*),
           componentes_gerais!checklist_id(*),
           farol_veiculo!checklist_id(*),
           fluido_veiculo!checklist_id(*)
         `)
         .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate);
+        .lte('data', dateRange.endDate)
+        .order('data', { ascending: false });
 
       if (checklistError) throw checklistError;
 
@@ -201,12 +211,21 @@ const ChecklistDashboard = () => {
       });
 
       if (problemas.length > 0) {
-        veiculosMap.set(veiculo.placa, {
-          placa: veiculo.placa,
-          marca: veiculo.marca,
-          tipo: veiculo.tipo,
-          problemas
-        });
+        // Group issues by vehicle
+        const existingItem = veiculosMap.get(veiculo.placa);
+
+        if (existingItem) {
+          // Add new issues to existing vehicle
+          existingItem.problemas.push(...problemas);
+        } else {
+          // Create new maintenance item
+          veiculosMap.set(veiculo.placa, {
+            placa: veiculo.placa.toUpperCase(),
+            marca: veiculo.marca,
+            tipo: veiculo.tipo,
+            problemas
+          });
+        }
       }
     });
 
@@ -253,26 +272,30 @@ const ChecklistDashboard = () => {
       </div>
 
       {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total de Checklists"
           value={stats.totalChecklists}
           icon={FileText}
+          color="blue"
         />
         <StatCard
           title="Checklists Mensais"
           value={stats.totalMensal}
           icon={Calendar}
+          color="green"
         />
         <StatCard
           title="Checklists Semanais"
           value={stats.totalSemanal}
           icon={FileText}
+          color="purple"
         />
         <StatCard
           title="Problemas"
           value={stats.totalProblemas}
           icon={AlertTriangle}
+          color="amber"
         />
       </div>
 
@@ -316,28 +339,23 @@ const ChecklistDashboard = () => {
               Checklists por Motorista
             </h3>
           </div>
-          <div className="space-y-6">
+          <div className="space-y-4">
             {stats.checklistsPorMotorista.slice(0, 5).map((motorista, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {motorista.nome}
-                  </span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    Total: {motorista.total}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 text-xs text-gray-500 dark:text-gray-400">Checklists:</span>
-                    <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                        style={{ width: `100%` }}
-                      />
+              <div key={index} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                        {motorista.nome.charAt(0)}
+                      </span>
                     </div>
-                    <span className="w-8 text-right text-sm">{motorista.total}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {motorista.nome}
+                    </span>
                   </div>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {motorista.total}
+                  </span>
                 </div>
               </div>
             ))}
@@ -397,23 +415,67 @@ const ChecklistDashboard = () => {
 const StatCard = ({ 
   title, 
   value, 
-  icon: Icon
+  icon: Icon,
+  color = 'blue'
 }: { 
   title: string;
   value: number;
   icon: any;
+  color?: 'blue' | 'green' | 'purple' | 'amber';
 }) => {
+  // Define color variants based on the hodometros dashboard style
+  const colorVariants = {
+    blue: {
+      iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+      iconColor: 'text-blue-600 dark:text-blue-400',
+      textColor: 'text-blue-600',
+      darkTextColor: 'dark:text-blue-400',
+      bgGradient: 'from-blue-600 to-indigo-600',
+      darkBgGradient: 'dark:from-blue-400 dark:to-indigo-400'
+    },
+    green: {
+      iconBg: 'bg-green-100 dark:bg-green-900/30',
+      iconColor: 'text-green-600 dark:text-green-400',
+      textColor: 'text-green-600',
+      darkTextColor: 'dark:text-green-400',
+      bgGradient: 'from-green-600 to-emerald-600',
+      darkBgGradient: 'dark:from-green-400 dark:to-emerald-400'
+    },
+    purple: {
+      iconBg: 'bg-purple-100 dark:bg-purple-900/30',
+      iconColor: 'text-purple-600 dark:text-purple-400',
+      textColor: 'text-purple-600',
+      darkTextColor: 'dark:text-purple-400',
+      bgGradient: 'from-purple-600 to-violet-600',
+      darkBgGradient: 'dark:from-purple-400 dark:to-violet-400'
+    },
+    amber: {
+      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      textColor: 'text-amber-600',
+      darkTextColor: 'dark:text-amber-400',
+      bgGradient: 'from-amber-600 to-orange-600',
+      darkBgGradient: 'dark:from-amber-400 dark:to-orange-400'
+    }
+  };
+
+  const variant = colorVariants[color];
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
-      <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400 mb-4">
-        <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-          <Icon className="w-6 h-6 text-blue-500 dark:text-blue-400" />
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+      <div className="flex flex-col items-center text-center">
+        <div className={`p-3 ${variant.iconBg} rounded-xl mb-3`}>
+          <Icon className={`w-6 h-6 ${variant.iconColor}`} />
         </div>
-        <span className="text-sm font-medium">{title}</span>
+        
+        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+          {title}
+        </h3>
+        
+        <p className={`text-4xl font-bold bg-gradient-to-r bg-clip-text text-transparent ${variant.bgGradient} ${variant.darkBgGradient}`}>
+          {value.toLocaleString('pt-BR')}
+        </p>
       </div>
-      <span className="text-2xl font-bold text-gray-900 dark:text-white">
-        {value}
-      </span>
     </div>
   );
 };

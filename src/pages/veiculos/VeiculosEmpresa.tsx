@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Edit2, Trash2, Search, Plus, Eye, FileText, AlertCircle, Phone } from 'lucide-react';
+import { Edit2, Trash2, Search, Plus, Eye, FileText, FilePen, AlertCircle, Phone } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Veiculo, Motorista } from '../../types/database';
 import AddVeiculoModal from '../../components/veiculos/AddVeiculoModal';
@@ -65,8 +65,9 @@ const VeiculosEmpresa = () => {
     veiculo: null,
   });
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
-  const debouncedPhoneSearch = useDebounce(phoneSearch, 500);
+  // Aumentado o delay do debounce de 500ms para 1000ms para alinhar com outros componentes
+  const debouncedSearchTerm = useDebounce(searchTerm, 1000);
+  const debouncedPhoneSearch = useDebounce(phoneSearch, 1000);
 
   useEffect(() => {
     const init = async () => {
@@ -185,11 +186,6 @@ const VeiculosEmpresa = () => {
       console.error('Error deleting veiculo:', error);
       toast.error('Erro ao excluir veículo');
     }
-  };
-
-  const handleEdit = (veiculo: VeiculoWithMotorista) => {
-    setSelectedVeiculo(veiculo);
-    setIsEditModalOpen(true);
   };
 
   const handleSelectItem = (id: number) => {
@@ -331,6 +327,7 @@ const VeiculosEmpresa = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                autoComplete="off"
               />
               {isSearching ? (
                 <div className="absolute left-3 top-2.5">
@@ -350,6 +347,7 @@ const VeiculosEmpresa = () => {
                 value={phoneSearch}
                 onChange={(e) => setPhoneSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                autoComplete="off"
               />
               {isSearching ? (
                 <div className="absolute left-3 top-2.5">
@@ -477,16 +475,9 @@ const VeiculosEmpresa = () => {
                           <button
                             onClick={() => handleViewVehicle(veiculo)}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                            title="Visualizar Detalhes e Documentos - Veja todas as informações do veículo e gerencie seus documentos"
+                            title="Visualizar e Editar Veículo"
                           >
-                            <Eye size={18} />
-                          </button>
-                          <button 
-                            onClick={() => handleEdit(veiculo)}
-                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
-                            title="Editar Veículo - Altere informações como marca, modelo, características e rastreador"
-                          >
-                            <Edit2 size={18} />
+                            <FilePen size={18} />
                           </button>
                           <button 
                             onClick={() => handleDelete(veiculo)}
@@ -601,16 +592,10 @@ const VeiculosEmpresa = () => {
           onClose={() => setContextMenu({ ...contextMenu, visible: false })}
           actions={[
             {
-              icon: <Eye size={16} />,
-              label: 'Visualizar Detalhes',
+              icon: <FilePen size={16} />,
+              label: 'Visualizar e Editar',
               onClick: () => handleViewVehicle(contextMenu.veiculo!),
-              color: 'text-blue-600 dark:text-blue-400'
-            },
-            {
-              icon: <Edit2 size={16} />,
-              label: 'Editar Veículo',
-              onClick: () => handleEdit(contextMenu.veiculo!),
-              color: 'text-yellow-500 dark:text-yellow-400'
+              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
             },
             {
               icon: <Trash2 size={16} />,
@@ -626,14 +611,6 @@ const VeiculosEmpresa = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={fetchVeiculos}
-        isEmpresa
-      />
-
-      <EditVeiculoModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        veiculo={selectedVeiculo}
-        onUpdate={fetchVeiculos}
         isEmpresa
       />
 

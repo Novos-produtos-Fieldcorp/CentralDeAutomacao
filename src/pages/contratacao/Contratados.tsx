@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { FileText, Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Eye, Store, UserMinus, MessageCircle, MessageSquare, Users, Building2, Truck, FilePen } from 'lucide-react';
+import { FileText, Trash2, Search, Phone, Filter, MapPin, Plus, Store, UserMinus, MessageCircle, MessageSquare, Users, Building2, Truck, FilePen } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import type { Motorista } from '../../types/database';
@@ -9,12 +9,12 @@ import { formatCPF, formatPhone } from '../../utils/format';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
-import EditMotoristaModal from '../../components/EditMotoristaModal';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import AgregadoDetailView from '../../components/AgregadoDetailView';
 import { useFloatingChat } from '../../hooks/useFloatingChat';
 import BulkActionsModal from '../../components/BulkActionsModal';
 import MassMessageModal from '../../components/MassMessageModal';
+import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 
 interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'cidade' | 'estado'> {
   telefone: string | number;
@@ -93,7 +93,7 @@ const Contratados = () => {
   const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isAgregadoDetailOpen, setIsAgregadoDetailOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedMotorista, setSelectedMotorista] = useState<MotoristaWithAddress | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
@@ -424,6 +424,11 @@ const Contratados = () => {
     }
   };
 
+  const handleViewUnifiedModal = (motorista: MotoristaWithAddress) => {
+    setSelectedMotorista(motorista);
+    setIsUnifiedModalOpen(true);
+  };
+
   const handleViewAgregadoDetail = async (motorista: MotoristaWithAddress) => {
     if (motorista.funcao !== 'Agregado') {
       handleViewDocument(motorista);
@@ -587,11 +592,6 @@ const Contratados = () => {
       toast.error(error instanceof Error ? error.message : 'Erro ao carregar documentos');
       setIsDocumentViewerOpen(false);
     }
-  };
-
-  const handleEdit = (motorista: MotoristaWithAddress) => {
-    setSelectedMotorista(motorista);
-    setIsEditModalOpen(true);
   };
 
   const handleDelete = (motorista: MotoristaWithAddress) => {
@@ -772,6 +772,7 @@ const Contratados = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              autoComplete="off"
             />
             {isSearching ? (
               <div className="absolute left-3 top-2.5">
@@ -789,6 +790,7 @@ const Contratados = () => {
               value={phoneSearch}
               onChange={(e) => setPhoneSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              autoComplete="off"
             />
             {isSearching ? (
               <div className="absolute left-3 top-2.5">
@@ -916,7 +918,7 @@ const Contratados = () => {
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
                         selectedItems.has(motorista.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
-                      onClick={() => handleViewAgregadoDetail(motorista)}
+                      onClick={() => handleViewUnifiedModal(motorista)}
                       onContextMenu={(e) => handleContextMenu(e, motorista)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
@@ -1028,22 +1030,12 @@ const Contratados = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleViewAgregadoDetail(motorista);
+                              handleViewUnifiedModal(motorista);
                             }}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Visualizar Documentos"
                           >
                             <FilePen size={18} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(motorista);
-                            }}
-                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
-                            title="Editar"
-                          >
-                            <Edit2 size={18} />
                           </button>
                           <button
                             onClick={(e) => {
@@ -1152,27 +1144,21 @@ const Contratados = () => {
             {
               icon: <FilePen size={16} />,
               label: 'Visualizar Documentos',
-              onClick: () => handleViewAgregadoDetail(contextMenu.motorista!),
-              color: 'text-blue-600 dark:text-blue-400'
+              onClick: () => handleViewUnifiedModal(contextMenu.motorista!),
+              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
             },
             {
               icon: <MessageCircle size={16} />,
               label: 'Iniciar Chat',
               onClick: () => handleStartChat(contextMenu.motorista!),
-              color: 'text-blue-600 dark:text-blue-400',
+              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors',
               disabled: !contextMenu.motorista?.telefone
-            },
-            {
-              icon: <Edit2 size={16} />,
-              label: 'Editar Motorista',
-              onClick: () => handleEdit(contextMenu.motorista!),
-              color: 'text-yellow-500 dark:text-yellow-400'
             },
             {
               icon: <UserMinus size={16} />,
               label: 'Remover Contratado',
               onClick: () => handleDelete(contextMenu.motorista!),
-              color: 'text-red-600 dark:text-red-400'
+              color: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors'
             }
           ]}
         />
@@ -1202,11 +1188,11 @@ const Contratados = () => {
         endereco={selectedDocumento.endereco}
       />
 
-      <EditMotoristaModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        motorista={selectedMotorista as unknown as Motorista}
-        onUpdate={fetchMotoristas}
+      <UnifiedAgregadoModal
+        isOpen={isUnifiedModalOpen}
+        onClose={() => setIsUnifiedModalOpen(false)}
+        agregado={selectedMotorista as unknown as Motorista}
+        onSuccess={fetchMotoristas}
       />
 
       <DeleteConfirmationModal
