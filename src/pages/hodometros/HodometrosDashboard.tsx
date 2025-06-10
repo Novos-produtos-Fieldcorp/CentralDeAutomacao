@@ -21,10 +21,7 @@ import {
   Tooltip, 
   Legend, 
   ResponsiveContainer,
-  Cell,
-  PieChart,
-  Pie,
-  Sector
+  Cell
 } from 'recharts';
 
 interface DailyMileage {
@@ -106,7 +103,6 @@ const HodometrosDashboard = () => {
   const [totalInconsistencies, setTotalInconsistencies] = useState(0);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-  const [activeOperationIndex, setActiveOperationIndex] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -385,54 +381,6 @@ const HodometrosDashboard = () => {
     return num.toLocaleString('pt-BR');
   };
 
-  const renderActiveShape = (props: any) => {
-    const RADIAN = Math.PI / 180;
-    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
-    const sin = Math.sin(-RADIAN * midAngle);
-    const cos = Math.cos(-RADIAN * midAngle);
-    const sx = cx + (outerRadius + 10) * cos;
-    const sy = cy + (outerRadius + 10) * sin;
-    const mx = cx + (outerRadius + 30) * cos;
-    const my = cy + (outerRadius + 30) * sin;
-    const ex = mx + (cos >= 0 ? 1 : -1) * 22;
-    const ey = my;
-    const textAnchor = cos >= 0 ? 'start' : 'end';
-  
-    return (
-      <g>
-        <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} className="text-sm font-medium">
-          {payload.name}
-        </text>
-        <Sector
-          cx={cx}
-          cy={cy}
-          innerRadius={innerRadius}
-          outerRadius={outerRadius}
-          startAngle={startAngle}
-          endAngle={endAngle}
-          fill={fill}
-        />
-        <Sector
-          cx={cx}
-          cy={cy}
-          startAngle={startAngle}
-          endAngle={endAngle}
-          innerRadius={outerRadius + 6}
-          outerRadius={outerRadius + 10}
-          fill={fill}
-        />
-        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
-        <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
-        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#333" className="text-xs">
-          {`${formatNumber(value)} km`}
-        </text>
-        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#999" className="text-xs">
-          {`(${(percent * 100).toFixed(2)}%)`}
-        </text>
-      </g>
-    );
-  };
-
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -516,29 +464,23 @@ const HodometrosDashboard = () => {
         {operationMileage.length > 0 ? (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  activeIndex={activeOperationIndex}
-                  activeShape={renderActiveShape}
-                  data={operationMileage}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  onMouseEnter={(_, index) => setActiveOperationIndex(index)}
-                >
-                  {operationMileage.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={[
-                        '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', 
-                        '#EC4899', '#6366F1', '#EF4444', '#14B8A6'
-                      ][index % 8]} 
-                    />
-                  ))}
-                </Pie>
+              <BarChart
+                data={operationMileage}
+                margin={{ top: 5, right: 30, left: 20, bottom: 70 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45} 
+                  textAnchor="end" 
+                  height={70} 
+                  tick={{ fontSize: 12 }}
+                  stroke="#9CA3AF"
+                />
+                <YAxis 
+                  tickFormatter={(value) => formatNumber(value)}
+                  stroke="#9CA3AF"
+                />
                 <Tooltip 
                   formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
                   contentStyle={{ 
@@ -548,14 +490,24 @@ const HodometrosDashboard = () => {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                   }}
                 />
-                <Legend 
-                  formatter={(value, entry, index) => (
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                      {value} ({formatNumber(operationMileage[index]?.value || 0)} km)
-                    </span>
-                  )}
-                />
-              </PieChart>
+                <Legend />
+                <Bar 
+                  dataKey="value" 
+                  name="Quilômetros Rodados"
+                  fill="#F59E0B"
+                  radius={[4, 4, 0, 0]}
+                >
+                  {operationMileage.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={[
+                        '#F59E0B', '#EC4899', '#8B5CF6', '#3B82F6', 
+                        '#10B981', '#6366F1', '#EF4444', '#14B8A6'
+                      ][index % 8]} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         ) : (
