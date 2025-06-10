@@ -6,7 +6,6 @@ import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { supabase } from '../../lib/supabase';
-import { formatNumber } from '../../utils/format';
 
 interface DashboardStats {
   totalMotoristas: number;
@@ -254,44 +253,44 @@ const ContratacaoDashboard = () => {
           title="Total de Motoristas"
           value={stats.totalMotoristas}
           icon={Users}
-          color="blue"
+          variant="blue"
         />
         <StatCard
           title="Total de Agregados"
           value={stats.totalAgregados}
           icon={Truck}
-          color="green"
+          variant="blue-light"
         />
         <StatCard
           title="Documentação"
           value={stats.documentacao}
           icon={FileText}
-          color="blue"
+          variant="blue"
         />
         <StatCard
           title="Qualificados"
           value={stats.qualificados}
           icon={Award}
-          color="green"
+          variant="blue-light"
         />
         <StatCard
           title="Contratos Ativos"
           value={stats.contratosAtivos}
           icon={CheckCircle2}
-          color="purple"
+          variant="blue"
         />
         <StatCard
           title="Rejeitados"
           value={stats.rejeitados}
           icon={XCircle}
-          color="amber"
+          variant="blue-light"
         />
       </div>
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Registrations */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
             <Calendar className="text-blue-500 dark:text-blue-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
@@ -326,7 +325,7 @@ const ContratacaoDashboard = () => {
         </div>
 
         {/* Contracted by Client */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
             <Users className="text-blue-500 dark:text-blue-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
@@ -366,8 +365,8 @@ const ContratacaoDashboard = () => {
           </div>
         </div>
 
-        {/* Distribution by Type */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        {/* Top 3 Cities */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
             <MapPin className="text-blue-500 dark:text-blue-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
@@ -411,7 +410,7 @@ const ContratacaoDashboard = () => {
         </div>
 
         {/* Status Distribution */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
             <BarChart2 className="text-blue-500 dark:text-blue-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
@@ -448,53 +447,47 @@ const StatCard = ({
   title, 
   value, 
   icon: Icon,
-  color = 'blue'
+  variant = 'blue'
 }: { 
   title: string;
   value: number;
   icon: any;
-  color?: 'blue' | 'green' | 'purple' | 'amber';
+  variant?: 'blue' | 'blue-light';
 }) => {
-  // Define color variants based on the hodometros dashboard style
-  const colorVariants = {
-    blue: {
-      iconBg: 'bg-blue-100 dark:bg-blue-900/30',
-      iconColor: 'text-blue-600 dark:text-blue-400',
-      textGradient: 'from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400'
+  const variants = {
+    'blue': {
+      icon: 'text-blue-500 dark:text-blue-400',
+      bg: 'bg-blue-50 dark:bg-blue-900/20'
     },
-    green: {
-      iconBg: 'bg-green-100 dark:bg-green-900/30',
-      iconColor: 'text-green-600 dark:text-green-400',
-      textGradient: 'from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400'
-    },
-    purple: {
-      iconBg: 'bg-purple-100 dark:bg-purple-900/30',
-      iconColor: 'text-purple-600 dark:text-purple-400',
-      textGradient: 'from-purple-600 to-violet-600 dark:from-purple-400 dark:to-violet-400'
-    },
-    amber: {
-      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-      iconColor: 'text-amber-600 dark:text-amber-400',
-      textGradient: 'from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400'
+    'blue-light': {
+      icon: 'text-blue-400 dark:text-blue-300',
+      bg: 'bg-blue-50/80 dark:bg-blue-900/10'
     }
   };
 
-  const variant = colorVariants[color];
+  const style = variants[variant];
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-      <div className="flex flex-col items-center text-center">
-        <div className={`p-3 ${variant.iconBg} rounded-xl mb-3`}>
-          <Icon className={`w-6 h-6 ${variant.iconColor}`} />
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-md min-h-[160px] flex flex-col">
+      <div className="flex flex-col items-center text-center h-full">
+        {/* Icon Container */}
+        <div className={`p-3 rounded-lg ${style.bg} mb-3`}>
+          <Icon className={`w-6 h-6 ${style.icon}`} />
         </div>
         
-        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-          {title}
-        </h3>
+        {/* Title Container - Allow wrapping for long titles */}
+        <div className="flex-1 flex items-center">
+          <h3 className="text-[18px] font-medium text-gray-600 dark:text-gray-400 leading-tight">
+            {title}
+          </h3>
+        </div>
         
-        <p className={`text-3xl font-bold bg-gradient-to-r ${variant.textGradient} bg-clip-text text-transparent`}>
-          {formatNumber(value)}
-        </p>
+        {/* Value Container */}
+        <div className="mt-3">
+          <span className="text-[16px] font-bold text-gray-900 dark:text-white">
+            {value}
+          </span>
+        </div>
       </div>
     </div>
   );
