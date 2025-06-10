@@ -145,7 +145,7 @@ const Navbar = () => {
                 <div key={item.path} className="relative group">
                   {/* Tooltip - only visible when sidebar is collapsed and hovering */}
                   {!isExpanded && (
-                    <div className="fixed left-20 ml-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none whitespace-nowrap z-[9999] shadow-md" style={{ top: 'var(--tooltip-y, 50%)', transform: 'translateY(-50%)' }}>
+                    <div className="fixed left-20 ml-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none whitespace-nowrap z-[9999] shadow-md\" style={{ top: 'var(--tooltip-y, 50%)', transform: 'translateY(-50%)' }}>
                       {item.label}
                       <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
                     </div>
