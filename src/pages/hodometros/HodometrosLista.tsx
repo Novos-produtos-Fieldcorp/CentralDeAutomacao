@@ -14,7 +14,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import MileageChartModal from '../../components/hodometros/MileageChartModal';
-import dynamic from 'next/dynamic';
+import Chart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 
 interface MileageData {
@@ -41,9 +41,6 @@ interface MonthlyData {
   month: string;
   km: number;
 }
-
-// Dynamically import ApexCharts to avoid SSR issues
-const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 const HodometrosLista = () => {
   const { query } = useCompanyData();

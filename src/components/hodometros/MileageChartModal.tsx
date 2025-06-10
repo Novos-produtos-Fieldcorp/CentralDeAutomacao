@@ -2,7 +2,7 @@ import React from 'react';
 import { X, BarChart2, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import dynamic from 'next/dynamic';
+import Chart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 
 interface MonthlyData {
@@ -16,9 +16,6 @@ interface MileageChartModalProps {
   data: MonthlyData[];
   driverName: string;
 }
-
-// Dynamically import ApexCharts to avoid SSR issues
-const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 const MileageChartModal: React.FC<MileageChartModalProps> = ({ 
   isOpen, 
