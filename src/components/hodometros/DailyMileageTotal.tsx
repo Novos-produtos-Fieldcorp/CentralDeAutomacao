@@ -71,7 +71,7 @@ const DailyMileageTotal: React.FC<DailyMileageProps> = ({ selectedDate }) => {
   }, [selectedDate, companyId]);
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border-l-4 border-blue-500 dark:border-blue-400 p-6 transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1">
       <div className="flex flex-col items-center text-center">
         <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl mb-3">
           <TrendingUp className="w-8 h-8 text-blue-600 dark:text-blue-400" />
