@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Edit2, Trash2, Search, Plus, Eye, FileText, AlertCircle, Phone } from 'lucide-react';
+import { Edit2, Trash2, Search, Plus, Eye, FileText, FilePen, AlertCircle, Phone } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Veiculo, Motorista } from '../../types/database';
 import AddVeiculoModal from '../../components/veiculos/AddVeiculoModal';
