@@ -68,11 +68,11 @@ const Motoristas = () => {
   }, []);
 
   const tabs = [
+    { path: '/motoristas/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/motoristas/lista', icon: Users, label: 'Motoristas' },
     { path: '/motoristas/agregados', icon: TruckIcon, label: 'Agregados' },
     { path: '/motoristas/contratados', icon: CheckCircle2, label: 'Contratados' },
     { path: '/motoristas/kanban', icon: Kanban, label: 'Kanban' },
-    { path: '/motoristas/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   ];
 
   const isActive = (path: string) => {
@@ -124,7 +124,7 @@ const Motoristas = () => {
 
         <div className="p-6">
           <Routes>
-            <Route index element={<Navigate to="/motoristas/lista" replace />} />
+            <Route index element={<Navigate to="/motoristas/dashboard" replace />} />
             <Route path="lista" element={<MotoristasLista />} />
             <Route path="lista-infinita" element={<Navigate to="/motoristas/lista" replace />} />
             <Route path="agregados" element={<AgregadosLista />} />
