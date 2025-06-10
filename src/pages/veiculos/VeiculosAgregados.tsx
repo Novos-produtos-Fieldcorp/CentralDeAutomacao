@@ -114,57 +114,27 @@ const VeiculosAgregados = () => {
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
       
+      // First, get count using the view
       let countQuery = supabase
-        .from('motorista')
-        .select('motorista_id', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .eq('st_cadastro', 'contratado');
-      
-      const { count: motoristaCount, error: motoristaCountError } = await countQuery;
-
-      if (motoristaCountError) {
-        throw new Error(`Erro ao buscar motoristas: ${motoristaCountError.message}`);
-      }
-
-      if (!motoristaCount || motoristaCount === 0) {
-        setVeiculos([]);
-        setTotalCount(0);
-        setTotalPages(1);
-        return;
-      }
-
-      const { data: motoristasData, error: motoristasError } = await supabase
-        .from('motorista')
-        .select('motorista_id')
-        .eq('company_id', companyId)
-        .eq('st_cadastro', 'contratado');
-
-      if (motoristasError) {
-        throw new Error(`Erro ao buscar motoristas: ${motoristasError.message}`);
-      }
-
-      if (!motoristasData || motoristasData.length === 0) {
-        setVeiculos([]);
-        setTotalCount(0);
-        setTotalPages(1);
-        return;
-      }
-
-      const motoristaIds = motoristasData.map(m => m.motorista_id);
-
-      let vehicleCountQuery = supabase
-        .from('veiculo')
+        .from('vw_contratados_completo')
         .select('veiculo_id', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('st_cadastro', 'contratado')
         .eq('status_veiculo', true)
-        .in('motorista_id', motoristaIds);
+        .eq('funcao', 'Agregado');
       
-      if (searchTerm) {
-        vehicleCountQuery = vehicleCountQuery.or(
-          `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%,motorista.nome.ilike.%${searchTerm}%,motorista.cpf.ilike.%${searchTerm}%`
+      // Apply search filters to count query
+      if (debouncedSearchTerm) {
+        countQuery = countQuery.or(
+          `placa.ilike.%${debouncedSearchTerm}%,marca.ilike.%${debouncedSearchTerm}%,tipo.ilike.%${debouncedSearchTerm}%,nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`
         );
       }
+
+      if (debouncedPhoneSearch) {
+        countQuery = countQuery.ilike('telefone', `%${debouncedPhoneSearch}%`);
+      }
       
-      const { count: vehicleCount, error: vehicleCountError } = await vehicleCountQuery;
+      const { count: vehicleCount, error: vehicleCountError } = await countQuery;
       
       if (vehicleCountError) {
         throw new Error(`Erro ao contar veículos: ${vehicleCountError.message}`);
@@ -173,28 +143,24 @@ const VeiculosAgregados = () => {
       setTotalCount(vehicleCount || 0);
       setTotalPages(Math.max(1, Math.ceil((vehicleCount || 0) / pageSize)));
 
+      // Now get the actual data using the view
       let dataQuery = supabase
-        .from('veiculo')
-        .select(`
-          *,
-          motorista:motorista_id (
-            motorista_id,
-            nome,
-            cpf,
-            telefone,
-            email,
-            st_cadastro,
-            documento_motorista (*)
-          ),
-          documento_veiculo (*)
-        `)
+        .from('vw_contratados_completo')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('st_cadastro', 'contratado')
         .eq('status_veiculo', true)
-        .in('motorista_id', motoristaIds);
+        .eq('funcao', 'Agregado');
       
-      if (searchTerm) {
+      // Apply search filters to data query
+      if (debouncedSearchTerm) {
         dataQuery = dataQuery.or(
-          `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%`
+          `placa.ilike.%${debouncedSearchTerm}%,marca.ilike.%${debouncedSearchTerm}%,tipo.ilike.%${debouncedSearchTerm}%,nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`
         );
+      }
+
+      if (debouncedPhoneSearch) {
+        dataQuery = dataQuery.ilike('telefone', `%${debouncedPhoneSearch}%`);
       }
       
       dataQuery = dataQuery
@@ -212,15 +178,31 @@ const VeiculosAgregados = () => {
         return;
       }
 
-      const veiculosContratados = veiculosData
-        .filter(veiculo => veiculo.motorista?.st_cadastro === 'contratado')
-        .map(veiculo => ({
-          ...veiculo,
-          placa: veiculo.placa?.toUpperCase() || ''
-        }))
-        .sort((a, b) => (a.placa || '').localeCompare(b.placa || ''));
+      // Map the view data to the expected VeiculoWithMotorista format
+      const mappedVeiculos = veiculosData.map(item => ({
+        veiculo_id: item.veiculo_id,
+        placa: item.placa?.toUpperCase() || '',
+        marca: item.marca || '',
+        tipo: item.tipo || '',
+        tipologia: item.tipologia || '',
+        peso: item.peso || '',
+        cubagem: item.cubagem || '',
+        possui_rastreador: item.possui_rastreador || false,
+        marca_rastreador: item.marca_rastreador || '',
+        motorista_id: item.motorista_id,
+        status_veiculo: item.status_veiculo,
+        company_id: item.company_id,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        motorista: {
+          motorista_id: item.motorista_id,
+          nome: item.nome_motorista || '',
+          cpf: item.cpf || '',
+          telefone: item.telefone || ''
+        }
+      }));
 
-      setVeiculos(veiculosContratados);
+      setVeiculos(mappedVeiculos);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar veículos';
       console.error('Error fetching veiculos:', errorMessage);
