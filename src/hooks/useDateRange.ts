@@ -25,10 +25,12 @@ export const useDateRange = (initialPeriod: PeriodType = '30days') => {
 
     switch (type) {
       case '30days':
-        start.setDate(end.getDate() - 30);
+        // Set start date to 29 days before today (today + 29 previous days = 30 days total)
+        start.setDate(end.getDate() - 29);
         break;
       case '15days':
-        start.setDate(end.getDate() - 15);
+        // Set start date to 14 days before today (today + 14 previous days = 15 days total)
+        start.setDate(end.getDate() - 14);
         break;
       case '1day':
         // For 1 day, set both start and end to today
