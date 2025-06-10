@@ -179,9 +179,8 @@ const Contratados = () => {
       };
       loadData();
     }
-  }, [companyId]); // Only depend on companyId for initial load
+  }, [companyId]);
 
-  // Separate effect for filters
   useEffect(() => {
     if (companyId) {
       const loadData = async () => {
@@ -201,28 +200,22 @@ const Contratados = () => {
 
   const fetchMotoristas = async () => {
     try {
-      // Only show loading on initial load or when changing pages
       if (currentPage === 1 && !debouncedSearchTerm && !debouncedPhoneSearch && !selectedStatus && !selectedCity && !selectedClient) {
         setLoading(true);
       }
       
-      // Calculate pagination parameters
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
       
-      // Build the query with filters using the view
       let query = supabase
-        .from('vw_motoristas_completo')
+        .from('vw_contratados_completo')
         .select('*', { count: 'exact' })
-        .eq('company_id', companyId)
-        .eq('st_cadastro', 'contratado');
+        .eq('company_id', companyId);
 
-      // Apply function filter if not 'todos'
       if (funcaoFilter !== 'todos') {
         query = query.eq('funcao', funcaoFilter);
       }
 
-      // Apply date range filter if dates are selected
       if (dateRange.startDate && dateRange.endDate) {
         query = query
           .gte('data_cadastro', dateRange.startDate)
@@ -704,11 +697,10 @@ const Contratados = () => {
 
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
-    setCurrentPage(1); // Reset to first page when changing page size
+    setCurrentPage(1);
   };
 
   const handleSearch = () => {
-    // Apply search filters and reset to page 1
     setCurrentPage(1);
     fetchMotoristas();
   };
@@ -719,7 +711,6 @@ const Contratados = () => {
     { value: 'Agregado', label: 'Agregados' }
   ];
 
-  // Update the select handlers to not trigger immediate search
   const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCity(e.target.value);
     setCurrentPage(1);
@@ -1113,19 +1104,14 @@ const Contratados = () => {
               </button>
               
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                // Calculate page numbers to show (always show 5 pages if possible)
                 let pageNum;
                 if (totalPages <= 5) {
-                  // If 5 or fewer pages, show all
                   pageNum = i + 1;
                 } else if (currentPage <= 3) {
-                  // If near the start, show first 5 pages
                   pageNum = i + 1;
                 } else if (currentPage >= totalPages - 2) {
-                  // If near the end, show last 5 pages
                   pageNum = totalPages - 4 + i;
                 } else {
-                  // Otherwise show 2 before and 2 after current page
                   pageNum = currentPage - 2 + i;
                 }
                 
