@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertTriangle, Activity, ChevronDown, Clock, AlertCircle } from 'lucide-react';
+import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertTriangle, Activity, ChevronDown } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import DailyMileageTotal from '../../components/hodometros/DailyMileageTotal';
 import { 
   BarChart, 
   Bar, 
@@ -41,30 +40,15 @@ interface VehicleMileage {
   totalKm: number;
 }
 
-interface InconsistentReading {
-  id_hodometro: number;
-  data: string;
-  hod_lido: number;
-  hod_informado: number;
-  motorista: {
-    nome: string;
-  };
-  veiculo: {
-    placa: string;
-  };
-}
-
 const HodometrosDashboard = () => {
   const { query, companyId } = useCompanyData();
   const [loading, setLoading] = useState(true);
   const [dailyMileage, setDailyMileage] = useState<DailyMileage[]>([]);
   const [driverMileage, setDriverMileage] = useState<DriverMileage[]>([]);
   const [vehicleMileage, setVehicleMileage] = useState<VehicleMileage[]>([]);
-  const [inconsistentReadings, setInconsistentReadings] = useState<InconsistentReading[]>([]);
   const [totalKm, setTotalKm] = useState(0);
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
-  const [todayReadings, setTodayReadings] = useState(0);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
   const [topItemsCount, setTopItemsCount] = useState<number>(5);
 
@@ -89,7 +73,6 @@ const HodometrosDashboard = () => {
           bateria,
           motorista_id,
           veiculo_id,
-          comparacao_leitura,
           motorista:motorista_id (
             motorista_id,
             nome
@@ -110,11 +93,8 @@ const HodometrosDashboard = () => {
       const dailyMileageMap = new Map<string, number>();
       const driverMileageMap = new Map<number, { nome: string; totalKm: number }>();
       const vehicleMileageMap = new Map<number, { placa: string; totalKm: number }>();
-      const inconsistentReadingsArray: InconsistentReading[] = [];
       
       let totalKilometers = 0;
-      let todayReadingsCount = 0;
-      const today = new Date().toISOString().split('T')[0];
       
       // Process each reading
       hodometros?.forEach(hodometro => {
@@ -126,11 +106,6 @@ const HodometrosDashboard = () => {
         
         // Add to total kilometers
         totalKilometers += kmValue;
-        
-        // Count today's readings
-        if (hodometro.data === today) {
-          todayReadingsCount++;
-        }
         
         // Add to daily mileage
         const dateKey = hodometro.data;
@@ -162,26 +137,6 @@ const HodometrosDashboard = () => {
           const vehicleData = vehicleMileageMap.get(vehicleId)!;
           vehicleData.totalKm += kmValue;
           vehicleMileageMap.set(vehicleId, vehicleData);
-        }
-
-        // Check for inconsistent readings
-        if (hodometro.comparacao_leitura === false && 
-            hodometro.hod_lido !== null && 
-            hodometro.hod_informado !== null &&
-            hodometro.motorista && 
-            hodometro.veiculo) {
-          inconsistentReadingsArray.push({
-            id_hodometro: hodometro.id_hodometro,
-            data: hodometro.data,
-            hod_lido: hodometro.hod_lido,
-            hod_informado: hodometro.hod_informado,
-            motorista: {
-              nome: hodometro.motorista.nome
-            },
-            veiculo: {
-              placa: hodometro.veiculo.placa
-            }
-          });
         }
       });
       
@@ -222,18 +177,13 @@ const HodometrosDashboard = () => {
       const uniqueDays = new Set(dailyMileageArray.map(item => item.date)).size;
       const avgKmPerDay = uniqueDays > 0 ? totalKilometers / uniqueDays : 0;
       
-      // Sort inconsistent readings by date (newest first)
-      inconsistentReadingsArray.sort((a, b) => b.data.localeCompare(a.data));
-      
       // Update state with processed data
       setDailyMileage(dailyMileageArray);
       setDriverMileage(driverMileageArray);
       setVehicleMileage(vehicleMileageArray);
-      setInconsistentReadings(inconsistentReadingsArray.slice(0, 5)); // Show only top 5
       setTotalKm(totalKilometers);
       setAverageKmPerDay(avgKmPerDay);
       setTotalReadings(hodometros?.length || 0);
-      setTodayReadings(todayReadingsCount);
       
     } catch (error) {
       console.error('Error fetching hodometro data:', error);
@@ -255,7 +205,7 @@ const HodometrosDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border-2 border-indigo-100 dark:border-indigo-900/30">
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
@@ -266,48 +216,45 @@ const HodometrosDashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Readings Card */}
-        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 dark:from-indigo-600 dark:to-indigo-800 p-6 rounded-xl shadow-lg border border-indigo-400 dark:border-indigo-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-blue-500 dark:border-blue-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex flex-col items-center text-center">
-            <div className="p-3 bg-white/20 rounded-xl mb-3">
-              <FileText className="w-6 h-6 text-white" />
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl mb-3">
+              <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="text-sm font-medium text-indigo-100 mb-2">Total de Leituras</h3>
-            <p className="text-3xl font-bold text-white">
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total Percorrido</h3>
+            <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-indigo-400">
+              {formatNumber(totalKm)} km
+            </p>
+          </div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-green-500 dark:border-green-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+          <div className="flex flex-col items-center text-center">
+            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl mb-3">
+              <Calendar className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Média Diária</h3>
+            <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent dark:from-green-400 dark:to-emerald-400">
+              {formatNumber(Math.round(averageKmPerDay))} km
+            </p>
+          </div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-purple-500 dark:border-purple-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+          <div className="flex flex-col items-center text-center">
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl mb-3">
+              <Activity className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total de Leituras</h3>
+            <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent dark:from-purple-400 dark:to-violet-400">
               {formatNumber(totalReadings)}
-            </p>
-          </div>
-        </div>
-        
-        {/* Today's Readings Card */}
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-800 p-6 rounded-xl shadow-lg border border-blue-400 dark:border-blue-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex flex-col items-center text-center">
-            <div className="p-3 bg-white/20 rounded-xl mb-3">
-              <Clock className="w-6 h-6 text-white" />
-            </div>
-            <h3 className="text-sm font-medium text-blue-100 mb-2">Leituras Hoje</h3>
-            <p className="text-3xl font-bold text-white">
-              {formatNumber(todayReadings)}
-            </p>
-          </div>
-        </div>
-        
-        {/* Total KM Card */}
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-800 p-6 rounded-xl shadow-lg border border-emerald-400 dark:border-emerald-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex flex-col items-center text-center">
-            <div className="p-3 bg-white/20 rounded-xl mb-3">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-            <h3 className="text-sm font-medium text-emerald-100 mb-2">KM Total Rodado</h3>
-            <p className="text-3xl font-bold text-white">
-              {formatNumber(totalKm)}
             </p>
           </div>
         </div>
       </div>
 
       {/* Daily Mileage Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-blue-100 dark:border-blue-900/30 hover:shadow-lg transition-all duration-300">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-blue-500 dark:text-blue-400" />
           Quilometragem Diária
@@ -374,10 +321,10 @@ const HodometrosDashboard = () => {
       {/* Top Drivers and Vehicles */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Drivers */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-green-100 dark:border-green-900/30 hover:shadow-lg transition-all duration-300">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+              <Users className="w-5 h-5 text-green-500 dark:text-green-400" />
               Top Motoristas por Quilometragem
             </h3>
             
@@ -385,7 +332,7 @@ const HodometrosDashboard = () => {
               <select
                 value={topItemsCount}
                 onChange={(e) => setTopItemsCount(Number(e.target.value))}
-                className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
               >
                 <option value={3}>Top 3</option>
                 <option value={5}>Top 5</option>
@@ -430,13 +377,13 @@ const HodometrosDashboard = () => {
                   <Bar 
                     dataKey="totalKm" 
                     name="Quilômetros Rodados"
-                    fill="#3B82F6"
+                    fill="#10B981"
                     radius={[0, 4, 4, 0]}
                   >
                     {driverMileage.slice(0, topItemsCount).map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={`rgba(59, 130, 246, ${0.9 - (index * 0.07)})`} 
+                        fill={`rgba(16, 185, 129, ${0.9 - (index * 0.07)})`} 
                       />
                     ))}
                   </Bar>
@@ -452,10 +399,10 @@ const HodometrosDashboard = () => {
         </div>
         
         {/* Top Vehicles */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-purple-100 dark:border-purple-900/30 hover:shadow-lg transition-all duration-300">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <Truck className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+              <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
               Top Veículos por Quilometragem
             </h3>
             
@@ -463,7 +410,7 @@ const HodometrosDashboard = () => {
               <select
                 value={topItemsCount}
                 onChange={(e) => setTopItemsCount(Number(e.target.value))}
-                className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
               >
                 <option value={3}>Top 3</option>
                 <option value={5}>Top 5</option>
@@ -508,13 +455,13 @@ const HodometrosDashboard = () => {
                   <Bar 
                     dataKey="totalKm" 
                     name="Quilômetros Rodados"
-                    fill="#3B82F6"
+                    fill="#8B5CF6"
                     radius={[0, 4, 4, 0]}
                   >
                     {vehicleMileage.slice(0, topItemsCount).map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={`rgba(59, 130, 246, ${0.9 - (index * 0.07)})`} 
+                        fill={`rgba(139, 92, 246, ${0.9 - (index * 0.07)})`} 
                       />
                     ))}
                   </Bar>
@@ -530,102 +477,42 @@ const HodometrosDashboard = () => {
         </div>
       </div>
 
-      {/* Inconsistent Readings */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-          Leituras Inconsistentes
-        </h3>
-        
-        {inconsistentReadings.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 rounded-lg overflow-hidden">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Hodômetro Lido
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Hodômetro Informado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Motorista
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Data
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Placa
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {inconsistentReadings.map((reading, index) => (
-                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {formatNumber(reading.hod_lido)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {formatNumber(reading.hod_informado)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {reading.motorista.nome}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {new Date(reading.data).toLocaleDateString('pt-BR')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {reading.veiculo.placa.toUpperCase()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-40 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <CheckCircle className="w-12 h-12 text-green-500 dark:text-green-400 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhuma leitura inconsistente encontrada</p>
-          </div>
-        )}
-      </div>
-
       {/* Daily Mileage Table */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-amber-100 dark:border-amber-900/30 hover:shadow-lg transition-all duration-300">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+          <Calendar className="w-5 h-5 text-amber-500 dark:text-amber-400" />
           Quilometragem Diária Detalhada
         </h3>
         
         {dailyMileage.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 rounded-lg overflow-hidden">
-              <thead className="bg-gray-50 dark:bg-gray-700">
+              <thead className="bg-amber-50 dark:bg-amber-900/20">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-amber-700 dark:text-amber-300 uppercase tracking-wider">
                     Data
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-amber-700 dark:text-amber-300 uppercase tracking-wider">
                     Quilômetros Rodados
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {dailyMileage.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <tr key={index} className="hover:bg-amber-50/50 dark:hover:bg-amber-900/10">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       {item.formattedDate}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600 dark:text-blue-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-amber-600 dark:text-amber-400">
                       {formatNumber(item.totalKm)} km
                     </td>
                   </tr>
                 ))}
-                <tr className="bg-gray-50 dark:bg-gray-700">
+                <tr className="bg-amber-50 dark:bg-amber-900/20">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
                     Total
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-blue-600 dark:text-blue-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-amber-600 dark:text-amber-400">
                     {formatNumber(totalKm)} km
                   </td>
                 </tr>
