@@ -2,7 +2,8 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Motorista, Veiculo, Cliente } from '../types/database';
 import { formatCPF, formatPhone, formatDate } from './format';
-import { formatChecklistPDF } from './exportChecklist';
+import { formatChecklistMensalPDF } from './exportChecklistMensal';
+import { formatChecklistSemanalPDF } from './exportChecklistSemanal';
 import * as XLSX from 'xlsx';
 
 export const downloadExcelTemplate = (type: 'motoristas' | 'clientes' | 'veiculos', fileName: string) => {
@@ -94,13 +95,8 @@ export const formatVeiculoData = (veiculo: Veiculo) => {
     'Cubagem': veiculo.cubagem ? `${veiculo.cubagem} m³` : 'N/A',
     'Rastreador': veiculo.possui_rastreador ? 'Sim' : 'Não',
     'Marca Rastreador': veiculo.marca_rastreador || 'N/A',
-    'Chassi': veiculo.chassi || 'N/A',
-    'RENAVAM': veiculo.renavam || 'N/A',
     'Motorista': veiculo.motorista?.nome || 'N/A',
     'CPF Motorista': veiculo.motorista?.cpf ? formatCPF(veiculo.motorista.cpf) : 'N/A',
-    'CNH': veiculo.motorista?.documento_motorista?.[0]?.nr_registro_cnh || 'N/A',
-    'Categoria CNH': veiculo.motorista?.documento_motorista?.[0]?.categoria_cnh || 'N/A',
-    'Validade CNH': veiculo.motorista?.documento_motorista?.[0]?.validade_cnh ? formatDate(veiculo.motorista.documento_motorista[0].validade_cnh) : 'N/A',
     'Telefone': veiculo.motorista?.telefone ? formatPhone(veiculo.motorista.telefone.toString()) : 'N/A',
     'Email': veiculo.motorista?.email || 'N/A'
   };
@@ -114,5 +110,12 @@ export const formatClienteData = (cliente: Cliente) => ({
 });
 
 export const exportChecklistToPDF = (checklist: any) => {
-  formatChecklistPDF(checklist);
+  // Determine which export function to use based on checklist type
+  if (checklist.id_tipo_checklist === 1) {
+    // Monthly checklist
+    formatChecklistMensalPDF(checklist);
+  } else {
+    // Weekly checklist
+    formatChecklistSemanalPDF(checklist);
+  }
 };

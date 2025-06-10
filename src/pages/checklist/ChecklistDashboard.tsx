@@ -14,8 +14,6 @@ interface DashboardStats {
   totalChecklists: number;
   totalMensal: number;
   totalSemanal: number;
-  totalVerificados: number;
-  totalPendentes: number;
   totalProblemas: number;
   problemasPorCategoria: {
     categoria: string;
@@ -35,8 +33,6 @@ interface DashboardStats {
   checklistsPorMotorista: {
     nome: string;
     total: number;
-    verificados: number;
-    pendentes: number;
   }[];
 }
 
@@ -46,8 +42,6 @@ const ChecklistDashboard = () => {
     totalChecklists: 0,
     totalMensal: 0,
     totalSemanal: 0,
-    totalVerificados: 0,
-    totalPendentes: 0,
     totalProblemas: 0,
     problemasPorCategoria: [],
     veiculosComProblemas: [],
@@ -84,8 +78,6 @@ const ChecklistDashboard = () => {
         // Basic stats
         const totalMensal = checklists.filter(c => c.id_tipo_checklist === 1).length;
         const totalSemanal = checklists.filter(c => c.id_tipo_checklist === 2).length;
-        const totalVerificados = checklists.filter(c => c.verificacao === true).length;
-        const totalPendentes = checklists.filter(c => c.verificacao === false).length;
 
         // Process problems by category
         const problemasPorCategoria = processProblemasPorCategoria(checklists);
@@ -100,8 +92,6 @@ const ChecklistDashboard = () => {
           totalChecklists: checklists.length,
           totalMensal,
           totalSemanal,
-          totalVerificados,
-          totalPendentes,
           totalProblemas: problemasPorCategoria.reduce((acc, cat) => acc + cat.total, 0),
           problemasPorCategoria,
           veiculosComProblemas,
@@ -232,17 +222,10 @@ const ChecklistDashboard = () => {
 
       const current = motoristasMap.get(motorista.nome) || {
         nome: motorista.nome,
-        total: 0,
-        verificados: 0,
-        pendentes: 0
+        total: 0
       };
 
       current.total++;
-      if (checklist.verificacao === true) {
-        current.verificados++;
-      } else {
-        current.pendentes++;
-      }
 
       motoristasMap.set(motorista.nome, current);
     });
@@ -270,7 +253,7 @@ const ChecklistDashboard = () => {
       </div>
 
       {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <StatCard
           title="Total de Checklists"
           value={stats.totalChecklists}
@@ -285,16 +268,6 @@ const ChecklistDashboard = () => {
           title="Checklists Semanais"
           value={stats.totalSemanal}
           icon={FileText}
-        />
-        <StatCard
-          title="Verificados"
-          value={stats.totalVerificados}
-          icon={CheckCircle2}
-        />
-        <StatCard
-          title="Pendentes"
-          value={stats.totalPendentes}
-          icon={XCircle}
         />
         <StatCard
           title="Problemas"
@@ -356,24 +329,14 @@ const ChecklistDashboard = () => {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="w-20 text-xs text-gray-500 dark:text-gray-400">Verificados:</span>
-                    <div className="flex-1 h-2 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
+                    <span className="w-20 text-xs text-gray-500 dark:text-gray-400">Checklists:</span>
+                    <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-green-500 dark:bg-green-400 rounded-full"
-                        style={{ width: `${(motorista.verificados / motorista.total) * 100}%` }}
+                        className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
+                        style={{ width: `100%` }}
                       />
                     </div>
-                    <span className="w-8 text-right text-sm">{motorista.verificados}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 text-xs text-gray-500 dark:text-gray-400">Pendentes:</span>
-                    <div className="flex-1 h-2 bg-red-100 dark:bg-red-900/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-red-500 dark:bg-red-400 rounded-full"
-                        style={{ width: `${(motorista.pendentes / motorista.total) * 100}%` }}
-                      />
-                    </div>
-                    <span className="w-8 text-right text-sm">{motorista.pendentes}</span>
+                    <span className="w-8 text-right text-sm">{motorista.total}</span>
                   </div>
                 </div>
               </div>

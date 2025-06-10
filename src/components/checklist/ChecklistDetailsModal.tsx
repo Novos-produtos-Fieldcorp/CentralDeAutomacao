@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Camera, Loader2, AlertCircle, Edit2, Save, ArrowLeft } from 'lucide-react';
+import { X, Download, Camera, Loader2, AlertCircle, Edit2, Save, ArrowLeft, Upload } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { exportChecklistToPDF } from '../../utils/export';
 import { getStatusInfo } from '../../utils/checklistStatus';
@@ -24,6 +24,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   const retryTimeoutRef = useRef<number>();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
   
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -43,6 +44,9 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
     componentes: {},
     acessorios: {}
   });
+
+  // State for editing photos
+  const [editPhotos, setEditPhotos] = useState<any>({});
 
   useEffect(() => {
     fetchStatusItems();
@@ -80,6 +84,9 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
         componentes: checklistDetails.componentes || {},
         acessorios: checklistDetails.acessorios || {}
       });
+
+      // Initialize photos data
+      setEditPhotos(checklistDetails.fotos || {});
     }
   }, [checklistDetails]);
 
@@ -94,7 +101,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       if (error) throw error;
       
       if (data) {
-        setStatusItems(data);
+        setStatusItems(data || []);
       } else {
         throw new Error('No data received from status items query');
       }
@@ -185,6 +192,51 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
     }));
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, photoField: string) => {
+    const file = e.target.files?.[0];
+    if (!file || !checklist) return;
+    
+    try {
+      setUploadingPhoto(photoField);
+      
+      // Create a unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${checklist.checklist_id}_${photoField}_${Date.now()}.${fileExt}`;
+      
+      // Upload file to storage
+      const { error: uploadError, data } = await supabase.storage
+        .from('checklist-photos')
+        .upload(fileName, file);
+        
+      if (uploadError) throw uploadError;
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('checklist-photos')
+        .getPublicUrl(fileName);
+        
+      // Update the photo in state
+      setEditPhotos(prev => ({
+        ...prev,
+        [photoField]: publicUrl
+      }));
+      
+      toast.success('Foto enviada com sucesso');
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast.error('Erro ao enviar foto');
+    } finally {
+      setUploadingPhoto(null);
+    }
+  };
+
+  const handleRemovePhoto = (photoField: string) => {
+    setEditPhotos(prev => ({
+      ...prev,
+      [photoField]: null
+    }));
+  };
+
   const handleSave = async () => {
     if (!checklist) return;
     
@@ -245,6 +297,38 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
         if (acessoriosError) throw acessoriosError;
       }
       
+      // Update photos if it's a monthly checklist
+      if (checklist.id_tipo_checklist === 1 && editPhotos) {
+        // Check if photos record exists
+        const { data: existingPhotos, error: checkPhotosError } = await supabase
+          .from('foto_checklist')
+          .select('id_foto_checklist')
+          .eq('checklist_id', checklist.checklist_id)
+          .maybeSingle();
+          
+        if (checkPhotosError && checkPhotosError.code !== 'PGRST116') throw checkPhotosError;
+        
+        if (existingPhotos) {
+          // Update existing photos
+          const { error: updatePhotosError } = await supabase
+            .from('foto_checklist')
+            .update(editPhotos)
+            .eq('id_foto_checklist', existingPhotos.id_foto_checklist);
+            
+          if (updatePhotosError) throw updatePhotosError;
+        } else {
+          // Insert new photos record
+          const { error: insertPhotosError } = await supabase
+            .from('foto_checklist')
+            .insert({
+              ...editPhotos,
+              checklist_id: checklist.checklist_id
+            });
+            
+          if (insertPhotosError) throw insertPhotosError;
+        }
+      }
+      
       toast.success('Checklist atualizado com sucesso');
       fetchChecklistDetails(); // Refresh data
       setIsEditing(false);
@@ -298,17 +382,101 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
     );
   };
 
+  const renderEditablePhotos = () => {
+    if (!checklist || checklist.id_tipo_checklist !== 1) return null;
+    
+    const photoFields = [
+      { key: 'foto_hodometro', label: 'Hodômetro' },
+      { key: 'foto_oleo', label: 'Óleo' },
+      { key: 'foto_bateria', label: 'Bateria' },
+      { key: 'foto_carrinho_carga', label: 'Carrinho de Carga' },
+      { key: 'foto_dianteira', label: 'Dianteira' },
+      { key: 'foto_traseira', label: 'Traseira' },
+      { key: 'foto_lateral_direita', label: 'Lateral Direita' },
+      { key: 'foto_lateral_esquerda', label: 'Lateral Esquerda' }
+    ];
+    
+    return (
+      <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Fotos do Veículo
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {photoFields.map(({ key, label }) => (
+            <div key={key} className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {label}
+              </label>
+              {editPhotos[key] ? (
+                <div className="relative aspect-video w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden group">
+                  <img
+                    src={editPhotos[key]}
+                    alt={label}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <button
+                      onClick={() => handleRemovePhoto(key)}
+                      className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    type="file"
+                    id={`photo-${key}`}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => handlePhotoUpload(e, key)}
+                  />
+                  <label
+                    htmlFor={`photo-${key}`}
+                    className="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed rounded-lg cursor-pointer
+                              border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
+                              hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                  >
+                    {uploadingPhoto === key ? (
+                      <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+                    ) : (
+                      <>
+                        <Camera className="w-8 h-8 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Clique para enviar foto
+                        </p>
+                      </>
+                    )}
+                  </label>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderEditableChecklistSection = (
     title: string, 
     section: string, 
     items: any, 
-    excludeKeys: string[] = ['id', 'checklist_id']
+    excludeKeys: string[] = ['id', 'checklist_id'],
+    filterKeys?: string[]
   ) => {
     if (!items) return null;
     
-    const filteredKeys = Object.keys(items).filter(key => 
+    let filteredKeys = Object.keys(items).filter(key => 
       !excludeKeys.some(exclude => key.includes(exclude))
     );
+    
+    // Apply additional filtering for weekly checklist
+    if (filterKeys) {
+      filteredKeys = filteredKeys.filter(key => filterKeys.includes(key));
+    }
+    
+    if (filteredKeys.length === 0) return null;
     
     return (
       <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
@@ -396,6 +564,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   }
 
   const isMonthlyChecklist = checklist.id_tipo_checklist === 1;
+  const isWeeklyChecklist = checklist.id_tipo_checklist === 2;
   const details = checklistDetails || checklist;
 
   const formatDate = (date: string) => {
@@ -631,7 +800,8 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                           "Componentes Gerais", 
                           "componentes", 
                           editComponents.componentes, 
-                          ['id_componentes_gerais', 'checklist_id']
+                          ['id_componentes_gerais', 'checklist_id'],
+                          isWeeklyChecklist ? ['pedal', 'limpeza_interna', 'sistema_freio', 'freio_estacionamento'] : undefined
                         )
                       )}
                       
@@ -641,9 +811,13 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                           "Acessórios", 
                           "acessorios", 
                           editComponents.acessorios, 
-                          ['id_acessorio', 'checklist_id']
+                          ['id_acessorio', 'checklist_id'],
+                          isWeeklyChecklist ? ['pneu', 'pneu_ruim', 'documento_veicular', 'carrinho_carga'] : undefined
                         )
                       )}
+                      
+                      {/* Editable Photos Section - Only for monthly checklist */}
+                      {isMonthlyChecklist && renderEditablePhotos()}
                     </div>
                   ) : (
                     <div>
@@ -678,7 +852,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                             items={details.componentes}
                             excludeKeys={['id_componentes_gerais', 'checklist_id']}
                             statusItems={statusItems}
-                            filterKeys={!isMonthlyChecklist ? ['pedal', 'limpeza_interna', 'sistema_freio'] : undefined}
+                            filterKeys={!isMonthlyChecklist ? ['pedal', 'limpeza_interna', 'sistema_freio', 'freio_estacionamento'] : undefined}
                             gridCols={2}
                           />
                         </div>
@@ -692,7 +866,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                             items={details.acessorios}
                             excludeKeys={['id_acessorio', 'checklist_id']}
                             statusItems={statusItems}
-                            filterKeys={!isMonthlyChecklist ? ['pneu', 'documento_veicular', 'carrinho_carga'] : undefined}
+                            filterKeys={!isMonthlyChecklist ? ['pneu', 'pneu_ruim', 'documento_veicular', 'carrinho_carga'] : undefined}
                             gridCols={2}
                             specialTextKey="pneu_ruim"
                             specialTextLabel="Pneu com Problema"

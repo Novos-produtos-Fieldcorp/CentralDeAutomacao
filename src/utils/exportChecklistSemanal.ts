@@ -1,13 +1,13 @@
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
-export const formatChecklistPDF = (checklist: any) => {
+export const formatChecklistSemanalPDF = (checklist: any) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
   // Add title
   doc.setFontSize(18);
-  doc.text(`Checklist ${checklist.id_tipo_checklist === 1 ? 'Mensal' : 'Semanal'}`, pageWidth / 2, 15, { align: 'center' });
+  doc.text(`Checklist Semanal`, pageWidth / 2, 15, { align: 'center' });
   
   // Add basic info
   doc.setFontSize(12);
@@ -21,27 +21,22 @@ export const formatChecklistPDF = (checklist: any) => {
   
   // Add fluids section
   if (checklist.fluidos) {
-    yPos = addFluidsSection(doc, checklist.fluidos, yPos);
+    yPos = addFluidsSection(doc, checklist.fluidos, yPos, pageWidth);
   }
   
   // Add lights section
   if (checklist.farol) {
-    yPos = addLightsSection(doc, checklist.farol, yPos);
+    yPos = addLightsSection(doc, checklist.farol, yPos, pageWidth);
   }
   
-  // Add components section
+  // Add components section - only specific items for weekly checklist
   if (checklist.componentes) {
-    yPos = addComponentsSection(doc, checklist.componentes, yPos, checklist.id_tipo_checklist);
+    yPos = addComponentsSection(doc, checklist.componentes, yPos, pageWidth);
   }
   
-  // Add accessories section
+  // Add accessories section - only specific items for weekly checklist
   if (checklist.acessorios) {
-    yPos = addAccessoriesSection(doc, checklist.acessorios, yPos, checklist.id_tipo_checklist);
-  }
-  
-  // Add photos section if it's a monthly checklist
-  if (checklist.id_tipo_checklist === 1 && checklist.fotos) {
-    yPos = addPhotosSection(doc, checklist.fotos, yPos);
+    yPos = addAccessoriesSection(doc, checklist.acessorios, yPos, pageWidth);
   }
   
   // Add observations if they exist
@@ -50,7 +45,7 @@ export const formatChecklistPDF = (checklist: any) => {
   }
   
   // Save the PDF
-  doc.save(`checklist_${checklist.checklist_id}.pdf`);
+  doc.save(`checklist_semanal_${checklist.checklist_id}.pdf`);
 };
 
 // Format date to DD/MM/YYYY
@@ -69,8 +64,10 @@ const getStatusText = (statusId: number, key: string, section: string): string =
   if (statusId === 1) {
     // Status OK
     if (section === 'Fluidos') return 'No nível';
-    if (section === 'Iluminação') return 'Funcionando';
-    if (key === 'lanterna_traseira') return 'Sim';
+    if (section === 'Iluminação') {
+      if (key === 'lanterna_traseira') return 'Sim';
+      return 'Funcionando';
+    }
     if (key.includes('pneu')) return 'Bom';
     if (key.includes('limpeza')) return 'Boa';
     if (key.includes('freio')) return 'Bom';
@@ -85,8 +82,10 @@ const getStatusText = (statusId: number, key: string, section: string): string =
   if (statusId === 2) {
     // Status Not OK
     if (section === 'Fluidos') return 'Abaixo do nível';
-    if (section === 'Iluminação') return 'Queimado';
-    if (key === 'lanterna_traseira') return 'Não';
+    if (section === 'Iluminação') {
+      if (key === 'lanterna_traseira') return 'Não';
+      return 'Queimado';
+    }
     if (key.includes('pneu')) return 'Ruim';
     if (key.includes('limpeza')) return 'Ruim';
     if (key.includes('freio')) return 'Ruim';
@@ -103,7 +102,7 @@ const getStatusText = (statusId: number, key: string, section: string): string =
   return 'Não informado';
 };
 
-const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number): number => {
+const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -148,7 +147,7 @@ const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number): number => {
   return yPos + 5;
 };
 
-const addLightsSection = (doc: jsPDF, farol: any, yPos: number): number => {
+const addLightsSection = (doc: jsPDF, farol: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -199,7 +198,7 @@ const addLightsSection = (doc: jsPDF, farol: any, yPos: number): number => {
   return yPos + 5;
 };
 
-const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, checklistType: number): number => {
+const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -218,7 +217,7 @@ const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, checkl
   // Skip id fields
   const componentKeys = Object.keys(componentes).filter(key => 
     key !== 'id_componentes_gerais' && key !== 'checklist_id' &&
-    (checklistType !== 2 || weeklyComponents.includes(key))
+    weeklyComponents.includes(key)
   );
   
   // If no valid component keys, show a message
@@ -254,7 +253,7 @@ const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, checkl
   return yPos + 5;
 };
 
-const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, checklistType: number): number => {
+const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, pageWidth: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -273,7 +272,7 @@ const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, checkl
   // Skip id fields and pneu_ruim (handled separately)
   const accessoryKeys = Object.keys(acessorios).filter(key => 
     key !== 'id_acessorio' && key !== 'checklist_id' && key !== 'pneu_ruim' &&
-    (checklistType !== 2 || weeklyAccessories.includes(key))
+    weeklyAccessories.includes(key)
   );
   
   // If no valid accessory keys, show a message
@@ -305,56 +304,6 @@ const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, checkl
     doc.text(`Pneu com Problema: ${acessorios.pneu_ruim}`, 20, yPos);
     yPos += 6;
   }
-  
-  return yPos + 5;
-};
-
-// New function to add photos section to the PDF
-const addPhotosSection = (doc: jsPDF, fotos: any, yPos: number): number => {
-  // Check if we need a new page
-  if (yPos > 250) {
-    doc.addPage();
-    yPos = 20;
-  }
-  
-  doc.setFontSize(14);
-  doc.text('Fotos do Veículo', 14, yPos);
-  yPos += 8;
-  
-  doc.setFontSize(10);
-  
-  // Skip id fields
-  const photoKeys = Object.keys(fotos).filter(key => 
-    key !== 'id_foto_checklist' && key !== 'checklist_id'
-  );
-  
-  // If no valid photo keys or all photos are empty, show a message
-  const hasPhotos = photoKeys.some(key => fotos[key]);
-  if (!hasPhotos) {
-    doc.text('Nenhuma foto disponível', 20, yPos);
-    return yPos + 10;
-  }
-  
-  // Add photo URLs to the PDF
-  photoKeys.forEach(key => {
-    if (fotos[key]) {
-      const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      doc.text(`${label}:`, 20, yPos);
-      yPos += 5;
-      
-      // Add the URL with smaller font
-      doc.setFontSize(8);
-      doc.text(fotos[key], 25, yPos);
-      doc.setFontSize(10);
-      yPos += 8;
-      
-      // Check if we need a new page
-      if (yPos > 280) {
-        doc.addPage();
-        yPos = 20;
-      }
-    }
-  });
   
   return yPos + 5;
 };

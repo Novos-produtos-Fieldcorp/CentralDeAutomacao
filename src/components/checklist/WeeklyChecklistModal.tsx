@@ -38,7 +38,6 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
       dianteiro: 'Funcionando',
       auxiliar: 'Funcionando',
       lanterna_traseira: 'Sim',
-      // Remove luz_freio as it doesn't exist in the schema
       pisca_dianteiro: 'Funcionando',
       pisca_traseiro: 'Funcionando',
       luz_placa: 'Funcionando',
@@ -52,10 +51,24 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
     acessorios: {
       pneu: 'Bom',
       pneu_ruim: '',
-      documento_veicular: 'Sim',
-      carrinho_carga: 'Sim'
+      documento_veicular: 'Sim'
+      // Removed: triangulo, chave_roda, extintor, macaco, cadeado
     }
   });
+
+  useEffect(() => {
+    if (checklist) {
+      setFormData(prev => ({
+        ...prev,
+        motorista_id: checklist.motorista_id?.toString() || '',
+        veiculo_id: checklist.veiculo_id?.toString() || '',
+        quilometragem: checklist.quilometragem?.toString() || '',
+        observacoes: checklist.observacoes || '',
+        data: checklist.data || new Date().toISOString().split('T')[0],
+        hora: checklist.hora || new Date().toTimeString().split(' ')[0].slice(0, 5)
+      }));
+    }
+  }, [checklist]);
 
   useEffect(() => {
     if (isOpen) {
@@ -190,8 +203,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
           const acessoriosData = {
             pneu: 'Bom',
             pneu_ruim: '',
-            documento_veicular: 'Sim',
-            carrinho_carga: 'Sim'
+            documento_veicular: 'Sim'
           };
           
           if (data.acessorios_veiculos?.[0]) {
@@ -212,13 +224,6 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
               acessoriosData.documento_veicular = 'Sim';
             } else if (acessorios.documento_veicular === 2) {
               acessoriosData.documento_veicular = 'Não';
-            }
-            
-            // Map carrinho_carga
-            if (acessorios.carrinho_carga === 1) {
-              acessoriosData.carrinho_carga = 'Sim';
-            } else if (acessorios.carrinho_carga === 2) {
-              acessoriosData.carrinho_carga = 'Não';
             }
           }
           
@@ -327,7 +332,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
       
       const checklistId = checklist ? checklist.checklist_id : newChecklist.checklist_id;
 
-      // Find status IDs based on the form values
+      // Get status IDs based on the form values
       const getStatusId = (value: string, type: string) => {
         // Default mappings
         if (type === 'fluid') {
@@ -383,8 +388,8 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
           checklist_id: checklistId,
           pneu: getStatusId(formData.acessorios.pneu, 'pneu'),
           pneu_ruim: formData.acessorios.pneu_ruim,
-          documento_veicular: getStatusId(formData.acessorios.documento_veicular, 'accessory'),
-          carrinho_carga: getStatusId(formData.acessorios.carrinho_carga, 'accessory')
+          documento_veicular: getStatusId(formData.acessorios.documento_veicular, 'accessory')
+          // Removed: triangulo, chave_roda, extintor, macaco, cadeado
         });
 
       if (acessoriosError) throw acessoriosError;
@@ -729,7 +734,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Only show pneu, pneu_ruim, documento_veicular, and carrinho_carga for weekly checklist */}
+              {/* Only show pneu, pneu_ruim, documento_veicular for weekly checklist */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Pneu
@@ -790,26 +795,6 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
                   <option value="Não">Não</option>
                 </select>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Carrinho Carga
-                </label>
-                <select
-                  value={formData.acessorios.carrinho_carga}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    acessorios: {
-                      ...prev.acessorios,
-                      carrinho_carga: e.target.value
-                    }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                >
-                  <option value="Sim">Sim</option>
-                  <option value="Não">Não</option>
-                </select>
-              </div>
             </div>
           </div>
 
@@ -824,7 +809,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={submitting}
             >
               {submitting ? (

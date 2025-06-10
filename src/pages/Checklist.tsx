@@ -21,14 +21,14 @@ const Checklist = () => {
       if (navRef.current) {
         const { scrollWidth, clientWidth, scrollLeft } = navRef.current;
         // Show indicator if there's more content to scroll AND we're not at the end
-        setShowScrollIndicator(scrollWidth > clientWidth && scrollLeft < scrollWidth - clientWidth - 10);
+        setShowScrollIndicator(scrollWidth > clientWidth && scrollLeft < scrollWidth - clientWidth - 1); // -1 for rounding errors
       }
     };
 
     // Initial check
     checkScroll();
 
-    // Add scroll event listener
+    // Add event listener
     const navElement = navRef.current;
     if (navElement) {
       navElement.addEventListener('scroll', checkScroll);
@@ -47,6 +47,12 @@ const Checklist = () => {
 
   const tabs = [
     { 
+      path: '/checklist/dashboard', 
+      icon: LayoutDashboard, 
+      label: 'Dashboard',
+      description: 'Visualização geral e análise dos checklists'
+    },
+    { 
       path: '/checklist/semanal', 
       icon: ClipboardCheck, 
       label: 'Checklists Semanais',
@@ -57,12 +63,6 @@ const Checklist = () => {
       icon: Calendar, 
       label: 'Checklists Mensais',
       description: 'Gerenciamento dos checklists mensais dos veículos'
-    },
-    { 
-      path: '/checklist/dashboard', 
-      icon: LayoutDashboard, 
-      label: 'Dashboard',
-      description: 'Visualização geral e análise dos checklists'
     },
     { 
       path: '/checklist/manutencao', 
@@ -77,7 +77,7 @@ const Checklist = () => {
   };
 
   if (!moduleAccess.checklist) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/\" replace />;
   }
 
   return (
@@ -125,10 +125,10 @@ const Checklist = () => {
 
         <div className="p-6">
           <Routes>
-            <Route index element={<Navigate to="/checklist/semanal" replace />} />
+            <Route index element={<Navigate to="/checklist/dashboard\" replace />} />
             <Route path="semanal" element={<ChecklistSemanal />} />
             <Route path="mensal" element={<ChecklistMensal />} />
-            <Route path="infinito" element={<Navigate to="/checklist/mensal" replace />} />
+            <Route path="infinito" element={<Navigate to="/checklist/mensal\" replace />} />
             <Route path="dashboard" element={<ChecklistDashboard />} />
             <Route path="manutencao" element={<ChecklistManutencao />} />
           </Routes>

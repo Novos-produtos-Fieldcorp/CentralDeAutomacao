@@ -280,7 +280,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
       const { error: uploadError, data } = await supabase.storage
         .from('checklist-photos')
         .upload(filePath, file);
-
+        
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
@@ -300,6 +300,16 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
       console.error('Error uploading photo:', error);
       toast.error('Erro ao enviar foto');
     }
+  };
+
+  const handleRemovePhoto = (field: keyof typeof formData.fotos) => {
+    setFormData(prev => ({
+      ...prev,
+      fotos: {
+        ...prev.fotos,
+        [field]: ''
+      }
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -659,40 +669,41 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {key.replace(/foto_/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </label>
-                      <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
-                          <Camera className="w-5 h-5" />
-                          <span>{value ? 'Alterar Foto' : 'Adicionar Foto'}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handlePhotoUpload(e, key as keyof typeof formData.fotos)}
-                            className="hidden"
+                      {value ? (
+                        <div className="relative aspect-video w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden group">
+                          <img
+                            src={value}
+                            alt={key.replace(/foto_/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            className="absolute inset-0 w-full h-full object-cover"
                           />
-                        </label>
-                        {value && (
-                          <div className="relative">
-                            <img
-                              src={value}
-                              alt={key}
-                              className="w-16 h-16 object-cover rounded-lg shadow-md"
-                            />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                             <button
                               type="button"
-                              onClick={() => setFormData(prev => ({
-                                ...prev,
-                                fotos: {
-                                  ...prev.fotos,
-                                  [key]: ''
-                                }
-                              }))}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                              onClick={() => handleRemovePhoto(key as keyof typeof formData.fotos)}
+                              className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
                             >
-                              <X size={14} />
+                              <X size={16} />
                             </button>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-4">
+                          <label
+                            htmlFor={`file-${key}`}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+                          >
+                            <Camera className="w-5 h-5" />
+                            <span>Adicionar Foto</span>
+                            <input
+                              type="file"
+                              id={`file-${key}`}
+                              accept="image/*"
+                              onChange={(e) => handlePhotoUpload(e, key as keyof typeof formData.fotos)}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
