@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertTriangle } from 'lucide-react';
+import { BarChart2, Calendar, TrendingUp, Truck, Users, AlertTriangle, Activity } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -17,7 +17,9 @@ import {
   ResponsiveContainer,
   Cell,
   LineChart,
-  Line
+  Line,
+  Area,
+  AreaChart
 } from 'recharts';
 
 interface DailyMileage {
@@ -202,7 +204,7 @@ const HodometrosDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border-2 border-indigo-100 dark:border-indigo-900/30">
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
@@ -213,7 +215,7 @@ const HodometrosDashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-blue-500 dark:border-blue-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
               <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -225,7 +227,7 @@ const HodometrosDashboard = () => {
           </div>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-green-500 dark:border-green-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
               <Calendar className="w-6 h-6 text-green-600 dark:text-green-400" />
@@ -237,10 +239,10 @@ const HodometrosDashboard = () => {
           </div>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-purple-500 dark:border-purple-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
-              <BarChart2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              <Activity className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total de Leituras</h3>
@@ -251,16 +253,25 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* Daily Mileage Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6">Quilometragem Diária</h3>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-blue-100 dark:border-blue-900/30 hover:shadow-lg transition-all duration-300">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+          Quilometragem Diária
+        </h3>
         
         {dailyMileage.length > 0 ? (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
+              <AreaChart
                 data={dailyMileage}
                 margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
               >
+                <defs>
+                  <linearGradient id="colorKm" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
                 <XAxis 
                   dataKey="formattedDate" 
@@ -285,16 +296,17 @@ const HodometrosDashboard = () => {
                   }}
                 />
                 <Legend />
-                <Line 
+                <Area 
                   type="monotone" 
                   dataKey="totalKm" 
                   name="Quilômetros Rodados"
                   stroke="#3B82F6" 
+                  fillOpacity={1}
+                  fill="url(#colorKm)"
                   strokeWidth={2}
-                  dot={{ r: 4, fill: "#3B82F6" }}
                   activeDot={{ r: 6, fill: "#2563EB" }}
                 />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         ) : (
@@ -308,9 +320,9 @@ const HodometrosDashboard = () => {
       {/* Top Drivers and Vehicles */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Drivers */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-green-100 dark:border-green-900/30 hover:shadow-lg transition-all duration-300">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Users className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+            <Users className="w-5 h-5 text-green-500 dark:text-green-400" />
             Top Motoristas por Quilometragem
           </h3>
           
@@ -347,13 +359,13 @@ const HodometrosDashboard = () => {
                   <Bar 
                     dataKey="totalKm" 
                     name="Quilômetros Rodados"
-                    fill="#3B82F6"
+                    fill="#10B981"
                     radius={[0, 4, 4, 0]}
                   >
                     {driverMileage.slice(0, 10).map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={`rgba(59, 130, 246, ${0.9 - (index * 0.07)})`} 
+                        fill={`rgba(16, 185, 129, ${0.9 - (index * 0.07)})`} 
                       />
                     ))}
                   </Bar>
@@ -369,9 +381,9 @@ const HodometrosDashboard = () => {
         </div>
         
         {/* Top Vehicles */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-purple-100 dark:border-purple-900/30 hover:shadow-lg transition-all duration-300">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Truck className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+            <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
             Top Veículos por Quilometragem
           </h3>
           
@@ -408,13 +420,13 @@ const HodometrosDashboard = () => {
                   <Bar 
                     dataKey="totalKm" 
                     name="Quilômetros Rodados"
-                    fill="#3B82F6"
+                    fill="#8B5CF6"
                     radius={[0, 4, 4, 0]}
                   >
                     {vehicleMileage.slice(0, 10).map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={`rgba(59, 130, 246, ${0.9 - (index * 0.07)})`} 
+                        fill={`rgba(139, 92, 246, ${0.9 - (index * 0.07)})`} 
                       />
                     ))}
                   </Bar>
@@ -431,38 +443,41 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* Daily Mileage Table */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6">Quilometragem Diária Detalhada</h3>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-2 border-amber-100 dark:border-amber-900/30 hover:shadow-lg transition-all duration-300">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+          Quilometragem Diária Detalhada
+        </h3>
         
         {dailyMileage.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 rounded-lg overflow-hidden">
+              <thead className="bg-amber-50 dark:bg-amber-900/20">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-amber-700 dark:text-amber-300 uppercase tracking-wider">
                     Data
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-amber-700 dark:text-amber-300 uppercase tracking-wider">
                     Quilômetros Rodados
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {dailyMileage.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <tr key={index} className="hover:bg-amber-50/50 dark:hover:bg-amber-900/10">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       {item.formattedDate}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600 dark:text-blue-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-amber-600 dark:text-amber-400">
                       {formatNumber(item.totalKm)} km
                     </td>
                   </tr>
                 ))}
-                <tr className="bg-gray-50 dark:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                <tr className="bg-amber-50 dark:bg-amber-900/20">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
                     Total
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600 dark:text-blue-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-amber-600 dark:text-amber-400">
                     {formatNumber(totalKm)} km
                   </td>
                 </tr>

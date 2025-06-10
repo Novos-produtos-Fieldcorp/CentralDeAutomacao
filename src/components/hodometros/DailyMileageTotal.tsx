@@ -71,10 +71,10 @@ const DailyMileageTotal: React.FC<DailyMileageProps> = ({ selectedDate }) => {
   }, [selectedDate, companyId]);
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-purple-100 dark:border-purple-800/30 p-6 transition-all duration-300 hover:shadow-lg">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border-l-4 border-blue-500 dark:border-blue-400 p-6 transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1">
       <div className="flex flex-col items-center text-center">
-        <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
-          <TrendingUp className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+        <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
+          <TrendingUp className="w-8 h-8 text-blue-600 dark:text-blue-400" />
         </div>
         
         <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -84,7 +84,7 @@ const DailyMileageTotal: React.FC<DailyMileageProps> = ({ selectedDate }) => {
         {loading ? (
           <div className="animate-pulse h-10 w-24 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
         ) : (
-          <span className="text-3xl font-bold text-gray-900 dark:text-white">
+          <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-indigo-400">
             {totalKm.toLocaleString('pt-BR')} km
           </span>
         )}
