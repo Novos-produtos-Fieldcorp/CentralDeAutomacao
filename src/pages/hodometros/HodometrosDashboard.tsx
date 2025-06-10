@@ -8,6 +8,7 @@ import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import DailyMileageTotal from '../../components/hodometros/DailyMileageTotal';
 import ReadingsPerDriverChart from '../../components/hodometros/ReadingsPerDriverChart';
+import VehicleMileageChart from '../../components/hodometros/VehicleMileageChart';
 import { 
   BarChart, 
   Bar, 
@@ -36,6 +37,7 @@ interface VehicleMileage {
   veiculo_id: number;
   placa: string;
   totalKm: number;
+  lastDate?: string;
 }
 
 interface DriverReadings {
@@ -96,7 +98,7 @@ const HodometrosDashboard = () => {
       // Process data for daily mileage
       const dailyMileageMap = new Map<string, number>();
       const driverMileageMap = new Map<number, { nome: string; totalKm: number }>();
-      const vehicleMileageMap = new Map<number, { placa: string; totalKm: number }>();
+      const vehicleMileageMap = new Map<number, { placa: string; totalKm: number; lastDate?: string }>();
       const driverReadingsMap = new Map<number, { nome: string; count: number }>();
       
       let totalKilometers = 0;
@@ -142,14 +144,27 @@ const HodometrosDashboard = () => {
         // Add to vehicle mileage
         if (hodometro.veiculo_id && hodometro.veiculo) {
           const vehicleId = hodometro.veiculo_id;
-          const vehiclePlate = hodometro.veiculo.placa;
+          const vehiclePlate = hodometro.veiculo.placa.toUpperCase();
           
           if (!vehicleMileageMap.has(vehicleId)) {
-            vehicleMileageMap.set(vehicleId, { placa: vehiclePlate, totalKm: 0 });
+            vehicleMileageMap.set(vehicleId, { 
+              placa: vehiclePlate, 
+              totalKm: 0,
+              lastDate: hodometro.data
+            });
           }
           
           const vehicleData = vehicleMileageMap.get(vehicleId)!;
           vehicleData.totalKm += kmValue;
+          
+          // Update last date if this reading is more recent
+          const currentDate = new Date(hodometro.data);
+          const existingDate = vehicleData.lastDate ? new Date(vehicleData.lastDate) : null;
+          
+          if (!existingDate || currentDate > existingDate) {
+            vehicleData.lastDate = hodometro.data;
+          }
+          
           vehicleMileageMap.set(vehicleId, vehicleData);
         }
       });
@@ -180,11 +195,21 @@ const HodometrosDashboard = () => {
       
       // Convert vehicle mileage map to array and sort by total km (descending)
       const vehicleMileageArray: VehicleMileage[] = Array.from(vehicleMileageMap.entries())
-        .map(([veiculo_id, data]) => ({
-          veiculo_id,
-          placa: data.placa.toUpperCase(),
-          totalKm: data.totalKm
-        }))
+        .map(([veiculo_id, data]) => {
+          // Format the last date
+          let formattedLastDate;
+          if (data.lastDate) {
+            const [year, month, day] = data.lastDate.split('-');
+            formattedLastDate = `${day}/${month}/${year}`;
+          }
+          
+          return {
+            veiculo_id,
+            placa: data.placa,
+            totalKm: data.totalKm,
+            lastDate: formattedLastDate
+          };
+        })
         .sort((a, b) => b.totalKm - a.totalKm);
         
       // Convert driver readings map to array and sort by count (descending)
@@ -349,6 +374,25 @@ const HodometrosDashboard = () => {
         {driverReadings.length > 0 ? (
           <div className="h-80">
             <ReadingsPerDriverChart data={driverReadings} />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+            <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+          </div>
+        )}
+      </div>
+
+      {/* Vehicle Mileage Chart */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <Truck className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+          Quilometragem por Veículo
+        </h3>
+        
+        {vehicleMileage.length > 0 ? (
+          <div className="h-auto">
+            <VehicleMileageChart data={vehicleMileage} />
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
