@@ -6,6 +6,7 @@ import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { supabase } from '../../lib/supabase';
+import { formatNumber } from '../../utils/format';
 
 interface DashboardStats {
   totalMotoristas: number;
@@ -244,11 +245,6 @@ const ContratacaoDashboard = () => {
   
   // Calculate max values for proper bar scaling
   const maxStatusValue = Math.max(...statusDistribution.map(s => s.value), 1);
-
-  // Format number with dot as thousands separator
-  const formatNumber = (num: number): string => {
-    return num.toLocaleString('pt-BR');
-  };
 
   return (
     <div className="space-y-8">
