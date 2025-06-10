@@ -1,831 +1,171 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  BarChart2, TrendingUp, AlertTriangle, CheckCircle2, 
-  Download, Truck, Users, FileCheck, FileX, Store, Battery,
-  Calendar, Gauge, XCircle, Clock, BarChart, PieChart, 
-  ArrowUp, ArrowDown, Zap, Activity, Camera, X, Filter, Search
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Truck, Users, TrendingUp, BarChart2, Filter } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { useAuth } from '../../context/AuthContext';
-import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
-import PeriodSelector from '../../components/hodometros/PeriodSelector';
-import { useDateRange } from '../../hooks/useDateRange';
+import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/LoadingSpinner';
-
-interface DashboardStats {
-  totalLeituras: number;
-  leiturasHoje: number;
-  verificacaoTrue: number;
-  verificacaoFalse: number;
-  comparacaoTrue: number;
-  comparacaoFalse: number;
-  kmTotalRodado: number;
-  kmMediaPorVeiculo: number;
-  kmMediaPorMotorista: number;
-  totalVeiculosEletricos: number;
-  totalRegistrosCiclomotores: number;
-  mediaBateria: number;
-  totalBateriaUtilizada: number;
-  kmPorVeiculo: {
-    placa: string;
-    km_total: number;
-    data: string;
-    is_electric?: boolean;
-    bateria?: number | null;
-    trip_total?: number;
-  }[];
-  kmPorMotorista: {
-    nome: string;
-    km_total: number;
-    data: string;
-    leituras: number;
-    trip_total?: number;
-  }[];
-  kmPorCliente: {
-    nome: string;
-    km_total: number;
-    data: string;
-  }[];
-  kmPorOperacao: {
-    nome: string;
-    km_total: number;
-    percentual: number;
-  }[];
-  leiturasInconsistentes: {
-    hod_lido: number;
-    hod_informado: number;
-    trip_lida?: number | null;
-    trip_informada?: string | null;
-    nome: string;
-    data: string;
-    placa: string;
-    isElectric: boolean;
-    foto_hodometro?: string | null;
-    id_hodometro: number;
-  }[];
-  totalInconsistencias: number;
-}
-
-interface VehicleTypeFilter {
-  value: string;
-  label: string;
-}
-
-type VehicleCategory = 'all' | 'automoveis' | 'ciclomotores';
+import DailyMileageTotal from '../../components/hodometros/DailyMileageTotal';
 
 const HodometrosDashboard = () => {
-  const { query } = useCompanyData();
-  const { companyId } = useAuth();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalLeituras: 0,
-    leiturasHoje: 0,
-    verificacaoTrue: 0,
-    verificacaoFalse: 0,
-    comparacaoTrue: 0,
-    comparacaoFalse: 0,
-    kmTotalRodado: 0,
-    kmMediaPorVeiculo: 0,
-    kmMediaPorMotorista: 0,
-    totalVeiculosEletricos: 0,
-    totalRegistrosCiclomotores: 0,
-    mediaBateria: 0,
-    totalBateriaUtilizada: 0,
-    kmPorVeiculo: [],
-    kmPorMotorista: [],
-    kmPorCliente: [],
-    kmPorOperacao: [],
-    leiturasInconsistentes: [],
-    totalInconsistencias: 0
-  });
+  const { query, companyId } = useCompanyData();
   const [loading, setLoading] = useState(true);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
-  const [vehicleCategory, setVehicleCategory] = useState<VehicleCategory>('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    totalReadings: 0,
+    activeVehicles: 0,
+    activeDrivers: 0,
+    totalKm: 0,
+    averageKmPerDay: 0,
+    topDrivers: [] as { name: string; km: number }[],
+    monthlyData: [] as { month: string; km: number }[]
+  });
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
-  const vehicleTypeOptions: VehicleTypeFilter[] = [
-    { value: 'all', label: 'Todos os veículos' },
-    { value: 'automoveis', label: 'Automóveis' },
-    { value: 'ciclomotores', label: 'Ciclomotores elétricos' }
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = async () => {
     try {
       setLoading(true);
       
-      // Fetch all hodometros within date range with related data
-      let query = supabase.from('hodometro')
+      // Get date range for last 30 days
+      const today = new Date();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      
+      const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+      const endDate = today.toISOString().split('T')[0];
+
+      // Fetch hodometer readings for the last 30 days
+      const { data: hodometros, error: hodometrosError } = await supabase
+        .from('hodometro')
         .select(`
-          *,
-          motorista:motorista_id (nome),
-          veiculo:veiculo_id (placa, marca, tipo),
-          cliente:cliente_id (nome)
+          id_hodometro,
+          data,
+          km_rodado,
+          hod_lido,
+          hod_informado,
+          motorista:motorista_id (
+            motorista_id,
+            nome
+          ),
+          veiculo:veiculo_id (
+            veiculo_id,
+            placa
+          )
         `)
+        .gte('data', startDate)
+        .lte('data', endDate)
         .eq('company_id', companyId);
-      
-      // Apply date range filter
-      if (dateRange.startDate) {
-        query = query.gte('data', dateRange.startDate);
-      }
-      if (dateRange.endDate) {
-        query = query.lte('data', dateRange.endDate);
-      }
-      
-      const { data: allHodometros, error } = await query;
 
-      if (error) throw error;
+      if (hodometrosError) throw hodometrosError;
 
-      if (allHodometros) {
-        // Filter hodometros based on vehicle category
-        let hodometros = allHodometros;
-        if (vehicleCategory === 'ciclomotores') {
-          hodometros = allHodometros.filter(h => h.bateria !== null);
-        } else if (vehicleCategory === 'automoveis') {
-          hodometros = allHodometros.filter(h => h.bateria === null);
+      // Calculate total readings
+      const totalReadings = hodometros?.length || 0;
+
+      // Calculate unique active vehicles
+      const uniqueVehicles = new Set(hodometros?.map(h => h.veiculo_id) || []);
+      const activeVehicles = uniqueVehicles.size;
+
+      // Calculate unique active drivers
+      const uniqueDrivers = new Set(hodometros?.map(h => h.motorista_id) || []);
+      const activeDrivers = uniqueDrivers.size;
+
+      // Calculate total kilometers
+      let totalKm = 0;
+      hodometros?.forEach(h => {
+        if (h.km_rodado) {
+          totalKm += h.km_rodado;
+        } else if (h.hod_lido && h.hod_informado) {
+          // Calculate difference between readings
+          const diff = Math.max(0, h.hod_lido - h.hod_informado);
+          totalKm += diff;
         }
-        
-        const hoje = new Date().toISOString().split('T')[0];
-        
-        // Basic stats
-        const totalLeituras = hodometros.length;
-        const leiturasHoje = hodometros.filter(h => h.data === hoje).length;
-        const verificacaoTrue = hodometros.filter(h => h.verificacao).length;
-        const verificacaoFalse = hodometros.filter(h => !h.verificacao).length;
-        const comparacaoTrue = hodometros.filter(h => h.comparacao_leitura === true).length;
-        const comparacaoFalse = hodometros.filter(h => h.comparacao_leitura === false).length;
-        
-        // Electric vehicles stats
-        const electricVehicleReadings = hodometros.filter(h => h.bateria !== null && h.bateria !== undefined);
-        const totalVeiculosEletricos = new Set(electricVehicleReadings.map(h => h.veiculo_id)).size;
-        const totalRegistrosCiclomotores = electricVehicleReadings.length;
-        
-        // Calculate average battery level and total battery used
-        let mediaBateria = 0;
-        let totalBateriaUtilizada = 0;
-        
-        if (electricVehicleReadings.length > 0) {
-          // Calculate average battery level
-          let validBatteryReadings = 0;
-          let batterySum = 0;
-          
-          electricVehicleReadings.forEach(reading => {
-            if (typeof reading.bateria === 'number') {
-              batterySum += reading.bateria;
-              validBatteryReadings++;
-            }
-          });
-          
-          mediaBateria = validBatteryReadings > 0 ? batterySum / validBatteryReadings : 0;
-          
-          // Calculate total battery used
-          electricVehicleReadings.forEach(reading => {
-            if (typeof reading.bateria === 'number') {
-              totalBateriaUtilizada += (100 - reading.bateria);
-            }
-          });
-        }
+      });
 
-        // Group readings by motorista, date, and vehicle
-        const motoristaDateVehicleMap = new Map();
-        
-        hodometros.forEach(h => {
-          if (!h.motorista_id || !h.data || !h.veiculo_id) return;
-          
-          const key = `${h.motorista_id}_${h.data}_${h.veiculo_id}`;
-          if (!motoristaDateVehicleMap.has(key)) {
-            motoristaDateVehicleMap.set(key, []);
-          }
-          
-          motoristaDateVehicleMap.get(key).push({
-            ...h,
-            timestamp: new Date(`${h.data}T${h.hora}`).getTime()
-          });
-        });
-        
-        // Calculate KM total rodado
-        let kmTotalRodado = 0;
-        
-        // Process each group of readings
-        motoristaDateVehicleMap.forEach(readings => {
-          // Sort readings by timestamp
-          const sortedReadings = [...readings].sort((a, b) => a.timestamp - b.timestamp);
-          
-          // Check if it's an electric vehicle
-          const isElectric = sortedReadings[0].bateria !== null && sortedReadings[0].bateria !== undefined;
-          
-          if (isElectric) {
-            // For electric vehicles, calculate the difference between first and last trip_lida
-            if (sortedReadings.length >= 2) {
-              const firstReading = sortedReadings[0];
-              const lastReading = sortedReadings[sortedReadings.length - 1];
-              
-              // Use trip_lida for calculation if available
-              if (typeof firstReading.trip_lida === 'number' && 
-                  typeof lastReading.trip_lida === 'number') {
-                const tripDifference = lastReading.trip_lida - firstReading.trip_lida;
-                if (tripDifference > 0) {
-                  kmTotalRodado += tripDifference;
-                }
-              } else {
-                // Fallback to km_rodado if trip_lida is not available
-                sortedReadings.forEach(reading => {
-                  if (typeof reading.km_rodado === 'number') {
-                    kmTotalRodado += reading.km_rodado;
-                  }
-                });
-              }
-            } else if (sortedReadings.length === 1) {
-              // If only one reading, use km_rodado
-              if (typeof sortedReadings[0].km_rodado === 'number') {
-                kmTotalRodado += sortedReadings[0].km_rodado;
-              }
-            }
-          } else {
-            // For regular vehicles, calculate the difference between first and last hod_lido
-            if (sortedReadings.length >= 2) {
-              const firstReading = sortedReadings[0];
-              const lastReading = sortedReadings[sortedReadings.length - 1];
-              
-              if (typeof firstReading.hod_lido === 'number' && 
-                  typeof lastReading.hod_lido === 'number') {
-                const hodDifference = lastReading.hod_lido - firstReading.hod_lido;
-                if (hodDifference > 0) {
-                  kmTotalRodado += hodDifference;
-                }
-              }
-            }
-          }
-        });
+      // Calculate average km per day
+      const daysDiff = Math.max(1, Math.round((today.getTime() - thirtyDaysAgo.getTime()) / (1000 * 60 * 60 * 24)));
+      const averageKmPerDay = totalKm / daysDiff;
 
-        // KM por veículo
-        const veiculosMap = new Map();
+      // Calculate top drivers by kilometers
+      const driverMap = new Map<number, { name: string; km: number }>();
+      hodometros?.forEach(h => {
+        if (!h.motorista_id || !h.motorista) return;
         
-        // Process each group of readings for vehicle stats
-        motoristaDateVehicleMap.forEach((readings, key) => {
-          const [_, __, veiculo_id] = key.split('_');
-          const sortedReadings = [...readings].sort((a, b) => a.timestamp - b.timestamp);
-          
-          if (sortedReadings.length === 0) return;
-          
-          const firstReading = sortedReadings[0];
-          const lastReading = sortedReadings[sortedReadings.length - 1];
-          const isElectric = firstReading.bateria !== null && firstReading.bateria !== undefined;
-          
-          if (!firstReading.veiculo?.placa) return;
-          
-          const placa = firstReading.veiculo.placa;
-          
-          // Get or initialize vehicle data
-          const vehicleData = veiculosMap.get(placa) || {
-            km_total: 0,
-            data: firstReading.data,
-            is_electric: isElectric,
-            bateria: isElectric ? lastReading.bateria : null,
-            trip_total: 0
-          };
-          
-          // Calculate KM for this day and vehicle
-          if (isElectric) {
-            if (sortedReadings.length >= 2) {
-              // Calculate trip difference
-              if (typeof firstReading.trip_lida === 'number' && 
-                  typeof lastReading.trip_lida === 'number') {
-                const tripDifference = lastReading.trip_lida - firstReading.trip_lida;
-                if (tripDifference > 0) {
-                  vehicleData.trip_total += tripDifference;
-                  vehicleData.km_total += tripDifference;
-                }
-              } else {
-                // Fallback to km_rodado
-                sortedReadings.forEach(reading => {
-                  if (typeof reading.km_rodado === 'number') {
-                    vehicleData.km_total += reading.km_rodado;
-                  }
-                });
-              }
-            } else if (sortedReadings.length === 1) {
-              // If only one reading, use km_rodado
-              if (typeof firstReading.km_rodado === 'number') {
-                vehicleData.km_total += firstReading.km_rodado;
-              }
-            }
-          } else {
-            // For regular vehicles
-            if (sortedReadings.length >= 2) {
-              if (typeof firstReading.hod_lido === 'number' && 
-                  typeof lastReading.hod_lido === 'number') {
-                const hodDifference = lastReading.hod_lido - firstReading.hod_lido;
-                if (hodDifference > 0) {
-                  vehicleData.km_total += hodDifference;
-                }
-              }
-            }
-          }
-          
-          // Update vehicle data
-          vehicleData.data = lastReading.data;
-          if (isElectric) {
-            vehicleData.bateria = lastReading.bateria;
-          }
-          
-          veiculosMap.set(placa, vehicleData);
-        });
-
-        const kmPorVeiculo = Array.from(veiculosMap.entries())
-          .map(([placa, data]) => ({
-            placa,
-            km_total: data.km_total,
-            data: data.data,
-            is_electric: data.is_electric,
-            bateria: data.bateria,
-            trip_total: data.trip_total
-          }))
-          .sort((a, b) => b.km_total - a.km_total);
-
-        // KM por motorista
-        const motoristasMap = new Map();
+        const driverId = h.motorista_id;
+        const driverName = h.motorista.nome;
+        const km = h.km_rodado || 0;
         
-        // Process each group of readings for motorista stats
-        motoristaDateVehicleMap.forEach((readings, key) => {
-          const [motorista_id, date, veiculo_id] = key.split('_');
-          const sortedReadings = [...readings].sort((a, b) => a.timestamp - b.timestamp);
-          
-          if (sortedReadings.length === 0) return;
-          
-          const firstReading = sortedReadings[0];
-          const lastReading = sortedReadings[sortedReadings.length - 1];
-          const isElectric = firstReading.bateria !== null && firstReading.bateria !== undefined;
-          
-          if (!firstReading.motorista?.nome) return;
-          
-          const nome = firstReading.motorista.nome;
-          
-          // Get or initialize motorista data
-          const motoristaData = motoristasMap.get(nome) || {
-            km_total: 0,
-            data: firstReading.data,
-            leituras: 0,
-            trip_total: 0
-          };
-          
-          // Calculate KM for this day, motorista, and vehicle
-          if (isElectric) {
-            if (sortedReadings.length >= 2) {
-              // Calculate trip difference
-              if (typeof firstReading.trip_lida === 'number' && 
-                  typeof lastReading.trip_lida === 'number') {
-                const tripDifference = lastReading.trip_lida - firstReading.trip_lida;
-                if (tripDifference > 0) {
-                  motoristaData.trip_total += tripDifference;
-                  motoristaData.km_total += tripDifference;
-                }
-              } else {
-                // Fallback to km_rodado
-                sortedReadings.forEach(reading => {
-                  if (typeof reading.km_rodado === 'number') {
-                    motoristaData.km_total += reading.km_rodado;
-                  }
-                });
-              }
-            } else if (sortedReadings.length === 1) {
-              // If only one reading, use km_rodado
-              if (typeof firstReading.km_rodado === 'number') {
-                motoristaData.km_total += firstReading.km_rodado;
-              }
-            }
-          } else {
-            // For regular vehicles
-            if (sortedReadings.length >= 2) {
-              if (typeof firstReading.hod_lido === 'number' && 
-                  typeof lastReading.hod_lido === 'number') {
-                const hodDifference = lastReading.hod_lido - firstReading.hod_lido;
-                if (hodDifference > 0) {
-                  motoristaData.km_total += hodDifference;
-                }
-              }
-            }
-          }
-          
-          // Update motorista data
-          motoristaData.data = lastReading.data;
-          motoristaData.leituras += sortedReadings.length;
-          
-          motoristasMap.set(nome, motoristaData);
-        });
-
-        const kmPorMotorista = Array.from(motoristasMap.entries())
-          .map(([nome, data]) => ({
-            nome,
-            km_total: data.km_total,
-            data: data.data,
-            leituras: data.leituras,
-            trip_total: data.trip_total
-          }))
-          .sort((a, b) => b.leituras - a.leituras); // Sort by number of readings (most to least)
-
-        // KM por cliente
-        const clientesMap = new Map();
-        
-        // Process each group of readings for client stats
-        motoristaDateVehicleMap.forEach((readings, key) => {
-          const sortedReadings = [...readings].sort((a, b) => a.timestamp - b.timestamp);
-          
-          if (sortedReadings.length === 0 || !sortedReadings[0].cliente?.nome) return;
-          
-          const firstReading = sortedReadings[0];
-          const lastReading = sortedReadings[sortedReadings.length - 1];
-          const isElectric = firstReading.bateria !== null && firstReading.bateria !== undefined;
-          
-          const nome = firstReading.cliente.nome;
-          
-          // Get or initialize client data
-          const clienteData = clientesMap.get(nome) || {
-            km_total: 0,
-            data: firstReading.data,
-            trip_total: 0
-          };
-          
-          // Calculate KM for this day, client, and vehicle
-          if (isElectric) {
-            if (sortedReadings.length >= 2) {
-              // Calculate trip difference
-              if (typeof firstReading.trip_lida === 'number' && 
-                  typeof lastReading.trip_lida === 'number') {
-                const tripDifference = lastReading.trip_lida - firstReading.trip_lida;
-                if (tripDifference > 0) {
-                  clienteData.trip_total += tripDifference;
-                  clienteData.km_total += tripDifference;
-                }
-              } else {
-                // Fallback to km_rodado
-                sortedReadings.forEach(reading => {
-                  if (typeof reading.km_rodado === 'number') {
-                    clienteData.km_total += reading.km_rodado;
-                  }
-                });
-              }
-            } else if (sortedReadings.length === 1) {
-              // If only one reading, use km_rodado
-              if (typeof firstReading.km_rodado === 'number') {
-                clienteData.km_total += firstReading.km_rodado;
-              }
-            }
-          } else {
-            // For regular vehicles
-            if (sortedReadings.length >= 2) {
-              if (typeof firstReading.hod_lido === 'number' && 
-                  typeof lastReading.hod_lido === 'number') {
-                const hodDifference = lastReading.hod_lido - firstReading.hod_lido;
-                if (hodDifference > 0) {
-                  clienteData.km_total += hodDifference;
-                }
-              }
-            }
-          }
-          
-          // Update client data
-          clienteData.data = lastReading.data;
-          
-          clientesMap.set(nome, clienteData);
-        });
-
-        const kmPorCliente = Array.from(clientesMap.entries())
-          .map(([nome, data]) => ({
-            nome,
-            km_total: data.km_total,
-            data: data.data
-          }))
-          .sort((a, b) => b.km_total - a.km_total);
-
-        // KM por operação (agrupado por cliente_id)
-        const operacoesMap = new Map();
-        
-        // Primeiro, adicionar "Sem operação" para leituras sem cliente
-        const semOperacaoReadings = hodometros.filter(h => !h.cliente_id);
-        let semOperacaoKm = 0;
-        
-        // Group readings by motorista, date, and vehicle for "Sem operação"
-        const semOperacaoMap = new Map();
-        
-        semOperacaoReadings.forEach(h => {
-          if (!h.motorista_id || !h.data || !h.veiculo_id) return;
-          
-          const key = `${h.motorista_id}_${h.data}_${h.veiculo_id}`;
-          if (!semOperacaoMap.has(key)) {
-            semOperacaoMap.set(key, []);
-          }
-          
-          semOperacaoMap.get(key).push({
-            ...h,
-            timestamp: new Date(`${h.data}T${h.hora}`).getTime()
-          });
-        });
-        
-        // Calculate KM for "Sem operação"
-        semOperacaoMap.forEach(readings => {
-          const sortedReadings = [...readings].sort((a, b) => a.timestamp - b.timestamp);
-          
-          if (sortedReadings.length === 0) return;
-          
-          const firstReading = sortedReadings[0];
-          const lastReading = sortedReadings[sortedReadings.length - 1];
-          const isElectric = firstReading.bateria !== null && firstReading.bateria !== undefined;
-          
-          if (isElectric) {
-            if (sortedReadings.length >= 2) {
-              // Calculate trip difference
-              if (typeof firstReading.trip_lida === 'number' && 
-                  typeof lastReading.trip_lida === 'number') {
-                const tripDifference = lastReading.trip_lida - firstReading.trip_lida;
-                if (tripDifference > 0) {
-                  semOperacaoKm += tripDifference;
-                }
-              } else {
-                // Fallback to km_rodado
-                sortedReadings.forEach(reading => {
-                  if (typeof reading.km_rodado === 'number') {
-                    semOperacaoKm += reading.km_rodado;
-                  }
-                });
-              }
-            } else if (sortedReadings.length === 1) {
-              // If only one reading, use km_rodado
-              if (typeof firstReading.km_rodado === 'number') {
-                semOperacaoKm += firstReading.km_rodado;
-              }
-            }
-          } else {
-            // For regular vehicles
-            if (sortedReadings.length >= 2) {
-              if (typeof firstReading.hod_lido === 'number' && 
-                  typeof lastReading.hod_lido === 'number') {
-                const hodDifference = lastReading.hod_lido - firstReading.hod_lido;
-                if (hodDifference > 0) {
-                  semOperacaoKm += hodDifference;
-                }
-              }
-            }
-          }
-        });
-        
-        if (semOperacaoKm > 0) {
-          operacoesMap.set('Sem operação', { km_total: semOperacaoKm, trip_total: 0 });
-        }
-        
-        // Group readings by client for operations with clients
-        const clienteOperacoesMap = new Map();
-        
-        hodometros.filter(h => h.cliente_id).forEach(h => {
-          if (!h.motorista_id || !h.data || !h.veiculo_id || !h.cliente?.nome) return;
-          
-          const key = `${h.cliente.nome}_${h.motorista_id}_${h.data}_${h.veiculo_id}`;
-          if (!clienteOperacoesMap.has(key)) {
-            clienteOperacoesMap.set(key, []);
-          }
-          
-          clienteOperacoesMap.get(key).push({
-            ...h,
-            timestamp: new Date(`${h.data}T${h.hora}`).getTime()
-          });
-        });
-        
-        // Calculate KM for each client operation
-        clienteOperacoesMap.forEach((readings, key) => {
-          const [clienteName, ...rest] = key.split('_');
-          const sortedReadings = [...readings].sort((a, b) => a.timestamp - b.timestamp);
-          
-          if (sortedReadings.length === 0) return;
-          
-          const firstReading = sortedReadings[0];
-          const lastReading = sortedReadings[sortedReadings.length - 1];
-          const isElectric = firstReading.bateria !== null && firstReading.bateria !== undefined;
-          
-          // Get or initialize client operation data
-          const operationData = operacoesMap.get(clienteName) || {
-            km_total: 0,
-            trip_total: 0
-          };
-          
-          // Calculate KM for this day, client, motorista, and vehicle
-          if (isElectric) {
-            if (sortedReadings.length >= 2) {
-              // Calculate trip difference
-              if (typeof firstReading.trip_lida === 'number' && 
-                  typeof lastReading.trip_lida === 'number') {
-                const tripDifference = lastReading.trip_lida - firstReading.trip_lida;
-                if (tripDifference > 0) {
-                  operationData.trip_total += tripDifference;
-                  operationData.km_total += tripDifference;
-                }
-              } else {
-                // Fallback to km_rodado
-                sortedReadings.forEach(reading => {
-                  if (typeof reading.km_rodado === 'number') {
-                    operationData.km_total += reading.km_rodado;
-                  }
-                });
-              }
-            } else if (sortedReadings.length === 1) {
-              // If only one reading, use km_rodado
-              if (typeof firstReading.km_rodado === 'number') {
-                operationData.km_total += firstReading.km_rodado;
-              }
-            }
-          } else {
-            // For regular vehicles
-            if (sortedReadings.length >= 2) {
-              if (typeof firstReading.hod_lido === 'number' && 
-                  typeof lastReading.hod_lido === 'number') {
-                const hodDifference = lastReading.hod_lido - firstReading.hod_lido;
-                if (hodDifference > 0) {
-                  operationData.km_total += hodDifference;
-                }
-              }
-            }
-          }
-          
-          // Update client operation data
-          operacoesMap.set(clienteName, operationData);
-        });
-        
-        // Calcular o total para percentuais
-        const totalKmOperacoes = Array.from(operacoesMap.values())
-          .reduce((sum, op) => {
-            if (vehicleCategory === 'ciclomotores') {
-              return sum + (op.trip_total || op.km_total);
-            } else {
-              return sum + op.km_total;
-            }
-          }, 0);
-        
-        // Formatar dados de operações com percentuais
-        const kmPorOperacao = Array.from(operacoesMap.entries())
-          .map(([nome, data]) => ({
-            nome, 
-            km_total: vehicleCategory === 'ciclomotores' ? (data.trip_total || data.km_total) : data.km_total,
-            percentual: totalKmOperacoes > 0 ? ((vehicleCategory === 'ciclomotores' ? (data.trip_total || data.km_total) : data.km_total) / totalKmOperacoes) * 100 : 0
-          }))
-          .sort((a, b) => b.km_total - a.km_total);
-
-        // Leituras inconsistentes
-        const leiturasInconsistentes = hodometros
-          .filter(h => {
-            // Remove any dots or commas before comparing
-            const cleanHodLido = h.hod_lido ? String(h.hod_lido).replace(/[.,]/g, '') : '';
-            const cleanHodInformado = h.hod_informado ? String(h.hod_informado).replace(/[.,]/g, '') : '';
-            const cleanTripLida = h.trip_lida ? String(h.trip_lida).replace(/[.,]/g, '') : '';
-            const cleanTripInformada = h.trip_informada ? String(h.trip_informada).replace(/[.,]/g, '') : '';
-            
-            // Para automóveis (sem bateria), verificar hod_lido e hod_informado
-            if (h.bateria === null) {
-              return cleanHodLido !== '' && cleanHodInformado !== '' && cleanHodLido !== cleanHodInformado;
-            }
-            // Para ciclomotores (com bateria), verificar trip_lida e trip_informada
-            else {
-              return cleanTripLida !== '' && cleanTripInformada !== '' && cleanTripLida !== cleanTripInformada;
-            }
-          })
-          .map(h => ({
-            hod_lido: h.hod_lido || 0,
-            hod_informado: h.hod_informado || 0,
-            trip_lida: h.trip_lida,
-            trip_informada: h.trip_informada,
-            nome: h.motorista?.nome || 'Desconhecido',
-            data: h.data,
-            placa: h.veiculo?.placa?.toUpperCase() || 'Desconhecido',
-            isElectric: h.bateria !== null,
-            foto_hodometro: h.foto_hodometro,
-            id_hodometro: h.id_hodometro
-          }))
-          .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-          
-        const totalInconsistencias = leiturasInconsistentes.length;
-
-        // Count unique vehicles (excluding electric ones if filtering for automobiles only)
-        const uniqueVehicles = new Set();
-        hodometros.forEach(h => {
-          if (h.veiculo?.placa) {
-            if (vehicleCategory === 'automoveis' && h.bateria !== null) {
-              // Skip electric vehicles when only showing automobiles
-              return;
-            }
-            if (vehicleCategory === 'ciclomotores' && h.bateria === null) {
-              // Skip regular vehicles when only showing electric ones
-              return;
-            }
-            uniqueVehicles.add(h.veiculo.placa);
-          }
-        });
-        
-        const uniqueVehicleCount = uniqueVehicles.size;
-        
-        // Calculate KM per vehicle based on the filtered category
-        let categoryKmTotal = 0;
-        if (vehicleCategory === 'automoveis') {
-          // Only regular vehicles
-          categoryKmTotal = kmTotalRodado;
-        } else if (vehicleCategory === 'ciclomotores') {
-          // Only electric vehicles - use trip_lida values
-          categoryKmTotal = kmTotalRodado;
+        if (driverMap.has(driverId)) {
+          const current = driverMap.get(driverId)!;
+          driverMap.set(driverId, { name: current.name, km: current.km + km });
         } else {
-          // All vehicles
-          categoryKmTotal = kmTotalRodado;
+          driverMap.set(driverId, { name: driverName, km });
         }
-        
-        const kmMediaPorVeiculo = uniqueVehicleCount > 0 ? categoryKmTotal / uniqueVehicleCount : 0;
-        
-        // Count unique drivers
-        const uniqueDrivers = new Set();
-        hodometros.forEach(h => {
-          if (h.motorista_id) {
-            if (vehicleCategory === 'automoveis' && h.bateria !== null) return;
-            if (vehicleCategory === 'ciclomotores' && h.bateria === null) return;
-            uniqueDrivers.add(h.motorista_id);
-          }
-        });
-        
-        const uniqueDriverCount = uniqueDrivers.size;
-        const kmMediaPorMotorista = uniqueDriverCount > 0 ? categoryKmTotal / uniqueDriverCount : 0;
+      });
+      
+      const topDrivers = Array.from(driverMap.values())
+        .sort((a, b) => b.km - a.km)
+        .slice(0, 5);
 
-        setStats({
-          totalLeituras,
-          leiturasHoje,
-          verificacaoTrue,
-          verificacaoFalse,
-          comparacaoTrue,
-          comparacaoFalse,
-          kmTotalRodado,
-          kmMediaPorVeiculo,
-          kmMediaPorMotorista,
-          totalVeiculosEletricos,
-          totalRegistrosCiclomotores,
-          mediaBateria,
-          totalBateriaUtilizada,
-          kmPorVeiculo,
-          kmPorMotorista,
-          kmPorCliente,
-          kmPorOperacao,
-          leiturasInconsistentes: leiturasInconsistentes.slice(0, 5), // Mostrar apenas as 5 mais recentes
-          totalInconsistencias
+      // Calculate monthly data
+      const monthlyMap = new Map<string, number>();
+      hodometros?.forEach(h => {
+        if (!h.data) return;
+        
+        const date = new Date(h.data);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const km = h.km_rodado || 0;
+        
+        if (monthlyMap.has(monthKey)) {
+          monthlyMap.set(monthKey, monthlyMap.get(monthKey)! + km);
+        } else {
+          monthlyMap.set(monthKey, km);
+        }
+      });
+      
+      const monthlyData = Array.from(monthlyMap.entries())
+        .map(([key, value]) => {
+          const [year, month] = key.split('-');
+          const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+          return {
+            month: date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
+            km: value
+          };
+        })
+        .sort((a, b) => {
+          const monthA = a.month.split(' ')[0];
+          const yearA = a.month.split(' ')[1];
+          const monthB = b.month.split(' ')[0];
+          const yearB = b.month.split(' ')[1];
+          
+          if (yearA !== yearB) {
+            return parseInt(yearA) - parseInt(yearB);
+          }
+          
+          const months = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
+          return months.indexOf(monthA) - months.indexOf(monthB);
         });
-      }
+
+      setStats({
+        totalReadings,
+        activeVehicles,
+        activeDrivers,
+        totalKm,
+        averageKmPerDay,
+        topDrivers,
+        monthlyData
+      });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       toast.error('Erro ao carregar dados do dashboard');
     } finally {
       setLoading(false);
     }
-  }, [dateRange, vehicleCategory, companyId]);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadData = async () => {
-      if (mounted) {
-        await fetchDashboardData();
-      }
-    };
-
-    loadData();
-
-    return () => {
-      mounted = false;
-    };
-  }, [fetchDashboardData]);
-
-  const filteredVehicleData = () => {
-    if (vehicleCategory === 'all') {
-      return stats.kmPorVeiculo;
-    } else if (vehicleCategory === 'ciclomotores') {
-      return stats.kmPorVeiculo.filter(v => v.is_electric);
-    } else {
-      return stats.kmPorVeiculo.filter(v => !v.is_electric);
-    }
   };
 
-  const formatDate = (dateString: string) => {
-    const [year, month, day] = dateString.split('-');
-    return `${day}/${month}/${year}`;
-  };
-
-  const filteredInconsistencias = stats.leiturasInconsistentes.filter(item => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      item.nome.toLowerCase().includes(searchLower) ||
-      item.placa.toLowerCase().includes(searchLower)
-    );
-  });
-
-  const handleShowPhoto = (photo: string | null | undefined) => {
-    if (photo) {
-      setSelectedPhoto(photo);
-      setShowPhotoModal(true);
-    } else {
-      toast.error('Nenhuma foto disponível');
-    }
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedDate(e.target.value);
   };
 
   if (loading) {
@@ -834,512 +174,154 @@ const HodometrosDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Filters Section */}
+      {/* Date Selector */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-2">
-            <Filter className="text-gray-400 w-5 h-5" />
-            <div className="text-sm text-gray-600 dark:text-gray-400">Categoria:</div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setVehicleCategory('all')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  vehicleCategory === 'all'
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                Todos
-              </button>
-              <button
-                onClick={() => setVehicleCategory('automoveis')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  vehicleCategory === 'automoveis'
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                Automóveis
-              </button>
-              <button
-                onClick={() => setVehicleCategory('ciclomotores')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  vehicleCategory === 'ciclomotores'
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                Ciclomotores
-              </button>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 ml-auto">
-            <Calendar className="text-gray-400 w-5 h-5" />
-            <PeriodSelector
-              periodType={periodType}
-              dateRange={dateRange}
-              onPeriodChange={updatePeriod}
-              onDateRangeChange={setDateRange}
-            />
-          </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="text-gray-400" size={20} />
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Selecione uma data para visualizar a quilometragem diária:
+          </label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={handleDateChange}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          />
         </div>
       </div>
 
-      {/* Top Stats Cards */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <StatCard
-          title="QTD DE LEITURAS REALIZADAS"
-          value={stats.totalLeituras}
-          icon={Gauge}
-          variant="blue"
-        />
-        <StatCard
-          title="LEITURAS REALIZADAS HOJE"
-          value={stats.leiturasHoje}
-          icon={Clock}
-          variant="green"
-        />
-        <StatCard
-          title="KM TOTAL RODADO"
-          value={`${Math.round(stats.kmTotalRodado).toLocaleString('pt-BR')} km`}
-          icon={Activity}
-          variant="purple"
-        />
-        <StatCard
-          title="MÉDIA KM/VEÍCULO"
-          value={`${Math.round(stats.kmMediaPorVeiculo).toLocaleString('pt-BR')} km`}
-          icon={TrendingUp}
-          variant="amber"
-        />
+        {/* Daily Total Mileage Card */}
+        <DailyMileageTotal selectedDate={selectedDate} />
+        
+        {/* Other Stats Cards */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-blue-100 dark:border-blue-800/30 p-6 transition-all duration-300 hover:shadow-lg">
+          <div className="flex flex-col items-center text-center">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
+              <Truck className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Veículos Ativos
+            </h3>
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">
+              {stats.activeVehicles}
+            </span>
+          </div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-green-100 dark:border-green-800/30 p-6 transition-all duration-300 hover:shadow-lg">
+          <div className="flex flex-col items-center text-center">
+            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
+              <Users className="w-8 h-8 text-green-600 dark:text-green-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Motoristas Ativos
+            </h3>
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">
+              {stats.activeDrivers}
+            </span>
+          </div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-amber-100 dark:border-amber-800/30 p-6 transition-all duration-300 hover:shadow-lg">
+          <div className="flex flex-col items-center text-center">
+            <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-full mb-4">
+              <TrendingUp className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Média Diária (30 dias)
+            </h3>
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">
+              {Math.round(stats.averageKmPerDay).toLocaleString('pt-BR')} km
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* Charts Grid */}
+      {/* Additional dashboard content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* KM por Motorista - MOVED FROM BELOW */}
+        {/* Top Drivers */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
-            <Users className="text-indigo-500 dark:text-indigo-400" size={20} />
+            <Users className="text-blue-500 dark:text-blue-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              KM POR MOTORISTA
+              Top Motoristas por Quilometragem
             </h3>
           </div>
           <div className="space-y-4">
-            {stats.kmPorMotorista.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500 dark:text-gray-400">
-                  Nenhum dado disponível para o período selecionado
-                </p>
-              </div>
-            ) : (
-              stats.kmPorMotorista.slice(0, 5).map((motorista, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {motorista.nome}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {Math.round(motorista.km_total).toLocaleString('pt-BR')} km
-                    </span>
-                  </div>
-                  <div className="h-2.5 bg-indigo-100 dark:bg-indigo-900/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full"
-                      style={{ width: `${(motorista.km_total / (stats.kmPorMotorista[0]?.km_total || 1)) * 100}%` }}
-                    />
-                  </div>
+            {stats.topDrivers.map((driver, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {driver.name}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {driver.km.toLocaleString('pt-BR')} km
+                  </span>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* KM por Veículo - MOVED FROM BELOW */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
-          <div className="flex items-center gap-2 mb-6">
-            <Truck className="text-teal-500 dark:text-teal-400" size={20} />
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              KM POR VEÍCULO
-            </h3>
-          </div>
-          <div className="space-y-4">
-            {filteredVehicleData().length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500 dark:text-gray-400">
-                  Nenhum dado disponível para o período selecionado
-                </p>
-              </div>
-            ) : (
-              filteredVehicleData().slice(0, 5).map((veiculo, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {veiculo.placa.toUpperCase()}
-                      </span>
-                      {veiculo.is_electric && (
-                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">
-                          Elétrico
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {Math.round(veiculo.km_total).toLocaleString('pt-BR')} km
-                    </span>
-                  </div>
-                  <div className="h-2.5 bg-teal-100 dark:bg-teal-900/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-teal-500 dark:bg-teal-400 rounded-full"
-                      style={{ 
-                        width: `${(veiculo.km_total / (filteredVehicleData()[0]?.km_total || 1)) * 100}%` 
-                      }}
-                    />
-                  </div>
-                  {veiculo.is_electric && veiculo.bateria !== null && veiculo.bateria !== undefined && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <Battery className="w-4 h-4 text-green-500" />
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        Bateria: {veiculo.bateria}%
-                      </div>
-                    </div>
-                  )}
+                <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${Math.max(
+                        5, 
+                        (driver.km / Math.max(...stats.topDrivers.map(d => d.km), 1)) * 100
+                      )}%` 
+                    }}
+                  />
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* KM por Operação - MOVED FROM ABOVE */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
-          <div className="flex items-center gap-2 mb-6">
-            <Store className="text-blue-500 dark:text-blue-400" size={20} />
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              KM POR OPERAÇÃO
-            </h3>
-          </div>
-          <div className="space-y-4">
-            {stats.kmPorOperacao.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500 dark:text-gray-400">
-                  Nenhum dado disponível para o período selecionado
-                </p>
               </div>
-            ) : (
-              stats.kmPorOperacao.slice(0, 5).map((item, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {item.nome}
-                    </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {Math.round(item.km_total).toLocaleString('pt-BR')} km
-                    </span>
-                  </div>
-                  <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
-                      style={{ width: `${item.percentual}%` }}
-                    />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Leituras por Motorista - MOVED FROM ABOVE */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
-          <div className="flex items-center gap-2 mb-6">
-            <Users className="text-purple-500 dark:text-purple-400" size={20} />
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              NÚMERO DE LEITURAS POR MOTORISTA
-            </h3>
-          </div>
-          <div className="space-y-4">
-            {stats.kmPorMotorista.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500 dark:text-gray-400">
-                  Nenhum dado disponível para o período selecionado
-                </p>
-              </div>
-            ) : (
-              stats.kmPorMotorista.slice(0, 5).map((motorista, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {motorista.nome}
-                    </span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {motorista.leituras} leituras
-                    </span>
-                  </div>
-                  <div className="h-2 bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-purple-500 dark:bg-purple-400 rounded-full"
-                      style={{ width: `${(motorista.leituras / Math.max(...stats.kmPorMotorista.map(m => m.leituras))) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Leituras Inconsistentes */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md lg:col-span-2">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="text-amber-500 dark:text-amber-400" size={20} />
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                LEITURAS INCONSISTENTES
-              </h3>
-              <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-                {stats.totalInconsistencias} total
-              </span>
-            </div>
+            ))}
             
-            <div className="relative w-64">
-              <input
-                type="text"
-                placeholder="Buscar por nome ou placa..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-4 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              />
-              <Search className="absolute left-2.5 top-1.5 h-4 w-4 text-gray-400" />
-            </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            {filteredInconsistencias.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500 dark:text-gray-400">
-                  Nenhuma leitura inconsistente encontrada no período selecionado
-                </p>
+            {stats.topDrivers.length === 0 && (
+              <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                Nenhum dado disponível
               </div>
-            ) : (
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {vehicleCategory === 'ciclomotores' ? 'Trip Lida' : 'Hodômetro Lido'}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {vehicleCategory === 'ciclomotores' ? 'Trip Informada' : 'Hodômetro Informado'}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Motorista
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Data
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Placa
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Foto
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredInconsistencias.map((leitura, index) => (
-                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                        {leitura.isElectric 
-                          ? leitura.trip_lida?.toLocaleString('pt-BR') || '-'
-                          : leitura.hod_lido.toLocaleString('pt-BR')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                        {leitura.isElectric 
-                          ? leitura.trip_informada || '-'
-                          : leitura.hod_informado.toLocaleString('pt-BR')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                        {leitura.nome}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                        {formatDate(leitura.data)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                        {leitura.placa}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <button
-                          onClick={() => handleShowPhoto(leitura.foto_hodometro)}
-                          className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                                   transition-colors ${!leitura.foto_hodometro && 'opacity-50 cursor-not-allowed'}`}
-                          title={leitura.foto_hodometro ? "Ver foto do hodômetro" : "Sem foto disponível"}
-                        >
-                          <Camera size={18} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             )}
           </div>
         </div>
-
-        {/* Electric Vehicle Stats */}
-        {stats.totalVeiculosEletricos > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md lg:col-span-2">
-            <div className="flex items-center gap-2 mb-6">
-              <Zap className="text-green-500 dark:text-green-400" size={20} />
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                CICLOMOTORES ELÉTRICOS
-              </h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
-                <div className="text-sm text-green-600 dark:text-green-400 mb-1">Total de Veículos</div>
-                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                  {stats.totalVeiculosEletricos}
-                </div>
-              </div>
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
-                <div className="text-sm text-green-600 dark:text-green-400 mb-1">Total de Registros</div>
-                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                  {stats.totalRegistrosCiclomotores}
-                </div>
-              </div>
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
-                <div className="text-sm text-green-600 dark:text-green-400 mb-1">Média de Bateria</div>
-                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                  {Math.round(stats.mediaBateria)}%
-                </div>
-              </div>
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
-                <div className="text-sm text-green-600 dark:text-green-400 mb-1">Bateria Utilizada</div>
-                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                  {Math.round(stats.totalBateriaUtilizada)}%
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {stats.kmPorVeiculo
-                .filter(v => v.is_electric)
-                .slice(0, 4)
-                .map((veiculo, index) => (
-                  <div key={index} className="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {veiculo.placa.toUpperCase()}
-                      </span>
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">
-                        Bateria: {veiculo.bateria}%
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-green-500 dark:bg-green-400 rounded-full"
-                          style={{ width: `${(veiculo.bateria || 0)}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                        <span>KM Total: {Math.round(veiculo.km_total).toLocaleString('pt-BR')} km</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
+        
+        {/* Monthly Trend */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+          <div className="flex items-center gap-2 mb-6">
+            <BarChart2 className="text-blue-500 dark:text-blue-400" size={20} />
+            <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              Quilometragem Mensal
+            </h3>
           </div>
-        )}
-      </div>
-
-      {/* Photo Modal */}
-      {showPhotoModal && selectedPhoto && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowPhotoModal(false)}
-        >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Foto do Hodômetro
-              </h3>
-              <button
-                onClick={() => setShowPhotoModal(false)}
-                className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="relative aspect-video">
-              <img
-                src={selectedPhoto}
-                alt="Foto do Hodômetro"
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-            </div>
+          <div className="space-y-4">
+            {stats.monthlyData.map((item, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {item.month}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {item.km.toLocaleString('pt-BR')} km
+                  </span>
+                </div>
+                <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${Math.max(
+                        5, 
+                        (item.km / Math.max(...stats.monthlyData.map(m => m.km), 1)) * 100
+                      )}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+            
+            {stats.monthlyData.length === 0 && (
+              <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                Nenhum dado disponível
+              </div>
+            )}
           </div>
         </div>
-      )}
-    </div>
-  );
-};
-
-const StatCard = ({ 
-  title, 
-  value, 
-  icon: Icon,
-  variant = 'blue'
-}: { 
-  title: string;
-  value: string | number;
-  icon: any;
-  variant?: 'blue' | 'green' | 'purple' | 'amber' | 'teal' | 'indigo';
-}) => {
-  const variants = {
-    'blue': {
-      icon: 'text-blue-500 dark:text-blue-400',
-      bg: 'bg-blue-50 dark:bg-blue-900/20',
-      border: 'border-blue-100 dark:border-blue-800/30'
-    },
-    'green': {
-      icon: 'text-green-500 dark:text-green-400',
-      bg: 'bg-green-50 dark:bg-green-900/20',
-      border: 'border-green-100 dark:border-green-800/30'
-    },
-    'purple': {
-      icon: 'text-purple-500 dark:text-purple-400',
-      bg: 'bg-purple-50 dark:bg-purple-900/20',
-      border: 'border-purple-100 dark:border-purple-800/30'
-    },
-    'amber': {
-      icon: 'text-amber-500 dark:text-amber-400',
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-      border: 'border-amber-100 dark:border-amber-800/30'
-    },
-    'teal': {
-      icon: 'text-teal-500 dark:text-teal-400',
-      bg: 'bg-teal-50 dark:bg-teal-900/20',
-      border: 'border-teal-100 dark:border-teal-800/30'
-    },
-    'indigo': {
-      icon: 'text-indigo-500 dark:text-indigo-400',
-      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-      border: 'border-indigo-100 dark:border-indigo-800/30'
-    }
-  };
-
-  const style = variants[variant];
-
-  return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-md border ${style.border} p-6 transition-all duration-300 hover:shadow-lg`}>
-      <div className="flex flex-col items-center text-center">
-        <div className={`p-3 rounded-full ${style.bg} mb-4`}>
-          <Icon className={`w-6 h-6 ${style.icon}`} />
-        </div>
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">{title}</p>
-        <span className="text-3xl font-bold text-gray-900 dark:text-white">
-          {value}
-        </span>
       </div>
     </div>
   );
