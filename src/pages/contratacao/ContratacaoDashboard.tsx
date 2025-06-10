@@ -495,7 +495,7 @@ const StatCard = ({
           {title}
         </h3>
         
-        <p className={`text-3xl font-bold bg-gradient-to-r ${variant.gradient} ${variant.darkGradient} bg-clip-text text-transparent`}>
+        <p className={`text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent ${variant.gradient} ${variant.darkGradient}`}>
           {value.toLocaleString('pt-BR')}
         </p>
       </div>
