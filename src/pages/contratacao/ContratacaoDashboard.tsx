@@ -283,7 +283,7 @@ const ContratacaoDashboard = () => {
           title="Rejeitados"
           value={stats.rejeitados}
           icon={XCircle}
-          color="green"
+          color="red"
         />
       </div>
 
@@ -452,7 +452,7 @@ const StatCard = ({
   title: string;
   value: number;
   icon: any;
-  color?: 'blue' | 'green' | 'purple' | 'amber';
+  color?: 'blue' | 'green' | 'purple' | 'amber' | 'red';
 }) => {
   // Define color variants based on the checklist dashboard style
   const colorVariants = {
@@ -479,6 +479,12 @@ const StatCard = ({
       iconColor: 'text-amber-600 dark:text-amber-400',
       gradient: 'from-amber-600 to-orange-600',
       darkGradient: 'dark:from-amber-400 dark:to-orange-400'
+    },
+    'red': {
+      iconBg: 'bg-red-100 dark:bg-red-900/30',
+      iconColor: 'text-red-600 dark:text-red-400',
+      gradient: 'from-red-600 to-rose-600',
+      darkGradient: 'dark:from-red-400 dark:to-rose-400'
     }
   };
 
