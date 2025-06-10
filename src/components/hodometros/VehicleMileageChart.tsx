@@ -22,38 +22,40 @@ const VehicleMileageChart: React.FC<VehicleMileageProps> = ({ data }) => {
 
   return (
     <div className="w-full space-y-4 p-6 rounded-xl bg-white dark:bg-gray-800">
-      {sortedData.map((vehicle, index) => (
-        <div key={index} className="relative">
-          <div className="flex justify-between items-center mb-1">
-            <div className="font-medium text-gray-900 dark:text-white">
-              {vehicle.placa}
+      {sortedData.length > 0 ? (
+        <div className="max-h-[500px] overflow-y-auto pr-2">
+          {sortedData.map((vehicle, index) => (
+            <div key={index} className="relative mb-4">
+              <div className="flex justify-between items-center mb-1">
+                <div className="font-medium text-gray-900 dark:text-white">
+                  {vehicle.placa}
+                </div>
+                <div className="flex items-center gap-2">
+                  {vehicle.lastDate && (
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {vehicle.lastDate}
+                    </span>
+                  )}
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {formatNumber(vehicle.totalKm)} km
+                  </span>
+                </div>
+              </div>
+              <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                  style={{ 
+                    width: `${Math.max(
+                      5, 
+                      (vehicle.totalKm / maxKm) * 100
+                    )}%` 
+                  }}
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {vehicle.lastDate && (
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {vehicle.lastDate}
-                </span>
-              )}
-              <span className="font-medium text-gray-900 dark:text-white">
-                {formatNumber(vehicle.totalKm)} km
-              </span>
-            </div>
-          </div>
-          <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-blue-500 rounded-full transition-all duration-300"
-              style={{ 
-                width: `${Math.max(
-                  5, 
-                  (vehicle.totalKm / maxKm) * 100
-                )}%` 
-              }}
-            />
-          </div>
+          ))}
         </div>
-      ))}
-
-      {data.length === 0 && (
+      ) : (
         <div className="text-center py-4 text-gray-500 dark:text-gray-400">
           Nenhum dado disponível para o período selecionado
         </div>
