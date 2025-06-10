@@ -352,16 +352,10 @@ const HodometrosDashboard = () => {
         {dailyMileage.length > 0 ? (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
+              <BarChart
                 data={dailyMileage}
                 margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
               >
-                <defs>
-                  <linearGradient id="colorKm" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
                 <XAxis 
                   dataKey="formattedDate" 
@@ -386,17 +380,20 @@ const HodometrosDashboard = () => {
                   }}
                 />
                 <Legend />
-                <Area 
-                  type="monotone" 
+                <Bar 
                   dataKey="totalKm" 
                   name="Quilômetros Rodados"
-                  stroke="#3B82F6" 
-                  fillOpacity={1}
-                  fill="url(#colorKm)"
-                  strokeWidth={2}
-                  activeDot={{ r: 6, fill: "#2563EB" }}
-                />
-              </AreaChart>
+                  fill="#3B82F6"
+                  radius={[4, 4, 0, 0]}
+                >
+                  {dailyMileage.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={`rgba(59, 130, 246, ${0.5 + (index * 0.05)})`} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         ) : (
@@ -407,13 +404,13 @@ const HodometrosDashboard = () => {
         )}
       </div>
 
-      {/* Top Drivers and Vehicles */}
+      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Drivers */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-green-500 dark:text-green-400" />
+              <Users className="text-green-500 dark:text-green-400" size={20} />
               Top Motoristas por Quilometragem
             </h3>
             
@@ -486,12 +483,12 @@ const HodometrosDashboard = () => {
             </div>
           )}
         </div>
-        
+
         {/* Top Vehicles */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+              <Truck className="text-purple-500 dark:text-purple-400" size={20} />
               Top Veículos por Quilometragem
             </h3>
             
