@@ -403,7 +403,7 @@ const MotoristasLista = () => {
           .select('*')
           .eq('motorista_id', motorista.motorista_id)
           .limit(1)
-          .single(),
+          .maybeSingle(),
         supabase.from('end_motorista')
           .select(`
             nr_end,
@@ -425,7 +425,7 @@ const MotoristasLista = () => {
           .eq('id_motorista', motorista.motorista_id)
           .eq('st_end', true)
           .limit(1)
-          .single()
+          .maybeSingle()
       ]);
 
       if (documentoResponse.error && documentoResponse.error.code !== 'PGRST116') {
