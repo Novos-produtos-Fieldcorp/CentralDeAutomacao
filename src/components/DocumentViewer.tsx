@@ -43,7 +43,7 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
 
   const openDocumentInNewTab = (url: string | null) => {
     if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      window.open(url, '_blank', 'noopener noreferrer');
     }
   };
 
@@ -309,7 +309,7 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                       {/* Comprovante de Residência */}
                       <div>
                         <h4 className="text-base font-medium text-gray-900 dark:text-white mb-3 flex items-center justify-between">
-                          <span>Comprovante de Residência</span>
+                          <span>Comprovante</span>
                           {documento?.foto_comprovante_residencia && (
                             <button
                               onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
