@@ -199,8 +199,9 @@ const HodometrosDashboard = () => {
         .eq('company_id', companyId)
         .gte('data', dateRange.startDate)
         .lte('data', dateRange.endDate)
-        .order('data', { ascending: false })
-        .order('hora', { ascending: false });
+        .order('veiculo_id', { ascending: true })
+        .order('data', { ascending: true })
+        .order('hora', { ascending: true });
 
       if (error) throw error;
 
@@ -213,21 +214,11 @@ const HodometrosDashboard = () => {
       const driverReadingsMap = new Map<number, { nome: string; count: number }>();
       const operationMileageMap = new Map<string, number>();
       
-      // IMPORTANT: Sort hodometros by vehicle_id, date, and time for accurate calculations
-      const sortedHodometros = [...(data || [])].sort((a, b) => {
-        if (a.veiculo_id !== b.veiculo_id) {
-          return (a.veiculo_id || 0) - (b.veiculo_id || 0);
-        }
-        const dateA = new Date(`${a.data}T${a.hora || '00:00:00'}`).getTime();
-        const dateB = new Date(`${b.data}T${b.hora || '00:00:00'}`).getTime();
-        return dateA - dateB;
-      });
-      
       // Map to store daily vehicle readings
       const dailyVehicleDataMap = new Map<string, DailyVehicleReadings>();
       
       // Process each reading
-      sortedHodometros.forEach(hodometro => {
+      (data || []).forEach(hodometro => {
         // ALWAYS process driver reading counts regardless of km values
         if (hodometro.motorista_id && hodometro.motorista) {
           const driverId = hodometro.motorista_id;
@@ -437,7 +428,7 @@ const HodometrosDashboard = () => {
       setOperationMileage(operationMileageArray);
       setTotalKm(totalKilometers);
       setAverageKmPerDay(avgKmPerDay);
-      setTotalReadings(sortedHodometros.length);
+      setTotalReadings(data?.length || 0);
       
       console.log(`Processed data: ${driverReadingsArray.length} drivers with readings`);
       
