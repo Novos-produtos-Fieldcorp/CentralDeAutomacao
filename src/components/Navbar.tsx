@@ -12,12 +12,13 @@ const Navbar = () => {
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
-  const { loading, moduleAccess } = useModuleAccess();
+  const [loading, setLoading] = useState(true);
+  const { moduleAccess } = useModuleAccess();
   const { companyId } = useAuth();
   const [companyName, setCompanyName] = useState('');
   const { query } = useCompanyData();
   const [tooltipVisible, setTooltipVisible] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState(0);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
 
   const fetchCompanyName = useCallback(async () => {
     if (!companyId) {
@@ -26,6 +27,8 @@ const Navbar = () => {
     }
     
     try {
+      setLoading(true);
+
       const { data, error } = await supabase
         .from('company')
         .select('nome_company')
@@ -39,6 +42,8 @@ const Navbar = () => {
     } catch (error) {
       console.error('Error fetching company name:', error);
       toast.error('Erro ao carregar nome da empresa');
+    } finally {
+      setLoading(false);
     }
   }, [companyId]);
 
@@ -85,7 +90,25 @@ const Navbar = () => {
 
   const handleLogoMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    setTooltipPosition(rect.top + rect.height/2);
+    
+    // Calculate position to ensure tooltip is visible
+    const viewportHeight = window.innerHeight;
+    let top = rect.top + rect.height/2;
+    
+    // Adjust if too close to bottom of viewport
+    if (top + 30 > viewportHeight) {
+      top = viewportHeight - 40;
+    }
+    
+    // Adjust if too close to top of viewport
+    if (top < 20) {
+      top = 20;
+    }
+    
+    setTooltipPosition({ 
+      top: top, 
+      left: rect.right + 10 
+    });
     setTooltipVisible(true);
   };
 
@@ -119,17 +142,6 @@ const Navbar = () => {
                   <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
                     {getCompanyInitial()}
                   </span>
-                  
-                  {/* Tooltip */}
-                  {tooltipVisible && !isExpanded && (
-                    <div 
-                      className="absolute left-12 z-50 px-3 py-2 bg-blue-600 text-white text-xs rounded-md whitespace-nowrap shadow-md"
-                      style={{ top: 'calc(50% - 12px)' }}
-                    >
-                      {companyName}
-                      <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
@@ -223,6 +235,20 @@ const Navbar = () => {
           <ThemeToggle isExpanded={isExpanded} />
         </div>
       </div>
+
+      {/* Fixed position tooltip for company name */}
+      {tooltipVisible && !isExpanded && (
+        <div 
+          className="fixed z-[9999] px-3 py-2 bg-blue-600 text-white text-xs rounded-md whitespace-nowrap shadow-md"
+          style={{ 
+            top: `${tooltipPosition.top}px`, 
+            left: `${tooltipPosition.left}px` 
+          }}
+        >
+          {companyName}
+          <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
+        </div>
+      )}
     </nav>
   );
 };
