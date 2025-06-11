@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
+import { useCompanyData } from './useCompanyData';
 import toast from 'react-hot-toast';
 
 interface ModuleAccess {
@@ -12,7 +12,8 @@ interface ModuleAccess {
 }
 
 export const useModuleAccess = () => {
-  const { companyId, accountId } = useAuth();
+  const { companyId } = useAuth();
+  const { query } = useCompanyData();
   const [loading, setLoading] = useState(true);
   const [moduleAccess, setModuleAccess] = useState<ModuleAccess>({
     checklist: true,
@@ -32,18 +33,15 @@ export const useModuleAccess = () => {
       try {
         setLoading(true);
 
-        // Use supabase directly - let supabase.ts handle retries and error messages
-        const { data: company, error: companyError } = await supabase
-          .from('company')
-          .select('checklist_access, motorista_access, hodometro_acsess')
-          .eq('company_id', companyId)
-          .maybeSingle();
-
-        if (companyError) {
-          console.error('Error fetching company:', companyError);
-          // Re-throw the original error to preserve user-friendly messages from supabase.ts
-          throw companyError;
-        }
+        // Use the centralized query function from useCompanyData for proper error handling
+        const company = await query(
+          'company',
+          {
+            select: 'checklist_access, motorista_access, hodometro_acsess',
+            filters: [{ column: 'company_id', operator: 'eq', value: companyId }],
+            single: true
+          }
+        );
 
         if (company) {
           setModuleAccess({
@@ -66,11 +64,7 @@ export const useModuleAccess = () => {
       } catch (error) {
         console.error('Error checking module access:', error);
         
-        // Show user-friendly error message if it's a network/connection error
-        if (error instanceof Error && error.message.includes('conectar ao servidor')) {
-          toast.error(error.message);
-        }
-        
+        // The centralized error handling in useCompanyData will already show user-friendly messages
         // Default to all modules enabled on error
         setModuleAccess({
           checklist: true,
@@ -85,7 +79,7 @@ export const useModuleAccess = () => {
     };
 
     checkAccess();
-  }, [companyId]);
+  }, [companyId, query]);
 
   return { loading, moduleAccess };
 };
