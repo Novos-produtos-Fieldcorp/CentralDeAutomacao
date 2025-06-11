@@ -18,7 +18,9 @@ const Navbar = () => {
   const { query } = useCompanyData();
 
   const fetchCompanyName = useCallback(async () => {
-    if (!companyId) return;
+    if (!companyId) {
+      return;
+    }
     
     try {
       const { data, error } = await supabase
@@ -69,18 +71,8 @@ const Navbar = () => {
     // For very short names (1-2 chars), just return the name
     if (companyName.length <= 2) return companyName;
     
-    // For names with spaces, get first letter of each word
-    if (companyName.includes(' ')) {
-      return companyName
-        .split(' ')
-        .map(word => word.charAt(0))
-        .join('')
-        .toUpperCase()
-        .substring(0, 3); // Limit to 3 chars max
-    }
-    
-    // For single words, return first 2-3 chars based on length
-    return companyName.substring(0, Math.min(3, companyName.length)).toUpperCase();
+    // Always return just the first letter for the collapsed state
+    return companyName.charAt(0).toUpperCase();
   };
 
   return (
@@ -92,7 +84,7 @@ const Navbar = () => {
       <div className="flex flex-col h-full overflow-y-auto smooth-scroll">
         {/* Company Name and Toggle Button */}
         <div className="px-3 py-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center h-10">
             {isExpanded ? (
               <h2 className="w-full flex justify-center">
                 <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
