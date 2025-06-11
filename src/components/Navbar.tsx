@@ -16,9 +16,12 @@ const Navbar = () => {
   const { companyId } = useAuth();
   const [companyName, setCompanyName] = useState('');
   const { query } = useCompanyData();
+  const [showCompanyTooltip, setShowCompanyTooltip] = useState(false);
 
   const fetchCompanyName = useCallback(async () => {
-    if (!companyId) return;
+    if (!companyId) {
+      return;
+    }
     
     try {
       const { data, error } = await supabase
@@ -66,21 +69,10 @@ const Navbar = () => {
   const getCompanyDisplay = () => {
     if (!companyName) return '';
     
-    // For very short names (1-2 chars), just return the name
     if (companyName.length <= 2) return companyName;
     
-    // For names with spaces, get first letter of each word
-    if (companyName.includes(' ')) {
-      return companyName
-        .split(' ')
-        .map(word => word.charAt(0))
-        .join('')
-        .toUpperCase()
-        .substring(0, 3); // Limit to 3 chars max
-    }
-    
-    // For single words, return first 2-3 chars based on length
-    return companyName.substring(0, Math.min(3, companyName.length)).toUpperCase();
+    // Always return just the first letter for the collapsed state
+    return companyName.charAt(0).toUpperCase();
   };
 
   return (
@@ -92,7 +84,7 @@ const Navbar = () => {
       <div className="flex flex-col h-full overflow-y-auto smooth-scroll">
         {/* Company Name and Toggle Button */}
         <div className="px-3 py-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center h-10">
             {isExpanded ? (
               <h2 className="w-full flex justify-center">
                 <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
@@ -100,19 +92,30 @@ const Navbar = () => {
                 </span>
               </h2>
             ) : (
-              <div className="w-full flex justify-center relative group">
+              <div 
+                className="w-full flex justify-center relative"
+                onMouseEnter={() => setShowCompanyTooltip(true)}
+                onMouseLeave={() => setShowCompanyTooltip(false)}
+              >
                 <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                   <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
                     {getCompanyDisplay()}
                   </span>
                 </div>
                 
-                {/* Tooltip - only visible when sidebar is collapsed and hovering */}
-                <div className="fixed left-20 ml-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none whitespace-nowrap z-[9999] shadow-md" 
-                     style={{ top: '50%', transform: 'translateY(-50%)' }}>
-                  {companyName}
-                  <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
-                </div>
+                {/* Company name tooltip - only visible when sidebar is collapsed and hovering */}
+                {showCompanyTooltip && (
+                  <div className="fixed px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md 
+                               opacity-100 transition-opacity duration-300 whitespace-nowrap z-[9999] shadow-md"
+                       style={{ 
+                         left: '60px', 
+                         top: '29px',
+                         transform: 'translateY(-50%)' 
+                       }}>
+                    {companyName}
+                    <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -139,7 +142,7 @@ const Navbar = () => {
             {menuItems.map((item) => {
               const active = isActive(item.path);
               return item.enabled ? (
-                <div key={item.path} className="relative group">
+                <div key={item.path} className="relative group h-11">
                   {/* Tooltip - only visible when sidebar is collapsed and hovering */}
                   {!isExpanded && (
                     <div className="fixed left-20 ml-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none whitespace-nowrap z-[9999] shadow-md" style={{ top: 'var(--tooltip-y, 50%)', transform: 'translateY(-50%)' }}>
