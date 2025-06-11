@@ -99,13 +99,13 @@ const HodometrosDashboard = () => {
   const [totalReadings, setTotalReadings] = useState(0);
   const [todayReadings, setTodayReadings] = useState(0);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
   
   // Inconsistencies table state
   const [hodometros, setHodometros] = useState<HodometroReading[]>([]);
   const [totalInconsistencies, setTotalInconsistencies] = useState(0);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-  const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
   
   // Connection error state
   const [connectionError, setConnectionError] = useState(false);
@@ -165,23 +165,10 @@ const HodometrosDashboard = () => {
       setLoading(true);
       setConnectionError(false);
       
-      // Fetch all hodometro readings within the date range
+      // Fetch all hodometro readings within date range
       const { data, error } = await supabase.from('hodometro')
         .select(`
-          id_hodometro,
-          data,
-          hora,
-          hod_lido,
-          hod_informado,
-          km_rodado,
-          bateria,
-          foto_hodometro,
-          trip_lida,
-          trip_informada,
-          comparacao_leitura,
-          motorista_id,
-          veiculo_id,
-          cliente_id,
+          *,
           motorista:motorista_id (
             motorista_id,
             nome,
@@ -374,7 +361,41 @@ const HodometrosDashboard = () => {
             
             vehicleMileageMap.set(data.veiculo_id, vehicleData);
           }
+          
+          // Update operation mileage map based on calculated KM
+          // This ensures we're using the same calculation method for all metrics
+          const clientId = data.motorista_id ? 
+            (data || []).find(h => h.motorista_id === data.motorista_id)?.cliente?.nome || 'Sem cliente' : 
+            'Sem cliente';
+            
+          operationMileageMap.set(
+            clientId,
+            (operationMileageMap.get(clientId) || 0) + kmRodadoNoDia
+          );
         }
+      }
+      
+      // Fetch all clients to ensure they're all represented in the chart
+      const { data: clientesData, error: clientesError } = await supabase
+        .from('cliente')
+        .select('nome')
+        .eq('company_id', companyId)
+        .eq('st_cliente', true);
+        
+      if (clientesError) throw clientesError;
+      
+      // Add all clients to the operation mileage map with 0 km if they don't exist
+      if (clientesData) {
+        clientesData.forEach(cliente => {
+          if (!operationMileageMap.has(cliente.nome)) {
+            operationMileageMap.set(cliente.nome, 0);
+          }
+        });
+      }
+      
+      // Always ensure "Sem cliente" exists in the map
+      if (!operationMileageMap.has('Sem cliente')) {
+        operationMileageMap.set('Sem cliente', 0);
       }
       
       // Convert maps to arrays for state
