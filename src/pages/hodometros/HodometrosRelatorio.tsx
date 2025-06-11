@@ -83,8 +83,8 @@ const HodometrosRelatorio = () => {
         .eq('company_id', companyId)
         .gte('data', dateRange.startDate)
         .lte('data', dateRange.endDate)
-        .order('data', { ascending: false })
-        .order('hora', { ascending: false });
+        .order('data', { ascending: false }) // Order by date descending (newest first)
+        .order('hora', { ascending: false }); // Then by time descending
 
       if (error) throw error;
 

@@ -29,6 +29,42 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   },
 });
 
+// Test Supabase connection function
+export const testSupabaseConnection = async (): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('company')
+      .select('company_id')
+      .limit(1);
+    
+    if (error) {
+      console.error('Supabase connection test failed:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Supabase connection test error:', error);
+    
+    // Check for network-related errors
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      return false;
+    }
+    
+    // Check for other connection-related errors
+    if (error instanceof Error && (
+        error.message.includes('ECONNREFUSED') || 
+        error.message.includes('connection refused') ||
+        error.message.includes('network error') ||
+        error.message.includes('supabase.co')
+    )) {
+      return false;
+    }
+    
+    return false;
+  }
+};
+
 // Helper function to apply retry logic to query execution
 const applyRetryLogic = (queryBuilder: any, table: string) => {
   const originalThen = queryBuilder.then;
