@@ -113,7 +113,8 @@ const HodometrosDashboard = () => {
       setLoading(true);
       
       // Fetch all hodometro readings within the date range
-      const { data: hodometros, error } = await supabase.from('hodometro')
+      const { data: hodometros, error } = await supabase
+        .from('hodometro')
         .select(`
           id_hodometro,
           data,
