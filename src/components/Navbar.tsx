@@ -105,9 +105,13 @@ const Navbar = () => {
                 
                 {/* Company name tooltip - only visible when sidebar is collapsed and hovering */}
                 {showCompanyTooltip && (
-                  <div className="fixed left-20 ml-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md 
-                                 opacity-100 transition-opacity duration-300 whitespace-nowrap z-[9999] shadow-md"
-                       style={{ top: '50%', transform: 'translateY(-50%)' }}>
+                  <div className="fixed px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md 
+                               opacity-100 transition-opacity duration-300 whitespace-nowrap z-[9999] shadow-md"
+                       style={{ 
+                         left: '60px', 
+                         top: '29px',
+                         transform: 'translateY(-50%)' 
+                       }}>
                     {companyName}
                     <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
                   </div>
