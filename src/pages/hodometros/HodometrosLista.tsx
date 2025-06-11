@@ -95,7 +95,7 @@ const HodometrosLista = () => {
     try {
       setLoading(true);
       
-      let queryBuilder = supabase.from('hodometro')
+      const baseQuery = supabase.from('hodometro')
       .select(`
         *,
         motorista:motorista_id (
@@ -113,30 +113,32 @@ const HodometrosLista = () => {
           cliente_id,
           nome
         )
-      `)
+      `);
+
+      let query = baseQuery
         .eq('company_id', companyId)
         .gte('data', dateRange.startDate)
         .lte('data', dateRange.endDate);
       
       // Apply filters if selected
       if (selectedClientFilter) {
-        queryBuilder = queryBuilder.eq('cliente.nome', selectedClientFilter);
+        query = query.eq('cliente.nome', selectedClientFilter);
       }
       
       if (selectedVehicleFilter) {
-        queryBuilder = queryBuilder.eq('veiculo.placa', selectedVehicleFilter);
+        query = query.eq('veiculo.placa', selectedVehicleFilter);
       }
       
       if (selectedMotoristaFilter) {
-        queryBuilder = queryBuilder.eq('motorista.nome', selectedMotoristaFilter);
+        query = query.eq('motorista.nome', selectedMotoristaFilter);
       }
       
       // Apply search term if provided
       if (searchTerm) {
-        queryBuilder = queryBuilder.or(`motorista.nome.ilike.%${searchTerm}%,motorista.cpf.ilike.%${searchTerm}%,veiculo.placa.ilike.%${searchTerm}%`);
+        query = query.or(`motorista.nome.ilike.%${searchTerm}%,motorista.cpf.ilike.%${searchTerm}%,veiculo.placa.ilike.%${searchTerm}%`);
       }
 
-      const { data, error } = await queryBuilder
+      const { data, error } = await query
         .order('data', { ascending: false })
         .order('hora', { ascending: false });
 
