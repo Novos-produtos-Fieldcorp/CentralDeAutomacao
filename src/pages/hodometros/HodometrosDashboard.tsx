@@ -113,26 +113,32 @@ const HodometrosDashboard = () => {
       setLoading(true);
       
       // Fetch all hodometro readings within the date range
-      const { data: hodometros, error } = await supabase
-        .from('hodometro')
+      const { data, error } = await supabase.from('hodometro')
         .select(`
           id_hodometro,
           data,
           hora,
-          km_rodado,
           hod_lido,
           hod_informado,
+          km_rodado,
           bateria,
+          foto_hodometro,
+          trip_lida,
+          trip_informada,
+          comparacao_leitura,
           motorista_id,
           veiculo_id,
           cliente_id,
           motorista:motorista_id (
             motorista_id,
-            nome
+            nome,
+            cpf
           ),
           veiculo:veiculo_id (
             veiculo_id,
-            placa
+            placa,
+            marca,
+            tipo
           ),
           cliente:cliente_id (
             cliente_id,
@@ -145,10 +151,10 @@ const HodometrosDashboard = () => {
         .order('data', { ascending: true });
 
       if (error) throw error;
-      
-      console.log("Raw Hodometros fetched:", hodometros);
 
-      // Process data for daily mileage
+      console.log(`Fetched ${data?.length || 0} hodometro readings`);
+
+      // Initialize maps for data processing
       const dailyMileageMap = new Map<string, number>();
       const driverMileageMap = new Map<number, { nome: string; totalKm: number }>();
       const vehicleMileageMap = new Map<number, { placa: string; totalKm: number; lastDate?: string }>();
@@ -157,13 +163,43 @@ const HodometrosDashboard = () => {
       
       let totalKilometers = 0;
       
+      // IMPORTANT: Sort hodometros by vehicle_id and date for accurate calculations
+      const sortedHodometros = [...(data || [])].sort((a, b) => {
+        if (a.veiculo_id !== b.veiculo_id) {
+          return (a.veiculo_id || 0) - (b.veiculo_id || 0);
+        }
+        const dateA = new Date(`${a.data}T${a.hora || '00:00:00'}`).getTime();
+        const dateB = new Date(`${b.data}T${b.hora || '00:00:00'}`).getTime();
+        return dateA - dateB;
+      });
+      
+      // Map to store the last hodometer reading for each vehicle
+      const lastKmByVehicle = new Map<number, number>();
+      
       // Process each reading
-      hodometros?.forEach(hodometro => {
-        // Use km_rodado as the primary source of mileage data
+      sortedHodometros.forEach(hodometro => {
+        // ALWAYS process driver reading counts regardless of km values
+        if (hodometro.motorista_id && hodometro.motorista) {
+          const driverId = hodometro.motorista_id;
+          const driverName = hodometro.motorista.nome;
+          
+          // Update driver readings count
+          if (!driverReadingsMap.has(driverId)) {
+            driverReadingsMap.set(driverId, { nome: driverName, count: 0 });
+          }
+          
+          const driverReadingsData = driverReadingsMap.get(driverId)!;
+          driverReadingsData.count += 1;
+          driverReadingsMap.set(driverId, driverReadingsData);
+        }
+        
+        // Process mileage data - use km_rodado as the primary source if available
         const kmValue = hodometro.km_rodado || 0;
         
-        // Skip invalid or zero values
-        if (kmValue <= 0) return;
+        // Skip invalid or zero values for mileage calculations only
+        if (kmValue <= 0) {
+          return; // Skip only the mileage calculations, not the entire iteration
+        }
         
         // Add to total kilometers
         totalKilometers += kmValue;
@@ -184,15 +220,6 @@ const HodometrosDashboard = () => {
           const driverData = driverMileageMap.get(driverId)!;
           driverData.totalKm += kmValue;
           driverMileageMap.set(driverId, driverData);
-          
-          // Count readings per driver
-          if (!driverReadingsMap.has(driverId)) {
-            driverReadingsMap.set(driverId, { nome: driverName, count: 0 });
-          }
-          
-          const driverReadingsData = driverReadingsMap.get(driverId)!;
-          driverReadingsData.count += 1;
-          driverReadingsMap.set(driverId, driverReadingsData);
         }
         
         // Add to vehicle mileage
@@ -280,14 +307,6 @@ const HodometrosDashboard = () => {
       const uniqueDays = new Set(dailyMileageArray.map(item => item.date)).size;
       const avgKmPerDay = uniqueDays > 0 ? totalKilometers / uniqueDays : 0;
       
-      console.log("Processed data:", {
-        dailyMileage: dailyMileageArray,
-        driverMileage: driverMileageArray,
-        vehicleMileage: vehicleMileageArray,
-        driverReadings: driverReadingsArray,
-        operationMileage: operationMileageArray
-      });
-      
       // Update state with processed data
       setDailyMileage(dailyMileageArray);
       setDriverMileage(driverMileageArray);
@@ -296,7 +315,9 @@ const HodometrosDashboard = () => {
       setOperationMileage(operationMileageArray);
       setTotalKm(totalKilometers);
       setAverageKmPerDay(avgKmPerDay);
-      setTotalReadings(hodometros?.length || 0);
+      setTotalReadings(sortedHodometros.length);
+      
+      console.log(`Processed data: ${driverReadingsArray.length} drivers with readings`);
       
     } catch (error) {
       console.error('Error fetching hodometro data:', error);
@@ -490,7 +511,7 @@ const HodometrosDashboard = () => {
           </h3>
           
           {driverMileage.length > 0 ? (
-            <div className="space-y-6 pr-2">
+            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
               {driverMileage.map((driver, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -531,7 +552,7 @@ const HodometrosDashboard = () => {
           </h3>
           
           {vehicleMileage.length > 0 ? (
-            <div className="space-y-6 pr-2">
+            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
               {vehicleMileage.map((vehicle, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -573,7 +594,7 @@ const HodometrosDashboard = () => {
         </h3>
         
         {driverReadings.length > 0 ? (
-          <div className="space-y-6 pr-2">
+          <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
             {driverReadings.map((driver, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -614,7 +635,7 @@ const HodometrosDashboard = () => {
         </h3>
         
         {operationMileage.length > 0 ? (
-          <div className="space-y-6 pr-2">
+          <div className="space-y-6">
             {operationMileage.map((item, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex items-center justify-between">
