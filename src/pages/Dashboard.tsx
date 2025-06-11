@@ -35,7 +35,7 @@ const MenuCard = ({
       } opacity-0 transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
       <div className="relative flex flex-col h-full justify-between p-6">
         <div className="flex flex-col items-center">
-          <div className="flex items-center justify-center gap-3 mb-3">
+          <div className="flex items-center justify-center gap-3">
             <div className={`w-12 h-12 flex items-center justify-center ${
               isSpecial 
                 ? 'bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40' 
@@ -59,7 +59,7 @@ const MenuCard = ({
           </div>
         </div>
         
-        <p className={`text-base text-center mt-1 px-4 ${
+        <p className={`text-base text-center ${
           isSpecial 
             ? 'text-orange-700/80 dark:text-orange-300/90' 
             : 'text-gray-600 dark:text-gray-300'
@@ -77,7 +77,7 @@ const MenuCard = ({
                  border ${isSpecial ? 'border-orange-200 dark:border-orange-800/50' : 'border-gray-200 dark:border-gray-700'} 
                  shadow-md hover:shadow-lg
                  transform hover:-translate-y-1 transition-all duration-300
-                 w-full h-[220px] flex flex-col justify-between`}
+                 w-full h-[200px] flex flex-col justify-between`}
       aria-label={`Acessar ${title}`}
     >
       {cardContent}
@@ -86,7 +86,7 @@ const MenuCard = ({
     <div
       className="group relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl 
                  border border-gray-200 dark:border-gray-700 shadow-md opacity-60
-                 w-full h-[220px] flex flex-col justify-between
+                 w-full h-[200px] flex flex-col justify-between
                  cursor-not-allowed select-none"
       aria-disabled="true"
     >
