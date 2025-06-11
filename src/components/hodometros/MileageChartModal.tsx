@@ -4,16 +4,15 @@ import DriverMileageChart from './DriverMileageChart';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
-interface DailyData {
-  date: string;
+interface MonthlyData {
+  month: string;
   km: number;
-  formattedDate: string;
 }
 
 interface MileageChartModalProps {
   isOpen: boolean;
   onClose: () => void;
-  data: DailyData[];
+  data: MonthlyData[];
   driverName: string;
 }
 
@@ -47,7 +46,7 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       pdf.setFontSize(16);
-      pdf.text(`Quilometragem Diária: ${driverName}`, 15, 15);
+      pdf.text(`Quilometragem: ${driverName}`, 15, 15);
       
       pdf.addImage(imgData, 'PNG', 10, 25, imgWidth, imgHeight);
       pdf.save(`quilometragem_${driverName.replace(/\s+/g, '_')}.pdf`);
@@ -111,7 +110,7 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
                   {data.map((item, index) => (
                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        {item.formattedDate}
+                        {item.month}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600 dark:text-blue-400">
                         {item.km.toLocaleString('pt-BR')}
