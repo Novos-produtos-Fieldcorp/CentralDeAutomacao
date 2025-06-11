@@ -335,16 +335,23 @@ const MotoristasLista = () => {
     try {
       const { data, error } = await supabase
         .from('motorista')
-        .select('st_cadastro, count')
+        .select('st_cadastro')
         .eq('company_id', companyId)
-        .eq('funcao', 'Motorista')
-        .group('st_cadastro');
+        .eq('funcao', 'Motorista');
 
       if (error) throw error;
 
-      const formattedData = (data || []).map(item => ({
-        name: item.st_cadastro.charAt(0).toUpperCase() + item.st_cadastro.slice(1).replace('_', ' '),
-        count: item.count
+      // Client-side aggregation of status counts
+      const statusCounts: { [key: string]: number } = {};
+      
+      (data || []).forEach(item => {
+        const status = item.st_cadastro;
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+
+      const formattedData = Object.entries(statusCounts).map(([status, count]) => ({
+        name: status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' '),
+        count: count
       }));
 
       setDashboardData(formattedData);
