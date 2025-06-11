@@ -58,7 +58,7 @@ const MenuCard = ({
             </h3>
           </div>
           
-          <p className={`text-base text-center mt-2 ${
+          <p className={`text-base text-center mt-8 ${
             isSpecial 
               ? 'text-orange-700/80 dark:text-orange-300/90' 
               : 'text-gray-600 dark:text-gray-300'
