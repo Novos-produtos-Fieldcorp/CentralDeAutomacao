@@ -19,89 +19,205 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     },
-    fetch: (url, options = {}) => {
-      return fetch(url, {
-        ...options,
-        signal: AbortSignal.timeout(30000), // 30 second timeout
-      });
-    },
   },
   db: {
     schema: 'public',
   },
+  httpOptions: {
+    timeout: 60000, // 60 seconds
+    retries: 3,
+  },
 });
-
-// Enhanced error handling function
-const handleSupabaseError = async (operation: () => Promise<any>, context: string = 'operation') => {
-  let retries = 3;
-  let lastError: any;
-  
-  while (retries > 0) {
-    try {
-      const result = await operation();
-      if (result && result.error) {
-        throw result.error;
-      }
-      return result;
-    } catch (error) {
-      lastError = error;
-      console.error(`Supabase ${context} failed (${retries} retries left):`, error);
-      
-      // Check for network-related errors
-      const isNetworkError = 
-        error instanceof TypeError && 
-        (error.message === 'Failed to fetch' || 
-         error.message.includes('fetch') ||
-         error.message.includes('network') ||
-         error.message.includes('NetworkError'));
-      
-      const isTimeoutError = 
-        error.name === 'AbortError' || 
-        error.message.includes('timeout') ||
-        error.message.includes('aborted');
-      
-      const isConnectionError = 
-        error.message && (
-          error.message.includes('ECONNREFUSED') || 
-          error.message.includes('connection refused') ||
-          error.message.includes('supabase.co') ||
-          error.message.includes('ERR_NETWORK')
-        );
-      
-      // If it's a retryable error and we have retries left, try again
-      if ((isNetworkError || isTimeoutError || isConnectionError) && retries > 1) {
-        retries--;
-        const delay = (4 - retries) * 2000; // Progressive delay: 2s, 4s, 6s
-        console.log(`Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
-      }
-      
-      // If we've exhausted retries or it's not a retryable error, throw appropriate error
-      if (isNetworkError || isTimeoutError || isConnectionError) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão com a internet e tente novamente.');
-      }
-      
-      // For other errors, throw as-is
-      throw error;
-    }
-  }
-  
-  // If we've exhausted all retries, throw the last error with a user-friendly message
-  throw new Error('Não foi possível conectar ao servidor após várias tentativas. Verifique sua conexão com a internet e tente novamente.');
-};
 
 // Helper function to apply retry logic to query execution
 const applyRetryLogic = (queryBuilder: any, table: string) => {
   const originalThen = queryBuilder.then;
-  
+  const originalSingle = queryBuilder.single;
+  const originalLimit = queryBuilder.limit;
+  const originalOrder = queryBuilder.order;
+  const originalEq = queryBuilder.eq;
+  const originalNeq = queryBuilder.neq;
+  const originalGt = queryBuilder.gt;
+  const originalGte = queryBuilder.gte;
+  const originalLt = queryBuilder.lt;
+  const originalLte = queryBuilder.lte;
+  const originalLike = queryBuilder.like;
+  const originalIlike = queryBuilder.ilike;
+  const originalIn = queryBuilder.in;
+  const originalIs = queryBuilder.is;
+  const originalFilter = queryBuilder.filter;
+  const originalMatch = queryBuilder.match;
+  const originalRange = queryBuilder.range;
+  const originalGroup = queryBuilder.group;
+
+  const handleSupabaseError = async (operation: () => Promise<any>) => {
+    let retries = 3;
+    let lastError: any;
+    
+    while (retries > 0) {
+      try {
+        const result = await operation();
+        if (result && result.error) throw result.error;
+        return result;
+      } catch (error) {
+        lastError = error;
+        console.error(`Supabase ${table} operation failed (${retries} retries left):`, error);
+        
+        // If it's a network error and we have retries left, try again
+        if (error instanceof TypeError && error.message === 'Failed to fetch' && retries > 1) {
+          retries--;
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retrying
+          continue;
+        }
+        
+        // If it's a network error with no retries left, throw a user-friendly error
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+          throw new Error(`A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.`);
+        }
+        
+        // If it's a connection refused error, throw a user-friendly error
+        if (error.message && (
+            error.message.includes('ECONNREFUSED') || 
+            error.message.includes('connection refused') ||
+            error.message.includes('network error') ||
+            error.message.includes('supabase.co')
+        )) {
+          throw new Error('A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.');
+        }
+        
+        throw error;
+      }
+    }
+    
+    // If we've exhausted all retries, throw the last error
+    throw lastError;
+  };
+
   // Override the then method to apply retry logic
   queryBuilder.then = function(onFulfilled?: any, onRejected?: any) {
-    return handleSupabaseError(
-      () => originalThen.call(this, onFulfilled, onRejected),
-      `${table} query`
-    );
+    return handleSupabaseError(() => originalThen.call(this, onFulfilled, onRejected));
   };
+
+  // Override other terminal methods that execute the query
+  if (originalSingle) {
+    queryBuilder.single = function() {
+      const result = originalSingle.call(this);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  // Override chaining methods to maintain chainability with retry logic
+  if (originalLimit) {
+    queryBuilder.limit = function(count: number, options?: any) {
+      const result = originalLimit.call(this, count, options);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalOrder) {
+    queryBuilder.order = function(column: string, options?: any) {
+      const result = originalOrder.call(this, column, options);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalEq) {
+    queryBuilder.eq = function(column: string, value: any) {
+      const result = originalEq.call(this, column, value);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalNeq) {
+    queryBuilder.neq = function(column: string, value: any) {
+      const result = originalNeq.call(this, column, value);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalGt) {
+    queryBuilder.gt = function(column: string, value: any) {
+      const result = originalGt.call(this, column, value);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalGte) {
+    queryBuilder.gte = function(column: string, value: any) {
+      const result = originalGte.call(this, column, value);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalLt) {
+    queryBuilder.lt = function(column: string, value: any) {
+      const result = originalLt.call(this, column, value);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalLte) {
+    queryBuilder.lte = function(column: string, value: any) {
+      const result = originalLte.call(this, column, value);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalLike) {
+    queryBuilder.like = function(column: string, pattern: string) {
+      const result = originalLike.call(this, column, pattern);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalIlike) {
+    queryBuilder.ilike = function(column: string, pattern: string) {
+      const result = originalIlike.call(this, column, pattern);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalIn) {
+    queryBuilder.in = function(column: string, values: any[]) {
+      const result = originalIn.call(this, column, values);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalIs) {
+    queryBuilder.is = function(column: string, value: any) {
+      const result = originalIs.call(this, column, value);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalFilter) {
+    queryBuilder.filter = function(column: string, operator: string, value: any) {
+      const result = originalFilter.call(this, column, operator, value);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalMatch) {
+    queryBuilder.match = function(query: Record<string, any>) {
+      const result = originalMatch.call(this, query);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalRange) {
+    queryBuilder.range = function(from: number, to: number) {
+      const result = originalRange.call(this, from, to);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalGroup) {
+    queryBuilder.group = function(column: string) {
+      const result = originalGroup.call(this, column);
+      return applyRetryLogic(result, table);
+    };
+  }
 
   return queryBuilder;
 };
@@ -112,6 +228,49 @@ export const createFilteredQuery = (table: string, companyId: number) => {
   
   const addCompanyFilter = (query: any) => {
     return needsCompanyFilter && companyId ? query.eq('company_id', companyId) : query;
+  };
+
+  const handleSupabaseError = async (operation: () => Promise<any>) => {
+    let retries = 3;
+    let lastError: any;
+    
+    while (retries > 0) {
+      try {
+        const result = await operation();
+        if (result && result.error) throw result.error;
+        return result;
+      } catch (error) {
+        lastError = error;
+        console.error(`Supabase ${table} operation failed (${retries} retries left):`, error);
+        
+        // If it's a network error and we have retries left, try again
+        if (error instanceof TypeError && error.message === 'Failed to fetch' && retries > 1) {
+          retries--;
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retrying
+          continue;
+        }
+        
+        // If it's a network error with no retries left, throw a user-friendly error
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+          throw new Error(`A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.`);
+        }
+        
+        // If it's a connection refused error, throw a user-friendly error
+        if (error.message && (
+            error.message.includes('ECONNREFUSED') || 
+            error.message.includes('connection refused') ||
+            error.message.includes('network error') ||
+            error.message.includes('supabase.co')
+        )) {
+          throw new Error('A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.');
+        }
+        
+        throw error;
+      }
+    }
+    
+    // If we've exhausted all retries, throw the last error
+    throw lastError;
   };
 
   return {
@@ -125,7 +284,7 @@ export const createFilteredQuery = (table: string, companyId: number) => {
       return handleSupabaseError(async () => {
         const insertData = needsCompanyFilter ? { ...data, company_id: companyId } : data;
         return supabase.from(table).insert(insertData);
-      }, `${table} insert`);
+      });
     },
     
     update: (data: any) => {
@@ -140,23 +299,4 @@ export const createFilteredQuery = (table: string, companyId: number) => {
       return applyRetryLogic(filteredQuery, table);
     }
   };
-};
-
-// Test connection function
-export const testSupabaseConnection = async () => {
-  try {
-    console.log('Testing Supabase connection...');
-    const { data, error } = await supabase.from('motorista').select('count').limit(1);
-    
-    if (error) {
-      console.error('Supabase connection test failed:', error);
-      return false;
-    }
-    
-    console.log('Supabase connection test successful');
-    return true;
-  } catch (error) {
-    console.error('Supabase connection test error:', error);
-    return false;
-  }
 };
