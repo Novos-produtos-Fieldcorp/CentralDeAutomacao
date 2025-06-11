@@ -104,11 +104,49 @@ const HodometrosDashboard = () => {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
+  // Connection error state
+  const [connectionError, setConnectionError] = useState(false);
+
   useEffect(() => {
     fetchData();
     fetchTodayReadings();
     fetchInconsistencies();
   }, [dateRange, companyId]);
+
+  // Enhanced error handling function
+  const handleSupabaseError = (error: any, operation: string) => {
+    console.error(`Error in ${operation}:`, error);
+    
+    // Check if it's a network/connection error
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      setConnectionError(true);
+      toast.error('Não foi possível conectar ao servidor. Verifique sua conexão com a internet.');
+      return;
+    }
+    
+    // Check for other connection-related errors
+    if (error.message && (
+        error.message.includes('ECONNREFUSED') || 
+        error.message.includes('connection refused') ||
+        error.message.includes('network error') ||
+        error.message.includes('supabase.co') ||
+        error.message.includes('Failed to fetch')
+    )) {
+      setConnectionError(true);
+      toast.error('Serviço temporariamente indisponível. Tente novamente em alguns instantes.');
+      return;
+    }
+    
+    // Reset connection error flag for other types of errors
+    setConnectionError(false);
+    
+    // Handle other types of errors
+    if (error.message) {
+      toast.error(`Erro ao ${operation}: ${error.message}`);
+    } else {
+      toast.error(`Erro inesperado ao ${operation}`);
+    }
+  };
 
   // Format date from YYYY-MM-DD to DD/MM/YYYY
   const formatDateBR = (dateStr: string) => {
@@ -122,6 +160,7 @@ const HodometrosDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setConnectionError(false);
       
       // Fetch all hodometro readings within the date range
       const { data, error } = await supabase.from('hodometro')
@@ -400,8 +439,7 @@ const HodometrosDashboard = () => {
       console.log(`Processed data: ${driverReadingsArray.length} drivers with readings`);
       
     } catch (error) {
-      console.error('Error fetching hodometro data:', error);
-      toast.error('Erro ao carregar dados de hodômetro');
+      handleSupabaseError(error, 'carregar dados de hodômetro');
     } finally {
       setLoading(false);
     }
@@ -409,6 +447,8 @@ const HodometrosDashboard = () => {
 
   const fetchTodayReadings = async () => {
     try {
+      setConnectionError(false);
+      
       // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
       
@@ -433,13 +473,14 @@ const HodometrosDashboard = () => {
       
       setTodayReadings(count || 0);
     } catch (error) {
-      console.error('Error fetching today readings:', error);
-      toast.error('Erro ao calcular leituras de hoje');
+      handleSupabaseError(error, 'calcular leituras de hoje');
     }
   };
 
   const fetchInconsistencies = async () => {
     try {
+      setConnectionError(false);
+      
       // Build the query with date range filter
       let query = supabase
         .from('hodometro')
@@ -488,8 +529,7 @@ const HodometrosDashboard = () => {
       setHodometros(data || []);
       setTotalInconsistencies(count || 0);
     } catch (error) {
-      console.error('Error fetching inconsistencies:', error);
-      toast.error('Erro ao carregar inconsistências');
+      handleSupabaseError(error, 'carregar inconsistências');
     }
   };
 
@@ -508,8 +548,39 @@ const HodometrosDashboard = () => {
     return num.toLocaleString('pt-BR');
   };
 
+  // Retry connection function
+  const retryConnection = () => {
+    setConnectionError(false);
+    fetchData();
+    fetchTodayReadings();
+    fetchInconsistencies();
+  };
+
   if (loading) {
     return <LoadingSpinner />;
+  }
+
+  // Show connection error state
+  if (connectionError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
+        <div className="text-center">
+          <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Problema de Conexão
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
+            Não foi possível conectar ao servidor. Verifique sua conexão com a internet e tente novamente.
+          </p>
+          <button
+            onClick={retryConnection}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Tentar Novamente
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
