@@ -27,18 +27,28 @@ import {
   Cell
 } from 'recharts';
 
-interface VehicleMileageData {
-  veiculo_id: number;
-  placa: string;
-  marca?: string;
-  tipo?: string;
+interface MotoristaWithDetails extends Motorista {
+  veiculo?: Veiculo[];
+}
+
+interface MileageData {
+  motorista_id: number;
+  nome: string;
+  cpf: string;
+  veiculos: {
+    placa: string;
+    marca?: string;
+    tipo?: string;
+    cliente?: string;
+    leitura_inicial: number;
+    leitura_final: number;
+    km_total: number;
+    ultima_data: string;
+    hodometros: Hodometro[];
+    isElectric: boolean;
+  }[];
+  totalKm: number;
   cliente?: string;
-  leitura_inicial: number;
-  leitura_final: number;
-  km_total: number;
-  ultima_data: string;
-  hodometros: Hodometro[];
-  isElectric: boolean;
 }
 
 interface DailyData {
@@ -51,7 +61,7 @@ const HodometrosLista = () => {
   const { query } = useCompanyData();
   const { companyId } = useAuth();
   const [hodometros, setHodometros] = useState<Hodometro[]>([]);
-  const [vehicleMileageData, setVehicleMileageData] = useState<VehicleMileageData[]>([]);
+  const [mileageData, setMileageData] = useState<MileageData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -67,7 +77,7 @@ const HodometrosLista = () => {
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [showChartModal, setShowChartModal] = useState(false);
-  const [selectedVehicleName, setSelectedVehicleName] = useState<string>('');
+  const [selectedDriverName, setSelectedDriverName] = useState<string>('');
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
   const tableRef = React.useRef<HTMLDivElement>(null);
 
@@ -154,75 +164,112 @@ const HodometrosLista = () => {
   };
 
   const processHodometrosData = (data: Hodometro[]) => {
-    // Group by veiculo
-    const groupedByVeiculo: Record<number, Hodometro[]> = {};
+    // Group by motorista
+    const groupedByMotorista: Record<number, Hodometro[]> = {};
     
     data.forEach(hodometro => {
-      if (!hodometro.veiculo) return;
+      if (!hodometro.motorista || !hodometro.veiculo) return;
       
-      const veiculoId = hodometro.veiculo_id;
-      if (!groupedByVeiculo[veiculoId]) {
-        groupedByVeiculo[veiculoId] = [];
+      const motoristaId = hodometro.motorista_id;
+      if (!groupedByMotorista[motoristaId]) {
+        groupedByMotorista[motoristaId] = [];
       }
-      groupedByVeiculo[veiculoId].push(hodometro);
+      groupedByMotorista[motoristaId].push(hodometro);
     });
 
-    // Process each vehicle group
-    const processedData: VehicleMileageData[] = [];
+    // Process each motorista group
+    const processedData: MileageData[] = [];
     
-    Object.entries(groupedByVeiculo).forEach(([veiculoId, hodometrosVeiculo]) => {
-      if (hodometrosVeiculo.length === 0) return;
+    Object.entries(groupedByMotorista).forEach(([motoristaId, hodometrosMotorista]) => {
+      if (hodometrosMotorista.length === 0) return;
       
-      // Sort by date (oldest first for initial reading, newest first for final reading)
-      const sortedHodometros = [...hodometrosVeiculo].sort((a, b) => {
-        const dateA = new Date(`${a.data} ${a.hora}`);
-        const dateB = new Date(`${b.data} ${b.hora}`);
-        return dateA.getTime() - dateB.getTime();
+      // Group by veiculo
+      const groupedByVeiculo: Record<number, Hodometro[]> = {};
+      
+      hodometrosMotorista.forEach(hodometro => {
+        const veiculoId = hodometro.veiculo_id;
+        if (!groupedByVeiculo[veiculoId]) {
+          groupedByVeiculo[veiculoId] = [];
+        }
+        groupedByVeiculo[veiculoId].push(hodometro);
       });
       
-      const firstReading = sortedHodometros[0];
-      const lastReading = sortedHodometros[sortedHodometros.length - 1];
-      
-      // Check if it's an electric vehicle (has battery readings)
-      const isElectric = firstReading.bateria !== null && firstReading.bateria !== undefined;
-      
-      // Calculate total KM
-      let totalKm = 0;
-      if (isElectric) {
-        // For electric vehicles, use the sum of km_rodado values
-        totalKm = sortedHodometros.reduce((sum, reading) => sum + (reading.km_rodado || 0), 0);
-      } else {
-        // For regular vehicles, use the difference between last and first readings
-        const firstHodLido = firstReading.hod_lido || 0;
-        const lastHodLido = lastReading.hod_lido || 0;
+      // Process each vehicle group
+      const veiculos = Object.entries(groupedByVeiculo).map(([veiculoId, hodometrosVeiculo]) => {
+        // Sort by date (oldest first for initial reading, newest first for final reading)
+        const sortedHodometros = [...hodometrosVeiculo].sort((a, b) => {
+          const dateA = new Date(`${a.data} ${a.hora}`);
+          const dateB = new Date(`${b.data} ${b.hora}`);
+          return dateA.getTime() - dateB.getTime();
+        });
         
-        // Make sure the result is positive by taking the absolute difference
-        totalKm = Math.max(0, lastHodLido - firstHodLido);
-      }
+        const firstReading = sortedHodometros[0];
+        const lastReading = sortedHodometros[sortedHodometros.length - 1];
+        
+        // Check if it's an electric vehicle (has battery readings)
+        const isElectric = firstReading.bateria !== null && firstReading.bateria !== undefined;
+        
+        // Calculate total KM
+        let totalKm = 0;
+        if (isElectric) {
+          // For electric vehicles, use the sum of km_rodado values
+          totalKm = sortedHodometros.reduce((sum, reading) => sum + (reading.km_rodado || 0), 0);
+        } else {
+          // For regular vehicles, use the difference between last and first readings
+          // FIXED: Ensure we subtract in the correct order (last - first) for positive values
+          const firstHodLido = firstReading.hod_lido || 0;
+          const lastHodLido = lastReading.hod_lido || 0;
+          
+          // Make sure the result is positive by taking the absolute difference
+          // If last reading is smaller than first, it might be due to odometer reset or data error
+          totalKm = Math.max(0, lastHodLido - firstHodLido);
+        }
 
-      // Format date
-      const lastDate = new Date(lastReading.data);
-      const formattedDate = formatDateBR(lastReading.data);
+        // Format date
+        const lastDate = new Date(lastReading.data);
+        const formattedDate = formatDateBR(lastReading.data);
 
+        // Sort hodometros by date (newest first) for display
+        const displayHodometros = [...hodometrosVeiculo].sort((a, b) => {
+          const dateA = new Date(`${a.data} ${a.hora}`);
+          const dateB = new Date(`${b.data} ${b.hora}`);
+          return dateB.getTime() - dateA.getTime();
+        });
+
+        return {
+          placa: firstReading.veiculo.placa.toUpperCase(),
+          marca: firstReading.veiculo.marca,
+          tipo: firstReading.veiculo.tipo,
+          cliente: firstReading.cliente?.nome || 'Sem cliente',
+          leitura_inicial: isElectric ? 0 : (firstReading.hod_lido || 0),
+          leitura_final: isElectric ? 0 : (lastReading.hod_lido || 0),
+          km_total: totalKm,
+          ultima_data: formattedDate,
+          hodometros: displayHodometros,
+          isElectric
+        };
+      });
+      
+      // Calculate total KM across all vehicles for this driver
+      const totalKm = veiculos.reduce((sum, veiculo) => sum + veiculo.km_total, 0);
+      
+      // Get the first hodometro to extract motorista info
+      const firstHodometro = hodometrosMotorista[0];
+      
       processedData.push({
-        veiculo_id: parseInt(veiculoId),
-        placa: firstReading.veiculo.placa.toUpperCase(),
-        marca: firstReading.veiculo.marca,
-        tipo: firstReading.veiculo.tipo,
-        cliente: firstReading.cliente?.nome || 'Sem cliente',
-        leitura_inicial: isElectric ? 0 : (firstReading.hod_lido || 0),
-        leitura_final: isElectric ? 0 : (lastReading.hod_lido || 0),
-        km_total: totalKm,
-        ultima_data: formattedDate,
-        hodometros: sortedHodometros,
-        isElectric
+        motorista_id: parseInt(motoristaId),
+        nome: firstHodometro.motorista.nome,
+        cpf: firstHodometro.motorista.cpf,
+        veiculos,
+        totalKm,
+        cliente: firstHodometro.cliente?.nome
       });
     });
 
-    // Sort by placa (A-Z)
-    processedData.sort((a, b) => a.placa.localeCompare(b.placa));
+    // Sort by name (A-Z)
+    processedData.sort((a, b) => a.nome.localeCompare(b.nome));
     
-    setVehicleMileageData(processedData);
+    setMileageData(processedData);
   };
 
   const generateDailyData = (hodometros: Hodometro[]) => {
@@ -312,14 +359,14 @@ const HodometrosLista = () => {
     setSelectedItems(newSelectedItems);
     
     // Update selectAll state
-    setSelectAll(newSelectedItems.size === vehicleMileageData.length);
+    setSelectAll(newSelectedItems.size === mileageData.length);
   };
 
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(vehicleMileageData.map(m => m.veiculo_id)));
+      setSelectedItems(new Set(mileageData.map(m => m.motorista_id)));
     }
     setSelectAll(!selectAll);
   };
@@ -345,17 +392,18 @@ const HodometrosLista = () => {
     }
   };
 
-  const toggleExpand = (veiculo_id: number, vehicleName: string) => {
-    if (expandedItem === veiculo_id) {
+  const toggleExpand = (motorista_id: number, driverName: string) => {
+    if (expandedItem === motorista_id) {
       setExpandedItem(null);
     } else {
-      setExpandedItem(veiculo_id);
-      setSelectedVehicleName(vehicleName);
+      setExpandedItem(motorista_id);
+      setSelectedDriverName(driverName);
       
-      // Collect all hodometros for this vehicle
-      const selectedData = vehicleMileageData.find(data => data.veiculo_id === veiculo_id);
+      // Collect all hodometros from all vehicles for this driver
+      const selectedData = mileageData.find(data => data.motorista_id === motorista_id);
       if (selectedData) {
-        generateDailyData(selectedData.hodometros);
+        const allHodometros = selectedData.veiculos.flatMap(v => v.hodometros);
+        generateDailyData(allHodometros);
       }
     }
   };
@@ -365,15 +413,14 @@ const HodometrosLista = () => {
     setShowChartModal(true);
   };
 
-  const filteredData = vehicleMileageData.filter(data => {
+  const filteredData = mileageData.filter(data => {
     const searchLower = searchTerm.toLowerCase();
     const clientMatch = selectedClientFilter ? data.cliente === selectedClientFilter : true;
     
     return (
       clientMatch &&
-      (data.placa.toLowerCase().includes(searchLower) ||
-       (data.marca && data.marca.toLowerCase().includes(searchLower)) ||
-       (data.tipo && data.tipo.toLowerCase().includes(searchLower)) ||
+      (data.nome.toLowerCase().includes(searchLower) ||
+       data.veiculos.some(v => v.placa.toLowerCase().includes(searchLower)) ||
        (data.cliente && data.cliente.toLowerCase().includes(searchLower)))
     );
   });
@@ -483,23 +530,23 @@ const HodometrosLista = () => {
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredData.map((data) => (
-                  <React.Fragment key={data.veiculo_id}>
+                  <React.Fragment key={data.motorista_id}>
                     <tr 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
-                        selectedItems.has(data.veiculo_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        selectedItems.has(data.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
-                      onClick={() => toggleExpand(data.veiculo_id, data.placa)}
+                      onClick={() => toggleExpand(data.motorista_id, data.nome)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <input
                             type="checkbox"
-                            checked={selectedItems.has(data.veiculo_id)}
-                            onChange={() => handleSelectItem(data.veiculo_id)}
+                            checked={selectedItems.has(data.motorista_id)}
+                            onChange={() => handleSelectItem(data.motorista_id)}
                             onClick={(e) => e.stopPropagation()}
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
                           />
-                          {expandedItem === data.veiculo_id ? (
+                          {expandedItem === data.motorista_id ? (
                             <ChevronUp className="w-5 h-5 text-gray-400" />
                           ) : (
                             <ChevronDown className="w-5 h-5 text-gray-400" />
@@ -509,21 +556,25 @@ const HodometrosLista = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
-                            {data.placa.charAt(0)}
+                            {data.nome.charAt(0)}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {data.placa}
+                              {data.nome}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {data.marca} {data.tipo}
+                              {formatCPF(data.cpf)}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                          {data.isElectric ? 'Ciclomotor Elétrico' : 'Automóvel'}
+                          {data.veiculos.map((v, i) => (
+                            <div key={i} className={i > 0 ? "mt-1" : ""}>
+                              {v.placa}
+                            </div>
+                          ))}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -533,17 +584,17 @@ const HodometrosLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                          {formatNumber(data.km_total)} km
+                          {formatNumber(data.totalKm)} km
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {data.ultima_data}
+                          {data.veiculos.length > 0 ? data.veiculos[0].ultima_data : "-"}
                         </div>
                       </td>
                     </tr>
                     
-                    {expandedItem === data.veiculo_id && (
+                    {expandedItem === data.motorista_id && (
                       <tr>
                         <td colSpan={6} className="px-0 py-0 border-b border-gray-200 dark:border-gray-700">
                           <div className="bg-gray-50 dark:bg-gray-700/30 p-4">
@@ -607,107 +658,142 @@ const HodometrosLista = () => {
                               </ResponsiveContainer>
                             </div>
                             
-                            {/* Leituras do veículo */}
-                            <div className="overflow-x-auto">
-                              <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                  <thead className="bg-gray-100 dark:bg-gray-800 rounded-t-xl">
-                                    <tr>
-                                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tl-xl">Data/Hora</th>
-                                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
-                                      {data.isElectric ? (
-                                        <>
-                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip Informada</th>
-                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip Lida</th>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
-                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
-                                        </>
-                                      )}
-                                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tr-xl">Foto</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    {data.hodometros.map((hodometro, index) => (
-                                      <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                          <div className="text-sm text-gray-900 dark:text-white">
-                                            {formatDateBR(hodometro.data)}
-                                          </div>
-                                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                                            {hodometro.hora}
-                                          </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                            {hodometro.motorista?.nome || 'Não informado'}
-                                          </div>
-                                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                                            {hodometro.motorista?.cpf ? formatCPF(hodometro.motorista.cpf) : ''}
-                                          </div>
-                                        </td>
-                                        {data.isElectric ? (
-                                          <>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                              {hodometro.trip_informada || '-'}
+                            {/* Veículos e leituras */}
+                            {data.veiculos.map((veiculo, veiculoIndex) => (
+                              <div key={veiculoIndex} className="mb-6">
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm mb-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-400">
+                                          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+                                          <circle cx="7" cy="17" r="2"/>
+                                          <path d="M9 17h6"/>
+                                          <circle cx="17" cy="17" r="2"/>
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <h5 className="font-medium text-gray-900 dark:text-white">
+                                          Placa: {veiculo.placa}
+                                        </h5>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                          {veiculo.marca} {veiculo.tipo}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                        Total: {formatNumber(veiculo.km_total)} km
+                                      </div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        {veiculo.isElectric ? 'Veículo Elétrico' : `${formatNumber(veiculo.leitura_inicial)} → ${formatNumber(veiculo.leitura_final)} km`}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="overflow-x-auto">
+                                  <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                      <thead className="bg-gray-100 dark:bg-gray-800 rounded-t-xl">
+                                        <tr>
+                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tl-xl">Data/Hora</th>
+                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                                          {veiculo.isElectric ? (
+                                            <>
+                                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip Informada</th>
+                                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip Lida</th>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
+                                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
+                                            </>
+                                          )}
+                                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tr-xl">Ações</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        {veiculo.hodometros.map((hodometro, index) => (
+                                          <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                              <div className="text-sm text-gray-900 dark:text-white">
+                                                {formatDateBR(hodometro.data)}
+                                              </div>
+                                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                {hodometro.hora}
+                                              </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                              {hodometro.trip_lida !== null ? formatNumber(hodometro.trip_lida) : '-'}
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                {hodometro.motorista?.nome || 'Não informado'}
+                                              </div>
+                                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                {hodometro.motorista?.cpf ? formatCPF(hodometro.motorista.cpf) : ''}
+                                              </div>
                                             </td>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                              {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}
+                                            {veiculo.isElectric ? (
+                                              <>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                  {hodometro.trip_informada || '-'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                  {hodometro.trip_lida !== null ? formatNumber(hodometro.trip_lida) : '-'}
+                                                </td>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                  {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                  {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
+                                                </td>
+                                              </>
+                                            )}
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                              <div className="flex items-center justify-end space-x-3">
+                                                <button
+                                                  onClick={(e) => handleShowPhoto(e, hodometro.foto_hodometro)}
+                                                  className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                                           transition-colors ${!hodometro.foto_hodometro && 'opacity-50 cursor-not-allowed'}`}
+                                                  title={hodometro.foto_hodometro ? "Ver foto do hodômetro" : "Sem foto disponível"}
+                                                >
+                                                  <Camera size={18} />
+                                                </button>
+                                                <button
+                                                  onClick={(e) => handleEdit(e, hodometro)}
+                                                  className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 
+                                                           transition-colors"
+                                                  title="Editar"
+                                                >
+                                                  <Edit2 size={18} />
+                                                </button>
+                                                <button
+                                                  onClick={(e) => handleDelete(e, hodometro)}
+                                                  className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                                           transition-colors"
+                                                  title="Excluir"
+                                                >
+                                                  <Trash2 size={18} />
+                                                </button>
+                                              </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                              {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
+                                          </tr>
+                                        ))}
+                                        {veiculo.hodometros.length === 0 && (
+                                          <tr>
+                                            <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                              Nenhuma leitura encontrada
                                             </td>
-                                          </>
+                                          </tr>
                                         )}
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                                          <div className="flex items-center justify-end space-x-3">
-                                            <button
-                                              onClick={(e) => handleShowPhoto(e, hodometro.foto_hodometro)}
-                                              className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                                                       transition-colors ${!hodometro.foto_hodometro && 'opacity-50 cursor-not-allowed'}`}
-                                              title={hodometro.foto_hodometro ? "Ver foto do hodômetro" : "Sem foto disponível"}
-                                            >
-                                              <Camera size={18} />
-                                            </button>
-                                            <button
-                                              onClick={(e) => handleEdit(e, hodometro)}
-                                              className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 
-                                                       transition-colors"
-                                              title="Editar"
-                                            >
-                                              <Edit2 size={18} />
-                                            </button>
-                                            <button
-                                              onClick={(e) => handleDelete(e, hodometro)}
-                                              className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                                                       transition-colors"
-                                              title="Excluir"
-                                            >
-                                              <Trash2 size={18} />
-                                            </button>
-                                          </div>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                    {data.hodometros.length === 0 && (
-                                      <tr>
-                                        <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                          Nenhuma leitura encontrada
-                                        </td>
-                                      </tr>
-                                    )}
-                                  </tbody>
-                                </table>
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
+                            ))}
                           </div>
                         </td>
                       </tr>
@@ -770,7 +856,7 @@ const HodometrosLista = () => {
         isOpen={showChartModal}
         onClose={() => setShowChartModal(false)}
         data={dailyData}
-        driverName={selectedVehicleName}
+        driverName={selectedDriverName}
       />
 
       <EditHodometroModal
