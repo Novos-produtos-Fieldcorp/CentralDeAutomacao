@@ -832,7 +832,7 @@ const HodometrosDashboard = () => {
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Inconsistências de Hodômetro
+              Inconsistência de Leitura
             </h3>
           </div>
           <div className="px-3 py-1 bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200 rounded-full text-sm font-medium">
