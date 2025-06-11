@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, ChevronDown, ChevronUp, Edit2, Trash2, Camera, X, BarChart2, Filter } from 'lucide-react';
+import { Search, Eye, ChevronDown, ChevronUp, Edit2, Trash2, Camera, X, BarChart2, Filter, AlertCircle, RefreshCw } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { supabase } from '../../lib/supabase';
+import { supabase, testSupabaseConnection } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import { useDateRange } from '../../hooks/useDateRange';
@@ -53,6 +53,7 @@ const HodometrosLista = () => {
   const [hodometros, setHodometros] = useState<Hodometro[]>([]);
   const [vehicleMileageData, setVehicleMileageData] = useState<VehicleMileageData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -74,7 +75,15 @@ const HodometrosLista = () => {
   const fetchHodometros = useCallback(async () => {
     try {
       setLoading(true);
+      setConnectionError(false);
       
+      // Test connection first
+      const connectionOk = await testSupabaseConnection();
+      if (!connectionOk) {
+        setConnectionError(true);
+        return;
+      }
+
       const baseQuery = supabase.from('hodometro')
       .select(`
         *,
@@ -126,7 +135,17 @@ const HodometrosLista = () => {
       setClients(uniqueClients);
     } catch (error) {
       console.error('Error fetching hodometros:', error);
-      toast.error('Erro ao carregar hodômetros');
+      
+      // Check if it's a connection error
+      if (error instanceof Error && 
+          (error.message.includes('conexão') || 
+           error.message.includes('conectar') ||
+           error.message.includes('servidor'))) {
+        setConnectionError(true);
+        toast.error(error.message);
+      } else {
+        toast.error('Erro ao carregar hodômetros');
+      }
     } finally {
       setLoading(false);
     }
@@ -135,6 +154,10 @@ const HodometrosLista = () => {
   useEffect(() => {
     fetchHodometros();
   }, [fetchHodometros]);
+
+  const handleRetry = () => {
+    fetchHodometros();
+  };
 
   // Format date from YYYY-MM-DD to DD/MM/YYYY
   const formatDateBR = (dateStr: string) => {
@@ -380,6 +403,31 @@ const HodometrosLista = () => {
 
   if (loading) {
     return <LoadingSpinner />;
+  }
+
+  // Connection error state
+  if (connectionError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            Erro de Conexão
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
+            Não foi possível conectar ao servidor. Verifique sua conexão com a internet e tente novamente.
+          </p>
+          <button
+            onClick={handleRetry}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Tentar Novamente
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -724,7 +772,7 @@ const HodometrosLista = () => {
           />
         </div>
         
-        {filteredData.length === 0 && (
+        {filteredData.length === 0 && !connectionError && (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400">
               Nenhuma leitura encontrada para o período selecionado
