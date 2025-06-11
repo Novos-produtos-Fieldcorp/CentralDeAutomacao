@@ -15,7 +15,6 @@ import EditHodometroModal from '../../components/hodometros/EditHodometroModal';
 import DeleteHodometroModal from '../../components/hodometros/DeleteHodometroModal';
 import BulkDeleteConfirmationModal from '../../components/BulkDeleteConfirmationModal';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
-import DriverMileageChart from '../../components/hodometros/DriverMileageChart';
 import MileageChartModal from '../../components/hodometros/MileageChartModal';
 
 interface HodometroReading {
@@ -75,6 +74,9 @@ const HodometrosLista = () => {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [showChartModal, setShowChartModal] = useState(false);
   const [selectedVehicleName, setSelectedVehicleName] = useState<string>('');
+  const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
+  const [vehicleReadings, setVehicleReadings] = useState<HodometroReading[]>([]);
+  const [isElectricVehicle, setIsElectricVehicle] = useState(false);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
   const tableRef = React.useRef<HTMLDivElement>(null);
 
@@ -180,8 +182,8 @@ const HodometrosLista = () => {
       setVehicles(uniqueVehicles);
       setMotoristas(uniqueMotoristas);
       
-      // Generate monthly data for the first vehicle
-      if (sortedData.length > 0) {
+      // Generate monthly data for the first vehicle if available
+      if (sortedData.length > 0 && sortedData[0].veiculo_id) {
         generateMonthlyDataForVehicle(sortedData[0].veiculo_id);
       }
     } catch (error) {
@@ -214,6 +216,14 @@ const HodometrosLista = () => {
   const generateMonthlyDataForVehicle = (vehicleId: number) => {
     // Filter hodometros for this vehicle
     const vehicleHodometros = hodometros.filter(h => h.veiculo_id === vehicleId);
+    
+    // Check if it's an electric vehicle
+    const isElectric = vehicleHodometros.some(h => h.bateria !== null && h.bateria !== undefined);
+    setIsElectricVehicle(isElectric);
+    
+    // Store the vehicle readings for the detail view
+    setVehicleReadings(vehicleHodometros);
+    setSelectedVehicleId(vehicleId);
     
     // Group by month
     const monthlyData: Record<string, number> = {};
@@ -747,13 +757,170 @@ const HodometrosLista = () => {
         </div>
       )}
 
-      {/* Chart Modal */}
-      <MileageChartModal
-        isOpen={showChartModal}
-        onClose={() => setShowChartModal(false)}
-        data={monthlyData}
-        driverName={selectedVehicleName}
-      />
+      {/* Chart Modal with Vehicle Readings Table */}
+      {showChartModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowChartModal(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-auto shadow-xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                <BarChart2 className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                Análise de Quilometragem: {selectedVehicleName}
+              </h3>
+              <button
+                onClick={() => setShowChartModal(false)}
+                className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              {/* Chart */}
+              <div className="h-64 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                {monthlyData.length > 0 ? (
+                  <div className="h-full w-full">
+                    <h4 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+                      Quilometragem Mensal
+                    </h4>
+                    <div className="h-[calc(100%-2rem)]">
+                      {/* Chart would be rendered here */}
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-gray-500 dark:text-gray-400">
+                          Gráfico de quilometragem mensal
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Sem dados de quilometragem para este veículo
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Vehicle Readings Table */}
+              <div className="mt-6">
+                <h4 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+                  Leituras do Veículo
+                </h4>
+                
+                <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        {isElectricVehicle ? (
+                          // Columns for electric vehicles (ciclomotores)
+                          <>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip Informada</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip Lida</th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
+                          </>
+                        ) : (
+                          // Columns for regular vehicles (automóveis)
+                          <>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
+                          </>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {vehicleReadings.length > 0 ? (
+                        vehicleReadings.map((reading) => (
+                          <tr key={reading.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {formatDateBR(reading.data)}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {reading.hora}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {reading.motorista?.nome || 'Não informado'}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {reading.motorista?.cpf ? formatCPF(reading.motorista.cpf) : ''}
+                              </div>
+                            </td>
+                            {isElectricVehicle ? (
+                              // Electric vehicle data
+                              <>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 dark:text-white">
+                                    {reading.trip_informada || '-'}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 dark:text-white">
+                                    {reading.trip_lida !== null ? formatNumber(reading.trip_lida) : '-'}
+                                  </div>
+                                </td>
+                              </>
+                            ) : (
+                              // Regular vehicle data
+                              <>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 dark:text-white">
+                                    {reading.hod_informado !== null ? formatNumber(reading.hod_informado) : '-'} km
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 dark:text-white">
+                                    {reading.hod_lido !== null ? formatNumber(reading.hod_lido) : '-'} km
+                                  </div>
+                                </td>
+                              </>
+                            )}
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              {reading.foto_hodometro ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleShowPhoto(reading.foto_hodometro);
+                                  }}
+                                  className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                                  title="Ver foto do hodômetro"
+                                >
+                                  <Camera size={18} />
+                                </button>
+                              ) : (
+                                <span className="text-gray-400 dark:text-gray-600">
+                                  <Camera size={18} className="inline-block opacity-50" />
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                            Nenhuma leitura encontrada para este veículo
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <EditHodometroModal
         isOpen={isEditModalOpen}
