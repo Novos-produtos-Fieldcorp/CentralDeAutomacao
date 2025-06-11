@@ -10,7 +10,7 @@ interface LoadingSpinnerProps {
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 24, 
   className = '', 
-  text = ''
+  text = 'Carregando...'
 }) => {
   return (
     <div className="flex flex-col items-center justify-center w-full h-full py-8">
