@@ -12,15 +12,23 @@ const Navbar = () => {
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
-  const { loading, moduleAccess } = useModuleAccess();
+  const [loading, setLoading] = useState(true);
+  const { moduleAccess } = useModuleAccess();
   const { companyId } = useAuth();
   const [companyName, setCompanyName] = useState('');
   const { query } = useCompanyData();
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
 
   const fetchCompanyName = useCallback(async () => {
-    if (!companyId) return;
+    if (!companyId) {
+      setLoading(false);
+      return;
+    }
     
     try {
+      setLoading(true);
+
       const { data, error } = await supabase
         .from('company')
         .select('nome_company')
@@ -34,6 +42,8 @@ const Navbar = () => {
     } catch (error) {
       console.error('Error fetching company name:', error);
       toast.error('Erro ao carregar nome da empresa');
+    } finally {
+      setLoading(false);
     }
   }, [companyId]);
 
@@ -63,24 +73,47 @@ const Navbar = () => {
   ];
 
   // Function to get company initials or abbreviation based on length
-  const getCompanyDisplay = () => {
+  const getCompanyInitial = () => {
     if (!companyName) return '';
     
-    // For very short names (1-2 chars), just return the name
-    if (companyName.length <= 2) return companyName;
+    // For very short names (1-2 chars), just return the first character
+    if (companyName.length <= 2) return companyName.charAt(0);
     
-    // For names with spaces, get first letter of each word
+    // For names with spaces, get first letter of first word
     if (companyName.includes(' ')) {
-      return companyName
-        .split(' ')
-        .map(word => word.charAt(0))
-        .join('')
-        .toUpperCase()
-        .substring(0, 3); // Limit to 3 chars max
+      return companyName.charAt(0);
     }
     
-    // For single words, return first 2-3 chars based on length
-    return companyName.substring(0, Math.min(3, companyName.length)).toUpperCase();
+    // For single words, return first char
+    return companyName.charAt(0).toUpperCase();
+  };
+
+  const handleLogoMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    
+    // Calculate position to ensure tooltip is visible
+    const viewportHeight = window.innerHeight;
+    let top = rect.top + rect.height/2;
+    
+    // Adjust if too close to bottom of viewport
+    if (top + 30 > viewportHeight) {
+      top = viewportHeight - 40;
+    }
+    
+    // Adjust if too close to top of viewport
+    if (top < 20) {
+      top = 20;
+    }
+    
+    setTooltipPosition({ 
+      top: top, 
+      left: rect.right + 10 
+    });
+    setTooltipVisible(true);
+  };
+
+  const handleLogoMouseLeave = () => {
+    setTooltipVisible(false);
   };
 
   return (
@@ -101,18 +134,14 @@ const Navbar = () => {
               </h2>
             ) : (
               <div className="w-full flex justify-center">
-                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center relative group">
+                <div 
+                  className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center relative"
+                  onMouseEnter={handleLogoMouseEnter}
+                  onMouseLeave={handleLogoMouseLeave}
+                >
                   <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                    {getCompanyDisplay()}
+                    {getCompanyInitial()}
                   </span>
-                  {/* Tooltip - positioned to appear centered to the right of the circle */}
-                  <div 
-                    className="fixed left-20 ml-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none whitespace-nowrap z-[9999] shadow-md" 
-                    style={{ top: '50%', transform: 'translateY(-50%)' }}
-                  >
-                    {companyName}
-                    <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
-                  </div>
                 </div>
               </div>
             )}
@@ -143,10 +172,7 @@ const Navbar = () => {
                 <div key={item.path} className="relative group">
                   {/* Tooltip - only visible when sidebar is collapsed and hovering */}
                   {!isExpanded && (
-                    <div 
-                      className="fixed left-20 ml-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none whitespace-nowrap z-[9999] shadow-md" 
-                      style={{ top: 'var(--tooltip-y, 50%)', transform: 'translateY(-50%)' }}
-                    >
+                    <div className="fixed left-20 ml-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none whitespace-nowrap z-[9999] shadow-md" style={{ top: 'var(--tooltip-y, 50%)', transform: 'translateY(-50%)' }}>
                       {item.label}
                       <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
                     </div>
@@ -209,6 +235,20 @@ const Navbar = () => {
           <ThemeToggle isExpanded={isExpanded} />
         </div>
       </div>
+
+      {/* Fixed position tooltip for company name */}
+      {tooltipVisible && !isExpanded && (
+        <div 
+          className="fixed z-[9999] px-3 py-2 bg-blue-600 text-white text-xs rounded-md whitespace-nowrap shadow-md"
+          style={{ 
+            top: `${tooltipPosition.top}px`, 
+            left: `${tooltipPosition.left}px` 
+          }}
+        >
+          {companyName}
+          <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
+        </div>
+      )}
     </nav>
   );
 };
