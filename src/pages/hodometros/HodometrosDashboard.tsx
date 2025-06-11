@@ -113,8 +113,7 @@ const HodometrosDashboard = () => {
       setLoading(true);
       
       // Fetch all hodometro readings within the date range
-      const { data: hodometros, error } = await supabase
-        .from('hodometro')
+      const { data: hodometros, error } = await supabase.from('hodometro')
         .select(`
           id_hodometro,
           data,
@@ -604,7 +603,7 @@ const HodometrosDashboard = () => {
         </h3>
         
         {operationMileage.length > 0 ? (
-          <div className="space-y-6">
+          <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
             {operationMileage.map((item, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex items-center justify-between">
