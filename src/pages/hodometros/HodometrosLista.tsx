@@ -32,13 +32,14 @@ interface MotoristaWithDetails extends Motorista {
 }
 
 interface MileageData {
-  motorista_id: number;
-  nome: string;
-  cpf: string;
-  veiculos: {
-    placa: string;
-    marca?: string;
-    tipo?: string;
+  veiculo_id: number;
+  placa: string;
+  marca?: string;
+  tipo?: string;
+  motoristas: {
+    motorista_id: number;
+    nome: string;
+    cpf: string;
     cliente?: string;
     leitura_inicial: number;
     leitura_final: number;
@@ -48,7 +49,6 @@ interface MileageData {
     isElectric: boolean;
   }[];
   totalKm: number;
-  cliente?: string;
 }
 
 interface MonthlyData {
@@ -76,7 +76,7 @@ const HodometrosLista = () => {
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [showChartModal, setShowChartModal] = useState(false);
-  const [selectedDriverName, setSelectedDriverName] = useState<string>('');
+  const [selectedVehicleName, setSelectedVehicleName] = useState<string>('');
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
   const tableRef = React.useRef<HTMLDivElement>(null);
 
@@ -163,40 +163,42 @@ const HodometrosLista = () => {
   };
 
   const processHodometrosData = (data: Hodometro[]) => {
-    // Group by motorista
-    const groupedByMotorista: Record<number, Hodometro[]> = {};
+    // Group by veiculo
+    const groupedByVeiculo: Record<number, Hodometro[]> = {};
     
     data.forEach(hodometro => {
-      if (!hodometro.motorista || !hodometro.veiculo) return;
+      if (!hodometro.veiculo || !hodometro.veiculo_id) return;
       
-      const motoristaId = hodometro.motorista_id;
-      if (!groupedByMotorista[motoristaId]) {
-        groupedByMotorista[motoristaId] = [];
+      const veiculoId = hodometro.veiculo_id;
+      if (!groupedByVeiculo[veiculoId]) {
+        groupedByVeiculo[veiculoId] = [];
       }
-      groupedByMotorista[motoristaId].push(hodometro);
+      groupedByVeiculo[veiculoId].push(hodometro);
     });
 
-    // Process each motorista group
+    // Process each veiculo group
     const processedData: MileageData[] = [];
     
-    Object.entries(groupedByMotorista).forEach(([motoristaId, hodometrosMotorista]) => {
-      if (hodometrosMotorista.length === 0) return;
+    Object.entries(groupedByVeiculo).forEach(([veiculoId, hodometrosVeiculo]) => {
+      if (hodometrosVeiculo.length === 0) return;
       
-      // Group by veiculo
-      const groupedByVeiculo: Record<number, Hodometro[]> = {};
+      // Group by motorista
+      const groupedByMotorista: Record<number, Hodometro[]> = {};
       
-      hodometrosMotorista.forEach(hodometro => {
-        const veiculoId = hodometro.veiculo_id;
-        if (!groupedByVeiculo[veiculoId]) {
-          groupedByVeiculo[veiculoId] = [];
+      hodometrosVeiculo.forEach(hodometro => {
+        if (!hodometro.motorista_id) return;
+        
+        const motoristaId = hodometro.motorista_id;
+        if (!groupedByMotorista[motoristaId]) {
+          groupedByMotorista[motoristaId] = [];
         }
-        groupedByVeiculo[veiculoId].push(hodometro);
+        groupedByMotorista[motoristaId].push(hodometro);
       });
       
-      // Process each vehicle group
-      const veiculos = Object.entries(groupedByVeiculo).map(([veiculoId, hodometrosVeiculo]) => {
+      // Process each motorista group
+      const motoristas = Object.entries(groupedByMotorista).map(([motoristaId, hodometrosMotorista]) => {
         // Sort by date (oldest first for initial reading, newest first for final reading)
-        const sortedHodometros = [...hodometrosVeiculo].sort((a, b) => {
+        const sortedHodometros = [...hodometrosMotorista].sort((a, b) => {
           const dateA = new Date(`${a.data} ${a.hora}`);
           const dateB = new Date(`${b.data} ${b.hora}`);
           return dateA.getTime() - dateB.getTime();
@@ -215,12 +217,10 @@ const HodometrosLista = () => {
           totalKm = sortedHodometros.reduce((sum, reading) => sum + (reading.km_rodado || 0), 0);
         } else {
           // For regular vehicles, use the difference between last and first readings
-          // FIXED: Ensure we subtract in the correct order (last - first) for positive values
           const firstHodLido = firstReading.hod_lido || 0;
           const lastHodLido = lastReading.hod_lido || 0;
           
           // Make sure the result is positive by taking the absolute difference
-          // If last reading is smaller than first, it might be due to odometer reset or data error
           totalKm = Math.max(0, lastHodLido - firstHodLido);
         }
 
@@ -229,9 +229,9 @@ const HodometrosLista = () => {
         const formattedDate = formatDateBR(lastReading.data);
 
         return {
-          placa: firstReading.veiculo.placa.toUpperCase(),
-          marca: firstReading.veiculo.marca,
-          tipo: firstReading.veiculo.tipo,
+          motorista_id: parseInt(motoristaId),
+          nome: firstReading.motorista?.nome || 'Desconhecido',
+          cpf: firstReading.motorista?.cpf || '',
           cliente: firstReading.cliente?.nome || 'Sem cliente',
           leitura_inicial: isElectric ? 0 : (firstReading.hod_lido || 0),
           leitura_final: isElectric ? 0 : (lastReading.hod_lido || 0),
@@ -242,24 +242,24 @@ const HodometrosLista = () => {
         };
       });
       
-      // Calculate total KM across all vehicles for this driver
-      const totalKm = veiculos.reduce((sum, veiculo) => sum + veiculo.km_total, 0);
+      // Calculate total KM across all motoristas for this vehicle
+      const totalKm = motoristas.reduce((sum, motorista) => sum + motorista.km_total, 0);
       
-      // Get the first hodometro to extract motorista info
-      const firstHodometro = hodometrosMotorista[0];
+      // Get the first hodometro to extract vehicle info
+      const firstHodometro = hodometrosVeiculo[0];
       
       processedData.push({
-        motorista_id: parseInt(motoristaId),
-        nome: firstHodometro.motorista.nome,
-        cpf: firstHodometro.motorista.cpf,
-        veiculos,
-        totalKm,
-        cliente: firstHodometro.cliente?.nome
+        veiculo_id: parseInt(veiculoId),
+        placa: firstHodometro.veiculo.placa.toUpperCase(),
+        marca: firstHodometro.veiculo.marca,
+        tipo: firstHodometro.veiculo.tipo,
+        motoristas,
+        totalKm
       });
     });
 
-    // Sort by name (A-Z)
-    processedData.sort((a, b) => a.nome.localeCompare(b.nome));
+    // Sort by placa (A-Z)
+    processedData.sort((a, b) => a.placa.localeCompare(b.placa));
     
     setMileageData(processedData);
   };
@@ -366,7 +366,7 @@ const HodometrosLista = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(mileageData.map(m => m.motorista_id)));
+      setSelectedItems(new Set(mileageData.map(m => m.veiculo_id)));
     }
     setSelectAll(!selectAll);
   };
@@ -392,17 +392,17 @@ const HodometrosLista = () => {
     }
   };
 
-  const toggleExpand = (motorista_id: number, driverName: string) => {
-    if (expandedItem === motorista_id) {
+  const toggleExpand = (veiculo_id: number, vehicleName: string) => {
+    if (expandedItem === veiculo_id) {
       setExpandedItem(null);
     } else {
-      setExpandedItem(motorista_id);
-      setSelectedDriverName(driverName);
+      setExpandedItem(veiculo_id);
+      setSelectedVehicleName(vehicleName);
       
-      // Collect all hodometros from all vehicles for this driver
-      const selectedData = mileageData.find(data => data.motorista_id === motorista_id);
+      // Collect all hodometros from all motoristas for this vehicle
+      const selectedData = mileageData.find(data => data.veiculo_id === veiculo_id);
       if (selectedData) {
-        const allHodometros = selectedData.veiculos.flatMap(v => v.hodometros);
+        const allHodometros = selectedData.motoristas.flatMap(m => m.hodometros);
         generateMonthlyData(allHodometros);
       }
     }
@@ -415,13 +415,18 @@ const HodometrosLista = () => {
 
   const filteredData = mileageData.filter(data => {
     const searchLower = searchTerm.toLowerCase();
-    const clientMatch = selectedClientFilter ? data.cliente === selectedClientFilter : true;
+    const clientMatch = selectedClientFilter ? 
+      data.motoristas.some(m => m.cliente === selectedClientFilter) : true;
     
     return (
       clientMatch &&
-      (data.nome.toLowerCase().includes(searchLower) ||
-       data.veiculos.some(v => v.placa.toLowerCase().includes(searchLower)) ||
-       (data.cliente && data.cliente.toLowerCase().includes(searchLower)))
+      (data.placa.toLowerCase().includes(searchLower) ||
+       (data.marca && data.marca.toLowerCase().includes(searchLower)) ||
+       (data.tipo && data.tipo.toLowerCase().includes(searchLower)) ||
+       data.motoristas.some(m => 
+         m.nome.toLowerCase().includes(searchLower) || 
+         m.cpf.includes(searchLower)
+       ))
     );
   });
 
@@ -459,7 +464,7 @@ const HodometrosLista = () => {
           <div className="relative">
             <input
               type="text"
-              placeholder="Buscar por nome, CPF, placa, marca ou modelo..."
+              placeholder="Buscar por placa, marca, modelo, motorista ou CPF..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -520,32 +525,32 @@ const HodometrosLista = () => {
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"></th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Marca/Modelo</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motoristas</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Total</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Última Leitura</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredData.map((data) => (
-                  <React.Fragment key={data.motorista_id}>
+                  <React.Fragment key={data.veiculo_id}>
                     <tr 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
-                        selectedItems.has(data.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        selectedItems.has(data.veiculo_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
-                      onClick={() => toggleExpand(data.motorista_id, data.nome)}
+                      onClick={() => toggleExpand(data.veiculo_id, data.placa)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <input
                             type="checkbox"
-                            checked={selectedItems.has(data.motorista_id)}
-                            onChange={() => handleSelectItem(data.motorista_id)}
+                            checked={selectedItems.has(data.veiculo_id)}
+                            onChange={() => handleSelectItem(data.veiculo_id)}
                             onClick={(e) => e.stopPropagation()}
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
                           />
-                          {expandedItem === data.motorista_id ? (
+                          {expandedItem === data.veiculo_id ? (
                             <ChevronUp className="w-5 h-5 text-gray-400" />
                           ) : (
                             <ChevronDown className="w-5 h-5 text-gray-400" />
@@ -553,32 +558,18 @@ const HodometrosLista = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
-                            {data.nome.charAt(0)}
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {data.nome}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {formatCPF(data.cpf)}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                          {data.veiculos.map((v, i) => (
-                            <div key={i} className={i > 0 ? "mt-1" : ""}>
-                              {v.placa}
-                            </div>
-                          ))}
+                        <div className="text-lg font-medium text-blue-600 dark:text-blue-400">
+                          {data.placa}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {data.cliente || "Sem cliente"}
+                          {data.marca} {data.tipo}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {data.motoristas.length} motorista{data.motoristas.length !== 1 ? 's' : ''}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -588,19 +579,26 @@ const HodometrosLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {data.veiculos.length > 0 ? data.veiculos[0].ultima_data : "-"}
+                          {data.motoristas.length > 0 ? 
+                            data.motoristas.reduce((latest, m) => {
+                              const mDate = new Date(m.ultima_data.split('/').reverse().join('-'));
+                              const latestDate = latest ? new Date(latest.split('/').reverse().join('-')) : null;
+                              return !latestDate || mDate > latestDate ? m.ultima_data : latest;
+                            }, '') : 
+                            "-"
+                          }
                         </div>
                       </td>
                     </tr>
                     
-                    {expandedItem === data.motorista_id && (
+                    {expandedItem === data.veiculo_id && (
                       <tr>
                         <td colSpan={6} className="px-0 py-0 border-b border-gray-200 dark:border-gray-700">
                           <div className="bg-gray-50 dark:bg-gray-700/30 p-4">
                             <div className="flex justify-between items-center mb-4">
                               <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
                                 <BarChart2 className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-                                Quilometragem Mensal
+                                Quilometragem Mensal - {data.placa}
                               </h4>
                               <button
                                 onClick={openChartModal}
@@ -657,35 +655,34 @@ const HodometrosLista = () => {
                               </ResponsiveContainer>
                             </div>
                             
-                            {/* Veículos e leituras */}
-                            {data.veiculos.map((veiculo, veiculoIndex) => (
-                              <div key={veiculoIndex} className="mb-6">
+                            {/* Motoristas e leituras */}
+                            {data.motoristas.map((motorista, motoristaIndex) => (
+                              <div key={motoristaIndex} className="mb-6">
                                 <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm mb-3">
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                       <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-400">
-                                          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
-                                          <circle cx="7" cy="17" r="2"/>
-                                          <path d="M9 17h6"/>
-                                          <circle cx="17" cy="17" r="2"/>
+                                          <path d="M19 16v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3"></path>
+                                          <path d="M12 2h7a2 2 0 0 1 2 2v7"></path>
+                                          <path d="M11 13 21 3"></path>
                                         </svg>
                                       </div>
                                       <div>
                                         <h5 className="font-medium text-gray-900 dark:text-white">
-                                          Placa: {veiculo.placa}
+                                          {motorista.nome}
                                         </h5>
                                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                                          {veiculo.marca} {veiculo.tipo}
+                                          {formatCPF(motorista.cpf)}
                                         </p>
                                       </div>
                                     </div>
                                     <div className="text-right">
                                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                        Total: {formatNumber(veiculo.km_total)} km
+                                        Total: {formatNumber(motorista.km_total)} km
                                       </div>
                                       <div className="text-xs text-gray-500 dark:text-gray-400">
-                                        {veiculo.isElectric ? 'Veículo Elétrico' : `${formatNumber(veiculo.leitura_inicial)} → ${formatNumber(veiculo.leitura_final)} km`}
+                                        {motorista.isElectric ? 'Veículo Elétrico' : `${formatNumber(motorista.leitura_inicial)} → ${formatNumber(motorista.leitura_final)} km`}
                                       </div>
                                     </div>
                                   </div>
@@ -703,7 +700,7 @@ const HodometrosLista = () => {
                                         </tr>
                                       </thead>
                                       <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                        {veiculo.hodometros.map((hodometro, index) => (
+                                        {motorista.hodometros.map((hodometro, index) => (
                                           <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                               {formatDateBR(hodometro.data)}
@@ -748,7 +745,7 @@ const HodometrosLista = () => {
                                             </td>
                                           </tr>
                                         ))}
-                                        {veiculo.hodometros.length === 0 && (
+                                        {motorista.hodometros.length === 0 && (
                                           <tr>
                                             <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                                               Nenhuma leitura encontrada
@@ -823,7 +820,7 @@ const HodometrosLista = () => {
         isOpen={showChartModal}
         onClose={() => setShowChartModal(false)}
         data={monthlyData}
-        driverName={selectedDriverName}
+        driverName={selectedVehicleName}
       />
 
       <EditHodometroModal
