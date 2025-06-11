@@ -149,12 +149,13 @@ const Dashboard = () => {
           <button
             title="Importar dados de motoristas, veículos ou clientes"
             onClick={() => setIsImportExportModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white
-                     rounded-lg border border-transparent hover:bg-blue-700 
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 text-gray-700
+                     rounded-lg border border-gray-200 hover:bg-gray-200 
                      focus:outline-none focus:ring-2 focus:ring-blue-500 
-                     focus:ring-offset-2 transition-colors shadow-sm"
+                     focus:ring-offset-2 transition-colors dark:bg-gray-700 dark:text-gray-300
+                     dark:border-gray-600 dark:hover:bg-gray-600"
           >
-            <FileDown className="w-5 h-5" />
+            <FileDown className="w-4 h-4" />
             Importar Dados
           </button>
         </header>
