@@ -73,13 +73,14 @@ interface HodometroReading {
   } | null;
 }
 
-interface DailyDriverReadings {
+interface DailyVehicleReadings {
   firstReadingKm: number | null;
   lastReadingKm: number | null;
   firstReadingTrip: number | null;
   lastReadingTrip: number | null;
   vehicleType: 'automovel' | 'ciclomotor' | 'unknown';
-  motorista_nome: string;
+  motorista_id: number | null;
+  motorista_nome: string | null;
   veiculo_id: number | null;
   veiculo_placa: string | null;
 }
@@ -103,7 +104,7 @@ const HodometrosDashboard = () => {
   const [totalInconsistencies, setTotalInconsistencies] = useState(0);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-
+  
   // Connection error state
   const [connectionError, setConnectionError] = useState(false);
 
@@ -198,7 +199,8 @@ const HodometrosDashboard = () => {
         .eq('company_id', companyId)
         .gte('data', dateRange.startDate)
         .lte('data', dateRange.endDate)
-        .order('data', { ascending: true });
+        .order('data', { ascending: false })
+        .order('hora', { ascending: false });
 
       if (error) throw error;
 
@@ -221,8 +223,8 @@ const HodometrosDashboard = () => {
         return dateA - dateB;
       });
       
-      // Map to store daily driver readings
-      const dailyDriverDataMap = new Map<string, DailyDriverReadings>();
+      // Map to store daily vehicle readings
+      const dailyVehicleDataMap = new Map<string, DailyVehicleReadings>();
       
       // Process each reading
       sortedHodometros.forEach(hodometro => {
@@ -242,7 +244,7 @@ const HodometrosDashboard = () => {
         }
         
         // Skip if missing essential data for mileage calculation
-        if (!hodometro.data || !hodometro.motorista_id || !hodometro.veiculo_id) {
+        if (!hodometro.data || !hodometro.veiculo_id || !hodometro.veiculo) {
           return;
         }
         
@@ -251,10 +253,10 @@ const HodometrosDashboard = () => {
           ? 'ciclomotor' 
           : 'automovel';
         
-        // Create unique key for day and motorista
+        // Create unique key for day and vehicle
         const dateKey = hodometro.data;
-        const driverId = hodometro.motorista_id;
-        const uniqueKey = `${dateKey}_${driverId}`;
+        const vehicleId = hodometro.veiculo_id;
+        const uniqueKey = `${dateKey}_${vehicleId}`;
         
         // Get current reading based on vehicle type
         let currentReading: number | null = null;
@@ -272,13 +274,14 @@ const HodometrosDashboard = () => {
           return;
         }
         
-        // Get or create daily driver entry
-        const dailyDriverEntry = dailyDriverDataMap.get(uniqueKey) || {
+        // Get or create daily vehicle entry
+        const dailyVehicleEntry = dailyVehicleDataMap.get(uniqueKey) || {
           firstReadingKm: null,
           lastReadingKm: null,
           firstReadingTrip: null,
           lastReadingTrip: null,
           vehicleType,
+          motorista_id: hodometro.motorista_id,
           motorista_nome: hodometro.motorista?.nome || 'Desconhecido',
           veiculo_id: hodometro.veiculo_id,
           veiculo_placa: hodometro.veiculo?.placa || null
@@ -286,27 +289,26 @@ const HodometrosDashboard = () => {
         
         // Update first and last readings
         if (isOdometerReading) {
-          if (dailyDriverEntry.firstReadingKm === null || currentReading < dailyDriverEntry.firstReadingKm) {
-            dailyDriverEntry.firstReadingKm = currentReading;
+          if (dailyVehicleEntry.firstReadingKm === null || currentReading < dailyVehicleEntry.firstReadingKm) {
+            dailyVehicleEntry.firstReadingKm = currentReading;
           }
-          if (dailyDriverEntry.lastReadingKm === null || currentReading > dailyDriverEntry.lastReadingKm) {
-            dailyDriverEntry.lastReadingKm = currentReading;
+          if (dailyVehicleEntry.lastReadingKm === null || currentReading > dailyVehicleEntry.lastReadingKm) {
+            dailyVehicleEntry.lastReadingKm = currentReading;
           }
         } else {
-          if (dailyDriverEntry.firstReadingTrip === null || currentReading < dailyDriverEntry.firstReadingTrip) {
-            dailyDriverEntry.firstReadingTrip = currentReading;
+          if (dailyVehicleEntry.firstReadingTrip === null || currentReading < dailyVehicleEntry.firstReadingTrip) {
+            dailyVehicleEntry.firstReadingTrip = currentReading;
           }
-          if (dailyDriverEntry.lastReadingTrip === null || currentReading > dailyDriverEntry.lastReadingTrip) {
-            dailyDriverEntry.lastReadingTrip = currentReading;
+          if (dailyVehicleEntry.lastReadingTrip === null || currentReading > dailyVehicleEntry.lastReadingTrip) {
+            dailyVehicleEntry.lastReadingTrip = currentReading;
           }
         }
         
-        dailyDriverDataMap.set(uniqueKey, dailyDriverEntry);
+        dailyVehicleDataMap.set(uniqueKey, dailyVehicleEntry);
         
-        // Process operation mileage if client exists
+        // Process operation mileage if client exists and km_rodado is available
         const operationName = hodometro.cliente?.nome || 'Sem cliente';
         
-        // Use km_rodado for operation mileage if available
         if (hodometro.km_rodado && hodometro.km_rodado > 0) {
           operationMileageMap.set(
             operationName, 
@@ -315,25 +317,25 @@ const HodometrosDashboard = () => {
         }
       });
       
-      // Post-process daily driver data to calculate total kilometers
+      // Post-process daily vehicle data to calculate total kilometers
       let totalKilometers = 0;
       
-      // Process daily driver data to calculate mileage
-      for (const [key, data] of dailyDriverDataMap.entries()) {
-        const [date, driverId] = key.split('_');
+      // Process daily vehicle data to calculate mileage
+      for (const [key, data] of dailyVehicleDataMap.entries()) {
+        const [date, vehicleId] = key.split('_');
         let kmRodadoNoDia = 0;
         
         if (data.vehicleType === 'automovel' && data.firstReadingKm !== null && data.lastReadingKm !== null) {
           kmRodadoNoDia = data.lastReadingKm - data.firstReadingKm;
           // Handle cases where final reading is less than initial (odometer reset or error)
           if (kmRodadoNoDia < 0) {
-            console.warn(`Negative km_rodado for automovel on ${date} by driver ${driverId}. Resetting to 0.`);
+            console.warn(`Negative km_rodado for automovel on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
             kmRodadoNoDia = 0;
           }
         } else if (data.vehicleType === 'ciclomotor' && data.firstReadingTrip !== null && data.lastReadingTrip !== null) {
           kmRodadoNoDia = data.lastReadingTrip - data.firstReadingTrip;
           if (kmRodadoNoDia < 0) {
-            console.warn(`Negative km_rodado for ciclomotor on ${date} by driver ${driverId}. Resetting to 0.`);
+            console.warn(`Negative km_rodado for ciclomotor on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
             kmRodadoNoDia = 0;
           }
         }
@@ -351,13 +353,14 @@ const HodometrosDashboard = () => {
           dailyMileageMap.set(date, dailyData);
           
           // Update driver mileage map
-          const numDriverId = parseInt(driverId);
-          const driverData = driverMileageMap.get(numDriverId) || {
-            nome: data.motorista_nome,
-            totalKm: 0
-          };
-          driverData.totalKm += kmRodadoNoDia;
-          driverMileageMap.set(numDriverId, driverData);
+          if (data.motorista_id && data.motorista_nome) {
+            const driverData = driverMileageMap.get(data.motorista_id) || {
+              nome: data.motorista_nome,
+              totalKm: 0
+            };
+            driverData.totalKm += kmRodadoNoDia;
+            driverMileageMap.set(data.motorista_id, driverData);
+          }
           
           // Update vehicle mileage map
           if (data.veiculo_id && data.veiculo_placa) {
@@ -595,70 +598,83 @@ const HodometrosDashboard = () => {
         />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Total KM Card */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex flex-col items-center text-center">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl mb-3">
-              <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total Percorrido</h3>
-            <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-indigo-400">
-              {formatNumber(totalKm)} km
-            </p>
-          </div>
-        </div>
-        
-        {/* Average KM Card */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex flex-col items-center text-center">
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl mb-3">
-              <Calendar className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Média Diária</h3>
-            <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent dark:from-green-400 dark:to-emerald-400">
-              {formatNumber(Math.round(averageKmPerDay))} km
-            </p>
-          </div>
-        </div>
-        
-        {/* Total Readings Card */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex flex-col items-center text-center">
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl mb-3">
-              <Activity className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total de Leituras</h3>
-            <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent dark:from-purple-400 dark:to-violet-400">
-              {formatNumber(totalReadings)}
-            </p>
-          </div>
-        </div>
-        
-        {/* Today's Readings Card */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex flex-col items-center text-center">
-            <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl mb-3">
-              <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              Leituras Realizadas Hoje
-            </h3>
-            <p className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400">
-              {todayReadings}
-            </p>
-          </div>
-        </div>
+      {/* Top Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Total de Quilômetros"
+          value={totalKm}
+          icon={TrendingUp}
+          color="blue"
+        />
+        <StatCard
+          title="Média Diária"
+          value={Math.round(averageKmPerDay)}
+          icon={Calendar}
+          color="green"
+          unit="km"
+        />
+        <StatCard
+          title="Total de Leituras"
+          value={totalReadings}
+          icon={Activity}
+          color="purple"
+        />
+        <StatCard
+          title="Leituras Hoje"
+          value={todayReadings}
+          icon={FileText}
+          color="amber"
+        />
       </div>
 
-      {/* Top Drivers and Vehicles */}
+      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* All Motoristas por Quilometragem */}
+        {/* Daily Mileage */}
         <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Users className="w-5 h-5 text-green-600 dark:text-green-400" />
-            Motoristas por Quilometragem
+            <BarChart2 className="text-blue-500 dark:text-blue-400" size={20} />
+            Quilometragem Diária
+          </h3>
+          
+          {dailyMileage.length > 0 ? (
+            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+              {dailyMileage.map((day, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      {day.formattedDate}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {formatNumber(day.totalKm)} km
+                    </span>
+                  </div>
+                  <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Math.max(
+                          5, 
+                          (day.totalKm / Math.max(...dailyMileage.map(d => d.totalKm), 1)) * 100
+                        )}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+              <BarChart2 className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+            </div>
+          )}
+        </div>
+
+        {/* Driver Mileage */}
+        <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <Users className="text-green-500 dark:text-green-400" size={20} />
+            Quilometragem por Motorista
           </h3>
           
           {driverMileage.length > 0 ? (
@@ -673,9 +689,9 @@ const HodometrosDashboard = () => {
                       {formatNumber(driver.totalKm)} km
                     </span>
                   </div>
-                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-2 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-green-500 dark:bg-green-500 rounded-full transition-all duration-300"
+                      className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all duration-300"
                       style={{ 
                         width: `${Math.max(
                           5, 
@@ -694,12 +710,12 @@ const HodometrosDashboard = () => {
             </div>
           )}
         </div>
-        
-        {/* All Vehicles by Mileage */}
+
+        {/* Vehicle Mileage */}
         <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Truck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            Veículos por Quilometragem
+            <Truck className="text-purple-500 dark:text-purple-400" size={20} />
+            Quilometragem por Veículo
           </h3>
           
           {vehicleMileage.length > 0 ? (
@@ -714,9 +730,9 @@ const HodometrosDashboard = () => {
                       {formatNumber(vehicle.totalKm)} km
                     </span>
                   </div>
-                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-2 bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-purple-500 dark:bg-purple-500 rounded-full transition-all duration-300"
+                      className="h-full bg-purple-500 dark:bg-purple-400 rounded-full transition-all duration-300"
                       style={{ 
                         width: `${Math.max(
                           5, 
@@ -735,11 +751,8 @@ const HodometrosDashboard = () => {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Leituras por Motorista Chart and KM per Operation Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Leituras por Motorista Chart */}
+        {/* Leituras por Motorista Chart and KM per Operation Chart */}
         <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
@@ -779,47 +792,47 @@ const HodometrosDashboard = () => {
             </div>
           )}
         </div>
+      </div>
 
-        {/* KM per Operation Chart */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Gauge className="w-5 h-5 text-orange-500 dark:text-orange-400" />
-            Quilômetros por Operação
-          </h3>
-          
-          {operationMileage.length > 0 ? (
-            <div className="space-y-6">
-              {operationMileage.map((item, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {item.name}
-                    </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {formatNumber(item.value)} km
-                    </span>
-                  </div>
-                  <div className="h-2 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-orange-500 dark:bg-orange-400 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${Math.max(
-                          5, 
-                          (item.value / Math.max(...operationMileage.map(m => m.value), 1)) * 100
-                        )}%` 
-                      }}
-                    />
-                  </div>
+      {/* KM per Operation Chart */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <Gauge className="w-5 h-5 text-orange-500 dark:text-orange-400" />
+          Quilômetros por Operação
+        </h3>
+        
+        {operationMileage.length > 0 ? (
+          <div className="space-y-6">
+            {operationMileage.map((item, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {item.name}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {formatNumber(item.value)} km
+                  </span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-              <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-            </div>
-          )}
-        </div>
+                <div className="h-2 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-orange-500 dark:bg-orange-400 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${Math.max(
+                        5, 
+                        (item.value / Math.max(...operationMileage.map(m => m.value), 1)) * 100
+                      )}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+            <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+          </div>
+        )}
       </div>
 
       {/* Inconsistencies Table */}
@@ -839,14 +852,14 @@ const HodometrosDashboard = () => {
         {hodometros.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -963,6 +976,75 @@ const HodometrosDashboard = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// Stat Card Component
+const StatCard = ({ 
+  title, 
+  value, 
+  icon: Icon,
+  color = 'blue',
+  unit = ''
+}: { 
+  title: string;
+  value: number;
+  icon: any;
+  color?: 'blue' | 'green' | 'purple' | 'amber' | 'red';
+  unit?: string;
+}) => {
+  // Define color variants based on the hodometros dashboard style
+  const colorVariants = {
+    blue: {
+      iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+      iconColor: 'text-blue-600 dark:text-blue-400',
+      gradient: 'from-blue-600 to-indigo-600',
+      darkGradient: 'dark:from-blue-400 dark:to-indigo-400'
+    },
+    green: {
+      iconBg: 'bg-green-100 dark:bg-green-900/30',
+      iconColor: 'text-green-600 dark:text-green-400',
+      gradient: 'from-green-600 to-emerald-600',
+      darkGradient: 'dark:from-green-400 dark:to-emerald-400'
+    },
+    purple: {
+      iconBg: 'bg-purple-100 dark:bg-purple-900/30',
+      iconColor: 'text-purple-600 dark:text-purple-400',
+      gradient: 'from-purple-600 to-violet-600',
+      darkGradient: 'dark:from-purple-400 dark:to-violet-400'
+    },
+    amber: {
+      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      gradient: 'from-amber-600 to-orange-600',
+      darkGradient: 'dark:from-amber-400 dark:to-orange-400'
+    },
+    red: {
+      iconBg: 'bg-red-100 dark:bg-red-900/30',
+      iconColor: 'text-red-600 dark:text-red-400',
+      gradient: 'from-red-600 to-rose-600',
+      darkGradient: 'dark:from-red-400 dark:to-rose-400'
+    }
+  };
+
+  const variant = colorVariants[color];
+
+  return (
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+      <div className="flex flex-col items-center text-center">
+        <div className={`p-3 ${variant.iconBg} rounded-xl mb-3`}>
+          <Icon className={`w-6 h-6 ${variant.iconColor}`} />
+        </div>
+        
+        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+          {title}
+        </h3>
+        
+        <p className={`text-3xl font-bold bg-gradient-to-r ${variant.gradient} ${variant.darkGradient} bg-clip-text text-transparent`}>
+          {value.toLocaleString('pt-BR')}{unit && ` ${unit}`}
+        </p>
+      </div>
     </div>
   );
 };
