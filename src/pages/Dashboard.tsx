@@ -33,22 +33,22 @@ const MenuCard = ({
           ? 'from-orange-500/10 to-amber-500/5' 
           : 'from-primary/5 to-transparent'
       } opacity-0 transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
-      <div className="relative flex flex-col h-full justify-between p-6">
+      <div className="relative flex flex-col h-full justify-between p-4">
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className={`w-12 h-12 flex items-center justify-center ${
+          <div className="flex items-center gap-2">
+            <div className={`w-10 h-10 flex items-center justify-center ${
               isSpecial 
                 ? 'bg-orange-100 dark:bg-orange-900/30' 
                 : 'bg-blue-100 dark:bg-blue-900/30'
-              } rounded-full transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''}`}>
-              <Icon className={`w-6 h-6 ${
+              } rounded-lg transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''}`}>
+              <Icon className={`w-5 h-5 ${
                 isSpecial 
                   ? 'text-orange-600 dark:text-orange-400' 
                   : 'text-blue-600 dark:text-blue-400'
                 }`} />
             </div>
             
-            <h3 className={`text-xl font-bold ${
+            <h3 className={`text-lg font-bold ${
               isSpecial 
                 ? 'text-orange-700 dark:text-orange-400' 
                 : 'text-gray-800 dark:text-white'
@@ -59,7 +59,7 @@ const MenuCard = ({
           </div>
         </div>
         
-        <p className={`text-base mt-1 ${
+        <p className={`text-sm mt-3 ${
           isSpecial 
             ? 'text-orange-700/80 dark:text-orange-300/90' 
             : 'text-gray-600 dark:text-gray-300'
@@ -73,20 +73,20 @@ const MenuCard = ({
   return enabled ? (
     <Link
       to={link}
-      className={`group relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl 
+      className={`group relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg 
                  border ${isSpecial ? 'border-orange-200 dark:border-orange-800/50' : 'border-gray-200 dark:border-gray-700'} 
                  shadow-md hover:shadow-lg
                  transform hover:-translate-y-1 transition-all duration-300
-                 w-full h-[220px] flex flex-col justify-between`}
+                 w-full h-[180px] flex flex-col justify-between`}
       aria-label={`Acessar ${title}`}
     >
       {cardContent}
     </Link>
   ) : (
     <div
-      className="group relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl 
+      className="group relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg 
                  border border-gray-200 dark:border-gray-700 shadow-md opacity-60
-                 w-full h-[220px] flex flex-col justify-between
+                 w-full h-[180px] flex flex-col justify-between
                  cursor-not-allowed select-none"
       aria-disabled="true"
     >
@@ -161,9 +161,9 @@ const Dashboard = () => {
 
   return (
     <div className="h-full flex flex-col items-center justify-center">
-      <div className="w-full max-w-7xl mx-auto px-6">
-        <header className="flex flex-col md:flex-row justify-between items-center mb-12">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-400
+      <div className="w-full max-w-7xl mx-auto px-4">
+        <header className="flex flex-col md:flex-row justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400
                         dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent
                         font-display tracking-tight relative inline-block mb-4 md:mb-0">
             Central de Automações
@@ -184,7 +184,7 @@ const Dashboard = () => {
           </button>
         </header>
 
-        <nav className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" aria-label="Menu principal">
+        <nav className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" aria-label="Menu principal">
           {menuItems.map((item) => (
             <MenuCard
               key={item.link}
