@@ -73,6 +73,17 @@ interface HodometroReading {
   } | null;
 }
 
+interface DailyDriverReadings {
+  firstReadingKm: number | null;
+  lastReadingKm: number | null;
+  firstReadingTrip: number | null;
+  lastReadingTrip: number | null;
+  vehicleType: 'automovel' | 'ciclomotor' | 'unknown';
+  motorista_nome: string;
+  veiculo_id: number | null;
+  veiculo_placa: string | null;
+}
+
 const HodometrosDashboard = () => {
   const { query, companyId } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -155,14 +166,13 @@ const HodometrosDashboard = () => {
       console.log(`Fetched ${data?.length || 0} hodometro readings`);
 
       // Initialize maps for data processing
-      const dailyMileageMap = new Map<string, number>();
+      const dailyMileageMap = new Map<string, { totalKm: number; formattedDate: string }>();
       const driverMileageMap = new Map<number, { nome: string; totalKm: number }>();
       const vehicleMileageMap = new Map<number, { placa: string; totalKm: number; lastDate?: string }>();
       const driverReadingsMap = new Map<number, { nome: string; count: number }>();
       const operationMileageMap = new Map<string, number>();
-      let totalKilometers = 0;
       
-      // IMPORTANT: Sort hodometros by vehicle_id and date for accurate calculations
+      // IMPORTANT: Sort hodometros by vehicle_id, date, and time for accurate calculations
       const sortedHodometros = [...(data || [])].sort((a, b) => {
         if (a.veiculo_id !== b.veiculo_id) {
           return (a.veiculo_id || 0) - (b.veiculo_id || 0);
@@ -172,8 +182,8 @@ const HodometrosDashboard = () => {
         return dateA - dateB;
       });
       
-      // Map to store the last hodometer reading for each vehicle
-      const lastKmByVehicle = new Map<number, number>();
+      // Map to store daily driver readings
+      const dailyDriverDataMap = new Map<string, DailyDriverReadings>();
       
       // Process each reading
       sortedHodometros.forEach(hodometro => {
@@ -192,79 +202,155 @@ const HodometrosDashboard = () => {
           driverReadingsMap.set(driverId, driverReadingsData);
         }
         
-        // Process mileage data - use km_rodado as the primary source if available
-        const kmValue = hodometro.km_rodado || 0;
-        
-        // Skip invalid or zero values for mileage calculations only
-        if (kmValue <= 0) {
-          return; // Skip only the mileage calculations, not the entire iteration
+        // Skip if missing essential data for mileage calculation
+        if (!hodometro.data || !hodometro.motorista_id || !hodometro.veiculo_id) {
+          return;
         }
         
-        // Add to total kilometers
-        totalKilometers += kmValue;
+        // Determine vehicle type based on whether it has battery readings
+        const vehicleType = hodometro.bateria !== null && hodometro.bateria !== undefined 
+          ? 'ciclomotor' 
+          : 'automovel';
         
-        // Add to daily mileage
+        // Create unique key for day and motorista
         const dateKey = hodometro.data;
-        dailyMileageMap.set(dateKey, (dailyMileageMap.get(dateKey) || 0) + kmValue);
+        const driverId = hodometro.motorista_id;
+        const uniqueKey = `${dateKey}_${driverId}`;
         
-        // Add to driver mileage
-        if (hodometro.motorista_id && hodometro.motorista) {
-          const driverId = hodometro.motorista_id;
-          const driverName = hodometro.motorista.nome;
-          
-          if (!driverMileageMap.has(driverId)) {
-            driverMileageMap.set(driverId, { nome: driverName, totalKm: 0 });
-          }
-          
-          const driverData = driverMileageMap.get(driverId)!;
-          driverData.totalKm += kmValue;
-          driverMileageMap.set(driverId, driverData);
+        // Get current reading based on vehicle type
+        let currentReading: number | null = null;
+        let isOdometerReading = false;
+        
+        if (vehicleType === 'automovel' && hodometro.hod_lido !== null) {
+          currentReading = hodometro.hod_lido;
+          isOdometerReading = true;
+        } else if (vehicleType === 'ciclomotor' && hodometro.trip_lida !== null) {
+          currentReading = hodometro.trip_lida;
         }
         
-        // Add to vehicle mileage
-        if (hodometro.veiculo_id && hodometro.veiculo) {
-          const vehicleId = hodometro.veiculo_id;
-          const vehiclePlate = hodometro.veiculo.placa.toUpperCase();
-          
-          if (!vehicleMileageMap.has(vehicleId)) {
-            vehicleMileageMap.set(vehicleId, { 
-              placa: vehiclePlate, 
-              totalKm: 0,
-              lastDate: hodometro.data
-            });
-          }
-          
-          const vehicleData = vehicleMileageMap.get(vehicleId)!;
-          vehicleData.totalKm += kmValue;
-          
-          // Update last date if this reading is more recent
-          const currentDate = new Date(hodometro.data);
-          const existingDate = vehicleData.lastDate ? new Date(vehicleData.lastDate) : null;
-          
-          if (!existingDate || currentDate > existingDate) {
-            vehicleData.lastDate = hodometro.data;
-          }
-          
-          vehicleMileageMap.set(vehicleId, vehicleData);
+        // Skip if no valid reading
+        if (currentReading === null) {
+          return;
         }
         
-        // Add to operation mileage
+        // Get or create daily driver entry
+        const dailyDriverEntry = dailyDriverDataMap.get(uniqueKey) || {
+          firstReadingKm: null,
+          lastReadingKm: null,
+          firstReadingTrip: null,
+          lastReadingTrip: null,
+          vehicleType,
+          motorista_nome: hodometro.motorista?.nome || 'Desconhecido',
+          veiculo_id: hodometro.veiculo_id,
+          veiculo_placa: hodometro.veiculo?.placa || null
+        };
+        
+        // Update first and last readings
+        if (isOdometerReading) {
+          if (dailyDriverEntry.firstReadingKm === null || currentReading < dailyDriverEntry.firstReadingKm) {
+            dailyDriverEntry.firstReadingKm = currentReading;
+          }
+          if (dailyDriverEntry.lastReadingKm === null || currentReading > dailyDriverEntry.lastReadingKm) {
+            dailyDriverEntry.lastReadingKm = currentReading;
+          }
+        } else {
+          if (dailyDriverEntry.firstReadingTrip === null || currentReading < dailyDriverEntry.firstReadingTrip) {
+            dailyDriverEntry.firstReadingTrip = currentReading;
+          }
+          if (dailyDriverEntry.lastReadingTrip === null || currentReading > dailyDriverEntry.lastReadingTrip) {
+            dailyDriverEntry.lastReadingTrip = currentReading;
+          }
+        }
+        
+        dailyDriverDataMap.set(uniqueKey, dailyDriverEntry);
+        
+        // Process operation mileage if client exists
         const operationName = hodometro.cliente?.nome || 'Sem cliente';
-        operationMileageMap.set(operationName, (operationMileageMap.get(operationName) || 0) + kmValue);
+        
+        // Use km_rodado for operation mileage if available
+        if (hodometro.km_rodado && hodometro.km_rodado > 0) {
+          operationMileageMap.set(
+            operationName, 
+            (operationMileageMap.get(operationName) || 0) + hodometro.km_rodado
+          );
+        }
       });
       
-      // Convert daily mileage map to array and sort by date
-      const dailyMileageArray: DailyMileage[] = Array.from(dailyMileageMap.entries())
-        .map(([date, totalKm]) => {
-          return {
-            date,
-            totalKm,
-            formattedDate: formatDateBR(date) // Format date as DD/MM/YYYY
+      // Post-process daily driver data to calculate total kilometers
+      let totalKilometers = 0;
+      
+      // Process daily driver data to calculate mileage
+      for (const [key, data] of dailyDriverDataMap.entries()) {
+        const [date, driverId] = key.split('_');
+        let kmRodadoNoDia = 0;
+        
+        if (data.vehicleType === 'automovel' && data.firstReadingKm !== null && data.lastReadingKm !== null) {
+          kmRodadoNoDia = data.lastReadingKm - data.firstReadingKm;
+          // Handle cases where final reading is less than initial (odometer reset or error)
+          if (kmRodadoNoDia < 0) {
+            console.warn(`Negative km_rodado for automovel on ${date} by driver ${driverId}. Resetting to 0.`);
+            kmRodadoNoDia = 0;
+          }
+        } else if (data.vehicleType === 'ciclomotor' && data.firstReadingTrip !== null && data.lastReadingTrip !== null) {
+          kmRodadoNoDia = data.lastReadingTrip - data.firstReadingTrip;
+          if (kmRodadoNoDia < 0) {
+            console.warn(`Negative km_rodado for ciclomotor on ${date} by driver ${driverId}. Resetting to 0.`);
+            kmRodadoNoDia = 0;
+          }
+        }
+        
+        if (kmRodadoNoDia > 0) {
+          // Update total kilometers
+          totalKilometers += kmRodadoNoDia;
+          
+          // Update daily mileage map
+          const dailyData = dailyMileageMap.get(date) || { 
+            totalKm: 0, 
+            formattedDate: formatDateBR(date) 
           };
-        })
+          dailyData.totalKm += kmRodadoNoDia;
+          dailyMileageMap.set(date, dailyData);
+          
+          // Update driver mileage map
+          const numDriverId = parseInt(driverId);
+          const driverData = driverMileageMap.get(numDriverId) || {
+            nome: data.motorista_nome,
+            totalKm: 0
+          };
+          driverData.totalKm += kmRodadoNoDia;
+          driverMileageMap.set(numDriverId, driverData);
+          
+          // Update vehicle mileage map
+          if (data.veiculo_id && data.veiculo_placa) {
+            const vehicleData = vehicleMileageMap.get(data.veiculo_id) || {
+              placa: data.veiculo_placa,
+              totalKm: 0,
+              lastDate: date
+            };
+            vehicleData.totalKm += kmRodadoNoDia;
+            
+            // Update last date if this reading is more recent
+            const currentDate = new Date(date);
+            const existingDate = vehicleData.lastDate ? new Date(vehicleData.lastDate) : null;
+            
+            if (!existingDate || currentDate > existingDate) {
+              vehicleData.lastDate = date;
+            }
+            
+            vehicleMileageMap.set(data.veiculo_id, vehicleData);
+          }
+        }
+      }
+      
+      // Convert maps to arrays for state
+      const dailyMileageArray: DailyMileage[] = Array.from(dailyMileageMap.entries())
+        .map(([date, data]) => ({
+          date,
+          totalKm: data.totalKm,
+          formattedDate: data.formattedDate
+        }))
         .sort((a, b) => a.date.localeCompare(b.date));
       
-      // Convert driver mileage map to array and sort by total km (descending)
       const driverMileageArray: DriverMileage[] = Array.from(driverMileageMap.entries())
         .map(([motorista_id, data]) => ({
           motorista_id: Number(motorista_id),
@@ -273,19 +359,15 @@ const HodometrosDashboard = () => {
         }))
         .sort((a, b) => b.totalKm - a.totalKm);
       
-      // Convert vehicle mileage map to array and sort by total km (descending)
       const vehicleMileageArray: VehicleMileage[] = Array.from(vehicleMileageMap.entries())
-        .map(([veiculo_id, data]) => {
-          return {
-            veiculo_id: Number(veiculo_id),
-            placa: data.placa,
-            totalKm: data.totalKm,
-            lastDate: data.lastDate ? formatDateBR(data.lastDate) : undefined // Format date as DD/MM/YYYY
-          };
-        })
+        .map(([veiculo_id, data]) => ({
+          veiculo_id: Number(veiculo_id),
+          placa: data.placa,
+          totalKm: data.totalKm,
+          lastDate: data.lastDate ? formatDateBR(data.lastDate) : undefined
+        }))
         .sort((a, b) => b.totalKm - a.totalKm);
-        
-      // Convert driver readings map to array and sort by count (descending)
+      
       const driverReadingsArray: DriverReadings[] = Array.from(driverReadingsMap.entries())
         .map(([motorista_id, data]) => ({
           motorista_id: Number(motorista_id),
@@ -293,8 +375,7 @@ const HodometrosDashboard = () => {
           count: data.count
         }))
         .sort((a, b) => b.count - a.count);
-        
-      // Convert operation mileage map to array and sort by total km (descending)
+      
       const operationMileageArray: OperationMileage[] = Array.from(operationMileageMap.entries())
         .map(([name, value]) => ({
           name,
