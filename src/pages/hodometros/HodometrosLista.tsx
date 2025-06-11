@@ -1,54 +1,50 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, ChevronDown, ChevronUp, Edit2, Trash2, Camera, X, BarChart2, Filter } from 'lucide-react';
+import { Search, Eye, Camera, X, Download, FileText, AlertCircle, Trash2, Edit2, BarChart2 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import { useDateRange } from '../../hooks/useDateRange';
-import type { Hodometro } from '../../types/database';
-import BulkDeleteConfirmationModal from '../../components/BulkDeleteConfirmationModal';
-import { useAuth } from '../../context/AuthContext';
+import { formatCPF } from '../../utils/format';
+import { supabase } from '../../lib/supabase';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import * as XLSX from 'xlsx';
+import { usePagination } from '../../hooks/usePagination';
+import Pagination from '../../components/Pagination';
 import EditHodometroModal from '../../components/hodometros/EditHodometroModal';
 import DeleteHodometroModal from '../../components/hodometros/DeleteHodometroModal';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import { formatCPF } from '../../utils/format';
+import BulkDeleteConfirmationModal from '../../components/BulkDeleteConfirmationModal';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import DriverMileageChart from '../../components/hodometros/DriverMileageChart';
 import MileageChartModal from '../../components/hodometros/MileageChartModal';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  Cell
-} from 'recharts';
 
-interface MotoristaWithDetails extends Motorista {
-  veiculo?: Veiculo[];
-}
-
-interface MileageData {
-  veiculo_id: number;
-  placa: string;
-  marca?: string;
-  tipo?: string;
-  motoristas: {
+interface HodometroReading {
+  id_hodometro: number;
+  data: string;
+  hora: string;
+  hod_informado: number | null;
+  hod_lido: number | null;
+  km_rodado: number | null;
+  bateria: number | null;
+  foto_hodometro: string | null;
+  trip_lida: number | null;
+  trip_informada: string | null;
+  comparacao_leitura: boolean | null;
+  motorista: {
     motorista_id: number;
     nome: string;
     cpf: string;
-    cliente?: string;
-    leitura_inicial: number;
-    leitura_final: number;
-    km_total: number;
-    ultima_data: string;
-    hodometros: Hodometro[];
-    isElectric: boolean;
-  }[];
-  totalKm: number;
+  };
+  veiculo: {
+    veiculo_id: number;
+    placa: string;
+    marca: string;
+    tipo: string;
+  };
+  cliente?: {
+    cliente_id: number;
+    nome: string;
+  } | null;
 }
 
 interface MonthlyData {
@@ -59,13 +55,12 @@ interface MonthlyData {
 const HodometrosLista = () => {
   const { query } = useCompanyData();
   const { companyId } = useAuth();
-  const [hodometros, setHodometros] = useState<Hodometro[]>([]);
-  const [mileageData, setMileageData] = useState<MileageData[]>([]);
+  const [hodometros, setHodometros] = useState<HodometroReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedHodometro, setSelectedHodometro] = useState<Hodometro | null>(null);
+  const [selectedHodometro, setSelectedHodometro] = useState<HodometroReading | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
@@ -73,12 +68,28 @@ const HodometrosLista = () => {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [selectedClientFilter, setSelectedClientFilter] = useState<string>('');
   const [clients, setClients] = useState<string[]>([]);
-  const [expandedItem, setExpandedItem] = useState<number | null>(null);
+  const [selectedVehicleFilter, setSelectedVehicleFilter] = useState<string>('');
+  const [vehicles, setVehicles] = useState<{placa: string, veiculo_id: number}[]>([]);
+  const [selectedMotoristaFilter, setSelectedMotoristaFilter] = useState<string>('');
+  const [motoristas, setMotoristas] = useState<{nome: string, motorista_id: number}[]>([]);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [showChartModal, setShowChartModal] = useState(false);
   const [selectedVehicleName, setSelectedVehicleName] = useState<string>('');
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
   const tableRef = React.useRef<HTMLDivElement>(null);
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedData,
+    handlePageChange,
+    handlePageSizeChange
+  } = usePagination({
+    data: hodometros,
+    initialPageSize: 20
+  });
 
   const fetchHodometros = useCallback(async () => {
     try {
@@ -104,10 +115,30 @@ const HodometrosLista = () => {
         )
       `);
 
-      const { data, error } = await baseQuery
+      let query = baseQuery
         .eq('company_id', companyId)
         .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate)
+        .lte('data', dateRange.endDate);
+      
+      // Apply filters if selected
+      if (selectedClientFilter) {
+        query = query.eq('cliente.nome', selectedClientFilter);
+      }
+      
+      if (selectedVehicleFilter) {
+        query = query.eq('veiculo.placa', selectedVehicleFilter);
+      }
+      
+      if (selectedMotoristaFilter) {
+        query = query.eq('motorista.nome', selectedMotoristaFilter);
+      }
+      
+      // Apply search term if provided
+      if (searchTerm) {
+        query = query.or(`motorista.nome.ilike.%${searchTerm}%,motorista.cpf.ilike.%${searchTerm}%,veiculo.placa.ilike.%${searchTerm}%`);
+      }
+
+      const { data, error } = await query
         .order('data', { ascending: false })
         .order('hora', { ascending: false });
 
@@ -121,25 +152,47 @@ const HodometrosLista = () => {
       });
 
       setHodometros(sortedData);
-
-      // Process data for the new UI
-      processHodometrosData(sortedData);
-
-      // Extract unique clients
+      
+      // Extract unique clients, vehicles, and motoristas for filters
       const uniqueClients = Array.from(new Set(
         sortedData
           .filter(h => h.cliente?.nome)
-          .map(h => h.cliente.nome)
+          .map(h => h.cliente!.nome)
       )).sort();
       
+      const uniqueVehicles = Array.from(new Set(
+        sortedData
+          .filter(h => h.veiculo?.placa)
+          .map(h => ({ 
+            placa: h.veiculo.placa.toUpperCase(),
+            veiculo_id: h.veiculo.veiculo_id
+          }))
+      )).sort((a, b) => a.placa.localeCompare(b.placa));
+      
+      const uniqueMotoristas = Array.from(new Set(
+        sortedData
+          .filter(h => h.motorista?.nome)
+          .map(h => ({ 
+            nome: h.motorista.nome,
+            motorista_id: h.motorista.motorista_id
+          }))
+      )).sort((a, b) => a.nome.localeCompare(b.nome));
+      
       setClients(uniqueClients);
+      setVehicles(uniqueVehicles);
+      setMotoristas(uniqueMotoristas);
+      
+      // Generate monthly data for the first vehicle
+      if (sortedData.length > 0) {
+        generateMonthlyDataForVehicle(sortedData[0].veiculo_id);
+      }
     } catch (error) {
       console.error('Error fetching hodometros:', error);
       toast.error('Erro ao carregar hodômetros');
     } finally {
       setLoading(false);
     }
-  }, [dateRange, companyId]);
+  }, [dateRange, companyId, searchTerm, selectedClientFilter, selectedVehicleFilter, selectedMotoristaFilter]);
 
   useEffect(() => {
     fetchHodometros();
@@ -157,121 +210,19 @@ const HodometrosLista = () => {
   // Format number with dot as thousands separator
   const formatNumber = (num: number | null | undefined): string => {
     if (num === null || num === undefined) return '-';
-    
-    // Convert to string with dots as thousands separators
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return num.toLocaleString('pt-BR');
   };
 
-  const processHodometrosData = (data: Hodometro[]) => {
-    // Group by veiculo
-    const groupedByVeiculo: Record<number, Hodometro[]> = {};
+  const generateMonthlyDataForVehicle = (vehicleId: number) => {
+    // Filter hodometros for this vehicle
+    const vehicleHodometros = hodometros.filter(h => h.veiculo_id === vehicleId);
     
-    data.forEach(hodometro => {
-      if (!hodometro.veiculo || !hodometro.veiculo_id) return;
-      
-      const veiculoId = hodometro.veiculo_id;
-      if (!groupedByVeiculo[veiculoId]) {
-        groupedByVeiculo[veiculoId] = [];
-      }
-      groupedByVeiculo[veiculoId].push(hodometro);
-    });
-
-    // Process each veiculo group
-    const processedData: MileageData[] = [];
-    
-    Object.entries(groupedByVeiculo).forEach(([veiculoId, hodometrosVeiculo]) => {
-      if (hodometrosVeiculo.length === 0) return;
-      
-      // Group by motorista
-      const groupedByMotorista: Record<number, Hodometro[]> = {};
-      
-      hodometrosVeiculo.forEach(hodometro => {
-        if (!hodometro.motorista_id) return;
-        
-        const motoristaId = hodometro.motorista_id;
-        if (!groupedByMotorista[motoristaId]) {
-          groupedByMotorista[motoristaId] = [];
-        }
-        groupedByMotorista[motoristaId].push(hodometro);
-      });
-      
-      // Process each motorista group
-      const motoristas = Object.entries(groupedByMotorista).map(([motoristaId, hodometrosMotorista]) => {
-        // Sort by date (oldest first for initial reading, newest first for final reading)
-        const sortedHodometros = [...hodometrosMotorista].sort((a, b) => {
-          const dateA = new Date(`${a.data} ${a.hora}`);
-          const dateB = new Date(`${b.data} ${b.hora}`);
-          return dateA.getTime() - dateB.getTime();
-        });
-        
-        const firstReading = sortedHodometros[0];
-        const lastReading = sortedHodometros[sortedHodometros.length - 1];
-        
-        // Check if it's an electric vehicle (has battery readings)
-        const isElectric = firstReading.bateria !== null && firstReading.bateria !== undefined;
-        
-        // Calculate total KM
-        let totalKm = 0;
-        if (isElectric) {
-          // For electric vehicles, use the sum of km_rodado values
-          totalKm = sortedHodometros.reduce((sum, reading) => sum + (reading.km_rodado || 0), 0);
-        } else {
-          // For regular vehicles, use the difference between last and first readings
-          const firstHodLido = firstReading.hod_lido || 0;
-          const lastHodLido = lastReading.hod_lido || 0;
-          
-          // Make sure the result is positive by taking the absolute difference
-          totalKm = Math.max(0, lastHodLido - firstHodLido);
-        }
-
-        // Format date
-        const lastDate = new Date(lastReading.data);
-        const formattedDate = formatDateBR(lastReading.data);
-
-        return {
-          motorista_id: parseInt(motoristaId),
-          nome: firstReading.motorista?.nome || 'Desconhecido',
-          cpf: firstReading.motorista?.cpf || '',
-          cliente: firstReading.cliente?.nome || 'Sem cliente',
-          leitura_inicial: isElectric ? 0 : (firstReading.hod_lido || 0),
-          leitura_final: isElectric ? 0 : (lastReading.hod_lido || 0),
-          km_total: totalKm,
-          ultima_data: formattedDate,
-          hodometros: sortedHodometros,
-          isElectric
-        };
-      });
-      
-      // Calculate total KM across all motoristas for this vehicle
-      const totalKm = motoristas.reduce((sum, motorista) => sum + motorista.km_total, 0);
-      
-      // Get the first hodometro to extract vehicle info
-      const firstHodometro = hodometrosVeiculo[0];
-      
-      processedData.push({
-        veiculo_id: parseInt(veiculoId),
-        placa: firstHodometro.veiculo.placa.toUpperCase(),
-        marca: firstHodometro.veiculo.marca,
-        tipo: firstHodometro.veiculo.tipo,
-        motoristas,
-        totalKm
-      });
-    });
-
-    // Sort by placa (A-Z)
-    processedData.sort((a, b) => a.placa.localeCompare(b.placa));
-    
-    setMileageData(processedData);
-  };
-
-  const generateMonthlyData = (hodometros: Hodometro[]) => {
     // Group by month
     const monthlyData: Record<string, number> = {};
     
-    hodometros.forEach(hodometro => {
+    vehicleHodometros.forEach(hodometro => {
       const date = new Date(hodometro.data);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
       
       if (!monthlyData[monthKey]) {
         monthlyData[monthKey] = 0;
@@ -306,22 +257,25 @@ const HodometrosLista = () => {
     });
     
     setMonthlyData(result);
+    
+    // Set the vehicle name for the chart
+    const vehicle = hodometros.find(h => h.veiculo_id === vehicleId)?.veiculo;
+    if (vehicle) {
+      setSelectedVehicleName(`${vehicle.placa.toUpperCase()} - ${vehicle.marca} ${vehicle.tipo}`);
+    }
   };
 
-  const handleEdit = (e: React.MouseEvent, hodometro: Hodometro) => {
-    e.stopPropagation();
+  const handleEdit = (hodometro: HodometroReading) => {
     setSelectedHodometro(hodometro);
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (e: React.MouseEvent, hodometro: Hodometro) => {
-    e.stopPropagation();
+  const handleDelete = (hodometro: HodometroReading) => {
     setSelectedHodometro(hodometro);
     setIsDeleteModalOpen(true);
   };
 
-  const handleShowPhoto = (e: React.MouseEvent, photo: string | null) => {
-    e.stopPropagation();
+  const handleShowPhoto = (photo: string | null) => {
     if (photo) {
       setSelectedPhoto(photo);
       setShowPhotoModal(true);
@@ -359,14 +313,14 @@ const HodometrosLista = () => {
     setSelectedItems(newSelectedItems);
     
     // Update selectAll state
-    setSelectAll(newSelectedItems.size === mileageData.length);
+    setSelectAll(newSelectedItems.size === hodometros.length);
   };
 
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(mileageData.map(m => m.veiculo_id)));
+      setSelectedItems(new Set(hodometros.map(h => h.id_hodometro)));
     }
     setSelectAll(!selectAll);
   };
@@ -392,43 +346,58 @@ const HodometrosLista = () => {
     }
   };
 
-  const toggleExpand = (veiculo_id: number, vehicleName: string) => {
-    if (expandedItem === veiculo_id) {
-      setExpandedItem(null);
-    } else {
-      setExpandedItem(veiculo_id);
-      setSelectedVehicleName(vehicleName);
-      
-      // Collect all hodometros from all motoristas for this vehicle
-      const selectedData = mileageData.find(data => data.veiculo_id === veiculo_id);
-      if (selectedData) {
-        const allHodometros = selectedData.motoristas.flatMap(m => m.hodometros);
-        generateMonthlyData(allHodometros);
-      }
-    }
-  };
-
-  const openChartModal = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const openChartModal = (vehicleId: number) => {
+    generateMonthlyDataForVehicle(vehicleId);
     setShowChartModal(true);
   };
 
-  const filteredData = mileageData.filter(data => {
-    const searchLower = searchTerm.toLowerCase();
-    const clientMatch = selectedClientFilter ? 
-      data.motoristas.some(m => m.cliente === selectedClientFilter) : true;
-    
-    return (
-      clientMatch &&
-      (data.placa.toLowerCase().includes(searchLower) ||
-       (data.marca && data.marca.toLowerCase().includes(searchLower)) ||
-       (data.tipo && data.tipo.toLowerCase().includes(searchLower)) ||
-       data.motoristas.some(m => 
-         m.nome.toLowerCase().includes(searchLower) || 
-         m.cpf.includes(searchLower)
-       ))
-    );
-  });
+  const exportToExcel = () => {
+    try {
+      const exportData = hodometros.map(h => ({
+        'Data': formatDateBR(h.data),
+        'Hora': h.hora,
+        'Motorista': h.motorista?.nome || '',
+        'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
+        'Placa': h.veiculo?.placa.toUpperCase() || '',
+        'Veículo': `${h.veiculo?.marca || ''} ${h.veiculo?.tipo || ''}`,
+        'Hodômetro Informado': h.hod_informado !== null ? formatNumber(h.hod_informado) : '',
+        'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : formatNumber(h.hod_lido),
+        'Trip Informada': h.trip_informada || '',
+        'Trip Lida': h.trip_lida !== null ? formatNumber(h.trip_lida) : '',
+        'KM Rodado': h.km_rodado !== null ? formatNumber(h.km_rodado) : '',
+        'Leitura Divergente': h.comparacao_leitura === false ? 'Sim' : 'Não',
+        'Cliente': h.cliente?.nome || 'Sem cliente'
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Hodometros');
+      
+      // Auto-size columns
+      const colWidths = [
+        { wch: 12 }, // Data
+        { wch: 8 },  // Hora
+        { wch: 25 }, // Motorista
+        { wch: 15 }, // CPF
+        { wch: 10 }, // Placa
+        { wch: 20 }, // Veículo
+        { wch: 18 }, // Hodômetro Informado
+        { wch: 15 }, // Hodômetro Lido
+        { wch: 15 }, // Trip Informada
+        { wch: 12 }, // Trip Lida
+        { wch: 12 }, // KM Rodado
+        { wch: 15 }, // Leitura Divergente
+        { wch: 20 }  // Cliente
+      ];
+      ws['!cols'] = colWidths;
+      
+      XLSX.writeFile(wb, `relatorio_hodometros_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.success('Relatório exportado com sucesso');
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      toast.error('Erro ao exportar para Excel');
+    }
+  };
 
   if (loading) {
     return <LoadingSpinner />;
@@ -460,47 +429,105 @@ const HodometrosLista = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {/* Search */}
           <div className="relative">
             <input
               type="text"
-              placeholder="Buscar por placa, marca, modelo, motorista ou CPF..."
+              placeholder="Buscar por placa, motorista ou CPF..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
-            {loading ? (
-              <div className="absolute left-3 top-2.5">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
-              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            )}
+            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
+          {/* Export Button */}
+          <div className="flex justify-end">
+            <button
+              onClick={exportToExcel}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                       transition-colors flex items-center gap-2"
+              disabled={hodometros.length === 0}
+            >
+              <Download className="w-5 h-5" />
+              Exportar Excel
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {/* Vehicle Filter */}
+          <div className="relative">
+            <select
+              value={selectedVehicleFilter}
+              onChange={(e) => setSelectedVehicleFilter(e.target.value)}
+              className="w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todos os veículos</option>
+              {vehicles.map((vehicle) => (
+                <option key={vehicle.veiculo_id} value={vehicle.placa}>
+                  {vehicle.placa}
+                </option>
+              ))}
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
+
+          {/* Motorista Filter */}
+          <div className="relative">
+            <select
+              value={selectedMotoristaFilter}
+              onChange={(e) => setSelectedMotoristaFilter(e.target.value)}
+              className="w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todos os motoristas</option>
+              {motoristas.map((motorista) => (
+                <option key={motorista.motorista_id} value={motorista.nome}>
+                  {motorista.nome}
+                </option>
+              ))}
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
+
+          {/* Client Filter */}
           <div className="relative">
             <select
               value={selectedClientFilter}
               onChange={(e) => setSelectedClientFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+              className="w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todos os clientes</option>
               {clients.map((client, index) => (
                 <option key={index} value={client}>{client}</option>
               ))}
             </select>
-            <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
           </div>
+        </div>
 
-          <div>
-            <PeriodSelector
-              periodType={periodType}
-              dateRange={dateRange}
-              onPeriodChange={updatePeriod}
-              onDateRangeChange={setDateRange}
-            />
-          </div>
+        {/* Period Selector */}
+        <div className="mt-4">
+          <PeriodSelector
+            periodType={periodType}
+            dateRange={dateRange}
+            onPeriodChange={updatePeriod}
+            onDateRangeChange={setDateRange}
+          />
         </div>
       </div>
 
@@ -518,252 +545,143 @@ const HodometrosLista = () => {
             </span>
           </div>
         </div>
-        
+
         <div className="relative">
           <div ref={tableRef} className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"></th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Marca/Modelo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motoristas</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Total</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Última Leitura</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredData.map((data) => (
-                  <React.Fragment key={data.veiculo_id}>
-                    <tr 
-                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
-                        selectedItems.has(data.veiculo_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                      }`}
-                      onClick={() => toggleExpand(data.veiculo_id, data.placa)}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedItems.has(data.veiculo_id)}
-                            onChange={() => handleSelectItem(data.veiculo_id)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                          />
-                          {expandedItem === data.veiculo_id ? (
-                            <ChevronUp className="w-5 h-5 text-gray-400" />
-                          ) : (
-                            <ChevronDown className="w-5 h-5 text-gray-400" />
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-lg font-medium text-blue-600 dark:text-blue-400">
-                          {data.placa}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                {paginatedData.map((hodometro) => (
+                  <tr key={hodometro.id_hodometro} className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+                    selectedItems.has(hodometro.id_hodometro) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                  }`}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.has(hodometro.id_hodometro)}
+                        onChange={() => handleSelectItem(hodometro.id_hodometro)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {formatDateBR(hodometro.data)}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {hodometro.hora}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase">
+                        {hodometro.veiculo?.placa || 'Não informada'}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {hodometro.veiculo?.marca} {hodometro.veiculo?.tipo}
+                      </div>
+                      <button
+                        onClick={() => openChartModal(hodometro.veiculo_id)}
+                        className="mt-1 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+                      >
+                        <BarChart2 size={12} />
+                        Ver gráfico
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {hodometro.motorista?.nome || 'Não informado'}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {hodometro.motorista?.cpf ? formatCPF(hodometro.motorista.cpf) : ''}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {data.marca} {data.tipo}
+                          Bateria: {hodometro.bateria}%
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {data.motoristas.length} motorista{data.motoristas.length !== 1 ? 's' : ''}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                          {formatNumber(data.totalKm)} km
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {data.motoristas.length > 0 ? 
-                            data.motoristas.reduce((latest, m) => {
-                              const mDate = new Date(m.ultima_data.split('/').reverse().join('-'));
-                              const latestDate = latest ? new Date(latest.split('/').reverse().join('-')) : null;
-                              return !latestDate || mDate > latestDate ? m.ultima_data : latest;
-                            }, '') : 
-                            "-"
-                          }
-                        </div>
-                      </td>
-                    </tr>
-                    
-                    {expandedItem === data.veiculo_id && (
-                      <tr>
-                        <td colSpan={6} className="px-0 py-0 border-b border-gray-200 dark:border-gray-700">
-                          <div className="bg-gray-50 dark:bg-gray-700/30 p-4">
-                            <div className="flex justify-between items-center mb-4">
-                              <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                                <BarChart2 className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-                                Quilometragem Mensal - {data.placa}
-                              </h4>
-                              <button
-                                onClick={openChartModal}
-                                className="text-blue-600 dark:text-blue-400 text-sm hover:underline flex items-center gap-1"
-                              >
-                                <Eye size={16} />
-                                Ver gráfico completo
-                              </button>
-                            </div>
-                            
-                            {/* Recharts Bar Chart */}
-                            <div className="h-64 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                  data={monthlyData}
-                                  margin={{ top: 10, right: 30, left: 0, bottom: 30 }}
-                                >
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                                  <XAxis 
-                                    dataKey="month" 
-                                    angle={-45} 
-                                    textAnchor="end" 
-                                    height={60} 
-                                    tick={{ fontSize: 12 }}
-                                    stroke="#9CA3AF"
-                                  />
-                                  <YAxis 
-                                    tickFormatter={(value) => formatNumber(value)}
-                                    stroke="#9CA3AF"
-                                  />
-                                  <Tooltip 
-                                    formatter={(value: any) => [formatNumber(value) + ' km', 'Quilômetros']}
-                                    contentStyle={{ 
-                                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                      borderRadius: '0.5rem',
-                                      border: '1px solid #e5e7eb',
-                                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                    }}
-                                  />
-                                  <Bar 
-                                    dataKey="km" 
-                                    fill="#3B82F6" 
-                                    radius={[4, 4, 0, 0]}
-                                    animationDuration={1500}
-                                  >
-                                    {monthlyData.map((entry, index) => (
-                                      <Cell 
-                                        key={`cell-${index}`} 
-                                        fill={`rgba(59, 130, 246, ${0.5 + (index * 0.05)})`} 
-                                      />
-                                    ))}
-                                  </Bar>
-                                </BarChart>
-                              </ResponsiveContainer>
-                            </div>
-                            
-                            {/* Motoristas e leituras */}
-                            {data.motoristas.map((motorista, motoristaIndex) => (
-                              <div key={motoristaIndex} className="mb-6">
-                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm mb-3">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-400">
-                                          <path d="M19 16v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3"></path>
-                                          <path d="M12 2h7a2 2 0 0 1 2 2v7"></path>
-                                          <path d="M11 13 21 3"></path>
-                                        </svg>
-                                      </div>
-                                      <div>
-                                        <h5 className="font-medium text-gray-900 dark:text-white">
-                                          {motorista.nome}
-                                        </h5>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                                          {formatCPF(motorista.cpf)}
-                                        </p>
-                                      </div>
-                                    </div>
-                                    <div className="text-right">
-                                      <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                        Total: {formatNumber(motorista.km_total)} km
-                                      </div>
-                                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                                        {motorista.isElectric ? 'Veículo Elétrico' : `${formatNumber(motorista.leitura_inicial)} → ${formatNumber(motorista.leitura_final)} km`}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                <div className="overflow-x-auto">
-                                  <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                      <thead className="bg-gray-100 dark:bg-gray-800 rounded-t-xl">
-                                        <tr>
-                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tl-xl">Data</th>
-                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hora</th>
-                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
-                                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tr-xl">Ações</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                        {motorista.hodometros.map((hodometro, index) => (
-                                          <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                              {formatDateBR(hodometro.data)}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                              {hodometro.hora}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                              {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                                                <span>Bateria: {hodometro.bateria}</span>
-                                              ) : (
-                                                <span>{formatNumber(hodometro.hod_lido)} km</span>
-                                              )}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                              <div className="flex items-center justify-end space-x-3">
-                                                <button
-                                                  onClick={(e) => handleShowPhoto(e, hodometro.foto_hodometro)}
-                                                  className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                                                           transition-colors ${!hodometro.foto_hodometro && 'opacity-50 cursor-not-allowed'}`}
-                                                  title={hodometro.foto_hodometro ? "Ver foto do hodômetro" : "Sem foto disponível"}
-                                                >
-                                                  <Camera size={18} />
-                                                </button>
-                                                <button
-                                                  onClick={(e) => handleEdit(e, hodometro)}
-                                                  className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 
-                                                           transition-colors"
-                                                  title="Editar"
-                                                >
-                                                  <Edit2 size={18} />
-                                                </button>
-                                                <button
-                                                  onClick={(e) => handleDelete(e, hodometro)}
-                                                  className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                                                           transition-colors"
-                                                  title="Excluir"
-                                                >
-                                                  <Trash2 size={18} />
-                                                </button>
-                                              </div>
-                                            </td>
-                                          </tr>
-                                        ))}
-                                        {motorista.hodometros.length === 0 && (
-                                          <tr>
-                                            <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                              Nenhuma leitura encontrada
-                                            </td>
-                                          </tr>
-                                        )}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                      ) : (
+                        <>
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            Lido: {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'} km
                           </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Informado: {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'} km
+                          </div>
+                        </>
+                      )}
+                      {hodometro.comparacao_leitura === false && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 mt-1">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Divergente
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {hodometro.km_rodado !== null ? formatNumber(hodometro.km_rodado) : '-'} km
+                      </div>
+                      {hodometro.trip_lida !== null && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Trip: {formatNumber(hodometro.trip_lida)} km
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {hodometro.cliente?.nome || 'Sem cliente'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center space-x-3">
+                        {hodometro.foto_hodometro ? (
+                          <button
+                            onClick={() => handleShowPhoto(hodometro.foto_hodometro)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            title="Ver foto do hodômetro"
+                          >
+                            <Camera size={18} />
+                          </button>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-600">
+                            <Camera size={18} className="inline-block opacity-50" />
+                          </span>
+                        )}
+                        <button
+                          onClick={() => handleEdit(hodometro)}
+                          className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
+                          title="Editar"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(hodometro)}
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 ))}
+                {hodometros.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                      Nenhuma leitura encontrada para o período selecionado
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -774,13 +692,14 @@ const HodometrosLista = () => {
           />
         </div>
         
-        {filteredData.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-gray-500 dark:text-gray-400">
-              Nenhuma leitura encontrada para o período selecionado
-            </p>
-          </div>
-        )}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </div>
 
       {/* Photo Modal */}
@@ -810,6 +729,21 @@ const HodometrosLista = () => {
                 alt="Foto do Hodômetro"
                 className="absolute inset-0 w-full h-full object-contain"
               />
+            </div>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <a
+                href={selectedPhoto}
+                download="hodometro.jpg"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                         transition-colors flex items-center gap-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Download size={16} />
+                Baixar Imagem
+              </a>
             </div>
           </div>
         </div>
