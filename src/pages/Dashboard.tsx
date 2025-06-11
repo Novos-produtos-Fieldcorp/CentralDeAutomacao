@@ -33,27 +33,29 @@ const MenuCard = ({
           ? 'from-orange-500/10 to-amber-500/5' 
           : 'from-primary/5 to-transparent'
       } opacity-0 transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
-      <div className="relative flex flex-col h-full items-center text-center">
-        <div className={`p-3 ${
-          isSpecial 
-            ? 'bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40' 
-            : 'bg-background-light group-hover:bg-background-lighter'
-          } rounded-[16px] transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''} mb-4`}>
-          <Icon className={`w-8 h-8 ${
+      <div className="relative flex flex-col h-full items-center text-center justify-between">
+        <div>
+          <div className={`p-3 ${
             isSpecial 
-              ? 'text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300' 
-              : enabled ? 'text-primary group-hover:text-primary-light' : 'text-gray-400 dark:text-gray-600'
-            } transition-colors duration-300`} />
+              ? 'bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40' 
+              : 'bg-background-light group-hover:bg-background-lighter'
+            } rounded-[16px] transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''} mb-4`}>
+            <Icon className={`w-8 h-8 ${
+              isSpecial 
+                ? 'text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300' 
+                : enabled ? 'text-primary group-hover:text-primary-light' : 'text-gray-400 dark:text-gray-600'
+              } transition-colors duration-300`} />
+          </div>
+          <div className="flex items-center gap-2 justify-center">
+            <h3 className={`text-xl font-bold ${
+              isSpecial 
+                ? 'text-orange-700 dark:text-orange-400' 
+                : enabled ? 'text-text-primary' : 'text-gray-400 dark:text-gray-600'
+            }`}>{title}</h3>
+            {!enabled && <Lock className="w-5 h-5 text-gray-400 dark:text-gray-600" />}
+          </div>
         </div>
-        <div className="flex items-center gap-2 justify-center">
-          <h3 className={`text-xl font-bold ${
-            isSpecial 
-              ? 'text-orange-700 dark:text-orange-400' 
-              : enabled ? 'text-text-primary' : 'text-gray-400 dark:text-gray-600'
-          }`}>{title}</h3>
-          {!enabled && <Lock className="w-5 h-5 text-gray-400 dark:text-gray-600" />}
-        </div>
-        <p className={`text-base relative z-10 transition-colors duration-300 mt-4 px-4 ${
+        <p className={`text-base relative z-10 transition-colors duration-300 mb-6 px-4 ${
           isSpecial 
             ? 'text-orange-700/80 dark:text-orange-300/90 group-hover:text-orange-800 dark:group-hover:text-orange-200' 
             : enabled ? 'text-text-secondary group-hover:text-text-primary' : 'text-gray-400 dark:text-gray-600'
