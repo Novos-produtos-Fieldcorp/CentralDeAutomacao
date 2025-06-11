@@ -34,7 +34,7 @@ const MenuCard = ({
           : 'from-primary/5 to-transparent'
       } opacity-0 transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
       <div className="relative flex flex-col h-full items-center text-center justify-between">
-        <div className="mt-8">
+        <div className="mt-10">
           <div className={`w-16 h-16 mx-auto flex items-center justify-center ${
             isSpecial 
               ? 'bg-orange-100 dark:bg-orange-900/30' 
@@ -48,8 +48,8 @@ const MenuCard = ({
           </div>
         </div>
         
-        <div className="px-4">
-          <h3 className={`text-xl font-bold mt-4 mb-3 ${
+        <div className="px-8">
+          <h3 className={`text-xl font-bold mt-6 mb-3 ${
             isSpecial 
               ? 'text-orange-700 dark:text-orange-400' 
               : 'text-gray-800 dark:text-white'
@@ -58,7 +58,7 @@ const MenuCard = ({
             {!enabled && <Lock className="w-5 h-5 text-gray-400 dark:text-gray-600 ml-2 inline-block" />}
           </h3>
           
-          <p className={`text-base mb-8 ${
+          <p className={`text-base mb-10 ${
             isSpecial 
               ? 'text-orange-700/80 dark:text-orange-300/90' 
               : 'text-gray-600 dark:text-gray-300'
@@ -73,7 +73,7 @@ const MenuCard = ({
   return enabled ? (
     <Link
       to={link}
-      className={`group relative overflow-hidden bg-white dark:bg-gray-800 p-6 rounded-xl 
+      className={`group relative overflow-hidden bg-white dark:bg-gray-800 p-8 rounded-xl 
                  border ${isSpecial ? 'border-orange-200 dark:border-orange-800/50' : 'border-gray-200 dark:border-gray-700'} 
                  shadow-md hover:shadow-lg
                  transform hover:-translate-y-1 transition-all duration-300
@@ -84,7 +84,7 @@ const MenuCard = ({
     </Link>
   ) : (
     <div
-      className="group relative overflow-hidden bg-white dark:bg-gray-800 p-6 rounded-xl 
+      className="group relative overflow-hidden bg-white dark:bg-gray-800 p-8 rounded-xl 
                  border border-gray-200 dark:border-gray-700 shadow-md opacity-60
                  w-full h-[250px] flex flex-col justify-between
                  cursor-not-allowed select-none"
