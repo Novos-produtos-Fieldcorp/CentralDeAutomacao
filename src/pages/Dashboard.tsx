@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Trash2, Search, Plus, Filter, MapPin, MessageCircle, MessageSquare, Users, Building2, ChevronDown, ChevronUp, Phone, Truck, FilePen, Lock, ClipboardList } from 'lucide-react';
+import { FileText, Trash2, Search, Plus, Filter, MapPin, MessageCircle, MessageSquare, Users, Building2, ChevronDown, ChevronUp, Phone, Truck, FilePen, Lock, ClipboardList, ClipboardCheck, FileDown, Gauge, Store } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import ImportExportModal from '../components/ImportExportModal';
