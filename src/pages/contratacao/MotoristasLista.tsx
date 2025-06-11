@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { FileText, Trash2, Search, Plus, Filter, MapPin, MessageCircle, MessageSquare, Users, Building2, ChevronDown, ChevronUp, Phone } from 'lucide-react';
+import { FileText, Trash2, Search, Plus, Filter, MapPin, MessageCircle, MessageSquare, Users, Building2, ChevronDown, ChevronUp, Phone, FilePen } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import type { Motorista } from '../../types/database';
@@ -918,7 +918,7 @@ const MotoristasLista = () => {
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Visualizar Documentos"
                           >
-                            <FileText size={18} />
+                            <FilePen size={18} />
                           </button>
                           <button
                             onClick={(e) => {
