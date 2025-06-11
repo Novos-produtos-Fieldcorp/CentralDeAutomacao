@@ -41,9 +41,10 @@ interface VehicleMileageData {
   isElectric: boolean;
 }
 
-interface MonthlyData {
-  month: string;
+interface DailyData {
+  date: string;
   km: number;
+  formattedDate: string;
 }
 
 const HodometrosLista = () => {
@@ -64,7 +65,7 @@ const HodometrosLista = () => {
   const [selectedClientFilter, setSelectedClientFilter] = useState<string>('');
   const [clients, setClients] = useState<string[]>([]);
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+  const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [showChartModal, setShowChartModal] = useState(false);
   const [selectedVehicleName, setSelectedVehicleName] = useState<string>('');
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
@@ -224,48 +225,40 @@ const HodometrosLista = () => {
     setVehicleMileageData(processedData);
   };
 
-  const generateMonthlyData = (hodometros: Hodometro[]) => {
-    // Group by month
-    const monthlyData: Record<string, number> = {};
+  const generateDailyData = (hodometros: Hodometro[]) => {
+    // Group by day
+    const dailyDataMap = new Map<string, { km: number, formattedDate: string }>();
     
-    hodometros.forEach(hodometro => {
-      const date = new Date(hodometro.data);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+    // First, sort hodometros by date
+    const sortedHodometros = [...hodometros].sort((a, b) => {
+      return new Date(a.data).getTime() - new Date(b.data).getTime();
+    });
+    
+    // Group by date and calculate daily km
+    sortedHodometros.forEach(hodometro => {
+      const dateKey = hodometro.data;
+      const formattedDate = formatDateBR(dateKey);
       
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = 0;
+      if (!dailyDataMap.has(dateKey)) {
+        dailyDataMap.set(dateKey, { km: 0, formattedDate });
       }
       
-      // Add the km_rodado value (which should always be positive)
+      // Add km_rodado to daily total
       if (hodometro.km_rodado && hodometro.km_rodado > 0) {
-        monthlyData[monthKey] += hodometro.km_rodado;
+        const currentData = dailyDataMap.get(dateKey)!;
+        currentData.km += hodometro.km_rodado;
+        dailyDataMap.set(dateKey, currentData);
       }
     });
     
-    // Convert to array and sort by month
-    const result = Object.entries(monthlyData).map(([key, km]) => {
-      const [year, month] = key.split('-');
-      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-      return {
-        month: date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
-        km: Math.round(km)
-      };
-    }).sort((a, b) => {
-      const monthA = a.month.split(' ')[0];
-      const yearA = a.month.split(' ')[1];
-      const monthB = b.month.split(' ')[0];
-      const yearB = b.month.split(' ')[1];
-      
-      if (yearA !== yearB) {
-        return parseInt(yearA) - parseInt(yearB);
-      }
-      
-      const months = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
-      return months.indexOf(monthA) - months.indexOf(monthB);
-    });
+    // Convert to array and sort by date
+    const result = Array.from(dailyDataMap.entries()).map(([date, data]) => ({
+      date,
+      km: data.km,
+      formattedDate: data.formattedDate
+    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
-    setMonthlyData(result);
+    setDailyData(result);
   };
 
   const handleEdit = (e: React.MouseEvent, hodometro: Hodometro) => {
@@ -362,7 +355,7 @@ const HodometrosLista = () => {
       // Collect all hodometros for this vehicle
       const selectedData = vehicleMileageData.find(data => data.veiculo_id === veiculo_id);
       if (selectedData) {
-        generateMonthlyData(selectedData.hodometros);
+        generateDailyData(selectedData.hodometros);
       }
     }
   };
@@ -557,7 +550,7 @@ const HodometrosLista = () => {
                             <div className="flex justify-between items-center mb-4">
                               <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
                                 <BarChart2 className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-                                Quilometragem Mensal
+                                Quilometragem Diária
                               </h4>
                               <button
                                 onClick={openChartModal}
@@ -572,12 +565,12 @@ const HodometrosLista = () => {
                             <div className="h-64 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
                               <ResponsiveContainer width="100%" height="100%">
                                 <BarChart
-                                  data={monthlyData}
+                                  data={dailyData}
                                   margin={{ top: 10, right: 30, left: 0, bottom: 30 }}
                                 >
                                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
                                   <XAxis 
-                                    dataKey="month" 
+                                    dataKey="formattedDate" 
                                     angle={-45} 
                                     textAnchor="end" 
                                     height={60} 
@@ -603,7 +596,7 @@ const HodometrosLista = () => {
                                     radius={[4, 4, 0, 0]}
                                     animationDuration={1500}
                                   >
-                                    {monthlyData.map((entry, index) => (
+                                    {dailyData.map((entry, index) => (
                                       <Cell 
                                         key={`cell-${index}`} 
                                         fill={`rgba(59, 130, 246, ${0.5 + (index * 0.05)})`} 
@@ -776,7 +769,7 @@ const HodometrosLista = () => {
       <MileageChartModal
         isOpen={showChartModal}
         onClose={() => setShowChartModal(false)}
-        data={monthlyData}
+        data={dailyData}
         driverName={selectedVehicleName}
       />
 

@@ -11,13 +11,14 @@ import {
   Cell
 } from 'recharts';
 
-interface MonthlyData {
-  month: string;
+interface DailyData {
+  date: string;
   km: number;
+  formattedDate: string;
 }
 
 interface DriverMileageChartProps {
-  data: MonthlyData[];
+  data: DailyData[];
   driverName: string;
 }
 
@@ -35,7 +36,7 @@ const DriverMileageChart: React.FC<DriverMileageChartProps> = ({ data, driverNam
         <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <p className="text-sm font-medium text-gray-900 dark:text-white">{label}</p>
           <p className="text-sm text-blue-600 dark:text-blue-400">
-            {`${payload[0].value.toLocaleString('pt-BR')}`}
+            {`${payload[0].value.toLocaleString('pt-BR')} km`}
           </p>
         </div>
       );
@@ -46,7 +47,7 @@ const DriverMileageChart: React.FC<DriverMileageChartProps> = ({ data, driverNam
   return (
     <div className="w-full h-full">
       <h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
-        Quilometragem Mensal: {driverName}
+        Quilometragem Diária: {driverName}
       </h3>
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -56,7 +57,7 @@ const DriverMileageChart: React.FC<DriverMileageChartProps> = ({ data, driverNam
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
             <XAxis 
-              dataKey="month" 
+              dataKey="formattedDate" 
               angle={-45} 
               textAnchor="end" 
               height={60} 
