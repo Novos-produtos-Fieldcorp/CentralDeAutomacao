@@ -242,8 +242,21 @@ const HodometrosLista = () => {
       });
     });
 
-    // Sort by placa (A-Z)
-    processedData.sort((a, b) => a.placa.localeCompare(b.placa));
+    // Sort by most recent date first (descending)
+    processedData.sort((a, b) => {
+      // Convert DD/MM/YYYY to Date objects for comparison
+      const partsA = a.ultima_data.split('/');
+      const partsB = b.ultima_data.split('/');
+      
+      if (partsA.length === 3 && partsB.length === 3) {
+        const dateA = new Date(parseInt(partsA[2]), parseInt(partsA[1]) - 1, parseInt(partsA[0]));
+        const dateB = new Date(parseInt(partsB[2]), parseInt(partsB[1]) - 1, parseInt(partsB[0]));
+        return dateB.getTime() - dateA.getTime(); // Newest first
+      }
+      
+      // Fallback to string comparison if date parsing fails
+      return b.ultima_data.localeCompare(a.ultima_data);
+    });
     
     setVehicleMileageData(processedData);
   };
