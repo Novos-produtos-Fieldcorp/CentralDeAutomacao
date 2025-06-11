@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Truck, Users, Gauge, ClipboardCheck, Store, FileDown, Lock, ClipboardList } from 'lucide-react';
+import { FileText, Trash2, Search, Plus, Filter, MapPin, MessageCircle, MessageSquare, Users, Building2, ChevronDown, ChevronUp, Phone, Truck, FilePen, Lock, ClipboardList } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import ImportExportModal from '../components/ImportExportModal';
@@ -34,12 +34,12 @@ const MenuCard = ({
           : 'from-primary/5 to-transparent'
       } opacity-0 transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
       <div className="relative flex flex-col h-full items-center text-center">
-        <div className={`w-24 h-24 flex items-center justify-center ${
+        <div className={`w-16 h-16 flex items-center justify-center ${
           isSpecial 
             ? 'bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40' 
             : 'bg-background-light group-hover:bg-background-lighter'
           } rounded-[12px] transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''} mb-4`}>
-          <Icon className={`w-12 h-12 ${
+          <Icon className={`w-8 h-8 ${
             isSpecial 
               ? 'text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300' 
               : enabled ? 'text-primary group-hover:text-primary-light' : 'text-gray-400 dark:text-gray-600'
