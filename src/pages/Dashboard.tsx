@@ -33,8 +33,8 @@ const MenuCard = ({
           ? 'from-orange-500/10 to-amber-500/5' 
           : 'from-primary/5 to-transparent'
       } opacity-0 transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
-      <div className="relative flex flex-col h-full items-center text-center">
-        <div className="mt-8 mb-4">
+      <div className="relative flex flex-col h-full items-center text-center justify-between">
+        <div className="mt-8">
           <div className={`w-16 h-16 mx-auto flex items-center justify-center ${
             isSpecial 
               ? 'bg-orange-100 dark:bg-orange-900/30' 
@@ -48,22 +48,24 @@ const MenuCard = ({
           </div>
         </div>
         
-        <h3 className={`text-xl font-bold mb-4 ${
-          isSpecial 
-            ? 'text-orange-700 dark:text-orange-400' 
-            : 'text-gray-800 dark:text-white'
-        }`}>
-          {title}
-          {!enabled && <Lock className="w-5 h-5 text-gray-400 dark:text-gray-600 ml-2 inline-block" />}
-        </h3>
-        
-        <p className={`text-base px-4 mb-6 ${
-          isSpecial 
-            ? 'text-orange-700/80 dark:text-orange-300/90' 
-            : 'text-gray-600 dark:text-gray-300'
-        }`}>
-          {description}
-        </p>
+        <div className="px-4">
+          <h3 className={`text-xl font-bold mt-4 mb-3 ${
+            isSpecial 
+              ? 'text-orange-700 dark:text-orange-400' 
+              : 'text-gray-800 dark:text-white'
+          }`}>
+            {title}
+            {!enabled && <Lock className="w-5 h-5 text-gray-400 dark:text-gray-600 ml-2 inline-block" />}
+          </h3>
+          
+          <p className={`text-base mb-8 ${
+            isSpecial 
+              ? 'text-orange-700/80 dark:text-orange-300/90' 
+              : 'text-gray-600 dark:text-gray-300'
+          }`}>
+            {description}
+          </p>
+        </div>
       </div>
     </>
   );
