@@ -146,6 +146,8 @@ const HodometrosDashboard = () => {
 
       if (error) throw error;
 
+      console.log("Raw Hodometros fetched:", hodometros?.length || 0, "records");
+      
       // Process data for daily mileage
       const dailyMileageMap = new Map<string, number>();
       const driverMileageMap = new Map<number, { nome: string; totalKm: number }>();
@@ -225,6 +227,13 @@ const HodometrosDashboard = () => {
         operationMileageMap.set(operationName, (operationMileageMap.get(operationName) || 0) + kmValue);
       });
       
+      console.log("Processed data:");
+      console.log("- Daily mileage entries:", dailyMileageMap.size);
+      console.log("- Driver mileage entries:", driverMileageMap.size);
+      console.log("- Vehicle mileage entries:", vehicleMileageMap.size);
+      console.log("- Driver readings entries:", driverReadingsMap.size);
+      console.log("- Operation mileage entries:", operationMileageMap.size);
+      
       // Convert daily mileage map to array and sort by date
       const dailyMileageArray: DailyMileage[] = Array.from(dailyMileageMap.entries())
         .map(([date, totalKm]) => {
@@ -273,6 +282,13 @@ const HodometrosDashboard = () => {
           value
         }))
         .sort((a, b) => b.value - a.value);
+      
+      console.log("Final arrays:");
+      console.log("- Daily mileage array:", dailyMileageArray.length, "entries");
+      console.log("- Driver mileage array:", driverMileageArray.length, "entries");
+      console.log("- Vehicle mileage array:", vehicleMileageArray.length, "entries");
+      console.log("- Driver readings array:", driverReadingsArray.length, "entries");
+      console.log("- Operation mileage array:", operationMileageArray.length, "entries");
       
       // Calculate average km per day
       const uniqueDays = new Set(dailyMileageArray.map(item => item.date)).size;
@@ -368,11 +384,13 @@ const HodometrosDashboard = () => {
         query = query.lte('data', dateRange.endDate);
       }
       
+      // Remove the limit to show all inconsistencies
       const { data, error, count } = await query
-        .order('data', { ascending: false })
-        .limit(10);
+        .order('data', { ascending: false });
       
       if (error) throw error;
+      
+      console.log("Inconsistencies fetched:", data?.length || 0, "records");
       
       setHodometros(data || []);
       setTotalInconsistencies(count || 0);
