@@ -262,37 +262,107 @@ const HodometrosLista = () => {
   };
 
   const generateDailyData = (hodometros: Hodometro[]) => {
-    // Group by day
-    const dailyDataMap = new Map<string, { km: number, formattedDate: string }>();
+    // Group by day and vehicle
+    const dailyVehicleDataMap = new Map<string, Map<number, { 
+      firstReading: number | null, 
+      lastReading: number | null,
+      isElectric: boolean
+    }>>();
     
-    // First, sort hodometros by date
+    // First, sort hodometros by date and time
     const sortedHodometros = [...hodometros].sort((a, b) => {
-      return new Date(a.data).getTime() - new Date(b.data).getTime();
+      const dateTimeA = new Date(`${a.data}T${a.hora || '00:00:00'}`);
+      const dateTimeB = new Date(`${b.data}T${b.hora || '00:00:00'}`);
+      return dateTimeA.getTime() - dateTimeB.getTime();
     });
     
-    // Group by date and calculate daily km
+    // Process each reading to track first and last readings per vehicle per day
     sortedHodometros.forEach(hodometro => {
       const dateKey = hodometro.data;
-      const formattedDate = formatDateBR(dateKey);
+      const vehicleId = hodometro.veiculo_id;
+      const isElectric = hodometro.bateria !== null && hodometro.bateria !== undefined;
       
-      if (!dailyDataMap.has(dateKey)) {
-        dailyDataMap.set(dateKey, { km: 0, formattedDate });
+      // Get or create map for this date
+      if (!dailyVehicleDataMap.has(dateKey)) {
+        dailyVehicleDataMap.set(dateKey, new Map());
       }
       
-      // Add km_rodado to daily total
-      if (hodometro.km_rodado && hodometro.km_rodado > 0) {
-        const currentData = dailyDataMap.get(dateKey)!;
-        currentData.km += hodometro.km_rodado;
-        dailyDataMap.set(dateKey, currentData);
+      const vehicleMap = dailyVehicleDataMap.get(dateKey)!;
+      
+      // Get or create entry for this vehicle
+      if (!vehicleMap.has(vehicleId)) {
+        vehicleMap.set(vehicleId, {
+          firstReading: null,
+          lastReading: null,
+          isElectric
+        });
       }
+      
+      const vehicleData = vehicleMap.get(vehicleId)!;
+      
+      // For electric vehicles, we don't track odometer readings
+      if (!isElectric && hodometro.hod_lido !== null) {
+        // Update first reading (keep the lowest)
+        if (vehicleData.firstReading === null || hodometro.hod_lido < vehicleData.firstReading) {
+          vehicleData.firstReading = hodometro.hod_lido;
+        }
+        
+        // Update last reading (keep the highest)
+        if (vehicleData.lastReading === null || hodometro.hod_lido > vehicleData.lastReading) {
+          vehicleData.lastReading = hodometro.hod_lido;
+        }
+      }
+      
+      // Update the map
+      vehicleMap.set(vehicleId, vehicleData);
+      dailyVehicleDataMap.set(dateKey, vehicleMap);
     });
     
+    // Calculate daily kilometers for each day
+    const dailyKmMap = new Map<string, { km: number, formattedDate: string }>();
+    
+    // Process each day
+    for (const [dateKey, vehicleMap] of dailyVehicleDataMap.entries()) {
+      let totalKmForDay = 0;
+      
+      // Process each vehicle's data for this day
+      for (const [vehicleId, vehicleData] of vehicleMap.entries()) {
+        if (vehicleData.isElectric) {
+          // For electric vehicles, sum the km_rodado values for this vehicle on this day
+          const vehicleReadingsForDay = sortedHodometros.filter(
+            h => h.data === dateKey && h.veiculo_id === vehicleId
+          );
+          
+          const kmRodado = vehicleReadingsForDay.reduce(
+            (sum, reading) => sum + (reading.km_rodado || 0), 
+            0
+          );
+          
+          totalKmForDay += kmRodado;
+        } else {
+          // For regular vehicles, calculate the difference between first and last readings
+          if (vehicleData.firstReading !== null && vehicleData.lastReading !== null) {
+            const kmDriven = Math.max(0, vehicleData.lastReading - vehicleData.firstReading);
+            totalKmForDay += kmDriven;
+          }
+        }
+      }
+      
+      // Store the total for this day
+      dailyKmMap.set(dateKey, {
+        km: totalKmForDay,
+        formattedDate: formatDateBR(dateKey)
+      });
+    }
+    
     // Convert to array and sort by date
-    const result = Array.from(dailyDataMap.entries()).map(([date, data]) => ({
-      date,
-      km: data.km,
-      formattedDate: data.formattedDate
-    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const result = Array.from(dailyKmMap.entries())
+      .map(([date, data]) => ({
+        date,
+        km: data.km,
+        formattedDate: data.formattedDate
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
     setDailyData(result);
   };
