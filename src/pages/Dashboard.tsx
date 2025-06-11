@@ -15,6 +15,7 @@ interface MenuItem {
   link: string;
   description: string;
   enabled: boolean;
+  isSpecial?: boolean;
 }
 
 const MenuCard = ({
@@ -22,25 +23,42 @@ const MenuCard = ({
   icon: Icon,
   link,
   description,
-  enabled = true
+  enabled = true,
+  isSpecial = false
 }: MenuItem) => {
   const cardContent = (
     <>
-      <div className={`absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0
-                    transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${
+        isSpecial 
+          ? 'from-orange-500/10 to-amber-500/5' 
+          : 'from-primary/5 to-transparent'
+      } opacity-0 transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
       <div className="relative flex flex-col h-full">
         <div className="flex items-start gap-4 mb-4">
-          <div className={`p-3 bg-background-light rounded-[16px]
-                        transform transition-all duration-300 ${enabled ? 'group-hover:bg-background-lighter group-hover:scale-110' : ''}`}>
-            <Icon className={`w-8 h-8 ${enabled ? 'text-primary group-hover:text-primary-light' : 'text-gray-400 dark:text-gray-600'} transition-colors duration-300`} />
+          <div className={`p-3 ${
+            isSpecial 
+              ? 'bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40' 
+              : 'bg-background-light group-hover:bg-background-lighter'
+            } rounded-[16px] transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''}`}>
+            <Icon className={`w-8 h-8 ${
+              isSpecial 
+                ? 'text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300' 
+                : enabled ? 'text-primary group-hover:text-primary-light' : 'text-gray-400 dark:text-gray-600'
+              } transition-colors duration-300`} />
           </div>
           <div className="flex items-center gap-2">
-            <h3 className={`text-xl font-bold ${enabled ? 'text-text-primary' : 'text-gray-400 dark:text-gray-600'}`}>{title}</h3>
+            <h3 className={`text-xl font-bold ${
+              isSpecial 
+                ? 'text-orange-700 dark:text-orange-400' 
+                : enabled ? 'text-text-primary' : 'text-gray-400 dark:text-gray-600'
+            }`}>{title}</h3>
             {!enabled && <Lock className="w-5 h-5 text-gray-400 dark:text-gray-600" />}
           </div>
         </div>
         <p className={`text-base relative z-10 transition-colors duration-300 ${
-          enabled ? 'text-text-secondary group-hover:text-text-primary' : 'text-gray-400 dark:text-gray-600'
+          isSpecial 
+            ? 'text-orange-700/80 dark:text-orange-300/90 group-hover:text-orange-800 dark:group-hover:text-orange-200' 
+            : enabled ? 'text-text-secondary group-hover:text-text-primary' : 'text-gray-400 dark:text-gray-600'
         }`}>
           {description}
         </p>
@@ -51,10 +69,11 @@ const MenuCard = ({
   return enabled ? (
     <Link
       to={link}
-      className="group relative overflow-hidden bg-card hover:bg-card-hover p-8 rounded-[20px] 
-                 border border-card-border shadow-card hover:shadow-card-hover
+      className={`group relative overflow-hidden bg-card hover:bg-card-hover p-8 rounded-[20px] 
+                 border ${isSpecial ? 'border-orange-200 dark:border-orange-800/50' : 'border-card-border'} 
+                 shadow-card hover:shadow-card-hover
                  transform hover:-translate-y-1 transition-all duration-300
-                 w-full h-[200px] flex flex-col justify-between"
+                 w-full h-[200px] flex flex-col justify-between`}
       aria-label={`Acessar ${title}`}
     >
       {cardContent}
@@ -130,8 +149,9 @@ const Dashboard = () => {
       title: "Resumos em Grupo",
       icon: ClipboardList,
       link: "",
-      description: "Em Breve",
-      enabled: true
+      description: "Aguarde! Estamos preparando algo incrível para revolucionar sua gestão de equipe...",
+      enabled: true,
+      isSpecial: true
     }
   ];
 
