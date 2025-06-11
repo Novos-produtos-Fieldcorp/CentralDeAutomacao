@@ -33,13 +33,13 @@ const MenuCard = ({
           ? 'from-orange-500/10 to-amber-500/5' 
           : 'from-primary/5 to-transparent'
       } opacity-0 transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
-      <div className="relative flex flex-col h-full items-center text-center justify-between">
+      <div className="relative flex flex-col h-full items-center text-center justify-between py-4">
         <div>
-          <div className={`w-14 h-14 flex items-center justify-center ${
+          <div className={`w-16 h-16 flex items-center justify-center ${
             isSpecial 
               ? 'bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40' 
               : 'bg-background-light group-hover:bg-background-lighter'
-            } rounded-[16px] transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''} mb-4`}>
+            } rounded-[16px] transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''} mb-6`}>
             <Icon className={`w-8 h-8 ${
               isSpecial 
                 ? 'text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300' 
@@ -55,7 +55,7 @@ const MenuCard = ({
             {!enabled && <Lock className="w-5 h-5 text-gray-400 dark:text-gray-600" />}
           </div>
         </div>
-        <p className={`text-base relative z-10 transition-colors duration-300 mb-6 px-4 ${
+        <p className={`text-base relative z-10 transition-colors duration-300 mb-8 px-6 ${
           isSpecial 
             ? 'text-orange-700/80 dark:text-orange-300/90 group-hover:text-orange-800 dark:group-hover:text-orange-200' 
             : enabled ? 'text-text-secondary group-hover:text-text-primary' : 'text-gray-400 dark:text-gray-600'
@@ -69,7 +69,7 @@ const MenuCard = ({
   return enabled ? (
     <Link
       to={link}
-      className={`group relative overflow-hidden bg-card hover:bg-card-hover p-8 rounded-[20px] 
+      className={`group relative overflow-hidden bg-card hover:bg-card-hover p-10 rounded-[20px] 
                  border ${isSpecial ? 'border-orange-200 dark:border-orange-800/50' : 'border-card-border'} 
                  shadow-card hover:shadow-card-hover
                  transform hover:-translate-y-1 transition-all duration-300
@@ -80,7 +80,7 @@ const MenuCard = ({
     </Link>
   ) : (
     <div
-      className="group relative overflow-hidden bg-card p-8 rounded-[20px] 
+      className="group relative overflow-hidden bg-card p-10 rounded-[20px] 
                  border border-card-border shadow-card opacity-60
                  w-full h-[200px] flex flex-col justify-between
                  cursor-not-allowed select-none"
