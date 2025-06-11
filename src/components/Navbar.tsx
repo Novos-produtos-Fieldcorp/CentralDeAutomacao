@@ -16,9 +16,14 @@ const Navbar = () => {
   const { companyId } = useAuth();
   const [companyName, setCompanyName] = useState('');
   const { query } = useCompanyData();
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState(0);
 
   const fetchCompanyName = useCallback(async () => {
-    if (!companyId) return;
+    if (!companyId) {
+      setLoading(false);
+      return;
+    }
     
     try {
       const { data, error } = await supabase
@@ -63,24 +68,29 @@ const Navbar = () => {
   ];
 
   // Function to get company initials or abbreviation based on length
-  const getCompanyDisplay = () => {
+  const getCompanyInitial = () => {
     if (!companyName) return '';
     
-    // For very short names (1-2 chars), just return the name
-    if (companyName.length <= 2) return companyName;
+    // For very short names (1-2 chars), just return the first character
+    if (companyName.length <= 2) return companyName.charAt(0);
     
-    // For names with spaces, get first letter of each word
+    // For names with spaces, get first letter of first word
     if (companyName.includes(' ')) {
-      return companyName
-        .split(' ')
-        .map(word => word.charAt(0))
-        .join('')
-        .toUpperCase()
-        .substring(0, 3); // Limit to 3 chars max
+      return companyName.charAt(0);
     }
     
-    // For single words, return first 2-3 chars based on length
-    return companyName.substring(0, Math.min(3, companyName.length)).toUpperCase();
+    // For single words, return first char
+    return companyName.charAt(0).toUpperCase();
+  };
+
+  const handleLogoMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltipPosition(rect.top + rect.height/2);
+    setTooltipVisible(true);
+  };
+
+  const handleLogoMouseLeave = () => {
+    setTooltipVisible(false);
   };
 
   return (
@@ -101,10 +111,25 @@ const Navbar = () => {
               </h2>
             ) : (
               <div className="w-full flex justify-center">
-                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <div 
+                  className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center relative"
+                  onMouseEnter={handleLogoMouseEnter}
+                  onMouseLeave={handleLogoMouseLeave}
+                >
                   <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                    {getCompanyDisplay()}
+                    {getCompanyInitial()}
                   </span>
+                  
+                  {/* Tooltip */}
+                  {tooltipVisible && !isExpanded && (
+                    <div 
+                      className="absolute left-12 z-50 px-3 py-2 bg-blue-600 text-white text-xs rounded-md whitespace-nowrap shadow-md"
+                      style={{ top: 'calc(50% - 12px)' }}
+                    >
+                      {companyName}
+                      <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
