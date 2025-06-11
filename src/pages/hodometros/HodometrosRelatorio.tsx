@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, Camera, X, Download, FileText, AlertCircle } from 'lucide-react';
+import { Search, Eye, Camera, X, Download, FileText, AlertCircle, Filter, ChevronDown } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -35,6 +35,8 @@ interface HodometroReading {
   };
 }
 
+type VehicleType = 'all' | 'automovel' | 'ciclomotor';
+
 const HodometrosRelatorio = () => {
   const { query } = useCompanyData();
   const { companyId } = useAuth();
@@ -44,6 +46,7 @@ const HodometrosRelatorio = () => {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('1day');
+  const [vehicleType, setVehicleType] = useState<VehicleType>('all');
 
   const fetchHodometros = useCallback(async () => {
     try {
@@ -208,15 +211,26 @@ const HodometrosRelatorio = () => {
     return false;
   };
 
+  // Determine if a reading is for a ciclomotor (electric vehicle)
+  const isCiclomotor = (hodometro: HodometroReading): boolean => {
+    return hodometro.bateria !== null && hodometro.bateria !== undefined;
+  };
+
   const filteredHodometros = hodometros.filter(hodometro => {
     const searchString = searchTerm.toLowerCase();
+    const vehicleTypeMatch = 
+      vehicleType === 'all' || 
+      (vehicleType === 'ciclomotor' && isCiclomotor(hodometro)) ||
+      (vehicleType === 'automovel' && !isCiclomotor(hodometro));
+    
     return (
-      !searchTerm ||
+      vehicleTypeMatch &&
+      (!searchTerm ||
       (hodometro.motorista?.nome && hodometro.motorista.nome.toLowerCase().includes(searchString)) ||
       (hodometro.motorista?.cpf && hodometro.motorista.cpf.includes(searchString)) ||
       (hodometro.veiculo?.placa && hodometro.veiculo.placa.toLowerCase().includes(searchString)) ||
       (hodometro.veiculo?.marca && hodometro.veiculo.marca.toLowerCase().includes(searchString)) ||
-      (hodometro.veiculo?.tipo && hodometro.veiculo.tipo.toLowerCase().includes(searchString))
+      (hodometro.veiculo?.tipo && hodometro.veiculo.tipo.toLowerCase().includes(searchString)))
     );
   });
 
@@ -230,7 +244,7 @@ const HodometrosRelatorio = () => {
     <div className="space-y-6">
       {/* Filters Section */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
           <div className="relative">
             <input
@@ -243,6 +257,23 @@ const HodometrosRelatorio = () => {
                        focus:border-blue-500 text-gray-900 dark:text-gray-100"
             />
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+
+          {/* Vehicle Type Filter */}
+          <div className="relative">
+            <select
+              value={vehicleType}
+              onChange={(e) => setVehicleType(e.target.value as VehicleType)}
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
+                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
+                       focus:border-blue-500 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="all">Todos os veículos</option>
+              <option value="automovel">Automóveis</option>
+              <option value="ciclomotor">Ciclomotores</option>
+            </select>
+            <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
           {/* Export Button */}
@@ -280,9 +311,21 @@ const HodometrosRelatorio = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
+                
+                {vehicleType !== 'ciclomotor' && (
+                  <>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
+                  </>
+                )}
+                
+                {vehicleType !== 'automovel' && (
+                  <>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip Informada</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip Lida</th>
+                  </>
+                )}
+                
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
               </tr>
             </thead>
@@ -320,48 +363,45 @@ const HodometrosRelatorio = () => {
                       {hodometro.hora}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                        <span>-</span>
-                      ) : (
-                        <span>{hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
+                  
+                  {/* Conditional columns based on vehicle type */}
+                  {!isCiclomotor(hodometro) && vehicleType !== 'ciclomotor' && (
+                    <>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          Bateria: {hodometro.bateria}
+                          {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}
                         </div>
-                      ) : (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
-                        </div>
-                      )}
-                      
-                      {/* Discrepancy tag */}
-                      {hasDiscrepancy(hodometro) && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Divergente
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {hodometro.trip_informada && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                          Informada: {hodometro.trip_informada}
-                        </div>
-                      )}
-                      {hodometro.trip_lida !== null ? (
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-900 dark:text-white">
-                            Lida: {formatNumber(hodometro.trip_lida)}
-                          </span>
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
+                          </div>
+                          
+                          {/* Discrepancy tag */}
+                          {hasDiscrepancy(hodometro) && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              Divergente
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </>
+                  )}
+                  
+                  {isCiclomotor(hodometro) && vehicleType !== 'automovel' && (
+                    <>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {hodometro.trip_informada || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {hodometro.trip_lida !== null ? formatNumber(hodometro.trip_lida) : '-'}
+                          </div>
                           
                           {/* Trip discrepancy tag */}
                           {hasTripDiscrepancy(hodometro) && (
@@ -371,11 +411,10 @@ const HodometrosRelatorio = () => {
                             </span>
                           )}
                         </div>
-                      ) : (
-                        <span>-</span>
-                      )}
-                    </div>
-                  </td>
+                      </td>
+                    </>
+                  )}
+                  
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     {hodometro.foto_hodometro ? (
                       <button
@@ -395,7 +434,7 @@ const HodometrosRelatorio = () => {
               ))}
               {filteredHodometros.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={vehicleType === 'all' ? 8 : 6} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     Nenhuma leitura encontrada para o período selecionado
                   </td>
                 </tr>
