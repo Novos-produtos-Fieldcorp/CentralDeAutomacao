@@ -112,8 +112,9 @@ const HodometrosDashboard = () => {
     try {
       setLoading(true);
       
-      // Fetch all hodometro readings within the date range without any limit
-      const { data: hodometros, error } = await supabase.from('hodometro')
+      // Fetch all hodometro readings within the date range
+      const { data: hodometros, error } = await supabase
+        .from('hodometro')
         .select(`
           id_hodometro,
           data,
@@ -368,7 +369,8 @@ const HodometrosDashboard = () => {
       }
       
       const { data, error, count } = await query
-        .order('data', { ascending: false });
+        .order('data', { ascending: false })
+        .limit(10);
       
       if (error) throw error;
       
