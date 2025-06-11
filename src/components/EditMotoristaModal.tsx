@@ -245,13 +245,17 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     try {
       setSubmitting(true);
 
+      // Prepare motorista data with proper date handling
+      const motoristaUpdateData = {
+        ...formData,
+        telefone: formData.telefone ? Number(formData.telefone.replace(/\D/g, '')) : null,
+        dt_nascimento: formData.dt_nascimento ? formData.dt_nascimento : null
+      };
+
       // Update motorista data
       const { error: motoristaError } = await supabase
         .from('motorista')
-        .update({
-          ...formData,
-          telefone: formData.telefone ? Number(formData.telefone.replace(/\D/g, '')) : null
-        })
+        .update(motoristaUpdateData)
         .eq('motorista_id', motorista.motorista_id);
 
       if (motoristaError) throw motoristaError;
