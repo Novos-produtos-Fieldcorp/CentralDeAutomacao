@@ -48,6 +48,7 @@ const applyRetryLogic = (queryBuilder: any, table: string) => {
   const originalFilter = queryBuilder.filter;
   const originalMatch = queryBuilder.match;
   const originalRange = queryBuilder.range;
+  const originalGroup = queryBuilder.group;
 
   const handleSupabaseError = async (operation: () => Promise<any>) => {
     let retries = 3;
@@ -207,6 +208,13 @@ const applyRetryLogic = (queryBuilder: any, table: string) => {
   if (originalRange) {
     queryBuilder.range = function(from: number, to: number) {
       const result = originalRange.call(this, from, to);
+      return applyRetryLogic(result, table);
+    };
+  }
+
+  if (originalGroup) {
+    queryBuilder.group = function(column: string) {
+      const result = originalGroup.call(this, column);
       return applyRetryLogic(result, table);
     };
   }
