@@ -34,32 +34,30 @@ const MenuCard = ({
           : 'from-primary/5 to-transparent'
       } opacity-0 transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
       <div className="relative flex flex-col h-full justify-between p-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className={`w-12 h-12 flex items-center justify-center ${
+        <div className="flex flex-col items-center">
+          <div className={`w-16 h-16 flex items-center justify-center ${
+            isSpecial 
+              ? 'bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40' 
+              : 'bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40'
+            } rounded-full transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''} mb-3`}>
+            <Icon className={`w-8 h-8 ${
               isSpecial 
-                ? 'bg-orange-100 dark:bg-orange-900/30' 
-                : 'bg-blue-100 dark:bg-blue-900/30'
-              } rounded-full transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''}`}>
-              <Icon className={`w-6 h-6 ${
-                isSpecial 
-                  ? 'text-orange-600 dark:text-orange-400' 
-                  : 'text-blue-600 dark:text-blue-400'
-                }`} />
-            </div>
-            
-            <h3 className={`text-xl font-bold ${
-              isSpecial 
-                ? 'text-orange-700 dark:text-orange-400' 
-                : 'text-gray-800 dark:text-white'
-            }`}>
-              {title}
-              {!enabled && <Lock className="w-4 h-4 text-gray-400 dark:text-gray-600 ml-2 inline-block" />}
-            </h3>
+                ? 'text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300' 
+                : 'text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300'
+              } transition-colors duration-300`} />
           </div>
+          
+          <h3 className={`text-xl font-bold ${
+            isSpecial 
+              ? 'text-orange-700 dark:text-orange-400' 
+              : 'text-gray-800 dark:text-white'
+          } mb-1`}>
+            {title}
+            {!enabled && <Lock className="w-4 h-4 text-gray-400 dark:text-gray-600 ml-2 inline-block" />}
+          </h3>
         </div>
         
-        <p className={`text-base mt-1 ${
+        <p className={`text-base text-center mt-1 px-4 ${
           isSpecial 
             ? 'text-orange-700/80 dark:text-orange-300/90' 
             : 'text-gray-600 dark:text-gray-300'
