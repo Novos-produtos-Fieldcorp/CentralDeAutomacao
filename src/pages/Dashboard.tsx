@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Truck, Users, Gauge, ClipboardCheck, Store, FileDown, Lock, ClipboardList } from 'lucide-react';
+import { ClipboardCheck, FileDown, Gauge, Store, Truck, Users, ClipboardList, Lock } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import ImportExportModal from '../components/ImportExportModal';
@@ -33,35 +33,39 @@ const MenuCard = ({
           ? 'from-orange-500/10 to-amber-500/5' 
           : 'from-primary/5 to-transparent'
       } opacity-0 transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
-      <div className="relative flex flex-col h-full">
-        <div className="flex items-start gap-4 mb-4">
-          <div className={`p-3 ${
-            isSpecial 
-              ? 'bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40' 
-              : 'bg-background-light group-hover:bg-background-lighter'
-            } rounded-[16px] transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''}`}>
-            <Icon className={`w-8 h-8 ${
+      <div className="relative flex flex-col h-full justify-between p-6">
+        <div className="flex flex-col items-center text-center">
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 flex items-center justify-center ${
               isSpecial 
-                ? 'text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300' 
-                : enabled ? 'text-primary group-hover:text-primary-light' : 'text-gray-400 dark:text-gray-600'
-              } transition-colors duration-300`} />
-          </div>
-          <div className="flex items-center gap-2">
+                ? 'bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40' 
+                : 'bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40'
+              } rounded-full transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''}`}>
+              <Icon className={`w-6 h-6 ${
+                isSpecial 
+                  ? 'text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300' 
+                  : 'text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300'
+                } transition-colors duration-300`} />
+            </div>
+            
             <h3 className={`text-xl font-bold ${
               isSpecial 
                 ? 'text-orange-700 dark:text-orange-400' 
-                : enabled ? 'text-text-primary' : 'text-gray-400 dark:text-gray-600'
-            }`}>{title}</h3>
-            {!enabled && <Lock className="w-5 h-5 text-gray-400 dark:text-gray-600" />}
+                : 'text-gray-800 dark:text-white'
+              }`}>
+              {title}
+              {!enabled && <Lock className="w-4 h-4 text-gray-400 dark:text-gray-600 ml-2 inline-block" />}
+            </h3>
           </div>
+          
+          <p className={`text-base text-center mt-8 ${
+            isSpecial 
+              ? 'text-orange-700/80 dark:text-orange-300/90' 
+              : 'text-gray-600 dark:text-gray-300'
+          }`}>
+            {description}
+          </p>
         </div>
-        <p className={`text-base relative z-10 transition-colors duration-300 ${
-          isSpecial 
-            ? 'text-orange-700/80 dark:text-orange-300/90 group-hover:text-orange-800 dark:group-hover:text-orange-200' 
-            : enabled ? 'text-text-secondary group-hover:text-text-primary' : 'text-gray-400 dark:text-gray-600'
-        }`}>
-          {description}
-        </p>
       </div>
     </>
   );
@@ -69,9 +73,9 @@ const MenuCard = ({
   return enabled ? (
     <Link
       to={link}
-      className={`group relative overflow-hidden bg-card hover:bg-card-hover p-8 rounded-[20px] 
-                 border ${isSpecial ? 'border-orange-200 dark:border-orange-800/50' : 'border-card-border'} 
-                 shadow-card hover:shadow-card-hover
+      className={`group relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl 
+                 border ${isSpecial ? 'border-orange-200 dark:border-orange-800/50' : 'border-gray-200 dark:border-gray-700'} 
+                 shadow-md hover:shadow-lg
                  transform hover:-translate-y-1 transition-all duration-300
                  w-full h-[200px] flex flex-col justify-between`}
       aria-label={`Acessar ${title}`}
@@ -80,8 +84,8 @@ const MenuCard = ({
     </Link>
   ) : (
     <div
-      className="group relative overflow-hidden bg-card p-8 rounded-[20px] 
-                 border border-card-border shadow-card opacity-60
+      className="group relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl 
+                 border border-gray-200 dark:border-gray-700 shadow-md opacity-60
                  w-full h-[200px] flex flex-col justify-between
                  cursor-not-allowed select-none"
       aria-disabled="true"
@@ -180,7 +184,7 @@ const Dashboard = () => {
           </button>
         </header>
 
-        <nav className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" aria-label="Menu principal">
+        <nav className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" aria-label="Menu principal">
           {menuItems.map((item) => (
             <MenuCard
               key={item.link}
