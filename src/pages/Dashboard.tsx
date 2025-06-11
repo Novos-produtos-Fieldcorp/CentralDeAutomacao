@@ -57,15 +57,15 @@ const MenuCard = ({
               {!enabled && <Lock className="w-4 h-4 text-gray-400 dark:text-gray-600 ml-2 inline-block" />}
             </h3>
           </div>
+          
+          <p className={`text-base text-center mt-2 ${
+            isSpecial 
+              ? 'text-orange-700/80 dark:text-orange-300/90' 
+              : 'text-gray-600 dark:text-gray-300'
+          }`}>
+            {description}
+          </p>
         </div>
-        
-        <p className={`text-base text-center ${
-          isSpecial 
-            ? 'text-orange-700/80 dark:text-orange-300/90' 
-            : 'text-gray-600 dark:text-gray-300'
-        }`}>
-          {description}
-        </p>
       </div>
     </>
   );
