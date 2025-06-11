@@ -33,22 +33,22 @@ const MenuCard = ({
           ? 'from-orange-500/10 to-amber-500/5' 
           : 'from-primary/5 to-transparent'
       } opacity-0 transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
-      <div className="relative flex flex-col h-full justify-between p-6">
+      <div className="relative flex flex-col h-full p-5">
         <div className="flex flex-col items-center text-center">
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 flex items-center justify-center ${
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-10 h-10 flex items-center justify-center ${
               isSpecial 
                 ? 'bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40' 
                 : 'bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40'
               } rounded-full transform transition-all duration-300 ${enabled ? 'group-hover:scale-110' : ''}`}>
-              <Icon className={`w-6 h-6 ${
+              <Icon className={`w-5 h-5 ${
                 isSpecial 
                   ? 'text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300' 
                   : 'text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300'
                 } transition-colors duration-300`} />
             </div>
             
-            <h3 className={`text-xl font-bold ${
+            <h3 className={`text-lg font-bold ${
               isSpecial 
                 ? 'text-orange-700 dark:text-orange-400' 
                 : 'text-gray-800 dark:text-white'
@@ -58,7 +58,7 @@ const MenuCard = ({
             </h3>
           </div>
           
-          <p className={`text-base text-center mt-2 ${
+          <p className={`text-sm ${
             isSpecial 
               ? 'text-orange-700/80 dark:text-orange-300/90' 
               : 'text-gray-600 dark:text-gray-300'
@@ -77,7 +77,7 @@ const MenuCard = ({
                  border ${isSpecial ? 'border-orange-200 dark:border-orange-800/50' : 'border-gray-200 dark:border-gray-700'} 
                  shadow-md hover:shadow-lg
                  transform hover:-translate-y-1 transition-all duration-300
-                 w-full h-[200px] flex flex-col justify-between`}
+                 w-full h-[180px] flex flex-col justify-center`}
       aria-label={`Acessar ${title}`}
     >
       {cardContent}
@@ -86,7 +86,7 @@ const MenuCard = ({
     <div
       className="group relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl 
                  border border-gray-200 dark:border-gray-700 shadow-md opacity-60
-                 w-full h-[200px] flex flex-col justify-between
+                 w-full h-[180px] flex flex-col justify-center
                  cursor-not-allowed select-none"
       aria-disabled="true"
     >
