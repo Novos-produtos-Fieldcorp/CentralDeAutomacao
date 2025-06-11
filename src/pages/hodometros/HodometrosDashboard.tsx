@@ -86,7 +86,8 @@ interface DailyVehicleReadings {
 }
 
 const HodometrosDashboard = () => {
-  const { query, companyId } = useAuth();
+  const { query } = useCompanyData();
+  const { companyId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [dailyMileage, setDailyMileage] = useState<DailyMileage[]>([]);
   const [driverMileage, setDriverMileage] = useState<DriverMileage[]>([]);
@@ -955,16 +956,8 @@ const HodometrosDashboard = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <div className="text-sm text-gray-900 dark:text-white">
-                                {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
-                              </div>
-                              
-                              {/* Discrepancy tag */}
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                Divergente
-                              </span>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
                             </div>
                           </td>
                         </>
@@ -991,16 +984,8 @@ const HodometrosDashboard = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <div className="text-sm text-gray-900 dark:text-white">
-                                {hodometro.trip_lida !== null ? formatNumber(hodometro.trip_lida) : '-'}
-                              </div>
-                              
-                              {/* Discrepancy tag */}
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                Divergente
-                              </span>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {hodometro.trip_lida !== null ? formatNumber(hodometro.trip_lida) : '-'}
                             </div>
                           </td>
                         </>
