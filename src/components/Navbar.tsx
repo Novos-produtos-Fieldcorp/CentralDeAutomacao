@@ -16,6 +16,7 @@ const Navbar = () => {
   const { companyId } = useAuth();
   const [companyName, setCompanyName] = useState('');
   const { query } = useCompanyData();
+  const [showCompanyTooltip, setShowCompanyTooltip] = useState(false);
 
   const fetchCompanyName = useCallback(async () => {
     if (!companyId) {
@@ -68,7 +69,6 @@ const Navbar = () => {
   const getCompanyDisplay = () => {
     if (!companyName) return '';
     
-    // For very short names (1-2 chars), just return the name
     if (companyName.length <= 2) return companyName;
     
     // Always return just the first letter for the collapsed state
@@ -92,12 +92,26 @@ const Navbar = () => {
                 </span>
               </h2>
             ) : (
-              <div className="w-full flex justify-center">
+              <div 
+                className="w-full flex justify-center relative"
+                onMouseEnter={() => setShowCompanyTooltip(true)}
+                onMouseLeave={() => setShowCompanyTooltip(false)}
+              >
                 <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                   <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
                     {getCompanyDisplay()}
                   </span>
                 </div>
+                
+                {/* Company name tooltip - only visible when sidebar is collapsed and hovering */}
+                {showCompanyTooltip && (
+                  <div className="fixed left-20 ml-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md 
+                                 opacity-100 transition-opacity duration-300 whitespace-nowrap z-[9999] shadow-md"
+                       style={{ top: '50%', transform: 'translateY(-50%)' }}>
+                    {companyName}
+                    <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
+                  </div>
+                )}
               </div>
             )}
           </div>
