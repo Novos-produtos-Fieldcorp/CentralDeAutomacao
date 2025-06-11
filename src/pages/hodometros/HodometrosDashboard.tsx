@@ -113,8 +113,7 @@ const HodometrosDashboard = () => {
       setLoading(true);
       
       // Fetch all hodometro readings within the date range
-      const { data: hodometros, error } = await supabase
-        .from('hodometro')
+      const { data: hodometros, error } = await supabase.from('hodometro')
         .select(`
           id_hodometro,
           data,
@@ -479,7 +478,7 @@ const HodometrosDashboard = () => {
           </h3>
           
           {driverMileage.length > 0 ? (
-            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+            <div className="space-y-6 pr-2">
               {driverMileage.map((driver, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -520,7 +519,7 @@ const HodometrosDashboard = () => {
           </h3>
           
           {vehicleMileage.length > 0 ? (
-            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+            <div className="space-y-6 pr-2">
               {vehicleMileage.map((vehicle, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -562,7 +561,7 @@ const HodometrosDashboard = () => {
         </h3>
         
         {driverReadings.length > 0 ? (
-          <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+          <div className="space-y-6 pr-2">
             {driverReadings.map((driver, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -603,7 +602,7 @@ const HodometrosDashboard = () => {
         </h3>
         
         {operationMileage.length > 0 ? (
-          <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+          <div className="space-y-6 pr-2">
             {operationMileage.map((item, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -651,7 +650,7 @@ const HodometrosDashboard = () => {
         </div>
         
         {hodometros.length > 0 ? (
-          <div className="overflow-x-auto max-h-[500px]">
+          <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
