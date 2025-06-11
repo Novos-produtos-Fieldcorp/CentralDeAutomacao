@@ -32,7 +32,7 @@ export const useModuleAccess = () => {
       try {
         setLoading(true);
 
-        // Use supabase directly to avoid circular dependency with useCompanyData
+        // Use supabase directly - let supabase.ts handle retries and error messages
         const { data: company, error: companyError } = await supabase
           .from('company')
           .select('checklist_access, motorista_access, hodometro_acsess')
@@ -41,15 +41,8 @@ export const useModuleAccess = () => {
 
         if (companyError) {
           console.error('Error fetching company:', companyError);
-          // Default to all modules enabled if we can't fetch company data
-          setModuleAccess({
-            checklist: true,
-            motoristas: true,
-            hodometros: true,
-            veiculos: true,
-            clientes: true
-          });
-          return;
+          // Re-throw the original error to preserve user-friendly messages from supabase.ts
+          throw companyError;
         }
 
         if (company) {
@@ -72,7 +65,12 @@ export const useModuleAccess = () => {
         }
       } catch (error) {
         console.error('Error checking module access:', error);
-        // Don't show error toast to user, just log to console
+        
+        // Show user-friendly error message if it's a network/connection error
+        if (error instanceof Error && error.message.includes('conectar ao servidor')) {
+          toast.error(error.message);
+        }
+        
         // Default to all modules enabled on error
         setModuleAccess({
           checklist: true,

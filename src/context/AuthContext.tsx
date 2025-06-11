@@ -62,44 +62,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAccountId(currentAccountId);
         console.log('Checking company for account ID:', currentAccountId);
 
-        try {
-          // Find company by account ID
-          const { data: company, error } = await supabase
-            .from('company')
-            .select('company_id, st_company, checklist_access, motorista_access, hodometro_acsess')
-            .eq('id_conta_wiseapp', currentAccountId)
-            .single();
+        // Find company by account ID - let supabase.ts handle retries and error messages
+        const { data: company, error } = await supabase
+          .from('company')
+          .select('company_id, st_company, checklist_access, motorista_access, hodometro_acsess')
+          .eq('id_conta_wiseapp', currentAccountId)
+          .single();
 
-          if (error) {
-            console.error('Supabase error:', error);
-            throw new Error(`Failed to fetch company data: ${error.message}`);
-          }
+        if (error) {
+          console.error('Supabase error:', error);
+          // Re-throw the original error to preserve user-friendly messages from supabase.ts
+          throw error;
+        }
 
-          if (!company) {
-            console.error('No company found for account ID:', currentAccountId);
-            throw new Error('No company found for this account');
-          }
+        if (!company) {
+          console.error('No company found for account ID:', currentAccountId);
+          throw new Error('No company found for this account');
+        }
 
-          const isValid = company.st_company === true;
-          console.log('Company status:', isValid);
+        const isValid = company.st_company === true;
+        console.log('Company status:', isValid);
 
-          // Update authentication state
-          setIsAuthenticated(isValid);
-          setCompanyId(company.company_id);
+        // Update authentication state
+        setIsAuthenticated(isValid);
+        setCompanyId(company.company_id);
 
-          if (!isValid) {
-            console.log('Company is not active');
-            localStorage.removeItem('account_id');
-            setAccountId(undefined);
-            navigate('/unauthorized');
-          }
-        } catch (fetchError) {
-          console.error('Failed to fetch company data:', fetchError);
-          toast.error('Erro ao conectar com o banco de dados. Verifique sua conexão com a internet.');
-          throw new Error('Failed to authenticate with Supabase');
+        if (!isValid) {
+          console.log('Company is not active');
+          localStorage.removeItem('account_id');
+          setAccountId(undefined);
+          navigate('/unauthorized');
         }
       } catch (error) {
         console.error('Auth check failed:', error);
+        
+        // Show user-friendly error message if it's a network/connection error
+        if (error instanceof Error && error.message.includes('conectar ao servidor')) {
+          toast.error(error.message);
+        } else {
+          toast.error('Erro ao conectar com o banco de dados. Verifique sua conexão com a internet.');
+        }
+        
         localStorage.removeItem('account_id');
         setAccountId(undefined);
         setIsAuthenticated(false);
