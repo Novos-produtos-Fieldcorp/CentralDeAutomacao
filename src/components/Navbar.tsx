@@ -56,6 +56,28 @@ const Navbar = () => {
     setIsManuallyExpanded(!isExpanded);
   };
 
+  // Add event listener to detect clicks outside the navbar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Get the navbar element
+      const navbar = document.querySelector('.navbar-container');
+      
+      // If the navbar is expanded and the click is outside the navbar
+      if (isExpanded && navbar && !navbar.contains(event.target as Node)) {
+        setIsExpanded(false);
+        setIsManuallyExpanded(false);
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Clean up the event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isExpanded]);
+
   const menuItems = [
     { path: '/', icon: Home, label: 'Menu', isTitle: false, enabled: true },
     { path: '/checklist', icon: ClipboardCheck, label: 'Checklists', needsAccess: true, enabled: moduleAccess.checklist },
@@ -78,7 +100,7 @@ const Navbar = () => {
   return (
     <nav 
       className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 shadow-lg z-50
-                  transition-all duration-500 ease
+                  transition-all duration-500 ease navbar-container
                   ${isExpanded ? 'w-64' : 'w-20'}`}
     >
       <div className="flex flex-col h-full overflow-y-auto smooth-scroll">

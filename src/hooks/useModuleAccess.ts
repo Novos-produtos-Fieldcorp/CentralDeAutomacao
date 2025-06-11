@@ -72,7 +72,8 @@ export const useModuleAccess = () => {
         }
       } catch (error) {
         console.error('Error checking module access:', error);
-        // Don't show error toast to user, just log to console
+        // Show user-friendly toast notification about connection issues
+        toast.error('Erro de conexão ao carregar configurações da empresa. Usando configurações padrão.');
         // Default to all modules enabled on error
         setModuleAccess({
           checklist: true,
