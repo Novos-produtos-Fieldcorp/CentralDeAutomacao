@@ -73,6 +73,17 @@ interface HodometroReading {
   } | null;
 }
 
+interface DailyDriverReadings {
+  firstReadingKm: number | null;
+  lastReadingKm: number | null;
+  firstReadingTrip: number | null;
+  lastReadingTrip: number | null;
+  vehicleType: 'automovel' | 'ciclomotor' | 'unknown';
+  motorista_nome: string;
+  veiculo_id: number | null;
+  veiculo_placa: string | null;
+}
+
 const HodometrosDashboard = () => {
   const { query, companyId } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -113,22 +124,26 @@ const HodometrosDashboard = () => {
       setLoading(true);
       
       // Fetch all hodometro readings within the date range
-      const { data: hodometros, error } = await supabase
-        .from('hodometro')
+      const { data, error } = await supabase.from('hodometro')
         .select(`
           id_hodometro,
           data,
           hora,
-          km_rodado,
           hod_lido,
           hod_informado,
+          km_rodado,
           bateria,
+          foto_hodometro,
+          trip_lida,
+          trip_informada,
+          comparacao_leitura,
           motorista_id,
           veiculo_id,
           cliente_id,
           motorista:motorista_id (
             motorista_id,
-            nome
+            nome,
+            cpf
           ),
           veiculo:veiculo_id (
             veiculo_id,
@@ -148,71 +163,36 @@ const HodometrosDashboard = () => {
 
       if (error) throw error;
 
-      // Process data for daily mileage
-      const dailyMileageMap = new Map<string, number>();
+      console.log(`Fetched ${data?.length || 0} hodometro readings`);
+
+      // Initialize maps for data processing
+      const dailyMileageMap = new Map<string, { totalKm: number; formattedDate: string }>();
       const driverMileageMap = new Map<number, { nome: string; totalKm: number }>();
       const vehicleMileageMap = new Map<number, { placa: string; totalKm: number; lastDate?: string }>();
       const driverReadingsMap = new Map<number, { nome: string; count: number }>();
       const operationMileageMap = new Map<string, number>();
       
-      let totalKilometers = 0;
-      
-      // Process each reading - now focusing on vehicles
-      hodometros?.forEach(hodometro => {
-        // Use km_rodado as the primary source of mileage data
-        const kmValue = hodometro.km_rodado || 0;
-        
-        // Skip invalid or zero values
-        if (kmValue <= 0) return;
-        
-        // Add to total kilometers
-        totalKilometers += kmValue;
-        
-        // Add to daily mileage
-        const dateKey = hodometro.data;
-        dailyMileageMap.set(dateKey, (dailyMileageMap.get(dateKey) || 0) + kmValue);
-        
-        // Add to vehicle mileage - this is now our primary focus
-        if (hodometro.veiculo_id && hodometro.veiculo) {
-          const vehicleId = hodometro.veiculo_id;
-          const vehiclePlate = hodometro.veiculo.placa.toUpperCase();
-          
-          if (!vehicleMileageMap.has(vehicleId)) {
-            vehicleMileageMap.set(vehicleId, { 
-              placa: vehiclePlate, 
-              totalKm: 0,
-              lastDate: hodometro.data
-            });
-          }
-          
-          const vehicleData = vehicleMileageMap.get(vehicleId)!;
-          vehicleData.totalKm += kmValue;
-          
-          // Update last date if this reading is more recent
-          const currentDate = new Date(hodometro.data);
-          const existingDate = vehicleData.lastDate ? new Date(vehicleData.lastDate) : null;
-          
-          if (!existingDate || currentDate > existingDate) {
-            vehicleData.lastDate = hodometro.data;
-          }
-          
-          vehicleMileageMap.set(vehicleId, vehicleData);
+      // IMPORTANT: Sort hodometros by vehicle_id, date, and time for accurate calculations
+      const sortedHodometros = [...(data || [])].sort((a, b) => {
+        if (a.veiculo_id !== b.veiculo_id) {
+          return (a.veiculo_id || 0) - (b.veiculo_id || 0);
         }
-        
-        // We still track driver mileage for the dashboard
+        const dateA = new Date(`${a.data}T${a.hora || '00:00:00'}`).getTime();
+        const dateB = new Date(`${b.data}T${b.hora || '00:00:00'}`).getTime();
+        return dateA - dateB;
+      });
+      
+      // Map to store daily driver readings
+      const dailyDriverDataMap = new Map<string, DailyDriverReadings>();
+      
+      // Process each reading
+      sortedHodometros.forEach(hodometro => {
+        // ALWAYS process driver reading counts regardless of km values
         if (hodometro.motorista_id && hodometro.motorista) {
           const driverId = hodometro.motorista_id;
           const driverName = hodometro.motorista.nome;
           
-          if (!driverMileageMap.has(driverId)) {
-            driverMileageMap.set(driverId, { nome: driverName, totalKm: 0 });
-          }
-          
-          const driverData = driverMileageMap.get(driverId)!;
-          driverData.totalKm += kmValue;
-          driverMileageMap.set(driverId, driverData);
-          
-          // Count readings per driver
+          // Update driver readings count
           if (!driverReadingsMap.has(driverId)) {
             driverReadingsMap.set(driverId, { nome: driverName, count: 0 });
           }
@@ -222,23 +202,155 @@ const HodometrosDashboard = () => {
           driverReadingsMap.set(driverId, driverReadingsData);
         }
         
-        // Add to operation mileage
+        // Skip if missing essential data for mileage calculation
+        if (!hodometro.data || !hodometro.motorista_id || !hodometro.veiculo_id) {
+          return;
+        }
+        
+        // Determine vehicle type based on whether it has battery readings
+        const vehicleType = hodometro.bateria !== null && hodometro.bateria !== undefined 
+          ? 'ciclomotor' 
+          : 'automovel';
+        
+        // Create unique key for day and motorista
+        const dateKey = hodometro.data;
+        const driverId = hodometro.motorista_id;
+        const uniqueKey = `${dateKey}_${driverId}`;
+        
+        // Get current reading based on vehicle type
+        let currentReading: number | null = null;
+        let isOdometerReading = false;
+        
+        if (vehicleType === 'automovel' && hodometro.hod_lido !== null) {
+          currentReading = hodometro.hod_lido;
+          isOdometerReading = true;
+        } else if (vehicleType === 'ciclomotor' && hodometro.trip_lida !== null) {
+          currentReading = hodometro.trip_lida;
+        }
+        
+        // Skip if no valid reading
+        if (currentReading === null) {
+          return;
+        }
+        
+        // Get or create daily driver entry
+        const dailyDriverEntry = dailyDriverDataMap.get(uniqueKey) || {
+          firstReadingKm: null,
+          lastReadingKm: null,
+          firstReadingTrip: null,
+          lastReadingTrip: null,
+          vehicleType,
+          motorista_nome: hodometro.motorista?.nome || 'Desconhecido',
+          veiculo_id: hodometro.veiculo_id,
+          veiculo_placa: hodometro.veiculo?.placa || null
+        };
+        
+        // Update first and last readings
+        if (isOdometerReading) {
+          if (dailyDriverEntry.firstReadingKm === null || currentReading < dailyDriverEntry.firstReadingKm) {
+            dailyDriverEntry.firstReadingKm = currentReading;
+          }
+          if (dailyDriverEntry.lastReadingKm === null || currentReading > dailyDriverEntry.lastReadingKm) {
+            dailyDriverEntry.lastReadingKm = currentReading;
+          }
+        } else {
+          if (dailyDriverEntry.firstReadingTrip === null || currentReading < dailyDriverEntry.firstReadingTrip) {
+            dailyDriverEntry.firstReadingTrip = currentReading;
+          }
+          if (dailyDriverEntry.lastReadingTrip === null || currentReading > dailyDriverEntry.lastReadingTrip) {
+            dailyDriverEntry.lastReadingTrip = currentReading;
+          }
+        }
+        
+        dailyDriverDataMap.set(uniqueKey, dailyDriverEntry);
+        
+        // Process operation mileage if client exists
         const operationName = hodometro.cliente?.nome || 'Sem cliente';
-        operationMileageMap.set(operationName, (operationMileageMap.get(operationName) || 0) + kmValue);
+        
+        // Use km_rodado for operation mileage if available
+        if (hodometro.km_rodado && hodometro.km_rodado > 0) {
+          operationMileageMap.set(
+            operationName, 
+            (operationMileageMap.get(operationName) || 0) + hodometro.km_rodado
+          );
+        }
       });
       
-      // Convert daily mileage map to array and sort by date
-      const dailyMileageArray: DailyMileage[] = Array.from(dailyMileageMap.entries())
-        .map(([date, totalKm]) => {
-          return {
-            date,
-            totalKm,
-            formattedDate: formatDateBR(date) // Format date as DD/MM/YYYY
+      // Post-process daily driver data to calculate total kilometers
+      let totalKilometers = 0;
+      
+      // Process daily driver data to calculate mileage
+      for (const [key, data] of dailyDriverDataMap.entries()) {
+        const [date, driverId] = key.split('_');
+        let kmRodadoNoDia = 0;
+        
+        if (data.vehicleType === 'automovel' && data.firstReadingKm !== null && data.lastReadingKm !== null) {
+          kmRodadoNoDia = data.lastReadingKm - data.firstReadingKm;
+          // Handle cases where final reading is less than initial (odometer reset or error)
+          if (kmRodadoNoDia < 0) {
+            console.warn(`Negative km_rodado for automovel on ${date} by driver ${driverId}. Resetting to 0.`);
+            kmRodadoNoDia = 0;
+          }
+        } else if (data.vehicleType === 'ciclomotor' && data.firstReadingTrip !== null && data.lastReadingTrip !== null) {
+          kmRodadoNoDia = data.lastReadingTrip - data.firstReadingTrip;
+          if (kmRodadoNoDia < 0) {
+            console.warn(`Negative km_rodado for ciclomotor on ${date} by driver ${driverId}. Resetting to 0.`);
+            kmRodadoNoDia = 0;
+          }
+        }
+        
+        if (kmRodadoNoDia > 0) {
+          // Update total kilometers
+          totalKilometers += kmRodadoNoDia;
+          
+          // Update daily mileage map
+          const dailyData = dailyMileageMap.get(date) || { 
+            totalKm: 0, 
+            formattedDate: formatDateBR(date) 
           };
-        })
+          dailyData.totalKm += kmRodadoNoDia;
+          dailyMileageMap.set(date, dailyData);
+          
+          // Update driver mileage map
+          const numDriverId = parseInt(driverId);
+          const driverData = driverMileageMap.get(numDriverId) || {
+            nome: data.motorista_nome,
+            totalKm: 0
+          };
+          driverData.totalKm += kmRodadoNoDia;
+          driverMileageMap.set(numDriverId, driverData);
+          
+          // Update vehicle mileage map
+          if (data.veiculo_id && data.veiculo_placa) {
+            const vehicleData = vehicleMileageMap.get(data.veiculo_id) || {
+              placa: data.veiculo_placa,
+              totalKm: 0,
+              lastDate: date
+            };
+            vehicleData.totalKm += kmRodadoNoDia;
+            
+            // Update last date if this reading is more recent
+            const currentDate = new Date(date);
+            const existingDate = vehicleData.lastDate ? new Date(vehicleData.lastDate) : null;
+            
+            if (!existingDate || currentDate > existingDate) {
+              vehicleData.lastDate = date;
+            }
+            
+            vehicleMileageMap.set(data.veiculo_id, vehicleData);
+          }
+        }
+      }
+      
+      // Convert maps to arrays for state
+      const dailyMileageArray: DailyMileage[] = Array.from(dailyMileageMap.entries())
+        .map(([date, data]) => ({
+          date,
+          totalKm: data.totalKm,
+          formattedDate: data.formattedDate
+        }))
         .sort((a, b) => a.date.localeCompare(b.date));
       
-      // Convert driver mileage map to array and sort by total km (descending)
       const driverMileageArray: DriverMileage[] = Array.from(driverMileageMap.entries())
         .map(([motorista_id, data]) => ({
           motorista_id: Number(motorista_id),
@@ -247,19 +359,15 @@ const HodometrosDashboard = () => {
         }))
         .sort((a, b) => b.totalKm - a.totalKm);
       
-      // Convert vehicle mileage map to array and sort by total km (descending)
       const vehicleMileageArray: VehicleMileage[] = Array.from(vehicleMileageMap.entries())
-        .map(([veiculo_id, data]) => {
-          return {
-            veiculo_id: Number(veiculo_id),
-            placa: data.placa,
-            totalKm: data.totalKm,
-            lastDate: data.lastDate ? formatDateBR(data.lastDate) : undefined // Format date as DD/MM/YYYY
-          };
-        })
+        .map(([veiculo_id, data]) => ({
+          veiculo_id: Number(veiculo_id),
+          placa: data.placa,
+          totalKm: data.totalKm,
+          lastDate: data.lastDate ? formatDateBR(data.lastDate) : undefined
+        }))
         .sort((a, b) => b.totalKm - a.totalKm);
-        
-      // Convert driver readings map to array and sort by count (descending)
+      
       const driverReadingsArray: DriverReadings[] = Array.from(driverReadingsMap.entries())
         .map(([motorista_id, data]) => ({
           motorista_id: Number(motorista_id),
@@ -267,8 +375,7 @@ const HodometrosDashboard = () => {
           count: data.count
         }))
         .sort((a, b) => b.count - a.count);
-        
-      // Convert operation mileage map to array and sort by total km (descending)
+      
       const operationMileageArray: OperationMileage[] = Array.from(operationMileageMap.entries())
         .map(([name, value]) => ({
           name,
@@ -288,7 +395,9 @@ const HodometrosDashboard = () => {
       setOperationMileage(operationMileageArray);
       setTotalKm(totalKilometers);
       setAverageKmPerDay(avgKmPerDay);
-      setTotalReadings(hodometros?.length || 0);
+      setTotalReadings(sortedHodometros.length);
+      
+      console.log(`Processed data: ${driverReadingsArray.length} drivers with readings`);
       
     } catch (error) {
       console.error('Error fetching hodometro data:', error);
@@ -474,47 +583,6 @@ const HodometrosDashboard = () => {
 
       {/* Top Drivers and Vehicles */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* All Vehicles by Mileage */}
-        <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Truck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            Veículos por Quilometragem
-          </h3>
-          
-          {vehicleMileage.length > 0 ? (
-            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-              {vehicleMileage.map((vehicle, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                      {vehicle.placa}
-                    </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {formatNumber(vehicle.totalKm)} km
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-purple-500 dark:bg-purple-500 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${Math.max(
-                          5, 
-                          (vehicle.totalKm / Math.max(...vehicleMileage.map(v => v.totalKm), 1)) * 100
-                        )}%` 
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-              <Truck className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-            </div>
-          )}
-        </div>
-        
         {/* All Motoristas por Quilometragem */}
         <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
@@ -555,88 +623,132 @@ const HodometrosDashboard = () => {
             </div>
           )}
         </div>
+        
+        {/* All Vehicles by Mileage */}
+        <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <Truck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            Veículos por Quilometragem
+          </h3>
+          
+          {vehicleMileage.length > 0 ? (
+            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+              {vehicleMileage.map((vehicle, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      {vehicle.placa}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {formatNumber(vehicle.totalKm)} km
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-purple-500 dark:bg-purple-500 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Math.max(
+                          5, 
+                          (vehicle.totalKm / Math.max(...vehicleMileage.map(v => v.totalKm), 1)) * 100
+                        )}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+              <Truck className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Leituras por Motorista Chart */}
-      <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-          Leituras por Motorista
-        </h3>
-        
-        {driverReadings.length > 0 ? (
-          <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-            {driverReadings.map((driver, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
-                    {driver.nome}
-                  </span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {driver.count} {driver.count === 1 ? 'leitura' : 'leituras'}
-                  </span>
+      {/* Leituras por Motorista Chart and KM per Operation Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Leituras por Motorista Chart */}
+        <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            Leituras por Motorista
+          </h3>
+          
+          {driverReadings.length > 0 ? (
+            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+              {driverReadings.map((driver, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      {driver.nome}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {driver.count} {driver.count === 1 ? 'leitura' : 'leituras'}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-amber-500 dark:bg-amber-500 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Math.max(
+                          5, 
+                          (driver.count / Math.max(...driverReadings.map(d => d.count), 1)) * 100
+                        )}%` 
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-amber-500 dark:bg-amber-500 rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${Math.max(
-                        5, 
-                        (driver.count / Math.max(...driverReadings.map(d => d.count), 1)) * 100
-                      )}%` 
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-            <FileBarChart className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+              <FileBarChart className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+            </div>
+          )}
+        </div>
 
-      {/* KM per Operation Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <Gauge className="w-5 h-5 text-orange-500 dark:text-orange-400" />
-          Quilômetros por Operação
-        </h3>
-        
-        {operationMileage.length > 0 ? (
-          <div className="space-y-6">
-            {operationMileage.map((item, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {item.name}
-                  </span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {formatNumber(item.value)} km
-                  </span>
+        {/* KM per Operation Chart */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <Gauge className="w-5 h-5 text-orange-500 dark:text-orange-400" />
+            Quilômetros por Operação
+          </h3>
+          
+          {operationMileage.length > 0 ? (
+            <div className="space-y-6">
+              {operationMileage.map((item, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {item.name}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {formatNumber(item.value)} km
+                    </span>
+                  </div>
+                  <div className="h-2 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-orange-500 dark:bg-orange-400 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Math.max(
+                          5, 
+                          (item.value / Math.max(...operationMileage.map(m => m.value), 1)) * 100
+                        )}%` 
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-orange-500 dark:bg-orange-400 rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${Math.max(
-                        5, 
-                        (item.value / Math.max(...operationMileage.map(m => m.value), 1)) * 100
-                      )}%` 
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
-            <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
-          </div>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+              <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Inconsistencies Table */}
