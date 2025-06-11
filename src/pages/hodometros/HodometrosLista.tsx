@@ -15,6 +15,7 @@ import EditHodometroModal from '../../components/hodometros/EditHodometroModal';
 import DeleteHodometroModal from '../../components/hodometros/DeleteHodometroModal';
 import BulkDeleteConfirmationModal from '../../components/BulkDeleteConfirmationModal';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
+import DriverMileageChart from '../../components/hodometros/DriverMileageChart';
 import MileageChartModal from '../../components/hodometros/MileageChartModal';
 
 interface HodometroReading {
@@ -352,41 +353,21 @@ const HodometrosLista = () => {
 
   const exportToExcel = () => {
     try {
-      const exportData = hodometros.map(h => {
-        // Base data for all types
-        const baseData = {
-          'Data': formatDateBR(h.data),
-          'Hora': h.hora,
-          'Motorista': h.motorista?.nome || '',
-          'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
-          'Placa': h.veiculo?.placa.toUpperCase() || '',
-          'Veículo': `${h.veiculo?.marca || ''} ${h.veiculo?.tipo || ''}`,
-          'Cliente': h.cliente?.nome || 'Sem cliente'
-        };
-        
-        // Check if it's an electric vehicle (has battery)
-        if (h.bateria !== null && h.bateria !== undefined) {
-          // Electric vehicle data
-          return {
-            ...baseData,
-            'Tipo': 'Ciclomotor',
-            'Trip Informada': h.trip_informada || '',
-            'Trip Lida': h.trip_lida !== null ? formatNumber(h.trip_lida) : '',
-            'Bateria': `${h.bateria}%`,
-            'KM Rodado': h.km_rodado !== null ? formatNumber(h.km_rodado) : '',
-          };
-        } else {
-          // Regular vehicle data
-          return {
-            ...baseData,
-            'Tipo': 'Automóvel',
-            'Hodômetro Informado': h.hod_informado !== null ? formatNumber(h.hod_informado) : '',
-            'Hodômetro Lido': h.hod_lido !== null ? formatNumber(h.hod_lido) : '',
-            'KM Rodado': h.km_rodado !== null ? formatNumber(h.km_rodado) : '',
-            'Leitura Divergente': h.comparacao_leitura === false ? 'Sim' : 'Não',
-          };
-        }
-      });
+      const exportData = hodometros.map(h => ({
+        'Data': formatDateBR(h.data),
+        'Hora': h.hora,
+        'Motorista': h.motorista?.nome || '',
+        'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
+        'Placa': h.veiculo?.placa.toUpperCase() || '',
+        'Veículo': `${h.veiculo?.marca || ''} ${h.veiculo?.tipo || ''}`,
+        'Hodômetro Informado': h.hod_informado !== null ? formatNumber(h.hod_informado) : '',
+        'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : formatNumber(h.hod_lido),
+        'Trip Informada': h.trip_informada || '',
+        'Trip Lida': h.trip_lida !== null ? formatNumber(h.trip_lida) : '',
+        'KM Rodado': h.km_rodado !== null ? formatNumber(h.km_rodado) : '',
+        'Leitura Divergente': h.comparacao_leitura === false ? 'Sim' : 'Não',
+        'Cliente': h.cliente?.nome || 'Sem cliente'
+      }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
@@ -400,10 +381,10 @@ const HodometrosLista = () => {
         { wch: 15 }, // CPF
         { wch: 10 }, // Placa
         { wch: 20 }, // Veículo
-        { wch: 12 }, // Tipo
-        { wch: 18 }, // Hodômetro Informado / Trip Informada
-        { wch: 15 }, // Hodômetro Lido / Trip Lida
-        { wch: 10 }, // Bateria
+        { wch: 18 }, // Hodômetro Informado
+        { wch: 15 }, // Hodômetro Lido
+        { wch: 15 }, // Trip Informada
+        { wch: 12 }, // Trip Lida
         { wch: 12 }, // KM Rodado
         { wch: 15 }, // Leitura Divergente
         { wch: 20 }  // Cliente
@@ -416,11 +397,6 @@ const HodometrosLista = () => {
       console.error('Error exporting to Excel:', error);
       toast.error('Erro ao exportar para Excel');
     }
-  };
-
-  // Check if a hodometro is for an electric vehicle
-  const isElectricVehicle = (hodometro: HodometroReading): boolean => {
-    return hodometro.bateria !== null && hodometro.bateria !== undefined;
   };
 
   if (loading) {
@@ -577,106 +553,101 @@ const HodometrosLista = () => {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"></th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
-                  {/* Conditional columns based on vehicle type */}
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip Informada</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip Lida</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {paginatedData.map((hodometro) => {
-                  const isElectric = isElectricVehicle(hodometro);
-                  
-                  return (
-                    <tr key={hodometro.id_hodometro} className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-                      selectedItems.has(hodometro.id_hodometro) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                    }`}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.has(hodometro.id_hodometro)}
-                          onChange={() => handleSelectItem(hodometro.id_hodometro)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {formatDateBR(hodometro.data)}
+                {paginatedData.map((hodometro) => (
+                  <tr key={hodometro.id_hodometro} className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+                    selectedItems.has(hodometro.id_hodometro) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                  }`}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.has(hodometro.id_hodometro)}
+                        onChange={() => handleSelectItem(hodometro.id_hodometro)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {formatDateBR(hodometro.data)}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {hodometro.hora}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase">
+                        {hodometro.veiculo?.placa || 'Não informada'}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {hodometro.veiculo?.marca} {hodometro.veiculo?.tipo}
+                      </div>
+                      <button
+                        onClick={() => openChartModal(hodometro.veiculo_id)}
+                        className="mt-1 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+                      >
+                        <BarChart2 size={12} />
+                        Ver gráfico
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {hodometro.motorista?.nome || 'Não informado'}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {hodometro.motorista?.cpf ? formatCPF(hodometro.motorista.cpf) : ''}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          Bateria: {hodometro.bateria}%
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {hodometro.hora}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {hodometro.motorista?.nome || 'Não informado'}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {hodometro.motorista?.cpf ? formatCPF(hodometro.motorista.cpf) : ''}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase">
-                          {hodometro.veiculo?.placa || 'Não informada'}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {hodometro.veiculo?.marca} {hodometro.veiculo?.tipo}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {isElectric ? 'Ciclomotor' : 'Automóvel'}
-                        </div>
-                      </td>
-                      {/* Hodômetro Informado - only for regular vehicles */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {!isElectric ? (
+                      ) : (
+                        <>
                           <div className="text-sm text-gray-900 dark:text-white">
-                            {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}
+                            Lido: {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'} km
                           </div>
-                        ) : (
-                          <div className="text-sm text-gray-400 dark:text-gray-600">-</div>
-                        )}
-                      </td>
-                      {/* Hodômetro Lido - only for regular vehicles */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {!isElectric ? (
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Informado: {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'} km
                           </div>
-                        ) : (
-                          <div className="text-sm text-gray-400 dark:text-gray-600">-</div>
-                        )}
-                      </td>
-                      {/* Trip Informada - only for electric vehicles */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {isElectric ? (
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {hodometro.trip_informada || '-'}
-                          </div>
-                        ) : (
-                          <div className="text-sm text-gray-400 dark:text-gray-600">-</div>
-                        )}
-                      </td>
-                      {/* Trip Lida - only for electric vehicles */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {isElectric ? (
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {hodometro.trip_lida !== null ? formatNumber(hodometro.trip_lida) : '-'}
-                          </div>
-                        ) : (
-                          <div className="text-sm text-gray-400 dark:text-gray-600">-</div>
-                        )}
-                      </td>
-                      {/* Foto column */}
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        </>
+                      )}
+                      {hodometro.comparacao_leitura === false && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 mt-1">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Divergente
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {hodometro.km_rodado !== null ? formatNumber(hodometro.km_rodado) : '-'} km
+                      </div>
+                      {hodometro.trip_lida !== null && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Trip: {formatNumber(hodometro.trip_lida)} km
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {hodometro.cliente?.nome || 'Sem cliente'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center space-x-3">
                         {hodometro.foto_hodometro ? (
                           <button
                             onClick={() => handleShowPhoto(hodometro.foto_hodometro)}
-                            className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Ver foto do hodômetro"
                           >
                             <Camera size={18} />
@@ -686,32 +657,27 @@ const HodometrosLista = () => {
                             <Camera size={18} className="inline-block opacity-50" />
                           </span>
                         )}
-                      </td>
-                      {/* Actions column */}
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center space-x-3">
-                          <button
-                            onClick={() => handleEdit(hodometro)}
-                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
-                            title="Editar"
-                          >
-                            <Edit2 size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(hodometro)}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                            title="Excluir"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        <button
+                          onClick={() => handleEdit(hodometro)}
+                          className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
+                          title="Editar"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(hodometro)}
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
                 {hodometros.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                       Nenhuma leitura encontrada para o período selecionado
                     </td>
                   </tr>
