@@ -34,8 +34,8 @@ const MenuCard = ({
           : 'from-primary/5 to-transparent'
       } opacity-0 transition-opacity duration-300 ${enabled ? 'group-hover:opacity-100' : ''}`} />
       <div className="relative flex flex-col h-full justify-between p-6">
-        <div className="flex flex-col items-center">
-          <div className="flex items-center justify-center gap-3">
+        <div className="flex flex-col items-center text-center">
+          <div className="flex items-center gap-3">
             <div className={`w-12 h-12 flex items-center justify-center ${
               isSpecial 
                 ? 'bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40' 
