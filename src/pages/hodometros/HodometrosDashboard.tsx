@@ -361,17 +361,6 @@ const HodometrosDashboard = () => {
             
             vehicleMileageMap.set(data.veiculo_id, vehicleData);
           }
-          
-          // Update operation mileage map based on calculated KM
-          // This ensures we're using the same calculation method for all metrics
-          const clientId = data.motorista_id ? 
-            (data || []).find(h => h.motorista_id === data.motorista_id)?.cliente?.nome || 'Sem cliente' : 
-            'Sem cliente';
-            
-          operationMileageMap.set(
-            clientId,
-            (operationMileageMap.get(clientId) || 0) + kmRodadoNoDia
-          );
         }
       }
       
