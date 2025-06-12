@@ -332,7 +332,7 @@ const MotoristasLista = () => {
         cidade: motorista.nome_cidade || 'Não informada',
         cidadeLowerCase: motorista.nome_cidade?.toLowerCase() || '',
         estado: motorista.sigla_estado || '',
-        ativo: motorista.st_cadastro === 'cadastrado'
+        ativo: motorista.ativo
       })) as unknown as MotoristaWithAddress[];
 
       // Apply phone filter on frontend
