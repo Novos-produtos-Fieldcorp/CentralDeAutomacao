@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FileText, Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Upload, MessageCircle, Users, Building2, MessageSquare, Eye, FilePen, Check, X, ListTodo } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
-import type { Motorista, Cliente, DocumentoMotorista } from '../../types/database';
+import type { Motorista } from '../../types/database';
 import DocumentViewer from '../../components/DocumentViewer';
 import EditMotoristaModal from '../../components/EditMotoristaModal';
 import AddMotoristaModal from '../../components/AddMotoristaModal';
@@ -11,18 +11,21 @@ import { formatPhone, formatCPF, formatDate } from '../../utils/format';
 import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import toast from 'react-hot-toast';
+import { formatCPF, formatPhone } from '../../utils/format';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import DocumentUploadModal from '../../components/DocumentUploadModal';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import { useFloatingChat } from '../../hooks/useFloatingChat';
 import BulkActionsModal from '../../components/BulkActionsModal';
 import MassMessageModal from '../../components/MassMessageModal';
+import AddMotoristaModal from '../../components/AddMotoristaModal';
+import DocumentUploadModal from '../../components/DocumentUploadModal';
+import DocumentoMotoristaForm from '../../components/DocumentoMotoristaForm';
+import EditMotoristaModal from '../../components/EditMotoristaModal';
+import { useAuth } from '../../context/AuthContext';
 
-interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'autorizacao_lgpd' | 'cliente_id'> {
-  cidade?: string;
-  cidadeLowerCase?: string;
-  estado?: string;
+interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'cidade' | 'estado'> {
   telefone: string | number;
   autorizacao_lgpd: boolean;
   cliente_id: number | null;
@@ -56,34 +59,37 @@ interface ViewMotorista {
   nome_estado: string | null;
   sigla_estado: string | null;
   ativo: boolean;
+  cidade: string;
+  estado: string;
+  cidadeLowerCase: string;
+  nome_cliente?: string | null;
 }
 
-interface EditMotoristaModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  motorista: MotoristaWithAddress | null;
-  onUpdate: () => void;
+interface City {
+  cidade: string;
+  estado: {
+    sigla_estado: string;
+  };
 }
 
-interface DocumentViewerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  documento: any | null;
-  nome: string;
-  cpf?: string;
-  email?: string;
-  telefone?: string;
-  dt_nascimento?: string;
-  endereco: any;
-  st_cadastro?: string;
+interface CityResponse {
+  cidade: string;
+  estado: {
+    sigla_estado: string;
+  };
+}
+
+interface DashboardData {
+  name: string;
+  count: number;
 }
 
 const MotoristasLista = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
+  const { accountId } = useAuth();
   const [motoristas, setMotoristas] = useState<MotoristaWithAddress[]>([]);
-  const [allMotoristas, setAllMotoristas] = useState<MotoristaWithAddress[]>([]);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [clientes, setClientes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [phoneSearch, setPhoneSearch] = useState('');
@@ -94,37 +100,17 @@ const MotoristasLista = () => {
   const [cities, setCities] = useState<{ cidade: string; cidadeLowerCase: string; estado: { sigla_estado: string } }[]>([]);
   const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
+  const [isDocumentFormOpen, setIsDocumentFormOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isDocumentUploadModalOpen, setIsDocumentUploadModalOpen] = useState(false);
+  const [selectedMotorista, setSelectedMotorista] = useState<MotoristaWithAddress | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
+  const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
   const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
   const [isBulkClientModalOpen, setIsBulkClientModalOpen] = useState(false);
-  const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
-  const [selectedMotoristaEdit, setSelectedMotoristaEdit] = useState<MotoristaWithAddress | null>(null);
-  const [selectedMotoristaDelete, setSelectedMotoristaDelete] = useState<MotoristaWithAddress | null>(null);
-  const [selectedMotoristaUpload, setSelectedMotoristaUpload] = useState<MotoristaWithAddress | null>(null);
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(100);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  
-  const [selectedDocumento, setSelectedDocumento] = useState<{
-    documento: DocumentoMotorista | null;
-    nome: string;
-    cpf?: string;
-    email?: string;
-    telefone?: string;
-    dt_nascimento?: string;
-    endereco: any;
-    st_cadastro?: string;
-  }>({ documento: null, nome: '', endereco: null });
-  
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -137,34 +123,81 @@ const MotoristasLista = () => {
     y: 0,
     motorista: null,
   });
+  const [selectedDocumento, setSelectedDocumento] = useState<{
+    documento: any | null;
+    nome: string;
+    cpf?: string;
+    email?: string;
+    telefone?: string;
+    dt_nascimento?: string;
+    endereco: any;
+    veiculo: any | null;
+  }>({ documento: null, nome: '', endereco: null, veiculo: null });
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isSearching, setIsSearching] = useState(false);
+  const [dashboardData, setDashboardData] = useState<DashboardData[]>([]);
 
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [debouncedPhoneSearch, setDebouncedPhoneSearch] = useState('');
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
-  const phoneTimeoutRef = useRef<NodeJS.Timeout>();
+  // Debounce search terms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        setLoading(true);
-        await Promise.all([
-          fetchCities(),
-          fetchClientes(),
-          fetchWiseappAccountId()
-        ]);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao inicializar';
-        toast.error(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-    init();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedPhoneSearch(phoneSearch);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [phoneSearch]);
+
+  // Effect to handle search when debounced terms change
+  useEffect(() => {
+    if (companyId) {
+      const loadData = async () => {
+        try {
+          setIsSearching(true);
+          await fetchMotoristas();
+        } catch (error) {
+          console.error('Error loading data:', error);
+          toast.error('Erro ao carregar dados');
+        } finally {
+          setIsSearching(false);
+        }
+      };
+      loadData();
+    }
+  }, [debouncedSearchTerm, debouncedPhoneSearch, selectedStatus, selectedCity, selectedClient, funcaoFilter, currentPage, pageSize, dateRange]);
 
   useEffect(() => {
-    fetchMotoristas();
-  }, [currentPage, pageSize, dateRange, debouncedSearchTerm, debouncedPhoneSearch, selectedStatus, selectedCity, funcaoFilter]);
+    if (companyId) {
+      const loadInitialData = async () => {
+        try {
+          setLoading(true);
+          await Promise.all([
+            fetchMotoristas(),
+            fetchClientes(),
+            fetchCities(),
+            fetchDashboardData()
+          ]);
+        } catch (error) {
+          console.error('Error loading initial data:', error);
+          toast.error('Erro ao carregar dados iniciais');
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadInitialData();
+    }
+  }, [companyId]);
 
   useEffect(() => {
     // Close context menu when clicking anywhere
@@ -180,102 +213,26 @@ const MotoristasLista = () => {
     };
   }, [contextMenu.visible]);
 
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    searchTimeoutRef.current = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 800);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchTerm]);
-
-  useEffect(() => {
-    if (phoneTimeoutRef.current) {
-      clearTimeout(phoneTimeoutRef.current);
-    }
-    phoneTimeoutRef.current = setTimeout(() => {
-      setDebouncedPhoneSearch(phoneSearch);
-    }, 500);
-
-    return () => {
-      if (phoneTimeoutRef.current) {
-        clearTimeout(phoneTimeoutRef.current);
-      }
-    };
-  }, [phoneSearch]);
-
-  const fetchWiseappAccountId = async () => {
+  const fetchMotoristas = async () => {
     try {
-      const { data, error } = await supabase
-        .from('company')
-        .select('id_conta_wiseapp')
-        .eq('company_id', companyId)
-        .single();
-
-      if (error) throw error;
-
-      if (data && data.id_conta_wiseapp) {
-        setWiseappAccountId(data.id_conta_wiseapp);
-      }
-    } catch (error) {
-      console.error('Error fetching WiseApp account ID:', error);
-    }
-  };
-
-  const clientColors = [
-    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-    'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
-    'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
-    'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-    'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
-  ];
-
-  const fetchClientes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('cliente')
-        .select('*')
-        .eq('st_cliente', true)
-        .eq('company_id', companyId)
-        .not('nome', 'is', null)
-        .not('nome', 'eq', '')
-        .order('nome');
-
-      if (error) throw error;
-      
-      setClientes(data as Cliente[]);
-    } catch (error) {
-      toast.error('Erro ao carregar clientes');
-    }
-  };
-
-  const fetchMotoristas = useCallback(async () => {
-    try {
-      // Only show loading on initial load or when changing pages
-      if (currentPage === 1 && !debouncedSearchTerm && !debouncedPhoneSearch && !selectedStatus && !selectedCity && !funcaoFilter) {
+      if (currentPage === 1 && !debouncedSearchTerm && !debouncedPhoneSearch && !selectedStatus && !selectedCity && !selectedClient) {
         setLoading(true);
       }
       
-      // Calculate pagination parameters
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
       
-      // Build the query with filters using the new view
+      // Build the query with all filters
       let query = supabase
         .from('vw_motoristas_completo')
         .select('*', { count: 'exact' })
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .eq('funcao', 'Motorista');
 
-      // Apply date range filter if dates are selected
+      if (selectedStatus) {
+        query = query.eq('st_cadastro', selectedStatus);
+      }
+
       if (dateRange.startDate && dateRange.endDate) {
         query = query
           .gte('data_cadastro', dateRange.startDate)
@@ -287,33 +244,32 @@ const MotoristasLista = () => {
         query = query.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
       }
 
-      // Apply status filter if selected
-      if (selectedStatus) {
-        query = query.eq('st_cadastro', selectedStatus);
-      }
-
       // Apply city filter if selected
       if (selectedCity) {
         query = query.ilike('nome_cidade', selectedCity);
       }
 
-      // Apply function filter if selected
-      if (funcaoFilter !== 'todos') {
-        query = query.eq('funcao', funcaoFilter);
+      // Apply client filter if selected
+      if (selectedClient) {
+        query = query.eq('cliente_id', selectedClient);
       }
 
       // Apply active status filter if selected
       if (selectedActiveStatus !== 'all') {
         query = query.eq('is_active', selectedActiveStatus === 'active');
       }
+      // Apply pagination
+      query = query
+        .order('data_cadastro', { ascending: false })
+        .range(from, to);
 
       // Execute the query
-      const { data, error, count } = await query.order('data_cadastro', { ascending: false });
+      const { data, error, count } = await query;
 
       if (error) throw error;
 
       // Process the data - map view fields to component fields
-      let motoristasData = (data as ViewMotorista[])?.map(motorista => ({
+      const motoristasData = (data || []).map(motorista => ({
         motorista_id: motorista.motorista_id,
         nome: motorista.nome_motorista,
         cpf: motorista.cpf,
@@ -334,87 +290,113 @@ const MotoristasLista = () => {
         estado: motorista.sigla_estado || '',
         ativo: motorista.ativo
       })) as unknown as MotoristaWithAddress[];
+        nome_cliente: motorista.nome_cliente
+      }));
 
       // Apply phone filter on frontend
+      let filteredData = motoristasData;
       if (debouncedPhoneSearch) {
         const phoneSearchLower = debouncedPhoneSearch.toLowerCase().replace(/[()\-\s]/g, '');
-        motoristasData = motoristasData.filter(motorista => {
+        filteredData = motoristasData.filter(motorista => {
           const phoneStr = motorista.telefone?.toString().replace(/[()\-\s]/g, '') || '';
           return phoneStr.toLowerCase().includes(phoneSearchLower);
         });
       }
 
+      // Create a Map to deduplicate motoristas by motorista_id
+      const uniqueMotoristas = new Map();
+      filteredData.forEach(motorista => {
+        uniqueMotoristas.set(motorista.motorista_id, motorista);
+      });
+
+      // Convert Map back to array
+      const deduplicatedMotoristas = Array.from(uniqueMotoristas.values());
+
       // Update total count based on filtered data
-      const filteredCount = motoristasData.length;
+      const filteredCount = count || deduplicatedMotoristas.length;
       setTotalCount(filteredCount);
       setTotalPages(Math.max(1, Math.ceil(filteredCount / pageSize)));
 
-      // Apply pagination
-      const paginatedData = motoristasData.slice(from, to + 1);
-      setMotoristas(paginatedData);
-      
-      // Fetch all motoristas for select all functionality
-      const { data: allData } = await supabase
-        .from('vw_motoristas_completo')
-        .select('motorista_id')
-        .eq('company_id', companyId);
-      
-      if (allData) {
-        setAllMotoristas(allData as MotoristaWithAddress[]);
-      }
+      setMotoristas(deduplicatedMotoristas);
     } catch (error) {
+      console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
-      setMotoristas([]);
-      setAllMotoristas([]);
     } finally {
       setLoading(false);
     }
-  }, [dateRange, debouncedSearchTerm, debouncedPhoneSearch, selectedStatus, selectedCity, funcaoFilter, currentPage, pageSize, companyId]);
+  };
+
+  const fetchClientes = async () => {
+    try {
+      const { data, error } = await supabase.from('cliente')
+        .select('*')
+        .eq('st_cliente', true)
+        .eq('company_id', companyId)
+        .order('nome');
+
+      if (error) throw error;
+      setClientes(data || []);
+    } catch (error) {
+      console.error('Error fetching clientes:', error);
+      toast.error('Erro ao carregar clientes');
+    }
+  };
 
   const fetchCities = async () => {
     try {
       const { data, error } = await supabase
-        .from('vw_motoristas_completo')
-        .select('nome_cidade, sigla_estado')
-        .not('nome_cidade', 'is', null)
-        .order('nome_cidade');
+        .from('cidade')
+        .select(`
+          cidade,
+          estado!inner (
+            sigla_estado
+          )
+        `)
+        .order('cidade');
 
       if (error) throw error;
       
-      // Process cities to handle case-insensitive matching
-      const uniqueCities = new Map<string, { cidade: string; estado: { sigla_estado: string } }>();
-      
-      data?.forEach((city: { nome_cidade: string; sigla_estado: string }) => {
-        const lowerCaseCity = city.nome_cidade.toLowerCase();
-        // If we already have this city (case-insensitive), keep the first occurrence
-        if (!uniqueCities.has(lowerCaseCity)) {
-          uniqueCities.set(lowerCaseCity, {
-            cidade: city.nome_cidade,
-            estado: {
-              sigla_estado: city.sigla_estado
-            }
-          });
+      const typedData = data.map(city => ({
+        cidade: city.cidade,
+        estado: {
+          sigla_estado: Array.isArray(city.estado) ? city.estado[0]?.sigla_estado || '' : city.estado?.sigla_estado || ''
         }
-      });
+      })) as City[];
       
-      // Convert map to array with lowercase keys for filtering
-      const processedCities = Array.from(uniqueCities.entries()).map(([lowerCase, city]) => ({
-        ...city,
-        cidadeLowerCase: lowerCase
-      }));
-      
-      setCities(processedCities);
+      setCities(typedData);
     } catch (error) {
       console.error('Error fetching cities:', error);
       toast.error('Erro ao carregar cidades');
     }
   };
 
-  const handleStartChat = (motorista: MotoristaWithAddress) => {
-    if (motorista.telefone) {
-      startChat(motorista.telefone.toString());
-    } else {
-      toast.error('Este motorista não possui telefone cadastrado');
+  const fetchDashboardData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('motorista')
+        .select('st_cadastro')
+        .eq('company_id', companyId)
+        .eq('funcao', 'Motorista');
+
+      if (error) throw error;
+
+      // Client-side aggregation of status counts
+      const statusCounts: { [key: string]: number } = {};
+      
+      (data || []).forEach(item => {
+        const status = item.st_cadastro;
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+
+      const formattedData = Object.entries(statusCounts).map(([status, count]) => ({
+        name: status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' '),
+        count: count
+      }));
+
+      setDashboardData(formattedData);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      toast.error('Erro ao carregar dados do dashboard');
     }
   };
 
@@ -432,41 +414,12 @@ const MotoristasLista = () => {
     setIsMassMessageModalOpen(true);
   };
 
-  const renderPhoneLink = (motorista: Motorista) => {
-    const phoneNumber = motorista.telefone ? formatPhone(motorista.telefone.toString()) : '-';
-
-    // If no conversation_id, just show the phone number without the "Sem conversa" text
-    if (!motorista.conversation_id) {
-      return (
-        <div className="text-sm text-gray-900 dark:text-white">
-          {phoneNumber}
-        </div>
-      );
+  const handleStartChat = (motorista: MotoristaWithAddress) => {
+    if (motorista.telefone) {
+      startChat(motorista.telefone.toString());
+    } else {
+      toast.error('Este motorista não possui telefone cadastrado');
     }
-
-    if (!wiseappAccountId) {
-      return (
-        <div className="text-sm text-gray-900 dark:text-white">
-          {phoneNumber}
-          <span className="ml-1 text-xs text-red-500" title="WiseApp Account ID não disponível">
-            (Conta WiseApp não configurada)
-          </span>
-        </div>
-      );
-    }
-
-    const wiseappUrl = `https://chat.wiseapp360.com/app/accounts/${wiseappAccountId}/conversations/${motorista.conversation_id}`;
-
-    return (
-      <a 
-        href={wiseappUrl} 
-        target="_blank" 
-        rel="noopener noreferrer" 
-        className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
-      >
-        {phoneNumber}
-      </a>
-    );
   };
 
   const handleViewDocument = async (motorista: MotoristaWithAddress) => {
@@ -479,7 +432,7 @@ const MotoristasLista = () => {
         telefone: motorista.telefone?.toString(),
         dt_nascimento: motorista.dt_nascimento,
         endereco: null,
-        st_cadastro: motorista.st_cadastro
+        veiculo: null
       });
       
       setIsDocumentViewerOpen(true);
@@ -529,7 +482,7 @@ const MotoristasLista = () => {
         telefone: motorista.telefone?.toString(),
         dt_nascimento: motorista.dt_nascimento,
         endereco: enderecoResponse.data,
-        st_cadastro: motorista.st_cadastro
+        veiculo: null
       });
     } catch (error) {
       console.error('Erro ao carregar documentos:', error);
@@ -538,39 +491,79 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleUploadDocuments = (motorista: MotoristaWithAddress) => {
-    setSelectedMotoristaUpload(motorista);
-    setIsDocumentUploadModalOpen(true);
+  const handleOpenDocumentUpload = (motorista: MotoristaWithAddress) => {
+    setSelectedMotorista(motorista);
+    setIsDocumentUploadOpen(true);
+  };
+
+  const handleOpenDocumentForm = (motorista: MotoristaWithAddress) => {
+    setSelectedMotorista(motorista);
+    setIsDocumentFormOpen(true);
   };
 
   const handleEdit = (motorista: MotoristaWithAddress) => {
-    setSelectedMotoristaEdit(motorista);
+    setSelectedMotorista(motorista);
     setIsEditModalOpen(true);
   };
 
   const handleDelete = (motorista: MotoristaWithAddress) => {
-    setSelectedMotoristaDelete(motorista);
+    setSelectedMotorista(motorista);
     setIsDeleteModalOpen(true);
   };
 
   const confirmDelete = async () => {
-    if (!selectedMotoristaDelete) return;
+    if (!selectedMotorista) return;
 
     try {
-      const { error } = await supabase
-        .from('motorista')
+      const { error } = await query('motorista')
         .delete()
-        .eq('motorista_id', selectedMotoristaDelete.motorista_id);
+        .eq('motorista_id', selectedMotorista.motorista_id);
 
       if (error) throw error;
 
-      setMotoristas(motoristas.filter(m => m.motorista_id !== selectedMotoristaDelete.motorista_id));
-      setAllMotoristas(allMotoristas.filter(m => m.motorista_id !== selectedMotoristaDelete.motorista_id));
+      setMotoristas(motoristas.filter(m => m.motorista_id !== selectedMotorista.motorista_id));
       toast.success('Motorista excluído com sucesso');
       setIsDeleteModalOpen(false);
     } catch (error) {
       console.error('Error deleting motorista:', error);
       toast.error('Erro ao excluir motorista');
+    }
+  };
+
+  const updateStatus = async (motorista_id: number, newStatus: string) => {
+    try {
+      const { error } = await query('motorista')
+        .update({ st_cadastro: newStatus })
+        .eq('motorista_id', motorista_id);
+
+      if (error) throw error;
+      
+      setMotoristas(prev => prev.map(m => 
+        m.motorista_id === motorista_id ? { ...m, st_cadastro: newStatus } : m
+      ));
+      
+      toast.success('Status atualizado com sucesso');
+    } catch (err) {
+      toast.error('Erro ao atualizar status');
+    }
+  };
+
+  const updateCliente = async (motorista_id: number, cliente_id: number | null) => {
+    try {
+      const { error } = await query('motorista')
+        .update({ cliente_id })
+        .eq('motorista_id', motorista_id);
+
+      if (error) throw error;
+
+      setMotoristas(prev => prev.map(m => 
+        m.motorista_id === motorista_id ? { ...m, cliente_id: cliente_id || 0 } : m
+      ));
+      
+      toast.success('Cliente atualizado com sucesso');
+    } catch (error) {
+      console.error('Error updating cliente:', error);
+      toast.error('Erro ao atualizar cliente');
     }
   };
 
@@ -583,16 +576,15 @@ const MotoristasLista = () => {
     }
     setSelectedItems(newSelectedItems);
     
-    // Update selectAll state based on all motoristas, not just the current page
-    setSelectAll(newSelectedItems.size === allMotoristas.length);
+    // Update selectAll state
+    setSelectAll(newSelectedItems.size === motoristas.length);
   };
 
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      // Select ALL motoristas, not just the ones on the current page
-      setSelectedItems(new Set(allMotoristas.map(m => m.motorista_id)));
+      setSelectedItems(new Set(motoristas.map(m => m.motorista_id)));
     }
     setSelectAll(!selectAll);
   };
@@ -626,7 +618,6 @@ const MotoristasLista = () => {
       toast.error(`Erro ao ${activate ? 'ativar' : 'desativar'} motoristas`);
     }
   };
-
   const handleContextMenu = (e: React.MouseEvent, motorista: MotoristaWithAddress) => {
     e.preventDefault();
     setContextMenu({
@@ -643,25 +634,30 @@ const MotoristasLista = () => {
 
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
-    setCurrentPage(1); // Reset to first page when changing page size
+    setCurrentPage(1);
   };
 
   const handleSearch = () => {
-    // Apply search filters and reset to page 1
     setCurrentPage(1);
     fetchMotoristas();
   };
+
+  const filterButtons = [
+    { value: 'todos', label: 'Todos' },
+    { value: 'Motorista', label: 'Motoristas' },
+    { value: 'Agregado', label: 'Agregados' }
+  ];
 
   const statusOptions = [
     { value: '', label: 'Todos os status' },
     { value: 'cadastrado', label: 'Cadastrado' },
     { value: 'qualificado', label: 'Qualificado' },
     { value: 'documentacao', label: 'Documentação' },
-    { value: 'gr', label: 'Gestão de Risco' },
     { value: 'contrato_enviado', label: 'Contrato Enviado' },
     { value: 'contratado', label: 'Contratado' },
     { value: 'repescagem', label: 'Repescagem' },
-    { value: 'rejeitado', label: 'Rejeitado' }
+    { value: 'rejeitado', label: 'Rejeitado' },
+    { value: 'gr', label: 'Gestão de Risco' }
   ];
 
   const activeStatusOptions = [
@@ -694,44 +690,19 @@ const MotoristasLista = () => {
       default:
         return baseStyle;
     }
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCity(e.target.value);
+    setCurrentPage(1);
   };
 
-  const updateStatus = async (motorista_id: number, newStatus: string) => {
-    try {
-      const { error } = await supabase.from('motorista')
-        .update({ st_cadastro: newStatus })
-        .eq('motorista_id', motorista_id)
-        .eq('company_id', companyId);
-
-      if (error) throw error;
-
-      setMotoristas(motoristas.map(m => 
-        m.motorista_id === motorista_id ? { ...m, st_cadastro: newStatus } : m
-      ));
-      
-      toast.success('Status atualizado com sucesso');
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Erro ao atualizar status');
-    }
+  const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedClient(Number(e.target.value));
+    setCurrentPage(1);
   };
-  
-  const updateCliente = async (motorista_id: number, cliente_id: number | null) => {
-    try {
-      const { error } = await supabase.from('motorista')
-        .update({ cliente_id })
-        .eq('motorista_id', motorista_id);
 
-      if (error) throw error;
-
-      setMotoristas(prev => prev.map(m => 
-        m.motorista_id === motorista_id ? { ...m, cliente_id } : m
-      ));
-      
-      toast.success('Cliente atualizado com sucesso');
-    } catch (err) {
-      toast.error('Erro ao atualizar cliente');
-    }
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedStatus(e.target.value);
+    setCurrentPage(1);
   };
 
   const toggleStatus = async (motorista_id: number, currentStatus: boolean) => {
@@ -784,8 +755,8 @@ const MotoristasLista = () => {
               </button>
               <button
                 onClick={() => setIsBulkStatusModalOpen(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 
+                        focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 
                         transition-colors flex items-center gap-2"
               >
                 <Users className="w-5 h-5" />
@@ -802,53 +773,61 @@ const MotoristasLista = () => {
               </button>
             </>
           )}
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                     transition-colors flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Novo Motorista
+          </button>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col md:flex-row gap-4 w-full">
-          <div className="relative flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative">
             <input
               type="text"
               placeholder="Buscar por nome ou CPF..."
               value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset to first page on filter change
-              }}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              autoComplete="off"
             />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            {isSearching ? (
+              <div className="absolute left-3 top-2.5">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            )}
           </div>
 
-          <div className="relative flex-1">
+          <div className="relative">
             <input
               type="text"
               placeholder="Buscar por telefone..."
               value={phoneSearch}
-              onChange={(e) => {
-                setPhoneSearch(e.target.value);
-                setCurrentPage(1); // Reset to first page on filter change
-              }}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100"
+              onChange={(e) => setPhoneSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              autoComplete="off"
             />
-            <Phone className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            {isSearching ? (
+              <div className="absolute left-3 top-2.5">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (
+              <Phone className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            )}
           </div>
 
-          <div className="relative flex-1">
+          <div className="relative">
             <select
               value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value);
-                setCurrentPage(1); // Reset to first page on filter change
-              }}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100 appearance-none"
+              onChange={handleStatusChange}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               {statusOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -859,20 +838,15 @@ const MotoristasLista = () => {
             <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
-          <div className="relative flex-1">
+          <div className="relative">
             <select
               value={selectedCity}
-              onChange={(e) => {
-                setSelectedCity(e.target.value);
-                setCurrentPage(1); // Reset to first page on filter change
-              }}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100 appearance-none"
+              onChange={handleCityChange}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="">Todas as cidades</option>
               {cities.map((city, index) => (
-                <option key={index} value={city.cidadeLowerCase}>
+                <option key={index} value={city.cidade}>
                   {city.cidade} ({city.estado.sigla_estado})
                 </option>
               ))}
@@ -907,19 +881,41 @@ const MotoristasLista = () => {
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
                        transition-colors flex items-center justify-center"
               title="Adicionar Motorista"
+          <div className="relative">
+            <select
+              value={selectedClient.toString()}
+              onChange={handleClientChange}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
-              <Plus className="w-5 h-5" />
-            </button>
+              <option value="0">Todos os clientes</option>
+              {clientes.map((cliente) => (
+                <option key={cliente.cliente_id} value={cliente.cliente_id}>
+                  {cliente.nome}
+                </option>
+              ))}
+            </select>
+            <Building2 className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-4">
-          <PeriodSelector
-            periodType={periodType}
-            dateRange={dateRange}
-            onPeriodChange={updatePeriod}
-            onDateRangeChange={setDateRange}
-          />
+        <div className="flex gap-2 mt-4">
+          {filterButtons.map(button => (
+            <button
+              key={button.value}
+              onClick={() => {
+                setFuncaoFilter(button.value as 'todos' | 'Motorista' | 'Agregado');
+                setCurrentPage(1);
+                handleSearch();
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                funcaoFilter === button.value
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+              }`}
+            >
+              {button.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -940,7 +936,7 @@ const MotoristasLista = () => {
           </div>
           
           <div className="relative">
-            <div ref={tableContainerRef as React.RefObject<HTMLDivElement>} className="overflow-x-auto w-full">
+            <div ref={tableContainerRef} className="overflow-x-auto w-full">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
@@ -958,13 +954,12 @@ const MotoristasLista = () => {
                   {motoristas.map((motorista) => (
                     <tr 
                       key={motorista.motorista_id} 
-                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                         selectedItems.has(motorista.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
-                      onClick={() => handleViewDocument(motorista)}
                       onContextMenu={(e) => handleContextMenu(e, motorista)}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
                           checked={selectedItems.has(motorista.motorista_id)}
@@ -1021,45 +1016,38 @@ const MotoristasLista = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <select
                           value={motorista.st_cadastro}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            updateStatus(motorista.motorista_id, e.target.value);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className={getStatusStyle(motorista.st_cadastro)}
+                          onChange={(e) => updateStatus(motorista.motorista_id, e.target.value)}
+                          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                            motorista.st_cadastro === 'cadastrado' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            motorista.st_cadastro === 'qualificado' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                            motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            motorista.st_cadastro === 'contrato_enviado' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' :
+                            motorista.st_cadastro === 'contratado' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                            motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                            motorista.st_cadastro === 'gr' ? 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                          }`}
                         >
-                          {statusOptions.filter(option => option.value).map(option => (
-                            <option 
-                              key={option.value} 
-                              value={option.value}
-                              className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                            >
-                              {option.label}
-                            </option>
-                          ))}
+                          <option value="cadastrado">Cadastrado</option>
+                          <option value="qualificado">Qualificado</option>
+                          <option value="documentacao">Documentação</option>
+                          <option value="contrato_enviado">Contrato Enviado</option>
+                          <option value="contratado">Contratado</option>
+                          <option value="repescagem">Repescagem</option>
+                          <option value="rejeitado">Rejeitado</option>
+                          <option value="gr">Gestão de Risco</option>
                         </select>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <select
                           value={motorista.cliente_id || ''}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            updateCliente(motorista.motorista_id, e.target.value ? Number(e.target.value) : null);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                            motorista.cliente_id ?
-                              clientColors[motorista.cliente_id % clientColors.length] :
-                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                          }`}
+                          onChange={(e) => updateCliente(motorista.motorista_id, e.target.value ? Number(e.target.value) : null)}
+                          className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 transition-colors"
                         >
                           <option value="">Sem cliente</option>
-                          {clientes.map((cliente, index) => (
-                            <option 
-                              key={cliente.cliente_id} 
-                              value={cliente.cliente_id}
-                              className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                            >
+                          {clientes.map((cliente) => (
+                            <option key={cliente.cliente_id} value={cliente.cliente_id}>
                               {cliente.nome}
                             </option>
                           ))}
@@ -1080,22 +1068,15 @@ const MotoristasLista = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleUploadDocuments(motorista);
-                            }}
-                            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors"
-                            title="Enviar Documentos"
-                          >
-                            <Upload size={18} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
                               handleEdit(motorista);
                             }}
                             className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                             title="Editar"
                           >
-                            <Edit2 size={18} />
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                              <path d="m15 5 4 4"></path>
+                            </svg>
                           </button>
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input
@@ -1123,7 +1104,7 @@ const MotoristasLista = () => {
             
             {/* Scroll indicators */}
             <ScrollableTableIndicator 
-              containerRef={tableContainerRef as React.RefObject<HTMLDivElement>}
+              containerRef={tableContainerRef} 
               className="mr-2 ml-2"
             />
           </div>
@@ -1162,19 +1143,14 @@ const MotoristasLista = () => {
               </button>
               
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                // Calculate page numbers to show (always show 5 pages if possible)
                 let pageNum;
                 if (totalPages <= 5) {
-                  // If 5 or fewer pages, show all
                   pageNum = i + 1;
                 } else if (currentPage <= 3) {
-                  // If near the start, show first 5 pages
                   pageNum = i + 1;
                 } else if (currentPage >= totalPages - 2) {
-                  // If near the end, show last 5 pages
                   pageNum = totalPages - 4 + i;
                 } else {
-                  // Otherwise show 2 before and 2 after current page
                   pageNum = currentPage - 2 + i;
                 }
                 
@@ -1213,35 +1189,32 @@ const MotoristasLista = () => {
           onClose={() => setContextMenu({ ...contextMenu, visible: false })}
           actions={[
             {
-              icon: <FilePen size={16} />,
+              icon: <FileText size={16} />,
               label: 'Visualizar Documentos',
               onClick: () => handleViewDocument(contextMenu.motorista!),
-              color: 'text-blue-600 dark:text-blue-400'
+              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
             },
             {
-              icon: <Upload size={16} />,
-              label: 'Enviar Documentos',
-              onClick: () => handleUploadDocuments(contextMenu.motorista!),
-              color: 'text-green-600 dark:text-green-400'
+              icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                <path d="m15 5 4 4"></path>
+              </svg>,
+              label: 'Editar Motorista',
+              onClick: () => handleEdit(contextMenu.motorista!),
+              color: 'text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors'
             },
             {
               icon: <MessageCircle size={16} />,
               label: 'Iniciar Chat',
               onClick: () => handleStartChat(contextMenu.motorista!),
-              color: 'text-blue-600 dark:text-blue-400',
+              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors',
               disabled: !contextMenu.motorista?.telefone
-            },
-            {
-              icon: <Edit2 size={16} />,
-              label: 'Editar Motorista',
-              onClick: () => handleEdit(contextMenu.motorista!),
-              color: 'text-yellow-500 dark:text-yellow-400'
             },
             {
               icon: <Trash2 size={16} />,
               label: 'Excluir Motorista',
               onClick: () => handleDelete(contextMenu.motorista!),
-              color: 'text-red-600 dark:text-red-400'
+              color: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors'
             }
           ]}
         />
@@ -1257,14 +1230,22 @@ const MotoristasLista = () => {
         telefone={selectedDocumento.telefone}
         dt_nascimento={selectedDocumento.dt_nascimento}
         endereco={selectedDocumento.endereco}
-        st_cadastro={selectedDocumento.st_cadastro}
+        veiculo={selectedDocumento.veiculo}
       />
 
-      <EditMotoristaModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        motorista={selectedMotoristaEdit}
-        onUpdate={fetchMotoristas}
+      <DocumentUploadModal
+        isOpen={isDocumentUploadOpen}
+        onClose={() => setIsDocumentUploadOpen(false)}
+        motorista_id={selectedMotorista?.motorista_id || 0}
+        nome={selectedMotorista?.nome || ''}
+        onUploadSuccess={fetchMotoristas}
+      />
+
+      <DocumentoMotoristaForm
+        isOpen={isDocumentFormOpen}
+        onClose={() => setIsDocumentFormOpen(false)}
+        motorista_id={selectedMotorista?.motorista_id || 0}
+        onSuccess={fetchMotoristas}
       />
 
       <AddMotoristaModal
@@ -1273,17 +1254,24 @@ const MotoristasLista = () => {
         onSuccess={fetchMotoristas}
       />
 
+      <EditMotoristaModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        motorista={selectedMotorista as any}
+        onUpdate={fetchMotoristas}
+      />
+
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
         title="Confirmar Exclusão"
         message="Tem certeza que deseja excluir este motorista? Esta ação não pode ser desfeita."
-        itemData={selectedMotoristaDelete ? [
-          { label: "Nome", value: selectedMotoristaDelete.nome },
-          { label: "CPF", value: formatCPF(selectedMotoristaDelete.cpf) },
-          { label: "Email", value: selectedMotoristaDelete.email || 'Não informado' },
-          { label: "Função", value: selectedMotoristaDelete.funcao }
+        itemData={selectedMotorista ? [
+          { label: "Nome", value: selectedMotorista.nome },
+          { label: "CPF", value: formatCPF(selectedMotorista.cpf) },
+          { label: "Email", value: selectedMotorista.email || 'Não informado' },
+          { label: "Função", value: selectedMotorista.funcao }
         ] : []}
       />
 
@@ -1294,7 +1282,7 @@ const MotoristasLista = () => {
         nome={selectedMotoristaUpload?.nome || ''}
         onUploadSuccess={fetchMotoristas}
       />
-
+        
       <BulkActionsModal
         isOpen={isBulkStatusModalOpen}
         onClose={() => setIsBulkStatusModalOpen(false)}

@@ -231,11 +231,6 @@ const Contratados = () => {
         query = query.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
       }
 
-      // Apply status filter if selected
-      if (selectedStatus) {
-        query = query.eq('st_cadastro', selectedStatus);
-      }
-
       // Apply city filter if selected
       if (selectedCity) {
         query = query.ilike('nome_cidade', selectedCity);
@@ -294,10 +289,24 @@ const Contratados = () => {
         });
       }
 
-      // Update state
-      setMotoristas(motoristasData);
-      setTotalCount(count || 0);
-      setTotalPages(Math.ceil((count || 0) / pageSize));
+
+      // Create a Map to deduplicate motoristas by motorista_id
+      const uniqueMotoristas = new Map();
+      motoristasData.forEach(motorista => {
+        uniqueMotoristas.set(motorista.motorista_id, motorista);
+      });
+
+      // Convert Map back to array
+      const deduplicatedMotoristas = Array.from(uniqueMotoristas.values());
+
+      // Update total count based on filtered data
+      const filteredCount = deduplicatedMotoristas.length;
+      setTotalCount(filteredCount);
+      setTotalPages(Math.max(1, Math.ceil(filteredCount / pageSize)));
+
+      // Apply pagination
+      const paginatedData = deduplicatedMotoristas.slice(from, to + 1);
+      setMotoristas(paginatedData);
       
       // Fetch all motoristas for select all functionality
       const { data: allData } = await supabase
