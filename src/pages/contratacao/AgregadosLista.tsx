@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
-import { Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Store, MessageCircle, MessageSquare, Users, Building2, Truck, FilePen, Upload } from 'lucide-react';
+import {Trash2, Search, Phone, Filter, MapPin, Plus, MessageCircle, MessageSquare, Users, Building2, Truck, FilePen, FileText } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
-import type { Motorista } from '../../types/database';
+import type { Motorista, DocumentoMotorista } from '../../types/database';
 import DocumentViewer from '../../components/DocumentViewer';
 import toast from 'react-hot-toast';
 import { formatCPF, formatPhone } from '../../utils/format';
@@ -21,7 +21,7 @@ import { useAuth } from '../../context/AuthContext';
 
 interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'autorizacao_lgpd' | 'cliente_id' | 'documento_motorista'> {
   telefone?: string | number;
-  autorizacao_lgpd?: string;
+  autorizacao_lgpd?: boolean;
   cidade?: string;
   cidadeLowerCase?: string;
   estado?: {
@@ -73,13 +73,6 @@ interface ViewAgregado {
 }
 
 interface City {
-  cidade: string;
-  estado: {
-    sigla_estado: string;
-  };
-}
-
-interface CityResponse {
   cidade: string;
   estado: {
     sigla_estado: string;
@@ -388,12 +381,12 @@ const AgregadosLista = () => {
 
       if (error) throw error;
       
-      const typedData = data.map(city => ({
+      const typedData = (data || []).map((city: any) => ({
         cidade: city.cidade,
         estado: {
-          sigla_estado: Array.isArray(city.estado) ? city.estado[0]?.sigla_estado || '' : city.estado?.sigla_estado || ''
+          sigla_estado: city.estado?.sigla_estado || ''
         }
-      })) as City[];
+      }));
       
       setCities(typedData);
     } catch (error) {
@@ -985,7 +978,7 @@ const AgregadosLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">{motorista.cidade}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{motorista.estado}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{motorista.estado?.sigla_estado || ''}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <select

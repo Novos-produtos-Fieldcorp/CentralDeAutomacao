@@ -1,44 +1,31 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FileText, Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Upload, MessageCircle, Users, Building2, MessageSquare, Eye, FilePen, Check, X, ListTodo } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FileText, Trash2, Search, Phone, Filter, MapPin, Plus, MessageCircle, Users, Building2, MessageSquare, FilePen, ListTodo } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
-import type { Motorista } from '../../types/database';
 import DocumentViewer from '../../components/DocumentViewer';
 import EditMotoristaModal from '../../components/EditMotoristaModal';
 import AddMotoristaModal from '../../components/AddMotoristaModal';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
-import { formatPhone, formatCPF, formatDate } from '../../utils/format';
+import { formatPhone, formatCPF } from '../../utils/format';
 import { useDateRange } from '../../hooks/useDateRange';
-import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import toast from 'react-hot-toast';
-import { formatCPF, formatPhone } from '../../utils/format';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
-import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import { useFloatingChat } from '../../hooks/useFloatingChat';
 import BulkActionsModal from '../../components/BulkActionsModal';
 import MassMessageModal from '../../components/MassMessageModal';
-import AddMotoristaModal from '../../components/AddMotoristaModal';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
 import DocumentoMotoristaForm from '../../components/DocumentoMotoristaForm';
-import EditMotoristaModal from '../../components/EditMotoristaModal';
 import { useAuth } from '../../context/AuthContext';
 
-interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'cidade' | 'estado'> {
-  telefone: string | number;
-  autorizacao_lgpd: boolean;
-  cliente_id: number | null;
-  ativo: boolean;
-}
-
-interface ViewMotorista {
+interface MotoristaWithAddress {
   motorista_id: number;
-  nome_motorista: string;
+  nome: string;
   cpf: string;
   dt_nascimento: string;
   genero: string;
-  telefone: string;
+  telefone: string | number;
   email: string;
   funcao: string;
   origem_usuario: string;
@@ -88,16 +75,24 @@ const MotoristasLista = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
   const { accountId } = useAuth();
+  const { dateRange } = useDateRange();
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  
+  // State declarations
   const [motoristas, setMotoristas] = useState<MotoristaWithAddress[]>([]);
+  const [allMotoristas, setAllMotoristas] = useState<MotoristaWithAddress[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [phoneSearch, setPhoneSearch] = useState('');
+  const [debouncedPhoneSearch, setDebouncedPhoneSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
+  const [selectedClient, setSelectedClient] = useState<number>(0);
   const [selectedActiveStatus, setSelectedActiveStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [wiseappAccountId, setWiseappAccountId] = useState<string | null>(null);
-  const [cities, setCities] = useState<{ cidade: string; cidadeLowerCase: string; estado: { sigla_estado: string } }[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
@@ -105,13 +100,18 @@ const MotoristasLista = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
+  const [isBulkClientModalOpen, setIsBulkClientModalOpen] = useState(false);
+  const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
   const [selectedMotorista, setSelectedMotorista] = useState<MotoristaWithAddress | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
-  const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
-  const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
-  const [isBulkClientModalOpen, setIsBulkClientModalOpen] = useState(false);
-  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [dashboardData, setDashboardData] = useState<DashboardData[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -133,14 +133,6 @@ const MotoristasLista = () => {
     endereco: any;
     veiculo: any | null;
   }>({ documento: null, nome: '', endereco: null, veiculo: null });
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(100);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isSearching, setIsSearching] = useState(false);
-  const [dashboardData, setDashboardData] = useState<DashboardData[]>([]);
 
   // Debounce search terms
   useEffect(() => {
@@ -258,6 +250,7 @@ const MotoristasLista = () => {
       if (selectedActiveStatus !== 'all') {
         query = query.eq('is_active', selectedActiveStatus === 'active');
       }
+
       // Apply pagination
       query = query
         .order('data_cadastro', { ascending: false })
@@ -288,8 +281,7 @@ const MotoristasLista = () => {
         cidade: motorista.nome_cidade || 'Não informada',
         cidadeLowerCase: motorista.nome_cidade?.toLowerCase() || '',
         estado: motorista.sigla_estado || '',
-        ativo: motorista.ativo
-      })) as unknown as MotoristaWithAddress[];
+        ativo: motorista.ativo,
         nome_cliente: motorista.nome_cliente
       }));
 
@@ -356,12 +348,12 @@ const MotoristasLista = () => {
 
       if (error) throw error;
       
-      const typedData = data.map(city => ({
+      const typedData = (data || []).map((city: any) => ({
         cidade: city.cidade,
         estado: {
-          sigla_estado: Array.isArray(city.estado) ? city.estado[0]?.sigla_estado || '' : city.estado?.sigla_estado || ''
+          sigla_estado: city.estado?.sigla_estado || ''
         }
-      })) as City[];
+      }));
       
       setCities(typedData);
     } catch (error) {
@@ -690,6 +682,8 @@ const MotoristasLista = () => {
       default:
         return baseStyle;
     }
+  };
+
   const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCity(e.target.value);
     setCurrentPage(1);
@@ -881,20 +875,24 @@ const MotoristasLista = () => {
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
                        transition-colors flex items-center justify-center"
               title="Adicionar Motorista"
-          <div className="relative">
-            <select
-              value={selectedClient.toString()}
-              onChange={handleClientChange}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
-              <option value="0">Todos os clientes</option>
-              {clientes.map((cliente) => (
-                <option key={cliente.cliente_id} value={cliente.cliente_id}>
-                  {cliente.nome}
-                </option>
-              ))}
-            </select>
-            <Building2 className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              <Plus className="w-5 h-5" />
+            </button>
+            <div className="relative">
+              <select
+                value={selectedClient.toString()}
+                onChange={handleClientChange}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="0">Todos os clientes</option>
+                {clientes.map((cliente) => (
+                  <option key={cliente.cliente_id} value={cliente.cliente_id}>
+                    {cliente.nome}
+                  </option>
+                ))}
+              </select>
+              <Building2 className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            </div>
           </div>
         </div>
 
@@ -1275,14 +1273,6 @@ const MotoristasLista = () => {
         ] : []}
       />
 
-      <DocumentUploadModal
-        isOpen={isDocumentUploadModalOpen}
-        onClose={() => setIsDocumentUploadModalOpen(false)}
-        motorista_id={selectedMotoristaUpload?.motorista_id || 0}
-        nome={selectedMotoristaUpload?.nome || ''}
-        onUploadSuccess={fetchMotoristas}
-      />
-        
       <BulkActionsModal
         isOpen={isBulkStatusModalOpen}
         onClose={() => setIsBulkStatusModalOpen(false)}

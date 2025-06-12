@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { FileText, Trash2, Search, Phone, Filter, MapPin, Plus, Store, UserMinus, MessageCircle, MessageSquare, Users, Building2, Truck, FilePen, Edit2, Upload } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import {Search, Phone, MapPin, Store, UserMinus, MessageCircle, MessageSquare, Building2, Truck, FilePen, Edit2, Upload } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import type { Motorista } from '../../types/database';
