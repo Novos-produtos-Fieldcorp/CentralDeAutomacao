@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { FileText, Trash2, Search, Phone, Filter, MapPin, Plus, Store, UserMinus, MessageCircle, MessageSquare, Users, Building2, Truck, FilePen } from 'lucide-react';
+import { FileText, Trash2, Search, Phone, Filter, MapPin, Plus, Store, UserMinus, MessageCircle, MessageSquare, Users, Building2, Truck, FilePen, Edit2, Upload } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import type { Motorista } from '../../types/database';
@@ -22,6 +22,7 @@ interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'cidade' | '
   estado: string;
   cidadeLowerCase: string;
   nome_cliente?: string | null;
+  ativo: boolean;
   veiculo?: Array<{
     placa: string;
     marca: string;
@@ -40,7 +41,7 @@ interface ViewMotorista {
   email: string;
   funcao: string;
   origem_usuario: string;
-  st_cadastro: boolean;
+  st_cadastro: string;
   autorizacao_lgpd: boolean;
   company_id: number;
   data_cadastro: string;
@@ -50,6 +51,7 @@ interface ViewMotorista {
   sigla_estado: string | null;
   nome_cliente: string | null;
   tipologia?: string;
+  ativo: boolean;
 }
 
 interface City {
@@ -134,6 +136,8 @@ const Contratados = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [allMotoristas, setAllMotoristas] = useState<MotoristaWithAddress[]>([]);
   const [vehicleTypes, setVehicleTypes] = useState<string[]>([]);
+  const [isDocumentUploadModalOpen, setIsDocumentUploadModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const clientColors = [
     'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
@@ -251,7 +255,7 @@ const Contratados = () => {
 
       if (error) throw error;
 
-      // Process the data - map view fields to component fields
+      // Process the data
       let motoristasData = (data as ViewMotorista[])?.map(motorista => ({
         motorista_id: motorista.motorista_id,
         nome: motorista.nome_motorista,
@@ -272,6 +276,7 @@ const Contratados = () => {
         cidadeLowerCase: motorista.nome_cidade?.toLowerCase() || '',
         estado: motorista.sigla_estado || '',
         nome_cliente: motorista.nome_cliente,
+        ativo: motorista.ativo,
         veiculo: motorista.tipologia ? [{
           placa: '',
           marca: '',
@@ -289,14 +294,10 @@ const Contratados = () => {
         });
       }
 
-      // Update total count based on filtered data
-      const filteredCount = motoristasData.length;
-      setTotalCount(filteredCount);
-      setTotalPages(Math.max(1, Math.ceil(filteredCount / pageSize)));
-
-      // Apply pagination
-      const paginatedData = motoristasData.slice(from, to + 1);
-      setMotoristas(paginatedData);
+      // Update state
+      setMotoristas(motoristasData);
+      setTotalCount(count || 0);
+      setTotalPages(Math.ceil((count || 0) / pageSize));
       
       // Fetch all motoristas for select all functionality
       const { data: allData } = await supabase
@@ -721,6 +722,36 @@ const Contratados = () => {
     setCurrentPage(1);
   };
 
+  const toggleStatus = async (motorista_id: number, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('motorista')
+        .update({ ativo: !currentStatus })
+        .eq('motorista_id', motorista_id);
+
+      if (error) throw error;
+
+      setMotoristas(motoristas.map(m => 
+        m.motorista_id === motorista_id ? { ...m, ativo: !currentStatus } : m
+      ));
+      
+      toast.success(`Contratado ${!currentStatus ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      toast.error('Erro ao alterar status do contratado');
+    }
+  };
+
+  const handleUploadDocuments = (motorista: MotoristaWithAddress) => {
+    setSelectedMotorista(motorista);
+    setIsDocumentUploadModalOpen(true);
+  };
+
+  const handleEdit = (motorista: MotoristaWithAddress) => {
+    setSelectedMotorista(motorista);
+    setIsEditModalOpen(true);
+  };
+
   if (loading) {
     return (
       <LoadingSpinner />
@@ -1026,11 +1057,11 @@ const Contratados = () => {
                         </select>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-3">
+                        <div className="flex items-center justify-end space-x-3" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleViewUnifiedModal(motorista);
+                              handleViewDocument(motorista);
                             }}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Visualizar Documentos"
@@ -1040,13 +1071,39 @@ const Contratados = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(motorista);
+                              handleUploadDocuments(motorista);
                             }}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                            title="Remover Contratado"
+                            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors"
+                            title="Enviar Documentos"
                           >
-                            <UserMinus size={18} />
+                            <Upload size={18} />
                           </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(motorista);
+                            }}
+                            className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                            title="Editar"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={motorista.ativo}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                toggleStatus(motorista.motorista_id, motorista.ativo);
+                              }}
+                            />
+                            <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 ${
+                              motorista.ativo 
+                                ? 'bg-green-600' 
+                                : 'bg-red-600'
+                            }`}></div>
+                          </label>
                         </div>
                       </td>
                     </tr>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FileText, Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Upload, MessageCircle, Users, Building2, MessageSquare, Eye, FilePen } from 'lucide-react';
+import { FileText, Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Upload, MessageCircle, Users, Building2, MessageSquare, Eye, FilePen, Check, X, ListTodo } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import type { Motorista, Cliente, DocumentoMotorista } from '../../types/database';
@@ -10,7 +10,6 @@ import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import { formatPhone, formatCPF, formatDate } from '../../utils/format';
 import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
-import BulkDeleteConfirmationModal from '../../components/BulkDeleteConfirmationModal';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
@@ -27,6 +26,7 @@ interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'autorizacao
   telefone: string | number;
   autorizacao_lgpd: boolean;
   cliente_id: number | null;
+  ativo: boolean;
 }
 
 interface ViewMotorista {
@@ -55,6 +55,7 @@ interface ViewMotorista {
   nome_cidade: string | null;
   nome_estado: string | null;
   sigla_estado: string | null;
+  ativo: boolean;
 }
 
 interface EditMotoristaModalProps {
@@ -88,6 +89,7 @@ const MotoristasLista = () => {
   const [phoneSearch, setPhoneSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
+  const [selectedActiveStatus, setSelectedActiveStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [wiseappAccountId, setWiseappAccountId] = useState<string | null>(null);
   const [cities, setCities] = useState<{ cidade: string; cidadeLowerCase: string; estado: { sigla_estado: string } }[]>([]);
   const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
@@ -98,7 +100,6 @@ const MotoristasLista = () => {
   const [isDocumentUploadModalOpen, setIsDocumentUploadModalOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
-  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
   const [isBulkClientModalOpen, setIsBulkClientModalOpen] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
@@ -301,6 +302,11 @@ const MotoristasLista = () => {
         query = query.eq('funcao', funcaoFilter);
       }
 
+      // Apply active status filter if selected
+      if (selectedActiveStatus !== 'all') {
+        query = query.eq('is_active', selectedActiveStatus === 'active');
+      }
+
       // Execute the query
       const { data, error, count } = await query.order('data_cadastro', { ascending: false });
 
@@ -325,7 +331,8 @@ const MotoristasLista = () => {
         conversation_id: motorista.conversation_id,
         cidade: motorista.nome_cidade || 'Não informada',
         cidadeLowerCase: motorista.nome_cidade?.toLowerCase() || '',
-        estado: motorista.sigla_estado || ''
+        estado: motorista.sigla_estado || '',
+        ativo: motorista.st_cadastro === 'cadastrado'
       })) as unknown as MotoristaWithAddress[];
 
       // Apply phone filter on frontend
@@ -590,30 +597,33 @@ const MotoristasLista = () => {
     setSelectAll(!selectAll);
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkStatusChange = async (activate: boolean) => {
     try {
-      // Delete all selected items
+      // Update active status for all selected items
       for (const id of selectedItems) {
         const { error } = await supabase
           .from('motorista')
-          .delete()
-          .then(q => q.eq('motorista_id', id));
+          .update({ ativo: activate })
+          .eq('motorista_id', id);
 
         if (error) throw error;
       }
 
       // Update the list
-      setMotoristas(motoristas.filter(m => !selectedItems.has(m.motorista_id)));
-      setAllMotoristas(allMotoristas.filter(m => !selectedItems.has(m.motorista_id)));
-      toast.success(`${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
+      setMotoristas(motoristas.map(m => 
+        selectedItems.has(m.motorista_id) ? { ...m, ativo: activate } : m
+      ));
+      setAllMotoristas(allMotoristas.map(m => 
+        selectedItems.has(m.motorista_id) ? { ...m, ativo: activate } : m
+      ));
+      toast.success(`${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''} ${activate ? 'ativado' : 'desativado'}${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
       
       // Reset selection
       setSelectedItems(new Set());
       setSelectAll(false);
-      setIsBulkDeleteModalOpen(false);
     } catch (error) {
-      console.error('Error deleting motoristas:', error);
-      toast.error('Erro ao excluir motoristas');
+      console.error('Error updating motoristas:', error);
+      toast.error(`Erro ao ${activate ? 'ativar' : 'desativar'} motoristas`);
     }
   };
 
@@ -652,6 +662,12 @@ const MotoristasLista = () => {
     { value: 'contratado', label: 'Contratado' },
     { value: 'repescagem', label: 'Repescagem' },
     { value: 'rejeitado', label: 'Rejeitado' }
+  ];
+
+  const activeStatusOptions = [
+    { value: 'all', label: 'Todos' },
+    { value: 'active', label: 'Ativos' },
+    { value: 'inactive', label: 'Inativos' }
   ];
 
   const getStatusStyle = (status: string) => {
@@ -718,6 +734,26 @@ const MotoristasLista = () => {
     }
   };
 
+  const toggleStatus = async (motorista_id: number, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('motorista')
+        .update({ ativo: !currentStatus })
+        .eq('motorista_id', motorista_id);
+
+      if (error) throw error;
+
+      setMotoristas(motoristas.map(m => 
+        m.motorista_id === motorista_id ? { ...m, ativo: !currentStatus } : m
+      ));
+      
+      toast.success(`Motorista ${!currentStatus ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      toast.error('Erro ao alterar status do motorista');
+    }
+  };
+
   if (loading) {
     return (
       <LoadingSpinner />
@@ -763,15 +799,6 @@ const MotoristasLista = () => {
               >
                 <Building2 className="w-5 h-5" />
                 Alterar Cliente
-              </button>
-              <button
-                onClick={() => setIsBulkDeleteModalOpen(true)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 
-                        focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
-                        transition-colors flex items-center gap-2"
-              >
-                <Trash2 className="w-5 h-5" />
-                Excluir Selecionados
               </button>
             </>
           )}
@@ -851,6 +878,26 @@ const MotoristasLista = () => {
               ))}
             </select>
             <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+
+          <div className="relative flex-3">
+            <select
+              value={selectedActiveStatus}
+              onChange={(e) => {
+                setSelectedActiveStatus(e.target.value as 'all' | 'active' | 'inactive');
+                setCurrentPage(1);
+              }}
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
+                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
+                       focus:border-blue-500 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              {activeStatusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <ListTodo className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
           <div className="flex gap-2">
@@ -1019,7 +1066,7 @@ const MotoristasLista = () => {
                         </select>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-3">
+                        <div className="flex items-center justify-end space-x-3" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1045,21 +1092,27 @@ const MotoristasLista = () => {
                               e.stopPropagation();
                               handleEdit(motorista);
                             }}
-                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
+                            className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                             title="Editar"
                           >
                             <Edit2 size={18} />
                           </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(motorista);
-                            }}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                            title="Excluir"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={motorista.ativo}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                toggleStatus(motorista.motorista_id, motorista.ativo);
+                              }}
+                            />
+                            <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 ${
+                              motorista.ativo 
+                                ? 'bg-green-600' 
+                                : 'bg-red-600'
+                            }`}></div>
+                          </label>
                         </div>
                       </td>
                     </tr>
@@ -1240,16 +1293,6 @@ const MotoristasLista = () => {
         motorista_id={selectedMotoristaUpload?.motorista_id || 0}
         nome={selectedMotoristaUpload?.nome || ''}
         onUploadSuccess={fetchMotoristas}
-      />
-
-      <BulkDeleteConfirmationModal
-        isOpen={isBulkDeleteModalOpen}
-        onClose={() => setIsBulkDeleteModalOpen(false)}
-        onConfirm={handleBulkDelete}
-        title="Confirmar Exclusão em Massa"
-        message="Tem certeza que deseja excluir todos os motoristas selecionados? Esta ação não pode ser desfeita."
-        itemCount={selectedItems.size}
-        itemType="motorista"
       />
 
       <BulkActionsModal

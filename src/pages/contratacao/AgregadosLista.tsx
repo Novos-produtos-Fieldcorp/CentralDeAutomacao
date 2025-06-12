@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Store, MessageCircle, MessageSquare, Users, Building2, Truck, FilePen } from 'lucide-react';
+import { Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Store, MessageCircle, MessageSquare, Users, Building2, Truck, FilePen, Upload } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import type { Motorista, Cliente, DocumentoMotorista } from '../../types/database';
@@ -30,6 +30,7 @@ interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'autorizacao
   };
   cliente_id?: number | null;
   documento_motorista?: DocumentoMotorista | null;
+  ativo: boolean;
   veiculo?: Array<{
     veiculo_id: number;
     placa: string;
@@ -78,6 +79,7 @@ interface ViewAgregado {
   marca_rastreador: string | null;
   cor: string | null;
   tipo: string | null;
+  ativo: boolean;
 }
 
 interface City {
@@ -86,9 +88,6 @@ interface City {
     sigla_estado: string;
   };
 }
-
-
-
 
 const AgregadosLista = () => {
   const { companyId } = useCompanyData();
@@ -313,7 +312,7 @@ const AgregadosLista = () => {
         console.log('Duplicate entries:', data?.filter(m => duplicates.includes(m.motorista_id)));
       }
 
-      // Process the data - map view fields to component fields
+      // Process the data
       let motoristasData = (data as ViewAgregado[])?.map(motorista => ({
         motorista_id: motorista.motorista_id,
         nome: motorista.nome_motorista,
@@ -333,21 +332,22 @@ const AgregadosLista = () => {
         cidade: motorista.nome_cidade || 'Não informada',
         cidadeLowerCase: motorista.nome_cidade?.toLowerCase() || '',
         estado: motorista.sigla_estado || '',
+        ativo: motorista.ativo,
         veiculo: motorista.veiculo_id ? [{
           veiculo_id: motorista.veiculo_id,
-          placa: motorista.placa,
-          status_veiculo: motorista.status_veiculo,
-          marca: motorista.marca_veiculo,
-          tipologia: motorista.tipologia,
-          ano: motorista.ano,
-          combustivel: motorista.combustivel,
-          peso: motorista.peso,
-          cubagem: motorista.cubagem,
-          possui_rastreador: motorista.possui_rastreador,
-          marca_rastreador: motorista.marca_rastreador,
-          cor: motorista.cor,
-          tipo: motorista.tipo
-        }] : []
+          placa: motorista.placa || '',
+          status_veiculo: motorista.status_veiculo || '',
+          marca: motorista.marca_veiculo || '',
+          tipologia: motorista.tipologia || '',
+          ano: motorista.ano || 0,
+          combustivel: motorista.combustivel || '',
+          peso: motorista.peso || 0,
+          cubagem: motorista.cubagem || 0,
+          possui_rastreador: motorista.possui_rastreador || false,
+          marca_rastreador: motorista.marca_rastreador || '',
+          cor: motorista.cor || '',
+          tipo: motorista.tipo || ''
+        }] : undefined
       })) as unknown as MotoristaWithAddress[];
 
       // Log the processed data
@@ -677,6 +677,26 @@ const AgregadosLista = () => {
     } catch (error) {
       console.error('Error updating cliente:', error);
       toast.error('Erro ao atualizar cliente');
+    }
+  };
+
+  const toggleStatus = async (motorista_id: number, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('motorista')
+        .update({ ativo: !currentStatus })
+        .eq('motorista_id', motorista_id);
+
+      if (error) throw error;
+
+      setMotoristas(motoristas.map(m => 
+        m.motorista_id === motorista_id ? { ...m, ativo: !currentStatus } : m
+      ));
+      
+      toast.success(`Agregado ${!currentStatus ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      toast.error('Erro ao alterar status do agregado');
     }
   };
 
@@ -1011,7 +1031,7 @@ const AgregadosLista = () => {
                         </select>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-3">
+                        <div className="flex items-center justify-end space-x-3" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1032,6 +1052,22 @@ const AgregadosLista = () => {
                           >
                             <Trash2 size={18} />
                           </button>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={motorista.ativo}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                toggleStatus(motorista.motorista_id, motorista.ativo);
+                              }}
+                            />
+                            <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 ${
+                              motorista.ativo 
+                                ? 'bg-green-600' 
+                                : 'bg-red-600'
+                            }`}></div>
+                          </label>
                         </div>
                       </td>
                     </tr>
