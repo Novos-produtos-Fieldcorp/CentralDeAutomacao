@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { FileText, Trash2, Search, Plus, Filter, MapPin, MessageCircle, MessageSquare, Users, Building2, ChevronDown, ChevronUp, Phone, Truck, FilePen } from 'lucide-react';
+
+import { Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Store, MessageCircle, MessageSquare, Users, Building2, Truck, FilePen, Upload } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import type { Motorista } from '../../types/database';
@@ -18,18 +19,57 @@ import AddAgregadoModal from '../../components/AddAgregadoModal';
 import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 import { useAuth } from '../../context/AuthContext';
 
-interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'cidade' | 'estado'> {
-  telefone: string | number;
-  cidade: string;
-  estado: string;
-  cidadeLowerCase: string;
-  nome_cliente?: string | null;
+interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'autorizacao_lgpd' | 'cliente_id' | 'documento_motorista'> {
+  telefone?: string | number;
+  autorizacao_lgpd?: string;
+  cidade?: string;
+  cidadeLowerCase?: string;
+  estado?: {
+    sigla_estado: string;
+  };
+  cliente_id?: number | null;
+  documento_motorista?: DocumentoMotorista | null;
+  ativo: boolean;
   veiculo?: Array<{
     placa: string;
     marca: string;
     tipo: string;
     tipologia: string;
   }>;
+}
+
+interface ViewAgregado {
+  motorista_id: number;
+  nome_motorista: string;
+  cpf: string;
+  dt_nascimento: string;
+  genero: string;
+  telefone: string;
+  email: string;
+  funcao: string;
+  origem_usuario: string;
+  st_cadastro: string;
+  autorizacao_lgpd: boolean;
+  company_id: number;
+  data_cadastro: string;
+  cliente_id: number | null;
+  conversation_id: string;
+  nome_cidade: string | null;
+  sigla_estado: string | null;
+  veiculo_id: number | null;
+  placa: string | null;
+  status_veiculo: string | null;
+  marca_veiculo: string | null;
+  tipologia: string | null;
+  ano: number | null;
+  combustivel: string | null;
+  peso: number | null;
+  cubagem: number | null;
+  possui_rastreador: boolean | null;
+  marca_rastreador: string | null;
+  cor: string | null;
+  tipo: string | null;
+  ativo: boolean;
 }
 
 interface City {
@@ -244,8 +284,8 @@ const AgregadosLista = () => {
 
       if (error) throw error;
 
-      // Process the data - map view fields to component fields
-      const motoristasData = (data || []).map(motorista => ({
+      // Process the data
+      let motoristasData = (data as ViewAgregado[])?.map(motorista => ({
         motorista_id: motorista.motorista_id,
         nome: motorista.nome_motorista,
         cpf: motorista.cpf,
@@ -264,14 +304,26 @@ const AgregadosLista = () => {
         cidade: motorista.nome_cidade || 'Não informada',
         cidadeLowerCase: motorista.nome_cidade?.toLowerCase() || '',
         estado: motorista.sigla_estado || '',
-        nome_cliente: motorista.nome_cliente,
-        veiculo: motorista.placa ? [{
-          placa: motorista.placa,
-          marca: motorista.marca || '',
-          tipo: motorista.tipo || '',
-          tipologia: motorista.tipologia || ''
+        ativo: motorista.ativo,
+        veiculo: motorista.veiculo_id ? [{
+          veiculo_id: motorista.veiculo_id,
+          placa: motorista.placa || '',
+          status_veiculo: motorista.status_veiculo || '',
+          marca: motorista.marca_veiculo || '',
+          tipologia: motorista.tipologia || '',
+          ano: motorista.ano || 0,
+          combustivel: motorista.combustivel || '',
+          peso: motorista.peso || 0,
+          cubagem: motorista.cubagem || 0,
+          possui_rastreador: motorista.possui_rastreador || false,
+          marca_rastreador: motorista.marca_rastreador || '',
+          cor: motorista.cor || '',
+          tipo: motorista.tipo || ''
         }] : undefined
-      }));
+      })) as unknown as MotoristaWithAddress[];
+
+      // Log the processed data
+      console.log('Processed data:', motoristasData);
 
       // Apply phone filter on frontend
       let filteredData = motoristasData;
@@ -657,6 +709,26 @@ const AgregadosLista = () => {
     setCurrentPage(1);
   };
 
+  const toggleStatus = async (motorista_id: number, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('motorista')
+        .update({ ativo: !currentStatus })
+        .eq('motorista_id', motorista_id);
+
+      if (error) throw error;
+
+      setMotoristas(motoristas.map(m => 
+        m.motorista_id === motorista_id ? { ...m, ativo: !currentStatus } : m
+      ));
+      
+      toast.success(`Agregado ${!currentStatus ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      toast.error('Erro ao alterar status do agregado');
+    }
+  };
+
   if (loading) {
     return (
       <LoadingSpinner />
@@ -975,7 +1047,7 @@ const AgregadosLista = () => {
                         </select>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-3">
+                        <div className="flex items-center justify-end space-x-3" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -996,6 +1068,22 @@ const AgregadosLista = () => {
                           >
                             <Trash2 size={18} />
                           </button>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={motorista.ativo}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                toggleStatus(motorista.motorista_id, motorista.ativo);
+                              }}
+                            />
+                            <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 ${
+                              motorista.ativo 
+                                ? 'bg-green-600' 
+                                : 'bg-red-600'
+                            }`}></div>
+                          </label>
                         </div>
                       </td>
                     </tr>

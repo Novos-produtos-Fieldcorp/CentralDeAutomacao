@@ -1,9 +1,15 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { FileText, Trash2, Search, Plus, Filter, MapPin, MessageCircle, MessageSquare, Users, Building2, ChevronDown, ChevronUp, Phone, FilePen } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { FileText, Edit2, Trash2, Search, Phone, Filter, MapPin, Plus, Upload, MessageCircle, Users, Building2, MessageSquare, Eye, FilePen, Check, X, ListTodo } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import type { Motorista } from '../../types/database';
 import DocumentViewer from '../../components/DocumentViewer';
+import EditMotoristaModal from '../../components/EditMotoristaModal';
+import AddMotoristaModal from '../../components/AddMotoristaModal';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
+import { formatPhone, formatCPF, formatDate } from '../../utils/format';
+import { useDateRange } from '../../hooks/useDateRange';
+import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import toast from 'react-hot-toast';
 import { formatCPF, formatPhone } from '../../utils/format';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -21,6 +27,38 @@ import { useAuth } from '../../context/AuthContext';
 
 interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'cidade' | 'estado'> {
   telefone: string | number;
+  autorizacao_lgpd: boolean;
+  cliente_id: number | null;
+  ativo: boolean;
+}
+
+interface ViewMotorista {
+  motorista_id: number;
+  nome_motorista: string;
+  cpf: string;
+  dt_nascimento: string;
+  genero: string;
+  telefone: string;
+  email: string;
+  funcao: string;
+  origem_usuario: string;
+  st_cadastro: string;
+  autorizacao_lgpd: boolean;
+  company_id: number;
+  data_cadastro: string;
+  cliente_id: number | null;
+  conversation_id: string;
+  nr_end: string | null;
+  ds_complemento_end: string | null;
+  st_end: boolean | null;
+  id_end_motorista: number | null;
+  logradouro: string | null;
+  nr_cep: string | null;
+  nome_bairro: string | null;
+  nome_cidade: string | null;
+  nome_estado: string | null;
+  sigla_estado: string | null;
+  ativo: boolean;
   cidade: string;
   estado: string;
   cidadeLowerCase: string;
@@ -55,16 +93,11 @@ const MotoristasLista = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [phoneSearch, setPhoneSearch] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [debouncedPhoneSearch, setDebouncedPhoneSearch] = useState('');
-  const [selectedCity, setSelectedCity] = useState<string>('');
-  const [selectedClient, setSelectedClient] = useState<number>(0);
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [dateRange, setDateRange] = useState<{ startDate: string | null; endDate: string | null }>({
-    startDate: null,
-    endDate: null
-  });
-  const [cities, setCities] = useState<City[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedActiveStatus, setSelectedActiveStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [wiseappAccountId, setWiseappAccountId] = useState<string | null>(null);
+  const [cities, setCities] = useState<{ cidade: string; cidadeLowerCase: string; estado: { sigla_estado: string } }[]>([]);
   const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
@@ -221,6 +254,10 @@ const MotoristasLista = () => {
         query = query.eq('cliente_id', selectedClient);
       }
 
+      // Apply active status filter if selected
+      if (selectedActiveStatus !== 'all') {
+        query = query.eq('is_active', selectedActiveStatus === 'active');
+      }
       // Apply pagination
       query = query
         .order('data_cadastro', { ascending: false })
@@ -251,6 +288,8 @@ const MotoristasLista = () => {
         cidade: motorista.nome_cidade || 'Não informada',
         cidadeLowerCase: motorista.nome_cidade?.toLowerCase() || '',
         estado: motorista.sigla_estado || '',
+        ativo: motorista.ativo
+      })) as unknown as MotoristaWithAddress[];
         nome_cliente: motorista.nome_cliente
       }));
 
@@ -550,6 +589,35 @@ const MotoristasLista = () => {
     setSelectAll(!selectAll);
   };
 
+  const handleBulkStatusChange = async (activate: boolean) => {
+    try {
+      // Update active status for all selected items
+      for (const id of selectedItems) {
+        const { error } = await supabase
+          .from('motorista')
+          .update({ ativo: activate })
+          .eq('motorista_id', id);
+
+        if (error) throw error;
+      }
+
+      // Update the list
+      setMotoristas(motoristas.map(m => 
+        selectedItems.has(m.motorista_id) ? { ...m, ativo: activate } : m
+      ));
+      setAllMotoristas(allMotoristas.map(m => 
+        selectedItems.has(m.motorista_id) ? { ...m, ativo: activate } : m
+      ));
+      toast.success(`${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''} ${activate ? 'ativado' : 'desativado'}${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
+      
+      // Reset selection
+      setSelectedItems(new Set());
+      setSelectAll(false);
+    } catch (error) {
+      console.error('Error updating motoristas:', error);
+      toast.error(`Erro ao ${activate ? 'ativar' : 'desativar'} motoristas`);
+    }
+  };
   const handleContextMenu = (e: React.MouseEvent, motorista: MotoristaWithAddress) => {
     e.preventDefault();
     setContextMenu({
@@ -592,6 +660,36 @@ const MotoristasLista = () => {
     { value: 'gr', label: 'Gestão de Risco' }
   ];
 
+  const activeStatusOptions = [
+    { value: 'all', label: 'Todos' },
+    { value: 'active', label: 'Ativos' },
+    { value: 'inactive', label: 'Inativos' }
+  ];
+
+  const getStatusStyle = (status: string) => {
+    const baseStyle = "px-3 py-1 rounded-full text-sm font-medium";
+    const normalizedStatus = status.toLowerCase();
+    
+    switch (normalizedStatus) {
+      case 'cadastrado':
+        return `${baseStyle} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200`;
+      case 'qualificado':
+        return `${baseStyle} bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200`;
+      case 'documentacao':
+        return `${baseStyle} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200`;
+      case 'gr':
+        return `${baseStyle} bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200`;
+      case 'contrato_enviado':
+        return `${baseStyle} bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200`;
+      case 'contratado':
+        return `${baseStyle} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`;
+      case 'repescagem':
+        return `${baseStyle} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200`;
+      case 'rejeitado':
+        return `${baseStyle} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200`;
+      default:
+        return baseStyle;
+    }
   const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCity(e.target.value);
     setCurrentPage(1);
@@ -605,6 +703,26 @@ const MotoristasLista = () => {
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedStatus(e.target.value);
     setCurrentPage(1);
+  };
+
+  const toggleStatus = async (motorista_id: number, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('motorista')
+        .update({ ativo: !currentStatus })
+        .eq('motorista_id', motorista_id);
+
+      if (error) throw error;
+
+      setMotoristas(motoristas.map(m => 
+        m.motorista_id === motorista_id ? { ...m, ativo: !currentStatus } : m
+      ));
+      
+      toast.success(`Motorista ${!currentStatus ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      toast.error('Erro ao alterar status do motorista');
+    }
   };
 
   if (loading) {
@@ -736,6 +854,33 @@ const MotoristasLista = () => {
             <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
+          <div className="relative flex-3">
+            <select
+              value={selectedActiveStatus}
+              onChange={(e) => {
+                setSelectedActiveStatus(e.target.value as 'all' | 'active' | 'inactive');
+                setCurrentPage(1);
+              }}
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
+                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
+                       focus:border-blue-500 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              {activeStatusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <ListTodo className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="h-[42px] w-[42px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                       transition-colors flex items-center justify-center"
+              title="Adicionar Motorista"
           <div className="relative">
             <select
               value={selectedClient.toString()}
@@ -909,7 +1054,7 @@ const MotoristasLista = () => {
                         </select>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-3">
+                        <div className="flex items-center justify-end space-x-3" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -925,7 +1070,7 @@ const MotoristasLista = () => {
                               e.stopPropagation();
                               handleEdit(motorista);
                             }}
-                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
+                            className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                             title="Editar"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -933,16 +1078,22 @@ const MotoristasLista = () => {
                               <path d="m15 5 4 4"></path>
                             </svg>
                           </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(motorista);
-                            }}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                            title="Excluir"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={motorista.ativo}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                toggleStatus(motorista.motorista_id, motorista.ativo);
+                              }}
+                            />
+                            <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 ${
+                              motorista.ativo 
+                                ? 'bg-green-600' 
+                                : 'bg-red-600'
+                            }`}></div>
+                          </label>
                         </div>
                       </td>
                     </tr>
@@ -1124,6 +1275,14 @@ const MotoristasLista = () => {
         ] : []}
       />
 
+      <DocumentUploadModal
+        isOpen={isDocumentUploadModalOpen}
+        onClose={() => setIsDocumentUploadModalOpen(false)}
+        motorista_id={selectedMotoristaUpload?.motorista_id || 0}
+        nome={selectedMotoristaUpload?.nome || ''}
+        onUploadSuccess={fetchMotoristas}
+      />
+        
       <BulkActionsModal
         isOpen={isBulkStatusModalOpen}
         onClose={() => setIsBulkStatusModalOpen(false)}
