@@ -729,7 +729,7 @@ const AgregadosLista = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
         <div className="flex items-center">
           {selectedItems.size > 0 && (
@@ -770,20 +770,11 @@ const AgregadosLista = () => {
               </button>
             </>
           )}
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                     transition-colors flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Novo Agregado
-          </button>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
             <input
               type="text"
@@ -881,6 +872,16 @@ const AgregadosLista = () => {
               ))}
             </select>
             <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+          <div className="relative">
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                     transition-colors flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
           </div>
         </div>
       </div>

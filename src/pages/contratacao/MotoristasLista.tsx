@@ -767,20 +767,11 @@ const MotoristasLista = () => {
               </button>
             </>
           )}
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                     transition-colors flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Novo Motorista
-          </button>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
             <input
               type="text"
@@ -855,9 +846,7 @@ const MotoristasLista = () => {
                 setSelectedActiveStatus(e.target.value as 'all' | 'active' | 'inactive');
                 setCurrentPage(1);
               }}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100 appearance-none"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               {activeStatusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -867,17 +856,7 @@ const MotoristasLista = () => {
             </select>
             <ListTodo className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="h-[42px] w-[42px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                       transition-colors flex items-center justify-center"
-              title="Adicionar Motorista"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
+          
             <div className="relative">
               <select
                 value={selectedClient.toString()}
@@ -893,7 +872,17 @@ const MotoristasLista = () => {
               </select>
               <Building2 className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             </div>
-          </div>
+          <div className="relative">
+              <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="h-[42px] w-[42px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                       transition-colors flex items-center justify-center"
+              title="Adicionar Motorista"
+            >
+              <Plus className="w-5 h-5" />
+              </button>
+            </div>
         </div>
 
         <div className="flex gap-2 mt-4">
