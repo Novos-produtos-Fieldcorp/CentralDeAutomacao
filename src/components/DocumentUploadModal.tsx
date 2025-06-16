@@ -421,7 +421,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                   currentUrl={documento.foto_comprovante_residencia}
                   motorista_id={motorista_id}
                   onUploadComplete={(url) => handleDocumentUpload('foto_comprovante_residencia', url)}
-                  label="Comprovante de Residência"
+                  label="Comprovante"
                 />
               </div>
 
