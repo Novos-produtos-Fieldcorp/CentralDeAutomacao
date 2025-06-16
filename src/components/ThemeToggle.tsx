@@ -20,12 +20,12 @@ const ThemeToggle = ({ isExpanded }: ThemeToggleProps) => {
     >
       <div className="flex items-center justify-center min-w-[40px] h-10 rounded-lg transition-all duration-500">
         {isDark ? (
-          <Sun className="w-6 h-6 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 
-                         dark:group-hover:text-blue-400 transition-all duration-500 
+          <Sun className="w-6 h-6 text-yellow-400 dark:text-yellow-400 group-hover:text-yellow-300 
+                         dark:group-hover:text-yellow-300 transition-all duration-500 
                          group-hover:rotate-90 group-hover:scale-110" />
         ) : (
-          <Moon className="w-6 h-6 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 
-                         dark:group-hover:text-blue-400 transition-all duration-500
+          <Moon className="w-6 h-6 text-blue-600 dark:text-blue-400 group-hover:text-blue-500 
+                         dark:group-hover:text-blue-300 transition-all duration-500
                          group-hover:-rotate-90 group-hover:scale-110" />
         )}
       </div>

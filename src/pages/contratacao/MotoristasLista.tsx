@@ -524,7 +524,8 @@ const MotoristasLista = () => {
 
   const updateStatus = async (motorista_id: number, newStatus: string) => {
     try {
-      const { error } = await query('motorista')
+      const { error } = await supabase
+        .from('motorista')
         .update({ st_cadastro: newStatus })
         .eq('motorista_id', motorista_id);
 
@@ -536,7 +537,28 @@ const MotoristasLista = () => {
       
       toast.success('Status atualizado com sucesso');
     } catch (err) {
+      console.error('Error updating status:', err);
       toast.error('Erro ao atualizar status');
+    }
+  };
+
+  const toggleStatus = async (motorista_id: number, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('motorista')
+        .update({ ativo: !currentStatus })
+        .eq('motorista_id', motorista_id);
+
+      if (error) throw error;
+
+      setMotoristas(motoristas.map(m => 
+        m.motorista_id === motorista_id ? { ...m, ativo: !currentStatus } : m
+      ));
+      
+      toast.success(`Motorista ${!currentStatus ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      toast.error('Erro ao alterar status do motorista');
     }
   };
 
@@ -664,23 +686,23 @@ const MotoristasLista = () => {
     
     switch (normalizedStatus) {
       case 'cadastrado':
-        return `${baseStyle} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200`;
+        return `${baseStyle} bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200`;
       case 'qualificado':
-        return `${baseStyle} bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200`;
+        return `${baseStyle} bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200`;
       case 'documentacao':
-        return `${baseStyle} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200`;
+        return `${baseStyle} bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200`;
       case 'gr':
-        return `${baseStyle} bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200`;
+        return `${baseStyle} bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-200`;
       case 'contrato_enviado':
-        return `${baseStyle} bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200`;
+        return `${baseStyle} bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-200`;
       case 'contratado':
-        return `${baseStyle} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`;
+        return `${baseStyle} bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200`;
       case 'repescagem':
-        return `${baseStyle} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200`;
+        return `${baseStyle} bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200`;
       case 'rejeitado':
-        return `${baseStyle} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200`;
+        return `${baseStyle} bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200`;
       default:
-        return baseStyle;
+        return `${baseStyle} bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200`;
     }
   };
 
@@ -697,26 +719,6 @@ const MotoristasLista = () => {
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedStatus(e.target.value);
     setCurrentPage(1);
-  };
-
-  const toggleStatus = async (motorista_id: number, currentStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('motorista')
-        .update({ ativo: !currentStatus })
-        .eq('motorista_id', motorista_id);
-
-      if (error) throw error;
-
-      setMotoristas(motoristas.map(m => 
-        m.motorista_id === motorista_id ? { ...m, ativo: !currentStatus } : m
-      ));
-      
-      toast.success(`Motorista ${!currentStatus ? 'ativado' : 'desativado'} com sucesso`);
-    } catch (error) {
-      console.error('Error toggling status:', error);
-      toast.error('Erro ao alterar status do motorista');
-    }
   };
 
   if (loading) {
@@ -1004,26 +1006,13 @@ const MotoristasLista = () => {
                         <select
                           value={motorista.st_cadastro}
                           onChange={(e) => updateStatus(motorista.motorista_id, e.target.value)}
-                          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                            motorista.st_cadastro === 'cadastrado' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                            motorista.st_cadastro === 'qualificado' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                            motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                            motorista.st_cadastro === 'contrato_enviado' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' :
-                            motorista.st_cadastro === 'contratado' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                            motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
-                            motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                            motorista.st_cadastro === 'gr' ? 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' :
-                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                          }`}
+                          className={getStatusStyle(motorista.st_cadastro)}
                         >
-                          <option value="cadastrado">Cadastrado</option>
-                          <option value="qualificado">Qualificado</option>
-                          <option value="documentacao">Documentação</option>
-                          <option value="contrato_enviado">Contrato Enviado</option>
-                          <option value="contratado">Contratado</option>
-                          <option value="repescagem">Repescagem</option>
-                          <option value="rejeitado">Rejeitado</option>
-                          <option value="gr">Gestão de Risco</option>
+                          {statusOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
                         </select>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1077,8 +1066,8 @@ const MotoristasLista = () => {
                             />
                             <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 ${
                               motorista.ativo 
-                                ? 'bg-green-600' 
-                                : 'bg-red-600'
+                                ? 'bg-green-600 dark:bg-green-500' 
+                                : 'bg-red-600 dark:bg-red-500'
                             }`}></div>
                           </label>
                         </div>
