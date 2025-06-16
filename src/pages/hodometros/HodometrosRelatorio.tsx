@@ -333,14 +333,6 @@ const HodometrosRelatorio = () => {
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             Informado: {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}
                           </div>
-                          
-                          {/* Discrepancy tag */}
-                          {hasDiscrepancy(hodometro) && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 mt-1">
-                              <AlertCircle className="w-3 h-3 mr-1" />
-                              Divergente
-                            </span>
-                          )}
                         </>
                       )}
                     </div>
@@ -359,14 +351,6 @@ const HodometrosRelatorio = () => {
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           Informada: {hodometro.trip_informada}
                         </div>
-                      )}
-                      
-                      {/* Trip discrepancy tag */}
-                      {hasTripDiscrepancy(hodometro) && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 mt-1">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Divergente
-                        </span>
                       )}
                     </div>
                   </td>
