@@ -59,7 +59,15 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
   
   const [formData, setFormData] = useState(emptyFormData);
 
-  // Reset form when modal opens or closes
+  // Reset form when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset form data when modal is closed
+      setFormData(emptyFormData);
+    }
+  }, [isOpen]);
+
+  // Initialize form data when modal opens
   useEffect(() => {
     if (isOpen) {
       // If editing an existing checklist, load its data
