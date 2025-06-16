@@ -310,10 +310,10 @@ const DocumentoMotoristaView: React.FC<DocumentoMotoristaViewProps> = ({
               )}
             </div>
             
-            {/* Comprovante de Residência */}
+            {/* Comprovante */}
             <div>
               <h4 className="text-base font-medium text-gray-900 dark:text-white mb-3 flex items-center justify-between">
-                <span>Comprovante de Residência</span>
+                <span>Comprovante</span>
                 {documento?.foto_comprovante_residencia && (
                   <button
                     onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
@@ -342,7 +342,7 @@ const DocumentoMotoristaView: React.FC<DocumentoMotoristaViewProps> = ({
                   ) : (
                     <img
                       src={documento.foto_comprovante_residencia}
-                      alt="Comprovante de Residência"
+                      alt="Comprovante"
                       className="absolute inset-0 w-full h-full object-contain cursor-pointer"
                       onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
                     />

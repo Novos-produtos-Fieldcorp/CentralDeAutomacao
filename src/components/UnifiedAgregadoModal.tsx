@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, User, UserCircle, Home, Edit2, Save } from 'lucide-react';
 import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
@@ -611,11 +611,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                       </div>
                     </section>
                     
-                    {/* Comprovante de Residência Section */}
+                    {/* Comprovante Section */}
                     <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <Home className="w-5 h-5 text-gray-400" />
-                        Comprovante de Residência
+                        Comprovante
                       </h3>
                       
                       <div className="flex justify-between items-center mb-2">
@@ -650,7 +650,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                           ) : (
                             <img
                               src={documento.foto_comprovante_residencia}
-                              alt="Comprovante de Residência"
+                              alt="Comprovante"
                               className="absolute inset-0 w-full h-full object-contain cursor-pointer"
                               onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
                             />

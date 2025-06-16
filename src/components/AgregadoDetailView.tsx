@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Truck, User, MapPin, Phone, Mail, Calendar, CreditCard, FileText, Info, Camera, CheckCircle2, XCircle, ExternalLink, Edit2, Home } from 'lucide-react';
+import { X, Truck, User, MapPin, Phone, Mail, Calendar, CreditCard, Info, Camera, CheckCircle2, XCircle, ExternalLink, Edit2, Home } from 'lucide-react';
 import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
@@ -519,12 +519,12 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                     </section>
                   )}
                   
-                  {/* Comprovante de Residência */}
+                  {/* Comprovante */}
                   <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                         <Home className="w-5 h-5 text-gray-400" />
-                        Comprovante de Residência
+                        Comprovante
                       </h3>
                     </div>
                     
@@ -559,7 +559,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                           ) : (
                             <img
                               src={documento.foto_comprovante_residencia}
-                              alt="Comprovante de Residência"
+                              alt="Comprovante"
                               className="absolute inset-0 w-full h-full object-contain cursor-pointer"
                               onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
                             />
@@ -675,10 +675,10 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                   />
                 </div>
                 
-                {/* Comprovante de Residência */}
+                {/* Comprovante */}
                 <div className="md:col-span-2">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2 mb-3">
-                    Comprovante de Residência
+                    Comprovante
                   </h3>
                   
                   <DocumentUploader

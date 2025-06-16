@@ -369,277 +369,33 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
               
               {/* CNH Document */}
               <div>
-                <div className="mb-2 flex justify-between items-center">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Foto da CNH
-                  </label>
-                  {formData.foto_cnh && (
-                    <button
-                      type="button"
-                      onClick={() => openDocumentInNewTab(formData.foto_cnh)}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-xs"
-                    >
-                      <ExternalLink size={14} />
-                      Abrir em nova aba
-                    </button>
-                  )}
-                </div>
-                
-                {formData.foto_cnh ? (
-                  <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                    {isPdf(formData.foto_cnh) ? (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setActiveDocument(formData.foto_cnh)}
-                            className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
-                          >
-                            <FileText size={16} />
-                            Visualizar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, foto_cnh: '' }))}
-                            className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center gap-1"
-                          >
-                            <X size={16} />
-                            Remover
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <img
-                          src={formData.foto_cnh}
-                          alt="CNH"
-                          className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                          onClick={() => setActiveDocument(formData.foto_cnh)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, foto_cnh: '' }))}
-                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                          title="Remover documento"
-                        >
-                          <X size={16} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <input
-                      type="file"
-                      id="file-cnh"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        
-                        // Check file size (max 15MB)
-                        if (file.size > 15 * 1024 * 1024) {
-                          toast.error('O arquivo é muito grande. Tamanho máximo: 15MB');
-                          return;
-                        }
-                        
-                        // Check file type
-                        const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-                        if (!validTypes.includes(file.type)) {
-                          toast.error('Tipo de arquivo inválido. Use JPEG, PNG ou PDF');
-                          return;
-                        }
-                        
-                        // Upload file
-                        const fileExt = file.name.split('.').pop();
-                        const fileName = `${motorista_id}_cnh_${Date.now()}.${fileExt}`;
-                        
-                        supabase.storage
-                          .from('imagensdocs')
-                          .upload(fileName, file, {
-                            cacheControl: '3600',
-                            upsert: true,
-                            contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
-                          })
-                          .then(({ data, error }) => {
-                            if (error) {
-                              toast.error('Erro ao enviar arquivo');
-                              console.error(error);
-                              return;
-                            }
-                            
-                            const { data: { publicUrl } } = supabase.storage
-                              .from('imagensdocs')
-                              .getPublicUrl(fileName);
-                              
-                            setFormData(prev => ({ ...prev, foto_cnh: publicUrl }));
-                            toast.success('Arquivo enviado com sucesso');
-                          });
-                      }}
-                      className="sr-only"
-                      accept="image/jpeg,image/png,image/jpg,application/pdf"
-                    />
-                    <label
-                      htmlFor="file-cnh"
-                      className="flex flex-col items-center justify-center w-full aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
-                                border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
-                                hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
-                    >
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Camera className="w-10 h-10 text-gray-400 mb-4" />
-                        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold">Clique para enviar</span> ou arraste e solte
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          JPEG, PNG ou PDF (máx. 15MB)
-                        </p>
-                      </div>
-                    </label>
-                  </div>
-                )}
+                <DocumentUploader
+                  documentType="cnh"
+                  currentUrl={formData.foto_cnh}
+                  motorista_id={motorista_id}
+                  onUploadComplete={(url) => handleDocumentUpload('foto_cnh', url)}
+                  label="CNH"
+                />
               </div>
-
-              {/* Comprovante de Residência */}
+              
+              {/* Comprovante */}
               <div className="md:col-span-2">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
                     <Home className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2 flex-1">
-                    Comprovante de Residência
+                    Comprovante
                   </h3>
                 </div>
                 
-                <div className="mb-2 flex justify-between items-center">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Foto do Comprovante
-                  </label>
-                  {formData.foto_comprovante_residencia && (
-                    <button
-                      type="button"
-                      onClick={() => openDocumentInNewTab(formData.foto_comprovante_residencia)}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-xs"
-                    >
-                      <ExternalLink size={14} />
-                      Abrir em nova aba
-                    </button>
-                  )}
-                </div>
-                
-                {formData.foto_comprovante_residencia ? (
-                  <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                    {isPdf(formData.foto_comprovante_residencia) ? (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setActiveDocument(formData.foto_comprovante_residencia)}
-                            className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
-                          >
-                            <FileText size={16} />
-                            Visualizar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, foto_comprovante_residencia: '' }))}
-                            className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center gap-1"
-                          >
-                            <X size={16} />
-                            Remover
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <img
-                          src={formData.foto_comprovante_residencia}
-                          alt="Comprovante de Residência"
-                          className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                          onClick={() => setActiveDocument(formData.foto_comprovante_residencia)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, foto_comprovante_residencia: '' }))}
-                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                          title="Remover documento"
-                        >
-                          <X size={16} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <input
-                      type="file"
-                      id="file-comprovante"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        
-                        // Check file size (max 15MB)
-                        if (file.size > 15 * 1024 * 1024) {
-                          toast.error('O arquivo é muito grande. Tamanho máximo: 15MB');
-                          return;
-                        }
-                        
-                        // Check file type
-                        const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-                        if (!validTypes.includes(file.type)) {
-                          toast.error('Tipo de arquivo inválido. Use JPEG, PNG ou PDF');
-                          return;
-                        }
-                        
-                        // Upload file
-                        const fileExt = file.name.split('.').pop();
-                        const fileName = `${motorista_id}_comprovante_${Date.now()}.${fileExt}`;
-                        
-                        supabase.storage
-                          .from('imagensdocs')
-                          .upload(fileName, file, {
-                            cacheControl: '3600',
-                            upsert: true,
-                            contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
-                          })
-                          .then(({ data, error }) => {
-                            if (error) {
-                              toast.error('Erro ao enviar arquivo');
-                              console.error(error);
-                              return;
-                            }
-                            
-                            const { data: { publicUrl } } = supabase.storage
-                              .from('imagensdocs')
-                              .getPublicUrl(fileName);
-                              
-                            setFormData(prev => ({ ...prev, foto_comprovante_residencia: publicUrl }));
-                            toast.success('Arquivo enviado com sucesso');
-                          });
-                      }}
-                      className="sr-only"
-                      accept="image/jpeg,image/png,image/jpg,application/pdf"
-                    />
-                    <label
-                      htmlFor="file-comprovante"
-                      className="flex flex-col items-center justify-center w-full aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
-                                border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
-                                hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
-                    >
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Camera className="w-10 h-10 text-gray-400 mb-4" />
-                        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold">Clique para enviar</span> ou arraste e solte
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          JPEG, PNG ou PDF (máx. 15MB)
-                        </p>
-                      </div>
-                    </label>
-                  </div>
-                )}
+                <DocumentUploader
+                  documentType="comprovante_residencia"
+                  currentUrl={formData.foto_comprovante_residencia}
+                  motorista_id={motorista_id}
+                  onUploadComplete={(url) => handleDocumentUpload('foto_comprovante_residencia', url)}
+                  label="Comprovante"
+                />
               </div>
 
               {/* CRV Section - Only show if vehicle exists */}
@@ -658,7 +414,6 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</span>
-                        
                         <p className="text-base font-semibold text-gray-900 dark:text-white uppercase">{veiculo.placa}</p>
                       </div>
                       <div>
@@ -678,7 +433,6 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                     </label>
                     {veiculoData.foto_crv && (
                       <button
-                        type="button"
                         onClick={() => openDocumentInNewTab(veiculoData.foto_crv)}
                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-xs"
                       >

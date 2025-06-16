@@ -405,14 +405,14 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                 />
               </div>
               
-              {/* Comprovante de Residência */}
+              {/* Comprovante */}
               <div className="md:col-span-2">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
                     <Home className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2 flex-1">
-                    Comprovante de Residência
+                    Comprovante
                   </h3>
                 </div>
                 
