@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit2, Trash2, Plus, User, Phone, FileText } from 'lucide-react';
+import { Edit2, Trash2, Plus, User, Phone, FileText, Camera, ExternalLink } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import AjudanteForm from './AjudanteForm';
@@ -19,8 +19,102 @@ interface Ajudante {
   veiculo_id: number;
 }
 
+interface AjudanteWithDocuments extends Ajudante {
+  cnh_ajudante?: {
+    foto_cnh: string | null;
+  }[];
+  rg_ajudante?: {
+    foto_rg: string | null;
+  }[];
+}
+
+const DocumentPreview: React.FC<{ url: string | null, type: string }> = ({ url, type }) => {
+  const [showFullImage, setShowFullImage] = useState(false);
+  
+  if (!url) return null;
+  
+  const isPdf = url.toLowerCase().endsWith('.pdf');
+  
+  const openInNewTab = () => {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+  
+  return (
+    <>
+      <div 
+        className="h-8 w-8 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+        onClick={() => setShowFullImage(true)}
+        title={`Ver ${type}`}
+      >
+        {isPdf ? (
+          <div className="h-full w-full flex items-center justify-center bg-blue-100 dark:bg-blue-900/30">
+            <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          </div>
+        ) : (
+          <img 
+            src={url} 
+            alt={type} 
+            className="h-full w-full object-cover"
+          />
+        )}
+      </div>
+      
+      {/* Full-screen preview */}
+      {showFullImage && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+          onClick={() => setShowFullImage(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                {type}
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={openInNewTab}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Abrir em nova aba"
+                >
+                  <ExternalLink size={20} />
+                </button>
+                <button
+                  onClick={() => setShowFullImage(false)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="relative h-[calc(90vh-80px)]">
+              {isPdf ? (
+                <iframe 
+                  src={`${url}#toolbar=1`} 
+                  className="w-full h-full" 
+                  title="PDF Viewer"
+                />
+              ) : (
+                <img
+                  src={url}
+                  alt={type}
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
 const AjudanteList: React.FC<AjudanteListProps> = ({ veiculo_id }) => {
-  const [ajudantes, setAjudantes] = useState<Ajudante[]>([]);
+  const [ajudantes, setAjudantes] = useState<AjudanteWithDocuments[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedAjudante, setSelectedAjudante] = useState<number | undefined>(undefined);
@@ -36,7 +130,11 @@ const AjudanteList: React.FC<AjudanteListProps> = ({ veiculo_id }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('documento_ajudante')
-        .select('*')
+        .select(`
+          *,
+          cnh_ajudante(foto_cnh),
+          rg_ajudante(foto_rg)
+        `)
         .eq('veiculo_id', veiculo_id);
 
       if (error) throw error;
@@ -110,64 +208,82 @@ const AjudanteList: React.FC<AjudanteListProps> = ({ veiculo_id }) => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="space-y-3">
           {ajudantes.map(ajudante => (
             <div 
               key={ajudante.id_ajudante}
-              className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm"
+              className="bg-white dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex justify-between items-center"
             >
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                    <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-medium text-gray-900 dark:text-white">
-                      {ajudante.nome}
-                    </h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {ajudante.cpf ? formatCPF(ajudante.cpf) : 'CPF não informado'}
-                    </p>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                    {ajudante.nome}
+                  </h4>
+                  <div className="flex items-center gap-3 mt-1">
+                    {ajudante.cpf && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatCPF(ajudante.cpf)}
+                      </span>
+                    )}
+                    {ajudante.telefone && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {formatPhone(ajudante.telefone)}
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div className="flex gap-2">
+              </div>
+              
+              <div className="flex items-center gap-3">
+                {/* Document Previews */}
+                <div className="flex -space-x-1 mr-2">
+                  {ajudante.comprovante_residencia && (
+                    <DocumentPreview 
+                      url={ajudante.comprovante_residencia} 
+                      type="Comprovante de Residência" 
+                    />
+                  )}
+                  {ajudante.cnh_ajudante?.[0]?.foto_cnh && (
+                    <DocumentPreview 
+                      url={ajudante.cnh_ajudante[0].foto_cnh} 
+                      type="CNH" 
+                    />
+                  )}
+                  {ajudante.rg_ajudante?.[0]?.foto_rg && (
+                    <DocumentPreview 
+                      url={ajudante.rg_ajudante[0].foto_rg} 
+                      type="RG" 
+                    />
+                  )}
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleEdit(ajudante.id_ajudante)}
-                    className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    className="p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                     title="Editar"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(ajudante)}
-                    className="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                    className="p-1.5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                     title="Excluir"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
               </div>
-              
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {ajudante.telefone && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span>{formatPhone(ajudante.telefone)}</span>
-                  </div>
-                )}
-                {ajudante.comprovante_residencia && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <FileText className="w-4 h-4 text-gray-400" />
-                    <span>Comprovante de residência disponível</span>
-                  </div>
-                )}
-              </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Add/Edit Ajudante Modal */}
       <AjudanteForm
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}

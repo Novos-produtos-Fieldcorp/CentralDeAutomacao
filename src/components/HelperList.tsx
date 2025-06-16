@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, User, Phone, X, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Phone, X, Loader2, AlertCircle, FileText, Camera, ExternalLink } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import HelperForm from './HelperForm';
@@ -16,6 +16,15 @@ interface Helper {
   telefone: string;
   genero: string;
   comprovante_residencia: string | null;
+}
+
+interface HelperWithDocuments extends Helper {
+  cnh_ajudante?: {
+    foto_cnh: string | null;
+  }[];
+  rg_ajudante?: {
+    foto_rg: string | null;
+  }[];
 }
 
 interface DeleteHelperModalProps {
@@ -98,13 +107,98 @@ const DeleteHelperModal: React.FC<DeleteHelperModalProps> = ({ isOpen, onClose, 
   );
 };
 
+const DocumentPreview: React.FC<{ url: string | null, type: string }> = ({ url, type }) => {
+  const [showFullImage, setShowFullImage] = useState(false);
+  
+  if (!url) return null;
+  
+  const isPdf = url.toLowerCase().endsWith('.pdf');
+  
+  const openInNewTab = () => {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+  
+  return (
+    <>
+      <div 
+        className="h-8 w-8 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+        onClick={() => setShowFullImage(true)}
+        title={`Ver ${type}`}
+      >
+        {isPdf ? (
+          <div className="h-full w-full flex items-center justify-center bg-blue-100 dark:bg-blue-900/30">
+            <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          </div>
+        ) : (
+          <img 
+            src={url} 
+            alt={type} 
+            className="h-full w-full object-cover"
+          />
+        )}
+      </div>
+      
+      {/* Full-screen preview */}
+      {showFullImage && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+          onClick={() => setShowFullImage(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                {type}
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={openInNewTab}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Abrir em nova aba"
+                >
+                  <ExternalLink size={20} />
+                </button>
+                <button
+                  onClick={() => setShowFullImage(false)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="relative h-[calc(90vh-80px)]">
+              {isPdf ? (
+                <iframe 
+                  src={`${url}#toolbar=1`} 
+                  className="w-full h-full" 
+                  title="PDF Viewer"
+                />
+              ) : (
+                <img
+                  src={url}
+                  alt={type}
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
 const HelperList: React.FC<HelperListProps> = ({ veiculo_id }) => {
-  const [helpers, setHelpers] = useState<Helper[]>([]);
+  const [helpers, setHelpers] = useState<HelperWithDocuments[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedHelper, setSelectedHelper] = useState<number | undefined>(undefined);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedHelper, setSelectedHelper] = useState<Helper | null>(null);
+  const [helperToDelete, setHelperToDelete] = useState<Helper | null>(null);
 
   useEffect(() => {
     fetchHelpers();
@@ -115,7 +209,11 @@ const HelperList: React.FC<HelperListProps> = ({ veiculo_id }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('documento_ajudante')
-        .select('*')
+        .select(`
+          *,
+          cnh_ajudante(foto_cnh),
+          rg_ajudante(foto_rg)
+        `)
         .eq('veiculo_id', veiculo_id);
 
       if (error) throw error;
@@ -128,29 +226,30 @@ const HelperList: React.FC<HelperListProps> = ({ veiculo_id }) => {
     }
   };
 
-  const handleEdit = (helper: Helper) => {
-    setSelectedHelper(helper);
-    setIsEditModalOpen(true);
+  const handleEdit = (helper_id: number) => {
+    setSelectedHelper(helper_id);
+    setIsFormOpen(true);
   };
 
   const handleDelete = (helper: Helper) => {
-    setSelectedHelper(helper);
+    setHelperToDelete(helper);
     setIsDeleteModalOpen(true);
   };
 
   const confirmDelete = async () => {
-    if (!selectedHelper) return;
+    if (!helperToDelete) return;
     
     try {
       const { error } = await supabase
         .from('documento_ajudante')
         .delete()
-        .eq('id_ajudante', selectedHelper.id_ajudante);
-
+        .eq('id_ajudante', helperToDelete.id_ajudante);
+        
       if (error) throw error;
       
-      setHelpers(helpers.filter(h => h.id_ajudante !== selectedHelper.id_ajudante));
+      setHelpers(helpers.filter(h => h.id_ajudante !== helperToDelete.id_ajudante));
       toast.success('Ajudante excluído com sucesso');
+      setIsDeleteModalOpen(false);
     } catch (error) {
       console.error('Error deleting helper:', error);
       toast.error('Erro ao excluir ajudante');
@@ -164,7 +263,10 @@ const HelperList: React.FC<HelperListProps> = ({ veiculo_id }) => {
           Ajudantes
         </h3>
         <button
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={() => {
+            setSelectedHelper(undefined);
+            setIsFormOpen(true);
+          }}
           className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
                    dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
                    rounded-lg transition-colors flex items-center gap-1"
@@ -181,7 +283,7 @@ const HelperList: React.FC<HelperListProps> = ({ veiculo_id }) => {
       ) : helpers.length === 0 ? (
         <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg text-center">
           <p className="text-gray-500 dark:text-gray-400">
-            Nenhum ajudante cadastrado
+            Nenhum ajudante cadastrado para este veículo
           </p>
         </div>
       ) : (
@@ -214,21 +316,47 @@ const HelperList: React.FC<HelperListProps> = ({ veiculo_id }) => {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleEdit(helper)}
-                  className="p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                  title="Editar"
-                >
-                  <Edit2 size={16} />
-                </button>
-                <button
-                  onClick={() => handleDelete(helper)}
-                  className="p-1.5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                  title="Excluir"
-                >
-                  <Trash2 size={16} />
-                </button>
+              
+              <div className="flex items-center gap-3">
+                {/* Document Previews */}
+                <div className="flex -space-x-1 mr-2">
+                  {helper.comprovante_residencia && (
+                    <DocumentPreview 
+                      url={helper.comprovante_residencia} 
+                      type="Comprovante de Residência" 
+                    />
+                  )}
+                  {helper.cnh_ajudante?.[0]?.foto_cnh && (
+                    <DocumentPreview 
+                      url={helper.cnh_ajudante[0].foto_cnh} 
+                      type="CNH" 
+                    />
+                  )}
+                  {helper.rg_ajudante?.[0]?.foto_rg && (
+                    <DocumentPreview 
+                      url={helper.rg_ajudante[0].foto_rg} 
+                      type="RG" 
+                    />
+                  )}
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleEdit(helper.id_ajudante)}
+                    className="p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                    title="Editar"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(helper)}
+                    className="p-1.5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    title="Excluir"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -236,24 +364,17 @@ const HelperList: React.FC<HelperListProps> = ({ veiculo_id }) => {
       )}
 
       <HelperForm
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
         veiculo_id={veiculo_id}
-        onSuccess={fetchHelpers}
-      />
-
-      <HelperForm
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        veiculo_id={veiculo_id}
-        helper_id={selectedHelper?.id_ajudante}
+        helper_id={selectedHelper}
         onSuccess={fetchHelpers}
       />
 
       <DeleteHelperModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        helper={selectedHelper}
+        helper={helperToDelete}
         onConfirm={confirmDelete}
       />
     </div>
