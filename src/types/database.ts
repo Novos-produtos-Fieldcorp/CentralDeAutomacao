@@ -80,7 +80,7 @@ export interface CnhAjudante {
   categoria: string | null;
   nome_pai: string | null;
   nome_mae: string | null;
-  id_ajudante: number | null;
+  id_ajudante: number;
   foto_cnh: string | null;
 }
 
@@ -90,11 +90,11 @@ export interface RgAjudante {
   data_emissao: string | null;
   orgao_expedidor: string | null;
   filiacao: string | null;
-  id_ajudante: number | null;
+  id_ajudante: number;
   foto_rg: string | null;
 }
 
-export interface EnderecoAjudante {
+export interface EndAjudante {
   id_end_ajudante: number;
   nr_end: number | null;
   ds_complemento_end: string | null;
@@ -122,7 +122,6 @@ export interface Veiculo {
   documento_veiculo?: DocumentoVeiculo[];
   pessoa_fisica_dono_veiculo?: PessoaFisicaDonoVeiculo;
   pessoa_juridica_dono_veiculo?: PessoaJuridicaDonoVeiculo;
-  documento_ajudante?: DocumentoAjudante[];
 }
 
 export interface Hodometro {
@@ -192,4 +191,24 @@ export interface Checklist {
   nome: string;
   endereco: any;
   veiculo: (Veiculo & { documento_veiculo: any[] }) | null;
+}
+
+export interface MotoristaWithAddress extends Motorista {
+  endereco?: {
+    logradouro?: {
+      logradouro?: string;
+      nr_cep?: string;
+      bairro?: {
+        bairro?: string;
+        cidade?: {
+          cidade?: string;
+          estado?: {
+            sigla_estado?: string;
+          };
+        };
+      };
+    };
+    nr_end?: number;
+    ds_complemento_end?: string;
+  } | null;
 }

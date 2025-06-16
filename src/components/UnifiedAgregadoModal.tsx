@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, User, UserCircle, Home, Edit2, Save } from 'lucide-react';
+import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, User, UserCircle, Home, Edit2, Save, Users } from 'lucide-react';
 import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
@@ -7,6 +7,7 @@ import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
+import HelperList from './HelperList';
 
 interface UnifiedAgregadoModalProps {
   isOpen: boolean;
@@ -16,7 +17,7 @@ interface UnifiedAgregadoModalProps {
 }
 
 const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedAgregadoModalProps) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'vehicle'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'vehicle' | 'helpers'>('details');
   const [loading, setLoading] = useState(true);
   const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
   const [veiculo, setVeiculo] = useState<(Veiculo & {
@@ -324,6 +325,16 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                 >
                   <Truck className="w-5 h-5 mr-2" />
                   Veículo
+                </button>
+                <button
+                  onClick={() => setActiveTab('helpers')}
+                  className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
+                            ${activeTab === 'helpers'
+                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                >
+                  <Users className="w-5 h-5 mr-2" />
+                  Ajudantes
                 </button>
               </div>
             </div>
@@ -913,6 +924,12 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                         </div>
                       </section>
                     )}
+                  </div>
+                )}
+
+                {activeTab === 'helpers' && veiculo && (
+                  <div className="space-y-6">
+                    <HelperList veiculo_id={veiculo.veiculo_id} />
                   </div>
                 )}
               </div>

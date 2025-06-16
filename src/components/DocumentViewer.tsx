@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, FileText, Camera, ExternalLink, Upload, Loader2, Phone, Mail, Calendar, Home, MapPin, Info, User, CreditCard } from 'lucide-react';
+import { X, FileText, Camera, ExternalLink, Upload, Loader2, Phone, Mail, Calendar, Home, MapPin, Info, User, CreditCard, Users } from 'lucide-react';
 import type { DocumentoMotorista, Veiculo, DocumentoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
+import HelperList from './HelperList';
 
 interface DocumentViewerProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ interface DocumentViewerProps {
 
 const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone, dt_nascimento, endereco, veiculo, isAgregado = false, st_cadastro }: DocumentViewerProps) => {
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'documents' | 'helpers'>('documents');
 
   if (!isOpen) return null;
 
@@ -72,300 +74,251 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                   <X size={24} />
                 </button>
               </div>
+              
+              {/* Tabs - Only show for agregados with vehicles */}
+              {isAgregado && veiculo && (
+                <div className="flex border-b border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => setActiveTab('documents')}
+                    className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
+                              ${activeTab === 'documents'
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                  >
+                    <FileText className="w-5 h-5 mr-2" />
+                    Documentos
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('helpers')}
+                    className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
+                              ${activeTab === 'helpers'
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                  >
+                    <Users className="w-5 h-5 mr-2" />
+                    Ajudantes
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Content - Scrollable */}
             <div className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left Column */}
-                <div className="space-y-6">
-                  {/* Informações Pessoais */}
-                  <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Informações Pessoais
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="overflow-hidden">
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome</div>
-                        <div className="text-base text-gray-900 dark:text-white break-words">
-                          {nome}
-                        </div>
-                      </div>
-                      
-                      {cpf && (
-                        <div className="overflow-hidden">
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">CPF</div>
-                          <div className="text-base text-gray-900 dark:text-white break-words">
-                            {formatCPF(cpf)}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {st_cadastro && (
-                        <div className="overflow-hidden">
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</div>
-                          <div className="text-base text-gray-900 dark:text-white break-words capitalize">
-                            {st_cadastro.replace('_', ' ')}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Telefone */}
-                      <div className="overflow-hidden">
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Telefone</div>
-                        <div className="text-base text-gray-900 dark:text-white break-words">
-                          {telefone ? formatPhone(telefone.toString()) : 'Não informado'}
-                        </div>
-                      </div>
-                      
-                      {/* Email */}
-                      <div className="overflow-hidden">
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</div>
-                        <div className="text-base text-gray-900 dark:text-white break-words">
-                          {email || 'Não informado'}
-                        </div>
-                      </div>
-                      
-                      {/* Data de Nascimento */}
-                      <div className="overflow-hidden">
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Data de Nascimento</div>
-                        <div className="text-base text-gray-900 dark:text-white break-words">
-                          {dt_nascimento ? formatDate(dt_nascimento) : 'Não informada'}
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  <hr className="border-t border-gray-200 dark:border-gray-700" />
-                  
-                  {/* Seção 2: Endereço */}
-                  <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                      <Home className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                      Endereço
-                    </h3>
-                    
-                    <div className="space-y-4">
-                      <div className="overflow-hidden">
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Logradouro</div>
-                        <div className="text-base text-gray-900 dark:text-white break-words">
-                          {endereco?.logradouro?.logradouro ? 
-                            `${endereco.logradouro.logradouro}, ${endereco.nr_end || 'S/N'}` : 
-                            'Não informado'
-                          }
-                        </div>
-                      </div>
-                      
-                      <div className="overflow-hidden">
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Complemento</div>
-                        <div className="text-base text-gray-900 dark:text-white break-words">
-                          {endereco?.ds_complemento_end || 'Não informado'}
-                        </div>
-                      </div>
+              {activeTab === 'documents' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-6">
+                    {/* Informações Pessoais */}
+                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Informações Pessoais
+                      </h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="overflow-hidden">
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Bairro</div>
+                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome</div>
                           <div className="text-base text-gray-900 dark:text-white break-words">
-                            {endereco?.logradouro?.bairro?.bairro || 'Não informado'}
+                            {nome}
+                          </div>
+                        </div>
+                        
+                        {cpf && (
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">CPF</div>
+                            <div className="text-base text-gray-900 dark:text-white break-words">
+                              {formatCPF(cpf)}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {st_cadastro && (
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</div>
+                            <div className="text-base text-gray-900 dark:text-white break-words capitalize">
+                              {st_cadastro.replace('_', ' ')}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Telefone */}
+                        <div className="overflow-hidden">
+                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Telefone</div>
+                          <div className="text-base text-gray-900 dark:text-white break-words">
+                            {telefone ? formatPhone(telefone.toString()) : 'Não informado'}
+                          </div>
+                        </div>
+                        
+                        {/* Email */}
+                        <div className="overflow-hidden">
+                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</div>
+                          <div className="text-base text-gray-900 dark:text-white break-words">
+                            {email || 'Não informado'}
+                          </div>
+                        </div>
+                        
+                        {/* Data de Nascimento */}
+                        <div className="overflow-hidden">
+                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Data de Nascimento</div>
+                          <div className="text-base text-gray-900 dark:text-white break-words">
+                            {dt_nascimento ? formatDate(dt_nascimento) : 'Não informada'}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    <hr className="border-t border-gray-200 dark:border-gray-700" />
+                    
+                    {/* Seção 2: Endereço */}
+                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <Home className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                        Endereço
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        <div className="overflow-hidden">
+                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Logradouro</div>
+                          <div className="text-base text-gray-900 dark:text-white break-words">
+                            {endereco?.logradouro?.logradouro ? 
+                              `${endereco.logradouro.logradouro}, ${endereco.nr_end || 'S/N'}` : 
+                              'Não informado'
+                            }
                           </div>
                         </div>
                         
                         <div className="overflow-hidden">
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">CEP</div>
+                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Complemento</div>
                           <div className="text-base text-gray-900 dark:text-white break-words">
-                            {endereco?.logradouro?.nr_cep ? formatCEP(endereco.logradouro.nr_cep) : 'Não informado'}
+                            {endereco?.ds_complemento_end || 'Não informado'}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Bairro</div>
+                            <div className="text-base text-gray-900 dark:text-white break-words">
+                              {endereco?.logradouro?.bairro?.bairro || 'Não informado'}
+                            </div>
+                          </div>
+                          
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">CEP</div>
+                            <div className="text-base text-gray-900 dark:text-white break-words">
+                              {endereco?.logradouro?.nr_cep ? formatCEP(endereco.logradouro.nr_cep) : 'Não informado'}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Cidade</div>
+                            <div className="text-base text-gray-900 dark:text-white break-words">
+                              {endereco?.logradouro?.bairro?.cidade?.cidade || 'Não informada'}
+                            </div>
+                          </div>
+                          
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Estado</div>
+                            <div className="text-base text-gray-900 dark:text-white break-words">
+                              {endereco?.logradouro?.bairro?.cidade?.estado?.sigla_estado || 'Não informado'}
+                            </div>
                           </div>
                         </div>
                       </div>
+                    </section>
+
+                    <hr className="border-t border-gray-200 dark:border-gray-700" />
+                    
+                    {/* Seção 3: Informações da CNH */}
+                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <CreditCard className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                        Informações da CNH
+                      </h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="overflow-hidden">
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Cidade</div>
-                          <div className="text-base text-gray-900 dark:text-white break-words">
-                            {endereco?.logradouro?.bairro?.cidade?.cidade || 'Não informada'}
-                          </div>
-                        </div>
-                        
-                        <div className="overflow-hidden">
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Estado</div>
-                          <div className="text-base text-gray-900 dark:text-white break-words">
-                            {endereco?.logradouro?.bairro?.cidade?.estado?.sigla_estado || 'Não informado'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  <hr className="border-t border-gray-200 dark:border-gray-700" />
-                  
-                  {/* Seção 3: Informações da CNH */}
-                  <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                      <CreditCard className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                      Informações da CNH
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="overflow-hidden">
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Número da CNH</div>
-                        <div className="text-base text-gray-900 dark:text-white break-words">
-                          {documento?.nr_registro_cnh || 'Não informado'}
-                        </div>
-                      </div>
-                      
-                      <div className="overflow-hidden">
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Categoria</div>
-                        <div className="text-base text-gray-900 dark:text-white break-words">
-                          {documento?.categoria_cnh || 'Não informada'}
-                        </div>
-                      </div>
-                      
-                      <div className="overflow-hidden">
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Validade</div>
-                        <div className="text-base text-gray-900 dark:text-white break-words">
-                          {documento?.validade_cnh ? formatDate(documento.validade_cnh) : 'Não informada'}
-                        </div>
-                      </div>
-                      
-                      <div className="overflow-hidden">
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome da Mãe</div>
-                        <div className="text-base text-gray-900 dark:text-white break-words">
-                          {documento?.nome_mae || 'Não informado'}
-                        </div>
-                      </div>
-                      
-                      <div className="overflow-hidden">
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome do Pai</div>
-                        <div className="text-base text-gray-900 dark:text-white break-words">
-                          {documento?.nome_pai || 'Não informado'}
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  <hr className="border-t border-gray-200 dark:border-gray-700" />
-                  
-                  {/* Seção 4: Fotos dos Documentos */}
-                  <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Documentos
-                    </h3>
-                    
-                    <div className="space-y-8">
-                      {/* CNH */}
-                      <div>
-                        <h4 className="text-base font-medium text-gray-900 dark:text-white mb-3 flex items-center justify-between">
-                          <span>Carteira Nacional de Habilitação (CNH)</span>
-                          {documento?.foto_cnh && (
-                            <button
-                              onClick={() => openDocumentInNewTab(documento.foto_cnh)}
-                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-sm"
-                            >
-                              <ExternalLink size={16} />
-                              Abrir em nova aba
-                            </button>
-                          )}
-                        </h4>
-                        
-                        {documento?.foto_cnh ? (
-                          <div className="relative aspect-[1.586] w-full bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden group">
-                            {isPdf(documento.foto_cnh) ? (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                                <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                                <button
-                                  onClick={() => setActiveDocument(documento.foto_cnh)}
-                                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
-                                >
-                                  <FileText size={16} />
-                                  Visualizar PDF
-                                </button>
-                              </div>
-                            ) : (
-                              <img
-                                src={documento.foto_cnh}
-                                alt="CNH"
-                                className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                onClick={() => setActiveDocument(documento.foto_cnh)}
-                              />
-                            )}
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 dark:group-hover:bg-black/20 transition-colors duration-200" />
-                          </div>
-                        ) : (
-                          <div className="aspect-[1.586] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
-                            <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-                            <div className="text-center">
-                              <p className="text-gray-500 dark:text-gray-400 font-medium">CNH não cadastrada</p>
-                              <p className="text-sm text-gray-400 dark:text-gray-500">
-                                Faça o upload da CNH para visualizá-la aqui
-                              </p>
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              <CreditCard className="w-4 h-4 text-gray-400" />
+                              Número da CNH
                             </div>
+                            <p className="text-base text-gray-900 dark:text-white">
+                              {documento?.nr_registro_cnh || 'Não informado'}
+                            </p>
                           </div>
-                        )}
-                      </div>
-                      
-                      {/* Comprovante de Residência */}
-                      <div>
-                        <h4 className="text-base font-medium text-gray-900 dark:text-white mb-3 flex items-center justify-between">
-                          <span>Comprovante de Residência</span>
-                          {documento?.foto_comprovante_residencia && (
-                            <button
-                              onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
-                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-sm"
-                            >
-                              <ExternalLink size={16} />
-                              Abrir em nova aba
-                            </button>
-                          )}
-                        </h4>
-                        
-                        {documento?.foto_comprovante_residencia ? (
-                          <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden group">
-                            {isPdf(documento.foto_comprovante_residencia) ? (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                                <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                                <button
-                                  onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
-                                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
-                                >
-                                  <FileText size={16} />
-                                  Visualizar PDF
-                                </button>
-                              </div>
-                            ) : (
-                              <img
-                                src={documento.foto_comprovante_residencia}
-                                alt="Comprovante de Residência"
-                                className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
-                              />
-                            )}
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 dark:group-hover:bg-black/20 transition-colors duration-200" />
-                          </div>
-                        ) : (
-                          <div className="aspect-[1.414] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
-                            <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-                            <div className="text-center">
-                              <p className="text-gray-500 dark:text-gray-400 font-medium">Comprovante não cadastrado</p>
-                              <p className="text-sm text-gray-400 dark:text-gray-500">
-                                Faça o upload do comprovante para visualizá-lo aqui
-                              </p>
+                          
+                          <div>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              <FileText className="w-4 h-4 text-gray-400" />
+                              Categoria
                             </div>
+                            <p className="text-base text-gray-900 dark:text-white">
+                              {documento?.categoria_cnh || 'Não informada'}
+                            </p>
                           </div>
-                        )}
+                          
+                          <div>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              Data de Validade
+                            </div>
+                            <p className="text-base text-gray-900 dark:text-white">
+                              {documento?.validade_cnh ? formatDate(documento.validade_cnh) : 'Não informada'}
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              <MapPin className="w-4 h-4 text-gray-400" />
+                              UF da CNH
+                            </div>
+                            <p className="text-base text-gray-900 dark:text-white">
+                              {documento?.uf_cnh || 'Não informada'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              <User className="w-4 h-4 text-gray-400" />
+                              Nome da Mãe
+                            </div>
+                            <p className="text-base text-gray-900 dark:text-white">
+                              {documento?.nome_mae || 'Não informado'}
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              <User className="w-4 h-4 text-gray-400" />
+                              Nome do Pai
+                            </div>
+                            <p className="text-base text-gray-900 dark:text-white">
+                              {documento?.nome_pai || 'Não informado'}
+                            </p>
+                          </div>
+                        </div>
                       </div>
+                    </section>
+                  </div>
+
+                  {/* Right Column - Document Images */}
+                  <div className="space-y-6">
+                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+                        Documentos
+                      </h3>
                       
-                      {/* Documentos do Veículo (apenas para Agregados) */}
-                      {isAgregado && veiculo && (
+                      <div className="space-y-8">
+                        {/* CNH */}
                         <div>
                           <h4 className="text-base font-medium text-gray-900 dark:text-white mb-3 flex items-center justify-between">
-                            <span>Documentos do Veículo</span>
-                            {veiculo.documento_veiculo?.[0]?.foto_crv && (
+                            <span>Carteira Nacional de Habilitação (CNH)</span>
+                            {documento?.foto_cnh && (
                               <button
-                                onClick={() => openDocumentInNewTab(veiculo.documento_veiculo[0].foto_crv)}
+                                onClick={() => openDocumentInNewTab(documento.foto_cnh)}
                                 className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-sm"
                               >
                                 <ExternalLink size={16} />
@@ -374,26 +327,78 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                             )}
                           </h4>
                           
-                          {veiculo.documento_veiculo?.[0]?.foto_crv ? (
-                            <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden group">
-                              {isPdf(veiculo.documento_veiculo[0].foto_crv) ? (
+                          {documento?.foto_cnh ? (
+                            <div className="relative aspect-[1.586] w-full bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden group">
+                              {isPdf(documento.foto_cnh) ? (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                                   <FileText className="w-12 h-12 text-gray-400 mb-2" />
                                   <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
                                   <button
-                                    onClick={() => setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
+                                    onClick={() => openDocumentInNewTab(documento.foto_cnh)}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
                                   >
-                                    <FileText size={16} />
-                                    Visualizar PDF
+                                    <ExternalLink size={16} />
+                                    Abrir PDF
                                   </button>
                                 </div>
                               ) : (
                                 <img
-                                  src={veiculo.documento_veiculo[0].foto_crv}
-                                  alt="CRV do veículo"
+                                  src={documento.foto_cnh}
+                                  alt="CNH"
                                   className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                  onClick={() => setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
+                                  onClick={() => openDocumentInNewTab(documento.foto_cnh)}
+                                />
+                              )}
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 dark:group-hover:bg-black/20 transition-colors duration-200" />
+                            </div>
+                          ) : (
+                            <div className="aspect-[1.586] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
+                              <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                              <div className="text-center">
+                                <p className="text-gray-500 dark:text-gray-400 font-medium">CNH não cadastrada</p>
+                                <p className="text-sm text-gray-400 dark:text-gray-500">
+                                  Faça o upload da CNH para visualizá-la aqui
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Comprovante de Residência */}
+                        <div>
+                          <h4 className="text-base font-medium text-gray-900 dark:text-white mb-3 flex items-center justify-between">
+                            <span>Comprovante de Residência</span>
+                            {documento?.foto_comprovante_residencia && (
+                              <button
+                                onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
+                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-sm"
+                              >
+                                <ExternalLink size={16} />
+                                Abrir em nova aba
+                              </button>
+                            )}
+                          </h4>
+                          
+                          {documento?.foto_comprovante_residencia ? (
+                            <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden group">
+                              {isPdf(documento.foto_comprovante_residencia) ? (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                  <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                                  <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
+                                  <button
+                                    onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
+                                  >
+                                    <ExternalLink size={16} />
+                                    Abrir PDF
+                                  </button>
+                                </div>
+                              ) : (
+                                <img
+                                  src={documento.foto_comprovante_residencia}
+                                  alt="Comprovante de Residência"
+                                  className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                                  onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
                                 />
                               )}
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 dark:group-hover:bg-black/20 transition-colors duration-200" />
@@ -402,39 +407,99 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                             <div className="aspect-[1.414] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
                               <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                               <div className="text-center">
-                                <p className="text-gray-500 dark:text-gray-400 font-medium">CRV não cadastrado</p>
+                                <p className="text-gray-500 dark:text-gray-400 font-medium">Comprovante não cadastrado</p>
                                 <p className="text-sm text-gray-400 dark:text-gray-500">
-                                  Faça o upload do CRV para visualizá-lo aqui
+                                  Faça o upload do comprovante para visualizá-lo aqui
                                 </p>
                               </div>
                             </div>
                           )}
-                          
-                          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                              <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Informações do Veículo</h5>
-                              <div className="space-y-2">
-                                <div>
-                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Placa:</span>
-                                  <p className="text-sm text-gray-900 dark:text-white">{veiculo.placa.toUpperCase()}</p>
+                        </div>
+                        
+                        {/* Documentos do Veículo (apenas para Agregados) */}
+                        {isAgregado && veiculo && (
+                          <div>
+                            <h4 className="text-base font-medium text-gray-900 dark:text-white mb-3 flex items-center justify-between">
+                              <span>Documentos do Veículo</span>
+                              {veiculo.documento_veiculo?.[0]?.foto_crv && (
+                                <button
+                                  onClick={() => openDocumentInNewTab(veiculo.documento_veiculo[0].foto_crv)}
+                                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-sm"
+                                >
+                                  <ExternalLink size={16} />
+                                  Abrir em nova aba
+                                </button>
+                              )}
+                            </h4>
+                            
+                            {veiculo.documento_veiculo?.[0]?.foto_crv ? (
+                              <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden group">
+                                {isPdf(veiculo.documento_veiculo[0].foto_crv) ? (
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                                    <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
+                                    <button
+                                      onClick={() => openDocumentInNewTab(veiculo.documento_veiculo[0].foto_crv)}
+                                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
+                                    >
+                                      <ExternalLink size={16} />
+                                      Abrir PDF
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <img
+                                    src={veiculo.documento_veiculo[0].foto_crv}
+                                    alt="CRV do veículo"
+                                    className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                                    onClick={() => openDocumentInNewTab(veiculo.documento_veiculo[0].foto_crv)}
+                                  />
+                                )}
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 dark:group-hover:bg-black/20 transition-colors duration-200" />
+                              </div>
+                            ) : (
+                              <div className="aspect-[1.414] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
+                                <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                                <div className="text-center">
+                                  <p className="text-gray-500 dark:text-gray-400 font-medium">CRV não cadastrado</p>
+                                  <p className="text-sm text-gray-400 dark:text-gray-500">
+                                    Faça o upload do CRV para visualizá-lo aqui
+                                  </p>
                                 </div>
-                                <div>
-                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Marca/Modelo:</span>
-                                  <p className="text-sm text-gray-900 dark:text-white">{veiculo.marca} {veiculo.tipo}</p>
-                                </div>
-                                <div>
-                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Ano:</span>
-                                  <p className="text-sm text-gray-900 dark:text-white">{veiculo.ano || 'Não informado'}</p>
+                              </div>
+                            )}
+                            
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Informações do Veículo</h5>
+                                <div className="space-y-2">
+                                  <div>
+                                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Placa:</span>
+                                    <p className="text-sm text-gray-900 dark:text-white">{veiculo.placa.toUpperCase()}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Marca/Modelo:</span>
+                                    <p className="text-sm text-gray-900 dark:text-white">{veiculo.marca} {veiculo.tipo}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Ano:</span>
+                                    <p className="text-sm text-gray-900 dark:text-white">{veiculo.ano || 'Não informado'}</p>
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </section>
+                        )}
+                      </div>
+                    </section>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {activeTab === 'helpers' && veiculo && (
+                <div className="space-y-6">
+                  <HelperList veiculo_id={veiculo.veiculo_id} />
+                </div>
+              )}
             </div>
           </div>
         </div>
