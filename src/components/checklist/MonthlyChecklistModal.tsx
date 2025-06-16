@@ -20,7 +20,8 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
   const [currentStep, setCurrentStep] = useState(1);
   const { companyId } = useAuth();
   
-  const [formData, setFormData] = useState({
+  // Initialize with empty form data
+  const emptyFormData = {
     motorista_id: '',
     veiculo_id: '',
     quilometragem: '',
@@ -89,24 +90,30 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
       liq_arrefecimento: 1,
       agua_parabrisa: 1
     }
-  });
+  };
+  
+  const [formData, setFormData] = useState(emptyFormData);
 
-  useEffect(() => {
-    if (checklist) {
-      setFormData(prev => ({
-        ...prev,
-        motorista_id: checklist.motorista_id?.toString() || '',
-        veiculo_id: checklist.veiculo_id?.toString() || '',
-        quilometragem: checklist.quilometragem?.toString() || '',
-        observacoes: checklist.observacoes || '',
-        data: checklist.data || new Date().toISOString().split('T')[0],
-        hora: checklist.hora || new Date().toTimeString().split(' ')[0].slice(0, 5)
-      }));
-    }
-  }, [checklist]);
-
+  // Reset form when modal opens or closes
   useEffect(() => {
     if (isOpen) {
+      // If editing an existing checklist, load its data
+      if (checklist) {
+        setFormData(prev => ({
+          ...prev,
+          motorista_id: checklist.motorista_id?.toString() || '',
+          veiculo_id: checklist.veiculo_id?.toString() || '',
+          quilometragem: checklist.quilometragem?.toString() || '',
+          observacoes: checklist.observacoes || '',
+          data: checklist.data || new Date().toISOString().split('T')[0],
+          hora: checklist.hora || new Date().toTimeString().split(' ')[0].slice(0, 5)
+        }));
+      } else {
+        // If creating a new checklist, reset to empty form
+        setFormData(emptyFormData);
+        setCurrentStep(1);
+      }
+      
       fetchMotoristas();
       fetchVeiculos();
       
