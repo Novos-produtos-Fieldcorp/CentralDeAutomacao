@@ -922,11 +922,15 @@ const HodometrosDashboard = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
                   
                   {vehicleTypeFilter === 'all' || vehicleTypeFilter === 'automovel' ? (
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
+                    <>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
+                    </>
                   ) : null}
                   
                   {vehicleTypeFilter === 'all' || vehicleTypeFilter === 'ciclomotor' ? (
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
+                    <>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
+                    </>
                   ) : null}
                   
                   <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
@@ -979,6 +983,14 @@ const HodometrosDashboard = () => {
                             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                               Informado: {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}
                             </div>
+                            
+                            {/* Discrepancy tag */}
+                            {hasDiscrepancy(hodometro) && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 mt-1">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                Divergente
+                              </span>
+                            )}
                           </div>
                         </td>
                       )}
