@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { X, Truck, User, MapPin, Phone, Mail, Calendar, CreditCard, FileText, Info, Camera, CheckCircle2, XCircle, ExternalLink, Edit2, Home, Users } from 'lucide-react';
+import { X, Truck, User, MapPin, Phone, Mail, Calendar, CreditCard, FileText, Info, Camera, CheckCircle2, XCircle, ExternalLink, Edit2, Home } from 'lucide-react';
 import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
-import HelperList from './HelperList';
 
 interface AgregadoDetailViewProps {
   isOpen: boolean;
@@ -48,7 +47,6 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'vehicle' | 'helpers'>('details');
 
   if (!isOpen || !agregado) return null;
 
@@ -95,62 +93,17 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                 </div>
                 <button
                   onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
-                           rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <X size={24} />
                 </button>
               </div>
-              
-              {/* Tabs */}
-              <div className="flex border-b border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => setActiveTab('details')}
-                  className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
-                            ${activeTab === 'details'
-                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
-                >
-                  <User className="w-5 h-5 mr-2" />
-                  Detalhes
-                </button>
-                <button
-                  onClick={() => setActiveTab('documents')}
-                  className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
-                            ${activeTab === 'documents'
-                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
-                >
-                  <FileText className="w-5 h-5 mr-2" />
-                  Documentos
-                </button>
-                <button
-                  onClick={() => setActiveTab('vehicle')}
-                  className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
-                            ${activeTab === 'vehicle'
-                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
-                >
-                  <Truck className="w-5 h-5 mr-2" />
-                  Veículo
-                </button>
-                {veiculo && (
-                  <button
-                    onClick={() => setActiveTab('helpers')}
-                    className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
-                              ${activeTab === 'helpers'
-                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
-                  >
-                    <Users className="w-5 h-5 mr-2" />
-                    Ajudantes
-                  </button>
-                )}
-              </div>
             </div>
 
             <div className="p-6">
-              {activeTab === 'details' && (
+              {/* Grid Layout for Motorista and Vehicle Info */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column - Motorista Info */}
                 <div className="space-y-6">
                   {/* Informações Pessoais */}
                   <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -374,184 +327,8 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                     </div>
                   </section>
                 </div>
-              )}
 
-              {activeTab === 'documents' && (
-                <div className="space-y-6">                   
-                  {/* CNH Section */}
-                  <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-gray-400" />
-                        Carteira Nacional de Habilitação (CNH)
-                      </h3>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setIsEditingDocuments(true)}
-                          className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                          title="Editar documentos"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div>
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Número da CNH</div>
-                          <div className="text-base text-gray-900 dark:text-white break-words">
-                            {documento?.nr_registro_cnh || 'Não informado'}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Categoria</div>
-                          <div className="text-base text-gray-900 dark:text-white break-words">
-                            {documento?.categoria_cnh || 'Não informada'}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Validade</div>
-                          <div className="text-base text-gray-900 dark:text-white break-words">
-                            {documento?.validade_cnh ? formatDate(documento.validade_cnh) : 'Não informada'}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome da Mãe</div>
-                          <div className="text-base text-gray-900 dark:text-white break-words">
-                            {documento?.nome_mae || 'Não informado'}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome do Pai</div>
-                          <div className="text-base text-gray-900 dark:text-white break-words">
-                            {documento?.nome_pai || 'Não informado'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* CNH Document */}
-                    <div className="mt-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          CNH
-                        </div>
-                        {documento?.foto_cnh && (
-                          <button
-                            onClick={() => openDocumentInNewTab(documento.foto_cnh)}
-                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-xs"
-                          >
-                            <ExternalLink size={14} />
-                            Abrir em nova aba
-                          </button>
-                        )}
-                      </div>
-                      
-                      {documento?.foto_cnh ? (
-                        <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                          {isPdf(documento.foto_cnh) ? (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                              <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                              <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                              <button
-                                onClick={() => setActiveDocument(documento.foto_cnh)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
-                              >
-                                <FileText size={16} />
-                                Visualizar PDF
-                              </button>
-                            </div>
-                          ) : (
-                            <img
-                              src={documento.foto_cnh}
-                              alt="CNH"
-                              className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                              onClick={() => setActiveDocument(documento.foto_cnh)}
-                            />
-                          )}
-                        </div>
-                      ) : (
-                        <div className="aspect-[1.414] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
-                          <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-                          <div className="text-center">
-                            <p className="text-gray-500 dark:text-gray-400 font-medium">CNH não cadastrada</p>
-                            <p className="text-sm text-gray-400 dark:text-gray-500">
-                              Faça o upload da CNH para visualizá-la aqui
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </section>
-                  
-                  {/* Comprovante de Residência */}
-                  <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                      <Home className="w-5 h-5 text-gray-400" />
-                      Comprovante de Residência
-                    </h3>
-                    
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Comprovante
-                      </div>
-                      {documento?.foto_comprovante_residencia && (
-                        <button
-                          onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-xs"
-                        >
-                          <ExternalLink size={14} />
-                          Abrir em nova aba
-                        </button>
-                      )}
-                    </div>
-                    
-                    {documento?.foto_comprovante_residencia ? (
-                      <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                        {isPdf(documento.foto_comprovante_residencia) ? (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                            <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                            <button
-                              onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
-                            >
-                              <FileText size={16} />
-                              Visualizar PDF
-                            </button>
-                          </div>
-                        ) : (
-                          <img
-                            src={documento.foto_comprovante_residencia}
-                            alt="Comprovante de Residência"
-                            className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                            onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
-                          />
-                        )}
-                      </div>
-                    ) : (
-                      <div className="aspect-[1.414] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
-                        <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-                        <div className="text-center">
-                          <p className="text-gray-500 dark:text-gray-400 font-medium">Comprovante não cadastrado</p>
-                          <p className="text-sm text-gray-400 dark:text-gray-500">
-                            Faça o upload do comprovante para visualizá-lo aqui
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </section>
-                </div>
-              )}
-
-              {activeTab === 'vehicle' && (
+                {/* Right Column - Vehicle Info */}
                 <div className="space-y-6">
                   {/* Informações do Veículo */}
                   <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -561,65 +338,65 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                     </h3>
                     
                     {veiculo ? (
-                      <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-4">
-                            <div>
-                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</div>
-                              <div className="text-lg font-semibold text-gray-900 dark:text-white uppercase">
-                                {veiculo.placa}
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca/Modelo</div>
-                              <div className="text-base text-gray-900 dark:text-white">
-                                {veiculo.marca} {veiculo.tipo}
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Ano</div>
-                              <div className="text-base text-gray-900 dark:text-white">
-                                {veiculo.ano || 'Não informado'}
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Cor</div>
-                              <div className="text-base text-gray-900 dark:text-white">
-                                {veiculo.cor || 'Não informada'}
-                              </div>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</div>
+                            <div className="text-lg font-semibold text-gray-900 dark:text-white uppercase font-medium break-words">
+                              {veiculo.placa}
                             </div>
                           </div>
                           
-                          <div className="space-y-4">
-                            <div>
-                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Tipologia</div>
-                              <div className="text-base text-gray-900 dark:text-white uppercase">
-                                {veiculo.tipologia || 'Não informada'}
-                              </div>
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca/Modelo</div>
+                            <div className="text-base text-gray-900 dark:text-white break-words">
+                              {veiculo.marca} {veiculo.tipo}
                             </div>
-                            
-                            <div>
-                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Combustível</div>
-                              <div className="text-base text-gray-900 dark:text-white">
-                                {veiculo.combustivel || 'Não informado'}
-                              </div>
+                          </div>
+                          
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Ano</div>
+                            <div className="text-base text-gray-900 dark:text-white break-words">
+                              {veiculo.ano || 'Não informado'}
                             </div>
-                            
-                            <div>
-                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Peso</div>
-                              <div className="text-base text-gray-900 dark:text-white">
-                                {veiculo.peso ? `${veiculo.peso} kg` : 'Não informado'}
-                              </div>
+                          </div>
+                          
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Cor</div>
+                            <div className="text-base text-gray-900 dark:text-white break-words">
+                              {veiculo.cor || 'Não informada'}
                             </div>
-                            
-                            <div>
-                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Cubagem</div>
-                              <div className="text-base text-gray-900 dark:text-white">
-                                {veiculo.cubagem ? `${veiculo.cubagem} m³` : 'Não informada'}
-                              </div>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Tipologia</div>
+                            <div className="text-base text-gray-900 dark:text-white uppercase break-words">
+                              {veiculo.tipologia || 'Não informada'}
+                            </div>
+                          </div>
+                          
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Combustível</div>
+                            <div className="text-base text-gray-900 dark:text-white break-words">
+                              {veiculo.combustivel || 'Não informado'}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Peso</div>
+                            <div className="text-base text-gray-900 dark:text-white break-words">
+                              {veiculo.peso ? `${veiculo.peso} kg` : 'Não informado'}
+                            </div>
+                          </div>
+                          
+                          <div className="overflow-hidden">
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Cubagem</div>
+                            <div className="text-base text-gray-900 dark:text-white break-words">
+                              {veiculo.cubagem ? `${veiculo.cubagem} m³` : 'Não informada'}
                             </div>
                           </div>
                         </div>
@@ -741,14 +518,68 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                       </div>
                     </section>
                   )}
+                  
+                  {/* Comprovante de Residência */}
+                  <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Home className="w-5 h-5 text-gray-400" />
+                        Comprovante de Residência
+                      </h3>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Comprovante Digital</div>
+                        {documento?.foto_comprovante_residencia && (
+                          <button
+                            onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-xs"
+                          >
+                            <ExternalLink size={14} />
+                            Abrir em nova aba
+                          </button>
+                        )}
+                      </div>
+                      
+                      {documento?.foto_comprovante_residencia ? (
+                        <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                          {isPdf(documento.foto_comprovante_residencia) ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                              <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
+                              <button
+                                onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
+                              >
+                                <FileText size={16} />
+                                Visualizar PDF
+                              </button>
+                            </div>
+                          ) : (
+                            <img
+                              src={documento.foto_comprovante_residencia}
+                              alt="Comprovante de Residência"
+                              className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                              onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="aspect-[1.414] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                          <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                          <div className="text-center">
+                            <p className="text-gray-500 dark:text-gray-400 font-medium">Comprovante não cadastrado</p>
+                            <p className="text-sm text-gray-400 dark:text-gray-500">
+                              Faça o upload do comprovante para visualizá-lo aqui
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </section>
                 </div>
-              )}
-
-              {activeTab === 'helpers' && veiculo && (
-                <div className="space-y-6">
-                  <HelperList veiculo_id={veiculo.veiculo_id} />
-                </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
