@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, User, MapPin, CreditCard, Home, FileText, Camera, Upload, ExternalLink } from 'lucide-react';
+import { X, Loader2, User, Phone, FileText, Camera, MapPin, Calendar, CreditCard, Info, ExternalLink } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { formatCEP } from '../utils/format';
+import { formatCEP, formatCPF, formatPhone } from '../utils/format';
+import type { CnhAjudante, RgAjudante, EndAjudante } from '../types/database';
 
 interface HelperFormProps {
   isOpen: boolean;
@@ -19,12 +20,16 @@ const HelperForm: React.FC<HelperFormProps> = ({
   helper_id,
   onSuccess
 }) => {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
-  const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
+  
+  // Additional state for detailed data
+  const [cnhData, setCnhData] = useState<CnhAjudante | null>(null);
+  const [rgData, setRgData] = useState<RgAjudante | null>(null);
+  const [enderecoData, setEnderecoData] = useState<EndAjudante | null>(null);
   
   const [formData, setFormData] = useState({
     nome: '',
@@ -34,8 +39,8 @@ const HelperForm: React.FC<HelperFormProps> = ({
     comprovante_residencia: '',
     
     // CNH data
-    nr_registro: '',
-    categoria: '',
+    nr_registro_cnh: '',
+    categoria_cnh: '',
     nome_pai: '',
     nome_mae: '',
     foto_cnh: '',
@@ -63,10 +68,43 @@ const HelperForm: React.FC<HelperFormProps> = ({
       if (helper_id) {
         fetchHelperData();
       } else {
-        setLoading(false);
+        resetForm();
       }
     }
   }, [isOpen, helper_id]);
+
+  const resetForm = () => {
+    setFormData({
+      nome: '',
+      cpf: '',
+      telefone: '',
+      genero: '',
+      comprovante_residencia: '',
+      
+      nr_registro_cnh: '',
+      categoria_cnh: '',
+      nome_pai: '',
+      nome_mae: '',
+      foto_cnh: '',
+      
+      nr_rg: '',
+      data_emissao: '',
+      orgao_expedidor: '',
+      filiacao: '',
+      foto_rg: '',
+      
+      cep: '',
+      estado: '',
+      cidade: '',
+      bairro: '',
+      logradouro: '',
+      numero: '',
+      complemento: ''
+    });
+    setCnhData(null);
+    setRgData(null);
+    setEnderecoData(null);
+  };
 
   const fetchEstados = async () => {
     try {
@@ -89,7 +127,7 @@ const HelperForm: React.FC<HelperFormProps> = ({
     try {
       setLoading(true);
       
-      // Fetch helper basic data
+      // Fetch basic helper data
       const { data: helperData, error: helperError } = await supabase
         .from('documento_ajudante')
         .select('*')
@@ -104,6 +142,9 @@ const HelperForm: React.FC<HelperFormProps> = ({
         .select('*')
         .eq('id_ajudante', helper_id)
         .maybeSingle();
+      
+      if (cnhError && cnhError.code !== 'PGRST116') throw cnhError;
+      setCnhData(cnhData);
         
       // Fetch RG data
       const { data: rgData, error: rgError } = await supabase
@@ -111,22 +152,26 @@ const HelperForm: React.FC<HelperFormProps> = ({
         .select('*')
         .eq('id_ajudante', helper_id)
         .maybeSingle();
+      
+      if (rgError && rgError.code !== 'PGRST116') throw rgError;
+      setRgData(rgData);
         
       // Fetch address data
-      const { data: addressData, error: addressError } = await supabase
+      const { data: enderecoData, error: enderecoError } = await supabase
         .from('end_ajudante')
         .select(`
+          id_end_ajudante,
           nr_end,
           ds_complemento_end,
+          st_end,
+          id_ajudante,
+          id_logradouro,
           logradouro (
-            id_logradouro,
             logradouro,
             nr_cep,
             bairro (
-              id_bairro,
               bairro,
               cidade (
-                id_cidade,
                 cidade,
                 estado (
                   id_estado,
@@ -139,36 +184,36 @@ const HelperForm: React.FC<HelperFormProps> = ({
         .eq('id_ajudante', helper_id)
         .maybeSingle();
       
-      // Update form data
+      if (enderecoError && enderecoError.code !== 'PGRST116') throw enderecoError;
+      setEnderecoData(enderecoData);
+      
+      // Update form data with fetched data
       setFormData({
         nome: helperData.nome || '',
-        cpf: helperData.cpf ? String(helperData.cpf) : '',
+        cpf: helperData.cpf ? helperData.cpf.toString() : '',
         telefone: helperData.telefone || '',
         genero: helperData.genero || '',
         comprovante_residencia: helperData.comprovante_residencia || '',
         
-        // CNH data
-        nr_registro: cnhData?.nr_registro ? String(cnhData.nr_registro) : '',
-        categoria: cnhData?.categoria || '',
+        nr_registro_cnh: cnhData?.nr_registro ? cnhData.nr_registro.toString() : '',
+        categoria_cnh: cnhData?.categoria || '',
         nome_pai: cnhData?.nome_pai || '',
         nome_mae: cnhData?.nome_mae || '',
         foto_cnh: cnhData?.foto_cnh || '',
         
-        // RG data
-        nr_rg: rgData?.nr_rg ? String(rgData.nr_rg) : '',
-        data_emissao: rgData?.data_emissao ? new Date(rgData.data_emissao).toISOString().split('T')[0] : '',
+        nr_rg: rgData?.nr_rg ? rgData.nr_rg.toString() : '',
+        data_emissao: rgData?.data_emissao ? rgData.data_emissao.split('T')[0] : '',
         orgao_expedidor: rgData?.orgao_expedidor || '',
         filiacao: rgData?.filiacao || '',
         foto_rg: rgData?.foto_rg || '',
         
-        // Address data
-        cep: addressData?.logradouro?.nr_cep || '',
-        estado: addressData?.logradouro?.bairro?.cidade?.estado?.id_estado?.toString() || '',
-        cidade: addressData?.logradouro?.bairro?.cidade?.cidade || '',
-        bairro: addressData?.logradouro?.bairro?.bairro || '',
-        logradouro: addressData?.logradouro?.logradouro || '',
-        numero: addressData?.nr_end ? String(addressData.nr_end) : '',
-        complemento: addressData?.ds_complemento_end || ''
+        cep: enderecoData?.logradouro?.nr_cep || '',
+        estado: enderecoData?.logradouro?.bairro?.cidade?.estado?.id_estado.toString() || '',
+        cidade: enderecoData?.logradouro?.bairro?.cidade?.cidade || '',
+        bairro: enderecoData?.logradouro?.bairro?.bairro || '',
+        logradouro: enderecoData?.logradouro?.logradouro || '',
+        numero: enderecoData?.nr_end ? enderecoData.nr_end.toString() : '',
+        complemento: enderecoData?.ds_complemento_end || ''
       });
       
     } catch (error) {
@@ -228,139 +273,136 @@ const HelperForm: React.FC<HelperFormProps> = ({
     try {
       setSubmitting(true);
       
-      // 1. Create or update helper basic info
-      let helperId: number;
+      // Validate CPF format if provided
+      if (formData.cpf && !/^\d{11}$/.test(formData.cpf.replace(/\D/g, ''))) {
+        throw new Error('CPF inválido. Digite 11 números.');
+      }
       
-      if (helper_id) {
-        // Update existing helper
+      // 1. Insert or update documento_ajudante
+      let ajudanteId = helper_id;
+      
+      if (ajudanteId) {
+        // Update existing ajudante
         const { error: updateError } = await supabase
           .from('documento_ajudante')
           .update({
             nome: formData.nome,
-            cpf: formData.cpf ? parseFloat(formData.cpf) : null,
-            telefone: formData.telefone,
-            genero: formData.genero,
-            comprovante_residencia: formData.comprovante_residencia,
-            veiculo_id
+            cpf: formData.cpf ? formData.cpf.replace(/\D/g, '') : null,
+            telefone: formData.telefone || null,
+            genero: formData.genero || null,
+            comprovante_residencia: formData.comprovante_residencia || null,
+            veiculo_id: veiculo_id
           })
-          .eq('id_ajudante', helper_id);
+          .eq('id_ajudante', ajudanteId);
           
         if (updateError) throw updateError;
-        helperId = helper_id;
       } else {
-        // Create new helper
-        const { data: newHelper, error: createError } = await supabase
+        // Insert new ajudante
+        const { data: newAjudante, error: insertError } = await supabase
           .from('documento_ajudante')
           .insert({
             nome: formData.nome,
-            cpf: formData.cpf ? parseFloat(formData.cpf) : null,
-            telefone: formData.telefone,
-            genero: formData.genero,
-            comprovante_residencia: formData.comprovante_residencia,
-            veiculo_id
+            cpf: formData.cpf ? formData.cpf.replace(/\D/g, '') : null,
+            telefone: formData.telefone || null,
+            genero: formData.genero || null,
+            comprovante_residencia: formData.comprovante_residencia || null,
+            veiculo_id: veiculo_id
           })
           .select()
           .single();
           
-        if (createError) throw createError;
-        helperId = newHelper.id_ajudante;
+        if (insertError) throw insertError;
+        ajudanteId = newAjudante.id_ajudante;
       }
       
       // 2. Handle CNH data if provided
-      if (formData.nr_registro || formData.categoria || formData.nome_pai || formData.nome_mae || formData.foto_cnh) {
-        const { data: existingCnh, error: checkCnhError } = await supabase
+      if (formData.nr_registro_cnh || formData.categoria_cnh || formData.nome_pai || formData.nome_mae || formData.foto_cnh) {
+        const { data: existingCnh } = await supabase
           .from('cnh_ajudante')
           .select('id_cnh_ajudante')
-          .eq('id_ajudante', helperId)
+          .eq('id_ajudante', ajudanteId)
           .maybeSingle();
           
-        if (checkCnhError && checkCnhError.code !== 'PGRST116') throw checkCnhError;
-        
-        const cnhData = {
-          nr_registro: formData.nr_registro ? parseFloat(formData.nr_registro) : null,
-          categoria: formData.categoria,
-          nome_pai: formData.nome_pai,
-          nome_mae: formData.nome_mae,
-          foto_cnh: formData.foto_cnh,
-          id_ajudante: helperId
-        };
-        
         if (existingCnh) {
           // Update existing CNH
-          const { error: updateCnhError } = await supabase
+          const { error: cnhUpdateError } = await supabase
             .from('cnh_ajudante')
-            .update(cnhData)
+            .update({
+              nr_registro: formData.nr_registro_cnh ? parseFloat(formData.nr_registro_cnh) : null,
+              categoria: formData.categoria_cnh || null,
+              nome_pai: formData.nome_pai || null,
+              nome_mae: formData.nome_mae || null,
+              foto_cnh: formData.foto_cnh || null
+            })
             .eq('id_cnh_ajudante', existingCnh.id_cnh_ajudante);
             
-          if (updateCnhError) throw updateCnhError;
+          if (cnhUpdateError) throw cnhUpdateError;
         } else {
-          // Create new CNH
-          const { error: createCnhError } = await supabase
+          // Insert new CNH
+          const { error: cnhInsertError } = await supabase
             .from('cnh_ajudante')
-            .insert(cnhData);
+            .insert({
+              nr_registro: formData.nr_registro_cnh ? parseFloat(formData.nr_registro_cnh) : null,
+              categoria: formData.categoria_cnh || null,
+              nome_pai: formData.nome_pai || null,
+              nome_mae: formData.nome_mae || null,
+              foto_cnh: formData.foto_cnh || null,
+              id_ajudante: ajudanteId
+            });
             
-          if (createCnhError) throw createCnhError;
+          if (cnhInsertError) throw cnhInsertError;
         }
       }
       
       // 3. Handle RG data if provided
       if (formData.nr_rg || formData.data_emissao || formData.orgao_expedidor || formData.filiacao || formData.foto_rg) {
-        const { data: existingRg, error: checkRgError } = await supabase
+        const { data: existingRg } = await supabase
           .from('rg_ajudante')
           .select('id_rg_ajudante')
-          .eq('id_ajudante', helperId)
+          .eq('id_ajudante', ajudanteId)
           .maybeSingle();
           
-        if (checkRgError && checkRgError.code !== 'PGRST116') throw checkRgError;
-        
-        const rgData = {
-          nr_rg: formData.nr_rg ? parseFloat(formData.nr_rg) : null,
-          data_emissao: formData.data_emissao || null,
-          orgao_expedidor: formData.orgao_expedidor,
-          filiacao: formData.filiacao,
-          foto_rg: formData.foto_rg,
-          id_ajudante: helperId
-        };
-        
         if (existingRg) {
           // Update existing RG
-          const { error: updateRgError } = await supabase
+          const { error: rgUpdateError } = await supabase
             .from('rg_ajudante')
-            .update(rgData)
+            .update({
+              nr_rg: formData.nr_rg ? parseFloat(formData.nr_rg) : null,
+              data_emissao: formData.data_emissao || null,
+              orgao_expedidor: formData.orgao_expedidor || null,
+              filiacao: formData.filiacao || null,
+              foto_rg: formData.foto_rg || null
+            })
             .eq('id_rg_ajudante', existingRg.id_rg_ajudante);
             
-          if (updateRgError) throw updateRgError;
+          if (rgUpdateError) throw rgUpdateError;
         } else {
-          // Create new RG
-          const { error: createRgError } = await supabase
+          // Insert new RG
+          const { error: rgInsertError } = await supabase
             .from('rg_ajudante')
-            .insert(rgData);
+            .insert({
+              nr_rg: formData.nr_rg ? parseFloat(formData.nr_rg) : null,
+              data_emissao: formData.data_emissao || null,
+              orgao_expedidor: formData.orgao_expedidor || null,
+              filiacao: formData.filiacao || null,
+              foto_rg: formData.foto_rg || null,
+              id_ajudante: ajudanteId
+            });
             
-          if (createRgError) throw createRgError;
+          if (rgInsertError) throw rgInsertError;
         }
       }
       
       // 4. Handle address data if provided
       if (formData.logradouro && formData.cidade && formData.estado) {
         try {
-          // First, find the estado_id based on sigla_estado
-          const { data: estadoData, error: estadoError } = await supabase
-            .from('estado')
-            .select('id_estado')
-            .eq('id_estado', parseInt(formData.estado))
-            .single();
-            
-          if (estadoError) {
-            throw new Error(`Estado não encontrado.`);
-          }
-          
-          // Check if cidade exists
+          // First, check if cidade exists
           let cidadeId: number;
           const { data: cidade, error: cidadeError } = await supabase
             .from('cidade')
             .select('id_cidade')
             .eq('cidade', formData.cidade)
-            .eq('id_estado', estadoData.id_estado)
+            .eq('id_estado', parseInt(formData.estado))
             .maybeSingle();
 
           if (cidadeError && cidadeError.code !== 'PGRST116') {
@@ -375,7 +417,7 @@ const HelperForm: React.FC<HelperFormProps> = ({
               .from('cidade')
               .insert({
                 cidade: formData.cidade,
-                id_estado: estadoData.id_estado
+                id_estado: parseInt(formData.estado)
               })
               .select()
               .single();
@@ -449,38 +491,37 @@ const HelperForm: React.FC<HelperFormProps> = ({
             logradouroId = newLogradouro.id_logradouro;
           }
 
-          // Check if address exists
-          const { data: existingAddress, error: checkAddressError } = await supabase
+          // Check if end_ajudante exists
+          const { data: existingEndereco } = await supabase
             .from('end_ajudante')
             .select('id_end_ajudante')
-            .eq('id_ajudante', helperId)
+            .eq('id_ajudante', ajudanteId)
             .maybeSingle();
             
-          if (checkAddressError && checkAddressError.code !== 'PGRST116') throw checkAddressError;
-          
-          const addressData = {
-            nr_end: formData.numero ? parseInt(formData.numero) : null,
-            ds_complemento_end: formData.complemento || null,
-            id_ajudante: helperId,
-            id_logradouro: logradouroId,
-            st_end: true
-          };
-          
-          if (existingAddress) {
-            // Update existing address
-            const { error: updateAddressError } = await supabase
+          if (existingEndereco) {
+            // Update existing endereco
+            const { error: enderecoUpdateError } = await supabase
               .from('end_ajudante')
-              .update(addressData)
-              .eq('id_end_ajudante', existingAddress.id_end_ajudante);
+              .update({
+                nr_end: formData.numero ? parseInt(formData.numero) : null,
+                ds_complemento_end: formData.complemento || null,
+                id_logradouro: logradouroId
+              })
+              .eq('id_end_ajudante', existingEndereco.id_end_ajudante);
               
-            if (updateAddressError) throw updateAddressError;
+            if (enderecoUpdateError) throw enderecoUpdateError;
           } else {
-            // Create new address
-            const { error: createAddressError } = await supabase
+            // Create new endereco
+            const { error: enderecoInsertError } = await supabase
               .from('end_ajudante')
-              .insert(addressData);
+              .insert({
+                nr_end: formData.numero ? parseInt(formData.numero) : null,
+                ds_complemento_end: formData.complemento || null,
+                id_ajudante: ajudanteId,
+                id_logradouro: logradouroId
+              });
               
-            if (createAddressError) throw createAddressError;
+            if (enderecoInsertError) throw enderecoInsertError;
           }
         } catch (error) {
           console.error('Erro ao cadastrar endereço:', error);
@@ -501,21 +542,27 @@ const HelperForm: React.FC<HelperFormProps> = ({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (type === 'checkbox') {
-      setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'comprovante_residencia' | 'foto_cnh' | 'foto_rg') => {
     const file = e.target.files?.[0];
     if (!file) return;
     
     try {
-      setUploadingPhoto(field);
+      // Check file size (max 15MB)
+      if (file.size > 15 * 1024 * 1024) {
+        toast.error('O arquivo é muito grande. Tamanho máximo: 15MB');
+        return;
+      }
+      
+      // Check file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Tipo de arquivo inválido. Use JPEG, PNG ou PDF');
+        return;
+      }
       
       // Create a unique file name
       const fileExt = file.name.split('.').pop();
@@ -524,7 +571,11 @@ const HelperForm: React.FC<HelperFormProps> = ({
       // Upload file to storage
       const { error: uploadError, data } = await supabase.storage
         .from('imagensdocs')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
+        });
         
       if (uploadError) throw uploadError;
       
@@ -533,18 +584,13 @@ const HelperForm: React.FC<HelperFormProps> = ({
         .from('imagensdocs')
         .getPublicUrl(fileName);
         
-      // Update the photo in state
-      setFormData(prev => ({
-        ...prev,
-        [field]: publicUrl
-      }));
+      // Update form data with the URL
+      setFormData(prev => ({ ...prev, [field]: publicUrl }));
       
-      toast.success('Foto enviada com sucesso');
+      toast.success('Arquivo enviado com sucesso');
     } catch (error) {
-      console.error('Error uploading photo:', error);
-      toast.error('Erro ao enviar foto');
-    } finally {
-      setUploadingPhoto(null);
+      console.error('Error uploading file:', error);
+      toast.error('Erro ao enviar arquivo');
     }
   };
 
@@ -581,7 +627,8 @@ const HelperForm: React.FC<HelperFormProps> = ({
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* Personal Information */}
             <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center gap-2">
+                <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 Informações Pessoais
               </h3>
               
@@ -618,6 +665,11 @@ const HelperForm: React.FC<HelperFormProps> = ({
                     maxLength={11}
                     placeholder="Digite o CPF (somente números)"
                   />
+                  {formData.cpf && (
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      {formatCPF(formData.cpf)}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -635,6 +687,11 @@ const HelperForm: React.FC<HelperFormProps> = ({
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="(00) 00000-0000"
                   />
+                  {formData.telefone && (
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      {formatPhone(formData.telefone)}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -653,12 +710,49 @@ const HelperForm: React.FC<HelperFormProps> = ({
                     <option value="O">Outro</option>
                   </select>
                 </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Comprovante de Residência
+                  </label>
+                  <div className="mt-1 flex items-center">
+                    <input
+                      type="file"
+                      id="comprovante_residencia"
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(e, 'comprovante_residencia')}
+                      accept="image/jpeg,image/png,image/jpg,application/pdf"
+                    />
+                    <label
+                      htmlFor="comprovante_residencia"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer flex items-center gap-2"
+                    >
+                      <Camera className="w-5 h-5" />
+                      {formData.comprovante_residencia ? 'Alterar Comprovante' : 'Enviar Comprovante'}
+                    </label>
+                    {formData.comprovante_residencia && (
+                      <div className="ml-3 flex items-center gap-2">
+                        <span className="text-sm text-green-600 dark:text-green-400">
+                          Comprovante enviado
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => openDocumentInNewTab(formData.comprovante_residencia)}
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-1"
+                        >
+                          <ExternalLink size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* CNH Information */}
             <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 Informações da CNH
               </h3>
               
@@ -669,8 +763,8 @@ const HelperForm: React.FC<HelperFormProps> = ({
                   </label>
                   <input
                     type="text"
-                    name="nr_registro"
-                    value={formData.nr_registro}
+                    name="nr_registro_cnh"
+                    value={formData.nr_registro_cnh}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
@@ -681,8 +775,8 @@ const HelperForm: React.FC<HelperFormProps> = ({
                     Categoria
                   </label>
                   <select
-                    name="categoria"
-                    value={formData.categoria}
+                    name="categoria_cnh"
+                    value={formData.categoria_cnh}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
@@ -729,76 +823,61 @@ const HelperForm: React.FC<HelperFormProps> = ({
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Foto da CNH
                   </label>
+                  <div className="mt-1 flex items-center">
+                    <input
+                      type="file"
+                      id="foto_cnh"
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(e, 'foto_cnh')}
+                      accept="image/jpeg,image/png,image/jpg,application/pdf"
+                    />
+                    <label
+                      htmlFor="foto_cnh"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer flex items-center gap-2"
+                    >
+                      <Camera className="w-5 h-5" />
+                      {formData.foto_cnh ? 'Alterar Foto da CNH' : 'Enviar Foto da CNH'}
+                    </label>
+                    {formData.foto_cnh && (
+                      <div className="ml-3 flex items-center gap-2">
+                        <span className="text-sm text-green-600 dark:text-green-400">
+                          Foto da CNH enviada
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => openDocumentInNewTab(formData.foto_cnh)}
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-1"
+                        >
+                          <ExternalLink size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   
-                  {formData.foto_cnh ? (
-                    <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                      {isPdf(formData.foto_cnh) ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                          <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                          <div className="flex gap-2">
+                  {formData.foto_cnh && (
+                    <div className="mt-3 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                      <div className="aspect-[1.586] w-full bg-gray-100 dark:bg-gray-700 relative">
+                        {isPdf(formData.foto_cnh) ? (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
                             <button
                               type="button"
-                              onClick={() => setActiveDocument(formData.foto_cnh)}
-                              className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
+                              onClick={() => openDocumentInNewTab(formData.foto_cnh)}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
                             >
-                              <FileText size={16} />
-                              Visualizar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setFormData(prev => ({ ...prev, foto_cnh: '' }))}
-                              className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center gap-1"
-                            >
-                              <X size={16} />
-                              Remover
+                              <ExternalLink size={16} />
+                              Abrir PDF
                             </button>
                           </div>
-                        </div>
-                      ) : (
-                        <>
+                        ) : (
                           <img
                             src={formData.foto_cnh}
                             alt="CNH"
-                            className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                            onClick={() => setActiveDocument(formData.foto_cnh)}
+                            className="absolute inset-0 w-full h-full object-contain"
                           />
-                          <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, foto_cnh: '' }))}
-                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                            title="Remover documento"
-                          >
-                            <X size={16} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <input
-                        type="file"
-                        id="file-cnh"
-                        onChange={(e) => handleDocumentUpload(e, 'foto_cnh')}
-                        className="sr-only"
-                        accept="image/jpeg,image/png,image/jpg,application/pdf"
-                      />
-                      <label
-                        htmlFor="file-cnh"
-                        className="flex flex-col items-center justify-center w-full aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
-                                  border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
-                                  hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
-                      >
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <Camera className="w-10 h-10 text-gray-400 mb-4" />
-                          <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                            <span className="font-semibold">Clique para enviar</span> ou arraste e solte
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            JPEG, PNG ou PDF (máx. 15MB)
-                          </p>
-                        </div>
-                      </label>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -807,7 +886,8 @@ const HelperForm: React.FC<HelperFormProps> = ({
 
             {/* RG Information */}
             <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 Informações do RG
               </h3>
               
@@ -868,170 +948,71 @@ const HelperForm: React.FC<HelperFormProps> = ({
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Foto do RG
                   </label>
+                  <div className="mt-1 flex items-center">
+                    <input
+                      type="file"
+                      id="foto_rg"
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(e, 'foto_rg')}
+                      accept="image/jpeg,image/png,image/jpg,application/pdf"
+                    />
+                    <label
+                      htmlFor="foto_rg"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer flex items-center gap-2"
+                    >
+                      <Camera className="w-5 h-5" />
+                      {formData.foto_rg ? 'Alterar Foto do RG' : 'Enviar Foto do RG'}
+                    </label>
+                    {formData.foto_rg && (
+                      <div className="ml-3 flex items-center gap-2">
+                        <span className="text-sm text-green-600 dark:text-green-400">
+                          Foto do RG enviada
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => openDocumentInNewTab(formData.foto_rg)}
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-1"
+                        >
+                          <ExternalLink size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   
-                  {formData.foto_rg ? (
-                    <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                      {isPdf(formData.foto_rg) ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                          <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                          <div className="flex gap-2">
+                  {formData.foto_rg && (
+                    <div className="mt-3 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                      <div className="aspect-[1.586] w-full bg-gray-100 dark:bg-gray-700 relative">
+                        {isPdf(formData.foto_rg) ? (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
                             <button
                               type="button"
-                              onClick={() => setActiveDocument(formData.foto_rg)}
-                              className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
+                              onClick={() => openDocumentInNewTab(formData.foto_rg)}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
                             >
-                              <FileText size={16} />
-                              Visualizar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setFormData(prev => ({ ...prev, foto_rg: '' }))}
-                              className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center gap-1"
-                            >
-                              <X size={16} />
-                              Remover
+                              <ExternalLink size={16} />
+                              Abrir PDF
                             </button>
                           </div>
-                        </div>
-                      ) : (
-                        <>
+                        ) : (
                           <img
                             src={formData.foto_rg}
                             alt="RG"
-                            className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                            onClick={() => setActiveDocument(formData.foto_rg)}
+                            className="absolute inset-0 w-full h-full object-contain"
                           />
-                          <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, foto_rg: '' }))}
-                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                            title="Remover documento"
-                          >
-                            <X size={16} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <input
-                        type="file"
-                        id="file-rg"
-                        onChange={(e) => handleDocumentUpload(e, 'foto_rg')}
-                        className="sr-only"
-                        accept="image/jpeg,image/png,image/jpg,application/pdf"
-                      />
-                      <label
-                        htmlFor="file-rg"
-                        className="flex flex-col items-center justify-center w-full aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
-                                  border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
-                                  hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
-                      >
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <Camera className="w-10 h-10 text-gray-400 mb-4" />
-                          <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                            <span className="font-semibold">Clique para enviar</span> ou arraste e solte
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            JPEG, PNG ou PDF (máx. 15MB)
-                          </p>
-                        </div>
-                      </label>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Comprovante de Residência */}
-            <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                Comprovante de Residência
-              </h3>
-              
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Foto do Comprovante
-                </label>
-                
-                {formData.comprovante_residencia ? (
-                  <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                    {isPdf(formData.comprovante_residencia) ? (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setActiveDocument(formData.comprovante_residencia)}
-                            className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
-                          >
-                            <FileText size={16} />
-                            Visualizar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, comprovante_residencia: '' }))}
-                            className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center gap-1"
-                          >
-                            <X size={16} />
-                            Remover
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <img
-                          src={formData.comprovante_residencia}
-                          alt="Comprovante de Residência"
-                          className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                          onClick={() => setActiveDocument(formData.comprovante_residencia)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, comprovante_residencia: '' }))}
-                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                          title="Remover documento"
-                        >
-                          <X size={16} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <input
-                      type="file"
-                      id="file-comprovante"
-                      onChange={(e) => handleDocumentUpload(e, 'comprovante_residencia')}
-                      className="sr-only"
-                      accept="image/jpeg,image/png,image/jpg,application/pdf"
-                    />
-                    <label
-                      htmlFor="file-comprovante"
-                      className="flex flex-col items-center justify-center w-full aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
-                                border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
-                                hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
-                    >
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Camera className="w-10 h-10 text-gray-400 mb-4" />
-                        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold">Clique para enviar</span> ou arraste e solte
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          JPEG, PNG ou PDF (máx. 15MB)
-                        </p>
-                      </div>
-                    </label>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Address Information */}
             <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 Endereço
               </h3>
               
