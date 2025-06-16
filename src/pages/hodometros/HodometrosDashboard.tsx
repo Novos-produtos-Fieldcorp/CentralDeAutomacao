@@ -570,6 +570,24 @@ const HodometrosDashboard = () => {
     return true;
   });
 
+  // Check if there's a discrepancy between reported and read values
+  const hasDiscrepancy = (hodometro: HodometroReading): boolean => {
+    // If comparacao_leitura is explicitly false, there's a discrepancy
+    if (hodometro.comparacao_leitura === false) return true;
+    
+    // For electric vehicles (with battery), we can't compare hodometer values
+    if (hodometro.bateria !== null && hodometro.bateria !== undefined) return false;
+    
+    // For regular vehicles, check if values are different
+    if (hodometro.hod_informado !== null && hodometro.hod_lido !== null) {
+      // Allow a small tolerance (e.g., 1% difference)
+      const tolerance = hodometro.hod_informado * 0.01;
+      return Math.abs(hodometro.hod_informado - hodometro.hod_lido) > tolerance;
+    }
+    
+    return false;
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -905,15 +923,13 @@ const HodometrosDashboard = () => {
                   
                   {vehicleTypeFilter === 'all' || vehicleTypeFilter === 'automovel' ? (
                     <>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
                     </>
                   ) : null}
                   
                   {vehicleTypeFilter === 'all' || vehicleTypeFilter === 'ciclomotor' ? (
                     <>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip Informada</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip Lida</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
                     </>
                   ) : null}
                   
@@ -959,58 +975,52 @@ const HodometrosDashboard = () => {
                       
                       {/* Conditional columns based on vehicle type */}
                       {(vehicleTypeFilter === 'all' || vehicleTypeFilter === 'automovel') && !isElectric && (
-                        <>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
                             <div className="text-sm text-gray-900 dark:text-white">
-                              {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}
+                              Lido: {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900 dark:text-white">
-                              {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Informado: {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}
                             </div>
-                          </td>
-                        </>
+                            
+                            {/* Discrepancy tag */}
+                            {hasDiscrepancy(hodometro) && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 mt-1">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                Divergente
+                              </span>
+                            )}
+                          </div>
+                        </td>
                       )}
                       
                       {/* Hide these columns for automóveis */}
                       {(vehicleTypeFilter === 'all' || vehicleTypeFilter === 'automovel') && isElectric && (
-                        <>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                          </td>
-                        </>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                        </td>
                       )}
                       
                       {/* Trip columns for ciclomotores */}
                       {(vehicleTypeFilter === 'all' || vehicleTypeFilter === 'ciclomotor') && isElectric && (
-                        <>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
                             <div className="text-sm text-gray-900 dark:text-white">
-                              {hodometro.trip_informada || '-'}
+                              Lida: {hodometro.trip_lida !== null ? formatNumber(hodometro.trip_lida) : '-'}
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900 dark:text-white">
-                              {hodometro.trip_lida !== null ? formatNumber(hodometro.trip_lida) : '-'}
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Informada: {hodometro.trip_informada || '-'}
                             </div>
-                          </td>
-                        </>
+                          </div>
+                        </td>
                       )}
                       
                       {/* Hide these columns for ciclomotores */}
                       {(vehicleTypeFilter === 'all' || vehicleTypeFilter === 'ciclomotor') && !isElectric && (
-                        <>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                          </td>
-                        </>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                        </td>
                       )}
                       
                       <td className="px-6 py-4 whitespace-nowrap text-center">
