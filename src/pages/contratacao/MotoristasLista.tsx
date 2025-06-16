@@ -663,7 +663,7 @@ const MotoristasLista = () => {
   ];
 
   const statusOptions = [
-    { value: '', label: 'Todos os status' },
+    { value: 'todos', label: 'Todos os status' },
     { value: 'cadastrado', label: 'Cadastrado' },
     { value: 'qualificado', label: 'Qualificado' },
     { value: 'documentacao', label: 'Documentação' },
