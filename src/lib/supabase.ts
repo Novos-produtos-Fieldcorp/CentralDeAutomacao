@@ -69,6 +69,7 @@ export const testSupabaseConnection = async (): Promise<boolean> => {
 const applyRetryLogic = (queryBuilder: any, table: string) => {
   const originalThen = queryBuilder.then;
   const originalSingle = queryBuilder.single;
+  const originalMaybeSingle = queryBuilder.maybeSingle;
   const originalLimit = queryBuilder.limit;
   const originalOrder = queryBuilder.order;
   const originalEq = queryBuilder.eq;
@@ -86,17 +87,31 @@ const applyRetryLogic = (queryBuilder: any, table: string) => {
   const originalRange = queryBuilder.range;
   const originalGroup = queryBuilder.group;
 
-  const handleSupabaseError = async (operation: () => Promise<any>) => {
+  const handleSupabaseError = async (operation: () => Promise<any>, isMaybeSingle: boolean = false) => {
     let retries = 3;
     let lastError: any;
     
     while (retries > 0) {
       try {
         const result = await operation();
+        
+        // Handle PGRST116 error for maybeSingle queries - this is expected behavior
+        if (result && result.error && result.error.code === 'PGRST116' && isMaybeSingle) {
+          if (result.error.details === 'The result contains 0 rows') {
+            return { data: null, error: null };
+          }
+        }
+        
         if (result && result.error) throw result.error;
         return result;
       } catch (error) {
         lastError = error;
+        
+        // Handle PGRST116 error for maybeSingle queries - this is expected behavior
+        if (error.code === 'PGRST116' && isMaybeSingle && error.details === 'The result contains 0 rows') {
+          return { data: null, error: null };
+        }
+        
         console.error(`Supabase ${table} operation failed (${retries} retries left):`, error);
         
         // If it's a network error and we have retries left, try again
@@ -139,6 +154,21 @@ const applyRetryLogic = (queryBuilder: any, table: string) => {
     queryBuilder.single = function() {
       const result = originalSingle.call(this);
       return applyRetryLogic(result, table);
+    };
+  }
+
+  // Override maybeSingle to handle PGRST116 errors properly
+  if (originalMaybeSingle) {
+    queryBuilder.maybeSingle = function() {
+      const result = originalMaybeSingle.call(this);
+      const newResult = { ...result };
+      
+      // Override the then method specifically for maybeSingle
+      newResult.then = function(onFulfilled?: any, onRejected?: any) {
+        return handleSupabaseError(() => originalThen.call(result, onFulfilled, onRejected), true);
+      };
+      
+      return newResult;
     };
   }
 
