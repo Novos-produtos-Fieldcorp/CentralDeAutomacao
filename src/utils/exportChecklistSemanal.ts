@@ -1,9 +1,11 @@
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
-export const formatChecklistSemanalPDF = (checklist: any) => {
+export const formatChecklistSemanalPDF = async (checklist: any) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   
   // Add title
   doc.setFontSize(18);

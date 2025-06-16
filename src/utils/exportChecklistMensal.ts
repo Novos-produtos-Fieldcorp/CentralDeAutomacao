@@ -1,9 +1,11 @@
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
-export const formatChecklistMensalPDF = (checklist: any) => {
+export const formatChecklistMensalPDF = async (checklist: any) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   
   // Add title
   doc.setFontSize(18);
@@ -39,14 +41,14 @@ export const formatChecklistMensalPDF = (checklist: any) => {
     yPos = addAccessoriesSection(doc, checklist.acessorios, yPos, pageWidth);
   }
   
-  // Add photos section
-  if (checklist.fotos) {
-    yPos = addPhotosSection(doc, checklist.fotos, yPos, pageWidth);
-  }
-  
   // Add observations if they exist
   if (checklist.observacoes) {
     yPos = addObservationsSection(doc, checklist.observacoes, pageWidth, yPos);
+  }
+  
+  // Add photos section if they exist
+  if (checklist.fotos) {
+    await addPhotosSection(doc, checklist.fotos, yPos, pageWidth, pageHeight);
   }
   
   // Save the PDF
@@ -305,66 +307,7 @@ const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, pageWi
   return yPos + 5;
 };
 
-// Function to add photos section to the PDF
-const addPhotosSection = (doc: jsPDF, fotos: any, yPos: number, pageWidth: number): number => {
-  // Check if we need a new page
-  if (yPos > 250) {
-    doc.addPage();
-    yPos = 20;
-  }
-  
-  doc.setFontSize(14);
-  doc.text('Fotos do Veículo', 14, yPos);
-  yPos += 8;
-  
-  doc.setFontSize(10);
-  
-  // Skip id fields
-  const photoKeys = Object.keys(fotos).filter(key => 
-    key !== 'id_foto_checklist' && key !== 'checklist_id'
-  );
-  
-  // If no valid photo keys or all photos are empty, show a message
-  const hasPhotos = photoKeys.some(key => fotos[key]);
-  if (!hasPhotos) {
-    doc.text('Nenhuma foto disponível', 20, yPos);
-    return yPos + 10;
-  }
-  
-  // Add photo URLs to the PDF
-  photoKeys.forEach(key => {
-    if (fotos[key]) {
-      const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      doc.text(`${label}:`, 20, yPos);
-      yPos += 5;
-      
-      // Add the URL with smaller font and word wrapping
-      doc.setFontSize(8);
-      
-      // Split long URLs to fit within page width
-      const maxWidth = pageWidth - 40; // 20px margin on each side
-      const url = fotos[key];
-      
-      // Use splitTextToSize to handle line breaks
-      const splitUrl = doc.splitTextToSize(url, maxWidth);
-      doc.text(splitUrl, 25, yPos);
-      
-      // Adjust yPos based on number of lines
-      yPos += (splitUrl.length * 3) + 5;
-      
-      doc.setFontSize(10);
-      
-      // Check if we need a new page
-      if (yPos > 280) {
-        doc.addPage();
-        yPos = 20;
-      }
-    }
-  });
-  
-  return yPos + 5;
-};
-
+// Function to add observations section to the PDF
 const addObservationsSection = (doc: jsPDF, observacoes: string, pageWidth: number, yPos: number): number => {
   // Check if we need a new page
   if (yPos > 250) {
@@ -381,4 +324,107 @@ const addObservationsSection = (doc: jsPDF, observacoes: string, pageWidth: numb
   doc.text(splitText, 20, yPos);
   
   return yPos + splitText.length * 6;
+};
+
+// Function to load an image from URL and return as base64
+const loadImageAsBase64 = async (url: string): Promise<string | null> => {
+  if (!url) return null;
+  
+  try {
+    // Create a temporary image element
+    const img = document.createElement('img');
+    img.crossOrigin = 'Anonymous'; // Enable CORS
+    img.src = url;
+    
+    // Wait for the image to load
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+    });
+    
+    // Create a canvas and draw the image
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Could not get canvas context');
+    
+    ctx.drawImage(img, 0, 0);
+    
+    // Get base64 data URL
+    return canvas.toDataURL('image/jpeg');
+  } catch (error) {
+    console.error('Error loading image:', error);
+    return null;
+  }
+};
+
+// Function to add photos section to the PDF with actual images
+const addPhotosSection = async (doc: jsPDF, fotos: any, yPos: number, pageWidth: number, pageHeight: number): Promise<void> => {
+  // Check if we need a new page
+  if (yPos > 200) {
+    doc.addPage();
+    yPos = 20;
+  }
+  
+  doc.setFontSize(14);
+  doc.text('Fotos do Veículo', 14, yPos);
+  yPos += 10;
+  
+  // Skip id fields
+  const photoKeys = Object.keys(fotos).filter(key => 
+    key !== 'id_foto_checklist' && key !== 'checklist_id'
+  );
+  
+  // If no valid photo keys or all photos are empty, show a message
+  const hasPhotos = photoKeys.some(key => fotos[key]);
+  if (!hasPhotos) {
+    doc.setFontSize(10);
+    doc.text('Nenhuma foto disponível', 20, yPos);
+    return;
+  }
+  
+  // Process each photo
+  for (const key of photoKeys) {
+    const photoUrl = fotos[key];
+    if (!photoUrl) continue;
+    
+    // Check if we need a new page
+    if (yPos > pageHeight - 100) {
+      doc.addPage();
+      yPos = 20;
+    }
+    
+    // Add photo label
+    const label = key.replace(/foto_/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    doc.setFontSize(12);
+    doc.text(label, 14, yPos);
+    yPos += 8;
+    
+    try {
+      // Load image as base64
+      const imageData = await loadImageAsBase64(photoUrl);
+      
+      if (imageData) {
+        // Calculate image dimensions to fit within page width
+        const imgWidth = pageWidth - 28; // 14px margin on each side
+        const imgHeight = 80; // Fixed height for each image
+        
+        // Add image to PDF
+        doc.addImage(imageData, 'JPEG', 14, yPos, imgWidth, imgHeight);
+        yPos += imgHeight + 15; // Add space after image
+      } else {
+        // If image loading failed, show error message
+        doc.setFontSize(10);
+        doc.text('Erro ao carregar imagem', 20, yPos);
+        yPos += 10;
+      }
+    } catch (error) {
+      console.error(`Error adding image ${key}:`, error);
+      doc.setFontSize(10);
+      doc.text('Erro ao carregar imagem', 20, yPos);
+      yPos += 10;
+    }
+  }
 };
