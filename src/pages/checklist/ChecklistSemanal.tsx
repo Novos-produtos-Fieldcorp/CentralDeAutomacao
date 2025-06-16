@@ -6,6 +6,7 @@ import type { Checklist } from '../../types/database';
 import ChecklistDetailsModal from '../../components/checklist/ChecklistDetailsModal';
 import DeleteChecklistModal from '../../components/checklist/DeleteChecklistModal';
 import WeeklyChecklistModal from '../../components/checklist/WeeklyChecklistModal';
+import CreateWeeklyChecklistModal from '../../components/checklist/CreateWeeklyChecklistModal';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useDateRange } from '../../hooks/useDateRange';
@@ -23,6 +24,7 @@ const ChecklistSemanal = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
@@ -481,12 +483,15 @@ const ChecklistSemanal = () => {
       )}
 
       {/* Modals */}
-      <WeeklyChecklistModal
+      <CreateWeeklyChecklistModal
         isOpen={isNewModalOpen}
-        onClose={() => {
-          setIsNewModalOpen(false);
-          setSelectedChecklist(null);
-        }}
+        onClose={() => setIsNewModalOpen(false)}
+        onSuccess={fetchChecklists}
+      />
+
+      <WeeklyChecklistModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
         onSuccess={fetchChecklists}
         checklist={selectedChecklist} 
       />
@@ -532,7 +537,7 @@ const ChecklistSemanal = () => {
         checklist={selectedChecklist}
         onEdit={(checklist) => {
           setSelectedChecklist(checklist);
-          setIsNewModalOpen(true);
+          setIsEditModalOpen(true);
         }}
       />
     </div>

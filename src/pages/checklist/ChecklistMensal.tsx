@@ -5,6 +5,7 @@ import type { Checklist } from '../../types/database';
 
 import ChecklistDetailsModal from '../../components/checklist/ChecklistDetailsModal';
 import MonthlyChecklistModal from '../../components/checklist/MonthlyChecklistModal';
+import CreateMonthlyChecklistModal from '../../components/checklist/CreateMonthlyChecklistModal';
 import DeleteChecklistModal from '../../components/checklist/DeleteChecklistModal';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
@@ -23,6 +24,7 @@ const ChecklistMensal = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
@@ -480,12 +482,15 @@ const ChecklistMensal = () => {
       )}
 
       {/* Modals */}
-      <MonthlyChecklistModal
+      <CreateMonthlyChecklistModal
         isOpen={isNewModalOpen}
-        onClose={() => {
-          setIsNewModalOpen(false);
-          setSelectedChecklist(null);
-        }}
+        onClose={() => setIsNewModalOpen(false)}
+        onSuccess={fetchChecklists}
+      />
+
+      <MonthlyChecklistModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
         onSuccess={fetchChecklists}
         checklist={selectedChecklist} 
       />
@@ -531,7 +536,7 @@ const ChecklistMensal = () => {
         checklist={selectedChecklist}
         onEdit={(checklist) => {
           setSelectedChecklist(checklist);
-          setIsNewModalOpen(true);
+          setIsEditModalOpen(true);
         }}
       />
     </div>
