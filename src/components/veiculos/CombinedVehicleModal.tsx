@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Save, Edit2 } from 'lucide-react';
+import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Save, Edit2, Users } from 'lucide-react';
 import type { Veiculo, DocumentoVeiculo } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { VEHICLE_TYPES } from '../../constants/vehicleTypes';
+import HelperList from '../HelperList';
 
 interface CombinedVehicleModalProps {
   isOpen: boolean;
@@ -13,7 +14,7 @@ interface CombinedVehicleModalProps {
 }
 
 const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: CombinedVehicleModalProps) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'documents'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'helpers'>('details');
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -290,6 +291,16 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                 >
                   <FileText className="w-5 h-5 mr-2" />
                   Documentos
+                </button>
+                <button
+                  onClick={() => setActiveTab('helpers')}
+                  className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
+                            ${activeTab === 'helpers'
+                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                >
+                  <Users className="w-5 h-5 mr-2" />
+                  Ajudantes
                 </button>
               </nav>
             </div>
@@ -719,6 +730,10 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                     </div>
                   </div>
                 </div>
+              )}
+
+              {activeTab === 'helpers' && (
+                <HelperList veiculo_id={veiculo.veiculo_id} />
               )}
             </div>
           </div>
