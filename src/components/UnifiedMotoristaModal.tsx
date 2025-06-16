@@ -1,12 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, User, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, UserCircle, Home, Edit2, Save, Users } from 'lucide-react';
-import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo, DocumentoAjudante } from '../types/database';
+import React, { useState, useEffect } from 'react';
+import { X, User, MapPin, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, UserCircle, Home, Edit2, Save, Users } from 'lucide-react';
+import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
+import AjudanteList from './AjudanteList';
 
 interface UnifiedMotoristaModalProps {
   isOpen: boolean;
@@ -20,10 +21,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
   const [loading, setLoading] = useState(true);
   const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
   const [veiculo, setVeiculo] = useState<(Veiculo & {
-    documento_veiculo: (DocumentoVeiculo & {
-      pessoa_fisica_dono_veiculo?: PessoaFisicaDonoVeiculo;
-      pessoa_juridica_dono_veiculo?: PessoaJuridicaDonoVeiculo;
-    })[];
+    documento_veiculo: DocumentoVeiculo[];
   }) | null>(null);
   const [endereco, setEndereco] = useState<any | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -31,7 +29,6 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [motoristaData, setMotoristaData] = useState<Motorista | null>(null);
-  const [ajudantes, setAjudantes] = useState<DocumentoAjudante[]>([]);
 
   useEffect(() => {
     if (isOpen && motorista) {
@@ -88,39 +85,25 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
 
       setEndereco(enderecoData);
 
-      // Fetch veiculo
-      const { data: veiculoData, error: veiculoError } = await supabase
-        .from('veiculo')
-        .select(`
-          *,
-          documento_veiculo (
+      // Fetch veiculo if it's a motorista
+      if (motorista.funcao === 'Motorista') {
+        const { data: veiculoData, error: veiculoError } = await supabase
+          .from('veiculo')
+          .select(`
             *,
-            pessoa_fisica_dono_veiculo (*),
-            pessoa_juridica_dono_veiculo (*)
-          )
-        `)
-        .eq('motorista_id', motorista.motorista_id)
-        .eq('status_veiculo', true)
-        .limit(1)
-        .maybeSingle();
+            documento_veiculo (*)
+          `)
+          .eq('motorista_id', motorista.motorista_id)
+          .eq('status_veiculo', true)
+          .limit(1)
+          .maybeSingle();
 
-      if (veiculoError && veiculoError.code !== 'PGRST116') {
-        throw veiculoError;
-      }
+        if (veiculoError && veiculoError.code !== 'PGRST116') {
+          throw veiculoError;
+        }
 
-      setVeiculo(veiculoData);
-      
-      // Fetch ajudantes
-      const { data: ajudantesData, error: ajudantesError } = await supabase
-        .from('documento_ajudante')
-        .select('*')
-        .eq('veiculo_id', veiculoData?.veiculo_id || 0);
-        
-      if (ajudantesError) {
-        throw ajudantesError;
+        setVeiculo(veiculoData);
       }
-      
-      setAjudantes(ajudantesData || []);
       
       // Fetch updated motorista data
       const { data: updatedMotorista, error: motoristaError } = await supabase
@@ -230,27 +213,6 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
             
           if (error) throw error;
         }
-      } else if (documentType === 'crv' && veiculo) {
-        // Update documento_veiculo
-        if (veiculo.documento_veiculo && veiculo.documento_veiculo.length > 0) {
-          // Update existing record
-          const { error } = await supabase
-            .from('documento_veiculo')
-            .update({ foto_crv: publicUrl })
-            .eq('id_documento_veiculo', veiculo.documento_veiculo[0].id_documento_veiculo);
-            
-          if (error) throw error;
-        } else {
-          // Create new record
-          const { error } = await supabase
-            .from('documento_veiculo')
-            .insert({ 
-              veiculo_id: veiculo.veiculo_id, 
-              foto_crv: publicUrl 
-            });
-            
-          if (error) throw error;
-        }
       }
       
       toast.success('Documento enviado com sucesso');
@@ -293,7 +255,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                       {displayData.nome}
                     </h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {displayData.funcao} • {formatCPF(displayData.cpf)}
+                      Motorista • {formatCPF(displayData.cpf)}
                     </p>
                   </div>
                 </div>
@@ -328,16 +290,18 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                   <FileText className="w-5 h-5 mr-2" />
                   Documentos
                 </button>
-                <button
-                  onClick={() => setActiveTab('helpers')}
-                  className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
-                            ${activeTab === 'helpers'
-                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
-                >
-                  <Users className="w-5 h-5 mr-2" />
-                  Ajudantes
-                </button>
+                {veiculo && (
+                  <button
+                    onClick={() => setActiveTab('helpers')}
+                    className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
+                              ${activeTab === 'helpers'
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                  >
+                    <Users className="w-5 h-5 mr-2" />
+                    Ajudantes
+                  </button>
+                )}
               </div>
             </div>
 
@@ -554,7 +518,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                         </div>
                         
                         {documento?.foto_cnh ? (
-                          <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden group">
+                          <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
                             {isPdf(documento.foto_cnh) ? (
                               <div className="absolute inset-0 flex flex-col items-center justify-center">
                                 <FileText className="w-12 h-12 text-gray-400 mb-2" />
@@ -575,11 +539,6 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                 onClick={() => setActiveDocument(documento.foto_cnh)}
                               />
                             )}
-                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/30 transition-opacity duration-200 flex items-center justify-center">
-                              <div className="bg-white dark:bg-gray-800 p-2 rounded-full">
-                                <Eye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                              </div>
-                            </div>
                           </div>
                         ) : (
                           <div className="aspect-[1.414] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
@@ -652,7 +611,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                       </div>
                       
                       {documento?.foto_comprovante_residencia ? (
-                        <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden group">
+                        <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
                           {isPdf(documento.foto_comprovante_residencia) ? (
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                               <FileText className="w-12 h-12 text-gray-400 mb-2" />
@@ -673,11 +632,6 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                               onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
                             />
                           )}
-                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/30 transition-opacity duration-200 flex items-center justify-center">
-                            <div className="bg-white dark:bg-gray-800 p-2 rounded-full">
-                              <Eye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                          </div>
                         </div>
                       ) : (
                         <div className="aspect-[1.414] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
@@ -728,134 +682,9 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                   </div>
                 )}
 
-                {activeTab === 'helpers' && (
+                {activeTab === 'helpers' && veiculo && (
                   <div className="space-y-6">
-                    {/* Helpers List */}
-                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                          <Users className="w-5 h-5 text-gray-400" />
-                          Ajudantes
-                        </h3>
-                        <button
-                          onClick={() => toast.success('Funcionalidade em desenvolvimento')}
-                          className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
-                                   dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
-                                   rounded-lg transition-colors flex items-center gap-1"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Adicionar Ajudante
-                        </button>
-                      </div>
-                      
-                      {ajudantes.length > 0 ? (
-                        <div className="space-y-6">
-                          {ajudantes.map((ajudante) => (
-                            <div 
-                              key={ajudante.id_ajudante}
-                              className="bg-white dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm"
-                            >
-                              <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                                    <UserCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                                  </div>
-                                  <div>
-                                    <h4 className="text-base font-medium text-gray-900 dark:text-white">
-                                      {ajudante.nome || 'Nome não informado'}
-                                    </h4>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                      {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'CPF não informado'}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => toast.success('Funcionalidade em desenvolvimento')}
-                                    className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                    title="Editar ajudante"
-                                  >
-                                    <Edit2 size={18} />
-                                  </button>
-                                  <button
-                                    onClick={() => toast.success('Funcionalidade em desenvolvimento')}
-                                    className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                    title="Remover ajudante"
-                                  >
-                                    <X size={18} />
-                                  </button>
-                                </div>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                {ajudante.telefone && (
-                                  <div className="flex items-center gap-2">
-                                    <Phone className="w-4 h-4 text-gray-400" />
-                                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                                      {formatPhone(ajudante.telefone)}
-                                    </span>
-                                  </div>
-                                )}
-                                
-                                {ajudante.genero && (
-                                  <div className="flex items-center gap-2">
-                                    <User className="w-4 h-4 text-gray-400" />
-                                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                                      {ajudante.genero === 'M' ? 'Masculino' : ajudante.genero === 'F' ? 'Feminino' : ajudante.genero}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Document thumbnails with tooltips */}
-                              {ajudante.comprovante_residencia && (
-                                <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-                                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                                    Documentos
-                                  </h5>
-                                  <div className="flex items-center gap-4">
-                                    {ajudante.comprovante_residencia && (
-                                      <div className="group relative">
-                                        <div 
-                                          className="h-16 w-16 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden cursor-pointer border border-gray-200 dark:border-gray-600"
-                                          onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia || null)}
-                                        >
-                                          {isPdf(ajudante.comprovante_residencia) ? (
-                                            <div className="h-full w-full flex items-center justify-center">
-                                              <FileText className="w-8 h-8 text-gray-400" />
-                                            </div>
-                                          ) : (
-                                            <img 
-                                              src={ajudante.comprovante_residencia} 
-                                              alt="Comprovante de Residência" 
-                                              className="h-full w-full object-cover"
-                                            />
-                                          )}
-                                        </div>
-                                        {/* Tooltip */}
-                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
-                                          Comprovante de Residência
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-8 bg-white dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-700">
-                          <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
-                          <p className="text-gray-500 dark:text-gray-400 text-center">
-                            Nenhum ajudante cadastrado
-                          </p>
-                          <p className="text-sm text-gray-400 dark:text-gray-500 text-center mt-1 max-w-md">
-                            Adicione ajudantes para este motorista clicando no botão "Adicionar Ajudante"
-                          </p>
-                        </div>
-                      )}
-                    </section>
+                    <AjudanteList veiculo_id={veiculo.veiculo_id} />
                   </div>
                 )}
               </div>

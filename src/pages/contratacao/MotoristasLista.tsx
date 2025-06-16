@@ -1,41 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, MessageCircle, FileText, Edit2, Trash2, Filter, ChevronDown, ChevronUp, FilePen } from 'lucide-react';
+import { Search, Plus, Filter, ChevronDown, ChevronUp, User, Phone, Mail, Calendar, FileText, Truck, MessageCircle, X } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import AddMotoristaModal from '../../components/AddMotoristaModal';
-import DocumentViewer from '../../components/DocumentViewer';
-import DocumentUploadModal from '../../components/DocumentUploadModal';
-import BulkActionsModal from '../../components/BulkActionsModal';
 import BulkDeleteConfirmationModal from '../../components/BulkDeleteConfirmationModal';
+import BulkActionsModal from '../../components/BulkActionsModal';
+import BulkStatusModal from '../../components/BulkStatusModal';
 import MassMessageModal from '../../components/MassMessageModal';
 import { useFloatingChat } from '../../hooks/useFloatingChat';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
-import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 
 interface MotoristaWithDetails extends Motorista {
-  endereco?: {
-    logradouro?: {
-      logradouro?: string;
-      nr_cep?: string;
-      bairro?: {
-        bairro?: string;
-        cidade?: {
-          cidade?: string;
-          estado?: {
-            sigla_estado?: string;
-          };
-        };
-      };
-    };
-    nr_end?: number;
-    ds_complemento_end?: string;
-  } | null;
   documento?: DocumentoMotorista | null;
+  endereco?: any;
   isExpanded?: boolean;
 }
 
@@ -46,114 +27,36 @@ const MotoristasLista = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
-  const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
-  const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
-  const [selectedMotorista, setSelectedMotorista] = useState<MotoristaWithDetails | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
-  const [isBulkActionsModalOpen, setIsBulkActionsModalOpen] = useState(false);
-  const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
+  const [selectedMotorista, setSelectedMotorista] = useState<Motorista | null>(null);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [isBulkActionsModalOpen, setIsBulkActionsModalOpen] = useState(false);
+  const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
   const [clientes, setClientes] = useState<any[]>([]);
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Motorista;
     direction: 'asc' | 'desc';
   }>({ key: 'nome', direction: 'asc' });
-  const tableContainerRef = useRef<HTMLDivElement>(null);
-  const [contextMenu, setContextMenu] = useState<{
-    visible: boolean;
-    x: number;
-    y: number;
-    motorista: MotoristaWithDetails | null;
-  }>({
-    visible: false,
-    x: 0,
-    y: 0,
-    motorista: null,
-  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchMotoristas();
     fetchClientes();
   }, []);
 
-  useEffect(() => {
-    // Close context menu when clicking anywhere
-    const handleClick = () => {
-      if (contextMenu.visible) {
-        setContextMenu({ ...contextMenu, visible: false });
-      }
-    };
-
-    document.addEventListener('click', handleClick);
-    return () => {
-      document.removeEventListener('click', handleClick);
-    };
-  }, [contextMenu.visible]);
-
-  const fetchMotoristas = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('motorista')
-        .select(`
-          *,
-          end_motorista (
-            nr_end,
-            ds_complemento_end,
-            logradouro (
-              logradouro,
-              nr_cep,
-              bairro (
-                bairro,
-                cidade (
-                  cidade,
-                  estado (
-                    sigla_estado
-                  )
-                )
-              )
-            )
-          ),
-          documento_motorista (*)
-        `)
-        .eq('funcao', 'Motorista')
-        .eq('company_id', companyId)
-        .order('nome');
-
-      if (error) throw error;
-
-      // Process the data to handle the nested structure
-      const processedData = data?.map(motorista => {
-        const endereco = motorista.end_motorista?.[0] || null;
-        const documento = motorista.documento_motorista?.[0] || null;
-        
-        // Remove the arrays to avoid issues with the type
-        const { end_motorista, documento_motorista, ...rest } = motorista;
-        
-        return {
-          ...rest,
-          endereco,
-          documento
-        };
-      }) || [];
-
-      setMotoristas(processedData);
-    } catch (error) {
-      console.error('Error fetching motoristas:', error);
-      toast.error('Erro ao carregar motoristas');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchClientes = async () => {
     try {
-      const { data, error } = await query('cliente')
+      const { data, error } = await supabase
+        .from('cliente')
         .select('*')
+        .eq('company_id', companyId)
         .eq('st_cliente', true);
 
       if (error) throw error;
@@ -164,57 +67,52 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleSort = (key: keyof Motorista) => {
-    setSortConfig(current => ({
-      key,
-      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
-    }));
-  };
-
-  const handleUpdateStatus = async (motorista: Motorista, newStatus: string) => {
+  const fetchMotoristas = async () => {
     try {
-      const { error } = await query('motorista')
-        .update({ st_cadastro: newStatus })
-        .eq('motorista_id', motorista.motorista_id);
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('motorista')
+        .select(`
+          *,
+          cliente (
+            cliente_id,
+            nome
+          )
+        `)
+        .eq('company_id', companyId)
+        .eq('funcao', 'Motorista')
+        .order('nome');
 
       if (error) throw error;
-
-      // Update the local state
-      setMotoristas(prev => 
-        prev.map(m => 
-          m.motorista_id === motorista.motorista_id 
-            ? { ...m, st_cadastro: newStatus } 
-            : m
-        )
-      );
-
-      toast.success('Status atualizado com sucesso');
+      setMotoristas(data || []);
     } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Erro ao atualizar status');
+      console.error('Error fetching motoristas:', error);
+      toast.error('Erro ao carregar motoristas');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDelete = async (motorista: Motorista) => {
-    try {
-      const { error } = await query('motorista')
-        .delete()
-        .eq('motorista_id', motorista.motorista_id);
-
-      if (error) throw error;
-
-      // Update the local state
-      setMotoristas(prev => prev.filter(m => m.motorista_id !== motorista.motorista_id));
-      toast.success('Motorista excluído com sucesso');
-    } catch (error) {
-      console.error('Error deleting motorista:', error);
-      toast.error('Erro ao excluir motorista');
+  const handleSelectItem = (id: number) => {
+    const newSelectedItems = new Set(selectedItems);
+    if (selectedItems.has(id)) {
+      newSelectedItems.delete(id);
+    } else {
+      newSelectedItems.add(id);
     }
+    setSelectedItems(newSelectedItems);
+    
+    // Update selectAll state
+    setSelectAll(newSelectedItems.size === filteredMotoristas.length);
   };
 
-  const handleBulkActions = async (actionType: 'status' | 'client') => {
-    setBulkActionType(actionType);
-    setIsBulkActionsModalOpen(true);
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(filteredMotoristas.map(m => m.motorista_id)));
+    }
+    setSelectAll(!selectAll);
   };
 
   const handleBulkDelete = async () => {
@@ -242,55 +140,57 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleMassMessage = () => {
-    setIsMassMessageModalOpen(true);
-  };
+  const handleBulkStatusUpdate = async (activate: boolean) => {
+    try {
+      const newStatus = activate ? 'contratado' : 'rejeitado';
+      
+      // Update status for all selected items
+      for (const id of selectedItems) {
+        const { error } = await query('motorista')
+          .update({ st_cadastro: newStatus })
+          .eq('motorista_id', id);
 
-  const handleSelectItem = (id: number) => {
-    const newSelectedItems = new Set(selectedItems);
-    if (selectedItems.has(id)) {
-      newSelectedItems.delete(id);
-    } else {
-      newSelectedItems.add(id);
-    }
-    setSelectedItems(newSelectedItems);
-    
-    // Update selectAll state
-    setSelectAll(newSelectedItems.size === filteredMotoristas.length);
-  };
+        if (error) throw error;
+      }
 
-  const handleSelectAll = () => {
-    if (selectAll) {
+      // Update the list
+      setMotoristas(motoristas.map(m => 
+        selectedItems.has(m.motorista_id) 
+          ? { ...m, st_cadastro: newStatus } 
+          : m
+      ));
+      
+      toast.success(`Status atualizado para ${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''}`);
+      
+      // Reset selection
       setSelectedItems(new Set());
-    } else {
-      setSelectedItems(new Set(filteredMotoristas.map(m => m.motorista_id)));
+      setSelectAll(false);
+      setIsBulkStatusModalOpen(false);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Erro ao atualizar status');
     }
-    setSelectAll(!selectAll);
   };
 
-  const toggleExpand = (motorista_id: number) => {
-    setMotoristas(prevMotoristas => 
-      prevMotoristas.map(motorista => 
-        motorista.motorista_id === motorista_id 
-          ? { ...motorista, isExpanded: !motorista.isExpanded } 
-          : motorista
-      )
-    );
+  const handleSort = (key: keyof Motorista) => {
+    setSortConfig(current => ({
+      key,
+      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+    }));
   };
 
-  const handleContextMenu = (e: React.MouseEvent, motorista: MotoristaWithDetails) => {
-    e.preventDefault();
-    setContextMenu({
-      visible: true,
-      x: e.clientX,
-      y: e.clientY,
-      motorista,
-    });
-  };
-
-  const handleViewUnified = (motorista: MotoristaWithDetails) => {
+  const handleViewMotorista = (motorista: Motorista) => {
     setSelectedMotorista(motorista);
     setIsUnifiedModalOpen(true);
+  };
+
+  const handleStartChat = (motorista: Motorista, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (motorista.telefone) {
+      startChat(motorista.telefone.toString(), motorista.nome);
+    } else {
+      toast.error('Este motorista não possui telefone cadastrado');
+    }
   };
 
   const filteredMotoristas = motoristas
@@ -320,6 +220,20 @@ const MotoristasLista = () => {
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
 
+  // Pagination
+  const totalPages = Math.ceil(filteredMotoristas.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedMotoristas = filteredMotoristas.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -338,27 +252,36 @@ const MotoristasLista = () => {
           {selectedItems.size > 0 && (
             <>
               <button
-                onClick={() => handleBulkActions('status')}
+                onClick={() => {
+                  setBulkActionType('status');
+                  setIsBulkActionsModalOpen(true);
+                }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
                         transition-colors flex items-center gap-2"
               >
-                <Edit2 className="w-5 h-5" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
                 Atualizar Status
               </button>
               <button
-                onClick={() => handleBulkActions('client')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                onClick={() => setIsBulkStatusModalOpen(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 
+                        focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 
                         transition-colors flex items-center gap-2"
               >
-                <Edit2 className="w-5 h-5" />
-                Atualizar Cliente
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Ativar/Desativar
               </button>
               <button
-                onClick={handleMassMessage}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                onClick={() => setIsMassMessageModalOpen(true)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 
+                        focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 
                         transition-colors flex items-center gap-2"
               >
                 <MessageCircle className="w-5 h-5" />
@@ -370,8 +293,12 @@ const MotoristasLista = () => {
                         focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
                         transition-colors flex items-center gap-2"
               >
-                <Trash2 className="w-5 h-5" />
-                Excluir
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
+                Excluir Selecionados
               </button>
             </>
           )}
@@ -382,14 +309,14 @@ const MotoristasLista = () => {
                      transition-colors flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />
-            Novo Motorista
+            Adicionar Motorista
           </button>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-          <div className="relative w-full md:w-auto flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative">
             <input
               type="text"
               placeholder="Buscar por nome, CPF, email ou telefone..."
@@ -400,7 +327,7 @@ const MotoristasLista = () => {
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
-          <div className="relative w-full md:w-auto">
+          <div className="relative">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -438,346 +365,195 @@ const MotoristasLista = () => {
           </div>
           
           <div className="relative">
-            <div ref={tableContainerRef} className="overflow-x-auto w-full">
+            <div ref={tableRef} className="overflow-x-auto w-full">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800"></th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"></th>
                     <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 cursor-pointer"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer"
                       onClick={() => handleSort('nome')}
                     >
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-2">
                         Nome
                         {sortConfig.key === 'nome' && (
                           sortConfig.direction === 'asc' ?
-                            <ChevronUp className="w-4 h-4 ml-1" /> :
-                            <ChevronDown className="w-4 h-4 ml-1" />
+                            <ChevronUp className="w-4 h-4" /> :
+                            <ChevronDown className="w-4 h-4" />
                         )}
                       </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 cursor-pointer"
-                      onClick={() => handleSort('st_cadastro')}
-                    >
-                      <div className="flex items-center">
-                        Status
-                        {sortConfig.key === 'st_cadastro' && (
-                          sortConfig.direction === 'asc' ?
-                            <ChevronUp className="w-4 h-4 ml-1" /> :
-                            <ChevronDown className="w-4 h-4 ml-1" />
-                        )}
-                      </div>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Contato
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Ações
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredMotoristas.map((motorista) => (
-                    <React.Fragment key={motorista.motorista_id}>
-                      <tr 
-                        className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-                          selectedItems.has(motorista.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                        }`}
-                        onClick={() => toggleExpand(motorista.motorista_id)}
-                        onContextMenu={(e) => handleContextMenu(e, motorista)}
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedItems.has(motorista.motorista_id)}
-                              onChange={() => handleSelectItem(motorista.motorista_id)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                            />
-                            {motorista.isExpanded ? (
-                              <ChevronUp className="w-5 h-5 text-gray-400" />
-                            ) : (
-                              <ChevronDown className="w-5 h-5 text-gray-400" />
-                            )}
+                  {paginatedMotoristas.map((motorista) => (
+                    <tr 
+                      key={motorista.motorista_id} 
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
+                        selectedItems.has(motorista.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                      }`}
+                      onClick={() => handleViewMotorista(motorista)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.has(motorista.motorista_id)}
+                          onChange={() => handleSelectItem(motorista.motorista_id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
-                              {motorista.nome.charAt(0)}
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {motorista.nome}
                             </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {motorista.nome}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {motorista.data_cadastro ? formatDate(motorista.data_cadastro) : ''}
-                              </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {formatCPF(motorista.cpf)}
                             </div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {formatCPF(motorista.cpf)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {motorista.telefone ? formatPhone(motorista.telefone.toString()) : 'Não informado'}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {motorista.email || 'Sem email'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            motorista.st_cadastro === 'contratado' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' :
-                            motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200' :
-                            'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
-                          }`}>
-                            {motorista.st_cadastro.replace('_', ' ').charAt(0).toUpperCase() + motorista.st_cadastro.replace('_', ' ').slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-3">
-                            {motorista.telefone && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startChat(motorista.telefone.toString(), motorista.nome);
-                                }}
-                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                                title="Iniciar chat"
-                              >
-                                <MessageCircle size={18} />
-                              </button>
-                            )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleViewUnified(motorista);
-                              }}
-                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                              title="Visualizar e editar"
-                            >
-                              <FilePen size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      
-                      {motorista.isExpanded && (
-                        <tr>
-                          <td colSpan={6} className="px-0 py-0 border-b border-gray-200 dark:border-gray-700">
-                            <div className="bg-gray-50 dark:bg-gray-700/30 p-4">
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* Address Information */}
-                                <div className="space-y-2">
-                                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                                    <MapPin className="w-4 h-4 text-gray-400" />
-                                    Endereço
-                                  </h4>
-                                  {motorista.endereco?.logradouro ? (
-                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                      <p>{motorista.endereco.logradouro.logradouro}, {motorista.endereco.nr_end || 'S/N'}</p>
-                                      <p>{motorista.endereco.logradouro.bairro?.bairro} - {motorista.endereco.logradouro.nr_cep}</p>
-                                      <p>{motorista.endereco.logradouro.bairro?.cidade?.cidade}/{motorista.endereco.logradouro.bairro?.cidade?.estado?.sigla_estado}</p>
-                                    </div>
-                                  ) : (
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Endereço não cadastrado</p>
-                                  )}
-                                </div>
-                                
-                                {/* Document Information */}
-                                <div className="space-y-2">
-                                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                                    <FileText className="w-4 h-4 text-gray-400" />
-                                    Documentos
-                                  </h4>
-                                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                                    <p>CNH: {motorista.documento?.nr_registro_cnh || 'Não informada'}</p>
-                                    <p>Categoria: {motorista.documento?.categoria_cnh || 'Não informada'}</p>
-                                    <p>Validade: {motorista.documento?.validade_cnh ? formatDate(motorista.documento.validade_cnh) : 'Não informada'}</p>
-                                  </div>
-                                </div>
-                                
-                                {/* Actions */}
-                                <div className="space-y-2">
-                                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Ações</h4>
-                                  <div className="flex flex-wrap gap-2">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleUpdateStatus(motorista, 'cadastrado');
-                                      }}
-                                      className={`px-2 py-1 text-xs font-medium rounded-md ${
-                                        motorista.st_cadastro === 'cadastrado' 
-                                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200' 
-                                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                      }`}
-                                    >
-                                      Cadastrado
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleUpdateStatus(motorista, 'qualificado');
-                                      }}
-                                      className={`px-2 py-1 text-xs font-medium rounded-md ${
-                                        motorista.st_cadastro === 'qualificado' 
-                                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200' 
-                                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                      }`}
-                                    >
-                                      Qualificado
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleUpdateStatus(motorista, 'documentacao');
-                                      }}
-                                      className={`px-2 py-1 text-xs font-medium rounded-md ${
-                                        motorista.st_cadastro === 'documentacao' 
-                                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200' 
-                                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                      }`}
-                                    >
-                                      Documentação
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleUpdateStatus(motorista, 'contrato_enviado');
-                                      }}
-                                      className={`px-2 py-1 text-xs font-medium rounded-md ${
-                                        motorista.st_cadastro === 'contrato_enviado' 
-                                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200' 
-                                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                      }`}
-                                    >
-                                      Contrato Enviado
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleUpdateStatus(motorista, 'contratado');
-                                      }}
-                                      className={`px-2 py-1 text-xs font-medium rounded-md ${
-                                        motorista.st_cadastro === 'contratado' 
-                                          ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
-                                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                      }`}
-                                    >
-                                      Contratado
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleUpdateStatus(motorista, 'repescagem');
-                                      }}
-                                      className={`px-2 py-1 text-xs font-medium rounded-md ${
-                                        motorista.st_cadastro === 'repescagem' 
-                                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200' 
-                                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                      }`}
-                                    >
-                                      Repescagem
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleUpdateStatus(motorista, 'rejeitado');
-                                      }}
-                                      className={`px-2 py-1 text-xs font-medium rounded-md ${
-                                        motorista.st_cadastro === 'rejeitado' 
-                                          ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200' 
-                                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                      }`}
-                                    >
-                                      Rejeitado
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white flex items-center gap-1">
+                          <Phone className="w-4 h-4 text-gray-400" />
+                          {motorista.telefone ? formatPhone(motorista.telefone.toString()) : 'Não informado'}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
+                          <Mail className="w-4 h-4 text-gray-400" />
+                          {motorista.email || 'Não informado'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          motorista.st_cadastro === 'contratado' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' :
+                          motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200' :
+                          motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200' :
+                          motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200' :
+                          motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200' :
+                          motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                        }`}>
+                          {motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
+                           motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {motorista.cliente?.nome || 'Sem cliente'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-3">
+                          <button 
+                            onClick={(e) => handleStartChat(motorista, e)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                     transition-colors"
+                            title="Iniciar chat"
+                          >
+                            <MessageCircle size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            
-            <ScrollableTableIndicator 
-              containerRef={tableContainerRef} 
-              className="mr-2 ml-2"
-            />
           </div>
         </div>
-        {filteredMotoristas.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-gray-500 dark:text-gray-400">
-              Nenhum motorista encontrado
-            </p>
+        
+        {/* Pagination */}
+        <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4 sm:mb-0">
+            <span>
+              Mostrando <span className="font-medium">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredMotoristas.length)}</span> a{' '}
+              <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredMotoristas.length)}</span> de{' '}
+              <span className="font-medium">{filteredMotoristas.length}</span> resultados
+            </span>
+            
+            <div className="ml-4">
+              <select
+                value={itemsPerPage}
+                onChange={handleItemsPerPageChange}
+                className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value={10}>10 por página</option>
+                <option value={25}>25 por página</option>
+                <option value={50}>50 por página</option>
+                <option value={100}>100 por página</option>
+              </select>
+            </div>
           </div>
-        )}
+          
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-2 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              Anterior
+            </button>
+            
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+              
+              return (
+                <button
+                  key={i}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
+                    pageNum === currentPage
+                      ? 'bg-blue-600 text-white border border-blue-600 dark:bg-blue-700 dark:border-blue-700'
+                      : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-2 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              Próximo
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Context Menu */}
-      {contextMenu.visible && contextMenu.motorista && (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          onClose={() => setContextMenu({ ...contextMenu, visible: false })}
-          actions={[
-            {
-              icon: <FilePen size={16} />,
-              label: 'Visualizar e Editar',
-              onClick: () => handleViewUnified(contextMenu.motorista!),
-              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
-            },
-            {
-              icon: <MessageCircle size={16} />,
-              label: 'Iniciar Chat',
-              onClick: () => startChat(contextMenu.motorista!.telefone.toString(), contextMenu.motorista!.nome),
-              color: 'text-green-600 dark:text-green-400',
-              disabled: !contextMenu.motorista!.telefone
-            },
-            {
-              icon: <Trash2 size={16} />,
-              label: 'Excluir Motorista',
-              onClick: () => handleDelete(contextMenu.motorista!),
-              color: 'text-red-600 dark:text-red-400'
-            }
-          ]}
-        />
-      )}
-
+      {/* Modals */}
       <AddMotoristaModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={fetchMotoristas}
-      />
-
-      <DocumentViewer
-        isOpen={isDocumentViewerOpen}
-        onClose={() => setIsDocumentViewerOpen(false)}
-        documento={selectedMotorista?.documento || null}
-        nome={selectedMotorista?.nome || ''}
-        cpf={selectedMotorista?.cpf}
-        email={selectedMotorista?.email}
-        telefone={selectedMotorista?.telefone?.toString()}
-        dt_nascimento={selectedMotorista?.dt_nascimento}
-        endereco={selectedMotorista?.endereco}
-        st_cadastro={selectedMotorista?.st_cadastro}
-      />
-
-      <DocumentUploadModal
-        isOpen={isDocumentUploadOpen}
-        onClose={() => setIsDocumentUploadOpen(false)}
-        motorista_id={selectedMotorista?.motorista_id || 0}
-        nome={selectedMotorista?.nome || ''}
-        onUploadSuccess={fetchMotoristas}
       />
 
       <UnifiedMotoristaModal
@@ -785,15 +561,6 @@ const MotoristasLista = () => {
         onClose={() => setIsUnifiedModalOpen(false)}
         motorista={selectedMotorista}
         onSuccess={fetchMotoristas}
-      />
-
-      <BulkActionsModal
-        isOpen={isBulkActionsModalOpen}
-        onClose={() => setIsBulkActionsModalOpen(false)}
-        selectedItems={selectedItems}
-        actionType={bulkActionType}
-        onSuccess={fetchMotoristas}
-        clientes={clientes}
       />
 
       <BulkDeleteConfirmationModal
@@ -806,12 +573,31 @@ const MotoristasLista = () => {
         itemType="motorista"
       />
 
+      <BulkActionsModal
+        isOpen={isBulkActionsModalOpen}
+        onClose={() => setIsBulkActionsModalOpen(false)}
+        selectedItems={selectedItems}
+        actionType={bulkActionType}
+        onSuccess={fetchMotoristas}
+        clientes={clientes}
+      />
+
+      <BulkStatusModal
+        isOpen={isBulkStatusModalOpen}
+        onClose={() => setIsBulkStatusModalOpen(false)}
+        onConfirm={handleBulkStatusUpdate}
+        title="Atualizar Status em Massa"
+        message="Escolha a ação que deseja realizar com os motoristas selecionados."
+        itemCount={selectedItems.size}
+        itemType="motorista"
+      />
+
       <MassMessageModal
         isOpen={isMassMessageModalOpen}
         onClose={() => setIsMassMessageModalOpen(false)}
         numbers={Array.from(selectedItems).map(id => {
           const motorista = motoristas.find(m => m.motorista_id === id);
-          return motorista?.telefone ? motorista.telefone.toString() : '';
+          return motorista?.telefone?.toString() || '';
         }).filter(Boolean)}
       />
     </div>
