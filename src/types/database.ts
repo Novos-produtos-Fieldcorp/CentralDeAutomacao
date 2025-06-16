@@ -72,35 +72,22 @@ export interface DocumentoAjudante {
   comprovante_residencia?: string | null;
   telefone?: string | null;
   genero?: string | null;
-}
-
-export interface CnhAjudante {
-  id_cnh_ajudante: number;
-  nr_registro: number | null;
-  categoria: string | null;
-  nome_pai: string | null;
-  nome_mae: string | null;
-  id_ajudante: number;
-  foto_cnh: string | null;
-}
-
-export interface RgAjudante {
-  id_rg_ajudante: number;
-  nr_rg: number | null;
-  data_emissao: string | null;
-  orgao_expedidor: string | null;
-  filiacao: string | null;
-  id_ajudante: number;
-  foto_rg: string | null;
-}
-
-export interface EndAjudante {
-  id_end_ajudante: number;
-  nr_end: number | null;
-  ds_complemento_end: string | null;
-  st_end: boolean | null;
-  id_ajudante: number;
-  id_logradouro: number;
+  cnh_ajudante?: {
+    id_cnh_ajudante: number;
+    nr_registro: number | null;
+    categoria: string | null;
+    nome_pai: string | null;
+    nome_mae: string | null;
+    foto_cnh: string | null;
+  }[];
+  rg_ajudante?: {
+    id_rg_ajudante: number;
+    nr_rg: number | null;
+    data_emissao: string | null;
+    orgao_expedidor: string | null;
+    filiacao: string | null;
+    foto_rg: string | null;
+  }[];
 }
 
 export interface Veiculo {
@@ -191,24 +178,4 @@ export interface Checklist {
   nome: string;
   endereco: any;
   veiculo: (Veiculo & { documento_veiculo: any[] }) | null;
-}
-
-export interface MotoristaWithAddress extends Motorista {
-  endereco?: {
-    logradouro?: {
-      logradouro?: string;
-      nr_cep?: string;
-      bairro?: {
-        bairro?: string;
-        cidade?: {
-          cidade?: string;
-          estado?: {
-            sigla_estado?: string;
-          };
-        };
-      };
-    };
-    nr_end?: number;
-    ds_complemento_end?: string;
-  } | null;
 }
