@@ -364,184 +364,185 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="p-6">
-            {/* Progress Steps */}
-            <div className="flex items-center justify-between mb-8">
-              {[1, 2, 3].map((step, index) => (
-                <React.Fragment key={step}>
-                  <div 
-                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 
-                              ${currentStep >= step 
-                                ? 'border-blue-600 bg-blue-600 text-white' 
-                                : 'border-gray-300 dark:border-gray-600'}`}
+        {/* Important: Only wrap the final step in the form element to prevent auto-submission */}
+        <div className="p-6">
+          {/* Progress Steps */}
+          <div className="flex items-center justify-between mb-8">
+            {[1, 2, 3].map((step, index) => (
+              <React.Fragment key={step}>
+                <div 
+                  className={`flex items-center justify-center w-10 h-10 rounded-full border-2 
+                            ${currentStep >= step 
+                              ? 'border-blue-600 bg-blue-600 text-white' 
+                              : 'border-gray-300 dark:border-gray-600'}`}
+                >
+                  {step}
+                </div>
+                {index < 2 && (
+                  <div className={`flex-1 h-1 mx-4 ${
+                    currentStep > step ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                  }`} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* Step Content */}
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                Informações Básicas
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Motorista *
+                  </label>
+                  <select
+                    value={formData.motorista_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, motorista_id: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    required
                   >
-                    {step}
-                  </div>
-                  {index < 2 && (
-                    <div className={`flex-1 h-1 mx-4 ${
-                      currentStep > step ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
-                    }`} />
-                  )}
-                </React.Fragment>
-              ))}
+                    <option value="">Selecione um motorista</option>
+                    {motoristas.map(motorista => (
+                      <option key={motorista.motorista_id} value={motorista.motorista_id}>
+                        {motorista.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Veículo *
+                  </label>
+                  <select
+                    value={formData.veiculo_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, veiculo_id: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    required
+                  >
+                    <option value="">Selecione um veículo</option>
+                    {veiculos.map(veiculo => (
+                      <option key={veiculo.veiculo_id} value={veiculo.veiculo_id}>
+                        {veiculo.placa} - {veiculo.marca} {veiculo.tipo}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Data *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.data}
+                    onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Hora *
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.hora}
+                    onChange={(e) => setFormData(prev => ({ ...prev, hora: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Quilometragem *
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.quilometragem}
+                    onChange={(e) => setFormData(prev => ({ ...prev, quilometragem: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    required
+                    step="0.1"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Observações
+                  </label>
+                  <textarea
+                    value={formData.observacoes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+              </div>
             </div>
+          )}
 
-            {/* Step Content */}
-            {currentStep === 1 && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                  Informações Básicas
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Motorista *
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                Fotos do Veículo
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Object.entries(formData.fotos).map(([key, value]) => (
+                  <div key={key} className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {key.replace(/foto_/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </label>
-                    <select
-                      value={formData.motorista_id}
-                      onChange={(e) => setFormData(prev => ({ ...prev, motorista_id: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      required
-                    >
-                      <option value="">Selecione um motorista</option>
-                      {motoristas.map(motorista => (
-                        <option key={motorista.motorista_id} value={motorista.motorista_id}>
-                          {motorista.nome}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Veículo *
-                    </label>
-                    <select
-                      value={formData.veiculo_id}
-                      onChange={(e) => setFormData(prev => ({ ...prev, veiculo_id: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      required
-                    >
-                      <option value="">Selecione um veículo</option>
-                      {veiculos.map(veiculo => (
-                        <option key={veiculo.veiculo_id} value={veiculo.veiculo_id}>
-                          {veiculo.placa} - {veiculo.marca} {veiculo.tipo}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Data *
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.data}
-                      onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Hora *
-                    </label>
-                    <input
-                      type="time"
-                      value={formData.hora}
-                      onChange={(e) => setFormData(prev => ({ ...prev, hora: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Quilometragem *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.quilometragem}
-                      onChange={(e) => setFormData(prev => ({ ...prev, quilometragem: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      required
-                      step="0.1"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Observações
-                    </label>
-                    <textarea
-                      value={formData.observacoes}
-                      onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
-                      rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {currentStep === 2 && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                  Fotos do Veículo
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {Object.entries(formData.fotos).map(([key, value]) => (
-                    <div key={key} className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {key.replace(/foto_/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </label>
-                      {value ? (
-                        <div className="relative aspect-video w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden group">
-                          <img
-                            src={value}
-                            alt={key.replace(/foto_/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            className="absolute inset-0 w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <button
-                              type="button"
-                              onClick={() => handleRemovePhoto(key as keyof typeof formData.fotos)}
-                              className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-4">
-                          <label
-                            htmlFor={`file-${key}`}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+                    {value ? (
+                      <div className="relative aspect-video w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden group">
+                        <img
+                          src={value}
+                          alt={key.replace(/foto_/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePhoto(key as keyof typeof formData.fotos)}
+                            className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
                           >
-                            <Camera className="w-5 h-5" />
-                            <span>Adicionar Foto</span>
-                            <input
-                              type="file"
-                              id={`file-${key}`}
-                              accept="image/*"
-                              onChange={(e) => handlePhotoUpload(e, key as keyof typeof formData.fotos)}
-                              className="hidden"
-                            />
-                          </label>
+                            <X size={16} />
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <label
+                          htmlFor={`file-${key}`}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+                        >
+                          <Camera className="w-5 h-5" />
+                          <span>Adicionar Foto</span>
+                          <input
+                            type="file"
+                            id={`file-${key}`}
+                            accept="image/*"
+                            onChange={(e) => handlePhotoUpload(e, key as keyof typeof formData.fotos)}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+          )}
 
-            {currentStep === 3 && (
+          {currentStep === 3 && (
+            <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
                   Estado dos Componentes
@@ -679,20 +680,45 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-            {currentStep > 1 && (
-              <button
-                type="button"
-                onClick={() => setCurrentStep(prev => prev - 1)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-              >
-                Voltar
-              </button>
-            )}
-            {currentStep < 3 ? (
+              
+              <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(prev => prev - 1)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                >
+                  Voltar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar'
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
+          
+          {/* Navigation buttons for steps 1 and 2 */}
+          {currentStep < 3 && (
+            <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+              {currentStep > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(prev => prev - 1)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                >
+                  Voltar
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setCurrentStep(prev => prev + 1)}
@@ -701,24 +727,9 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
               >
                 Próximo
               </button>
-            ) : (
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
-                    Salvando...
-                  </>
-                ) : (
-                  'Salvar'
-                )}
-              </button>
-            )}
-          </div>
-        </form>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
