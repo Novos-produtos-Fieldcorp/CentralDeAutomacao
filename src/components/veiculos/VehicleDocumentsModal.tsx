@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { X, FileText, Camera, ExternalLink, Upload, Loader2 } from 'lucide-react';
+import { X, FileText, Camera, ExternalLink, Upload, Loader2, Users } from 'lucide-react';
 import type { DocumentoVeiculo } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
+import AjudanteList from '../AjudanteList';
 
 interface VehicleDocumentsModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface VehicleDocumentsModalProps {
 }
 
 const VehicleDocumentsModal = ({ isOpen, onClose, documento, placa, marca, tipo, veiculo_id, onUploadSuccess }: VehicleDocumentsModalProps) => {
+  const [activeTab, setActiveTab] = useState<'documents' | 'helpers'>('documents');
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(documento?.foto_crv || null);
@@ -139,137 +141,171 @@ const VehicleDocumentsModal = ({ isOpen, onClose, documento, placa, marca, tipo,
                   <X size={24} />
                 </button>
               </div>
+              
+              {/* Tabs */}
+              <nav className="flex space-x-8 px-6" aria-label="Tabs">
+                <button
+                  onClick={() => setActiveTab('documents')}
+                  className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
+                            ${activeTab === 'documents'
+                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                >
+                  <FileText className="w-5 h-5 mr-2" />
+                  Documentos
+                </button>
+                {veiculo_id && (
+                  <button
+                    onClick={() => setActiveTab('helpers')}
+                    className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
+                              ${activeTab === 'helpers'
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                  >
+                    <Users className="w-5 h-5 mr-2" />
+                    Ajudantes
+                  </button>
+                )}
+              </nav>
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Vehicle Basic Info */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</span>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white uppercase">{placa}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca</span>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{marca}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Modelo</span>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{tipo}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* CRV Document */}
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                    CRV Digital
-                  </h3>
-                  {previewUrl && (
-                    <button
-                      onClick={() => openDocumentInNewTab(previewUrl)}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-sm"
-                    >
-                      <ExternalLink size={16} />
-                      Abrir em nova aba
-                    </button>
-                  )}
-                </div>
-                
-                {previewUrl ? (
-                  <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                    {isPdf(previewUrl) ? (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                        <button
-                          onClick={() => setActiveDocument(previewUrl)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
-                        >
-                          <FileText size={16} />
-                          Visualizar PDF
-                        </button>
+              {activeTab === 'documents' && (
+                <>
+                  {/* Vehicle Basic Info */}
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</span>
+                        <p className="text-lg font-semibold text-gray-900 dark:text-white uppercase">{placa}</p>
                       </div>
-                    ) : (
-                      <img
-                        src={previewUrl}
-                        alt="CRV do veículo"
-                        className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                        onClick={() => setActiveDocument(previewUrl)}
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <div className="aspect-[1.414] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
-                    <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-                    <div className="text-center">
-                      <p className="text-gray-500 dark:text-gray-400 font-medium">CRV não cadastrado</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500">
-                        Faça o upload do CRV para visualizá-lo aqui
-                      </p>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca</span>
+                        <p className="text-lg font-semibold text-gray-900 dark:text-white">{marca}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Modelo</span>
+                        <p className="text-lg font-semibold text-gray-900 dark:text-white">{tipo}</p>
+                      </div>
                     </div>
                   </div>
-                )}
 
-                {/* Upload Section */}
-                {veiculo_id && (
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Enviar novo documento
-                      </h4>
+                  {/* CRV Document */}
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                        CRV Digital
+                      </h3>
+                      {previewUrl && (
+                        <button
+                          onClick={() => openDocumentInNewTab(previewUrl)}
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-sm"
+                        >
+                          <ExternalLink size={16} />
+                          Abrir em nova aba
+                        </button>
+                      )}
                     </div>
                     
-                    <div className="flex items-end gap-3">
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Selecione um arquivo
-                        </label>
-                        <input
-                          type="file"
-                          onChange={handleFileChange}
-                          accept="image/jpeg,image/png,image/jpg,application/pdf"
-                          className="block w-full text-sm text-gray-900 dark:text-gray-100
-                                   file:mr-4 file:py-2 file:px-4
-                                   file:rounded-md file:border-0
-                                   file:text-sm file:font-medium
-                                   file:bg-blue-50 file:text-blue-700
-                                   dark:file:bg-blue-900/20 dark:file:text-blue-300
-                                   hover:file:bg-blue-100 dark:hover:file:bg-blue-900/30
-                                   border border-gray-300 dark:border-gray-600 rounded-lg
-                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          ref={fileInputRef}
-                        />
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          JPEG, PNG ou PDF (máx. 15MB)
-                        </p>
-                      </div>
-                      
-                      <button
-                        onClick={() => uploadDocument(file!, 'crv')}
-                        disabled={!file || uploading}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                                 transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-                                 flex items-center gap-2"
-                      >
-                        {uploading ? (
-                          <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Enviando...
-                          </>
+                    {previewUrl ? (
+                      <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                        {isPdf(previewUrl) ? (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
+                            <button
+                              onClick={() => setActiveDocument(previewUrl)}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
+                            >
+                              <FileText size={16} />
+                              Visualizar PDF
+                            </button>
+                          </div>
                         ) : (
-                          <>
-                            <Upload className="w-5 h-5" />
-                            Enviar
-                          </>
+                          <img
+                            src={previewUrl}
+                            alt="CRV do veículo"
+                            className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                            onClick={() => setActiveDocument(previewUrl)}
+                          />
                         )}
-                      </button>
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-[1.414] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                        <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                        <div className="text-center">
+                          <p className="text-gray-500 dark:text-gray-400 font-medium">CRV não cadastrado</p>
+                          <p className="text-sm text-gray-400 dark:text-gray-500">
+                            Faça o upload do CRV para visualizá-lo aqui
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Upload Section */}
+                    {veiculo_id && (
+                      <div className="mt-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Enviar novo documento
+                          </h4>
+                        </div>
+                        
+                        <div className="flex items-end gap-3">
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Selecione um arquivo
+                            </label>
+                            <input
+                              type="file"
+                              onChange={handleFileChange}
+                              accept="image/jpeg,image/png,image/jpg,application/pdf"
+                              className="block w-full text-sm text-gray-900 dark:text-gray-100
+                                     file:mr-4 file:py-2 file:px-4
+                                     file:rounded-md file:border-0
+                                     file:text-sm file:font-medium
+                                     file:bg-blue-50 file:text-blue-700
+                                     dark:file:bg-blue-900/20 dark:file:text-blue-300
+                                     hover:file:bg-blue-100 dark:hover:file:bg-blue-900/30
+                                     border border-gray-300 dark:border-gray-600 rounded-lg
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              ref={fileInputRef}
+                            />
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              JPEG, PNG ou PDF (máx. 15MB)
+                            </p>
+                          </div>
+                          
+                          <button
+                            onClick={() => uploadDocument(file!, 'crv')}
+                            disabled={!file || uploading}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                                   transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                                   flex items-center gap-2"
+                          >
+                            {uploading ? (
+                              <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Enviando...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-5 h-5" />
+                                Enviar
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
+
+              {activeTab === 'helpers' && veiculo_id && (
+                <AjudanteList veiculo_id={veiculo_id} />
+              )}
             </div>
           </div>
         </div>

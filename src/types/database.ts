@@ -74,6 +74,35 @@ export interface DocumentoAjudante {
   genero?: string | null;
 }
 
+export interface CnhAjudante {
+  id_cnh_ajudante: number;
+  nr_registro: number | null;
+  categoria: string | null;
+  nome_pai: string | null;
+  nome_mae: string | null;
+  id_ajudante: number | null;
+  foto_cnh: string | null;
+}
+
+export interface RgAjudante {
+  id_rg_ajudante: number;
+  nr_rg: number | null;
+  data_emissao: string | null;
+  orgao_expedidor: string | null;
+  filiacao: string | null;
+  id_ajudante: number | null;
+  foto_rg: string | null;
+}
+
+export interface EnderecoAjudante {
+  id_end_ajudante: number;
+  nr_end: number | null;
+  ds_complemento_end: string | null;
+  st_end: boolean | null;
+  id_ajudante: number;
+  id_logradouro: number;
+}
+
 export interface Veiculo {
   veiculo_id: number;
   placa: string;
@@ -93,6 +122,7 @@ export interface Veiculo {
   documento_veiculo?: DocumentoVeiculo[];
   pessoa_fisica_dono_veiculo?: PessoaFisicaDonoVeiculo;
   pessoa_juridica_dono_veiculo?: PessoaJuridicaDonoVeiculo;
+  documento_ajudante?: DocumentoAjudante[];
 }
 
 export interface Hodometro {
