@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, User, UserCircle, Home, Edit2, Save, Users } from 'lucide-react';
 import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
@@ -295,41 +295,41 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
               </div>
               
               {/* Tabs */}
-              <div className="border-b border-gray-200 dark:border-gray-700">
-                <nav className="flex space-x-8 px-6" aria-label="Tabs">
-                  <button
-                    onClick={() => setActiveTab('details')}
-                    className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
-                              ${activeTab === 'details'
-                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
-                  >
-                    <User className="w-5 h-5 mr-2" />
-                    Detalhes
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('documents')}
-                    className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
-                              ${activeTab === 'documents'
-                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
-                  >
-                    <FileText className="w-5 h-5 mr-2" />
-                    Documentos
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('vehicle')}
-                    className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
-                              ${activeTab === 'vehicle'
-                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
-                  >
-                    <Truck className="w-5 h-5 mr-2" />
-                    Veículo
-                  </button>
+              <div className="flex border-b border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setActiveTab('details')}
+                  className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
+                            ${activeTab === 'details'
+                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                >
+                  <User className="w-5 h-5 mr-2" />
+                  Detalhes
+                </button>
+                <button
+                  onClick={() => setActiveTab('documents')}
+                  className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
+                            ${activeTab === 'documents'
+                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                >
+                  <FileText className="w-5 h-5 mr-2" />
+                  Documentos
+                </button>
+                <button
+                  onClick={() => setActiveTab('vehicle')}
+                  className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
+                            ${activeTab === 'vehicle'
+                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                >
+                  <Truck className="w-5 h-5 mr-2" />
+                  Veículo
+                </button>
+                {veiculo && (
                   <button
                     onClick={() => setActiveTab('helpers')}
-                    className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
+                    className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
                               ${activeTab === 'helpers'
                                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
@@ -337,7 +337,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                     <Users className="w-5 h-5 mr-2" />
                     Ajudantes
                   </button>
-                </nav>
+                )}
               </div>
             </div>
 
@@ -535,12 +535,12 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                           </div>
                         </div>
                       </div>
-
-                      {/* CNH Document */}
+                      
+                      {/* CNH Document Upload */}
                       <div className="mt-6">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex justify-between items-center mb-2">
                           <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            CNH Digital
+                            CNH
                           </div>
                           {documento?.foto_cnh && (
                             <button
@@ -785,11 +785,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                                   {veiculo.combustivel || 'Não informado'}
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
+                              
                               <div>
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Peso</div>
                                 <div className="text-base text-gray-900 dark:text-white">
@@ -804,53 +800,26 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                                 </div>
                               </div>
                             </div>
-                            
-                            <div className="space-y-4">
-                              <div>
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Rastreador</div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  {veiculo.possui_rastreador ? (
-                                    <>
-                                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                                      <span className="text-base text-gray-900 dark:text-white">
-                                        Instalado - {veiculo.marca_rastreador || 'Marca não informada'}
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <XCircle className="w-5 h-5 text-red-500" />
-                                      <span className="text-base text-gray-900 dark:text-white">
-                                        Não instalado
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Vehicle Owner Information */}
-                              <div>
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Proprietário do Veículo</div>
-                                <div className="text-base text-gray-900 dark:text-white">
-                                  {veiculo.documento_veiculo?.[0]?.pessoa_fisica_dono_veiculo ? (
-                                    <>
-                                      <div>{veiculo.documento_veiculo[0].pessoa_fisica_dono_veiculo.nome_dono_veiculo}</div>
-                                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                                        Pessoa Física {veiculo.documento_veiculo[0].pessoa_fisica_dono_veiculo.nr_rg ? `• RG: ${veiculo.documento_veiculo[0].pessoa_fisica_dono_veiculo.nr_rg}` : ''}
-                                      </div>
-                                    </>
-                                  ) : veiculo.documento_veiculo?.[0]?.pessoa_juridica_dono_veiculo ? (
-                                    <>
-                                      <div>{veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.razao_social}</div>
-                                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                                        Pessoa Jurídica {veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.cnpj ? `• CNPJ: ${veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.cnpj}` : ''}
-                                        {veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.inscricao_estadual ? ` • IE: ${veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.inscricao_estadual}` : ''}
-                                      </div>
-                                    </>
-                                  ) : (
-                                    'Não informado'
-                                  )}
-                                </div>
-                              </div>
+                          </div>
+                          
+                          <div>
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Rastreador</div>
+                            <div className="flex items-center gap-2 mt-1">
+                              {veiculo.possui_rastreador ? (
+                                <>
+                                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                  <span className="text-base text-gray-900 dark:text-white">
+                                    Instalado - {veiculo.marca_rastreador || 'Marca não informada'}
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="w-5 h-5 text-red-500" />
+                                  <span className="text-base text-gray-900 dark:text-white">
+                                    Não instalado
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -961,7 +930,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                 )}
 
                 {activeTab === 'helpers' && veiculo && (
-                  <HelperList veiculo_id={veiculo.veiculo_id} />
+                  <div className="space-y-6">
+                    <HelperList veiculo_id={veiculo.veiculo_id} />
+                  </div>
                 )}
               </div>
             )}
