@@ -280,8 +280,7 @@ const HodometrosRelatorio = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Informado</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro Lido</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
               </tr>
@@ -321,58 +320,53 @@ const HodometrosRelatorio = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                        <span>-</span>
-                      ) : (
-                        <span>{hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col">
                       {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
                         <div className="text-sm text-gray-900 dark:text-white">
                           Bateria: {hodometro.bateria}
                         </div>
                       ) : (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
-                        </div>
-                      )}
-                      
-                      {/* Discrepancy tag */}
-                      {hasDiscrepancy(hodometro) && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Divergente
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {hodometro.trip_informada && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                          Informada: {hodometro.trip_informada}
-                        </div>
-                      )}
-                      {hodometro.trip_lida !== null ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-900 dark:text-white">
-                            Lida: {formatNumber(hodometro.trip_lida)}
-                          </span>
+                        <>
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            Lido: {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Informado: {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}
+                          </div>
                           
-                          {/* Trip discrepancy tag */}
-                          {hasTripDiscrepancy(hodometro) && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                          {/* Discrepancy tag */}
+                          {hasDiscrepancy(hodometro) && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 mt-1">
                               <AlertCircle className="w-3 h-3 mr-1" />
                               Divergente
                             </span>
                           )}
+                        </>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col">
+                      {hodometro.trip_lida !== null ? (
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          Lida: {formatNumber(hodometro.trip_lida)}
                         </div>
                       ) : (
-                        <span>-</span>
+                        <div className="text-sm text-gray-900 dark:text-white">-</div>
+                      )}
+                      
+                      {hodometro.trip_informada && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Informada: {hodometro.trip_informada}
+                        </div>
+                      )}
+                      
+                      {/* Trip discrepancy tag */}
+                      {hasTripDiscrepancy(hodometro) && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 mt-1">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Divergente
+                        </span>
                       )}
                     </div>
                   </td>
