@@ -338,8 +338,8 @@ const MotoristasLista = () => {
       clienteMatch &&
       (motorista.nome.toLowerCase().includes(searchLower) ||
        motorista.cpf.includes(searchLower) ||
-       (motorista.email && motorista.email.toLowerCase().includes(searchLower)) ||
-       (motorista.telefone && motorista.telefone.toString().includes(searchLower)))
+       (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
+       (typeof motorista.telefone === 'number' && motorista.telefone.toString().includes(searchLower)))
     );
   });
 

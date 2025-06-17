@@ -344,8 +344,8 @@ const AgregadosLista = () => {
       clienteMatch &&
       (agregado.nome.toLowerCase().includes(searchLower) ||
        agregado.cpf.includes(searchLower) ||
-       (agregado.email && agregado.email.toLowerCase().includes(searchLower)) ||
-       (agregado.telefone && agregado.telefone.toString().includes(searchLower)))
+       (typeof agregado.email === 'string' && agregado.email.toLowerCase().includes(searchLower)) ||
+       (typeof agregado.telefone === 'number' && agregado.telefone.toString().includes(searchLower)))
     );
   });
 
