@@ -499,6 +499,25 @@ const MotoristasLista = () => {
 
           <div className="relative">
             <select
+              value={cidadeFilter}
+              onChange={(e) => setCidadeFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todas as cidades</option>
+              {cidades.map((cidade, index) => (
+                <option key={index} value={cidade}>
+                  {cidade}
+                </option>
+              ))}
+            </select>
+            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+        </div>
+        
+        <div className="mt-4">
+          <div className="relative">
+            <select
               value={clienteFilter}
               onChange={(e) => setClienteFilter(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
@@ -516,25 +535,6 @@ const MotoristasLista = () => {
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-          </div>
-        </div>
-        
-        <div className="mt-4">
-          <div className="relative">
-            <select
-              value={cidadeFilter}
-              onChange={(e) => setCidadeFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-            >
-              <option value="">Todas as cidades</option>
-              {cidades.map((cidade, index) => (
-                <option key={index} value={cidade}>
-                  {cidade}
-                </option>
-              ))}
-            </select>
-            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
         </div>
@@ -565,6 +565,7 @@ const MotoristasLista = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Nome</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
@@ -597,12 +598,6 @@ const MotoristasLista = () => {
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {motorista.nome}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {motorista.cliente_id ? 
-                                clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || 'Cliente não encontrado' : 
-                                'Sem cliente'
-                              }
-                            </div>
                           </div>
                         </div>
                       </td>
@@ -628,6 +623,14 @@ const MotoristasLista = () => {
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {motorista.email || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {motorista.cliente_id ? 
+                            clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || 'Cliente não encontrado' : 
+                            'Sem cliente'
+                          }
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
