@@ -1,7 +1,23 @@
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { supabase } from '../lib/supabase';
 
-export const formatChecklistSemanalPDF = (checklist: any) => {
+export const formatChecklistSemanalPDF = async (checklist: any) => {
+  // Fetch status items to get proper status text
+  let statusItems: { status_id: number; status: string }[] = [];
+  try {
+    const { data, error } = await supabase
+      .from('status_item')
+      .select('*')
+      .order('status_id');
+
+    if (!error && data) {
+      statusItems = data;
+    }
+  } catch (error) {
+    console.error('Error fetching status items:', error);
+  }
+
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
@@ -21,22 +37,22 @@ export const formatChecklistSemanalPDF = (checklist: any) => {
   
   // Add fluids section
   if (checklist.fluidos) {
-    yPos = addFluidsSection(doc, checklist.fluidos, yPos, pageWidth);
+    yPos = addFluidsSection(doc, checklist.fluidos, yPos, pageWidth, statusItems);
   }
   
   // Add lights section
   if (checklist.farol) {
-    yPos = addLightsSection(doc, checklist.farol, yPos, pageWidth);
+    yPos = addLightsSection(doc, checklist.farol, yPos, pageWidth, statusItems);
   }
   
   // Add components section - only specific items for weekly checklist
   if (checklist.componentes) {
-    yPos = addComponentsSection(doc, checklist.componentes, yPos, pageWidth);
+    yPos = addComponentsSection(doc, checklist.componentes, yPos, pageWidth, statusItems);
   }
   
   // Add accessories section - only specific items for weekly checklist
   if (checklist.acessorios) {
-    yPos = addAccessoriesSection(doc, checklist.acessorios, yPos, pageWidth);
+    yPos = addAccessoriesSection(doc, checklist.acessorios, yPos, pageWidth, statusItems);
   }
   
   // Add observations if they exist
@@ -60,49 +76,22 @@ const formatDate = (date: string): string => {
 };
 
 // Function to get the status text from the status_id
-const getStatusText = (statusId: number, key: string, section: string): string => {
-  if (statusId === 1) {
-    // Status OK
-    if (section === 'Fluidos') return 'No nível';
-    if (section === 'Iluminação') {
-      if (key === 'lanterna_traseira') return 'Sim';
-      return 'Funcionando';
-    }
-    if (key.includes('pneu')) return 'Bom';
-    if (key.includes('limpeza')) return 'Boa';
-    if (key.includes('freio')) return 'Bom';
-    if (key.includes('pedal')) return 'Bom';
-    if (key.includes('documento') || key.includes('extintor') || key.includes('carrinho') || 
-        key.includes('cadeado') || key.includes('chave') || key.includes('macaco') || 
-        key.includes('estepe') || key.includes('triangulo') || key.includes('cartao') || 
-        key.includes('manual')) return 'Sim';
-    return 'Bom';
+const getStatusText = (statusId: number, statusItems: { status_id: number; status: string }[]): string => {
+  // Find the status text from the status items
+  const statusItem = statusItems.find(item => item.status_id === statusId);
+  if (statusItem) {
+    return statusItem.status;
   }
   
-  if (statusId === 2) {
-    // Status Not OK
-    if (section === 'Fluidos') return 'Abaixo do nível';
-    if (section === 'Iluminação') {
-      if (key === 'lanterna_traseira') return 'Não';
-      return 'Queimado';
-    }
-    if (key.includes('pneu')) return 'Ruim';
-    if (key.includes('limpeza')) return 'Ruim';
-    if (key.includes('freio')) return 'Ruim';
-    if (key.includes('pedal')) return 'Ruim';
-    if (key.includes('documento') || key.includes('extintor') || key.includes('carrinho') || 
-        key.includes('cadeado') || key.includes('chave') || key.includes('macaco') || 
-        key.includes('estepe') || key.includes('triangulo') || key.includes('cartao') || 
-        key.includes('manual')) return 'Não';
-    return 'Ruim';
-  }
-  
+  // Fallback to default values if status item not found
+  if (statusId === 1) return 'OK';
+  if (statusId === 2) return 'Não OK';
   if (statusId === 3) return 'N/A';
   
   return 'Não informado';
 };
 
-const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number, pageWidth: number): number => {
+const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number, pageWidth: number, statusItems: { status_id: number; status: string }[]): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -130,10 +119,10 @@ const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number, pageWidth: num
     const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     const value = fluidos[key];
     
-    // Get status text based on the value and item type
+    // Get status text based on the value
     let statusText;
     if (typeof value === 'number') {
-      statusText = getStatusText(value, key, 'Fluidos');
+      statusText = getStatusText(value, statusItems);
     } else if (value === null || value === undefined) {
       statusText = 'Não informado';
     } else {
@@ -147,7 +136,7 @@ const addFluidsSection = (doc: jsPDF, fluidos: any, yPos: number, pageWidth: num
   return yPos + 5;
 };
 
-const addLightsSection = (doc: jsPDF, farol: any, yPos: number, pageWidth: number): number => {
+const addLightsSection = (doc: jsPDF, farol: any, yPos: number, pageWidth: number, statusItems: { status_id: number; status: string }[]): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -179,10 +168,10 @@ const addLightsSection = (doc: jsPDF, farol: any, yPos: number, pageWidth: numbe
     if (key === 'luz_indicador_painel') {
       doc.text(`${label}: ${value || 'Não informado'}`, 20, yPos);
     } else {
-      // Get status text based on the value and item type
+      // Get status text based on the value
       let statusText;
       if (typeof value === 'number') {
-        statusText = getStatusText(value, key, 'Iluminação');
+        statusText = getStatusText(value, statusItems);
       } else if (value === null || value === undefined) {
         statusText = 'Não informado';
       } else {
@@ -198,7 +187,7 @@ const addLightsSection = (doc: jsPDF, farol: any, yPos: number, pageWidth: numbe
   return yPos + 5;
 };
 
-const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, pageWidth: number): number => {
+const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, pageWidth: number, statusItems: { status_id: number; status: string }[]): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -230,10 +219,10 @@ const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, pageWi
     const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     const value = componentes[key];
     
-    // Get status text based on the value and item type
+    // Get status text based on the value
     let statusText;
     if (typeof value === 'number') {
-      statusText = getStatusText(value, key, 'Componentes');
+      statusText = getStatusText(value, statusItems);
     } else if (value === null || value === undefined) {
       statusText = 'Não informado';
     } else {
@@ -253,7 +242,7 @@ const addComponentsSection = (doc: jsPDF, componentes: any, yPos: number, pageWi
   return yPos + 5;
 };
 
-const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, pageWidth: number): number => {
+const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, pageWidth: number, statusItems: { status_id: number; status: string }[]): number => {
   // Check if we need a new page
   if (yPos > 250) {
     doc.addPage();
@@ -285,10 +274,10 @@ const addAccessoriesSection = (doc: jsPDF, acessorios: any, yPos: number, pageWi
     const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     const value = acessorios[key];
     
-    // Get status text based on the value and item type
+    // Get status text based on the value
     let statusText;
     if (typeof value === 'number') {
-      statusText = getStatusText(value, key, 'Acessórios');
+      statusText = getStatusText(value, statusItems);
     } else if (value === null || value === undefined) {
       statusText = 'Não informado';
     } else {

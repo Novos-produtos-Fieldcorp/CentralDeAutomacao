@@ -389,6 +389,16 @@ const ChecklistSemanal = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-3">
                         <button
+                          onClick={() => {
+                            setSelectedChecklist(checklist);
+                            setIsDetailsModalOpen(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                          title="Visualizar"
+                        >
+                          <FilePen size={18} />
+                        </button>
+                        <button
                           onClick={(e) => handleToggleStatus(e, checklist)}
                           disabled={updatingStatus === checklist.checklist_id}
                           className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
@@ -410,16 +420,6 @@ const ChecklistSemanal = () => {
                               className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
                             />
                           )}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedChecklist(checklist);
-                            setIsDetailsModalOpen(true);
-                          }}
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                          title="Visualizar"
-                        >
-                          <FilePen size={18} />
                         </button>
                       </div>
                     </td>

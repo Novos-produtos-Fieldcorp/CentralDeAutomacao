@@ -17,6 +17,7 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [currentStep, setCurrentStep] = useState(1);
+  const [statusItems, setStatusItems] = useState<{ status_id: number; status: string }[]>([]);
   const { companyId } = useAuth();
   
   // Initialize with empty form data
@@ -111,8 +112,24 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
       
       fetchMotoristas();
       fetchVeiculos();
+      fetchStatusItems();
     }
-  }, [isOpen]);
+  }, [isOpen, companyId]);
+
+  const fetchStatusItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('status_item')
+        .select('*')
+        .order('status_id');
+
+      if (error) throw error;
+      setStatusItems(data || []);
+    } catch (error) {
+      console.error('Error fetching status items:', error);
+      toast.error('Erro ao carregar status');
+    }
+  };
 
   const fetchMotoristas = async () => {
     try {
@@ -120,6 +137,7 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
         .from('motorista')
         .select('*')
         .eq('st_cadastro', 'contratado')
+        .eq('company_id', companyId)
         .order('nome');
 
       if (error) throw error;
@@ -136,6 +154,7 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
         .from('veiculo')
         .select('*')
         .eq('status_veiculo', true)
+        .eq('company_id', companyId)
         .order('placa');
 
       if (error) throw error;
@@ -156,13 +175,13 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
       const filePath = `${fileName}`;
 
       const { error: uploadError, data } = await supabase.storage
-        .from('checklist-photos')
+        .from('imagensdocs')
         .upload(filePath, file);
         
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('checklist-photos')
+        .from('imagensdocs')
         .getPublicUrl(filePath);
 
       setFormData(prev => ({
@@ -568,9 +587,11 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
                           }))}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         >
-                          <option value={1}>OK</option>
-                          <option value={2}>Não OK</option>
-                          <option value={3}>N/A</option>
+                          {statusItems.map(item => (
+                            <option key={item.status_id} value={item.status_id}>
+                              {item.status}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     ))}
@@ -597,9 +618,11 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
                           }))}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         >
-                          <option value={1}>OK</option>
-                          <option value={2}>Não OK</option>
-                          <option value={3}>N/A</option>
+                          {statusItems.map(item => (
+                            <option key={item.status_id} value={item.status_id}>
+                              {item.status}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     ))}
@@ -641,9 +664,11 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
                             }))}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                           >
-                            <option value={1}>OK</option>
-                            <option value={2}>Não OK</option>
-                            <option value={3}>N/A</option>
+                            {statusItems.map(item => (
+                              <option key={item.status_id} value={item.status_id}>
+                                {item.status}
+                              </option>
+                            ))}
                           </select>
                         )}
                       </div>
@@ -671,9 +696,11 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
                           }))}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         >
-                          <option value={1}>OK</option>
-                          <option value={2}>Não OK</option>
-                          <option value={3}>N/A</option>
+                          {statusItems.map(item => (
+                            <option key={item.status_id} value={item.status_id}>
+                              {item.status}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     ))}

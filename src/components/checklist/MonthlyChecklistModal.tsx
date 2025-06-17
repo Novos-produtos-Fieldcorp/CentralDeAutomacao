@@ -132,7 +132,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         fetchChecklistDetails(checklist.checklist_id);
       }
     }
-  }, [isOpen, checklist]);
+  }, [isOpen, checklist, companyId]);
 
   const fetchChecklistDetails = async (checklistId: number) => {
     try {
@@ -258,6 +258,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         .from('motorista')
         .select('*')
         .eq('st_cadastro', 'contratado')
+        .eq('company_id', companyId)
         .order('nome');
 
       if (error) throw error;
@@ -274,6 +275,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         .from('veiculo')
         .select('*')
         .eq('status_veiculo', true)
+        .eq('company_id', companyId)
         .order('placa');
 
       if (error) throw error;
@@ -294,13 +296,13 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
       const filePath = `${fileName}`;
 
       const { error: uploadError, data } = await supabase.storage
-        .from('checklist-photos')
+        .from('imagensdocs')
         .upload(filePath, file);
         
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('checklist-photos')
+        .from('imagensdocs')
         .getPublicUrl(filePath);
 
       setFormData(prev => ({
@@ -868,7 +870,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
           </div>
 
           <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-            {currentStep > 1 && (
+            {currentPage > 1 && (
               <button
                 type="button"
                 onClick={() => setCurrentStep(prev => prev - 1)}
