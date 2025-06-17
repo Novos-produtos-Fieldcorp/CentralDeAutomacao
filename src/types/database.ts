@@ -3,8 +3,8 @@ export interface Motorista {
   cpf: string;
   dt_nascimento: string;
   genero: string;
-  telefone: number;
-  email: string;
+  telefone: number | null;
+  email: string | null;
   funcao: string;
   nome: string;
   origem_usuario: string;
