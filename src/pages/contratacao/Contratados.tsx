@@ -139,6 +139,17 @@ const Contratados = () => {
   const [isDocumentUploadModalOpen, setIsDocumentUploadModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  const statusOptions = [
+    { value: 'cadastrado', label: 'Cadastrado' },
+    { value: 'qualificado', label: 'Qualificado' },
+    { value: 'documentacao', label: 'Documentação' },
+    { value: 'gr', label: 'GR' },
+    { value: 'contrato_enviado', label: 'Contrato Enviado' },
+    { value: 'contratado', label: 'Contratado' },
+    { value: 'repescagem', label: 'Repescagem' },
+    { value: 'rejeitado', label: 'Rejeitado' }
+  ];
+
   const clientColors = [
     'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
@@ -204,9 +215,7 @@ const Contratados = () => {
 
   const fetchMotoristas = async () => {
     try {
-      if (currentPage === 1 && !debouncedSearchTerm && !debouncedPhoneSearch && !selectedStatus && !selectedCity && !selectedClient) {
-        setLoading(true);
-      }
+      setIsSearching(true);
       
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
@@ -241,6 +250,7 @@ const Contratados = () => {
         query = query.eq('cliente_id', selectedClient);
       }
 
+      // Apply vehicle type filter if selected
       if (selectedVehicleType) {
         query = query.eq('tipologia', selectedVehicleType);
       }
@@ -289,7 +299,6 @@ const Contratados = () => {
         });
       }
 
-
       // Create a Map to deduplicate motoristas by motorista_id
       const uniqueMotoristas = new Map();
       motoristasData.forEach(motorista => {
@@ -322,7 +331,7 @@ const Contratados = () => {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
     } finally {
-      setLoading(false);
+      setIsSearching(false);
     }
   };
 
@@ -929,7 +938,7 @@ const Contratados = () => {
               onChange={(e) => {
                 setSelectedVehicleType(e.target.value);
                 setCurrentPage(1);
-                handleSearch();
+                fetchMotoristas();
               }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >

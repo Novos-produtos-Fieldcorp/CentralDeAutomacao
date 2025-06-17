@@ -24,6 +24,8 @@ type Contact = {
   status?: 'online' | 'offline';
   availability_status?: 'online' | 'offline';
   last_seen_at?: string;
+  email?: string;
+  custom_attributes?: Record<string, any>;
   contact_inboxes?: Array<{
     source_id: string;
     inbox: {
@@ -201,10 +203,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   }, [showChat, minimized]);
 
   useEffect(() => {
-    if (showChat && !minimized && !activeConversation && selectedInboxId) {
+    if (showChat && !minimized && !activeConversation && selectedInboxId && contact) {
       loadPreviousConversations();
     }
-  }, [showChat, minimized, activeConversation, selectedInboxId]);
+  }, [showChat, minimized, activeConversation, selectedInboxId, contact]);
 
   useEffect(() => {
     if (initialPhone) {
@@ -213,70 +215,11 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   }, [initialPhone, initialName]);
 
   useEffect(() => {
-    // Load saved conversations and state from localStorage
+    // Load only visibility state from localStorage
     const loadSavedState = async () => {
       try {
-        const savedConversations = localStorage.getItem('chat_conversations');
         const savedShowChat = localStorage.getItem('chat_visible');
         const savedMinimized = localStorage.getItem('chat_minimized');
-        
-        if (savedConversations) {
-          const parsed = JSON.parse(savedConversations);
-          if (Array.isArray(parsed)) {
-            setStorageConversations(parsed);
-            
-            // Load messages for each conversation
-            for (const conv of parsed) {
-              if (conv.conversationId) {
-                try {
-                  const messagesResponse = await api.get(`/api/v1/accounts/${accountId}/conversations/${conv.conversationId}/messages`, {
-                    params: {
-                      page: 1,
-                      per_page: 20
-                    }
-                  });
-
-                  if (messagesResponse.data?.payload) {
-                    const formattedMessages = messagesResponse.data.payload.map((msg: any) => ({
-                      id: msg.id,
-                      content: msg.content,
-                      created_at: msg.created_at,
-                      message_type: msg.message_type === 1 ? 'incoming' : 'outgoing',
-                      content_type: msg.content_type || 'text',
-                      status: msg.status || 'sent',
-                      sender: msg.sender || {
-                        type: msg.message_type === 1 ? 'agent_bot' : 'user',
-                        name: msg.sender?.name || (msg.message_type === 1 ? 'Agente' : 'Você')
-                      }
-                    }));
-
-                    // Update the conversation with its messages
-                    setPreviousConversations(prev => {
-                      const existingConv = prev.find(c => c.id === conv.conversationId);
-                      if (existingConv) {
-                        return prev.map(c => 
-                          c.id === conv.conversationId 
-                            ? { ...c, messages: formattedMessages }
-                            : c
-                        );
-                      }
-                      return [...prev, {
-                        id: conv.conversationId,
-                        contact: conv.user,
-                        messages: formattedMessages,
-                        lastMessage: formattedMessages[0] || null,
-                        status: 'open',
-                        unread_count: 0
-                      }];
-                    });
-                  }
-                } catch (error) {
-                  console.error('Error loading messages for conversation:', error);
-                }
-              }
-            }
-          }
-        }
         
         if (savedShowChat) {
           setShowChat(savedShowChat === 'true');
@@ -293,24 +236,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     loadSavedState();
     setIsInitialized(true);
   }, []);
-
-  // Save state changes to localStorage
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem('chat_visible', showChat.toString());
-      localStorage.setItem('chat_minimized', minimized.toString());
-    }
-  }, [showChat, minimized, isInitialized]);
-
-  useEffect(() => {
-    if (storageConversations.length > 0) {
-      try {
-        localStorage.setItem('chat_conversations', JSON.stringify(storageConversations));
-      } catch (error) {
-        console.error('Error saving conversations:', error);
-      }
-    }
-  }, [storageConversations]);
 
   const handleError = (error: unknown) => {
     console.error('Error:', error);
@@ -566,10 +491,19 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         throw new Error('Configuração inválida');
       }
 
+      const api = axios.create({
+        baseURL: '/api',
+        headers: {
+          'api_access_token': apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
       if (initialPhone) {
         const formattedNumber = formatPhoneNumber(initialPhone);
         
-        // Buscar contato existente
+        // 2. Check if contact exists
         const searchResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/search`, {
           params: {
             q: formattedNumber
@@ -577,93 +511,11 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         });
 
         let contactToUse;
-
         if (searchResponse.data?.payload?.[0]) {
-          // Usar contato existente
-          const existingContact = searchResponse.data.payload[0];
-          contactToUse = {
-            id: existingContact.id,
-            name: existingContact.name,
-            phone_number: existingContact.phone_number,
-            thumbnail: existingContact.avatar_url || existingContact.thumbnail || ''
-          };
-
-          // Buscar conversas do contato
-          const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contactToUse.id}/conversations`);
-
-          if (conversationsResponse.data?.payload?.length > 0) {
-            // Filtrar conversas pelo inbox selecionado
-            const inboxConversations = conversationsResponse.data.payload.filter(
-              (conv: any) => conv.inbox_id === inboxId
-            );
-
-            if (inboxConversations.length > 0) {
-              // Usar a conversa mais recente do inbox selecionado
-              const conversationToUse = inboxConversations[0];
-              
-              setContact(contactToUse);
-              setActiveConversation({
-                id: conversationToUse.id,
-                messages: []
-              });
-
-              // Carregar mensagens apenas uma vez
-              const messagesResponse = await api.get(`/api/v1/accounts/${accountId}/conversations/${conversationToUse.id}/messages`, {
-                params: {
-                  page: 1,
-                  per_page: 20
-                }
-              });
-
-              if (messagesResponse.data?.payload) {
-                setActiveConversation(prev => ({
-                  ...prev!,
-                  messages: messagesResponse.data.payload.map((msg: any) => ({
-                    id: msg.id,
-                    content: msg.content,
-                    created_at: msg.created_at,
-                    message_type: msg.message_type === 1 ? 'incoming' : 'outgoing',
-                    content_type: msg.content_type || 'text',
-                    status: msg.status || 'sent',
-                    sender: msg.sender || {
-                      type: msg.message_type === 1 ? 'agent_bot' : 'user',
-                      name: msg.sender?.name || (msg.message_type === 1 ? 'Agente' : 'Você')
-                    }
-                  }))
-                }));
-              }
-            } else {
-              // Criar nova conversa no inbox selecionado
-              const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
-                inbox_id: inboxId.toString(),
-                contact_id: contactToUse.id.toString()
-              });
-
-              if (newConversationResponse.data) {
-                setContact(contactToUse);
-                setActiveConversation({
-                  id: newConversationResponse.data.id,
-                  messages: []
-                });
-              }
-            }
-          } else {
-            // Criar nova conversa para o contato existente
-            const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
-              inbox_id: inboxId.toString(),
-              contact_id: contactToUse.id.toString()
-            });
-
-            if (newConversationResponse.data) {
-              setContact(contactToUse);
-              setActiveConversation({
-                id: newConversationResponse.data.id,
-                messages: []
-              });
-            }
-          }
+          // Contact exists - use it
+          contactToUse = searchResponse.data.payload[0];
         } else {
-          // Criar novo contato
+          // Contact doesn't exist - create it
           const contactNameToUse = initialName || additionalInfo?.name || 'Novo Contato';
           const contactEmail = initialEmail || additionalInfo?.email;
 
@@ -678,31 +530,79 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             }
           });
 
-          if (newContactResponse.data) {
-            contactToUse = {
-              id: newContactResponse.data.id,
-              name: newContactResponse.data.name,
-              phone_number: newContactResponse.data.phone_number,
-              thumbnail: newContactResponse.data.avatar_url || newContactResponse.data.thumbnail || ''
-            };
+          if (!newContactResponse.data) {
+            throw new Error('Não foi possível criar o contato');
+          }
 
-            // Criar nova conversa para o novo contato
-            const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
-              inbox_id: inboxId.toString(),
-              contact_id: contactToUse.id.toString()
-            });
+          contactToUse = newContactResponse.data;
+        }
 
-            if (newConversationResponse.data) {
-              setContact(contactToUse);
-              setActiveConversation({
-                id: newConversationResponse.data.id,
-                messages: []
-              });
-            }
+        // 3. Check if contact has a conversation in the selected inbox
+        const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contactToUse.id}/conversations`);
+        
+        let conversationToUse = null;
+        if (conversationsResponse.data?.payload) {
+          // Filter conversations for the selected inbox
+          const inboxConversations = conversationsResponse.data.payload.filter(
+            (conv: any) => conv.inbox_id === inboxId
+          );
+
+          if (inboxConversations.length > 0) {
+            // Use the most recent conversation from this inbox
+            conversationToUse = inboxConversations[0];
           }
         }
-      } else {
-        throw new Error('Nenhum número de telefone disponível para criar o contato');
+
+        // If no conversation exists in the selected inbox, create one
+        if (!conversationToUse) {
+          const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
+            inbox_id: inboxId.toString(),
+            contact_id: contactToUse.id.toString()
+          });
+
+          if (newConversationResponse.data) {
+            conversationToUse = newConversationResponse.data;
+          }
+        }
+
+        // 4. Set up the chat with the contact and conversation
+        if (conversationToUse) {
+          // Set contact info
+          setContact({
+            id: contactToUse.id,
+            name: contactToUse.name || initialName || formattedNumber,
+            phone_number: contactToUse.phone_number,
+            thumbnail: contactToUse.avatar_url || contactToUse.thumbnail || '',
+            source_id: contactToUse.contact_inboxes?.[0]?.source_id || '',
+            availability_status: contactToUse.availability_status || 'offline',
+            last_seen_at: contactToUse.last_activity_at ? new Date(contactToUse.last_activity_at * 1000).toISOString() : '',
+            email: contactToUse.email,
+            custom_attributes: contactToUse.custom_attributes || {}
+          });
+
+          // Set active conversation
+          setActiveConversation({
+            id: conversationToUse.id,
+            messages: []
+          });
+
+          // Load messages for the conversation
+          await loadConversationMessages(conversationToUse.id);
+
+          // Update storage conversations
+          setStorageConversations(prev => {
+            const filteredConversations = prev.filter(conv => conv.user.id !== contactToUse.id);
+            return [...filteredConversations, {
+              user: {
+                id: contactToUse.id,
+                name: contactToUse.name,
+                phone_number: contactToUse.phone_number,
+                thumbnail: contactToUse.avatar_url || contactToUse.thumbnail || ''
+              },
+              conversationId: conversationToUse.id
+            }];
+          });
+        }
       }
     } catch (error) {
       setError(
@@ -781,76 +681,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     }
   };
 
-  const loadAllConversations = async () => {
-    try {
-      const response = await api.get(`/api/v1/accounts/${accountId}/conversations`, {
-        params: {
-          status: 'open',
-          assignee_type: 'all',
-          per_page: 50
-        }
-      });
-
-      if (response.data?.payload) {
-        const conversations = await Promise.all(
-          response.data.payload.map(async (conv: any) => {
-            try {
-              const contactResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${conv.contact_id}`);
-              const contact = contactResponse.data;
-
-              const inboxResponse = await api.get(`/api/v1/accounts/${accountId}/inboxes/${conv.inbox_id}`);
-              const inbox = inboxResponse.data;
-
-              const messagesResponse = await api.get(
-                `/api/v1/accounts/${accountId}/conversations/${conv.id}/messages?page=1&per_page=1`
-              );
-              const lastMessage = messagesResponse.data?.payload?.[0];
-
-              const processedConversation = {
-                id: conv.id,
-                contact: {
-                  id: contact.id,
-                  name: contact.name,
-                  phone_number: contact.phone_number,
-                  thumbnail: contact.avatar_url || contact.thumbnail || ''
-                },
-                lastMessage: lastMessage ? {
-                  content: lastMessage.content,
-                  created_at: lastMessage.created_at,
-                  message_type: lastMessage.message_type
-                } : null,
-                unread_count: conv.unread_count || 0,
-                status: conv.status,
-                inbox_id: conv.inbox_id,
-                inbox_name: inbox.name,
-                created_at: conv.created_at,
-                meta: conv.meta
-              };
-
-              return processedConversation;
-            } catch (error) {
-              return null;
-            }
-          })
-        );
-
-        const validConversations = conversations.filter(conv => conv !== null);
-
-        validConversations.sort((a, b) => {
-          if (!a.lastMessage) return 1;
-          if (!b.lastMessage) return -1;
-          return new Date(b.lastMessage.created_at).getTime() - new Date(a.lastMessage.created_at).getTime();
-        });
-        
-        setPreviousConversations(validConversations);
-        
-        return validConversations;
-      }
-    } catch (error) {
-      handleError(error);
-    }
-  };
-
   const userInChat = async (phoneNumber: string, contactName?: string) => {
     try {
       // Don't reset state if we're already in a chat with this number
@@ -888,123 +718,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         throw new Error('Token WiseApp não encontrado');
       }
 
-      const api = axios.create({
-        baseURL: '/api',
-        headers: {
-          'api_access_token': apiKey,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
-
-      const formattedNumber = formatPhoneNumber(phoneNumber);
-
-      // Buscar contato existente
-      const searchResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/search`, {
-        params: {
-          q: formattedNumber
-        }
-      });
-
-      let user;
-      if (!searchResponse.data?.payload?.[0]) {
-        const contactNameToUse = contactName || 'Novo Contato';
-        const newContactResponse = await api.post(`/api/v1/accounts/${accountId}/contacts`, {
-          name: contactNameToUse,
-          phone_number: formattedNumber,
-          custom_attributes: {
-            source: "web_chat",
-            source_type: sourceType || 'web',
-            ...additionalInfo
-          }
-        });
-
-        if (!newContactResponse.data) {
-          throw new Error('Não foi possível criar o contato');
-        }
-
-        user = newContactResponse.data;
-      } else {
-        user = searchResponse.data.payload[0];
-      }
-
-      const contactResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${user.id}`);
-
-      if (!contactResponse.data) {
-        throw new Error('Não foi possível carregar detalhes do contato');
-      }
-
-      const contactData = {
-        id: contactResponse.data.id,
-        name: contactResponse.data.name || contactName || formattedNumber,
-        phone_number: contactResponse.data.phone_number,
-        thumbnail: contactResponse.data.avatar_url || contactResponse.data.thumbnail || '',
-        source_id: contactResponse.data.contact_inboxes?.[0]?.source_id || '',
-        availability_status: contactResponse.data.availability_status || 'offline',
-        last_seen_at: contactResponse.data.last_activity_at ? new Date(contactResponse.data.last_activity_at * 1000).toISOString() : '',
-        email: contactResponse.data.email,
-        custom_attributes: contactResponse.data.custom_attributes || {}
-      };
-
-      setContact(contactData);
-
-      const inboxId = await fetchInboxes(accountId, apiKey);
-      if (!inboxId) {
-        setLoading(false);
-        return;
-      }
-
-      // Buscar todas as conversas do contato
-      const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${user.id}/conversations`);
-
-      let conversationToUse = null;
-      const sortedConversations = conversationsResponse.data.payload.sort((a: any, b: any) => {
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-
-      // Primeiro, tentar encontrar uma conversa no inbox selecionado
-      const inboxConversations = sortedConversations.filter(
-        (conv: any) => conv.inbox_id === inboxId
-      );
-
-      if (inboxConversations.length > 0) {
-        // Usar a conversa mais recente do inbox selecionado
-        conversationToUse = inboxConversations[0];
-      } else if (sortedConversations.length > 0) {
-        // Se não houver conversa no inbox selecionado, usar a mais recente de qualquer inbox
-        conversationToUse = sortedConversations[0];
-      }
-
-      // Se não houver nenhuma conversa, criar uma nova
-      if (!conversationToUse) {
-        const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
-          inbox_id: inboxId.toString(),
-          contact_id: user.id.toString()
-        });
-
-        if (newConversationResponse.data) {
-          conversationToUse = newConversationResponse.data;
-        }
-      }
-
-      if (conversationToUse) {
-        setActiveConversation({
-          id: conversationToUse.id,
-          messages: []
-        });
-
-        await loadConversationMessages(conversationToUse.id);
-
-        setStorageConversations(prev => {
-          // Remover conversas duplicadas do mesmo contato
-          const filteredConversations = prev.filter(conv => conv.user.id !== contactData.id);
-          return [...filteredConversations, {
-            user: contactData,
-            conversationId: conversationToUse.id
-          }];
-        });
-      }
-
+      // Carregar inboxes e mostrar o seletor
+      await fetchInboxes(accountId, apiKey);
+      setShowInboxSelector(true);
       setLoading(false);
     } catch (error) {
       console.error('Error in userInChat:', error);
@@ -1380,7 +1096,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   const loadPreviousConversations = async (page: number = 1) => {
     try {
-      if (!accountId || !apiKey || !selectedInboxId) {
+      if (!accountId || !apiKey || !selectedInboxId || !contact?.id) {
         return;
       }
 
@@ -1392,149 +1108,84 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         inbox_id: selectedInboxId
       };
 
-      // Se tiver um contato específico, buscar apenas as conversas dele
-      if (contact?.id) {
-        const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contact.id}/conversations`);
+      // Buscar apenas as conversas do contato específico
+      const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contact.id}/conversations`);
+      
+      if (conversationsResponse.data?.payload) {
+        // Filtrar conversas pelo inbox selecionado
+        const inboxConversations = conversationsResponse.data.payload.filter(
+          (conv: any) => conv.inbox_id === selectedInboxId
+        );
+
+        // Ordenar por data de criação (mais recente primeiro)
+        inboxConversations.sort((a: any, b: any) => {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+
+        // Carregar mensagens para cada conversa
+        const conversationsWithMessages = await Promise.all(
+          inboxConversations.map(async (conv: any) => {
+            try {
+              const messagesResponse = await api.get(`/api/v1/accounts/${accountId}/conversations/${conv.id}/messages`, {
+                params: {
+                  page: 1,
+                  per_page: 20
+                }
+              });
+
+              const formattedMessages = messagesResponse.data?.payload?.map((msg: any) => ({
+                id: msg.id,
+                content: msg.content,
+                created_at: msg.created_at,
+                message_type: msg.message_type === 1 ? 'incoming' : 'outgoing',
+                content_type: msg.content_type || 'text',
+                status: msg.status || 'sent',
+                sender: msg.sender || {
+                  type: msg.message_type === 1 ? 'agent_bot' : 'user',
+                  name: msg.sender?.name || (msg.message_type === 1 ? 'Agente' : 'Você')
+                }
+              })) || [];
+
+              return {
+                id: conv.id,
+                contact: {
+                  id: contact.id,
+                  name: contact.name,
+                  phone_number: contact.phone_number,
+                  thumbnail: contact.thumbnail || ''
+                },
+                messages: formattedMessages,
+                lastMessage: formattedMessages[0] || null,
+                unread_count: conv.unread_count || 0,
+                status: conv.status,
+                inbox_id: conv.inbox_id,
+                created_at: conv.created_at
+              };
+            } catch (error) {
+              console.error('Error loading messages for conversation:', error);
+              return null;
+            }
+          })
+        );
+
+        // Filtrar conversas nulas e atualizar o estado
+        const validConversations = conversationsWithMessages.filter(conv => conv !== null);
         
-        if (conversationsResponse.data?.payload) {
-          // Filtrar conversas pelo inbox selecionado
-          const inboxConversations = conversationsResponse.data.payload.filter(
-            (conv: any) => conv.inbox_id === selectedInboxId
-          );
+        setPreviousConversations(validConversations);
 
-          // Ordenar por data de criação (mais recente primeiro)
-          inboxConversations.sort((a: any, b: any) => {
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        // Se houver conversas, selecionar a mais recente
+        if (validConversations.length > 0) {
+          const mostRecent = validConversations[0];
+          setActiveConversation({
+            id: mostRecent.id,
+            messages: mostRecent.messages
           });
-
-          // Carregar mensagens para cada conversa
-          const conversationsWithMessages = await Promise.all(
-            inboxConversations.map(async (conv: any) => {
-              try {
-                const messagesResponse = await api.get(`/api/v1/accounts/${accountId}/conversations/${conv.id}/messages`, {
-                  params: {
-                    page: 1,
-                    per_page: 20
-                  }
-                });
-
-                const formattedMessages = messagesResponse.data?.payload?.map((msg: any) => ({
-                  id: msg.id,
-                  content: msg.content,
-                  created_at: msg.created_at,
-                  message_type: msg.message_type === 1 ? 'incoming' : 'outgoing',
-                  content_type: msg.content_type || 'text',
-                  status: msg.status || 'sent',
-                  sender: msg.sender || {
-                    type: msg.message_type === 1 ? 'agent_bot' : 'user',
-                    name: msg.sender?.name || (msg.message_type === 1 ? 'Agente' : 'Você')
-                  }
-                })) || [];
-
-                return {
-                  id: conv.id,
-                  contact: {
-                    id: contact.id,
-                    name: contact.name,
-                    phone_number: contact.phone_number,
-                    thumbnail: contact.thumbnail || ''
-                  },
-                  messages: formattedMessages,
-                  lastMessage: formattedMessages[0] || null,
-                  unread_count: conv.unread_count || 0,
-                  status: conv.status,
-                  inbox_id: conv.inbox_id,
-                  created_at: conv.created_at
-                };
-              } catch (error) {
-                console.error('Error loading messages for conversation:', error);
-                return null;
-              }
-            })
-          );
-
-          // Filtrar conversas nulas e atualizar o estado
-          const validConversations = conversationsWithMessages.filter(conv => conv !== null);
-          
-          setPreviousConversations(validConversations);
-
-          // Se houver conversas, selecionar a mais recente
-          if (validConversations.length > 0) {
-            const mostRecent = validConversations[0];
-            setActiveConversation({
-              id: mostRecent.id,
-              messages: mostRecent.messages
-            });
-          }
-
-          return {
-            meta: conversationsResponse.data.meta,
-            hasMore: inboxConversations.length === params.per_page
-          };
         }
-      } else {
-        // Se não tiver contato específico, buscar todas as conversas do inbox
-        const response = await api.get(`/api/v1/accounts/${accountId}/conversations`, { params });
 
-        if (response.data?.payload?.[0]) {
-          const conv = response.data.payload[0];
-          try {
-            const contactResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${conv.contact_id}`);
-            const contact = contactResponse.data;
-
-            const messagesResponse = await api.get(`/api/v1/accounts/${accountId}/conversations/${conv.id}/messages`, {
-              params: {
-                page: 1,
-                per_page: 20
-              }
-            });
-
-            const formattedMessages = messagesResponse.data?.payload?.map((msg: any) => ({
-              id: msg.id,
-              content: msg.content,
-              created_at: msg.created_at,
-              message_type: msg.message_type === 1 ? 'incoming' : 'outgoing',
-              content_type: msg.content_type || 'text',
-              status: msg.status || 'sent',
-              sender: msg.sender || {
-                type: msg.message_type === 1 ? 'agent_bot' : 'user',
-                name: msg.sender?.name || (msg.message_type === 1 ? 'Agente' : 'Você')
-              }
-            })) || [];
-
-            const conversation = {
-              id: conv.id,
-              contact: {
-                id: contact.id,
-                name: contact.name,
-                phone_number: contact.phone_number,
-                thumbnail: contact.avatar_url || contact.thumbnail || ''
-              },
-              messages: formattedMessages,
-              lastMessage: formattedMessages[0] || null,
-              unread_count: conv.unread_count || 0,
-              status: conv.status,
-              inbox_id: conv.inbox_id,
-              created_at: conv.created_at
-            };
-
-            setContact(conversation.contact);
-            setActiveConversation({
-              id: conversation.id,
-              messages: formattedMessages
-            });
-
-            setPreviousConversations([conversation]);
-
-            return {
-              meta: response.data.meta,
-              hasMore: response.data.payload.length === params.per_page
-            };
-          } catch (error) {
-            console.error('Error loading contact:', error);
-            handleError(error);
-          }
-        }
+        return {
+          meta: conversationsResponse.data.meta,
+          hasMore: inboxConversations.length === params.per_page
+        };
       }
     } catch (error) {
       console.error('Error loading previous conversations:', error);
@@ -1543,6 +1194,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   };
 
   const loadMoreConversations = async () => {
+    if (!contact?.id) return;
     const currentPage = Math.ceil(previousConversations.length / 20) + 1;
     const result = await loadPreviousConversations(currentPage);
   };
@@ -1681,65 +1333,81 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             </div>
             <div className="flex-1 overflow-y-auto" onScroll={handleHistoryScroll}>
               {(() => {
-                return !previousConversations || previousConversations.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                    Nenhuma conversa encontrada
-                  </div>
-                ) : (
-                  previousConversations.map((conv) => {
-                    return (
-                      <button
-                        key={conv.id}
-                        onClick={() => switchConversation(conv.id)}
-                        className={`w-full p-4 text-left border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                          activeConversation?.id === conv.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden">
-                            {conv.contact?.thumbnail ? (
-                              <img 
-                                src={conv.contact.thumbnail} 
-                                alt={conv.contact.name || 'Avatar'} 
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              conv.contact?.name?.[0]?.toUpperCase() || 'C'
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <p className="font-medium text-gray-900 dark:text-white truncate">
-                                {conv.contact?.name || conv.contact?.phone_number || 'Contato'}
-                              </p>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {conv.inbox_name}
-                              </span>
-                            </div>
-                            {conv.lastMessage && (
-                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                                {conv.lastMessage.content}
-                              </p>
-                            )}
-                            <div className="flex items-center justify-between mt-1">
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {conv.lastMessage ? formatDateTime(conv.lastMessage.created_at) : ''}
-                              </span>
-                              {conv.status === 'open' && (
-                                <span className="text-xs text-green-500">Aberta</span>
-                              )}
-                            </div>
-                          </div>
-                          {conv.unread_count > 0 && (
-                            <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                              {conv.unread_count}
-                            </span>
+                if (!selectedInboxId) {
+                  return (
+                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                      Selecione um inbox para ver as conversas
+                    </div>
+                  );
+                }
+
+                if (!contact) {
+                  return (
+                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                      Selecione um contato para ver as conversas
+                    </div>
+                  );
+                }
+
+                if (!previousConversations || previousConversations.length === 0) {
+                  return (
+                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                      Nenhuma conversa encontrada
+                    </div>
+                  );
+                }
+
+                return previousConversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    onClick={() => switchConversation(conv.id)}
+                    className={`w-full p-4 text-left border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                      activeConversation?.id === conv.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden">
+                        {conv.contact?.thumbnail ? (
+                          <img 
+                            src={conv.contact.thumbnail} 
+                            alt={conv.contact.name || 'Avatar'} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          conv.contact?.name?.[0]?.toUpperCase() || 'C'
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-gray-900 dark:text-white truncate">
+                            {conv.contact?.name || conv.contact?.phone_number || 'Contato'}
+                          </p>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {conv.inbox_name}
+                          </span>
+                        </div>
+                        {conv.lastMessage && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                            {conv.lastMessage.content}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {conv.lastMessage ? formatDateTime(conv.lastMessage.created_at) : ''}
+                          </span>
+                          {conv.status === 'open' && (
+                            <span className="text-xs text-green-500">Aberta</span>
                           )}
                         </div>
-                      </button>
-                    );
-                  })
-                );
+                      </div>
+                      {conv.unread_count > 0 && (
+                        <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                          {conv.unread_count}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ));
               })()}
             </div>
           </div>
@@ -1792,7 +1460,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                    Selecione um Inbox
+                    Selecione um Inbox para iniciar a conversa
                   </h3>
                   <div className="space-y-3">
                     {availableInboxes.map((inbox) => (
@@ -1837,107 +1505,121 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               ref={messagesEndRef}
               onScroll={handleMessagesScroll}
             >
-              {activeConversation?.messages.map((message, index) => {
-                const showDateSeparator = index === 0 || 
-                  new Date(message.created_at).toDateString() !== 
-                  new Date(activeConversation.messages[index - 1].created_at).toDateString();
+              {!selectedInboxId ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Selecione um inbox para iniciar a conversa
+                  </p>
+                </div>
+              ) : activeConversation?.messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Nenhuma mensagem ainda. Inicie a conversa!
+                  </p>
+                </div>
+              ) : (
+                activeConversation?.messages.map((message, index) => {
+                  const showDateSeparator = index === 0 || 
+                    new Date(message.created_at).toDateString() !== 
+                    new Date(activeConversation.messages[index - 1].created_at).toDateString();
 
-                return (
-                  <div key={message.id} className="space-y-2">
-                    {/* Date Separator */}
-                    {showDateSeparator && (
-                      <div className="flex justify-center my-4">
-                        <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-                          {formatDate(message.created_at)}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Message */}
-                    <div
-                      className={`flex items-start gap-2 ${message.sender?.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      {message.sender?.type !== 'user' && (
-                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
-                          {message.sender?.avatar_url || message.sender?.thumbnail ? (
-                            <img 
-                              src={message.sender.avatar_url || message.sender.thumbnail} 
-                              alt={message.sender.name || 'Avatar'} 
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            message.sender?.name?.[0]?.toUpperCase() || 'A'
-                          )}
-                        </div>
-                      )}
-                      <div
-                        className={`max-w-[80%] rounded-lg p-3 ${
-                          message.sender?.type === 'user'
-                            ? 'bg-blue-500 text-white ml-auto'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                        }`}
-                      >
-                        {message.content_type === 'image' ? (
-                          <img
-                            src={message.content}
-                            alt="Imagem"
-                            className="max-w-full rounded-lg"
-                            loading="lazy"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = 'https://via.placeholder.com/150?text=Imagem+não+encontrada';
-                            }}
-                          />
-                        ) : message.content_type === 'file' ? (
-                          <a
-                            href={message.content}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center space-x-2 text-blue-500 hover:text-blue-600"
-                          >
-                            <File className="w-5 h-5" />
-                            <span>{message.content}</span>
-                          </a>
-                        ) : message.content_type === 'audio' ? (
-                          <audio controls className="w-full">
-                            <source src={message.content} type="audio/webm" />
-                            Seu navegador não suporta o elemento de áudio.
-                          </audio>
-                        ) : (
-                          <p className="whitespace-pre-wrap break-words">{message.content}</p>
-                        )}
-                        <div className="flex items-center justify-between mt-1">
-                          <span className={`text-xs ${
-                            message.sender?.type === 'user'
-                              ? 'text-blue-100' 
-                              : 'text-gray-500 dark:text-gray-400'
-                          }`}>
-                            {formatTime(message.created_at)}
+                  return (
+                    <div key={message.id} className="space-y-2">
+                      {/* Date Separator */}
+                      {showDateSeparator && (
+                        <div className="flex justify-center my-4">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+                            {formatDate(message.created_at)}
                           </span>
-                          {message.sender?.type !== 'user' && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                              {message.sender?.name}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {message.sender?.type === 'user' && (
-                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
-                          {message.sender?.avatar_url || message.sender?.thumbnail ? (
-                            <img 
-                              src={message.sender.avatar_url || message.sender.thumbnail} 
-                              alt={message.sender.name || 'Avatar'} 
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            message.sender?.name?.[0]?.toUpperCase() || 'U'
-                          )}
                         </div>
                       )}
+
+                      {/* Message */}
+                      <div
+                        className={`flex items-start gap-2 ${message.sender?.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {message.sender?.type !== 'user' && (
+                          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
+                            {message.sender?.avatar_url || message.sender?.thumbnail ? (
+                              <img 
+                                src={message.sender.avatar_url || message.sender.thumbnail} 
+                                alt={message.sender.name || 'Avatar'} 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              message.sender?.name?.[0]?.toUpperCase() || 'A'
+                            )}
+                          </div>
+                        )}
+                        <div
+                          className={`max-w-[80%] rounded-lg p-3 ${
+                            message.sender?.type === 'user'
+                              ? 'bg-blue-500 text-white ml-auto'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                          }`}
+                        >
+                          {message.content_type === 'image' ? (
+                            <img
+                              src={message.content}
+                              alt="Imagem"
+                              className="max-w-full rounded-lg"
+                              loading="lazy"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = 'https://via.placeholder.com/150?text=Imagem+não+encontrada';
+                              }}
+                            />
+                          ) : message.content_type === 'file' ? (
+                            <a
+                              href={message.content}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center space-x-2 text-blue-500 hover:text-blue-600"
+                            >
+                              <File className="w-5 h-5" />
+                              <span>{message.content}</span>
+                            </a>
+                          ) : message.content_type === 'audio' ? (
+                            <audio controls className="w-full">
+                              <source src={message.content} type="audio/webm" />
+                              Seu navegador não suporta o elemento de áudio.
+                            </audio>
+                          ) : (
+                            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                          )}
+                          <div className="flex items-center justify-between mt-1">
+                            <span className={`text-xs ${
+                              message.sender?.type === 'user'
+                                ? 'text-blue-100' 
+                                : 'text-gray-500 dark:text-gray-400'
+                            }`}>
+                              {formatTime(message.created_at)}
+                            </span>
+                            {message.sender?.type !== 'user' && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                                {message.sender?.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {message.sender?.type === 'user' && (
+                          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
+                            {message.sender?.avatar_url || message.sender?.thumbnail ? (
+                              <img 
+                                src={message.sender.avatar_url || message.sender.thumbnail} 
+                                alt={message.sender.name || 'Avatar'} 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              message.sender?.name?.[0]?.toUpperCase() || 'U'
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
 
             {/* Input */}
@@ -1963,6 +1645,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                   onClick={() => document.getElementById('fileInput')?.click()}
                   className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                   title="Anexar arquivo"
+                  disabled={!selectedInboxId}
                 >
                   <Paperclip className="w-5 h-5" />
                 </button>
@@ -1973,6 +1656,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                   className="hidden"
                   id="fileInput"
                   accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                  disabled={!selectedInboxId}
                 />
                 <button
                   type="button"
@@ -1983,6 +1667,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                       : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                   title={isRecording ? 'Parar gravação' : 'Gravar áudio'}
+                  disabled={!selectedInboxId}
                 >
                   {isRecording ? (
                     <Square className="w-5 h-5" />
@@ -1995,20 +1680,20 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Digite sua mensagem..."
+                  placeholder={!selectedInboxId ? "Selecione um inbox primeiro..." : "Digite sua mensagem..."}
                   className="flex-1 p-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  disabled={!activeConversation || networkError || authError}
+                  disabled={!selectedInboxId || !activeConversation || networkError || authError}
                 />
                 <button
                   type="button"
                   onClick={handleSendMessage}
-                  disabled={!newMessage.trim() || !activeConversation || networkError || authError}
+                  disabled={!selectedInboxId || !newMessage.trim() || !activeConversation || networkError || authError}
                   className={`p-2 rounded-full ${
-                    !newMessage.trim() || !activeConversation || networkError || authError
+                    !selectedInboxId || !newMessage.trim() || !activeConversation || networkError || authError
                       ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
                       : 'bg-blue-500 hover:bg-blue-600'
                   }`}
-                  title="Enviar mensagem"
+                  title={!selectedInboxId ? "Selecione um inbox primeiro" : "Enviar mensagem"}
                 >
                   <Send className="w-5 h-5 text-white" />
                 </button>
