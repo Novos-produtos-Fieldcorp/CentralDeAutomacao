@@ -1195,5 +1195,3 @@ const AgregadosLista = () => {
 };
 
 export default AgregadosLista;
-
-export default AgregadosLista
