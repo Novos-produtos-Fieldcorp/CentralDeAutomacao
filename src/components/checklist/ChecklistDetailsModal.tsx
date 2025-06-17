@@ -206,14 +206,14 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       
       // Upload file to storage
       const { error: uploadError, data } = await supabase.storage
-        .from('checklist-photos')
+        .from('imagensdocs')
         .upload(fileName, file);
         
       if (uploadError) throw uploadError;
       
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('checklist-photos')
+        .from('imagensdocs')
         .getPublicUrl(fileName);
         
       // Update the photo in state
@@ -247,7 +247,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
         if (fileNameWithPath) {
           // Delete the file from storage
           const { error: deleteError } = await supabase.storage
-            .from('checklist-photos')
+            .from('imagensdocs')
             .remove([fileNameWithPath]);
             
           if (deleteError) {

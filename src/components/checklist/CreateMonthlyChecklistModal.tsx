@@ -156,13 +156,13 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
       const filePath = `${fileName}`;
 
       const { error: uploadError, data } = await supabase.storage
-        .from('checklist-photos')
+        .from('imagensdocs')
         .upload(filePath, file);
         
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('checklist-photos')
+        .from('imagensdocs')
         .getPublicUrl(filePath);
 
       setFormData(prev => ({
