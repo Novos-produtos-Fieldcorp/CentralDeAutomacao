@@ -520,7 +520,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
     
     return (
       <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           {title}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -555,11 +555,9 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                   onChange={(e) => handleComponentChange(section, key, parseInt(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  {statusItems.map(item => (
-                    <option key={item.status_id} value={item.status_id}>
-                      {item.status}
-                    </option>
-                  ))}
+                  <option value={1}>OK</option>
+                  <option value={2}>Não OK</option>
+                  <option value={3}>N/A</option>
                 </select>
               </div>
             );
