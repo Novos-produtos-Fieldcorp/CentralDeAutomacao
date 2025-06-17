@@ -88,8 +88,6 @@ const Checklist = () => {
                         dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent
                         font-display tracking-tight relative">
             Checklists
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 via-blue-400/20 
-                          to-blue-300/20 blur-xl opacity-50" />
           </h1>
         </div>
       </div>
