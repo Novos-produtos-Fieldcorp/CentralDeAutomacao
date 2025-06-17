@@ -77,6 +77,7 @@ const MotoristasLista = () => {
     motorista: null,
   });
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
 
   useEffect(() => {
     fetchMotoristas();
@@ -244,6 +245,55 @@ const MotoristasLista = () => {
       y: e.clientY,
       motorista,
     });
+  };
+
+  const handleToggleStatus = async (motorista: Motorista) => {
+    try {
+      setUpdatingStatus(motorista.motorista_id);
+      
+      // Determine the new status based on current status
+      let newStatus: string;
+      
+      if (motorista.st_cadastro === 'contratado') {
+        newStatus = 'cadastrado'; // If currently contracted, reset to registered
+      } else if (motorista.st_cadastro === 'rejeitado') {
+        newStatus = 'cadastrado'; // If currently rejected, reset to registered
+      } else if (motorista.st_cadastro === 'cadastrado') {
+        newStatus = 'qualificado'; // Move to qualified
+      } else if (motorista.st_cadastro === 'qualificado') {
+        newStatus = 'documentacao'; // Move to documentation
+      } else if (motorista.st_cadastro === 'documentacao') {
+        newStatus = 'contrato_enviado'; // Move to contract sent
+      } else if (motorista.st_cadastro === 'contrato_enviado') {
+        newStatus = 'contratado'; // Move to contracted
+      } else {
+        newStatus = 'cadastrado'; // Default fallback
+      }
+      
+      // Update the status in the database
+      const { error } = await supabase
+        .from('motorista')
+        .update({ st_cadastro: newStatus })
+        .eq('motorista_id', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setMotoristas(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { ...m, st_cadastro: newStatus } 
+            : m
+        )
+      );
+      
+      toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Erro ao atualizar status');
+    } finally {
+      setUpdatingStatus(null);
+    }
   };
 
   const filteredMotoristas = motoristas.filter(motorista => {
@@ -520,6 +570,32 @@ const MotoristasLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-3">
+                          <button
+                            onClick={() => handleToggleStatus(motorista)}
+                            disabled={updatingStatus === motorista.motorista_id}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                              motorista.st_cadastro === 'contratado' || motorista.st_cadastro === 'rejeitado'
+                                ? 'bg-gray-200 dark:bg-gray-700'
+                                : 'bg-blue-600 dark:bg-blue-500'
+                            } ${updatingStatus === motorista.motorista_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            role="switch"
+                            aria-checked={motorista.st_cadastro === 'contratado'}
+                            title="Avançar status"
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                motorista.st_cadastro === 'contratado' || motorista.st_cadastro === 'rejeitado'
+                                  ? 'translate-x-0'
+                                  : 'translate-x-5'
+                              }`}
+                            />
+                            {updatingStatus === motorista.motorista_id && (
+                              <svg className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            )}
+                          </button>
                           <button
                             onClick={() => handleViewDocument(motorista)}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
