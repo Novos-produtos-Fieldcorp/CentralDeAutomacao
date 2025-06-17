@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2 } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -64,6 +64,8 @@ const MotoristasLista = () => {
   const [endereco, setEndereco] = useState<any | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteFilter, setClienteFilter] = useState<string>('');
+  const [cidadeFilter, setCidadeFilter] = useState<string>('');
+  const [cidades, setCidades] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -109,12 +111,33 @@ const MotoristasLista = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('motorista')
-        .select('*')
+        .select(`
+          *,
+          end_motorista (
+            logradouro (
+              bairro (
+                cidade (
+                  cidade
+                )
+              )
+            )
+          )
+        `)
         .eq('funcao', 'Motorista')
         .eq('company_id', companyId)
         .order('nome');
 
       if (error) throw error;
+
+      // Extract unique cities from motoristas
+      const uniqueCities = new Set<string>();
+      data?.forEach(motorista => {
+        const cidade = motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade;
+        if (cidade) {
+          uniqueCities.add(cidade);
+        }
+      });
+      setCidades(Array.from(uniqueCities).sort());
 
       setMotoristas(data || []);
     } catch (error) {
@@ -328,14 +351,20 @@ const MotoristasLista = () => {
     }
   };
 
+  const getMotoristaCity = (motorista: MotoristaWithAddress): string | null => {
+    return motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || null;
+  };
+
   const filteredMotoristas = motoristas.filter(motorista => {
     const searchLower = searchTerm.toLowerCase();
     const statusMatch = statusFilter ? motorista.st_cadastro === statusFilter : true;
     const clienteMatch = clienteFilter ? motorista.cliente_id === parseInt(clienteFilter) : true;
+    const cidadeMatch = cidadeFilter ? getMotoristaCity(motorista) === cidadeFilter : true;
     
     return (
       statusMatch &&
       clienteMatch &&
+      cidadeMatch &&
       (motorista.nome.toLowerCase().includes(searchLower) ||
        motorista.cpf.includes(searchLower) ||
        (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
@@ -429,7 +458,7 @@ const MotoristasLista = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
             <input
               type="text"
@@ -489,6 +518,23 @@ const MotoristasLista = () => {
             </svg>
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
+
+          <div className="relative">
+            <select
+              value={cidadeFilter}
+              onChange={(e) => setCidadeFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todas as cidades</option>
+              {cidades.map((cidade, index) => (
+                <option key={index} value={cidade}>
+                  {cidade}
+                </option>
+              ))}
+            </select>
+            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
         </div>
       </div>
 
@@ -517,6 +563,7 @@ const MotoristasLista = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Nome</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
@@ -579,6 +626,11 @@ const MotoristasLista = () => {
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {motorista.email || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {getMotoristaCity(motorista) || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

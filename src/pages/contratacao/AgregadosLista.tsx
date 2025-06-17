@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, FileText, MessageCircle, Filter, ChevronDown, X, Truck, Loader2 } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, FileText, MessageCircle, Filter, ChevronDown, X, Truck, Loader2, MapPin } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, DocumentoMotorista, Veiculo } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -67,6 +67,10 @@ const AgregadosLista = () => {
   const [endereco, setEndereco] = useState<any | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteFilter, setClienteFilter] = useState<string>('');
+  const [cidadeFilter, setCidadeFilter] = useState<string>('');
+  const [cidades, setCidades] = useState<string[]>([]);
+  const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string>('');
+  const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -114,7 +118,16 @@ const AgregadosLista = () => {
         .from('motorista')
         .select(`
           *,
-          veiculo(*)
+          veiculo(*),
+          end_motorista (
+            logradouro (
+              bairro (
+                cidade (
+                  cidade
+                )
+              )
+            )
+          )
         `)
         .eq('funcao', 'Agregado')
         .eq('company_id', companyId)
@@ -122,6 +135,29 @@ const AgregadosLista = () => {
 
       if (error) throw error;
 
+      // Extract unique cities from agregados
+      const uniqueCities = new Set<string>();
+      const uniqueVehicleTypes = new Set<string>();
+      
+      data?.forEach(agregado => {
+        // Extract city
+        const cidade = agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade;
+        if (cidade) {
+          uniqueCities.add(cidade);
+        }
+        
+        // Extract vehicle types
+        if (agregado.veiculo && agregado.veiculo.length > 0) {
+          agregado.veiculo.forEach(veiculo => {
+            if (veiculo.tipologia) {
+              uniqueVehicleTypes.add(veiculo.tipologia);
+            }
+          });
+        }
+      });
+      
+      setCidades(Array.from(uniqueCities).sort());
+      setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
       setAgregados(data || []);
     } catch (error) {
       console.error('Error fetching agregados:', error);
@@ -334,14 +370,26 @@ const AgregadosLista = () => {
     }
   };
 
+  const getAgregadoCity = (agregado: AgregadoWithDetails): string | null => {
+    return agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || null;
+  };
+
+  const getVehicleType = (agregado: AgregadoWithDetails): string | null => {
+    return agregado.veiculo?.[0]?.tipologia || null;
+  };
+
   const filteredAgregados = agregados.filter(agregado => {
     const searchLower = searchTerm.toLowerCase();
     const statusMatch = statusFilter ? agregado.st_cadastro === statusFilter : true;
     const clienteMatch = clienteFilter ? agregado.cliente_id === parseInt(clienteFilter) : true;
+    const cidadeMatch = cidadeFilter ? getAgregadoCity(agregado) === cidadeFilter : true;
+    const tipoVeiculoMatch = tipoVeiculoFilter ? getVehicleType(agregado) === tipoVeiculoFilter : true;
     
     return (
       statusMatch &&
       clienteMatch &&
+      cidadeMatch &&
+      tipoVeiculoMatch &&
       (agregado.nome.toLowerCase().includes(searchLower) ||
        agregado.cpf.includes(searchLower) ||
        (typeof agregado.email === 'string' && agregado.email.toLowerCase().includes(searchLower)) ||
@@ -435,7 +483,7 @@ const AgregadosLista = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
             <input
               type="text"
@@ -495,6 +543,42 @@ const AgregadosLista = () => {
             </svg>
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="relative">
+              <select
+                value={cidadeFilter}
+                onChange={(e) => setCidadeFilter(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+              >
+                <option value="">Todas as cidades</option>
+                {cidades.map((cidade, index) => (
+                  <option key={index} value={cidade}>
+                    {cidade}
+                  </option>
+                ))}
+              </select>
+              <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            </div>
+
+            <div className="relative">
+              <select
+                value={tipoVeiculoFilter}
+                onChange={(e) => setTipoVeiculoFilter(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+              >
+                <option value="">Todos os tipos</option>
+                {tiposVeiculo.map((tipo, index) => (
+                  <option key={index} value={tipo}>
+                    {tipo}
+                  </option>
+                ))}
+              </select>
+              <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -524,6 +608,7 @@ const AgregadosLista = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
@@ -602,6 +687,11 @@ const AgregadosLista = () => {
                           ) : (
                             ''
                           )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {getAgregadoCity(agregado) || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
