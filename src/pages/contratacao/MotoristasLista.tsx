@@ -481,8 +481,19 @@ const MotoristasLista = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {motorista.telefone ? formatPhone(motorista.telefone.toString()) : '-'}
+                        <div className="flex items-center">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {motorista.telefone ? formatPhone(motorista.telefone.toString()) : '-'}
+                          </div>
+                          {motorista.telefone && (
+                            <button
+                              onClick={() => startChat(motorista.telefone.toString(), motorista.nome)}
+                              className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
+                              title="Iniciar chat"
+                            >
+                              <MessageCircle size={16} />
+                            </button>
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {motorista.email || '-'}
@@ -515,22 +526,6 @@ const MotoristasLista = () => {
                             title="Visualizar"
                           >
                             <User size={18} />
-                          </button>
-                          {motorista.telefone && (
-                            <button
-                              onClick={() => startChat(motorista.telefone.toString(), motorista.nome)}
-                              className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors"
-                              title="Iniciar chat"
-                            >
-                              <MessageCircle size={18} />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleEdit(motorista)}
-                            className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
-                            title="Editar"
-                          >
-                            <Edit2 size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(motorista)}
