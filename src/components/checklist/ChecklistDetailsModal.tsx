@@ -205,14 +205,14 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       
       // Upload file to storage
       const { error: uploadError, data } = await supabase.storage
-        .from('imagensdocs')
+        .from('checklist-photos')
         .upload(fileName, file);
         
       if (uploadError) throw uploadError;
       
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('imagensdocs')
+        .from('checklist-photos')
         .getPublicUrl(fileName);
         
       // Update the photo in state
