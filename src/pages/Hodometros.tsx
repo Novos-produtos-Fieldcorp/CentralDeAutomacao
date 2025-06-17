@@ -56,6 +56,7 @@ const Hodometros = () => {
                     dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent
                     font-display tracking-tight relative">
         Hodômetros
+      </h1>
       <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 
                     dark:from-blue-400 dark:via-blue-300 dark:to-blue-200 bg-clip-text text-transparent">
         Hodômetros
@@ -94,7 +95,7 @@ const Hodometros = () => {
 
         <div className="p-6 min-h-[calc(100vh-16rem)]">
           <Routes>
-            <Route index element={<Navigate to="/hodometros/dashboard\" replace />} />
+            <Route index element={<Navigate to="/hodometros/dashboard" replace />} />
             <Route path="dashboard" element={<HodometrosDashboard />} />
             <Route path="relatorio" element={<HodometrosRelatorio />} />
             <Route path="lista" element={<HodometrosLista />} />
