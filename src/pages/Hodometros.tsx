@@ -56,7 +56,8 @@ const Hodometros = () => {
                     dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent
                     font-display tracking-tight relative">
         Hodômetros
-      </h1>
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-400
+                    dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent">Hodômetros</h1>
 
       <div className="bg-card rounded-lg shadow-card">
         <div className="border-b border-card-border relative">
