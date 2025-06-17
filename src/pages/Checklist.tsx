@@ -88,8 +88,7 @@ const Checklist = () => {
                         dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent
                         font-display tracking-tight relative">
             Checklists
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-400
-                        dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent">Checklists</h1>
+          </h1>
         </div>
       </div>
 
