@@ -422,8 +422,8 @@ const MotoristasLista = () => {
       statusMatch &&
       clienteMatch &&
       cidadeMatch &&
-      (motorista.nome.toLowerCase().includes(searchLower) ||
-       motorista.cpf.includes(searchLower) ||
+      ((motorista.nome && motorista.nome.toLowerCase().includes(searchLower)) ||
+       (motorista.cpf && motorista.cpf.includes(searchLower)) ||
        (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
        (typeof motorista.telefone === 'number' && motorista.telefone.toString().includes(searchLower)))
     );
