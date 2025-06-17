@@ -16,6 +16,7 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
   const [loading, setLoading] = useState(false);
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
+  const [statusItems, setStatusItems] = useState<{ status_id: number; status: string }[]>([]);
   const { companyId } = useAuth();
   
   // Initialize with empty form data
@@ -27,31 +28,31 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
     data: new Date().toISOString().split('T')[0],
     hora: new Date().toTimeString().split(' ')[0].slice(0, 5),
     fluidos: {
-      agua_radiador: 'No nível',
-      oleo_motor: 'No nível',
-      oleo_hidraulico: 'No nível',
-      fluido_freio: 'No nível',
-      liq_arrefecimento: 'No nível',
-      agua_parabrisa: 'No nível'
+      agua_radiador: 1,
+      oleo_motor: 1,
+      oleo_hidraulico: 1,
+      fluido_freio: 1,
+      liq_arrefecimento: 1,
+      agua_parabrisa: 1
     },
     farol: {
-      dianteiro: 'Funcionando',
-      auxiliar: 'Funcionando',
-      lanterna_traseira: 'Sim',
-      pisca_dianteiro: 'Funcionando',
-      pisca_traseiro: 'Funcionando',
-      luz_placa: 'Funcionando',
+      dianteiro: 1,
+      auxiliar: 1,
+      lanterna_traseira: 1,
+      pisca_dianteiro: 1,
+      pisca_traseiro: 1,
+      luz_placa: 1,
       luz_indicador_painel: ''
     },
     componentes: {
-      freio: 'Bom',
-      pedal: 'Bom',
-      limpeza_interna: 'Boa'
+      freio_estacionamento: 1,
+      pedal: 1,
+      limpeza_interna: 1
     },
     acessorios: {
-      pneu: 'Bom',
+      pneu: 1,
       pneu_ruim: '',
-      documento_veicular: 'Sim'
+      documento_veicular: 1
     }
   };
   
@@ -73,8 +74,24 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
       
       fetchMotoristas();
       fetchVeiculos();
+      fetchStatusItems();
     }
   }, [isOpen, companyId]);
+
+  const fetchStatusItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('status_item')
+        .select('*')
+        .order('status_id');
+
+      if (error) throw error;
+      setStatusItems(data || []);
+    } catch (error) {
+      console.error('Error fetching status items:', error);
+      toast.error('Erro ao carregar status');
+    }
+  };
 
   const fetchMotoristas = async () => {
     try {
@@ -144,56 +161,14 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
       
       const checklistId = newChecklist.checklist_id;
 
-      // Get status IDs based on the form values
-      const getStatusId = (value: string, type: string) => {
-        // Default mappings
-        if (type === 'fluid') {
-          if (value === 'No nível') return 1;
-          if (value === 'Abaixo do nível') return 2;
-          if (value === 'Acima do nível') return 3;
-          return 1;
-        }
-        
-        if (type === 'light') {
-          if (value === 'Funcionando') return 1;
-          if (value === 'Queimado') return 2;
-          return 1;
-        }
-        
-        if (type === 'lanterna') {
-          if (value === 'Sim') return 1;
-          if (value === 'Não') return 2;
-          return 1;
-        }
-        
-        if (type === 'component') {
-          if (value === 'Bom' || value === 'Boa') return 1;
-          if (value === 'Ruim') return 2;
-          return 1;
-        }
-        
-        if (type === 'accessory') {
-          if (value === 'Sim') return 1;
-          if (value === 'Não') return 2;
-          return 1;
-        }
-        
-        // For pneu
-        if (value === 'Bom') return 1;
-        if (value === 'Ruim') return 2;
-        
-        // Default to OK if no match
-        return 1;
-      };
-
       // Insert acessorios
       const { error: acessoriosError } = await supabase
         .from('acessorios_veiculos')
         .insert({
           checklist_id: checklistId,
-          pneu: getStatusId(formData.acessorios.pneu, 'pneu'),
+          pneu: formData.acessorios.pneu,
           pneu_ruim: formData.acessorios.pneu_ruim,
-          documento_veicular: getStatusId(formData.acessorios.documento_veicular, 'accessory')
+          documento_veicular: formData.acessorios.documento_veicular
         });
 
       if (acessoriosError) throw acessoriosError;
@@ -203,9 +178,9 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
         .from('componentes_gerais')
         .insert({
           checklist_id: checklistId,
-          freio_estacionamento: getStatusId(formData.componentes.freio, 'component'),
-          pedal: getStatusId(formData.componentes.pedal, 'component'),
-          limpeza_interna: getStatusId(formData.componentes.limpeza_interna, 'component')
+          freio_estacionamento: formData.componentes.freio_estacionamento,
+          pedal: formData.componentes.pedal,
+          limpeza_interna: formData.componentes.limpeza_interna
         });
 
       if (componentesError) throw componentesError;
@@ -215,12 +190,12 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
         .from('farol_veiculo')
         .insert({
           checklist_id: checklistId,
-          dianteiro: getStatusId(formData.farol.dianteiro, 'light'),
-          auxiliar: getStatusId(formData.farol.auxiliar, 'light'),
-          lanterna_traseira: getStatusId(formData.farol.lanterna_traseira, 'lanterna'),
-          pisca_dianteiro: getStatusId(formData.farol.pisca_dianteiro, 'light'),
-          pisca_traseiro: getStatusId(formData.farol.pisca_traseiro, 'light'),
-          luz_placa: getStatusId(formData.farol.luz_placa, 'light'),
+          dianteiro: formData.farol.dianteiro,
+          auxiliar: formData.farol.auxiliar,
+          lanterna_traseira: formData.farol.lanterna_traseira,
+          pisca_dianteiro: formData.farol.pisca_dianteiro,
+          pisca_traseiro: formData.farol.pisca_traseiro,
+          luz_placa: formData.farol.luz_placa,
           luz_indicador_painel: formData.farol.luz_indicador_painel
         });
 
@@ -231,12 +206,12 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
         .from('fluido_veiculo')
         .insert({
           checklist_id: checklistId,
-          agua_radiador: getStatusId(formData.fluidos.agua_radiador, 'fluid'),
-          oleo_motor: getStatusId(formData.fluidos.oleo_motor, 'fluid'),
-          oleo_hidraulico: getStatusId(formData.fluidos.oleo_hidraulico, 'fluid'),
-          fluido_freio: getStatusId(formData.fluidos.fluido_freio, 'fluid'),
-          liq_arrefecimento: getStatusId(formData.fluidos.liq_arrefecimento, 'fluid'),
-          agua_parabrisa: getStatusId(formData.fluidos.agua_parabrisa, 'fluid')
+          agua_radiador: formData.fluidos.agua_radiador,
+          oleo_motor: formData.fluidos.oleo_motor,
+          oleo_hidraulico: formData.fluidos.oleo_hidraulico,
+          fluido_freio: formData.fluidos.fluido_freio,
+          liq_arrefecimento: formData.fluidos.liq_arrefecimento,
+          agua_parabrisa: formData.fluidos.agua_parabrisa
         });
 
       if (fluidosError) throw fluidosError;
@@ -405,14 +380,16 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
                       ...prev,
                       fluidos: {
                         ...prev.fluidos,
-                        [key]: e.target.value
+                        [key]: parseInt(e.target.value)
                       }
                     }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
-                    <option value="No nível">No nível</option>
-                    <option value="Abaixo do nível">Abaixo do nível</option>
-                    <option value="Acima do nível">Acima do nível</option>
+                    {statusItems.map(item => (
+                      <option key={item.status_id} value={item.status_id}>
+                        {item.status}
+                      </option>
+                    ))}
                   </select>
                 </div>
               ))}
@@ -434,7 +411,7 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
                   {key === 'luz_indicador_painel' ? (
                     <input
                       type="text"
-                      value={value}
+                      value={value as string}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
                         farol: {
@@ -447,27 +424,21 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
                     />
                   ) : (
                     <select
-                      value={value}
+                      value={value as number}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
                         farol: {
                           ...prev.farol,
-                          [key]: e.target.value
+                          [key]: parseInt(e.target.value)
                         }
                       }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     >
-                      {key === 'lanterna_traseira' ? (
-                        <>
-                          <option value="Sim">Sim</option>
-                          <option value="Não">Não</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="Funcionando">Funcionando</option>
-                          <option value="Queimado">Queimado</option>
-                        </>
-                      )}
+                      {statusItems.map(item => (
+                        <option key={item.status_id} value={item.status_id}>
+                          {item.status}
+                        </option>
+                      ))}
                     </select>
                   )}
                 </div>
@@ -493,22 +464,16 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
                       ...prev,
                       componentes: {
                         ...prev.componentes,
-                        [key]: e.target.value
+                        [key]: parseInt(e.target.value)
                       }
                     }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
-                    {key === 'limpeza_interna' ? (
-                      <>
-                        <option value="Boa">Boa</option>
-                        <option value="Ruim">Ruim</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="Bom">Bom</option>
-                        <option value="Ruim">Ruim</option>
-                      </>
-                    )}
+                    {statusItems.map(item => (
+                      <option key={item.status_id} value={item.status_id}>
+                        {item.status}
+                      </option>
+                    ))}
                   </select>
                 </div>
               ))}
@@ -533,17 +498,20 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
                     ...prev,
                     acessorios: {
                       ...prev.acessorios,
-                      pneu: e.target.value
+                      pneu: parseInt(e.target.value)
                     }
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  <option value="Bom">Bom</option>
-                  <option value="Ruim">Ruim</option>
+                  {statusItems.map(item => (
+                    <option key={item.status_id} value={item.status_id}>
+                      {item.status}
+                    </option>
+                  ))}
                 </select>
               </div>
               
-              {formData.acessorios.pneu === 'Ruim' && (
+              {formData.acessorios.pneu === 2 && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Pneu com Problema
@@ -574,13 +542,16 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
                     ...prev,
                     acessorios: {
                       ...prev.acessorios,
-                      documento_veicular: e.target.value
+                      documento_veicular: parseInt(e.target.value)
                     }
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  <option value="Sim">Sim</option>
-                  <option value="Não">Não</option>
+                  {statusItems.map(item => (
+                    <option key={item.status_id} value={item.status_id}>
+                      {item.status}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
