@@ -78,6 +78,7 @@ const MotoristasLista = () => {
   });
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
 
   useEffect(() => {
     fetchMotoristas();
@@ -90,13 +91,18 @@ const MotoristasLista = () => {
       if (contextMenu.visible) {
         setContextMenu({ ...contextMenu, visible: false });
       }
+      
+      // Close any open status dropdown
+      if (statusDropdownOpen !== null) {
+        setStatusDropdownOpen(null);
+      }
     };
 
     document.addEventListener('click', handleClick);
     return () => {
       document.removeEventListener('click', handleClick);
     };
-  }, [contextMenu.visible]);
+  }, [contextMenu.visible, statusDropdownOpen]);
 
   const fetchMotoristas = async () => {
     try {
@@ -247,28 +253,19 @@ const MotoristasLista = () => {
     });
   };
 
-  const handleToggleStatus = async (motorista: Motorista) => {
+  const toggleStatusDropdown = (e: React.MouseEvent, motoristaId: number) => {
+    e.stopPropagation();
+    if (statusDropdownOpen === motoristaId) {
+      setStatusDropdownOpen(null);
+    } else {
+      setStatusDropdownOpen(motoristaId);
+    }
+  };
+
+  const handleUpdateStatus = async (e: React.MouseEvent, motorista: Motorista, newStatus: string) => {
+    e.stopPropagation();
     try {
       setUpdatingStatus(motorista.motorista_id);
-      
-      // Determine the new status based on current status
-      let newStatus: string;
-      
-      if (motorista.st_cadastro === 'contratado') {
-        newStatus = 'cadastrado'; // If currently contracted, reset to registered
-      } else if (motorista.st_cadastro === 'rejeitado') {
-        newStatus = 'cadastrado'; // If currently rejected, reset to registered
-      } else if (motorista.st_cadastro === 'cadastrado') {
-        newStatus = 'qualificado'; // Move to qualified
-      } else if (motorista.st_cadastro === 'qualificado') {
-        newStatus = 'documentacao'; // Move to documentation
-      } else if (motorista.st_cadastro === 'documentacao') {
-        newStatus = 'contrato_enviado'; // Move to contract sent
-      } else if (motorista.st_cadastro === 'contrato_enviado') {
-        newStatus = 'contratado'; // Move to contracted
-      } else {
-        newStatus = 'cadastrado'; // Default fallback
-      }
       
       // Update the status in the database
       const { error } = await supabase
@@ -293,6 +290,7 @@ const MotoristasLista = () => {
       toast.error('Erro ao atualizar status');
     } finally {
       setUpdatingStatus(null);
+      setStatusDropdownOpen(null);
     }
   };
 
@@ -584,32 +582,95 @@ const MotoristasLista = () => {
                           >
                             <Trash2 size={18} />
                           </button>
-                          <button
-                            onClick={() => handleToggleStatus(motorista)}
-                            disabled={updatingStatus === motorista.motorista_id}
-                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                              motorista.st_cadastro === 'contratado' || motorista.st_cadastro === 'rejeitado'
-                                ? 'bg-gray-200 dark:bg-gray-700'
-                                : 'bg-blue-600 dark:bg-blue-500'
-                            } ${updatingStatus === motorista.motorista_id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            role="switch"
-                            aria-checked={motorista.st_cadastro === 'contratado'}
-                            title="Avançar status"
-                          >
-                            <span
-                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                motorista.st_cadastro === 'contratado' || motorista.st_cadastro === 'rejeitado'
-                                  ? 'translate-x-0'
-                                  : 'translate-x-5'
-                              }`}
-                            />
-                            {updatingStatus === motorista.motorista_id && (
-                              <svg className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
+                          <div className="relative">
+                            <button
+                              onClick={(e) => toggleStatusDropdown(e, motorista.motorista_id)}
+                              disabled={updatingStatus === motorista.motorista_id}
+                              className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                              title="Alterar status"
+                            >
+                              <ChevronDown size={18} />
+                            </button>
+                            {statusDropdownOpen === motorista.motorista_id && (
+                              <div 
+                                className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="py-1">
+                                  <button
+                                    onClick={(e) => handleUpdateStatus(e, motorista, 'cadastrado')}
+                                    className={`block w-full text-left px-4 py-2 text-sm ${
+                                      motorista.st_cadastro === 'cadastrado' 
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    Cadastrado
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleUpdateStatus(e, motorista, 'qualificado')}
+                                    className={`block w-full text-left px-4 py-2 text-sm ${
+                                      motorista.st_cadastro === 'qualificado' 
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    Qualificado
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleUpdateStatus(e, motorista, 'documentacao')}
+                                    className={`block w-full text-left px-4 py-2 text-sm ${
+                                      motorista.st_cadastro === 'documentacao' 
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    Documentação
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleUpdateStatus(e, motorista, 'contrato_enviado')}
+                                    className={`block w-full text-left px-4 py-2 text-sm ${
+                                      motorista.st_cadastro === 'contrato_enviado' 
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    Contrato Enviado
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleUpdateStatus(e, motorista, 'contratado')}
+                                    className={`block w-full text-left px-4 py-2 text-sm ${
+                                      motorista.st_cadastro === 'contratado' 
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    Contratado
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleUpdateStatus(e, motorista, 'repescagem')}
+                                    className={`block w-full text-left px-4 py-2 text-sm ${
+                                      motorista.st_cadastro === 'repescagem' 
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    Repescagem
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleUpdateStatus(e, motorista, 'rejeitado')}
+                                    className={`block w-full text-left px-4 py-2 text-sm ${
+                                      motorista.st_cadastro === 'rejeitado' 
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    Rejeitado
+                                  </button>
+                                </div>
+                              </div>
                             )}
-                          </button>
+                          </div>
                         </div>
                       </td>
                     </tr>
