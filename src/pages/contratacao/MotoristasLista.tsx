@@ -622,9 +622,9 @@ const MotoristasLista = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Nome</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
                   </tr>
@@ -680,67 +680,6 @@ const MotoristasLista = () => {
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {motorista.email || '-'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="relative">
-                          <button
-                            onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
-                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                                     dark:focus:ring-offset-gray-800 text-left w-full"
-                          >
-                            <span className="truncate max-w-[150px]">
-                              {motorista.cliente?.nome || 'Sem cliente'}
-                            </span>
-                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                          </button>
-                          
-                          {clienteDropdownOpen === motorista.motorista_id && (
-                            <div 
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="py-1">
-                                <button
-                                  onClick={(e) => handleUpdateCliente(e, motorista, null)}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    !motorista.cliente_id
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Sem cliente
-                                </button>
-                                
-                                {clientes.map(cliente => (
-                                  <button
-                                    key={cliente.cliente_id}
-                                    onClick={(e) => handleUpdateCliente(e, motorista, cliente.cliente_id)}
-                                    className={`block w-full text-left px-4 py-2 text-sm truncate ${
-                                      motorista.cliente_id === cliente.cliente_id
-                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                    }`}
-                                  >
-                                    {cliente.nome}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {updatingCliente === motorista.motorista_id && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
-                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {getMotoristaCity(motorista) || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -846,6 +785,73 @@ const MotoristasLista = () => {
                               </div>
                             </div>
                           )}
+                          
+                          {updatingStatus === motorista.motorista_id && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="relative">
+                          <button
+                            onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id)}
+                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
+                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                                     dark:focus:ring-offset-gray-800 text-left w-full"
+                          >
+                            <span className="truncate max-w-[150px]">
+                              {motorista.cliente?.nome || 'Sem cliente'}
+                            </span>
+                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                          </button>
+                          
+                          {clienteDropdownOpen === motorista.motorista_id && (
+                            <div 
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="py-1">
+                                <button
+                                  onClick={(e) => handleUpdateCliente(e, motorista, null)}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    !motorista.cliente_id
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Sem cliente
+                                </button>
+                                
+                                {clientes.map(cliente => (
+                                  <button
+                                    key={cliente.cliente_id}
+                                    onClick={(e) => handleUpdateCliente(e, motorista, cliente.cliente_id)}
+                                    className={`block w-full text-left px-4 py-2 text-sm truncate ${
+                                      motorista.cliente_id === cliente.cliente_id
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    {cliente.nome}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {updatingCliente === motorista.motorista_id && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {getMotoristaCity(motorista) || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

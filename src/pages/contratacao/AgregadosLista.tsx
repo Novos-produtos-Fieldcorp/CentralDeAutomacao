@@ -3,7 +3,7 @@ import { Search, Plus, Edit2, Trash2, FileText, MessageCircle, Filter, ChevronDo
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, DocumentoMotorista, Veiculo, DocumentoVeiculo } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
-import DocumentViewer from '../../components/DocumentViewer';
+import AgregadoDetailView from '../../components/AgregadoDetailView';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
 import EditMotoristaModal from '../../components/EditMotoristaModal';
 import AddAgregadoModal from '../../components/AddAgregadoModal';
@@ -19,10 +19,12 @@ import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
-import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
-import AgregadoDetailView from '../../components/AgregadoDetailView';
 
-interface MotoristaWithAddress extends Motorista {
+interface MotoristaWithDetails extends Motorista {
+  veiculo?: (Veiculo & {
+    documento_veiculo: DocumentoVeiculo[];
+  })[];
+  documento_motorista?: DocumentoMotorista[];
   endereco?: {
     logradouro?: {
       logradouro?: string;
@@ -40,19 +42,16 @@ interface MotoristaWithAddress extends Motorista {
     nr_end?: number;
     ds_complemento_end?: string;
   } | null;
-  veiculo?: (Veiculo & {
-    documento_veiculo: DocumentoVeiculo[];
-  })[];
 }
 
 const AgregadosLista = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const [agregados, setAgregados] = useState<MotoristaWithAddress[]>([]);
+  const [agregados, setAgregados] = useState<MotoristaWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [isDetailViewOpen, setIsDetailViewOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -61,32 +60,27 @@ const AgregadosLista = () => {
   const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
-  const [selectedAgregado, setSelectedAgregado] = useState<Motorista | null>(null);
+  const [selectedAgregado, setSelectedAgregado] = useState<MotoristaWithDetails | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
-  const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
-  const [endereco, setEndereco] = useState<any | null>(null);
-  const [veiculo, setVeiculo] = useState<(Veiculo & {
-    documento_veiculo: DocumentoVeiculo[];
-  }) | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteFilter, setClienteFilter] = useState<string>('');
   const [cidadeFilter, setCidadeFilter] = useState<string>('');
   const [cidades, setCidades] = useState<string[]>([]);
+  const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string>('');
+  const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
     y: number;
-    agregado: Motorista | null;
+    agregado: MotoristaWithDetails | null;
   }>({
     visible: false,
     x: 0,
     y: 0,
     agregado: null,
   });
-  const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
-  const [isDetailViewOpen, setIsDetailViewOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
   const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
@@ -125,14 +119,27 @@ const AgregadosLista = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('motorista')
+        .from('vw_agregados_completo')
         .select(`
           *,
+          veiculo:veiculo_id (
+            *,
+            documento_veiculo (*)
+          ),
+          documento_motorista:documento_motorista_id (*),
           end_motorista (
+            nr_end,
+            ds_complemento_end,
             logradouro (
+              logradouro,
+              nr_cep,
               bairro (
+                bairro,
                 cidade (
-                  cidade
+                  cidade,
+                  estado (
+                    sigla_estado
+                  )
                 )
               )
             )
@@ -142,7 +149,6 @@ const AgregadosLista = () => {
             nome
           )
         `)
-        .eq('funcao', 'Agregado')
         .eq('company_id', companyId)
         .order('nome');
 
@@ -150,13 +156,22 @@ const AgregadosLista = () => {
 
       // Extract unique cities from agregados
       const uniqueCities = new Set<string>();
+      const uniqueVehicleTypes = new Set<string>();
+      
       data?.forEach(agregado => {
         const cidade = agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade;
         if (cidade) {
           uniqueCities.add(cidade);
         }
+        
+        const tipologia = agregado.veiculo?.[0]?.tipologia;
+        if (tipologia) {
+          uniqueVehicleTypes.add(tipologia);
+        }
       });
+      
       setCidades(Array.from(uniqueCities).sort());
+      setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
 
       setAgregados(data || []);
     } catch (error) {
@@ -185,78 +200,22 @@ const AgregadosLista = () => {
     }
   };
 
-  const handleViewDocument = async (agregado: Motorista) => {
-    try {
-      setSelectedAgregado(agregado);
-      setIsDetailViewOpen(true);
-
-      // Fetch additional details
-      const [documentoResponse, enderecoResponse, veiculoResponse] = await Promise.all([
-        supabase
-          .from('documento_motorista')
-          .select('*')
-          .eq('motorista_id', agregado.motorista_id)
-          .maybeSingle(),
-        supabase
-          .from('end_motorista')
-          .select(`
-            nr_end,
-            ds_complemento_end,
-            logradouro (
-              logradouro,
-              nr_cep,
-              bairro (
-                bairro,
-                cidade (
-                  cidade,
-                  estado (
-                    sigla_estado
-                  )
-                )
-              )
-            )
-          `)
-          .eq('id_motorista', agregado.motorista_id)
-          .maybeSingle(),
-        supabase
-          .from('veiculo')
-          .select(`
-            *,
-            documento_veiculo (
-              *,
-              pessoa_fisica_dono_veiculo(*),
-              pessoa_juridica_dono_veiculo(*)
-            )
-          `)
-          .eq('motorista_id', agregado.motorista_id)
-          .eq('status_veiculo', true)
-          .maybeSingle()
-      ]);
-
-      if (documentoResponse.error) throw documentoResponse.error;
-      if (enderecoResponse.error) throw enderecoResponse.error;
-      if (veiculoResponse.error) throw veiculoResponse.error;
-
-      setDocumento(documentoResponse.data);
-      setEndereco(enderecoResponse.data);
-      setVeiculo(veiculoResponse.data);
-    } catch (error) {
-      console.error('Error fetching document details:', error);
-      toast.error('Erro ao carregar detalhes do documento');
-    }
+  const handleViewDetail = (agregado: MotoristaWithDetails) => {
+    setSelectedAgregado(agregado);
+    setIsDetailViewOpen(true);
   };
 
-  const handleUploadDocument = (agregado: Motorista) => {
+  const handleUploadDocument = (agregado: MotoristaWithDetails) => {
     setSelectedAgregado(agregado);
     setIsDocumentUploadOpen(true);
   };
 
-  const handleEdit = (agregado: Motorista) => {
+  const handleEdit = (agregado: MotoristaWithDetails) => {
     setSelectedAgregado(agregado);
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (agregado: Motorista) => {
+  const handleDelete = (agregado: MotoristaWithDetails) => {
     setSelectedAgregado(agregado);
     setIsDeleteModalOpen(true);
   };
@@ -271,7 +230,7 @@ const AgregadosLista = () => {
 
       if (error) throw error;
 
-      setAgregados(agregados.filter(m => m.motorista_id !== selectedAgregado.motorista_id));
+      setAgregados(agregados.filter(a => a.motorista_id !== selectedAgregado.motorista_id));
       toast.success('Agregado excluído com sucesso');
       setIsDeleteModalOpen(false);
     } catch (error) {
@@ -297,7 +256,7 @@ const AgregadosLista = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(filteredAgregados.map(m => m.motorista_id)));
+      setSelectedItems(new Set(filteredAgregados.map(a => a.motorista_id)));
     }
     setSelectAll(!selectAll);
   };
@@ -314,7 +273,7 @@ const AgregadosLista = () => {
       }
 
       // Update the list
-      setAgregados(agregados.filter(m => !selectedItems.has(m.motorista_id)));
+      setAgregados(agregados.filter(a => !selectedItems.has(a.motorista_id)));
       toast.success(`${selectedItems.size} agregado${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
       
       // Reset selection
@@ -336,7 +295,7 @@ const AgregadosLista = () => {
     setIsMassMessageModalOpen(true);
   };
 
-  const handleContextMenu = (e: React.MouseEvent, agregado: Motorista) => {
+  const handleContextMenu = (e: React.MouseEvent, agregado: MotoristaWithDetails) => {
     e.preventDefault();
     setContextMenu({
       visible: true,
@@ -346,25 +305,25 @@ const AgregadosLista = () => {
     });
   };
 
-  const toggleStatusDropdown = (e: React.MouseEvent, agregadoId: number) => {
+  const toggleStatusDropdown = (e: React.MouseEvent, motoristaId: number) => {
     e.stopPropagation();
-    if (statusDropdownOpen === agregadoId) {
+    if (statusDropdownOpen === motoristaId) {
       setStatusDropdownOpen(null);
     } else {
-      setStatusDropdownOpen(agregadoId);
+      setStatusDropdownOpen(motoristaId);
     }
   };
 
-  const toggleClienteDropdown = (e: React.MouseEvent, agregadoId: number) => {
+  const toggleClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
     e.stopPropagation();
-    if (clienteDropdownOpen === agregadoId) {
+    if (clienteDropdownOpen === motoristaId) {
       setClienteDropdownOpen(null);
     } else {
-      setClienteDropdownOpen(agregadoId);
+      setClienteDropdownOpen(motoristaId);
     }
   };
 
-  const handleUpdateStatus = async (e: React.MouseEvent, agregado: Motorista, newStatus: string) => {
+  const handleUpdateStatus = async (e: React.MouseEvent, agregado: MotoristaWithDetails, newStatus: string) => {
     e.stopPropagation();
     try {
       setUpdatingStatus(agregado.motorista_id);
@@ -379,10 +338,10 @@ const AgregadosLista = () => {
       
       // Update the local state
       setAgregados(prev => 
-        prev.map(m => 
-          m.motorista_id === agregado.motorista_id 
-            ? { ...m, st_cadastro: newStatus } 
-            : m
+        prev.map(a => 
+          a.motorista_id === agregado.motorista_id 
+            ? { ...a, st_cadastro: newStatus } 
+            : a
         )
       );
       
@@ -396,7 +355,7 @@ const AgregadosLista = () => {
     }
   };
 
-  const handleUpdateCliente = async (e: React.MouseEvent, agregado: Motorista, clienteId: number | null) => {
+  const handleUpdateCliente = async (e: React.MouseEvent, agregado: MotoristaWithDetails, clienteId: number | null) => {
     e.stopPropagation();
     try {
       setUpdatingCliente(agregado.motorista_id);
@@ -411,16 +370,16 @@ const AgregadosLista = () => {
       
       // Update the local state
       setAgregados(prev => 
-        prev.map(m => 
-          m.motorista_id === agregado.motorista_id 
+        prev.map(a => 
+          a.motorista_id === agregado.motorista_id 
             ? { 
-                ...m, 
+                ...a, 
                 cliente_id: clienteId,
                 cliente: clienteId 
                   ? clientes.find(c => c.cliente_id === clienteId) 
                   : null
               } 
-            : m
+            : a
         )
       );
       
@@ -434,7 +393,7 @@ const AgregadosLista = () => {
     }
   };
 
-  const handleToggleStatus = async (e: React.MouseEvent, agregado: Motorista) => {
+  const handleToggleStatus = async (e: React.MouseEvent, agregado: MotoristaWithDetails) => {
     e.stopPropagation();
     try {
       setUpdatingStatus(agregado.motorista_id);
@@ -451,10 +410,10 @@ const AgregadosLista = () => {
       
       // Update the local state
       setAgregados(prev => 
-        prev.map(m => 
-          m.motorista_id === agregado.motorista_id 
-            ? { ...m, ativo: newAtivo } 
-            : m
+        prev.map(a => 
+          a.motorista_id === agregado.motorista_id 
+            ? { ...a, ativo: newAtivo } 
+            : a
         )
       );
       
@@ -467,7 +426,7 @@ const AgregadosLista = () => {
     }
   };
 
-  const getAgregadoCity = (agregado: MotoristaWithAddress): string | null => {
+  const getAgregadoCity = (agregado: MotoristaWithDetails): string | null => {
     return agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || null;
   };
 
@@ -476,15 +435,18 @@ const AgregadosLista = () => {
     const statusMatch = statusFilter ? agregado.st_cadastro === statusFilter : true;
     const clienteMatch = clienteFilter ? agregado.cliente_id === parseInt(clienteFilter) : true;
     const cidadeMatch = cidadeFilter ? getAgregadoCity(agregado) === cidadeFilter : true;
+    const tipoVeiculoMatch = tipoVeiculoFilter ? agregado.veiculo?.[0]?.tipologia === tipoVeiculoFilter : true;
     
     return (
       statusMatch &&
       clienteMatch &&
       cidadeMatch &&
-      (agregado.nome.toLowerCase().includes(searchLower) ||
-       agregado.cpf.includes(searchLower) ||
+      tipoVeiculoMatch &&
+      ((agregado.nome && agregado.nome.toLowerCase().includes(searchLower)) ||
+       (agregado.cpf && agregado.cpf.includes(searchLower)) ||
        (typeof agregado.email === 'string' && agregado.email.toLowerCase().includes(searchLower)) ||
-       (typeof agregado.telefone === 'number' && agregado.telefone.toString().includes(searchLower)))
+       (typeof agregado.telefone === 'number' && agregado.telefone.toString().includes(searchLower)) ||
+       (agregado.veiculo?.[0]?.placa && agregado.veiculo[0].placa.toLowerCase().includes(searchLower)))
     );
   });
 
@@ -574,11 +536,11 @@ const AgregadosLista = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <input
               type="text"
-              placeholder="Buscar por nome, CPF, email ou telefone..."
+              placeholder="Buscar por nome, CPF, email, telefone ou placa..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -612,7 +574,9 @@ const AgregadosLista = () => {
             <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
-
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div className="relative">
             <select
               value={cidadeFilter}
@@ -629,9 +593,7 @@ const AgregadosLista = () => {
             <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
-        </div>
-        
-        <div className="mt-4">
+          
           <div className="relative">
             <select
               value={clienteFilter}
@@ -651,6 +613,25 @@ const AgregadosLista = () => {
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+        </div>
+        
+        <div className="mt-4">
+          <div className="relative">
+            <select
+              value={tipoVeiculoFilter}
+              onChange={(e) => setTipoVeiculoFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todos os tipos de veículo</option>
+              {tiposVeiculo.map((tipo, index) => (
+                <option key={index} value={tipo}>
+                  {tipo}
+                </option>
+              ))}
+            </select>
+            <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
         </div>
@@ -681,10 +662,10 @@ const AgregadosLista = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Nome</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
                   </tr>
                 </thead>
@@ -742,64 +723,11 @@ const AgregadosLista = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="relative">
-                          <button
-                            onClick={(e) => toggleClienteDropdown(e, agregado.motorista_id)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
-                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                                     dark:focus:ring-offset-gray-800 text-left w-full"
-                          >
-                            <span className="truncate max-w-[150px]">
-                              {agregado.cliente?.nome || 'Sem cliente'}
-                            </span>
-                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                          </button>
-                          
-                          {clienteDropdownOpen === agregado.motorista_id && (
-                            <div 
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="py-1">
-                                <button
-                                  onClick={(e) => handleUpdateCliente(e, agregado, null)}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    !agregado.cliente_id
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Sem cliente
-                                </button>
-                                
-                                {clientes.map(cliente => (
-                                  <button
-                                    key={cliente.cliente_id}
-                                    onClick={(e) => handleUpdateCliente(e, agregado, cliente.cliente_id)}
-                                    className={`block w-full text-left px-4 py-2 text-sm truncate ${
-                                      agregado.cliente_id === cliente.cliente_id
-                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                    }`}
-                                  >
-                                    {cliente.nome}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {updatingCliente === agregado.motorista_id && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
-                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                            </div>
-                          )}
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {agregado.veiculo?.[0]?.placa.toUpperCase() || '-'}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {getAgregadoCity(agregado) || '-'}
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {agregado.veiculo?.[0]?.tipologia || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -905,17 +833,79 @@ const AgregadosLista = () => {
                               </div>
                             </div>
                           )}
+                          
+                          {updatingStatus === agregado.motorista_id && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="relative">
+                          <button
+                            onClick={(e) => toggleClienteDropdown(e, agregado.motorista_id)}
+                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
+                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                                     dark:focus:ring-offset-gray-800 text-left w-full"
+                          >
+                            <span className="truncate max-w-[150px]">
+                              {agregado.cliente?.nome || 'Sem cliente'}
+                            </span>
+                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                          </button>
+                          
+                          {clienteDropdownOpen === agregado.motorista_id && (
+                            <div 
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="py-1">
+                                <button
+                                  onClick={(e) => handleUpdateCliente(e, agregado, null)}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    !agregado.cliente_id
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Sem cliente
+                                </button>
+                                
+                                {clientes.map(cliente => (
+                                  <button
+                                    key={cliente.cliente_id}
+                                    onClick={(e) => handleUpdateCliente(e, agregado, cliente.cliente_id)}
+                                    className={`block w-full text-left px-4 py-2 text-sm truncate ${
+                                      agregado.cliente_id === cliente.cliente_id
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    {cliente.nome}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {updatingCliente === agregado.motorista_id && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {formatDate(agregado.data_cadastro)}
+                          {getAgregadoCity(agregado) || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-3">
                           <button
-                            onClick={() => handleViewDocument(agregado)}
+                            onClick={() => handleViewDetail(agregado)}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Visualizar"
                           >
@@ -994,7 +984,7 @@ const AgregadosLista = () => {
             {
               icon: <Truck size={16} />,
               label: 'Visualizar Detalhes',
-              onClick: () => handleViewDocument(contextMenu.agregado!),
+              onClick: () => handleViewDetail(contextMenu.agregado!),
               color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
             },
             {
@@ -1027,35 +1017,13 @@ const AgregadosLista = () => {
       )}
 
       {/* Modals */}
-      <UnifiedAgregadoModal
-        isOpen={isUnifiedModalOpen}
-        onClose={() => setIsUnifiedModalOpen(false)}
-        motorista={selectedAgregado}
-        onSuccess={fetchAgregados}
-      />
-
       <AgregadoDetailView
         isOpen={isDetailViewOpen}
         onClose={() => setIsDetailViewOpen(false)}
         agregado={selectedAgregado}
-        documento={documento}
-        veiculo={veiculo}
-        endereco={endereco}
-      />
-
-      <DocumentViewer
-        isOpen={isDocumentViewerOpen}
-        onClose={() => setIsDocumentViewerOpen(false)}
-        documento={documento}
-        nome={selectedAgregado?.nome || ''}
-        cpf={selectedAgregado?.cpf}
-        email={selectedAgregado?.email}
-        telefone={selectedAgregado?.telefone?.toString()}
-        dt_nascimento={selectedAgregado?.dt_nascimento}
-        endereco={endereco}
-        veiculo={veiculo}
-        isAgregado={true}
-        st_cadastro={selectedAgregado?.st_cadastro}
+        documento={selectedAgregado?.documento_motorista?.[0] || null}
+        veiculo={selectedAgregado?.veiculo?.[0] || null}
+        endereco={selectedAgregado?.end_motorista?.[0] || null}
       />
 
       <DocumentUploadModal
@@ -1088,6 +1056,7 @@ const AgregadosLista = () => {
         itemData={selectedAgregado ? [
           { label: 'Nome', value: selectedAgregado.nome },
           { label: 'CPF', value: formatCPF(selectedAgregado.cpf) },
+          { label: 'Placa', value: selectedAgregado.veiculo?.[0]?.placa.toUpperCase() || 'Não informada' },
           { label: 'Status', value: selectedAgregado.st_cadastro }
         ] : []}
       />
@@ -1116,7 +1085,7 @@ const AgregadosLista = () => {
         onClose={() => setIsMassMessageModalOpen(false)}
         numbers={Array.from(selectedItems)
           .map(id => {
-            const agregado = agregados.find(m => m.motorista_id === id);
+            const agregado = agregados.find(a => a.motorista_id === id);
             return agregado?.telefone ? agregado.telefone.toString() : '';
           })
           .filter(Boolean)}
