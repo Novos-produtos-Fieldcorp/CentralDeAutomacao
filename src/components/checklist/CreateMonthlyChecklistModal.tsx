@@ -156,13 +156,13 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
       const filePath = `${fileName}`;
 
       const { error: uploadError, data } = await supabase.storage
-        .from('checklist-photos')
+        .from('imagensdocs')
         .upload(filePath, file);
         
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('checklist-photos')
+        .from('imagensdocs')
         .getPublicUrl(filePath);
 
       setFormData(prev => ({
@@ -506,6 +506,20 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
                           src={value}
                           alt={key.replace(/foto_/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                           className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            // Handle image loading error
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null; // Prevent infinite error loop
+                            target.parentElement!.innerHTML = `
+                              <div class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
+                                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
+                                  <circle cx="12" cy="13" r="3"></circle>
+                                </svg>
+                                <p>Erro ao carregar imagem</p>
+                              </div>
+                            `;
+                          }}
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                           <button
