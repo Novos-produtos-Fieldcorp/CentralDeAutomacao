@@ -86,6 +86,8 @@ const AgregadosLista = () => {
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
+  const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
+  const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
 
   useEffect(() => {
     fetchAgregados();
@@ -103,13 +105,18 @@ const AgregadosLista = () => {
       if (statusDropdownOpen !== null) {
         setStatusDropdownOpen(null);
       }
+      
+      // Close any open cliente dropdown
+      if (clienteDropdownOpen !== null) {
+        setClienteDropdownOpen(null);
+      }
     };
 
     document.addEventListener('click', handleClick);
     return () => {
       document.removeEventListener('click', handleClick);
     };
-  }, [contextMenu.visible, statusDropdownOpen]);
+  }, [contextMenu.visible, statusDropdownOpen, clienteDropdownOpen]);
 
   const fetchAgregados = async () => {
     try {
@@ -127,6 +134,10 @@ const AgregadosLista = () => {
                 )
               )
             )
+          ),
+          cliente (
+            cliente_id,
+            nome
           )
         `)
         .eq('funcao', 'Agregado')
@@ -304,6 +315,15 @@ const AgregadosLista = () => {
     }
   };
 
+  const toggleClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
+    e.stopPropagation();
+    if (clienteDropdownOpen === motoristaId) {
+      setClienteDropdownOpen(null);
+    } else {
+      setClienteDropdownOpen(motoristaId);
+    }
+  };
+
   const handleUpdateStatus = async (e: React.MouseEvent, agregado: Motorista, newStatus: string) => {
     e.stopPropagation();
     try {
@@ -333,6 +353,44 @@ const AgregadosLista = () => {
     } finally {
       setUpdatingStatus(null);
       setStatusDropdownOpen(null);
+    }
+  };
+
+  const handleUpdateCliente = async (e: React.MouseEvent, agregado: Motorista, clienteId: number | null) => {
+    e.stopPropagation();
+    try {
+      setUpdatingCliente(agregado.motorista_id);
+      
+      // Update the cliente_id in the database
+      const { error } = await supabase
+        .from('motorista')
+        .update({ cliente_id: clienteId })
+        .eq('motorista_id', agregado.motorista_id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setAgregados(prev => 
+        prev.map(a => 
+          a.motorista_id === agregado.motorista_id 
+            ? { 
+                ...a, 
+                cliente_id: clienteId,
+                cliente: clienteId 
+                  ? clientes.find(c => c.cliente_id === clienteId) 
+                  : null
+              } 
+            : a
+        )
+      );
+      
+      toast.success(clienteId ? 'Cliente atualizado com sucesso' : 'Cliente removido com sucesso');
+    } catch (error) {
+      console.error('Error updating cliente:', error);
+      toast.error('Erro ao atualizar cliente');
+    } finally {
+      setUpdatingCliente(null);
+      setClienteDropdownOpen(null);
     }
   };
 
@@ -685,11 +743,59 @@ const AgregadosLista = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {agregado.cliente_id ? 
-                            clientes.find(c => c.cliente_id === agregado.cliente_id)?.nome || 'Cliente não encontrado' : 
-                            'Sem cliente'
-                          }
+                        <div className="relative">
+                          <button
+                            onClick={(e) => toggleClienteDropdown(e, agregado.motorista_id)}
+                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
+                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                                     dark:focus:ring-offset-gray-800 text-left w-full"
+                          >
+                            <span className="truncate max-w-[150px]">
+                              {agregado.cliente?.nome || 'Sem cliente'}
+                            </span>
+                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                          </button>
+                          
+                          {clienteDropdownOpen === agregado.motorista_id && (
+                            <div 
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="py-1">
+                                <button
+                                  onClick={(e) => handleUpdateCliente(e, agregado, null)}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    !agregado.cliente_id
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Sem cliente
+                                </button>
+                                
+                                {clientes.map(cliente => (
+                                  <button
+                                    key={cliente.cliente_id}
+                                    onClick={(e) => handleUpdateCliente(e, agregado, cliente.cliente_id)}
+                                    className={`block w-full text-left px-4 py-2 text-sm truncate ${
+                                      agregado.cliente_id === cliente.cliente_id
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    {cliente.nome}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {updatingCliente === agregado.motorista_id && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
