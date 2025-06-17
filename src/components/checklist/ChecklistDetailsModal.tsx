@@ -166,9 +166,9 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (checklistDetails) {
-      exportChecklistToPDF(checklistDetails);
+      await exportChecklistToPDF(checklistDetails);
     }
   };
 
@@ -410,7 +410,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
           <PhotoThumbnail
             key={key}
             url={value as string}
-            label={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            label={key.replace(/foto_/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
           />
         ))}
       </div>
