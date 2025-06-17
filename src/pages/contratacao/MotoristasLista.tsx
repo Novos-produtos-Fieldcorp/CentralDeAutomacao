@@ -682,7 +682,7 @@ const MotoristasLista = () => {
 
   const getStatusStyle = (status: string) => {
     const baseStyle = "px-3 py-1 rounded-full text-sm font-medium";
-    const normalizedStatus = status.toLowerCase();
+    const normalizedStatus = status.toLowerCase().trim();
     
     switch (normalizedStatus) {
       case 'cadastrado':
@@ -1008,11 +1008,16 @@ const MotoristasLista = () => {
                           onChange={(e) => updateStatus(motorista.motorista_id, e.target.value)}
                           className={getStatusStyle(motorista.st_cadastro)}
                         >
-                          {statusOptions.map(option => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
+                          <option value={motorista.st_cadastro}>
+                            {motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1).replace('_', ' ')}
+                          </option>
+                          {statusOptions
+                            .filter(option => option.value !== motorista.st_cadastro)
+                            .map(option => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
                         </select>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

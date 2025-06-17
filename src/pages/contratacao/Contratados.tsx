@@ -761,6 +761,52 @@ const Contratados = () => {
     setIsEditModalOpen(true);
   };
 
+  const getStatusStyle = (status: string) => {
+    const baseStyle = "px-3 py-1 rounded-full text-sm font-medium";
+    const normalizedStatus = status.toLowerCase().trim();
+    
+    switch (normalizedStatus) {
+      case 'cadastrado':
+        return `${baseStyle} bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200`;
+      case 'qualificado':
+        return `${baseStyle} bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200`;
+      case 'documentacao':
+        return `${baseStyle} bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200`;
+      case 'gr':
+        return `${baseStyle} bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-200`;
+      case 'contrato_enviado':
+        return `${baseStyle} bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-200`;
+      case 'contratado':
+        return `${baseStyle} bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200`;
+      case 'repescagem':
+        return `${baseStyle} bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200`;
+      case 'rejeitado':
+        return `${baseStyle} bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200`;
+      default:
+        return `${baseStyle} bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200`;
+    }
+  };
+
+  const updateStatus = async (motorista_id: number, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('motorista')
+        .update({ st_cadastro: newStatus })
+        .eq('motorista_id', motorista_id);
+
+      if (error) throw error;
+
+      setMotoristas(motoristas.map(m => 
+        m.motorista_id === motorista_id ? { ...m, st_cadastro: newStatus } : m
+      ));
+      
+      toast.success(`Status atualizado com sucesso`);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Erro ao atualizar status do contratado');
+    }
+  };
+
   if (loading) {
     return (
       <LoadingSpinner />
@@ -1016,9 +1062,22 @@ const Contratados = () => {
                         <div className="text-sm text-gray-500 dark:text-gray-400">{motorista.estado}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          Contratado
-                        </span>
+                        <select
+                          value={motorista.st_cadastro}
+                          onChange={(e) => updateStatus(motorista.motorista_id, e.target.value)}
+                          className={getStatusStyle(motorista.st_cadastro)}
+                        >
+                          <option value={motorista.st_cadastro}>
+                            {motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1).replace('_', ' ')}
+                          </option>
+                          {statusOptions
+                            .filter(option => option.value !== motorista.st_cadastro)
+                            .map(option => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                        </select>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {motorista.veiculo && motorista.veiculo.length > 0 ? (
