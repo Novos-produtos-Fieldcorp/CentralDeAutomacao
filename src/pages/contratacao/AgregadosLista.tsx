@@ -112,7 +112,10 @@ const AgregadosLista = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('motorista')
-        .select('*')
+        .select(`
+          *,
+          veiculo(*)
+        `)
         .eq('funcao', 'Agregado')
         .eq('company_id', companyId)
         .order('nome');
@@ -520,6 +523,7 @@ const AgregadosLista = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Nome</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
@@ -582,6 +586,22 @@ const AgregadosLista = () => {
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {agregado.email || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {agregado.veiculo && agregado.veiculo.length > 0 ? (
+                            <span className="uppercase">{agregado.veiculo[0].placa}</span>
+                          ) : (
+                            'Sem veículo'
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {agregado.veiculo && agregado.veiculo.length > 0 ? (
+                            `${agregado.veiculo[0].tipologia || ''}`
+                          ) : (
+                            ''
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
