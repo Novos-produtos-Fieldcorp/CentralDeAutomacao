@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Edit2, Trash2, FileText, MessageCircle, Filter, ChevronDown, X, Truck, Loader2, MapPin } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import type { Motorista, DocumentoMotorista, Veiculo } from '../../types/database';
+import type { Motorista, DocumentoMotorista, Veiculo, DocumentoVeiculo } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
-import AgregadoDetailView from '../../components/AgregadoDetailView';
+import DocumentViewer from '../../components/DocumentViewer';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
 import EditMotoristaModal from '../../components/EditMotoristaModal';
 import AddAgregadoModal from '../../components/AddAgregadoModal';
@@ -20,10 +20,9 @@ import Pagination from '../../components/Pagination';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
+import AgregadoDetailView from '../../components/AgregadoDetailView';
 
-interface AgregadoWithDetails extends Motorista {
-  veiculo?: Veiculo[];
-  documento?: DocumentoMotorista;
+interface MotoristaWithAddress extends Motorista {
   endereco?: {
     logradouro?: {
       logradouro?: string;
@@ -41,16 +40,19 @@ interface AgregadoWithDetails extends Motorista {
     nr_end?: number;
     ds_complemento_end?: string;
   } | null;
+  veiculo?: (Veiculo & {
+    documento_veiculo: DocumentoVeiculo[];
+  })[];
 }
 
 const AgregadosLista = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const [agregados, setAgregados] = useState<AgregadoWithDetails[]>([]);
+  const [agregados, setAgregados] = useState<MotoristaWithAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [isDetailViewOpen, setIsDetailViewOpen] = useState(false);
+  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -63,14 +65,14 @@ const AgregadosLista = () => {
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
-  const [veiculo, setVeiculo] = useState<(Veiculo & { documento_veiculo: any[] }) | null>(null);
   const [endereco, setEndereco] = useState<any | null>(null);
+  const [veiculo, setVeiculo] = useState<(Veiculo & {
+    documento_veiculo: DocumentoVeiculo[];
+  }) | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteFilter, setClienteFilter] = useState<string>('');
   const [cidadeFilter, setCidadeFilter] = useState<string>('');
   const [cidades, setCidades] = useState<string[]>([]);
-  const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string>('');
-  const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -84,6 +86,7 @@ const AgregadosLista = () => {
     agregado: null,
   });
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
+  const [isDetailViewOpen, setIsDetailViewOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
   const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
@@ -125,7 +128,6 @@ const AgregadosLista = () => {
         .from('motorista')
         .select(`
           *,
-          veiculo(*),
           end_motorista (
             logradouro (
               bairro (
@@ -148,27 +150,14 @@ const AgregadosLista = () => {
 
       // Extract unique cities from agregados
       const uniqueCities = new Set<string>();
-      const uniqueVehicleTypes = new Set<string>();
-      
       data?.forEach(agregado => {
-        // Extract city
         const cidade = agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade;
         if (cidade) {
           uniqueCities.add(cidade);
         }
-        
-        // Extract vehicle types
-        if (agregado.veiculo && agregado.veiculo.length > 0) {
-          agregado.veiculo.forEach(veiculo => {
-            if (veiculo.tipologia) {
-              uniqueVehicleTypes.add(veiculo.tipologia);
-            }
-          });
-        }
       });
-      
       setCidades(Array.from(uniqueCities).sort());
-      setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
+
       setAgregados(data || []);
     } catch (error) {
       console.error('Error fetching agregados:', error);
@@ -196,13 +185,64 @@ const AgregadosLista = () => {
     }
   };
 
-  const handleViewDetail = async (agregado: Motorista) => {
+  const handleViewDocument = async (agregado: Motorista) => {
     try {
       setSelectedAgregado(agregado);
-      setIsUnifiedModalOpen(true);
+      setIsDetailViewOpen(true);
+
+      // Fetch additional details
+      const [documentoResponse, enderecoResponse, veiculoResponse] = await Promise.all([
+        supabase
+          .from('documento_motorista')
+          .select('*')
+          .eq('motorista_id', agregado.motorista_id)
+          .maybeSingle(),
+        supabase
+          .from('end_motorista')
+          .select(`
+            nr_end,
+            ds_complemento_end,
+            logradouro (
+              logradouro,
+              nr_cep,
+              bairro (
+                bairro,
+                cidade (
+                  cidade,
+                  estado (
+                    sigla_estado
+                  )
+                )
+              )
+            )
+          `)
+          .eq('id_motorista', agregado.motorista_id)
+          .maybeSingle(),
+        supabase
+          .from('veiculo')
+          .select(`
+            *,
+            documento_veiculo (
+              *,
+              pessoa_fisica_dono_veiculo(*),
+              pessoa_juridica_dono_veiculo(*)
+            )
+          `)
+          .eq('motorista_id', agregado.motorista_id)
+          .eq('status_veiculo', true)
+          .maybeSingle()
+      ]);
+
+      if (documentoResponse.error) throw documentoResponse.error;
+      if (enderecoResponse.error) throw enderecoResponse.error;
+      if (veiculoResponse.error) throw veiculoResponse.error;
+
+      setDocumento(documentoResponse.data);
+      setEndereco(enderecoResponse.data);
+      setVeiculo(veiculoResponse.data);
     } catch (error) {
-      console.error('Error fetching agregado details:', error);
-      toast.error('Erro ao carregar detalhes do agregado');
+      console.error('Error fetching document details:', error);
+      toast.error('Erro ao carregar detalhes do documento');
     }
   };
 
@@ -231,7 +271,7 @@ const AgregadosLista = () => {
 
       if (error) throw error;
 
-      setAgregados(agregados.filter(a => a.motorista_id !== selectedAgregado.motorista_id));
+      setAgregados(agregados.filter(m => m.motorista_id !== selectedAgregado.motorista_id));
       toast.success('Agregado excluído com sucesso');
       setIsDeleteModalOpen(false);
     } catch (error) {
@@ -257,7 +297,7 @@ const AgregadosLista = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(filteredAgregados.map(a => a.motorista_id)));
+      setSelectedItems(new Set(filteredAgregados.map(m => m.motorista_id)));
     }
     setSelectAll(!selectAll);
   };
@@ -274,7 +314,7 @@ const AgregadosLista = () => {
       }
 
       // Update the list
-      setAgregados(agregados.filter(a => !selectedItems.has(a.motorista_id)));
+      setAgregados(agregados.filter(m => !selectedItems.has(m.motorista_id)));
       toast.success(`${selectedItems.size} agregado${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
       
       // Reset selection
@@ -306,21 +346,21 @@ const AgregadosLista = () => {
     });
   };
 
-  const toggleStatusDropdown = (e: React.MouseEvent, motoristaId: number) => {
+  const toggleStatusDropdown = (e: React.MouseEvent, agregadoId: number) => {
     e.stopPropagation();
-    if (statusDropdownOpen === motoristaId) {
+    if (statusDropdownOpen === agregadoId) {
       setStatusDropdownOpen(null);
     } else {
-      setStatusDropdownOpen(motoristaId);
+      setStatusDropdownOpen(agregadoId);
     }
   };
 
-  const toggleClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
+  const toggleClienteDropdown = (e: React.MouseEvent, agregadoId: number) => {
     e.stopPropagation();
-    if (clienteDropdownOpen === motoristaId) {
+    if (clienteDropdownOpen === agregadoId) {
       setClienteDropdownOpen(null);
     } else {
-      setClienteDropdownOpen(motoristaId);
+      setClienteDropdownOpen(agregadoId);
     }
   };
 
@@ -339,10 +379,10 @@ const AgregadosLista = () => {
       
       // Update the local state
       setAgregados(prev => 
-        prev.map(a => 
-          a.motorista_id === agregado.motorista_id 
-            ? { ...a, st_cadastro: newStatus } 
-            : a
+        prev.map(m => 
+          m.motorista_id === agregado.motorista_id 
+            ? { ...m, st_cadastro: newStatus } 
+            : m
         )
       );
       
@@ -371,16 +411,16 @@ const AgregadosLista = () => {
       
       // Update the local state
       setAgregados(prev => 
-        prev.map(a => 
-          a.motorista_id === agregado.motorista_id 
+        prev.map(m => 
+          m.motorista_id === agregado.motorista_id 
             ? { 
-                ...a, 
+                ...m, 
                 cliente_id: clienteId,
                 cliente: clienteId 
                   ? clientes.find(c => c.cliente_id === clienteId) 
                   : null
               } 
-            : a
+            : m
         )
       );
       
@@ -399,41 +439,36 @@ const AgregadosLista = () => {
     try {
       setUpdatingStatus(agregado.motorista_id);
       
-      // Determine the new status based on current status
-      const newStatus = agregado.st_cadastro === 'contratado' ? 'cadastrado' : 'contratado';
+      // Update the ativo status in the database (toggle it)
+      const newAtivo = !agregado.ativo;
       
-      // Update the status in the database
       const { error } = await supabase
         .from('motorista')
-        .update({ st_cadastro: newStatus })
+        .update({ ativo: newAtivo })
         .eq('motorista_id', agregado.motorista_id);
         
       if (error) throw error;
       
       // Update the local state
       setAgregados(prev => 
-        prev.map(a => 
-          a.motorista_id === agregado.motorista_id 
-            ? { ...a, st_cadastro: newStatus } 
-            : a
+        prev.map(m => 
+          m.motorista_id === agregado.motorista_id 
+            ? { ...m, ativo: newAtivo } 
+            : m
         )
       );
       
-      toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
+      toast.success(`Agregado ${newAtivo ? 'ativado' : 'desativado'} com sucesso`);
     } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Erro ao atualizar status');
+      console.error('Error updating ativo status:', error);
+      toast.error('Erro ao atualizar status do agregado');
     } finally {
       setUpdatingStatus(null);
     }
   };
 
-  const getAgregadoCity = (agregado: AgregadoWithDetails): string | null => {
+  const getAgregadoCity = (agregado: MotoristaWithAddress): string | null => {
     return agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || null;
-  };
-
-  const getVehicleType = (agregado: AgregadoWithDetails): string | null => {
-    return agregado.veiculo?.[0]?.tipologia || null;
   };
 
   const filteredAgregados = agregados.filter(agregado => {
@@ -441,13 +476,11 @@ const AgregadosLista = () => {
     const statusMatch = statusFilter ? agregado.st_cadastro === statusFilter : true;
     const clienteMatch = clienteFilter ? agregado.cliente_id === parseInt(clienteFilter) : true;
     const cidadeMatch = cidadeFilter ? getAgregadoCity(agregado) === cidadeFilter : true;
-    const tipoVeiculoMatch = tipoVeiculoFilter ? getVehicleType(agregado) === tipoVeiculoFilter : true;
     
     return (
       statusMatch &&
       clienteMatch &&
       cidadeMatch &&
-      tipoVeiculoMatch &&
       (agregado.nome.toLowerCase().includes(searchLower) ||
        agregado.cpf.includes(searchLower) ||
        (typeof agregado.email === 'string' && agregado.email.toLowerCase().includes(searchLower)) ||
@@ -598,24 +631,7 @@ const AgregadosLista = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div className="relative">
-            <select
-              value={tipoVeiculoFilter}
-              onChange={(e) => setTipoVeiculoFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-            >
-              <option value="">Todos os tipos</option>
-              {tiposVeiculo.map((tipo, index) => (
-                <option key={index} value={tipo}>
-                  {tipo}
-                </option>
-              ))}
-            </select>
-            <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-          </div>
-
+        <div className="mt-4">
           <div className="relative">
             <select
               value={clienteFilter}
@@ -665,7 +681,6 @@ const AgregadosLista = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Nome</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
@@ -724,22 +739,6 @@ const AgregadosLista = () => {
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {agregado.email || '-'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {agregado.veiculo && agregado.veiculo.length > 0 ? (
-                            <span className="uppercase">{agregado.veiculo[0].placa}</span>
-                          ) : (
-                            'Sem veículo'
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {agregado.veiculo && agregado.veiculo.length > 0 ? (
-                            `${agregado.veiculo[0].tipologia || ''}`
-                          ) : (
-                            ''
-                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -916,7 +915,7 @@ const AgregadosLista = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-3">
                           <button
-                            onClick={() => handleViewDetail(agregado)}
+                            onClick={() => handleViewDocument(agregado)}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Visualizar"
                           >
@@ -933,17 +932,17 @@ const AgregadosLista = () => {
                             onClick={(e) => handleToggleStatus(e, agregado)}
                             disabled={updatingStatus === agregado.motorista_id}
                             className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                              agregado.st_cadastro === 'contratado' 
+                              agregado.ativo 
                                 ? 'bg-green-500 dark:bg-green-600' 
                                 : 'bg-gray-200 dark:bg-gray-700'
                             } ${updatingStatus === agregado.motorista_id ? 'opacity-50 cursor-not-allowed' : ''}`}
                             role="switch"
-                            aria-checked={agregado.st_cadastro === 'contratado'}
-                            title={agregado.st_cadastro === 'contratado' ? "Desativar agregado" : "Ativar agregado"}
+                            aria-checked={agregado.ativo}
+                            title={agregado.ativo ? "Desativar agregado" : "Ativar agregado"}
                           >
                             <span
                               className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                agregado.st_cadastro === 'contratado' ? 'translate-x-5' : 'translate-x-0'
+                                agregado.ativo ? 'translate-x-5' : 'translate-x-0'
                               }`}
                             />
                             {updatingStatus === agregado.motorista_id && (
@@ -995,7 +994,7 @@ const AgregadosLista = () => {
             {
               icon: <Truck size={16} />,
               label: 'Visualizar Detalhes',
-              onClick: () => handleViewDetail(contextMenu.agregado!),
+              onClick: () => handleViewDocument(contextMenu.agregado!),
               color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
             },
             {
@@ -1031,7 +1030,7 @@ const AgregadosLista = () => {
       <UnifiedAgregadoModal
         isOpen={isUnifiedModalOpen}
         onClose={() => setIsUnifiedModalOpen(false)}
-        agregado={selectedAgregado}
+        motorista={selectedAgregado}
         onSuccess={fetchAgregados}
       />
 
@@ -1042,6 +1041,21 @@ const AgregadosLista = () => {
         documento={documento}
         veiculo={veiculo}
         endereco={endereco}
+      />
+
+      <DocumentViewer
+        isOpen={isDocumentViewerOpen}
+        onClose={() => setIsDocumentViewerOpen(false)}
+        documento={documento}
+        nome={selectedAgregado?.nome || ''}
+        cpf={selectedAgregado?.cpf}
+        email={selectedAgregado?.email}
+        telefone={selectedAgregado?.telefone?.toString()}
+        dt_nascimento={selectedAgregado?.dt_nascimento}
+        endereco={endereco}
+        veiculo={veiculo}
+        isAgregado={true}
+        st_cadastro={selectedAgregado?.st_cadastro}
       />
 
       <DocumentUploadModal
@@ -1102,7 +1116,7 @@ const AgregadosLista = () => {
         onClose={() => setIsMassMessageModalOpen(false)}
         numbers={Array.from(selectedItems)
           .map(id => {
-            const agregado = agregados.find(a => a.motorista_id === id);
+            const agregado = agregados.find(m => m.motorista_id === id);
             return agregado?.telefone ? agregado.telefone.toString() : '';
           })
           .filter(Boolean)}
