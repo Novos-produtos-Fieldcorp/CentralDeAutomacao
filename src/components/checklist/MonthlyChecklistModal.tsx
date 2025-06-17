@@ -870,7 +870,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
           </div>
 
           <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-            {currentPage > 1 && (
+            {currentStep > 1 && (
               <button
                 type="button"
                 onClick={() => setCurrentStep(prev => prev - 1)}

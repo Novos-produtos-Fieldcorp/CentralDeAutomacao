@@ -323,7 +323,8 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
         id_tipo_checklist: 2, // Weekly
         motorista_id: parseInt(formData.motorista_id),
         veiculo_id: parseInt(formData.veiculo_id),
-        company_id: companyId
+        company_id: companyId,
+        status: false // Default to false for new checklists
       };
 
       let checklistResponse;
@@ -405,7 +406,6 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
           pneu: getStatusId(formData.acessorios.pneu, 'pneu'),
           pneu_ruim: formData.acessorios.pneu_ruim,
           documento_veicular: getStatusId(formData.acessorios.documento_veicular, 'accessory')
-          // Removed: triangulo, chave_roda, extintor, macaco, cadeado
         });
 
       if (acessoriosError) throw acessoriosError;
