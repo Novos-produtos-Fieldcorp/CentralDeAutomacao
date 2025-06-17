@@ -5,11 +5,13 @@ import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
+import EditMotoristaModal from './EditMotoristaModal';
 
 interface AgregadoDetailViewProps {
   isOpen: boolean;
   onClose: () => void;
   agregado?: Motorista | null;
+  onSuccess?: () => void;
   documento: DocumentoMotorista | null;
  veiculo: (Veiculo & {
   documento_veiculo: (DocumentoVeiculo & {
@@ -42,11 +44,13 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
   agregado,
   documento,
   veiculo,
-  endereco
+  endereco,
+  onSuccess
 }) => {
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   if (!isOpen || !agregado) return null;
 
@@ -91,12 +95,23 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <X size={24} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
+                             dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
+                             rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Editar
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -594,6 +609,20 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
           onSuccess={() => {
             setIsEditingDocuments(false);
             // Reload data would happen here in a real implementation
+            if (onSuccess) onSuccess();
+          }}
+        />
+      )}
+
+      {/* Edit Motorista Modal */}
+      {isEditModalOpen && agregado && (
+        <EditMotoristaModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          motorista={agregado}
+          onUpdate={() => {
+            setIsEditModalOpen(false);
+            if (onSuccess) onSuccess();
           }}
         />
       )}
