@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Camera, Loader2, AlertCircle, Edit2, Save, ArrowLeft, Upload } from 'lucide-react';
+import { X, Download, Camera, Loader2, AlertCircle, Edit2, Save, ArrowLeft, Upload, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { exportChecklistToPDF } from '../../utils/export';
 import { getStatusInfo } from '../../utils/checklistStatus';
@@ -25,6 +25,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
+  const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null);
   
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -230,11 +231,45 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
     }
   };
 
-  const handleRemovePhoto = (photoField: string) => {
-    setEditPhotos(prev => ({
-      ...prev,
-      [photoField]: null
-    }));
+  const handleRemovePhoto = async (photoField: string) => {
+    if (!checklist) return;
+    
+    try {
+      setDeletingPhoto(photoField);
+      
+      // Get the current photo URL
+      const currentPhotoUrl = editPhotos[photoField];
+      
+      if (currentPhotoUrl) {
+        // Extract the file name from the URL
+        const fileNameWithPath = currentPhotoUrl.split('/').pop();
+        
+        if (fileNameWithPath) {
+          // Delete the file from storage
+          const { error: deleteError } = await supabase.storage
+            .from('checklist-photos')
+            .remove([fileNameWithPath]);
+            
+          if (deleteError) {
+            console.warn('Error deleting photo from storage:', deleteError);
+            // Continue anyway as we want to remove from database even if storage delete fails
+          }
+        }
+      }
+      
+      // Update state to remove the photo
+      setEditPhotos(prev => ({
+        ...prev,
+        [photoField]: null
+      }));
+      
+      toast.success('Foto removida com sucesso');
+    } catch (error) {
+      console.error('Error removing photo:', error);
+      toast.error('Erro ao remover foto');
+    } finally {
+      setDeletingPhoto(null);
+    }
   };
 
   const handleSave = async () => {
@@ -417,9 +452,14 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <button
                       onClick={() => handleRemovePhoto(key)}
+                      disabled={deletingPhoto === key}
                       className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
                     >
-                      <X size={16} />
+                      {deletingPhoto === key ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 size={16} />
+                      )}
                     </button>
                   </div>
                 </div>
