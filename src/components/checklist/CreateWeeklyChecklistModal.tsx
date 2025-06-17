@@ -74,7 +74,7 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
       fetchMotoristas();
       fetchVeiculos();
     }
-  }, [isOpen]);
+  }, [isOpen, companyId]);
 
   const fetchMotoristas = async () => {
     try {
@@ -82,6 +82,7 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
         .from('motorista')
         .select('*')
         .eq('st_cadastro', 'contratado')
+        .eq('company_id', companyId)
         .order('nome');
 
       if (error) throw error;
@@ -98,6 +99,7 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
         .from('veiculo')
         .select('*')
         .eq('status_veiculo', true)
+        .eq('company_id', companyId)
         .order('placa');
 
       if (error) throw error;

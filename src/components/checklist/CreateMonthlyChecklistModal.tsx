@@ -112,7 +112,7 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
       fetchMotoristas();
       fetchVeiculos();
     }
-  }, [isOpen]);
+  }, [isOpen, companyId]);
 
   const fetchMotoristas = async () => {
     try {
@@ -120,6 +120,7 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
         .from('motorista')
         .select('*')
         .eq('st_cadastro', 'contratado')
+        .eq('company_id', companyId)
         .order('nome');
 
       if (error) throw error;
@@ -136,6 +137,7 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
         .from('veiculo')
         .select('*')
         .eq('status_veiculo', true)
+        .eq('company_id', companyId)
         .order('placa');
 
       if (error) throw error;
