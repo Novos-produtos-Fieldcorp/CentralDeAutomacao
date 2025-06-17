@@ -380,13 +380,12 @@ const MotoristasLista = () => {
     try {
       setUpdatingStatus(motorista.motorista_id);
       
-      // Determine the new status based on current status
-      const newStatus = motorista.st_cadastro === 'contratado' ? 'cadastrado' : 'contratado';
+      // Update the ativo status in the database (toggle it)
+      const newAtivo = !motorista.ativo;
       
-      // Update the status in the database
       const { error } = await supabase
         .from('motorista')
-        .update({ st_cadastro: newStatus })
+        .update({ ativo: newAtivo })
         .eq('motorista_id', motorista.motorista_id);
         
       if (error) throw error;
@@ -395,15 +394,15 @@ const MotoristasLista = () => {
       setMotoristas(prev => 
         prev.map(m => 
           m.motorista_id === motorista.motorista_id 
-            ? { ...m, st_cadastro: newStatus } 
+            ? { ...m, ativo: newAtivo } 
             : m
         )
       );
       
-      toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
+      toast.success(`Motorista ${newAtivo ? 'ativado' : 'desativado'} com sucesso`);
     } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Erro ao atualizar status');
+      console.error('Error updating ativo status:', error);
+      toast.error('Erro ao atualizar status do motorista');
     } finally {
       setUpdatingStatus(null);
     }
@@ -874,17 +873,17 @@ const MotoristasLista = () => {
                             onClick={(e) => handleToggleStatus(e, motorista)}
                             disabled={updatingStatus === motorista.motorista_id}
                             className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                              motorista.st_cadastro === 'contratado' 
+                              motorista.ativo 
                                 ? 'bg-green-500 dark:bg-green-600' 
                                 : 'bg-gray-200 dark:bg-gray-700'
                             } ${updatingStatus === motorista.motorista_id ? 'opacity-50 cursor-not-allowed' : ''}`}
                             role="switch"
-                            aria-checked={motorista.st_cadastro === 'contratado'}
-                            title={motorista.st_cadastro === 'contratado' ? "Desativar motorista" : "Ativar motorista"}
+                            aria-checked={motorista.ativo}
+                            title={motorista.ativo ? "Desativar motorista" : "Ativar motorista"}
                           >
                             <span
                               className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                motorista.st_cadastro === 'contratado' ? 'translate-x-5' : 'translate-x-0'
+                                motorista.ativo ? 'translate-x-5' : 'translate-x-0'
                               }`}
                             />
                             {updatingStatus === motorista.motorista_id && (

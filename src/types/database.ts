@@ -17,6 +17,7 @@ export interface Motorista {
   cidade?: string;
   documento_motorista?: DocumentoMotorista[];
   documento_ajudante?: DocumentoAjudante[];
+  ativo?: boolean;
 }
 
 export interface DocumentoMotorista {
