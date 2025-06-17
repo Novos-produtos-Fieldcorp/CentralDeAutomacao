@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, User, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, UserCircle, Home, Edit2, Save } from 'lucide-react';
+import { X, User, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, UserCircle, Home, Edit2, Save, Plus, Trash2 } from 'lucide-react';
 import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
@@ -7,6 +7,7 @@ import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
+import AddAjudanteModal from './AddAjudanteModal';
 
 interface UnifiedMotoristaModalProps {
   isOpen: boolean;
@@ -26,6 +27,8 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
   const [uploading, setUploading] = useState(false);
   const [motoristaData, setMotoristaData] = useState<Motorista | null>(null);
   const [ajudantes, setAjudantes] = useState<any[]>([]);
+  const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
+  const [deletingAjudante, setDeletingAjudante] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen && motorista) {
@@ -85,7 +88,26 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
       // Fetch ajudantes if they exist
       const { data: ajudantesData, error: ajudantesError } = await supabase
         .from('documento_ajudante')
-        .select('*')
+        .select(`
+          *,
+          cnh_ajudante(*),
+          rg_ajudante(*),
+          end_ajudante(
+            nr_end,
+            ds_complemento_end,
+            logradouro(
+              logradouro,
+              nr_cep,
+              bairro(
+                bairro,
+                cidade(
+                  cidade,
+                  estado(sigla_estado)
+                )
+              )
+            )
+          )
+        `)
         .eq('motorista_id', motorista.motorista_id);
         
       if (ajudantesError && ajudantesError.code !== 'PGRST116') {
@@ -215,6 +237,27 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
       toast.error(error instanceof Error ? error.message : 'Erro ao enviar documento');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDeleteAjudante = async (ajudanteId: number) => {
+    try {
+      setDeletingAjudante(ajudanteId);
+      
+      const { error } = await supabase
+        .from('documento_ajudante')
+        .delete()
+        .eq('id_ajudante', ajudanteId);
+        
+      if (error) throw error;
+      
+      toast.success('Ajudante removido com sucesso');
+      fetchMotoristaDetails(); // Refresh data
+    } catch (error) {
+      console.error('Error deleting ajudante:', error);
+      toast.error('Erro ao remover ajudante');
+    } finally {
+      setDeletingAjudante(null);
     }
   };
 
@@ -677,25 +720,20 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                         Ajudantes
                       </h3>
                       <button
-                        onClick={() => {
-                          // Implement add ajudante functionality
-                          toast.info('Funcionalidade em desenvolvimento');
-                        }}
+                        onClick={() => setIsAddAjudanteModalOpen(true)}
                         className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
                                  dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
                                  rounded-lg transition-colors flex items-center gap-1"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 5v14M5 12h14" />
-                        </svg>
+                        <Plus className="w-4 h-4" />
                         Adicionar Ajudante
                       </button>
                     </div>
                     
                     {ajudantes.length > 0 ? (
                       <div className="grid grid-cols-1 gap-4">
-                        {ajudantes.map((ajudante, index) => (
-                          <div key={index} className="bg-white dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        {ajudantes.map((ajudante) => (
+                          <div key={ajudante.id_ajudante} className="bg-white dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                             <div className="flex justify-between items-start">
                               <div className="flex items-center gap-3">
                                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
@@ -706,30 +744,22 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                     {ajudante.nome || 'Nome não informado'}
                                   </h4>
                                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    {ajudante.cpf ? formatCPF(ajudante.cpf) : 'CPF não informado'}
+                                    {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'CPF não informado'}
                                   </p>
                                 </div>
                               </div>
                               <div className="flex gap-2">
                                 <button
-                                  onClick={() => {
-                                    // Implement edit ajudante functionality
-                                    toast.info('Funcionalidade em desenvolvimento');
-                                  }}
-                                  className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                  title="Editar ajudante"
-                                >
-                                  <Edit2 size={16} />
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    // Implement delete ajudante functionality
-                                    toast.info('Funcionalidade em desenvolvimento');
-                                  }}
-                                  className="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
+                                  onClick={() => handleDeleteAjudante(ajudante.id_ajudante)}
+                                  disabled={deletingAjudante === ajudante.id_ajudante}
+                                  className="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Remover ajudante"
                                 >
-                                  <X size={16} />
+                                  {deletingAjudante === ajudante.id_ajudante ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 size={16} />
+                                  )}
                                 </button>
                               </div>
                             </div>
@@ -753,6 +783,59 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                               )}
                             </div>
                             
+                            {/* CNH Information */}
+                            {ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0 && (
+                              <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                  Informações da CNH
+                                </h5>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                                  {ajudante.cnh_ajudante[0].nr_registro && (
+                                    <div>
+                                      <span className="text-gray-500 dark:text-gray-400">Número: </span>
+                                      <span className="text-gray-700 dark:text-gray-300">{ajudante.cnh_ajudante[0].nr_registro}</span>
+                                    </div>
+                                  )}
+                                  {ajudante.cnh_ajudante[0].categoria && (
+                                    <div>
+                                      <span className="text-gray-500 dark:text-gray-400">Categoria: </span>
+                                      <span className="text-gray-700 dark:text-gray-300">{ajudante.cnh_ajudante[0].categoria}</span>
+                                    </div>
+                                  )}
+                                  {ajudante.cnh_ajudante[0].foto_cnh && (
+                                    <div className="md:col-span-2 mt-1">
+                                      <button
+                                        onClick={() => openDocumentInNewTab(ajudante.cnh_ajudante[0].foto_cnh)}
+                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs flex items-center gap-1"
+                                      >
+                                        <FileText size={12} />
+                                        Ver CNH
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Address Information */}
+                            {ajudante.end_ajudante && ajudante.end_ajudante.length > 0 && ajudante.end_ajudante[0].logradouro && (
+                              <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />
+                                  Endereço
+                                </h5>
+                                <div className="text-xs text-gray-600 dark:text-gray-300">
+                                  {ajudante.end_ajudante[0].logradouro.logradouro}, {ajudante.end_ajudante[0].nr_end || 'S/N'}
+                                  {ajudante.end_ajudante[0].ds_complemento_end && `, ${ajudante.end_ajudante[0].ds_complemento_end}`}
+                                  <br />
+                                  {ajudante.end_ajudante[0].logradouro.bairro?.bairro}, {ajudante.end_ajudante[0].logradouro.nr_cep && formatCEP(ajudante.end_ajudante[0].logradouro.nr_cep)}
+                                  <br />
+                                  {ajudante.end_ajudante[0].logradouro.bairro?.cidade?.cidade}/{ajudante.end_ajudante[0].logradouro.bairro?.cidade?.estado?.sigla_estado}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Comprovante de Residência */}
                             {ajudante.comprovante_residencia && (
                               <div className="mt-3">
                                 <div className="flex items-center justify-between">
@@ -824,6 +907,17 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
         onSuccess={() => {
           fetchMotoristaDetails();
           setIsDocumentFormOpen(false);
+          if (onSuccess) onSuccess();
+        }}
+      />
+
+      {/* Add Ajudante Modal */}
+      <AddAjudanteModal
+        isOpen={isAddAjudanteModalOpen}
+        onClose={() => setIsAddAjudanteModalOpen(false)}
+        motorista_id={motorista.motorista_id}
+        onSuccess={() => {
+          fetchMotoristaDetails();
           if (onSuccess) onSuccess();
         }}
       />
