@@ -141,7 +141,6 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
           cpf: formData.cpf,
           telefone: formData.telefone || null,
           genero: formData.genero || null,
-          veiculo_id: veiculo_id || null,
           motorista_id: motorista_id
         })
         .select()
