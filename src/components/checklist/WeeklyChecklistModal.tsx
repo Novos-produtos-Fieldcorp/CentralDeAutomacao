@@ -89,7 +89,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
       fetchMotoristas();
       fetchVeiculos();
     }
-  }, [isOpen, checklist]);
+  }, [isOpen, checklist, companyId]);
 
   useEffect(() => {
     const fetchChecklistDetails = async () => {
@@ -275,6 +275,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
         .from('motorista')
         .select('*')
         .eq('st_cadastro', 'contratado')
+        .eq('company_id', companyId)
         .order('nome');
 
       if (error) throw error;
@@ -291,6 +292,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
         .from('veiculo')
         .select('*')
         .eq('status_veiculo', true)
+        .eq('company_id', companyId)
         .order('placa');
 
       if (error) throw error;

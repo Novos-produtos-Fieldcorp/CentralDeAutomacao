@@ -109,13 +109,13 @@ export const formatClienteData = (cliente: Cliente) => ({
   'Telefone': cliente.telefone || 'N/A',
 });
 
-export const exportChecklistToPDF = (checklist: any) => {
+export const exportChecklistToPDF = async (checklist: any) => {
   // Determine which export function to use based on checklist type
   if (checklist.id_tipo_checklist === 1) {
     // Monthly checklist
-    formatChecklistMensalPDF(checklist);
+    await formatChecklistMensalPDF(checklist);
   } else {
     // Weekly checklist
-    formatChecklistSemanalPDF(checklist);
+    await formatChecklistSemanalPDF(checklist);
   }
 };
