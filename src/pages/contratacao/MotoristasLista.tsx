@@ -1152,3 +1152,5 @@ const MotoristasLista = () => {
 };
 
 export default MotoristasLista;
+
+export default MotoristasLista
