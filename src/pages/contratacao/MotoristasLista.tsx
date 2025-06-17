@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, FileText, MessageCircle, Filter, ChevronDown, X, User } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
