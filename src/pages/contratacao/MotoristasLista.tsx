@@ -83,11 +83,19 @@ const MotoristasLista = () => {
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
   const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
   const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [customDateRange, setCustomDateRange] = useState<{
+    startDate: string;
+    endDate: string;
+  }>({
+    startDate: '',
+    endDate: '',
+  });
 
   useEffect(() => {
     fetchMotoristas();
     fetchClientes();
-  }, []);
+  }, [dateFilter, customDateRange]);
 
   useEffect(() => {
     // Close context menu when clicking anywhere
@@ -116,7 +124,7 @@ const MotoristasLista = () => {
   const fetchMotoristas = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('motorista')
         .select(`
           *,
@@ -135,8 +143,41 @@ const MotoristasLista = () => {
           )
         `)
         .eq('funcao', 'Motorista')
-        .eq('company_id', companyId)
-        .order('nome');
+        .eq('company_id', companyId);
+
+      // Apply date filter
+      if (dateFilter !== 'all') {
+        const today = new Date();
+        let startDate = new Date();
+        
+        if (dateFilter === 'today') {
+          // Today only
+          startDate = new Date(today.setHours(0, 0, 0, 0));
+          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+          query = query.lte('data_cadastro', new Date().toISOString().split('T')[0]);
+        } else if (dateFilter === '2days') {
+          // Last 2 days
+          startDate.setDate(today.getDate() - 2);
+          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+        } else if (dateFilter === '15days') {
+          // Last 15 days
+          startDate.setDate(today.getDate() - 15);
+          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+        } else if (dateFilter === '30days') {
+          // Last 30 days
+          startDate.setDate(today.getDate() - 30);
+          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+        } else if (dateFilter === 'custom' && customDateRange.startDate && customDateRange.endDate) {
+          // Custom date range
+          query = query.gte('data_cadastro', customDateRange.startDate);
+          query = query.lte('data_cadastro', customDateRange.endDate);
+        }
+      }
+
+      // Order by data_cadastro (newest first)
+      query = query.order('data_cadastro', { ascending: false });
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -572,7 +613,7 @@ const MotoristasLista = () => {
           </div>
         </div>
         
-        <div className="mt-4">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <select
               value={clienteFilter}
@@ -594,7 +635,56 @@ const MotoristasLista = () => {
             </svg>
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
+
+          <div className="relative">
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="all">Todos os períodos</option>
+              <option value="today">Hoje</option>
+              <option value="2days">Últimos 2 dias</option>
+              <option value="15days">Últimos 15 dias</option>
+              <option value="30days">Último mês</option>
+              <option value="custom">Personalizado</option>
+            </select>
+            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
         </div>
+
+        {dateFilter === 'custom' && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data inicial
+              </label>
+              <input
+                type="date"
+                value={customDateRange.startDate}
+                onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data final
+              </label>
+              <input
+                type="date"
+                value={customDateRange.endDate}
+                onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
