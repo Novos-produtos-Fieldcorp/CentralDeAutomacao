@@ -956,7 +956,7 @@ const MotoristasLista = () => {
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Visualizar"
                           >
-                            <User size={18} />
+                            <FilePen size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(motorista)}
