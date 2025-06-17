@@ -84,7 +84,13 @@ const Checklist = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Checklists</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-400
+                        dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent
+                        font-display tracking-tight relative">
+            Checklists
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 via-blue-400/20 
+                          to-blue-300/20 blur-xl opacity-50" />
+          </h1>
         </div>
       </div>
 
