@@ -32,6 +32,7 @@ const BulkActionsModal = ({
     { value: 'cadastrado', label: 'Cadastrado' },
     { value: 'qualificado', label: 'Qualificado' },
     { value: 'documentacao', label: 'Documentação' },
+    { value: 'gr', label: 'GR' },
     { value: 'contrato_enviado', label: 'Contrato Enviado' },
     { value: 'contratado', label: 'Contratado' },
     { value: 'repescagem', label: 'Repescagem' },

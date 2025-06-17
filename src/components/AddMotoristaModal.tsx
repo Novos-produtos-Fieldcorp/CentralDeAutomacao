@@ -393,6 +393,7 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
                   <option value="cadastrado">Cadastrado</option>
                   <option value="qualificado">Qualificado</option>
                   <option value="documentacao">Documentação</option>
+                  <option value="gr">GR</option>
                   <option value="contrato_enviado">Contrato Enviado</option>
                   <option value="contratado">Contratado</option>
                   <option value="repescagem">Repescagem</option>
@@ -549,7 +550,7 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
             >
               {submitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   Salvando...
                 </>
               ) : (

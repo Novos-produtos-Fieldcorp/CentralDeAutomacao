@@ -468,6 +468,7 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
                   <option value="cadastrado">Cadastrado</option>
                   <option value="qualificado">Qualificado</option>
                   <option value="documentacao">Documentação</option>
+                  <option value="gr">GR</option>
                   <option value="contrato_enviado">Contrato Enviado</option>
                   <option value="contratado">Contratado</option>
                   <option value="repescagem">Repescagem</option>
