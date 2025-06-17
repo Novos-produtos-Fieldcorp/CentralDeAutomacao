@@ -458,7 +458,7 @@ const MotoristasLista = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <input
               type="text"
@@ -518,7 +518,9 @@ const MotoristasLista = () => {
             </svg>
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
-
+        </div>
+        
+        <div className="mt-4">
           <div className="relative">
             <select
               value={cidadeFilter}

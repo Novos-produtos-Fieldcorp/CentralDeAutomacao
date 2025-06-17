@@ -483,7 +483,7 @@ const AgregadosLista = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <input
               type="text"
@@ -543,41 +543,41 @@ const AgregadosLista = () => {
             </svg>
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="relative">
+            <select
+              value={cidadeFilter}
+              onChange={(e) => setCidadeFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todas as cidades</option>
+              {cidades.map((cidade, index) => (
+                <option key={index} value={cidade}>
+                  {cidade}
+                </option>
+              ))}
+            </select>
+            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="relative">
-              <select
-                value={cidadeFilter}
-                onChange={(e) => setCidadeFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-              >
-                <option value="">Todas as cidades</option>
-                {cidades.map((cidade, index) => (
-                  <option key={index} value={cidade}>
-                    {cidade}
-                  </option>
-                ))}
-              </select>
-              <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-              <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-            </div>
-
-            <div className="relative">
-              <select
-                value={tipoVeiculoFilter}
-                onChange={(e) => setTipoVeiculoFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-              >
-                <option value="">Todos os tipos</option>
-                {tiposVeiculo.map((tipo, index) => (
-                  <option key={index} value={tipo}>
-                    {tipo}
-                  </option>
-                ))}
-              </select>
-              <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-              <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-            </div>
+          <div className="relative">
+            <select
+              value={tipoVeiculoFilter}
+              onChange={(e) => setTipoVeiculoFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todos os tipos</option>
+              {tiposVeiculo.map((tipo, index) => (
+                <option key={index} value={tipo}>
+                  {tipo}
+                </option>
+              ))}
+            </select>
+            <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
         </div>
       </div>
