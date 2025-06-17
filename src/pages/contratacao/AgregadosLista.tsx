@@ -41,6 +41,10 @@ interface AgregadoWithDetails extends Motorista {
     nr_end?: number;
     ds_complemento_end?: string;
   } | null;
+  cliente?: {
+    cliente_id: number;
+    nome: string;
+  } | null;
 }
 
 const AgregadosLista = () => {
