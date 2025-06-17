@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, User, Phone, MapPin } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import type { Motorista } from '../types/database';
 import toast from 'react-hot-toast';
-import { getCurrentDate, formatCEP } from '../utils/format';
-import { useAuth } from '../context/AuthContext';
+import { formatCEP } from '../utils/format';
 
-interface AddAgregadoModalProps {
+interface AddAjudanteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  motorista_id: number;
+  veiculo_id?: number;
 }
 
 interface ViaCepResponse {
@@ -22,41 +22,40 @@ interface ViaCepResponse {
   erro?: boolean;
 }
 
-const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps) => {
+const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id }: AddAjudanteModalProps) => {
   const [submitting, setSubmitting] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
-  const { companyId } = useAuth();
   
   const [formData, setFormData] = useState({
-    cpf: '',
     nome: '',
-    email: '',
+    cpf: '',
     telefone: '',
-    dt_nascimento: '',
     genero: '',
-    st_cadastro: 'cadastrado',
-    data_cadastro: getCurrentDate(),
     
-    placa: '',
-    marca: '',
-    tipo: '',
-    ano: '',
-    cor: '',
-    tipologia: '',
-    combustivel: '',
-    peso: '',
-    cubagem: '',
-    possui_rastreador: false,
-    marca_rastreador: '',
-
+    // CNH
+    nr_registro: '',
+    categoria: '',
+    nome_pai: '',
+    nome_mae: '',
+    foto_cnh: '',
+    
+    // RG
+    nr_rg: '',
+    data_emissao: '',
+    orgao_expedidor: '',
+    filiacao: '',
+    foto_rg: '',
+    
+    // Endereço
     cep: '',
     estado: '',
     cidade: '',
     bairro: '',
     logradouro: '',
     numero: '',
-    complemento: ''
+    complemento: '',
+    comprovante_residencia: ''
   });
 
   useEffect(() => {
@@ -134,66 +133,60 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
         throw new Error('CPF inválido. Digite 11 números.');
       }
 
-      // Insert motorista (agregado)
-      const { data: motorista, error: motoristaError } = await supabase
-        .from('motorista')
+      // Insert documento_ajudante
+      const { data: ajudante, error: ajudanteError } = await supabase
+        .from('documento_ajudante')
         .insert({
-          cpf: formData.cpf,
           nome: formData.nome,
-          email: formData.email || null,
+          cpf: formData.cpf,
           telefone: formData.telefone || null,
-          dt_nascimento: formData.dt_nascimento || null,
           genero: formData.genero || null,
-          funcao: 'Agregado',
-          st_cadastro: formData.st_cadastro,
-         data_cadastro: formData.data_cadastro,
-         company_id: companyId
+          motorista_id: motorista_id
         })
         .select()
         .single();
 
-      if (motoristaError) {
-        if (motoristaError.code === '23505') {
+      if (ajudanteError) {
+        if (ajudanteError.code === '23505') {
           throw new Error('CPF já cadastrado no sistema.');
         }
-        throw new Error(`Erro ao cadastrar motorista: ${motoristaError.message}`);
+        throw new Error(`Erro ao cadastrar ajudante: ${ajudanteError.message}`);
       }
 
-      if (!motorista) {
-        throw new Error('Erro ao cadastrar motorista: nenhum dado retornado');
+      if (!ajudante) {
+        throw new Error('Erro ao cadastrar ajudante: nenhum dado retornado');
       }
 
-      // Insert vehicle information
-      const { error: veiculoError } = await supabase
-        .from('veiculo')
-        .insert({
-          placa: formData.placa,
-          marca: formData.marca,
-          tipo: formData.tipo,
-          ano: formData.ano,
-          cor: formData.cor,
-          tipologia: formData. tipologia,
-          combustivel: formData.combustivel,
-          peso: formData.peso,
-          cubagem: formData.cubagem,
-          possui_rastreador: formData.possui_rastreador,
-          marca_rastreador: formData.marca_rastreador,
-          motorista_id: motorista.motorista_id,
-         status_veiculo: true,
-         company_id: companyId
-        });
+      // Insert CNH if data is provided
+      if (formData.nr_registro || formData.categoria || formData.nome_pai || formData.nome_mae || formData.foto_cnh) {
+        const { error: cnhError } = await supabase
+          .from('cnh_ajudante')
+          .insert({
+            nr_registro: formData.nr_registro ? parseFloat(formData.nr_registro) : null,
+            categoria: formData.categoria || null,
+            nome_pai: formData.nome_pai || null,
+            nome_mae: formData.nome_mae || null,
+            foto_cnh: formData.foto_cnh || null,
+            id_ajudante: ajudante.id_ajudante
+          });
 
-      if (veiculoError) {
-        // Rollback motorista insertion
-        await supabase
-          .from('motorista')
-          .delete()
-          .eq('motorista_id', motorista.motorista_id);
-        
-        if (veiculoError.code === '23505') {
-          throw new Error('Placa já cadastrada no sistema.');
-        }
-        throw new Error(`Erro ao cadastrar veículo: ${veiculoError.message}`);
+        if (cnhError) throw cnhError;
+      }
+
+      // Insert RG if data is provided
+      if (formData.nr_rg || formData.data_emissao || formData.orgao_expedidor || formData.filiacao || formData.foto_rg) {
+        const { error: rgError } = await supabase
+          .from('rg_ajudante')
+          .insert({
+            nr_rg: formData.nr_rg ? parseFloat(formData.nr_rg) : null,
+            data_emissao: formData.data_emissao || null,
+            orgao_expedidor: formData.orgao_expedidor || null,
+            filiacao: formData.filiacao || null,
+            foto_rg: formData.foto_rg || null,
+            id_ajudante: ajudante.id_ajudante
+          });
+
+        if (rgError) throw rgError;
       }
 
       // Insert address if all required fields are filled
@@ -305,13 +298,13 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
             logradouroId = newLogradouro.id_logradouro;
           }
 
-          // Create end_motorista
+          // Create end_ajudante
           const { error: enderecoError } = await supabase
-            .from('end_motorista')
+            .from('end_ajudante')
             .insert({
-              nr_end: formData.numero,
-              ds_complemento_end: formData.complemento,
-              id_motorista: motorista.motorista_id,
+              nr_end: formData.numero ? parseInt(formData.numero) : null,
+              ds_complemento_end: formData.complemento || null,
+              id_ajudante: ajudante.id_ajudante,
               id_logradouro: logradouroId
             });
 
@@ -319,16 +312,16 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
         } catch (error) {
           console.error('Erro ao cadastrar endereço:', error);
           // Don't throw here, as address is optional
-          toast.error('Erro ao cadastrar endereço, mas o cadastro foi realizado');
+          toast.error('Erro ao cadastrar endereço, mas o ajudante foi cadastrado');
         }
       }
 
-      toast.success('Agregado cadastrado com sucesso');
+      toast.success('Ajudante cadastrado com sucesso');
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Erro ao cadastrar agregado:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao cadastrar agregado');
+      console.error('Erro ao cadastrar ajudante:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao cadastrar ajudante');
     } finally {
       setSubmitting(false);
     }
@@ -341,7 +334,7 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Adicionar Agregado
+            Adicionar Ajudante
           </h2>
           <button
             onClick={onClose}
@@ -359,6 +352,20 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nome *
+                </label>
+                <input
+                  type="text"
+                  name="nome"
+                  value={formData.nome}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  required
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   CPF *
@@ -382,33 +389,6 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nome *
-                </label>
-                <input
-                  type="text"
-                  name="nome"
-                  value={formData.nome}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Telefone
                 </label>
                 <input
@@ -421,19 +401,6 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
                   }}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="(00) 00000-0000"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Data de Nascimento
-                </label>
-                <input
-                  type="date"
-                  name="dt_nascimento"
-                  value={formData.dt_nascimento}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dt_nascimento: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
 
@@ -453,191 +420,138 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
                   <option value="O">Outro</option>
                 </select>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Status
-                </label>
-                <select
-                  name="st_cadastro"
-                  value={formData.st_cadastro}
-                  onChange={(e) => setFormData(prev => ({ ...prev, st_cadastro: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  required
-                >
-                  <option value="cadastrado">Cadastrado</option>
-                  <option value="qualificado">Qualificado</option>
-                  <option value="documentacao">Documentação</option>
-                  <option value="gr">GR</option>
-                  <option value="contrato_enviado">Contrato Enviado</option>
-                  <option value="contratado">Contratado</option>
-                  <option value="repescagem">Repescagem</option>
-                  <option value="rejeitado">Rejeitado</option>
-                </select>
-              </div>
             </div>
           </div>
 
-          {/* Vehicle Information */}
+          {/* CNH Information */}
           <div className="space-y-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-              Informações do Veículo
+              Informações da CNH
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Placa *
+                  Número da CNH
                 </label>
                 <input
                   type="text"
-                  name="placa"
-                  value={formData.placa}
-                  onChange={(e) => setFormData(prev => ({ ...prev, placa: e.target.value.toUpperCase() }))}
+                  name="nr_registro"
+                  value={formData.nr_registro}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nr_registro: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  required
-                  maxLength={7}
                 />
               </div>
-
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Marca
+                  Categoria
                 </label>
-                <input
-                  type="text"
-                  name="marca"
-                  value={formData.marca}
-                  onChange={(e) => setFormData(prev => ({ ...prev, marca: e.target.value }))}
+                <select
+                  name="categoria"
+                  value={formData.categoria}
+                  onChange={(e) => setFormData(prev => ({ ...prev, categoria: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
+                >
+                  <option value="">Selecione</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="D">D</option>
+                  <option value="E">E</option>
+                  <option value="AB">AB</option>
+                  <option value="AC">AC</option>
+                  <option value="AD">AD</option>
+                  <option value="AE">AE</option>
+                </select>
               </div>
-
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Modelo
+                  Nome do Pai
                 </label>
                 <input
                   type="text"
-                  name="tipo"
-                  value={formData.tipo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value }))}
+                  name="nome_pai"
+                  value={formData.nome_pai}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nome_pai: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
-
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Ano
+                  Nome da Mãe
                 </label>
                 <input
                   type="text"
-                  name="ano"
-                  value={formData.ano}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '');
-                    if (value.length <= 4) {
-                      setFormData(prev => ({ ...prev, ano: value }));
-                    }
-                  }}
+                  name="nome_mae"
+                  value={formData.nome_mae}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nome_mae: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  maxLength={4}
                 />
               </div>
+            </div>
+          </div>
 
+          {/* RG Information */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Informações do RG
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Cor
+                  Número do RG
                 </label>
                 <input
                   type="text"
-                  name="cor"
-                  value={formData.cor}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cor: e.target.value }))}
+                  name="nr_rg"
+                  value={formData.nr_rg}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nr_rg: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
-
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Tipologia *
+                  Data de Emissão
                 </label>
                 <input
-                  type="text"
-                  name="tipologia"
-                  value={formData.tipologia}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tipologia: e.target.value }))}
+                  type="date"
+                  name="data_emissao"
+                  value={formData.data_emissao}
+                  onChange={(e) => setFormData(prev => ({ ...prev, data_emissao: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  required
                 />
               </div>
-
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Combustível
+                  Órgão Expedidor
                 </label>
                 <input
                   type="text"
-                  name="combustivel"
-                  value={formData.combustivel}
-                  onChange={(e) => setFormData(prev => ({ ...prev, combustivel: e.target.value }))}
+                  name="orgao_expedidor"
+                  value={formData.orgao_expedidor}
+                  onChange={(e) => setFormData(prev => ({ ...prev, orgao_expedidor: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
-
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Peso
+                  Filiação
                 </label>
                 <input
                   type="text"
-                  name="peso"
-                  value={formData.peso}
-                  onChange={(e) => setFormData(prev => ({ ...prev, peso: e.target.value }))}
+                  name="filiacao"
+                  value={formData.filiacao}
+                  onChange={(e) => setFormData(prev => ({ ...prev, filiacao: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Cubagem
-                </label>
-                <input
-                  type="text"
-                  name="cubagem"
-                  value={formData.cubagem}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cubagem: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </div>
-
-              <div>
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  <input
-                    type="checkbox"
-                    name="possui_rastreador"
-                    checked={formData.possui_rastreador}
-                    onChange={(e) => setFormData(prev => ({ ...prev, possui_rastreador: e.target.checked }))}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span>Possui Rastreador</span>
-                </label>
-              </div>
-
-              {formData.possui_rastreador && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Marca do Rastreador
-                  </label>
-                  <input
-                    type="text"
-                    name="marca_rastreador"
-                    value={formData.marca_rastreador}
-                    onChange={(e) => setFormData(prev => ({ ...prev, marca_rastreador: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-              )}
             </div>
           </div>
 
@@ -747,8 +661,13 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
                   type="text"
                   name="numero"
                   value={formData.numero}
-                  onChange={(e) => setFormData(prev => ({ ...prev, numero: e.target.value }))}
+                  onChange={(e) => {
+                    // Only allow numbers
+                    const value = e.target.value.replace(/\D/g, '');
+                    setFormData(prev => ({ ...prev, numero: value }));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="Digite apenas números"
                 />
               </div>
 
@@ -767,24 +686,25 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
             </div>
           </div>
 
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+              disabled={submitting}
             >
               Cancelar
             </button>
             <button
               type="submit"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               disabled={submitting}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               {submitting ? (
-                <div className="flex items-center">
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
                   Salvando...
-                </div>
+                </>
               ) : (
                 'Salvar'
               )}
@@ -796,4 +716,4 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
   );
 };
 
-export default AddAgregadoModal;
+export default AddAjudanteModal;

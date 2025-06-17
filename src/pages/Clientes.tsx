@@ -348,8 +348,8 @@ const Clientes = () => {
             return (
                 cliente.nome.toLowerCase().includes(searchString) ||
                 cliente.cnpj.includes(searchString) ||
-                (cliente.email && cliente.email.toLowerCase().includes(searchString)) ||
-                (cliente.telefone && cliente.telefone?.toString().includes(searchString))
+                (typeof cliente.email === 'string' && cliente.email.toLowerCase().includes(searchString)) ||
+                (typeof cliente.telefone === 'string' && cliente.telefone.includes(searchString))
             );
         })
         .sort((a, b) => {

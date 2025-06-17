@@ -3,8 +3,8 @@ export interface Motorista {
   cpf: string;
   dt_nascimento: string;
   genero: string;
-  telefone: number;
-  email: string;
+  telefone: number | null;
+  email: string | null;
   funcao: string;
   nome: string;
   origem_usuario: string;
@@ -17,6 +17,7 @@ export interface Motorista {
   cidade?: string;
   documento_motorista?: DocumentoMotorista[];
   documento_ajudante?: DocumentoAjudante[];
+  ativo?: boolean;
 }
 
 export interface DocumentoMotorista {
@@ -68,10 +69,53 @@ export interface DocumentoAjudante {
   id_ajudante: number;
   nome: string | null;
   cpf: number | null;
-  veiculo_id: number;
+  veiculo_id: number | null;
+  motorista_id: number | null;
   comprovante_residencia?: string | null;
   telefone?: string | null;
   genero?: string | null;
+}
+
+export interface CnhAjudante {
+  id_cnh_ajudante: number;
+  nr_registro: number | null;
+  categoria: string | null;
+  nome_pai: string | null;
+  nome_mae: string | null;
+  id_ajudante: number | null;
+  foto_cnh: string | null;
+}
+
+export interface RgAjudante {
+  id_rg_ajudante: number;
+  nr_rg: number | null;
+  data_emissao: string | null;
+  orgao_expedidor: string | null;
+  filiacao: string | null;
+  id_ajudante: number | null;
+  foto_rg: string | null;
+}
+
+export interface EndAjudante {
+  id_end_ajudante: number;
+  nr_end: number | null;
+  ds_complemento_end: string | null;
+  st_end: boolean | null;
+  id_ajudante: number;
+  id_logradouro: number;
+  logradouro?: {
+    logradouro: string;
+    nr_cep: string;
+    bairro?: {
+      bairro: string;
+      cidade?: {
+        cidade: string;
+        estado?: {
+          sigla_estado: string;
+        };
+      };
+    };
+  };
 }
 
 export interface Veiculo {
