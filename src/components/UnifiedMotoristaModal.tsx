@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, User, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, UserCircle, Home, Edit2, Save, Plus, Trash2, FilePen } from 'lucide-react';
+import { X, User, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, UserCircle, Home, Edit2, Save, Plus, Trash2, FilePen, Users, UserPlus } from 'lucide-react';
 import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
@@ -32,6 +32,11 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
   const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
   const [selectedAjudanteId, setSelectedAjudanteId] = useState<number | null>(null);
   const [deletingAjudante, setDeletingAjudante] = useState<number | null>(null);
+  const [previewDocument, setPreviewDocument] = useState<{
+    url: string | null;
+    type: 'cnh' | 'rg' | 'comprovante';
+    ajudanteId: number | null;
+  } | null>(null);
 
   useEffect(() => {
     if (isOpen && motorista) {
@@ -269,6 +274,14 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
     setIsEditAjudanteModalOpen(true);
   };
 
+  const handleViewDocument = (url: string | null, type: 'cnh' | 'rg' | 'comprovante', ajudanteId: number | null) => {
+    if (url) {
+      setPreviewDocument({ url, type, ajudanteId });
+    } else {
+      toast.error('Documento não disponível');
+    }
+  };
+
   if (!isOpen || !motorista) return null;
 
   // Use motoristaData for rendering to ensure we show the most up-to-date information
@@ -299,15 +312,25 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
-                           rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <X size={24} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
+                             dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
+                             rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Editar
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
               </div>
-              
+
               {/* Tabs */}
               <div className="flex border-b border-gray-200 dark:border-gray-700">
                 <button
@@ -337,7 +360,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                               ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
                 >
-                  <UserCircle className="w-5 h-5 mr-2" />
+                  <Users className="w-5 h-5 mr-2" />
                   Ajudantes
                 </button>
               </div>
@@ -724,7 +747,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                   <div className="space-y-6">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <UserCircle className="w-5 h-5 text-gray-400" />
+                        <Users className="w-5 h-5 text-gray-400" />
                         Ajudantes
                       </h3>
                       <button
@@ -733,7 +756,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                  dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
                                  rounded-lg transition-colors flex items-center gap-1"
                       >
-                        <Plus className="w-4 h-4" />
+                        <UserPlus className="w-4 h-4" />
                         Adicionar Ajudante
                       </button>
                     </div>
@@ -798,73 +821,45 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                               )}
                             </div>
                             
-                            {/* CNH Information */}
-                            {ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0 && (
-                              <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                  Informações da CNH
-                                </h5>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                                  {ajudante.cnh_ajudante[0].nr_registro && (
-                                    <div>
-                                      <span className="text-gray-500 dark:text-gray-400">Número: </span>
-                                      <span className="text-gray-700 dark:text-gray-300">{ajudante.cnh_ajudante[0].nr_registro}</span>
-                                    </div>
-                                  )}
-                                  {ajudante.cnh_ajudante[0].categoria && (
-                                    <div>
-                                      <span className="text-gray-500 dark:text-gray-400">Categoria: </span>
-                                      <span className="text-gray-700 dark:text-gray-300">{ajudante.cnh_ajudante[0].categoria}</span>
-                                    </div>
-                                  )}
-                                  {ajudante.cnh_ajudante[0].foto_cnh && (
-                                    <div className="md:col-span-2 mt-1">
-                                      <button
-                                        onClick={() => openDocumentInNewTab(ajudante.cnh_ajudante[0].foto_cnh)}
-                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs flex items-center gap-1"
-                                      >
-                                        <FileText size={12} />
-                                        Ver CNH
-                                      </button>
-                                    </div>
-                                  )}
+                            {/* Document Information */}
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0 && (
+                                <div 
+                                  className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200 rounded-full text-xs flex items-center gap-1 cursor-pointer hover:bg-green-200 dark:hover:bg-green-900/30 transition-colors"
+                                  onClick={() => handleViewDocument(ajudante.cnh_ajudante[0].foto_cnh, 'cnh', ajudante.id_ajudante)}
+                                >
+                                  <FileText className="w-3 h-3" />
+                                  CNH cadastrada
                                 </div>
-                              </div>
-                            )}
-                            
-                            {/* Address Information */}
+                              )}
+                              {ajudante.rg_ajudante && ajudante.rg_ajudante.length > 0 && (
+                                <div 
+                                  className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200 rounded-full text-xs flex items-center gap-1 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-900/30 transition-colors"
+                                  onClick={() => handleViewDocument(ajudante.rg_ajudante[0].foto_rg, 'rg', ajudante.id_ajudante)}
+                                >
+                                  <FileText className="w-3 h-3" />
+                                  RG cadastrado
+                                </div>
+                              )}
+                              {ajudante.comprovante_residencia && (
+                                <div 
+                                  className="px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200 rounded-full text-xs flex items-center gap-1 cursor-pointer hover:bg-purple-200 dark:hover:bg-purple-900/30 transition-colors"
+                                  onClick={() => handleViewDocument(ajudante.comprovante_residencia, 'comprovante', ajudante.id_ajudante)}
+                                >
+                                  <FileText className="w-3 h-3" />
+                                  Comprovante de residência
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Address Information (Compact) */}
                             {ajudante.end_ajudante && ajudante.end_ajudante.length > 0 && ajudante.end_ajudante[0].logradouro && (
-                              <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1">
-                                  <MapPin className="w-3 h-3" />
-                                  Endereço
-                                </h5>
-                                <div className="text-xs text-gray-600 dark:text-gray-300">
-                                  {ajudante.end_ajudante[0].logradouro.logradouro}, {ajudante.end_ajudante[0].nr_end || 'S/N'}
-                                  {ajudante.end_ajudante[0].ds_complemento_end && `, ${ajudante.end_ajudante[0].ds_complemento_end}`}
-                                  <br />
-                                  {ajudante.end_ajudante[0].logradouro.bairro?.bairro}, {ajudante.end_ajudante[0].logradouro.nr_cep && formatCEP(ajudante.end_ajudante[0].logradouro.nr_cep)}
-                                  <br />
+                              <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <MapPin className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">
+                                  {ajudante.end_ajudante[0].logradouro.logradouro}, {ajudante.end_ajudante[0].nr_end || 'S/N'}, 
                                   {ajudante.end_ajudante[0].logradouro.bairro?.cidade?.cidade}/{ajudante.end_ajudante[0].logradouro.bairro?.cidade?.estado?.sigla_estado}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Comprovante de Residência */}
-                            {ajudante.comprovante_residencia && (
-                              <div className="mt-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Comprovante de Residência
-                                  </span>
-                                  <button
-                                    onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia)}
-                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs flex items-center gap-1"
-                                  >
-                                    <ExternalLink size={12} />
-                                    Ver documento
-                                  </button>
-                                </div>
+                                </span>
                               </div>
                             )}
                           </div>
@@ -990,6 +985,57 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
               ) : (
                 <img
                   src={activeDocument}
+                  alt="Documento"
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document preview modal for ajudante documents */}
+      {previewDocument && previewDocument.url && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+          onClick={() => setPreviewDocument(null)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                {previewDocument.type === 'cnh' && 'CNH do Ajudante'}
+                {previewDocument.type === 'rg' && 'RG do Ajudante'}
+                {previewDocument.type === 'comprovante' && 'Comprovante de Residência do Ajudante'}
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openDocumentInNewTab(previewDocument.url)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Abrir em nova aba"
+                >
+                  <ExternalLink size={20} />
+                </button>
+                <button
+                  onClick={() => setPreviewDocument(null)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="relative h-[calc(90vh-80px)]">
+              {isPdf(previewDocument.url) ? (
+                <iframe 
+                  src={`${previewDocument.url}#toolbar=1`} 
+                  className="w-full h-full" 
+                  title="PDF Viewer"
+                />
+              ) : (
+                <img
+                  src={previewDocument.url}
                   alt="Documento"
                   className="w-full h-full object-contain"
                 />
