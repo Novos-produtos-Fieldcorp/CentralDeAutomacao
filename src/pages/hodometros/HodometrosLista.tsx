@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Eye, ChevronDown, ChevronUp, Edit2, Trash2, Camera, X, BarChart2, Filter, AlertCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { useAuth } from '../../context/AuthContext';
+import { supabase, testSupabaseConnection } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import { useDateRange } from '../../hooks/useDateRange';
 import type { Hodometro } from '../../types/database';
 import BulkDeleteConfirmationModal from '../../components/BulkDeleteConfirmationModal';
-import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+import EditHodometroModal from '../../components/hodometros/EditHodometroModal';
+import DeleteHodometroModal from '../../components/hodometros/DeleteHodometroModal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
@@ -692,7 +694,7 @@ const HodometrosLista = () => {
                             </div>
                             
                             {/* Recharts Bar Chart */}
-                            <div className="h-64 w-full mb-6 bg-white dark:bg-[#0f172a] p-4 rounded-lg shadow-sm">
+                            <div className="h-64 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
                               <ResponsiveContainer width="100%" height="100%">
                                 <BarChart
                                   data={dailyData}
@@ -759,7 +761,7 @@ const HodometrosLista = () => {
                                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tr-xl">Foto</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="bg-white dark:bg-[#0f172a] divide-y divide-gray-200 dark:divide-gray-700">
+                                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     {/* Sort hodometros by date (newest first) */}
                                     {[...data.hodometros]
                                       .sort((a, b) => {
@@ -892,6 +894,20 @@ const HodometrosLista = () => {
         onClose={() => setShowChartModal(false)}
         data={dailyData}
         driverName={selectedVehicleName}
+      />
+
+      <EditHodometroModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        hodometro={selectedHodometro}
+        onUpdate={fetchHodometros}
+      />
+
+      <DeleteHodometroModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        hodometroData={selectedHodometro}
       />
 
       <BulkDeleteConfirmationModal
