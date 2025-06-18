@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, User, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, UserCircle, Home, Edit2, Save, Plus, Trash2, FilePen, Truck } from 'lucide-react';
+import { X, Truck, User, MapPin, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, UserCircle, Home, Edit2, Save, Plus, Trash2, FilePen } from 'lucide-react';
 import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
@@ -13,37 +13,36 @@ import EditAjudanteModal from './EditAjudanteModal';
 interface UnifiedAgregadoModalProps {
   isOpen: boolean;
   onClose: () => void;
-  motorista?: Motorista | null;
+  agregado?: Motorista | null;
   onSuccess?: () => void;
 }
 
-const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: UnifiedAgregadoModalProps) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'vehicle'>('details');
+const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedAgregadoModalProps) => {
+  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'veiculo'>('details');
   const [loading, setLoading] = useState(true);
   const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
   const [endereco, setEndereco] = useState<any | null>(null);
+  const [veiculo, setVeiculo] = useState<(Veiculo & { documento_veiculo: DocumentoVeiculo[] }) | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDocumentFormOpen, setIsDocumentFormOpen] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [motoristaData, setMotoristaData] = useState<Motorista | null>(null);
+  const [agregadoData, setAgregadoData] = useState<Motorista | null>(null);
   const [ajudantes, setAjudantes] = useState<any[]>([]);
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
   const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
   const [selectedAjudanteId, setSelectedAjudanteId] = useState<number | null>(null);
   const [deletingAjudante, setDeletingAjudante] = useState<number | null>(null);
-  const [veiculo, setVeiculo] = useState<(Veiculo & { documento_veiculo: DocumentoVeiculo[] }) | null>(null);
-  const [uploadingVehicleDoc, setUploadingVehicleDoc] = useState(false);
 
   useEffect(() => {
-    if (isOpen && motorista) {
-      setMotoristaData(motorista);
+    if (isOpen && agregado) {
+      setAgregadoData(agregado);
       fetchAgregadoDetails();
     }
-  }, [isOpen, motorista]);
+  }, [isOpen, agregado]);
 
   const fetchAgregadoDetails = async () => {
-    if (!motorista) return;
+    if (!agregado) return;
     
     try {
       setLoading(true);
@@ -52,7 +51,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       const { data: documentoData, error: documentoError } = await supabase
         .from('documento_motorista')
         .select('*')
-        .eq('motorista_id', motorista.motorista_id)
+        .eq('motorista_id', agregado.motorista_id)
         .maybeSingle();
 
       if (documentoError && documentoError.code !== 'PGRST116') {
@@ -81,7 +80,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
             )
           )
         `)
-        .eq('id_motorista', motorista.motorista_id)
+        .eq('id_motorista', agregado.motorista_id)
         .maybeSingle();
 
       if (enderecoError && enderecoError.code !== 'PGRST116') {
@@ -89,6 +88,23 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       }
 
       setEndereco(enderecoData);
+      
+      // Fetch veiculo
+      const { data: veiculoData, error: veiculoError } = await supabase
+        .from('veiculo')
+        .select(`
+          *,
+          documento_veiculo (*)
+        `)
+        .eq('motorista_id', agregado.motorista_id)
+        .eq('status_veiculo', true)
+        .maybeSingle();
+
+      if (veiculoError && veiculoError.code !== 'PGRST116') {
+        throw veiculoError;
+      }
+
+      setVeiculo(veiculoData);
       
       // Fetch ajudantes if they exist
       const { data: ajudantesData, error: ajudantesError } = await supabase
@@ -113,7 +129,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
             )
           )
         `)
-        .eq('motorista_id', motorista.motorista_id);
+        .eq('motorista_id', agregado.motorista_id);
         
       if (ajudantesError && ajudantesError.code !== 'PGRST116') {
         throw ajudantesError;
@@ -121,35 +137,18 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       
       setAjudantes(ajudantesData || []);
       
-      // Fetch vehicle data
-      const { data: veiculoData, error: veiculoError } = await supabase
-        .from('veiculo')
-        .select(`
-          *,
-          documento_veiculo(*)
-        `)
-        .eq('motorista_id', motorista.motorista_id)
-        .eq('status_veiculo', true)
-        .maybeSingle();
-        
-      if (veiculoError && veiculoError.code !== 'PGRST116') {
-        throw veiculoError;
-      }
-      
-      setVeiculo(veiculoData);
-      
-      // Fetch updated motorista data
-      const { data: updatedMotorista, error: motoristaError } = await supabase
+      // Fetch updated agregado data
+      const { data: updatedAgregado, error: agregadoError } = await supabase
         .from('motorista')
         .select('*')
-        .eq('motorista_id', motorista.motorista_id)
+        .eq('motorista_id', agregado.motorista_id)
         .single();
         
-      if (motoristaError) {
-        throw motoristaError;
+      if (agregadoError) {
+        throw agregadoError;
       }
       
-      setMotoristaData(updatedMotorista);
+      setAgregadoData(updatedAgregado);
     } catch (error) {
       console.error('Error fetching agregado details:', error);
       toast.error('Erro ao carregar detalhes do agregado');
@@ -167,14 +166,14 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const isPdf = (url: string | null) => url?.toLowerCase().endsWith('.pdf');
 
   const handleDocumentUpload = async (file: File, documentType: string) => {
-    if (!motorista || !file) return;
+    if (!agregado || !file) return;
     
     try {
       setUploading(true);
       
       // Create a unique file name
       const fileExt = file.name.split('.').pop();
-      const fileName = `${motorista.motorista_id}_${documentType}_${Date.now()}.${fileExt}`;
+      const fileName = `${agregado.motorista_id}_${documentType}_${Date.now()}.${fileExt}`;
 
       // For PDF files, we need to convert to base64 and then to blob to ensure proper MIME type
       let fileToUpload = file;
@@ -240,40 +239,33 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
           const { error } = await supabase
             .from('documento_motorista')
             .insert({ 
-              motorista_id: motorista.motorista_id, 
+              motorista_id: agregado.motorista_id, 
               ...updateData 
             });
             
           if (error) throw error;
         }
-      } else if (documentType === 'crv') {
-        setUploadingVehicleDoc(true);
-        
-        // Update vehicle document
-        if (veiculo) {
-          // Check if document record exists
-          if (veiculo.documento_veiculo && veiculo.documento_veiculo.length > 0) {
-            // Update existing record
-            const { error } = await supabase
-              .from('documento_veiculo')
-              .update({ foto_crv: publicUrl })
-              .eq('id_documento_veiculo', veiculo.documento_veiculo[0].id_documento_veiculo);
-              
-            if (error) throw error;
-          } else {
-            // Create new record
-            const { error } = await supabase
-              .from('documento_veiculo')
-              .insert({ 
-                veiculo_id: veiculo.veiculo_id, 
-                foto_crv: publicUrl 
-              });
-              
-            if (error) throw error;
-          }
+      } else if (documentType === 'crv' && veiculo) {
+        // Update documento_veiculo
+        if (veiculo.documento_veiculo && veiculo.documento_veiculo.length > 0) {
+          // Update existing record
+          const { error } = await supabase
+            .from('documento_veiculo')
+            .update({ foto_crv: publicUrl })
+            .eq('id_documento_veiculo', veiculo.documento_veiculo[0].id_documento_veiculo);
+            
+          if (error) throw error;
+        } else {
+          // Create new record
+          const { error } = await supabase
+            .from('documento_veiculo')
+            .insert({ 
+              veiculo_id: veiculo.veiculo_id, 
+              foto_crv: publicUrl 
+            });
+            
+          if (error) throw error;
         }
-        
-        setUploadingVehicleDoc(false);
       }
       
       toast.success('Documento enviado com sucesso');
@@ -287,7 +279,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       toast.error(error instanceof Error ? error.message : 'Erro ao enviar documento');
     } finally {
       setUploading(false);
-      setUploadingVehicleDoc(false);
     }
   };
 
@@ -317,10 +308,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
     setIsEditAjudanteModalOpen(true);
   };
 
-  if (!isOpen || !motorista) return null;
+  if (!isOpen || !agregado) return null;
 
-  // Use motoristaData for rendering to ensure we show the most up-to-date information
-  const displayData = motoristaData || motorista;
+  // Use agregadoData for rendering to ensure we show the most up-to-date information
+  const displayData = agregadoData || agregado;
 
   return (
     <div className="fixed inset-0 z-50">
@@ -347,13 +338,24 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
-                           rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <X size={24} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
+                             dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
+                             rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Editar
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
+                             rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
               </div>
               
               {/* Tabs */}
@@ -379,9 +381,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   Documentos
                 </button>
                 <button
-                  onClick={() => setActiveTab('vehicle')}
+                  onClick={() => setActiveTab('veiculo')}
                   className={`flex items-center px-6 py-3 text-sm font-medium border-b-2 transition-all duration-200
-                            ${activeTab === 'vehicle'
+                            ${activeTab === 'veiculo'
                               ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
                 >
@@ -411,18 +413,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   <div className="space-y-6">
                     {/* Personal Information */}
                     <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700 relative">
-                      <div className="absolute top-6 right-6">
-                        <button
-                          onClick={() => setIsEditModalOpen(true)}
-                          className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
-                                   dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
-                                   rounded-lg transition-colors flex items-center gap-1 w-auto"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          Editar
-                        </button>
-                      </div>
-                      
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <User className="w-5 h-5 text-gray-400" />
                         Informações Pessoais
@@ -538,23 +528,23 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   <div className="space-y-6">                   
                     {/* CNH Section */}
                     <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                      <CreditCard className="w-5 h-5 text-gray-400" />
-                      Carteira Nacional de Habilitação (CNH)
-                      </h3>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setIsDocumentFormOpen(true)}
-                          className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
-                                   dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
-                                   rounded-lg transition-colors flex items-center gap-1"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          Editar
-                        </button>
-                      </div>
-                    </div>                     
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          <CreditCard className="w-5 h-5 text-gray-400" />
+                          Carteira Nacional de Habilitação (CNH)
+                        </h3>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setIsDocumentFormOpen(true)}
+                            className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
+                                     dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
+                                     rounded-lg transition-colors flex items-center gap-1"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            Editar
+                          </button>
+                        </div>
+                      </div>                     
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                           <div>
@@ -778,7 +768,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   </div>
                 )}
 
-                {activeTab === 'vehicle' && (
+                {activeTab === 'veiculo' && (
                   <div className="space-y-6">
                     {/* Vehicle Information */}
                     <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -788,65 +778,65 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       </h3>
                       
                       {veiculo ? (
-                        <div className="space-y-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                              <div>
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</div>
-                                <div className="text-lg font-semibold text-gray-900 dark:text-white uppercase">
-                                  {veiculo.placa}
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca/Modelo</div>
-                                <div className="text-base text-gray-900 dark:text-white">
-                                  {veiculo.marca} {veiculo.tipo}
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Ano</div>
-                                <div className="text-base text-gray-900 dark:text-white">
-                                  {veiculo.ano || 'Não informado'}
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Cor</div>
-                                <div className="text-base text-gray-900 dark:text-white">
-                                  {veiculo.cor || 'Não informada'}
-                                </div>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="overflow-hidden">
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</div>
+                              <div className="text-lg font-semibold text-gray-900 dark:text-white uppercase font-medium break-words">
+                                {veiculo.placa}
                               </div>
                             </div>
                             
-                            <div className="space-y-4">
-                              <div>
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Tipologia</div>
-                                <div className="text-base text-gray-900 dark:text-white uppercase">
-                                  {veiculo.tipologia || 'Não informada'}
-                                </div>
+                            <div className="overflow-hidden">
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca/Modelo</div>
+                              <div className="text-base text-gray-900 dark:text-white break-words">
+                                {veiculo.marca} {veiculo.tipo}
                               </div>
-                              
-                              <div>
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Combustível</div>
-                                <div className="text-base text-gray-900 dark:text-white">
-                                  {veiculo.combustivel || 'Não informado'}
-                                </div>
+                            </div>
+                            
+                            <div className="overflow-hidden">
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Ano</div>
+                              <div className="text-base text-gray-900 dark:text-white break-words">
+                                {veiculo.ano || 'Não informado'}
                               </div>
-                              
-                              <div>
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Peso</div>
-                                <div className="text-base text-gray-900 dark:text-white">
-                                  {veiculo.peso ? `${veiculo.peso} kg` : 'Não informado'}
-                                </div>
+                            </div>
+                            
+                            <div className="overflow-hidden">
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Cor</div>
+                              <div className="text-base text-gray-900 dark:text-white break-words">
+                                {veiculo.cor || 'Não informada'}
                               </div>
-                              
-                              <div>
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Cubagem</div>
-                                <div className="text-base text-gray-900 dark:text-white">
-                                  {veiculo.cubagem ? `${veiculo.cubagem} m³` : 'Não informada'}
-                                </div>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="overflow-hidden">
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Tipologia</div>
+                              <div className="text-base text-gray-900 dark:text-white uppercase break-words">
+                                {veiculo.tipologia || 'Não informada'}
+                              </div>
+                            </div>
+                            
+                            <div className="overflow-hidden">
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Combustível</div>
+                              <div className="text-base text-gray-900 dark:text-white break-words">
+                                {veiculo.combustivel || 'Não informado'}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="overflow-hidden">
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Peso</div>
+                              <div className="text-base text-gray-900 dark:text-white break-words">
+                                {veiculo.peso ? `${veiculo.peso} kg` : 'Não informado'}
+                              </div>
+                            </div>
+                            
+                            <div className="overflow-hidden">
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Cubagem</div>
+                              <div className="text-base text-gray-900 dark:text-white break-words">
+                                {veiculo.cubagem ? `${veiculo.cubagem} m³` : 'Não informada'}
                               </div>
                             </div>
                           </div>
@@ -881,97 +871,102 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                         </div>
                       )}
                     </section>
-                    
+
                     {/* CRV Document */}
                     <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-gray-400" />
-                        CRV do Veículo
-                      </h3>
-                      
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-gray-400" />
                           CRV Digital
-                        </div>
+                        </h3>
                         {veiculo?.documento_veiculo?.[0]?.foto_crv && (
                           <button
                             onClick={() => openDocumentInNewTab(veiculo.documento_veiculo[0].foto_crv)}
-                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-xs"
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-sm"
                           >
-                            <ExternalLink size={14} />
+                            <ExternalLink size={16} />
                             Abrir em nova aba
                           </button>
                         )}
                       </div>
                       
-                      {veiculo?.documento_veiculo?.[0]?.foto_crv ? (
-                        <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                          {isPdf(veiculo.documento_veiculo[0].foto_crv) ? (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                              <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                              <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                              <button
-                                onClick={() => setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
-                              >
-                                <FileText size={16} />
-                                Visualizar PDF
-                              </button>
+                      {veiculo ? (
+                        <>
+                          {veiculo.documento_veiculo?.[0]?.foto_crv ? (
+                            <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                              {isPdf(veiculo.documento_veiculo[0].foto_crv) ? (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                  <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                                  <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
+                                  <button
+                                    onClick={() => setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
+                                  >
+                                    <FileText size={16} />
+                                    Visualizar PDF
+                                  </button>
+                                </div>
+                              ) : (
+                                <img
+                                  src={veiculo.documento_veiculo[0].foto_crv}
+                                  alt="CRV do veículo"
+                                  className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                                  onClick={() => setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
+                                />
+                              )}
                             </div>
                           ) : (
-                            <img
-                              src={veiculo.documento_veiculo[0].foto_crv}
-                              alt="CRV do veículo"
-                              className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                              onClick={() => setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
-                            />
+                            <div className="aspect-[1.414] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                              <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                              <div className="text-center">
+                                <p className="text-gray-500 dark:text-gray-400 font-medium">CRV não cadastrado</p>
+                                <p className="text-sm text-gray-400 dark:text-gray-500">
+                                  Faça o upload do CRV para visualizá-lo aqui
+                                </p>
+                              </div>
+                            </div>
                           )}
-                        </div>
-                      ) : (
-                        <div className="aspect-[1.414] w-full flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
-                          <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-                          <div className="text-center">
-                            <p className="text-gray-500 dark:text-gray-400 font-medium">CRV não cadastrado</p>
-                            <p className="text-sm text-gray-400 dark:text-gray-500">
-                              Faça o upload do CRV para visualizá-lo aqui
-                            </p>
+                          
+                          {/* Upload Button */}
+                          <div className="mt-4">
+                            <input
+                              type="file"
+                              id="crv-upload"
+                              className="hidden"
+                              accept="image/jpeg,image/png,image/jpg,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleDocumentUpload(file, 'crv');
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor="crv-upload"
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                                       transition-colors inline-flex items-center gap-2 cursor-pointer"
+                            >
+                              {uploading ? (
+                                <>
+                                  <Loader2 className="w-5 h-5 animate-spin" />
+                                  Enviando...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="w-5 h-5" />
+                                  {veiculo.documento_veiculo?.[0]?.foto_crv ? 'Atualizar CRV' : 'Enviar CRV'}
+                                </>
+                              )}
+                            </label>
                           </div>
-                        </div>
-                      )}
-                      
-                      {/* Upload Button */}
-                      {veiculo && (
-                        <div className="mt-4">
-                          <input
-                            type="file"
-                            id="crv-upload"
-                            className="hidden"
-                            accept="image/jpeg,image/png,image/jpg,application/pdf"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                handleDocumentUpload(file, 'crv');
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor="crv-upload"
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                                     transition-colors inline-flex items-center gap-2 cursor-pointer"
-                          >
-                            {uploadingVehicleDoc ? (
-                              <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                Enviando...
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="w-5 h-5" />
-                                {veiculo.documento_veiculo?.[0]?.foto_crv ? 'Atualizar CRV' : 'Enviar CRV'}
-                              </>
-                            )}
-                          </label>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
+                          <p className="text-gray-500 dark:text-gray-400 text-center">
+                            Nenhum veículo associado para exibir o CRV
+                          </p>
                         </div>
                       )}
                     </section>
@@ -1056,89 +1051,39 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               )}
                             </div>
                             
-                            {/* Document Previews */}
-                            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                              {/* CNH Preview */}
-                              {ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0 && ajudante.cnh_ajudante[0].foto_cnh && (
-                                <div className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">CNH</div>
-                                  <div className="aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative">
-                                    {isPdf(ajudante.cnh_ajudante[0].foto_cnh) ? (
-                                      <div className="absolute inset-0 flex items-center justify-center">
-                                        <FileText className="w-8 h-8 text-gray-400" />
-                                      </div>
-                                    ) : (
-                                      <img 
-                                        src={ajudante.cnh_ajudante[0].foto_cnh} 
-                                        alt="CNH" 
-                                        className="w-full h-full object-cover"
+                            {/* CNH Information */}
+                            {ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0 && (
+                              <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                  Informações da CNH
+                                </h5>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                                  {ajudante.cnh_ajudante[0].nr_registro && (
+                                    <div>
+                                      <span className="text-gray-500 dark:text-gray-400">Número: </span>
+                                      <span className="text-gray-700 dark:text-gray-300">{ajudante.cnh_ajudante[0].nr_registro}</span>
+                                    </div>
+                                  )}
+                                  {ajudante.cnh_ajudante[0].categoria && (
+                                    <div>
+                                      <span className="text-gray-500 dark:text-gray-400">Categoria: </span>
+                                      <span className="text-gray-700 dark:text-gray-300">{ajudante.cnh_ajudante[0].categoria}</span>
+                                    </div>
+                                  )}
+                                  {ajudante.cnh_ajudante[0].foto_cnh && (
+                                    <div className="md:col-span-2 mt-1">
+                                      <button
                                         onClick={() => openDocumentInNewTab(ajudante.cnh_ajudante[0].foto_cnh)}
-                                      />
-                                    )}
-                                    <button
-                                      onClick={() => openDocumentInNewTab(ajudante.cnh_ajudante[0].foto_cnh)}
-                                      className="absolute bottom-1 right-1 p-1 bg-white/80 dark:bg-gray-800/80 rounded-full text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-gray-800"
-                                    >
-                                      <ExternalLink size={14} />
-                                    </button>
-                                  </div>
+                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs flex items-center gap-1"
+                                      >
+                                        <FileText size={12} />
+                                        Ver CNH
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                              
-                              {/* RG Preview */}
-                              {ajudante.rg_ajudante && ajudante.rg_ajudante.length > 0 && ajudante.rg_ajudante[0].foto_rg && (
-                                <div className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">RG</div>
-                                  <div className="aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative">
-                                    {isPdf(ajudante.rg_ajudante[0].foto_rg) ? (
-                                      <div className="absolute inset-0 flex items-center justify-center">
-                                        <FileText className="w-8 h-8 text-gray-400" />
-                                      </div>
-                                    ) : (
-                                      <img 
-                                        src={ajudante.rg_ajudante[0].foto_rg} 
-                                        alt="RG" 
-                                        className="w-full h-full object-cover"
-                                        onClick={() => openDocumentInNewTab(ajudante.rg_ajudante[0].foto_rg)}
-                                      />
-                                    )}
-                                    <button
-                                      onClick={() => openDocumentInNewTab(ajudante.rg_ajudante[0].foto_rg)}
-                                      className="absolute bottom-1 right-1 p-1 bg-white/80 dark:bg-gray-800/80 rounded-full text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-gray-800"
-                                    >
-                                      <ExternalLink size={14} />
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Comprovante Preview */}
-                              {ajudante.comprovante_residencia && (
-                                <div className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Comprovante</div>
-                                  <div className="aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative">
-                                    {isPdf(ajudante.comprovante_residencia) ? (
-                                      <div className="absolute inset-0 flex items-center justify-center">
-                                        <FileText className="w-8 h-8 text-gray-400" />
-                                      </div>
-                                    ) : (
-                                      <img 
-                                        src={ajudante.comprovante_residencia} 
-                                        alt="Comprovante" 
-                                        className="w-full h-full object-cover"
-                                        onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia)}
-                                      />
-                                    )}
-                                    <button
-                                      onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia)}
-                                      className="absolute bottom-1 right-1 p-1 bg-white/80 dark:bg-gray-800/80 rounded-full text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-gray-800"
-                                    >
-                                      <ExternalLink size={14} />
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                              </div>
+                            )}
                             
                             {/* Address Information */}
                             {ajudante.end_ajudante && ajudante.end_ajudante.length > 0 && ajudante.end_ajudante[0].logradouro && (
@@ -1154,6 +1099,24 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                   {ajudante.end_ajudante[0].logradouro.bairro?.bairro}, {ajudante.end_ajudante[0].logradouro.nr_cep && formatCEP(ajudante.end_ajudante[0].logradouro.nr_cep)}
                                   <br />
                                   {ajudante.end_ajudante[0].logradouro.bairro?.cidade?.cidade}/{ajudante.end_ajudante[0].logradouro.bairro?.cidade?.estado?.sigla_estado}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Comprovante de Residência */}
+                            {ajudante.comprovante_residencia && (
+                              <div className="mt-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Comprovante de Residência
+                                  </span>
+                                  <button
+                                    onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia)}
+                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs flex items-center gap-1"
+                                  >
+                                    <ExternalLink size={12} />
+                                    Ver documento
+                                  </button>
                                 </div>
                               </div>
                             )}
@@ -1197,7 +1160,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       <EditMotoristaModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        motorista={motorista}
+        motorista={agregado}
         onUpdate={() => {
           fetchAgregadoDetails();
           if (onSuccess) onSuccess();
@@ -1208,7 +1171,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       <DocumentoMotoristaForm
         isOpen={isDocumentFormOpen}
         onClose={() => setIsDocumentFormOpen(false)}
-        motorista_id={motorista.motorista_id}
+        motorista_id={agregado.motorista_id}
         onSuccess={() => {
           fetchAgregadoDetails();
           setIsDocumentFormOpen(false);
@@ -1220,7 +1183,8 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       <AddAjudanteModal
         isOpen={isAddAjudanteModalOpen}
         onClose={() => setIsAddAjudanteModalOpen(false)}
-        motorista_id={motorista.motorista_id}
+        motorista_id={agregado.motorista_id}
+        veiculo_id={veiculo?.veiculo_id}
         onSuccess={() => {
           fetchAgregadoDetails();
           if (onSuccess) onSuccess();
