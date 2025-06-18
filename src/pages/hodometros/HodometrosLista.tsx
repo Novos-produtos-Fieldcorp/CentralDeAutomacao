@@ -757,7 +757,14 @@ const HodometrosLista = () => {
                                     </tr>
                                   </thead>
                                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    {data.hodometros.map((hodometro, index) => (
+                                    {/* Sort hodometros by date (newest first) */}
+                                    {[...data.hodometros]
+                                      .sort((a, b) => {
+                                        const dateA = new Date(`${a.data}T${a.hora || '00:00:00'}`);
+                                        const dateB = new Date(`${b.data}T${b.hora || '00:00:00'}`);
+                                        return dateB.getTime() - dateA.getTime(); // Newest first
+                                      })
+                                      .map((hodometro, index) => (
                                       <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                           <div className="text-sm text-gray-900 dark:text-white">
