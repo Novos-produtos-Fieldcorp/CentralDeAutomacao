@@ -389,7 +389,7 @@ const HodometrosRelatorio = () => {
               ))}
               {filteredHodometros.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     Nenhuma leitura encontrada para o período selecionado
                   </td>
                 </tr>
