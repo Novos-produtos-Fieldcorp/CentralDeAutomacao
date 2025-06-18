@@ -47,6 +47,7 @@ const Contratados = () => {
   const [contratados, setContratados] = useState<MotoristaWithAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -65,6 +66,7 @@ const Contratados = () => {
   const [cidadeFilter, setCidadeFilter] = useState<string>('');
   const [cidades, setCidades] = useState<string[]>([]);
   const [funcaoFilter, setFuncaoFilter] = useState<string>('');
+  const [ativoFilter, setAtivoFilter] = useState<string>('');
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -80,6 +82,7 @@ const Contratados = () => {
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
   const [isDetailViewOpen, setIsDetailViewOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
   const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
   const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
 
@@ -95,6 +98,11 @@ const Contratados = () => {
         setContextMenu({ ...contextMenu, visible: false });
       }
       
+      // Close any open status dropdown
+      if (statusDropdownOpen !== null) {
+        setStatusDropdownOpen(null);
+      }
+      
       // Close any open cliente dropdown
       if (clienteDropdownOpen !== null) {
         setClienteDropdownOpen(null);
@@ -105,7 +113,7 @@ const Contratados = () => {
     return () => {
       document.removeEventListener('click', handleClick);
     };
-  }, [contextMenu.visible, clienteDropdownOpen]);
+  }, [contextMenu.visible, statusDropdownOpen, clienteDropdownOpen]);
 
   const fetchContratados = async () => {
     try {
@@ -294,12 +302,53 @@ const Contratados = () => {
     });
   };
 
+  const toggleStatusDropdown = (e: React.MouseEvent, contratadoId: number) => {
+    e.stopPropagation();
+    if (statusDropdownOpen === contratadoId) {
+      setStatusDropdownOpen(null);
+    } else {
+      setStatusDropdownOpen(contratadoId);
+    }
+  };
+
   const toggleClienteDropdown = (e: React.MouseEvent, contratadoId: number) => {
     e.stopPropagation();
     if (clienteDropdownOpen === contratadoId) {
       setClienteDropdownOpen(null);
     } else {
       setClienteDropdownOpen(contratadoId);
+    }
+  };
+
+  const handleUpdateStatus = async (e: React.MouseEvent, contratado: MotoristaWithAddress, newStatus: string) => {
+    e.stopPropagation();
+    try {
+      setUpdatingStatus(contratado.motorista_id);
+      
+      // Update the status in the database
+      const { error } = await supabase
+        .from('motorista')
+        .update({ st_cadastro: newStatus })
+        .eq('motorista_id', contratado.motorista_id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setContratados(prev => 
+        prev.map(m => 
+          m.motorista_id === contratado.motorista_id 
+            ? { ...m, st_cadastro: newStatus } 
+            : m
+        )
+      );
+      
+      toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Erro ao atualizar status');
+    } finally {
+      setUpdatingStatus(null);
+      setStatusDropdownOpen(null);
     }
   };
 
@@ -383,11 +432,17 @@ const Contratados = () => {
     const clienteMatch = clienteFilter ? contratado.cliente_id === parseInt(clienteFilter) : true;
     const cidadeMatch = cidadeFilter ? getContratadoCity(contratado) === cidadeFilter : true;
     const funcaoMatch = funcaoFilter ? contratado.funcao === funcaoFilter : true;
+    const ativoMatch = ativoFilter ? 
+      (ativoFilter === 'ativo' ? contratado.ativo === true : contratado.ativo === false) : 
+      true;
+    const statusMatch = statusFilter ? contratado.st_cadastro === statusFilter : true;
     
     return (
       clienteMatch &&
       cidadeMatch &&
       funcaoMatch &&
+      ativoMatch &&
+      statusMatch &&
       ((contratado.nome && contratado.nome.toLowerCase().includes(searchLower)) ||
        (contratado.cpf && contratado.cpf.includes(searchLower)) ||
        (typeof contratado.email === 'string' && contratado.email.toLowerCase().includes(searchLower)) ||
@@ -425,6 +480,15 @@ const Contratados = () => {
         <div className="flex gap-2">
           {selectedItems.size > 0 && (
             <>
+              <button
+                onClick={() => handleBulkAction('status')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                        transition-colors flex items-center gap-2"
+              >
+                <Edit2 className="w-5 h-5" />
+                Atualizar Status
+              </button>
               <button
                 onClick={() => handleBulkAction('client')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
@@ -506,7 +570,7 @@ const Contratados = () => {
           </div>
         </div>
         
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <select
               value={clienteFilter}
@@ -526,6 +590,39 @@ const Contratados = () => {
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+
+          <div className="relative">
+            <select
+              value={ativoFilter}
+              onChange={(e) => setAtivoFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todos (Ativos/Inativos)</option>
+              <option value="ativo">Somente Ativos</option>
+              <option value="inativo">Somente Inativos</option>
+            </select>
+            <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todos os status</option>
+              <option value="cadastrado">Cadastrado</option>
+              <option value="qualificado">Qualificado</option>
+              <option value="documentacao">Documentação</option>
+              <option value="contrato_enviado">Contrato Enviado</option>
+              <option value="contratado">Contratado</option>
+              <option value="repescagem">Repescagem</option>
+              <option value="rejeitado">Rejeitado</option>
+            </select>
+            <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
         </div>
@@ -557,6 +654,7 @@ const Contratados = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Função</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
@@ -628,6 +726,117 @@ const Contratados = () => {
                         }`}>
                           {contratado.funcao}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="relative">
+                          <button
+                            onClick={(e) => toggleStatusDropdown(e, contratado.motorista_id)}
+                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
+                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                                     dark:focus:ring-offset-gray-800"
+                          >
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              contratado.st_cadastro === 'contratado' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' :
+                              contratado.st_cadastro === 'rejeitado' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200' :
+                              contratado.st_cadastro === 'documentacao' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200' :
+                              contratado.st_cadastro === 'qualificado' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200' :
+                              contratado.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200' :
+                              contratado.st_cadastro === 'repescagem' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200' :
+                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                            }`}>
+                              {contratado.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
+                               contratado.st_cadastro.charAt(0).toUpperCase() + contratado.st_cadastro.slice(1)}
+                            </span>
+                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400" />
+                          </button>
+                          
+                          {statusDropdownOpen === contratado.motorista_id && (
+                            <div 
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="py-1">
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, contratado, 'cadastrado')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    contratado.st_cadastro === 'cadastrado' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Cadastrado
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, contratado, 'qualificado')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    contratado.st_cadastro === 'qualificado' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Qualificado
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, contratado, 'documentacao')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    contratado.st_cadastro === 'documentacao' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Documentação
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, contratado, 'contrato_enviado')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    contratado.st_cadastro === 'contrato_enviado' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Contrato Enviado
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, contratado, 'contratado')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    contratado.st_cadastro === 'contratado' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Contratado
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, contratado, 'repescagem')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    contratado.st_cadastro === 'repescagem' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Repescagem
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, contratado, 'rejeitado')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    contratado.st_cadastro === 'rejeitado' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Rejeitado
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {updatingStatus === contratado.motorista_id && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
