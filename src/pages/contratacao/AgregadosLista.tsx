@@ -81,6 +81,8 @@ const AgregadosLista = () => {
   const [clienteFilter, setClienteFilter] = useState<string>('');
   const [cidadeFilter, setCidadeFilter] = useState<string>('');
   const [cidades, setCidades] = useState<string[]>([]);
+  const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string>('');
+  const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
   const [isDetailViewOpen, setIsDetailViewOpen] = useState(false);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -215,13 +217,26 @@ const AgregadosLista = () => {
 
       // Extract unique cities from agregados
       const uniqueCities = new Set<string>();
+      const uniqueVehicleTypes = new Set<string>();
+      
       data?.forEach(agregado => {
         const cidade = agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade;
         if (cidade) {
           uniqueCities.add(cidade);
         }
+        
+        // Extract vehicle types
+        if (agregado.veiculo && agregado.veiculo.length > 0) {
+          agregado.veiculo.forEach(veiculo => {
+            if (veiculo.tipologia) {
+              uniqueVehicleTypes.add(veiculo.tipologia);
+            }
+          });
+        }
       });
+      
       setCidades(Array.from(uniqueCities).sort());
+      setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
 
       setAgregados(data || []);
     } catch (error) {
@@ -480,19 +495,26 @@ const AgregadosLista = () => {
     return agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || null;
   };
 
+  const getVehicleType = (agregado: MotoristaWithDetails): string | null => {
+    return agregado.veiculo && agregado.veiculo.length > 0 ? agregado.veiculo[0].tipologia : null;
+  };
+
   const filteredAgregados = agregados.filter(agregado => {
     const searchLower = searchTerm.toLowerCase();
     const statusMatch = statusFilter ? agregado.st_cadastro === statusFilter : true;
     const clienteMatch = clienteFilter ? agregado.cliente_id === parseInt(clienteFilter) : true;
     const cidadeMatch = cidadeFilter ? getAgregadoCity(agregado) === cidadeFilter : true;
-    const ativoMatch = ativoFilter ? 
-      (ativoFilter === 'ativo' ? agregado.ativo === true : agregado.ativo === false) : 
-      true;
+    const tipoVeiculoMatch = tipoVeiculoFilter ? 
+      (agregado.veiculo && agregado.veiculo.some(v => v.tipologia === tipoVeiculoFilter)) : true;
+    const ativoMatch = ativoFilter === '' ? true : 
+                      ativoFilter === 'active' ? agregado.ativo === true : 
+                      ativoFilter === 'inactive' ? agregado.ativo === false : true;
     
     return (
       statusMatch &&
       clienteMatch &&
       cidadeMatch &&
+      tipoVeiculoMatch &&
       ativoMatch &&
       ((agregado.nome && agregado.nome.toLowerCase().includes(searchLower)) ||
        (agregado.cpf && agregado.cpf.includes(searchLower)) ||
@@ -633,18 +655,15 @@ const AgregadosLista = () => {
 
           <div className="relative">
             <select
-              value={cidadeFilter}
-              onChange={(e) => setCidadeFilter(e.target.value)}
+              value={ativoFilter}
+              onChange={(e) => setAtivoFilter(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
-              <option value="">Todas as cidades</option>
-              {cidades.map((cidade, index) => (
-                <option key={index} value={cidade}>
-                  {cidade}
-                </option>
-              ))}
+              <option value="">Todos (Ativos/Inativos)</option>
+              <option value="active">Somente Ativos</option>
+              <option value="inactive">Somente Inativos</option>
             </select>
-            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <User className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
         </div>
@@ -674,21 +693,40 @@ const AgregadosLista = () => {
 
           <div className="relative">
             <select
-              value={ativoFilter}
-              onChange={(e) => setAtivoFilter(e.target.value)}
+              value={cidadeFilter}
+              onChange={(e) => setCidadeFilter(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
-              <option value="">Todos (Ativo/Inativo)</option>
-              <option value="ativo">Somente Ativos</option>
-              <option value="inativo">Somente Inativos</option>
+              <option value="">Todas as cidades</option>
+              {cidades.map((cidade, index) => (
+                <option key={index} value={cidade}>
+                  {cidade}
+                </option>
+              ))}
             </select>
-            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-            </svg>
+            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
+          <div className="relative">
+            <select
+              value={tipoVeiculoFilter}
+              onChange={(e) => setTipoVeiculoFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todos os tipos de veículo</option>
+              {tiposVeiculo.map((tipo, index) => (
+                <option key={index} value={tipo}>
+                  {tipo}
+                </option>
+              ))}
+            </select>
+            <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+        </div>
+        
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <select
               value={dateFilter}
@@ -1002,7 +1040,7 @@ const AgregadosLista = () => {
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {agregado.veiculo && agregado.veiculo[0] ? (
-                            `${agregado.veiculo[0].marca || ''} ${agregado.veiculo[0].tipo || ''}`
+                            `${agregado.veiculo[0].tipologia || ''}`
                           ) : (
                             ''
                           )}
