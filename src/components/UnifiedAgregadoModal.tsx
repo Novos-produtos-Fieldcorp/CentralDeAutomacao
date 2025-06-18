@@ -287,39 +287,37 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-gray-200 dark:border-gray-700">
-              <nav className="flex space-x-8 px-6" aria-label="Tabs">
-                <button
-                  onClick={() => setActiveTab('details')}
-                  className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
-                            ${activeTab === 'details'
-                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
-                >
-                  <User className="w-5 h-5 mr-2" />
-                  Detalhes
-                </button>
-                <button
-                  onClick={() => setActiveTab('documents')}
-                  className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
-                            ${activeTab === 'documents'
-                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
-                >
-                  <FileText className="w-5 h-5 mr-2" />
-                  Documentos
-                </button>
-                <button
-                  onClick={() => setActiveTab('helpers')}
-                  className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
-                            ${activeTab === 'helpers'
-                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
-                >
-                  <Users className="w-5 h-5 mr-2" />
-                  Ajudantes
-                </button>
-              </nav>
+            <div className="flex border-b border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setActiveTab('details')}
+                className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
+                          ${activeTab === 'details'
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+              >
+                <User className="w-5 h-5 mr-2" />
+                Detalhes
+              </button>
+              <button
+                onClick={() => setActiveTab('documents')}
+                className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
+                          ${activeTab === 'documents'
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+              >
+                <FileText className="w-5 h-5 mr-2" />
+                Documentos
+              </button>
+              <button
+                onClick={() => setActiveTab('helpers')}
+                className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200
+                          ${activeTab === 'helpers'
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}`}
+              >
+                <Users className="w-5 h-5 mr-2" />
+                Ajudantes
+              </button>
             </div>
 
             {/* Content */}
