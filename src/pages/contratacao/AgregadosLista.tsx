@@ -1109,6 +1109,7 @@ const AgregadosLista = () => {
         documento={selectedAgregado?.documento || null}
         veiculo={selectedAgregado?.veiculo?.[0] || null}
         endereco={selectedAgregado?.endereco}
+        onSuccess={fetchAgregados}
       />
 
       <DocumentViewer
