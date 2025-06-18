@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, User, UserCircle, Home, Edit2, Save, Plus, Trash2 } from 'lucide-react';
-import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
+import { X, User, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, UserCircle, Home, Edit2, Save, Plus, Truck, Trash2, FilePen } from 'lucide-react';
+import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo, DocumentoAjudante } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
 import AddAjudanteModal from './AddAjudanteModal';
+import EditAjudanteModal from './EditAjudanteModal';
 
 interface UnifiedAgregadoModalProps {
   isOpen: boolean;
@@ -20,12 +21,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'vehicle' | 'ajudantes'>('details');
   const [loading, setLoading] = useState(true);
   const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
-  const [veiculo, setVeiculo] = useState<(Veiculo & {
-    documento_veiculo: (DocumentoVeiculo & {
-      pessoa_fisica_dono_veiculo?: PessoaFisicaDonoVeiculo;
-      pessoa_juridica_dono_veiculo?: PessoaJuridicaDonoVeiculo;
-    })[];
-  }) | null>(null);
   const [endereco, setEndereco] = useState<any | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDocumentFormOpen, setIsDocumentFormOpen] = useState(false);
@@ -34,7 +29,25 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
   const [agregadoData, setAgregadoData] = useState<Motorista | null>(null);
   const [ajudantes, setAjudantes] = useState<any[]>([]);
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
+  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
+  const [selectedAjudanteId, setSelectedAjudanteId] = useState<number | null>(null);
   const [deletingAjudante, setDeletingAjudante] = useState<number | null>(null);
+  const [veiculo, setVeiculo] = useState<(Veiculo & { documento_veiculo: DocumentoVeiculo[] }) | null>(null);
+  const [isEditingVehicle, setIsEditingVehicle] = useState(false);
+  const [vehicleFormData, setVehicleFormData] = useState({
+    placa: '',
+    marca: '',
+    tipo: '',
+    ano: '',
+    cor: '',
+    tipologia: '',
+    combustivel: '',
+    peso: '',
+    cubagem: '',
+    possui_rastreador: false,
+    marca_rastreador: ''
+  });
+  const [savingVehicle, setSavingVehicle] = useState(false);
 
   useEffect(() => {
     if (isOpen && agregado) {
@@ -42,6 +55,24 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
       fetchAgregadoDetails();
     }
   }, [isOpen, agregado]);
+
+  useEffect(() => {
+    if (veiculo) {
+      setVehicleFormData({
+        placa: veiculo.placa || '',
+        marca: veiculo.marca || '',
+        tipo: veiculo.tipo || '',
+        ano: veiculo.ano || '',
+        cor: veiculo.cor || '',
+        tipologia: veiculo.tipologia || '',
+        combustivel: veiculo.combustivel || '',
+        peso: veiculo.peso || '',
+        cubagem: veiculo.cubagem || '',
+        possui_rastreador: veiculo.possui_rastreador || false,
+        marca_rastreador: veiculo.marca_rastreador || ''
+      });
+    }
+  }, [veiculo]);
 
   const fetchAgregadoDetails = async () => {
     if (!agregado) return;
@@ -90,28 +121,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
       }
 
       setEndereco(enderecoData);
-
-      // Fetch veiculo
-      const { data: veiculoData, error: veiculoError } = await supabase
-        .from('veiculo')
-        .select(`
-          *,
-          documento_veiculo (
-            *,
-            pessoa_fisica_dono_veiculo (*),
-            pessoa_juridica_dono_veiculo (*)
-          )
-        `)
-        .eq('motorista_id', agregado.motorista_id)
-        .eq('status_veiculo', true)
-        .limit(1)
-        .maybeSingle();
-
-      if (veiculoError && veiculoError.code !== 'PGRST116') {
-        throw veiculoError;
-      }
-
-      setVeiculo(veiculoData);
       
       // Fetch ajudantes if they exist
       const { data: ajudantesData, error: ajudantesError } = await supabase
@@ -143,6 +152,23 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
       }
       
       setAjudantes(ajudantesData || []);
+      
+      // Fetch vehicle data
+      const { data: veiculoData, error: veiculoError } = await supabase
+        .from('veiculo')
+        .select(`
+          *,
+          documento_veiculo (*)
+        `)
+        .eq('motorista_id', agregado.motorista_id)
+        .eq('status_veiculo', true)
+        .maybeSingle();
+        
+      if (veiculoError && veiculoError.code !== 'PGRST116') {
+        throw veiculoError;
+      }
+      
+      setVeiculo(veiculoData);
       
       // Fetch updated agregado data
       const { data: updatedAgregado, error: agregadoError } = await supabase
@@ -307,6 +333,54 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
       toast.error('Erro ao remover ajudante');
     } finally {
       setDeletingAjudante(null);
+    }
+  };
+
+  const handleEditAjudante = (ajudanteId: number) => {
+    setSelectedAjudanteId(ajudanteId);
+    setIsEditAjudanteModalOpen(true);
+  };
+
+  const handleVehicleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      setVehicleFormData(prev => ({
+        ...prev,
+        [name]: (e.target as HTMLInputElement).checked
+      }));
+    } else {
+      setVehicleFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleSaveVehicle = async () => {
+    if (!veiculo || !agregado) return;
+    
+    try {
+      setSavingVehicle(true);
+      
+      const { error } = await supabase
+        .from('veiculo')
+        .update({
+          ...vehicleFormData,
+          placa: vehicleFormData.placa.toUpperCase()
+        })
+        .eq('veiculo_id', veiculo.veiculo_id);
+        
+      if (error) throw error;
+      
+      toast.success('Veículo atualizado com sucesso');
+      fetchAgregadoDetails(); // Refresh data
+      setIsEditingVehicle(false);
+    } catch (error) {
+      console.error('Error updating vehicle:', error);
+      toast.error('Erro ao atualizar veículo');
+    } finally {
+      setSavingVehicle(false);
     }
   };
 
@@ -531,23 +605,23 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                   <div className="space-y-6">                   
                     {/* CNH Section */}
                     <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                      <CreditCard className="w-5 h-5 text-gray-400" />
-                      Carteira Nacional de Habilitação (CNH)
-                      </h3>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setIsDocumentFormOpen(true)}
-                          className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
-                                   dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
-                                   rounded-lg transition-colors flex items-center gap-1"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          Editar
-                        </button>
-                      </div>
-                    </div>                     
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          <CreditCard className="w-5 h-5 text-gray-400" />
+                          Carteira Nacional de Habilitação (CNH)
+                        </h3>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setIsDocumentFormOpen(true)}
+                            className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
+                                     dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
+                                     rounded-lg transition-colors flex items-center gap-1"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            Editar
+                          </button>
+                        </div>
+                      </div>                     
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                           <div>
@@ -774,133 +848,273 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                 {activeTab === 'vehicle' && (
                   <div className="space-y-6">
                     {/* Vehicle Information */}
-                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                          <Truck className="w-5 h-5 text-gray-400" />
-                          Informações do Veículo
-                        </h3>
-                        <button
-                          onClick={() => setIsEditModalOpen(true)}
-                          className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
-                                   dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
-                                   rounded-lg transition-colors flex items-center gap-1 w-auto"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          Editar
-                        </button>
+                    <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700 relative">
+                      <div className="absolute top-6 right-6">
+                        {isEditingVehicle ? (
+                          <button
+                            onClick={handleSaveVehicle}
+                            disabled={savingVehicle}
+                            className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
+                                     dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
+                                     rounded-lg transition-colors flex items-center gap-1 w-auto"
+                          >
+                            {savingVehicle ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Salvando...
+                              </>
+                            ) : (
+                              <>
+                                <Save className="w-4 h-4" />
+                                Salvar
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setIsEditingVehicle(true)}
+                            className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 
+                                     dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 
+                                     rounded-lg transition-colors flex items-center gap-1 w-auto"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            Editar
+                          </button>
+                        )}
                       </div>
                       
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <Truck className="w-5 h-5 text-gray-400" />
+                        Informações do Veículo
+                      </h3>
+                      
                       {veiculo ? (
-                        <div className="space-y-6">
+                        isEditingVehicle ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Placa *
+                              </label>
+                              <input
+                                type="text"
+                                name="placa"
+                                value={vehicleFormData.placa}
+                                onChange={handleVehicleInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                required
+                                maxLength={7}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Marca
+                              </label>
+                              <input
+                                type="text"
+                                name="marca"
+                                value={vehicleFormData.marca}
+                                onChange={handleVehicleInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Modelo
+                              </label>
+                              <input
+                                type="text"
+                                name="tipo"
+                                value={vehicleFormData.tipo}
+                                onChange={handleVehicleInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Ano
+                              </label>
+                              <input
+                                type="text"
+                                name="ano"
+                                value={vehicleFormData.ano}
+                                onChange={handleVehicleInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Cor
+                              </label>
+                              <input
+                                type="text"
+                                name="cor"
+                                value={vehicleFormData.cor}
+                                onChange={handleVehicleInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Tipologia *
+                              </label>
+                              <input
+                                type="text"
+                                name="tipologia"
+                                value={vehicleFormData.tipologia}
+                                onChange={handleVehicleInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Combustível
+                              </label>
+                              <input
+                                type="text"
+                                name="combustivel"
+                                value={vehicleFormData.combustivel}
+                                onChange={handleVehicleInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Peso (kg)
+                              </label>
+                              <input
+                                type="text"
+                                name="peso"
+                                value={vehicleFormData.peso}
+                                onChange={handleVehicleInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Cubagem (m³)
+                              </label>
+                              <input
+                                type="text"
+                                name="cubagem"
+                                value={vehicleFormData.cubagem}
+                                onChange={handleVehicleInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              />
+                            </div>
+                            <div>
+                              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <input
+                                  type="checkbox"
+                                  name="possui_rastreador"
+                                  checked={vehicleFormData.possui_rastreador}
+                                  onChange={handleVehicleInputChange}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span>Possui Rastreador</span>
+                              </label>
+                            </div>
+                            {vehicleFormData.possui_rastreador && (
                               <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                  Marca do Rastreador
+                                </label>
+                                <input
+                                  type="text"
+                                  name="marca_rastreador"
+                                  value={vehicleFormData.marca_rastreador}
+                                  onChange={handleVehicleInputChange}
+                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="overflow-hidden">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</div>
-                                <div className="text-lg font-semibold text-gray-900 dark:text-white uppercase">
+                                <div className="text-lg font-semibold text-gray-900 dark:text-white break-words uppercase">
                                   {veiculo.placa}
                                 </div>
                               </div>
                               
-                              <div>
+                              <div className="overflow-hidden">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca/Modelo</div>
-                                <div className="text-base text-gray-900 dark:text-white">
+                                <div className="text-lg font-semibold text-gray-900 dark:text-white break-words">
                                   {veiculo.marca} {veiculo.tipo}
                                 </div>
                               </div>
                               
-                              <div>
+                              <div className="overflow-hidden">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Ano</div>
-                                <div className="text-base text-gray-900 dark:text-white">
+                                <div className="text-base text-gray-900 dark:text-white break-words">
                                   {veiculo.ano || 'Não informado'}
                                 </div>
                               </div>
                               
-                              <div>
+                              <div className="overflow-hidden">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Cor</div>
-                                <div className="text-base text-gray-900 dark:text-white">
+                                <div className="text-base text-gray-900 dark:text-white break-words">
                                   {veiculo.cor || 'Não informada'}
                                 </div>
                               </div>
                             </div>
                             
-                            <div className="space-y-4">
-                              <div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                              <div className="overflow-hidden">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Tipologia</div>
-                                <div className="text-base text-gray-900 dark:text-white uppercase">
+                                <div className="text-base text-gray-900 dark:text-white uppercase break-words">
                                   {veiculo.tipologia || 'Não informada'}
                                 </div>
                               </div>
                               
-                              <div>
+                              <div className="overflow-hidden">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Combustível</div>
-                                <div className="text-base text-gray-900 dark:text-white">
+                                <div className="text-base text-gray-900 dark:text-white break-words">
                                   {veiculo.combustivel || 'Não informado'}
                                 </div>
                               </div>
-                              
-                              <div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                              <div className="overflow-hidden">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Peso</div>
-                                <div className="text-base text-gray-900 dark:text-white">
+                                <div className="text-base text-gray-900 dark:text-white break-words">
                                   {veiculo.peso ? `${veiculo.peso} kg` : 'Não informado'}
                                 </div>
                               </div>
                               
-                              <div>
+                              <div className="overflow-hidden">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Cubagem</div>
-                                <div className="text-base text-gray-900 dark:text-white">
+                                <div className="text-base text-gray-900 dark:text-white break-words">
                                   {veiculo.cubagem ? `${veiculo.cubagem} m³` : 'Não informada'}
                                 </div>
                               </div>
                             </div>
-                          </div>
-                          
-                          <div>
-                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Rastreador</div>
-                            <div className="flex items-center gap-2 mt-1">
-                              {veiculo.possui_rastreador ? (
-                                <>
-                                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                                  <span className="text-base text-gray-900 dark:text-white">
-                                    Instalado - {veiculo.marca_rastreador || 'Marca não informada'}
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="w-5 h-5 text-red-500" />
-                                  <span className="text-base text-gray-900 dark:text-white">
-                                    Não instalado
-                                  </span>
-                                </>
-                              )}
+                            
+                            <div className="mt-6">
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Rastreador</div>
+                              <div className="flex items-center gap-2 mt-1">
+                                {veiculo.possui_rastreador ? (
+                                  <>
+                                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                    <span className="text-base text-gray-900 dark:text-white">
+                                      Instalado - {veiculo.marca_rastreador || 'Marca não informada'}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle className="w-5 h-5 text-red-500" />
+                                    <span className="text-base text-gray-900 dark:text-white">
+                                      Não instalado
+                                    </span>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
-
-                          {/* Vehicle Owner Information */}
-                          <div className="overflow-hidden">
-                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Proprietário do Veículo</div>
-                            <div className="text-base text-gray-900 dark:text-white break-words">
-                              {veiculo.documento_veiculo?.[0]?.pessoa_fisica_dono_veiculo ? (
-                                <>
-                                  <div>{veiculo.documento_veiculo[0].pessoa_fisica_dono_veiculo.nome_dono_veiculo}</div>
-                                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    Pessoa Física {veiculo.documento_veiculo[0].pessoa_fisica_dono_veiculo.nr_rg ? `• RG: ${veiculo.documento_veiculo[0].pessoa_fisica_dono_veiculo.nr_rg}` : ''}
-                                  </div>
-                                </>
-                              ) : veiculo.documento_veiculo?.[0]?.pessoa_juridica_dono_veiculo ? (
-                                <>
-                                  <div>{veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.razao_social}</div>
-                                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    Pessoa Jurídica {veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.cnpj ? `• CNPJ: ${veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.cnpj}` : ''}
-                                    {veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.inscricao_estadual ? ` • IE: ${veiculo.documento_veiculo[0].pessoa_juridica_dono_veiculo.inscricao_estadual}` : ''}
-                                  </div>
-                                </>
-                              ) : (
-                                'Não informado'
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        )}
                       ) : (
                         <div className="flex flex-col items-center justify-center py-8">
                           <Truck className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
@@ -911,17 +1125,17 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                       )}
                     </section>
                     
-                    {/* Documentação do Veículo */}
+                    {/* CRV Document */}
                     {veiculo && (
                       <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                           <FileText className="w-5 h-5 text-gray-400" />
-                          Documentação do Veículo
+                          CRV Digital
                         </h3>
                         
                         <div className="flex justify-between items-center mb-2">
                           <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            CRV Digital
+                            CRV
                           </div>
                           {veiculo.documento_veiculo?.[0]?.foto_crv && (
                             <button
@@ -1045,6 +1259,13 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                               </div>
                               <div className="flex gap-2">
                                 <button
+                                  onClick={() => handleEditAjudante(ajudante.id_ajudante)}
+                                  className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                  title="Editar ajudante"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button
                                   onClick={() => handleDeleteAjudante(ajudante.id_ajudante)}
                                   disabled={deletingAjudante === ajudante.id_ajudante}
                                   className="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1078,39 +1299,95 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                               )}
                             </div>
                             
-                            {/* CNH Information */}
-                            {ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0 && (
-                              <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                  Informações da CNH
-                                </h5>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                                  {ajudante.cnh_ajudante[0].nr_registro && (
-                                    <div>
-                                      <span className="text-gray-500 dark:text-gray-400">Número: </span>
-                                      <span className="text-gray-700 dark:text-gray-300">{ajudante.cnh_ajudante[0].nr_registro}</span>
-                                    </div>
-                                  )}
-                                  {ajudante.cnh_ajudante[0].categoria && (
-                                    <div>
-                                      <span className="text-gray-500 dark:text-gray-400">Categoria: </span>
-                                      <span className="text-gray-700 dark:text-gray-300">{ajudante.cnh_ajudante[0].categoria}</span>
-                                    </div>
-                                  )}
-                                  {ajudante.cnh_ajudante[0].foto_cnh && (
-                                    <div className="md:col-span-2 mt-1">
-                                      <button
-                                        onClick={() => openDocumentInNewTab(ajudante.cnh_ajudante[0].foto_cnh)}
-                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs flex items-center gap-1"
-                                      >
-                                        <FileText size={12} />
-                                        Ver CNH
-                                      </button>
-                                    </div>
-                                  )}
+                            {/* Documents Section */}
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* CNH Document */}
+                              {ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0 && ajudante.cnh_ajudante[0].foto_cnh && (
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">CNH</h5>
+                                    <button
+                                      onClick={() => openDocumentInNewTab(ajudante.cnh_ajudante[0].foto_cnh)}
+                                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs flex items-center gap-1"
+                                    >
+                                      <ExternalLink size={12} />
+                                      Ver
+                                    </button>
+                                  </div>
+                                  <div className="aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                    {isPdf(ajudante.cnh_ajudante[0].foto_cnh) ? (
+                                      <div className="flex items-center justify-center h-full">
+                                        <FileText className="w-8 h-8 text-gray-400" />
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={ajudante.cnh_ajudante[0].foto_cnh}
+                                        alt="CNH do ajudante"
+                                        className="w-full h-full object-cover"
+                                      />
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
+                              
+                              {/* RG Document */}
+                              {ajudante.rg_ajudante && ajudante.rg_ajudante.length > 0 && ajudante.rg_ajudante[0].foto_rg && (
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">RG</h5>
+                                    <button
+                                      onClick={() => openDocumentInNewTab(ajudante.rg_ajudante[0].foto_rg)}
+                                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs flex items-center gap-1"
+                                    >
+                                      <ExternalLink size={12} />
+                                      Ver
+                                    </button>
+                                  </div>
+                                  <div className="aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                    {isPdf(ajudante.rg_ajudante[0].foto_rg) ? (
+                                      <div className="flex items-center justify-center h-full">
+                                        <FileText className="w-8 h-8 text-gray-400" />
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={ajudante.rg_ajudante[0].foto_rg}
+                                        alt="RG do ajudante"
+                                        className="w-full h-full object-cover"
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Comprovante de Residência */}
+                              {ajudante.comprovante_residencia && (
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Comprovante de Residência</h5>
+                                    <button
+                                      onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia)}
+                                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs flex items-center gap-1"
+                                    >
+                                      <ExternalLink size={12} />
+                                      Ver
+                                    </button>
+                                  </div>
+                                  <div className="aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                    {isPdf(ajudante.comprovante_residencia) ? (
+                                      <div className="flex items-center justify-center h-full">
+                                        <FileText className="w-8 h-8 text-gray-400" />
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={ajudante.comprovante_residencia}
+                                        alt="Comprovante de residência do ajudante"
+                                        className="w-full h-full object-cover"
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                             
                             {/* Address Information */}
                             {ajudante.end_ajudante && ajudante.end_ajudante.length > 0 && ajudante.end_ajudante[0].logradouro && (
@@ -1126,24 +1403,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
                                   {ajudante.end_ajudante[0].logradouro.bairro?.bairro}, {ajudante.end_ajudante[0].logradouro.nr_cep && formatCEP(ajudante.end_ajudante[0].logradouro.nr_cep)}
                                   <br />
                                   {ajudante.end_ajudante[0].logradouro.bairro?.cidade?.cidade}/{ajudante.end_ajudante[0].logradouro.bairro?.cidade?.estado?.sigla_estado}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Comprovante de Residência */}
-                            {ajudante.comprovante_residencia && (
-                              <div className="mt-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Comprovante de Residência
-                                  </span>
-                                  <button
-                                    onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia)}
-                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs flex items-center gap-1"
-                                  >
-                                    <ExternalLink size={12} />
-                                    Ver documento
-                                  </button>
                                 </div>
                               </div>
                             )}
@@ -1217,6 +1476,19 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, agregado, onSuccess }: UnifiedA
           if (onSuccess) onSuccess();
         }}
       />
+
+      {/* Edit Ajudante Modal */}
+      {selectedAjudanteId && (
+        <EditAjudanteModal
+          isOpen={isEditAjudanteModalOpen}
+          onClose={() => setIsEditAjudanteModalOpen(false)}
+          ajudanteId={selectedAjudanteId}
+          onSuccess={() => {
+            fetchAgregadoDetails();
+            if (onSuccess) onSuccess();
+          }}
+        />
+      )}
 
       {/* Full-screen document viewer */}
       {activeDocument && (
