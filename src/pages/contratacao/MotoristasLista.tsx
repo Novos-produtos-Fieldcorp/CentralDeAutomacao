@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen } from 'lucide-react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -538,7 +538,7 @@ const MotoristasLista = () => {
                         focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
                         transition-colors flex items-center gap-2"
               >
-                <Trash2 className="w-5 h-5" />
+                <Edit2 className="w-5 h-5" />
                 Excluir
               </button>
             </>
@@ -959,13 +959,6 @@ const MotoristasLista = () => {
                             <FilePen size={18} />
                           </button>
                           <button
-                            onClick={() => handleDelete(motorista)}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                            title="Excluir"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                          <button
                             onClick={(e) => handleToggleStatus(e, motorista)}
                             disabled={updatingStatus === motorista.motorista_id}
                             className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
@@ -1052,12 +1045,6 @@ const MotoristasLista = () => {
               onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome),
               color: 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300',
               disabled: !contextMenu.motorista!.telefone
-            },
-            {
-              icon: <Trash2 size={16} />,
-              label: 'Excluir Motorista',
-              onClick: () => handleDelete(contextMenu.motorista!),
-              color: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300'
             }
           ]}
         />
