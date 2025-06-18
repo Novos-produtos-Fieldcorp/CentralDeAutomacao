@@ -539,7 +539,7 @@ const HodometrosLista = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#0f172a] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <input
@@ -585,7 +585,7 @@ const HodometrosLista = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-[#0f172a] rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
           <div className="flex items-center">
             <input
@@ -613,7 +613,7 @@ const HodometrosLista = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Última Leitura</th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="bg-white dark:bg-[#0f172a] divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredData.map((data) => (
                   <React.Fragment key={data.veiculo_id}>
                     <tr 
@@ -678,7 +678,7 @@ const HodometrosLista = () => {
                     {expandedItem === data.veiculo_id && (
                       <tr>
                         <td colSpan={6} className="px-0 py-0 border-b border-gray-200 dark:border-gray-700">
-                          <div className="bg-gray-50 dark:bg-gray-700/30 p-4">
+                          <div className="bg-gray-50 dark:bg-[#0f172a] p-4">
                             <div className="flex justify-between items-center mb-4">
                               <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
                                 <BarChart2 className="w-5 h-5 text-blue-500 dark:text-blue-400" />
