@@ -679,7 +679,7 @@ const HodometrosDashboard = () => {
                   </div>
                   <div className="h-2 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                      className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
                       style={{ 
                         width: `${Math.max(
                           5, 
@@ -915,7 +915,7 @@ const HodometrosDashboard = () => {
         {filteredHodometros.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-white dark:bg-[#1F2937]">
+              <thead className="p-6 min-h-[calc(100vh-16rem)] bg-white dark:bg-[#1B2537]">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nome</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Data</th>
