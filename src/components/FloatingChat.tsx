@@ -112,6 +112,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const [showHistory, setShowHistory] = useState(false);
   const [previousConversations, setPreviousConversations] = useState<any[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [lastMessageId, setLastMessageId] = useState<number | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout>();
 
   const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
   const apiKey = localStorage.getItem('wiseapp_token');
@@ -236,6 +238,59 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     loadSavedState();
     setIsInitialized(true);
   }, []);
+
+  useEffect(() => {
+    if (activeConversation?.id) {
+      // Iniciar polling para novas mensagens
+      pollingIntervalRef.current = setInterval(async () => {
+        try {
+          const response = await api.get(`/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`, {
+            params: {
+              page: 1,
+              per_page: 20
+            }
+          });
+
+          if (response.data?.payload) {
+            const newMessages = response.data.payload.map((msg: any) => ({
+              id: msg.id,
+              content: msg.content,
+              created_at: msg.created_at,
+              message_type: msg.message_type === 1 ? 'incoming' : 'outgoing',
+              content_type: msg.content_type || 'text',
+              status: msg.status || 'sent',
+              sender: msg.sender || {
+                type: msg.message_type === 1 ? 'agent_bot' : 'user',
+                name: msg.sender?.name || (msg.message_type === 1 ? 'Agente' : 'Você')
+              }
+            }));
+
+            // Verificar se há novas mensagens
+            const latestMessageId = newMessages[0]?.id;
+            if (latestMessageId && latestMessageId !== lastMessageId) {
+              setLastMessageId(latestMessageId);
+              setActiveConversation(prev => {
+                if (!prev) return null;
+                return {
+                  ...prev,
+                  messages: newMessages
+                };
+              });
+              setMessages(newMessages);
+            }
+          }
+        } catch (error) {
+          console.error('Error polling messages:', error);
+        }
+      }, 3000); // Verificar a cada 3 segundos
+    }
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [activeConversation?.id, lastMessageId]);
 
   const handleError = (error: unknown) => {
     console.error('Error:', error);
@@ -502,72 +557,65 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
       if (initialPhone) {
         const formattedNumber = formatPhoneNumber(initialPhone);
-        
-        // 2. Check if contact exists
-        const searchResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/search`, {
-          params: {
-            q: formattedNumber
-          }
-        });
-
         let contactToUse;
-        if (searchResponse.data?.payload?.[0]) {
-          // Contact exists - use it
-          contactToUse = searchResponse.data.payload[0];
-        } else {
-          // Contact doesn't exist - create it
-          const contactNameToUse = initialName || additionalInfo?.name || 'Novo Contato';
-          const contactEmail = initialEmail || additionalInfo?.email;
 
-          const newContactResponse = await api.post(`/api/v1/accounts/${accountId}/contacts`, {
-            name: contactNameToUse,
-            phone_number: formattedNumber,
-            email: contactEmail,
-            custom_attributes: {
-              source: "web_chat",
-              source_type: sourceType || 'web',
-              ...additionalInfo
+        try {
+          // Tentar buscar o contato existente
+          const searchResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/search`, {
+            params: {
+              q: formattedNumber
             }
           });
 
-          if (!newContactResponse.data) {
-            throw new Error('Não foi possível criar o contato');
+          if (searchResponse.data?.payload?.[0]) {
+            contactToUse = searchResponse.data.payload[0];
           }
-
-          contactToUse = newContactResponse.data;
+        } catch (error) {
+          console.log('Contato não encontrado, criando novo...');
         }
 
-        // 3. Check if contact has a conversation in the selected inbox
-        const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contactToUse.id}/conversations`);
-        
-        let conversationToUse = null;
-        if (conversationsResponse.data?.payload) {
-          // Filter conversations for the selected inbox
-          const inboxConversations = conversationsResponse.data.payload.filter(
-            (conv: any) => conv.inbox_id === inboxId
-          );
+        // Se não encontrou o contato, criar um novo
+        if (!contactToUse) {
+          const contactNameToUse = initialName || additionalInfo?.name || 'Novo Contato';
+          const contactEmail = initialEmail || additionalInfo?.email;
 
-          if (inboxConversations.length > 0) {
-            // Use the most recent conversation from this inbox
-            conversationToUse = inboxConversations[0];
+          try {
+            const newContactResponse = await api.post(`/api/v1/accounts/${accountId}/contacts`, {
+              name: contactNameToUse,
+              phone_number: formattedNumber,
+              email: contactEmail,
+              custom_attributes: {
+                source: "web_chat",
+                source_type: sourceType || 'web',
+                ...additionalInfo
+              }
+            });
+
+            if (!newContactResponse.data) {
+              throw new Error('Não foi possível criar o contato');
+            }
+
+            contactToUse = newContactResponse.data;
+          } catch (error) {
+            console.error('Erro ao criar contato:', error);
+            throw new Error('Falha ao criar novo contato');
           }
         }
 
-        // If no conversation exists in the selected inbox, create one
-        if (!conversationToUse) {
+        // Criar nova conversa para o contato
+        try {
           const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
             inbox_id: inboxId.toString(),
             contact_id: contactToUse.id.toString()
           });
 
-          if (newConversationResponse.data) {
-            conversationToUse = newConversationResponse.data;
+          if (!newConversationResponse.data) {
+            throw new Error('Não foi possível criar a conversa');
           }
-        }
 
-        // 4. Set up the chat with the contact and conversation
-        if (conversationToUse) {
-          // Set contact info
+          const conversationToUse = newConversationResponse.data;
+
+          // Configurar o chat com o contato e conversa
           setContact({
             id: contactToUse.id,
             name: contactToUse.name || initialName || formattedNumber,
@@ -580,16 +628,15 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             custom_attributes: contactToUse.custom_attributes || {}
           });
 
-          // Set active conversation
           setActiveConversation({
             id: conversationToUse.id,
             messages: []
           });
 
-          // Load messages for the conversation
+          // Carregar mensagens iniciais
           await loadConversationMessages(conversationToUse.id);
 
-          // Update storage conversations
+          // Atualizar conversas armazenadas
           setStorageConversations(prev => {
             const filteredConversations = prev.filter(conv => conv.user.id !== contactToUse.id);
             return [...filteredConversations, {
@@ -602,6 +649,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               conversationId: conversationToUse.id
             }];
           });
+        } catch (error) {
+          console.error('Erro ao criar conversa:', error);
+          throw new Error('Falha ao criar nova conversa');
         }
       }
     } catch (error) {
@@ -1256,6 +1306,113 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     return formattedHours.join(' | ');
   };
 
+  const renderMessage = (message: Message, index: number) => {
+    const showDateSeparator = index === 0 || 
+      new Date(message.created_at).toDateString() !== 
+      new Date(activeConversation!.messages[index - 1].created_at).toDateString();
+
+    const isOutgoing = message.message_type === 'outgoing';
+    const isAgent = message.sender?.type === 'agent_bot';
+
+    return (
+      <div key={message.id} className="space-y-2">
+        {showDateSeparator && (
+          <div className="flex justify-center my-4">
+            <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+              {formatDate(message.created_at)}
+            </span>
+          </div>
+        )}
+
+        <div
+          className={`flex items-start gap-2 ${
+            isOutgoing ? 'justify-end' : 'justify-start'
+          }`}
+        >
+          {!isOutgoing && (
+            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
+              {message.sender?.avatar_url || message.sender?.thumbnail ? (
+                <img 
+                  src={message.sender.avatar_url || message.sender.thumbnail} 
+                  alt={message.sender.name || 'Avatar'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                message.sender?.name?.[0]?.toUpperCase() || 'A'
+              )}
+            </div>
+          )}
+          <div
+            className={`max-w-[80%] rounded-lg p-3 ${
+              isOutgoing
+                ? 'bg-blue-500 text-white ml-auto'
+                : isAgent
+                ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                : 'bg-green-100 dark:bg-green-900 text-gray-900 dark:text-white'
+            }`}
+          >
+            {message.content_type === 'image' ? (
+              <img
+                src={message.content}
+                alt="Imagem"
+                className="max-w-full rounded-lg"
+                loading="lazy"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'https://via.placeholder.com/150?text=Imagem+não+encontrada';
+                }}
+              />
+            ) : message.content_type === 'file' ? (
+              <a
+                href={message.content}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2 text-blue-500 hover:text-blue-600"
+              >
+                <File className="w-5 h-5" />
+                <span>{message.content}</span>
+              </a>
+            ) : message.content_type === 'audio' ? (
+              <audio controls className="w-full">
+                <source src={message.content} type="audio/webm" />
+                Seu navegador não suporta o elemento de áudio.
+              </audio>
+            ) : (
+              <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            )}
+            <div className="flex items-center justify-between mt-1">
+              <span className={`text-xs ${
+                isOutgoing
+                  ? 'text-blue-100' 
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}>
+                {formatTime(message.created_at)}
+              </span>
+              {!isOutgoing && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                  {message.sender?.name}
+                </span>
+              )}
+            </div>
+          </div>
+          {isOutgoing && (
+            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
+              {message.sender?.avatar_url || message.sender?.thumbnail ? (
+                <img 
+                  src={message.sender.avatar_url || message.sender.thumbnail} 
+                  alt={message.sender.name || 'Avatar'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                message.sender?.name?.[0]?.toUpperCase() || 'U'
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   if (!showChat) return null;
 
   if (loading) {
@@ -1518,107 +1675,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                   </p>
                 </div>
               ) : (
-                activeConversation?.messages.map((message, index) => {
-                  const showDateSeparator = index === 0 || 
-                    new Date(message.created_at).toDateString() !== 
-                    new Date(activeConversation.messages[index - 1].created_at).toDateString();
-
-                  return (
-                    <div key={message.id} className="space-y-2">
-                      {/* Date Separator */}
-                      {showDateSeparator && (
-                        <div className="flex justify-center my-4">
-                          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-                            {formatDate(message.created_at)}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Message */}
-                      <div
-                        className={`flex items-start gap-2 ${message.sender?.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        {message.sender?.type !== 'user' && (
-                          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
-                            {message.sender?.avatar_url || message.sender?.thumbnail ? (
-                              <img 
-                                src={message.sender.avatar_url || message.sender.thumbnail} 
-                                alt={message.sender.name || 'Avatar'} 
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              message.sender?.name?.[0]?.toUpperCase() || 'A'
-                            )}
-                          </div>
-                        )}
-                        <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
-                            message.sender?.type === 'user'
-                              ? 'bg-blue-500 text-white ml-auto'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                          }`}
-                        >
-                          {message.content_type === 'image' ? (
-                            <img
-                              src={message.content}
-                              alt="Imagem"
-                              className="max-w-full rounded-lg"
-                              loading="lazy"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = 'https://via.placeholder.com/150?text=Imagem+não+encontrada';
-                              }}
-                            />
-                          ) : message.content_type === 'file' ? (
-                            <a
-                              href={message.content}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center space-x-2 text-blue-500 hover:text-blue-600"
-                            >
-                              <File className="w-5 h-5" />
-                              <span>{message.content}</span>
-                            </a>
-                          ) : message.content_type === 'audio' ? (
-                            <audio controls className="w-full">
-                              <source src={message.content} type="audio/webm" />
-                              Seu navegador não suporta o elemento de áudio.
-                            </audio>
-                          ) : (
-                            <p className="whitespace-pre-wrap break-words">{message.content}</p>
-                          )}
-                          <div className="flex items-center justify-between mt-1">
-                            <span className={`text-xs ${
-                              message.sender?.type === 'user'
-                                ? 'text-blue-100' 
-                                : 'text-gray-500 dark:text-gray-400'
-                            }`}>
-                              {formatTime(message.created_at)}
-                            </span>
-                            {message.sender?.type !== 'user' && (
-                              <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                                {message.sender?.name}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {message.sender?.type === 'user' && (
-                          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
-                            {message.sender?.avatar_url || message.sender?.thumbnail ? (
-                              <img 
-                                src={message.sender.avatar_url || message.sender.thumbnail} 
-                                alt={message.sender.name || 'Avatar'} 
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              message.sender?.name?.[0]?.toUpperCase() || 'U'
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
+                activeConversation?.messages.map((message, index) => renderMessage(message, index))
               )}
             </div>
 
