@@ -1,349 +1,242 @@
-import React, { useEffect, useState, useRef } from 'react';
-import {Search, Phone, MapPin, Store, UserMinus, MessageCircle, MessageSquare, Building2, Truck, FilePen, Edit2, Upload } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { supabase } from '../../lib/supabase';
-import type { Motorista } from '../../types/database';
+import type { Motorista, DocumentoMotorista } from '../../types/database';
+import { formatCPF, formatPhone, formatDate } from '../../utils/format';
 import DocumentViewer from '../../components/DocumentViewer';
+import DocumentUploadModal from '../../components/DocumentUploadModal';
+import EditMotoristaModal from '../../components/EditMotoristaModal';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
+import BulkActionsModal from '../../components/BulkActionsModal';
+import BulkDeleteConfirmationModal from '../../components/BulkDeleteConfirmationModal';
+import MassMessageModal from '../../components/MassMessageModal';
 import toast from 'react-hot-toast';
-import { formatCPF, formatPhone } from '../../utils/format';
+import { useFloatingChat } from '../../hooks/useFloatingChat';
+import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { usePagination } from '../../hooks/usePagination';
+import Pagination from '../../components/Pagination';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
-import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
-import AgregadoDetailView from '../../components/AgregadoDetailView';
-import { useFloatingChat } from '../../hooks/useFloatingChat';
-import BulkActionsModal from '../../components/BulkActionsModal';
-import MassMessageModal from '../../components/MassMessageModal';
-import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
+import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 
-interface MotoristaWithAddress extends Omit<Motorista, 'telefone' | 'cidade' | 'estado'> {
-  telefone: string | number;
-  cidade: string;
-  estado: string;
-  cidadeLowerCase: string;
-  nome_cliente?: string | null;
-  ativo: boolean;
-  veiculo?: Array<{
+interface MotoristaWithAddress extends Motorista {
+  endereco?: {
+    logradouro?: {
+      logradouro?: string;
+      nr_cep?: string;
+      bairro?: {
+        bairro?: string;
+        cidade?: {
+          cidade?: string;
+          estado?: {
+            sigla_estado?: string;
+          };
+        };
+      };
+    };
+    nr_end?: number;
+    ds_complemento_end?: string;
+  } | null;
+  veiculo?: {
     placa: string;
-    marca: string;
-    tipo: string;
     tipologia: string;
-  }>;
-}
-
-interface ViewMotorista {
-  motorista_id: number;
-  nome_motorista: string;
-  cpf: string;
-  dt_nascimento: string;
-  genero: string;
-  telefone: string;
-  email: string;
-  funcao: string;
-  origem_usuario: string;
-  st_cadastro: string;
-  autorizacao_lgpd: boolean;
-  company_id: number;
-  data_cadastro: string;
-  cliente_id: number | null;
-  conversation_id: string | null;
-  nome_cidade: string | null;
-  sigla_estado: string | null;
-  nome_cliente: string | null;
-  tipologia?: string;
-  ativo: boolean;
-}
-
-interface City {
-  cidade: string;
-  estado: {
-    sigla_estado: string;
-  };
-}
-
-interface CityResponse {
-  cidade: string;
-  estado: {
-    sigla_estado: string;
-  };
-}
-
-interface DashboardData {
-  name: string;
-  count: number;
+    marca?: string;
+    tipo?: string;
+  }[];
 }
 
 const Contratados = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const [motoristas, setMotoristas] = useState<MotoristaWithAddress[]>([]);
-  const [clientes, setClientes] = useState<any[]>([]);
+  const [contratados, setContratados] = useState<MotoristaWithAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [phoneSearch, setPhoneSearch] = useState('');
-  const [debouncedPhoneSearch, setDebouncedPhoneSearch] = useState('');
-  const [selectedVehicleType, setSelectedVehicleType] = useState<string>('');
-  const [selectedCity, setSelectedCity] = useState<string>('');
-  const [selectedClient, setSelectedClient] = useState<number>(0);
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [dateRange, setDateRange] = useState<{ startDate: string | null; endDate: string | null }>({
-    startDate: null,
-    endDate: null
-  });
-  const [cities, setCities] = useState<City[]>([]);
-  const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
-  const [isAgregadoDetailOpen, setIsAgregadoDetailOpen] = useState(false);
-  const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
+  const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedMotorista, setSelectedMotorista] = useState<MotoristaWithAddress | null>(null);
+  const [isBulkActionsModalOpen, setIsBulkActionsModalOpen] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
+  const [selectedMotorista, setSelectedMotorista] = useState<Motorista | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
-  const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
-  const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
-  const [isBulkClientModalOpen, setIsBulkClientModalOpen] = useState(false);
+  const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
+  const [endereco, setEndereco] = useState<any | null>(null);
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [clienteFilter, setClienteFilter] = useState<string>('');
+  const [cidadeFilter, setCidadeFilter] = useState<string>('');
+  const [cidades, setCidades] = useState<string[]>([]);
+  const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string>('');
+  const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
     y: number;
-    motorista: MotoristaWithAddress | null;
+    motorista: Motorista | null;
   }>({
     visible: false,
     x: 0,
     y: 0,
     motorista: null,
   });
-  const [selectedDocumento, setSelectedDocumento] = useState<{
-    documento: any | null;
-    nome: string;
-    cpf?: string;
-    email?: string;
-    telefone?: string;
-    dt_nascimento?: string;
-    endereco: any;
-    veiculo: any | null;
-    agregado?: MotoristaWithAddress | null;
-    st_cadastro?: string;
-  }>({ documento: null, nome: '', endereco: null, veiculo: null });
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(100);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isSearching, setIsSearching] = useState(false);
-  const [allMotoristas, setAllMotoristas] = useState<MotoristaWithAddress[]>([]);
-  const [vehicleTypes, setVehicleTypes] = useState<string[]>([]);
-  const [isDocumentUploadModalOpen, setIsDocumentUploadModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  const statusOptions = [
-    { value: 'cadastrado', label: 'Cadastrado' },
-    { value: 'qualificado', label: 'Qualificado' },
-    { value: 'documentacao', label: 'Documentação' },
-    { value: 'gr', label: 'GR' },
-    { value: 'contrato_enviado', label: 'Contrato Enviado' },
-    { value: 'contratado', label: 'Contratado' },
-    { value: 'repescagem', label: 'Repescagem' },
-    { value: 'rejeitado', label: 'Rejeitado' }
-  ];
-
-  const clientColors = [
-    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-    'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
-    'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
-    'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-    'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
-  ];
-
-  // Debounce search terms
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+  const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
+  const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
+  const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [customDateRange, setCustomDateRange] = useState<{
+    startDate: string;
+    endDate: string;
+  }>({
+    startDate: '',
+    endDate: '',
+  });
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedPhoneSearch(phoneSearch);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [phoneSearch]);
-
-  // Effect to handle search when debounced terms change
-  useEffect(() => {
-    if (companyId) {
-      const loadData = async () => {
-        try {
-          setIsSearching(true);
-          await fetchMotoristas();
-        } catch (error) {
-          console.error('Error loading data:', error);
-          toast.error('Erro ao carregar dados');
-        } finally {
-          setIsSearching(false);
-        }
-      };
-      loadData();
-    }
-  }, [companyId]);
+    fetchContratados();
+    fetchClientes();
+  }, [dateFilter, customDateRange]);
 
   useEffect(() => {
-    if (companyId) {
-      const loadData = async () => {
-        try {
-          setIsSearching(true);
-          await fetchMotoristas();
-        } catch (error) {
-          console.error('Error loading data:', error);
-          toast.error('Erro ao carregar dados');
-        } finally {
-          setIsSearching(false);
-        }
-      };
-      loadData();
-    }
-  }, [debouncedSearchTerm, debouncedPhoneSearch, selectedClient, selectedCity, funcaoFilter, selectedVehicleType, currentPage, pageSize, dateRange]);
+    // Close context menu when clicking anywhere
+    const handleClick = () => {
+      if (contextMenu.visible) {
+        setContextMenu({ ...contextMenu, visible: false });
+      }
+      
+      // Close any open status dropdown
+      if (statusDropdownOpen !== null) {
+        setStatusDropdownOpen(null);
+      }
+      
+      // Close any open cliente dropdown
+      if (clienteDropdownOpen !== null) {
+        setClienteDropdownOpen(null);
+      }
+    };
 
-  const fetchMotoristas = async () => {
+    document.addEventListener('click', handleClick);
+    return () => {
+      document.removeEventListener('click', handleClick);
+    };
+  }, [contextMenu.visible, statusDropdownOpen, clienteDropdownOpen]);
+
+  const fetchContratados = async () => {
     try {
-      setIsSearching(true);
-      
-      const from = (currentPage - 1) * pageSize;
-      const to = from + pageSize - 1;
-      
+      setLoading(true);
       let query = supabase
-        .from('vw_contratados_completo')
-        .select('*', { count: 'exact' })
+        .from('motorista')
+        .select(`
+          *,
+          end_motorista (
+            logradouro (
+              bairro (
+                cidade (
+                  cidade
+                )
+              )
+            )
+          ),
+          cliente (
+            cliente_id,
+            nome
+          ),
+          veiculo (
+            placa,
+            tipologia,
+            marca,
+            tipo
+          )
+        `)
+        .eq('st_cadastro', 'contratado')
         .eq('company_id', companyId);
 
-      if (funcaoFilter !== 'todos') {
-        query = query.eq('funcao', funcaoFilter);
+      // Apply date filter
+      if (dateFilter !== 'all') {
+        const today = new Date();
+        let startDate = new Date();
+        
+        if (dateFilter === 'today') {
+          // Today only
+          startDate = new Date(today.setHours(0, 0, 0, 0));
+          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+          query = query.lte('data_cadastro', new Date().toISOString().split('T')[0]);
+        } else if (dateFilter === '2days') {
+          // Last 2 days
+          startDate.setDate(today.getDate() - 2);
+          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+        } else if (dateFilter === '15days') {
+          // Last 15 days
+          startDate.setDate(today.getDate() - 15);
+          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+        } else if (dateFilter === '30days') {
+          // Last 30 days
+          startDate.setDate(today.getDate() - 30);
+          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+        } else if (dateFilter === 'custom' && customDateRange.startDate && customDateRange.endDate) {
+          // Custom date range
+          query = query.gte('data_cadastro', customDateRange.startDate);
+          query = query.lte('data_cadastro', customDateRange.endDate);
+        }
       }
 
-      if (dateRange.startDate && dateRange.endDate) {
-        query = query
-          .gte('data_cadastro', dateRange.startDate)
-          .lte('data_cadastro', dateRange.endDate);
-      }
+      // Order by data_cadastro (newest first)
+      query = query.order('data_cadastro', { ascending: false });
 
-      // Apply search filter if provided
-      if (debouncedSearchTerm) {
-        query = query.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
-      }
-
-      // Apply city filter if selected
-      if (selectedCity) {
-        query = query.ilike('nome_cidade', selectedCity);
-      }
-
-      // Apply client filter if selected
-      if (selectedClient) {
-        query = query.eq('cliente_id', selectedClient);
-      }
-
-      // Apply vehicle type filter if selected
-      if (selectedVehicleType) {
-        query = query.eq('tipologia', selectedVehicleType);
-      }
-
-      // Execute the query
-      const { data, error, count } = await query.order('data_cadastro', { ascending: false });
+      const { data, error } = await query;
 
       if (error) throw error;
 
-      // Process the data
-      let motoristasData = (data as ViewMotorista[])?.map(motorista => ({
-        motorista_id: motorista.motorista_id,
-        nome: motorista.nome_motorista,
-        cpf: motorista.cpf,
-        dt_nascimento: motorista.dt_nascimento,
-        genero: motorista.genero,
-        telefone: motorista.telefone,
-        email: motorista.email,
-        funcao: motorista.funcao,
-        origem_usuario: motorista.origem_usuario,
-        st_cadastro: motorista.st_cadastro,
-        autorizacao_lgpd: motorista.autorizacao_lgpd,
-        company_id: motorista.company_id,
-        data_cadastro: motorista.data_cadastro,
-        cliente_id: motorista.cliente_id || 0,
-        conversation_id: motorista.conversation_id,
-        cidade: motorista.nome_cidade || 'Não informada',
-        cidadeLowerCase: motorista.nome_cidade?.toLowerCase() || '',
-        estado: motorista.sigla_estado || '',
-        nome_cliente: motorista.nome_cliente,
-        ativo: motorista.ativo,
-        veiculo: motorista.tipologia ? [{
-          placa: '',
-          marca: '',
-          tipo: '',
-          tipologia: motorista.tipologia
-        }] : undefined
-      })) as unknown as MotoristaWithAddress[];
-
-      // Apply phone filter on frontend
-      if (debouncedPhoneSearch) {
-        const phoneSearchLower = debouncedPhoneSearch.toLowerCase().replace(/[()\-\s]/g, '');
-        motoristasData = motoristasData.filter(motorista => {
-          const phoneStr = motorista.telefone?.toString().replace(/[()\-\s]/g, '') || '';
-          return phoneStr.toLowerCase().includes(phoneSearchLower);
-        });
-      }
-
-      // Create a Map to deduplicate motoristas by motorista_id
-      const uniqueMotoristas = new Map();
-      motoristasData.forEach(motorista => {
-        uniqueMotoristas.set(motorista.motorista_id, motorista);
-      });
-
-      // Convert Map back to array
-      const deduplicatedMotoristas = Array.from(uniqueMotoristas.values());
-
-      // Update total count based on filtered data
-      const filteredCount = deduplicatedMotoristas.length;
-      setTotalCount(filteredCount);
-      setTotalPages(Math.max(1, Math.ceil(filteredCount / pageSize)));
-
-      // Apply pagination
-      const paginatedData = deduplicatedMotoristas.slice(from, to + 1);
-      setMotoristas(paginatedData);
+      // Extract unique cities from contratados
+      const uniqueCities = new Set<string>();
+      const uniqueVehicleTypes = new Set<string>();
       
-      // Fetch all motoristas for select all functionality
-      const { data: allData } = await supabase
-        .from('vw_motoristas_completo')
-        .select('motorista_id')
-        .eq('company_id', companyId)
-        .eq('st_cadastro', 'contratado');
+      data?.forEach(motorista => {
+        const cidade = motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade;
+        if (cidade) {
+          uniqueCities.add(cidade);
+        }
+        
+        // Extract vehicle types
+        if (motorista.veiculo && motorista.veiculo.length > 0) {
+          motorista.veiculo.forEach(veiculo => {
+            if (veiculo.tipologia) {
+              uniqueVehicleTypes.add(veiculo.tipologia);
+            }
+          });
+        }
+      });
+      
+      setCidades(Array.from(uniqueCities).sort());
+      setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
 
-      if (allData) {
-        setAllMotoristas(allData as unknown as MotoristaWithAddress[]);
-      }
+      setContratados(data || []);
     } catch (error) {
-      console.error('Error fetching motoristas:', error);
-      toast.error('Erro ao carregar motoristas');
+      console.error('Error fetching contratados:', error);
+      toast.error('Erro ao carregar contratados');
     } finally {
-      setIsSearching(false);
+      setLoading(false);
     }
   };
 
   const fetchClientes = async () => {
     try {
-      const { data, error } = await supabase.from('cliente')
+      const { data, error } = await supabase
+        .from('cliente')
         .select('*')
-        .eq('st_cliente', true)
         .eq('company_id', companyId)
+        .eq('st_cliente', true)
         .order('nome');
 
       if (error) throw error;
+
       setClientes(data || []);
     } catch (error) {
       console.error('Error fetching clientes:', error);
@@ -351,341 +244,48 @@ const Contratados = () => {
     }
   };
 
-  const fetchCities = async () => {
+  const handleViewDocument = async (motorista: Motorista) => {
     try {
-      const { data, error } = await supabase
-        .from('cidade')
-        .select(`
-          cidade,
-          estado!inner (
-            sigla_estado
-          )
-        `)
-        .order('cidade');
-
-      if (error) throw error;
-      
-      const typedData = data.map(city => ({
-        cidade: city.cidade,
-        estado: {
-          sigla_estado: Array.isArray(city.estado) ? city.estado[0]?.sigla_estado || '' : city.estado?.sigla_estado || ''
-        }
-      })) as City[];
-      
-      setCities(typedData);
+      setSelectedMotorista(motorista);
+      setIsUnifiedModalOpen(true);
     } catch (error) {
-      console.error('Error fetching cities:', error);
-      toast.error('Erro ao carregar cidades');
+      console.error('Error fetching document details:', error);
+      toast.error('Erro ao carregar detalhes do documento');
     }
   };
 
-  const fetchVehicleTypes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('veiculo')
-        .select('tipologia')
-        .eq('company_id', companyId)
-        .not('tipologia', 'is', null)
-        .not('tipologia', 'eq', '')
-        .order('tipologia');
-
-      if (error) throw error;
-      
-      const uniqueTypes = [...new Set(data?.map((v: { tipologia: string }) => v.tipologia) || [])].sort();
-      setVehicleTypes(uniqueTypes);
-    } catch (error) {
-      console.error('Error fetching vehicle types:', error);
-      toast.error('Erro ao carregar tipos de veículos');
-    }
-  };
-
-  useEffect(() => {
-    if (companyId) {
-      const loadInitialData = async () => {
-        try {
-          setLoading(true);
-          await Promise.all([
-            fetchMotoristas(),
-            fetchClientes(),
-            fetchCities(),
-            fetchVehicleTypes()
-          ]);
-        } catch (error) {
-          console.error('Error loading initial data:', error);
-          toast.error('Erro ao carregar dados iniciais');
-        } finally {
-          setLoading(false);
-        }
-      };
-      loadInitialData();
-    }
-  }, [companyId]);
-
-  const handleOpenMassMessageModal = () => {
-    const selectedNumbers = motoristas
-      .filter(m => selectedItems.has(m.motorista_id))
-      .map(m => m.telefone?.toString() || '')
-      .filter(num => num !== '');
-    
-    if (selectedNumbers.length === 0) {
-      toast.error('Selecione pelo menos um motorista com telefone cadastrado');
-      return;
-    }
-    
-    setIsMassMessageModalOpen(true);
-  };
-
-  const handleStartChat = (motorista: MotoristaWithAddress) => {
-    if (motorista.telefone) {
-      startChat(motorista.telefone.toString());
-    } else {
-      toast.error('Este motorista não possui telefone cadastrado');
-    }
-  };
-
-  const handleViewUnifiedModal = (motorista: MotoristaWithAddress) => {
+  const handleUploadDocument = (motorista: Motorista) => {
     setSelectedMotorista(motorista);
-    setIsUnifiedModalOpen(true);
+    setIsDocumentUploadOpen(true);
   };
 
-  const handleViewAgregadoDetail = async (motorista: MotoristaWithAddress) => {
-    if (motorista.funcao !== 'Agregado') {
-      handleViewDocument(motorista);
-      return;
-    }
-    
-    try {
-      setSelectedDocumento({
-        agregado: motorista,
-        documento: null,
-        nome: motorista.nome,
-        cpf: motorista.cpf,
-        email: motorista.email,
-        telefone: motorista.telefone?.toString(),
-        dt_nascimento: motorista.dt_nascimento,
-        endereco: null,
-        veiculo: null,
-        st_cadastro: motorista.st_cadastro
-      });
-      
-      setIsAgregadoDetailOpen(true);
-
-      // Fetch documento_motorista
-      const { data: documentoData, error: documentoError } = await supabase
-        .from('documento_motorista')
-        .select('*')
-        .eq('motorista_id', motorista.motorista_id)
-        .maybeSingle();
-
-      if (documentoError && documentoError.code !== 'PGRST116') {
-        throw documentoError;
-      }
-
-      // Fetch endereco
-      const { data: enderecoData, error: enderecoError } = await supabase
-        .from('end_motorista')
-        .select(`
-          nr_end,
-          ds_complemento_end,
-          logradouro (
-            logradouro,
-            nr_cep,
-            bairro (
-              bairro,
-              cidade (
-                cidade,
-                estado (
-                  sigla_estado
-                )
-              )
-            )
-          )
-        `)
-        .eq('id_motorista', motorista.motorista_id)
-        .maybeSingle();
-
-      if (enderecoError && enderecoError.code !== 'PGRST116') {
-        throw enderecoError;
-      }
-
-      // Fetch veiculo
-      const { data: veiculoData, error: veiculoError } = await supabase
-        .from('veiculo')
-        .select(`
-          *,
-          documento_veiculo (*)
-        `)
-        .eq('motorista_id', motorista.motorista_id)
-        .eq('status_veiculo', true)
-        .maybeSingle();
-
-      if (veiculoError && veiculoError.code !== 'PGRST116') {
-        throw veiculoError;
-      }
-
-      setSelectedDocumento({
-        documento: documentoData || null,
-        nome: motorista.nome,
-        cpf: motorista.cpf,
-        email: motorista.email,
-        telefone: motorista.telefone?.toString(),
-        dt_nascimento: motorista.dt_nascimento,
-        endereco: enderecoData || null,
-        veiculo: veiculoData || null,
-        agregado: motorista,
-        st_cadastro: motorista.st_cadastro
-      });
-    } catch (error) {
-      console.error('Erro ao carregar dados do agregado:', error);
-      toast.error('Erro ao carregar dados do agregado');
-      setIsAgregadoDetailOpen(false);
-    }
+  const handleEdit = (motorista: Motorista) => {
+    setSelectedMotorista(motorista);
+    setIsEditModalOpen(true);
   };
 
-  const handleViewDocument = async (motorista: MotoristaWithAddress) => {
-    try {
-      setSelectedDocumento({
-        documento: null,
-        nome: motorista.nome,
-        cpf: motorista.cpf,
-        email: motorista.email,
-        telefone: motorista.telefone?.toString(),
-        dt_nascimento: motorista.dt_nascimento,
-        endereco: null,
-        veiculo: null,
-        st_cadastro: motorista.st_cadastro
-      });
-      
-      setIsDocumentViewerOpen(true);
-
-      const [documentoResponse, enderecoResponse] = await Promise.all([
-        supabase.from('documento_motorista')
-          .select('*')
-          .eq('motorista_id', motorista.motorista_id)
-          .limit(1)
-          .single(),
-        supabase.from('end_motorista')
-          .select(`
-            nr_end,
-            ds_complemento_end,
-            logradouro (
-              logradouro,
-              nr_cep,
-              bairro (
-                bairro,
-                cidade (
-                  cidade,
-                  estado (
-                    sigla_estado
-                  )
-                )
-              )
-            )
-          `)
-          .eq('id_motorista', motorista.motorista_id)
-          .eq('st_end', true)
-          .limit(1)
-          .single()
-      ]);
-
-      if (documentoResponse.error && documentoResponse.error.code !== 'PGRST116') {
-        throw new Error(`Erro ao buscar documentos: ${documentoResponse.error.message}`);
-      }
-      if (enderecoResponse.error && enderecoResponse.error.code !== 'PGRST116') {
-        throw new Error(`Erro ao buscar endereço: ${enderecoResponse.error.message}`);
-      }
-
-      setSelectedDocumento({
-        documento: documentoResponse.data,
-        nome: motorista.nome,
-        cpf: motorista.cpf,
-        email: motorista.email,
-        telefone: motorista.telefone?.toString(),
-        dt_nascimento: motorista.dt_nascimento,
-        endereco: enderecoResponse.data,
-        veiculo: null,
-        st_cadastro: motorista.st_cadastro
-      });
-    } catch (error) {
-      console.error('Erro ao carregar documentos:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao carregar documentos');
-      setIsDocumentViewerOpen(false);
-    }
-  };
-
-  const handleDelete = (motorista: MotoristaWithAddress) => {
+  const handleDelete = (motorista: Motorista) => {
     setSelectedMotorista(motorista);
     setIsDeleteModalOpen(true);
   };
 
-  const removeMotoristaFromVehicles = async () => {
+  const confirmDelete = async () => {
     if (!selectedMotorista) return;
 
     try {
-      // Get all vehicles associated with this motorista
-      const { data: vehicles, error: vehiclesError } = await supabase
-        .from('veiculo')
-        .select('veiculo_id')
+      const { error } = await query('motorista')
+        .delete()
         .eq('motorista_id', selectedMotorista.motorista_id);
-
-      if (vehiclesError) throw vehiclesError;
-
-      if (vehicles && vehicles.length > 0) {
-        // Update all vehicles to set motorista_id to null
-        const { error: updateError } = await supabase.from('veiculo')
-          .update({ motorista_id: null })
-          .eq('motorista_id', selectedMotorista.motorista_id);
-
-        if (updateError) throw updateError;
-      }
-
-      // Update the motorista status to 'cadastrado' instead of 'rejeitado'
-      const { error: motoristaError } = await supabase.from('motorista')
-        .update({ 
-          st_cadastro: 'cadastrado',
-          cliente_id: null
-        })
-        .eq('motorista_id', selectedMotorista.motorista_id);
-
-      if (motoristaError) throw motoristaError;
-
-      // Remove from the current list
-      setMotoristas(motoristas.filter(m => m.motorista_id !== selectedMotorista.motorista_id));
-      toast.success('Contratado removido com sucesso');
-      setIsDeleteModalOpen(false);
-    } catch (error) {
-      console.error('Error removing motorista:', error);
-      toast.error('Erro ao remover contratado');
-    }
-  };
-
-  const updateCliente = async (motorista_id: number, cliente_id: number | null) => {
-    try {
-      const { error } = await supabase.from('motorista')
-        .update({ cliente_id })
-        .eq('motorista_id', motorista_id);
 
       if (error) throw error;
 
-      setMotoristas(prev => prev.map(m => 
-        m.motorista_id === motorista_id ? { ...m, cliente_id: cliente_id || 0 } : m
-      ));
-      
-      toast.success('Cliente atualizado com sucesso');
+      setContratados(contratados.filter(m => m.motorista_id !== selectedMotorista.motorista_id));
+      toast.success('Motorista excluído com sucesso');
+      setIsDeleteModalOpen(false);
     } catch (error) {
-      console.error('Error updating cliente:', error);
-      toast.error('Erro ao atualizar cliente');
+      console.error('Error deleting motorista:', error);
+      toast.error('Erro ao excluir motorista');
     }
-  };
-
-  const handleContextMenu = (e: React.MouseEvent, motorista: MotoristaWithAddress) => {
-    e.preventDefault();
-    setContextMenu({
-      visible: true,
-      x: e.clientX,
-      y: e.clientY,
-      motorista,
-    });
   };
 
   const handleSelectItem = (id: number) => {
@@ -698,128 +298,235 @@ const Contratados = () => {
     setSelectedItems(newSelectedItems);
     
     // Update selectAll state
-    setSelectAll(newSelectedItems.size === motoristas.length);
+    setSelectAll(newSelectedItems.size === filteredContratados.length);
   };
 
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(motoristas.map(m => m.motorista_id)));
+      setSelectedItems(new Set(filteredContratados.map(m => m.motorista_id)));
     }
     setSelectAll(!selectAll);
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (size: number) => {
-    setPageSize(size);
-    setCurrentPage(1);
-  };
-
-  const handleSearch = () => {
-    setCurrentPage(1);
-    fetchMotoristas();
-  };
-
-  const filterButtons = [
-    { value: 'todos', label: 'Todos' },
-    { value: 'Motorista', label: 'Motoristas' },
-    { value: 'Agregado', label: 'Agregados' }
-  ];
-
-  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedCity(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedClient(Number(e.target.value));
-    setCurrentPage(1);
-  };
-
-  const toggleStatus = async (motorista_id: number, currentStatus: boolean) => {
+  const handleBulkDelete = async () => {
     try {
-      const { error } = await supabase
-        .from('motorista')
-        .update({ ativo: !currentStatus })
-        .eq('motorista_id', motorista_id);
+      // Delete all selected items
+      for (const id of selectedItems) {
+        const { error } = await query('motorista')
+          .delete()
+          .eq('motorista_id', id);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
-      setMotoristas(motoristas.map(m => 
-        m.motorista_id === motorista_id ? { ...m, ativo: !currentStatus } : m
-      ));
+      // Update the list
+      setContratados(contratados.filter(m => !selectedItems.has(m.motorista_id)));
+      toast.success(`${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
       
-      toast.success(`Contratado ${!currentStatus ? 'ativado' : 'desativado'} com sucesso`);
+      // Reset selection
+      setSelectedItems(new Set());
+      setSelectAll(false);
+      setIsBulkDeleteModalOpen(false);
     } catch (error) {
-      console.error('Error toggling status:', error);
-      toast.error('Erro ao alterar status do contratado');
+      console.error('Error deleting motoristas:', error);
+      toast.error('Erro ao excluir motoristas');
     }
   };
 
-  const handleUploadDocuments = (motorista: MotoristaWithAddress) => {
-    setSelectedMotorista(motorista);
-    setIsDocumentUploadModalOpen(true);
+  const handleBulkAction = async (actionType: 'status' | 'client') => {
+    setBulkActionType(actionType);
+    setIsBulkActionsModalOpen(true);
   };
 
-  const handleEdit = (motorista: MotoristaWithAddress) => {
-    setSelectedMotorista(motorista);
-    setIsEditModalOpen(true);
+  const handleMassMessage = () => {
+    setIsMassMessageModalOpen(true);
   };
 
-  const getStatusStyle = (status: string) => {
-    const baseStyle = "px-3 py-1 rounded-full text-sm font-medium";
-    const normalizedStatus = status.toLowerCase().trim();
-    
-    switch (normalizedStatus) {
-      case 'cadastrado':
-        return `${baseStyle} bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200`;
-      case 'qualificado':
-        return `${baseStyle} bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200`;
-      case 'documentacao':
-        return `${baseStyle} bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200`;
-      case 'gr':
-        return `${baseStyle} bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-200`;
-      case 'contrato_enviado':
-        return `${baseStyle} bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-200`;
-      case 'contratado':
-        return `${baseStyle} bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200`;
-      case 'repescagem':
-        return `${baseStyle} bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200`;
-      case 'rejeitado':
-        return `${baseStyle} bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200`;
-      default:
-        return `${baseStyle} bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200`;
+  const handleContextMenu = (e: React.MouseEvent, motorista: Motorista) => {
+    e.preventDefault();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      motorista,
+    });
+  };
+
+  const toggleStatusDropdown = (e: React.MouseEvent, motoristaId: number) => {
+    e.stopPropagation();
+    if (statusDropdownOpen === motoristaId) {
+      setStatusDropdownOpen(null);
+    } else {
+      setStatusDropdownOpen(motoristaId);
     }
   };
 
-  const updateStatus = async (motorista_id: number, newStatus: string) => {
+  const toggleClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
+    e.stopPropagation();
+    if (clienteDropdownOpen === motoristaId) {
+      setClienteDropdownOpen(null);
+    } else {
+      setClienteDropdownOpen(motoristaId);
+    }
+  };
+
+  const handleUpdateStatus = async (e: React.MouseEvent, motorista: Motorista, newStatus: string) => {
+    e.stopPropagation();
     try {
+      setUpdatingStatus(motorista.motorista_id);
+      
+      // Update the status in the database
       const { error } = await supabase
         .from('motorista')
         .update({ st_cadastro: newStatus })
-        .eq('motorista_id', motorista_id);
-
+        .eq('motorista_id', motorista.motorista_id);
+        
       if (error) throw error;
-
-      setMotoristas(motoristas.map(m => 
-        m.motorista_id === motorista_id ? { ...m, st_cadastro: newStatus } : m
-      ));
       
-      toast.success(`Status atualizado com sucesso`);
+      // If the new status is not 'contratado', remove from the list
+      if (newStatus !== 'contratado') {
+        setContratados(prev => prev.filter(m => m.motorista_id !== motorista.motorista_id));
+        toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}. Motorista removido da lista.`);
+      } else {
+        // Update the local state
+        setContratados(prev => 
+          prev.map(m => 
+            m.motorista_id === motorista.motorista_id 
+              ? { ...m, st_cadastro: newStatus } 
+              : m
+          )
+        );
+        toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
+      }
     } catch (error) {
       console.error('Error updating status:', error);
-      toast.error('Erro ao atualizar status do contratado');
+      toast.error('Erro ao atualizar status');
+    } finally {
+      setUpdatingStatus(null);
+      setStatusDropdownOpen(null);
     }
   };
 
-  if (loading) {
+  const handleUpdateCliente = async (e: React.MouseEvent, motorista: Motorista, clienteId: number | null) => {
+    e.stopPropagation();
+    try {
+      setUpdatingCliente(motorista.motorista_id);
+      
+      // Update the cliente_id in the database
+      const { error } = await supabase
+        .from('motorista')
+        .update({ cliente_id: clienteId })
+        .eq('motorista_id', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setContratados(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { 
+                ...m, 
+                cliente_id: clienteId,
+                cliente: clienteId 
+                  ? clientes.find(c => c.cliente_id === clienteId) 
+                  : null
+              } 
+            : m
+        )
+      );
+      
+      toast.success(clienteId ? 'Cliente atualizado com sucesso' : 'Cliente removido com sucesso');
+    } catch (error) {
+      console.error('Error updating cliente:', error);
+      toast.error('Erro ao atualizar cliente');
+    } finally {
+      setUpdatingCliente(null);
+      setClienteDropdownOpen(null);
+    }
+  };
+
+  const handleToggleStatus = async (e: React.MouseEvent, motorista: Motorista) => {
+    e.stopPropagation();
+    try {
+      setUpdatingStatus(motorista.motorista_id);
+      
+      // Update the ativo status in the database (toggle it)
+      const newAtivo = !motorista.ativo;
+      
+      const { error } = await supabase
+        .from('motorista')
+        .update({ ativo: newAtivo })
+        .eq('motorista_id', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setContratados(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { ...m, ativo: newAtivo } 
+            : m
+        )
+      );
+      
+      toast.success(`Motorista ${newAtivo ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error updating ativo status:', error);
+      toast.error('Erro ao atualizar status do motorista');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  const getMotoristaCity = (motorista: MotoristaWithAddress): string | null => {
+    return motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || null;
+  };
+
+  const getVehicleType = (motorista: MotoristaWithAddress): string | null => {
+    return motorista.veiculo && motorista.veiculo.length > 0 ? motorista.veiculo[0].tipologia : null;
+  };
+
+  const filteredContratados = contratados.filter(motorista => {
+    const searchLower = searchTerm.toLowerCase();
+    const statusMatch = statusFilter ? motorista.st_cadastro === statusFilter : true;
+    const clienteMatch = clienteFilter ? motorista.cliente_id === parseInt(clienteFilter) : true;
+    const cidadeMatch = cidadeFilter ? getMotoristaCity(motorista) === cidadeFilter : true;
+    const tipoVeiculoMatch = tipoVeiculoFilter ? 
+      (motorista.veiculo && motorista.veiculo.some(v => v.tipologia === tipoVeiculoFilter)) : true;
+    const ativoMatch = ativoFilter === '' ? true : 
+                      ativoFilter === 'active' ? motorista.ativo === true : 
+                      ativoFilter === 'inactive' ? motorista.ativo === false : true;
+    
     return (
-      <LoadingSpinner />
+      statusMatch &&
+      clienteMatch &&
+      cidadeMatch &&
+      tipoVeiculoMatch &&
+      ativoMatch &&
+      ((motorista.nome && motorista.nome.toLowerCase().includes(searchLower)) ||
+       (motorista.cpf && motorista.cpf.includes(searchLower)) ||
+       (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
+       (typeof motorista.telefone === 'number' && motorista.telefone.toString().includes(searchLower)))
     );
+  });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedData,
+    handlePageChange,
+    handlePageSizeChange
+  } = usePagination({
+    data: filteredContratados,
+    initialPageSize: 10
+  });
+
+  if (loading) {
+    return <LoadingSpinner />;
   }
 
   return (
@@ -836,142 +543,218 @@ const Contratados = () => {
           {selectedItems.size > 0 && (
             <>
               <button
-                onClick={handleOpenMassMessageModal}
+                onClick={() => handleBulkAction('status')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
                         transition-colors flex items-center gap-2"
               >
-                <MessageSquare className="w-5 h-5" />
+                <Edit2 className="w-5 h-5" />
+                Atualizar Status
+              </button>
+              <button
+                onClick={() => handleBulkAction('client')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                        transition-colors flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                Atribuir Cliente
+              </button>
+              <button
+                onClick={handleMassMessage}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                        transition-colors flex items-center gap-2"
+              >
+                <MessageCircle className="w-5 h-5" />
                 Enviar Mensagem
               </button>
               <button
-                onClick={() => setIsBulkClientModalOpen(true)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 
-                        focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 
+                onClick={() => setIsBulkDeleteModalOpen(true)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 
+                        focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
                         transition-colors flex items-center gap-2"
               >
-                <Building2 className="w-5 h-5" />
-                Alterar Cliente
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
+                Excluir
               </button>
             </>
           )}
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <input
               type="text"
-              placeholder="Buscar por nome, CPF, placa, marca ou modelo..."
+              placeholder="Buscar por nome, CPF, email ou telefone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              autoComplete="off"
             />
-            {isSearching ? (
-              <div className="absolute left-3 top-2.5">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
-              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            )}
-          </div>
-
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar por telefone..."
-              value={phoneSearch}
-              onChange={(e) => setPhoneSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              autoComplete="off"
-            />
-            {isSearching ? (
-              <div className="absolute left-3 top-2.5">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
-              <Phone className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X size={16} />
+              </button>
             )}
           </div>
 
           <div className="relative">
             <select
-              value={selectedCity}
-              onChange={handleCityChange}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
-              <option value="">Todas as cidades</option>
-              {cities.map((city, index) => (
-                <option key={index} value={city.cidade}>
-                  {city.cidade} ({city.estado.sigla_estado})
-                </option>
-              ))}
+              <option value="">Todos os status</option>
+              <option value="cadastrado">Cadastrado</option>
+              <option value="qualificado">Qualificado</option>
+              <option value="documentacao">Documentação</option>
+              <option value="contrato_enviado">Contrato Enviado</option>
+              <option value="contratado">Contratado</option>
+              <option value="repescagem">Repescagem</option>
+              <option value="rejeitado">Rejeitado</option>
             </select>
-            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
           <div className="relative">
             <select
-              value={selectedClient.toString()}
-              onChange={handleClientChange}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              value={ativoFilter}
+              onChange={(e) => setAtivoFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
-              <option value="0">Todos os clientes</option>
-              {clientes.map((cliente) => (
-                <option 
-                  key={cliente.cliente_id} 
-                  value={cliente.cliente_id}
-                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                >
+              <option value="">Todos (Ativos/Inativos)</option>
+              <option value="active">Somente Ativos</option>
+              <option value="inactive">Somente Inativos</option>
+            </select>
+            <User className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+        </div>
+        
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative">
+            <select
+              value={clienteFilter}
+              onChange={(e) => setClienteFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todos os clientes</option>
+              {clientes.map(cliente => (
+                <option key={cliente.cliente_id} value={cliente.cliente_id}>
                   {cliente.nome}
                 </option>
               ))}
             </select>
-            <Store className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
           <div className="relative">
             <select
-              value={selectedVehicleType}
-              onChange={(e) => {
-                setSelectedVehicleType(e.target.value);
-                setCurrentPage(1);
-                fetchMotoristas();
-              }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              value={cidadeFilter}
+              onChange={(e) => setCidadeFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todas as cidades</option>
+              {cidades.map((cidade, index) => (
+                <option key={index} value={cidade}>
+                  {cidade}
+                </option>
+              ))}
+            </select>
+            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+
+          <div className="relative">
+            <select
+              value={tipoVeiculoFilter}
+              onChange={(e) => setTipoVeiculoFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todos os tipos de veículo</option>
-              {vehicleTypes.map(type => (
-                <option key={type} value={type}>
-                  {type}
+              {tiposVeiculo.map((tipo, index) => (
+                <option key={index} value={tipo}>
+                  {tipo}
                 </option>
               ))}
             </select>
             <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
         </div>
 
-        <div className="flex gap-2 mt-4">
-          {filterButtons.map(button => (
-            <button
-              key={button.value}
-              onClick={() => {
-                setFuncaoFilter(button.value as 'todos' | 'Motorista' | 'Agregado');
-                setCurrentPage(1);
-                handleSearch();
-              }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                funcaoFilter === button.value
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-              }`}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="relative">
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
-              {button.label}
-            </button>
-          ))}
+              <option value="all">Todos os períodos</option>
+              <option value="today">Hoje</option>
+              <option value="2days">Últimos 2 dias</option>
+              <option value="15days">Últimos 15 dias</option>
+              <option value="30days">Último mês</option>
+              <option value="custom">Personalizado</option>
+            </select>
+            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
         </div>
+
+        {dateFilter === 'custom' && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data inicial
+              </label>
+              <input
+                type="date"
+                value={customDateRange.startDate}
+                onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data final
+              </label>
+              <input
+                type="date"
+                value={customDateRange.endDate}
+                onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
@@ -995,28 +778,28 @@ const Contratados = () => {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"></th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800"></th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Nome</th>
-                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400  uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {motoristas.map((motorista) => (
+                  {paginatedData.map((motorista) => (
                     <tr 
                       key={motorista.motorista_id} 
-                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                         selectedItems.has(motorista.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
-                      onClick={() => handleViewUnifiedModal(motorista)}
                       onContextMenu={(e) => handleContextMenu(e, motorista)}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
                           checked={selectedItems.has(motorista.motorista_id)}
@@ -1026,161 +809,270 @@ const Contratados = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                            <span className="text-lg font-medium text-gray-600 dark:text-gray-300">
-                              {motorista.nome.charAt(0)}
-                            </span>
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            {motorista.funcao === 'Motorista' ? (
+                              <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            ) : (
+                              <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            )}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {motorista.nome}
                             </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
                               {motorista.funcao}
                             </div>
                           </div>
                         </div>
                       </td>
-                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {formatCPF(motorista.cpf)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
                           <div className="text-sm text-gray-900 dark:text-white">
                             {motorista.telefone ? formatPhone(motorista.telefone.toString()) : '-'}
                           </div>
                           {motorista.telefone && (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStartChat(motorista);
-                              }}
-                              className="p-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                            <button
+                              onClick={() => startChat(motorista.telefone.toString(), motorista.nome)}
+                              className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
                               title="Iniciar chat"
                             >
                               <MessageCircle size={16} />
                             </button>
                           )}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           {motorista.email || '-'}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                        {formatCPF(motorista.cpf)}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">{motorista.cidade}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{motorista.estado}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <select
-                          value={motorista.st_cadastro}
-                          onChange={(e) => updateStatus(motorista.motorista_id, e.target.value)}
-                          className={getStatusStyle(motorista.st_cadastro)}
-                        >
-                          <option value={motorista.st_cadastro}>
-                            {motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1).replace('_', ' ')}
-                          </option>
-                          {statusOptions
-                            .filter(option => option.value !== motorista.st_cadastro)
-                            .map(option => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                        </select>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {motorista.veiculo && motorista.veiculo.length > 0 ? (
-                          <div>
-                            <div className="text-sm font-medium text-gray-900 dark:text-white uppercase">
-                              {motorista.veiculo[0].placa}
-                            </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {motorista.veiculo[0].marca} {motorista.veiculo[0].tipo}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {motorista.veiculo[0].tipologia || 'Tipo não informado'}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            Sem veículo
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <select
-                          value={motorista.cliente_id || ''}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            updateCliente(motorista.motorista_id, e.target.value ? Number(e.target.value) : null);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                            motorista.cliente_id ?
-                              clientColors[motorista.cliente_id % clientColors.length] :
-                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                          }`}
-                        >
-                          <option value="">Sem cliente</option>
-                          {clientes.map((cliente, index) => (
-                            <option 
-                              key={cliente.cliente_id} 
-                              value={cliente.cliente_id}
-                              className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        <div className="relative">
+                          <button
+                            onClick={(e) => toggleStatusDropdown(e, motorista.motorista_id)}
+                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
+                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                                     dark:focus:ring-offset-gray-800"
+                          >
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              motorista.st_cadastro === 'contratado' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' :
+                              motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200' :
+                              motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200' :
+                              motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200' :
+                              motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200' :
+                              motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200' :
+                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                            }`}>
+                              {motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
+                               motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
+                            </span>
+                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400" />
+                          </button>
+                          
+                          {statusDropdownOpen === motorista.motorista_id && (
+                            <div 
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              {cliente.nome}
-                            </option>
-                          ))}
-                        </select>
+                              <div className="py-1">
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'cadastrado')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    motorista.st_cadastro === 'cadastrado' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Cadastrado
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'qualificado')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    motorista.st_cadastro === 'qualificado' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Qualificado
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'documentacao')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    motorista.st_cadastro === 'documentacao' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Documentação
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'contrato_enviado')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    motorista.st_cadastro === 'contrato_enviado' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Contrato Enviado
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'contratado')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    motorista.st_cadastro === 'contratado' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Contratado
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'repescagem')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    motorista.st_cadastro === 'repescagem' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Repescagem
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'rejeitado')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    motorista.st_cadastro === 'rejeitado' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Rejeitado
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {updatingStatus === motorista.motorista_id && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="relative">
+                          <button
+                            onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id)}
+                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
+                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                                     dark:focus:ring-offset-gray-800 text-left w-full"
+                          >
+                            <span className="truncate max-w-[150px]">
+                              {motorista.cliente?.nome || 'Sem cliente'}
+                            </span>
+                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                          </button>
+                          
+                          {clienteDropdownOpen === motorista.motorista_id && (
+                            <div 
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="py-1">
+                                <button
+                                  onClick={(e) => handleUpdateCliente(e, motorista, null)}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    !motorista.cliente_id
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Sem cliente
+                                </button>
+                                
+                                {clientes.map(cliente => (
+                                  <button
+                                    key={cliente.cliente_id}
+                                    onClick={(e) => handleUpdateCliente(e, motorista, cliente.cliente_id)}
+                                    className={`block w-full text-left px-4 py-2 text-sm truncate ${
+                                      motorista.cliente_id === cliente.cliente_id
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    {cliente.nome}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {updatingCliente === motorista.motorista_id && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {getMotoristaCity(motorista) || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {motorista.veiculo && motorista.veiculo.length > 0 ? (
+                            <div>
+                              <div className="font-medium">{motorista.veiculo[0].placa.toUpperCase()}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {motorista.veiculo[0].tipologia}
+                              </div>
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {formatDate(motorista.data_cadastro)}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end space-x-3">
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewDocument(motorista);
-                            }}
+                            onClick={() => handleViewDocument(motorista)}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                            title="Visualizar Documentos"
+                            title="Visualizar"
                           >
                             <FilePen size={18} />
                           </button>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleUploadDocuments(motorista);
-                            }}
-                            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors"
-                            title="Enviar Documentos"
-                          >
-                            <Upload size={18} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(motorista);
-                            }}
-                            className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                            title="Editar"
-                          >
-                            <Edit2 size={18} />
-                          </button>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              className="sr-only peer"
-                              checked={motorista.ativo}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                toggleStatus(motorista.motorista_id, motorista.ativo);
-                              }}
-                            />
-                            <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 ${
+                            onClick={(e) => handleToggleStatus(e, motorista)}
+                            disabled={updatingStatus === motorista.motorista_id}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                               motorista.ativo 
-                                ? 'bg-green-600' 
-                                : 'bg-red-600'
-                            }`}></div>
-                          </label>
+                                ? 'bg-green-500 dark:bg-green-600' 
+                                : 'bg-gray-200 dark:bg-gray-700'
+                            } ${updatingStatus === motorista.motorista_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            role="switch"
+                            aria-checked={motorista.ativo}
+                            title={motorista.ativo ? "Desativar motorista" : "Ativar motorista"}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                motorista.ativo ? 'translate-x-5' : 'translate-x-0'
+                              }`}
+                            />
+                            {updatingStatus === motorista.motorista_id && (
+                              <Loader2 
+                                className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
+                              />
+                            )}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1189,83 +1081,29 @@ const Contratados = () => {
               </table>
             </div>
             
-            {/* Scroll indicators */}
             <ScrollableTableIndicator 
               containerRef={tableContainerRef} 
               className="mr-2 ml-2"
             />
           </div>
-
-          {/* Custom Pagination */}
-          <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4 sm:mb-0">
-              <span>
-                Mostrando <span className="font-medium">{Math.min((currentPage - 1) * pageSize + 1, totalCount)}</span> a{' '}
-                <span className="font-medium">{Math.min(currentPage * pageSize, totalCount)}</span> de{' '}
-                <span className="font-medium">{totalCount}</span> resultados
-              </span>
-              
-              <div className="ml-4">
-                <select
-                  value={pageSize}
-                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                  className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                >
-                  <option value={10}>10 por página</option>
-                  <option value={25}>25 por página</option>
-                  <option value={50}>50 por página</option>
-                  <option value={100}>100 por página</option>
-                  <option value={250}>250 por página</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-1">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-2 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-              >
-                Anterior
-              </button>
-              
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                
-                return (
-                  <button
-                    key={i}
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
-                      pageNum === currentPage
-                        ? 'bg-blue-600 text-white border border-blue-600 dark:bg-blue-700 dark:border-blue-700'
-                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="px-2 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-              >
-                Próximo
-              </button>
-            </div>
-          </div>
         </div>
+        
+        {filteredContratados.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 dark:text-gray-400">
+              Nenhum contratado encontrado
+            </p>
+          </div>
+        ) : (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        )}
       </div>
 
       {/* Context Menu */}
@@ -1276,89 +1114,111 @@ const Contratados = () => {
           onClose={() => setContextMenu({ ...contextMenu, visible: false })}
           actions={[
             {
-              icon: <FilePen size={16} />,
-              label: 'Visualizar Documentos',
-              onClick: () => handleViewUnifiedModal(contextMenu.motorista!),
-              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
+              icon: <User size={16} />,
+              label: 'Visualizar Detalhes',
+              onClick: () => handleViewDocument(contextMenu.motorista!),
+              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
+            },
+            {
+              icon: <Edit2 size={16} />,
+              label: 'Editar Motorista',
+              onClick: () => handleEdit(contextMenu.motorista!),
+              color: 'text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300'
+            },
+            {
+              icon: <FileText size={16} />,
+              label: 'Gerenciar Documentos',
+              onClick: () => handleUploadDocument(contextMenu.motorista!),
+              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
             },
             {
               icon: <MessageCircle size={16} />,
               label: 'Iniciar Chat',
-              onClick: () => handleStartChat(contextMenu.motorista!),
-              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors',
-              disabled: !contextMenu.motorista?.telefone
-            },
-            {
-              icon: <UserMinus size={16} />,
-              label: 'Remover Contratado',
-              onClick: () => handleDelete(contextMenu.motorista!),
-              color: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors'
+              onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome),
+              color: 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300',
+              disabled: !contextMenu.motorista!.telefone
             }
           ]}
         />
       )}
 
+      {/* Modals */}
+      <UnifiedMotoristaModal
+        isOpen={isUnifiedModalOpen}
+        onClose={() => setIsUnifiedModalOpen(false)}
+        motorista={selectedMotorista}
+        onSuccess={fetchContratados}
+      />
+
       <DocumentViewer
         isOpen={isDocumentViewerOpen}
         onClose={() => setIsDocumentViewerOpen(false)}
-        documento={selectedDocumento.documento}
-        nome={selectedDocumento.nome}
-        cpf={selectedDocumento.cpf}
-        email={selectedDocumento.email}
-        telefone={selectedDocumento.telefone}
-        dt_nascimento={selectedDocumento.dt_nascimento}
-        endereco={selectedDocumento.endereco}
-        veiculo={selectedDocumento.veiculo}
-        isAgregado={false}
-        st_cadastro={selectedDocumento.st_cadastro}
+        documento={documento}
+        nome={selectedMotorista?.nome || ''}
+        cpf={selectedMotorista?.cpf}
+        email={selectedMotorista?.email}
+        telefone={selectedMotorista?.telefone?.toString()}
+        dt_nascimento={selectedMotorista?.dt_nascimento}
+        endereco={endereco}
+        st_cadastro={selectedMotorista?.st_cadastro}
       />
 
-      <AgregadoDetailView
-        isOpen={isAgregadoDetailOpen}
-        onClose={() => setIsAgregadoDetailOpen(false)}
-        agregado={selectedDocumento.agregado as unknown as Motorista}
-        documento={selectedDocumento.documento}
-        veiculo={selectedDocumento.veiculo}
-        endereco={selectedDocumento.endereco}
+      <DocumentUploadModal
+        isOpen={isDocumentUploadOpen}
+        onClose={() => setIsDocumentUploadOpen(false)}
+        motorista_id={selectedMotorista?.motorista_id || 0}
+        nome={selectedMotorista?.nome || ''}
+        onUploadSuccess={fetchContratados}
       />
 
-      <UnifiedAgregadoModal
-        isOpen={isUnifiedModalOpen}
-        onClose={() => setIsUnifiedModalOpen(false)}
-        agregado={selectedMotorista as unknown as Motorista}
-        onSuccess={fetchMotoristas}
+      <EditMotoristaModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        motorista={selectedMotorista}
+        onUpdate={fetchContratados}
       />
 
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={removeMotoristaFromVehicles}
-        title="Remover Contratado"
-        message="Tem certeza que deseja remover este motorista da lista de contratados? O motorista será marcado como rejeitado e desvinculado dos veículos."
+        onConfirm={confirmDelete}
+        title="Confirmar Exclusão"
+        message="Tem certeza que deseja excluir este motorista? Esta ação não pode ser desfeita."
         itemData={selectedMotorista ? [
-          { label: "Nome", value: selectedMotorista.nome },
-          { label: "CPF", value: formatCPF(selectedMotorista.cpf) },
-          { label: "Email", value: selectedMotorista.email || 'Não informado' },
-          { label: "Função", value: selectedMotorista.funcao }
+          { label: 'Nome', value: selectedMotorista.nome },
+          { label: 'CPF', value: formatCPF(selectedMotorista.cpf) },
+          { label: 'Status', value: selectedMotorista.st_cadastro }
         ] : []}
       />
 
       <BulkActionsModal
-        isOpen={isBulkClientModalOpen}
-        onClose={() => setIsBulkClientModalOpen(false)}
+        isOpen={isBulkActionsModalOpen}
+        onClose={() => setIsBulkActionsModalOpen(false)}
         selectedItems={selectedItems}
-        actionType="client"
-        onSuccess={fetchMotoristas}
+        actionType={bulkActionType}
+        onSuccess={fetchContratados}
         clientes={clientes}
       />
 
-       <MassMessageModal
+      <BulkDeleteConfirmationModal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => setIsBulkDeleteModalOpen(false)}
+        onConfirm={handleBulkDelete}
+        title="Confirmar Exclusão em Massa"
+        message="Tem certeza que deseja excluir todos os motoristas selecionados? Esta ação não pode ser desfeita."
+        itemCount={selectedItems.size}
+        itemType="motorista"
+      />
+
+      <MassMessageModal
         isOpen={isMassMessageModalOpen}
         onClose={() => setIsMassMessageModalOpen(false)}
-        numbers={motoristas
-          .filter(m => selectedItems.has(m.motorista_id))
-          .map(m => m.telefone?.toString() || '')
-          .filter(num => num !== '')}
+        numbers={Array.from(selectedItems)
+          .map(id => {
+            const motorista = contratados.find(m => m.motorista_id === id);
+            return motorista?.telefone ? motorista.telefone.toString() : '';
+          })
+          .filter(Boolean)}
       />
     </div>
   );

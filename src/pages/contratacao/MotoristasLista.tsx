@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen } from 'lucide-react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -48,6 +48,7 @@ const MotoristasLista = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -458,11 +459,15 @@ const MotoristasLista = () => {
     const statusMatch = statusFilter ? motorista.st_cadastro === statusFilter : true;
     const clienteMatch = clienteFilter ? motorista.cliente_id === parseInt(clienteFilter) : true;
     const cidadeMatch = cidadeFilter ? getMotoristaCity(motorista) === cidadeFilter : true;
+    const ativoMatch = ativoFilter ? 
+      (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false) : 
+      true;
     
     return (
       statusMatch &&
       clienteMatch &&
       cidadeMatch &&
+      ativoMatch &&
       ((motorista.nome && motorista.nome.toLowerCase().includes(searchLower)) ||
        (motorista.cpf && motorista.cpf.includes(searchLower)) ||
        (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
@@ -538,7 +543,11 @@ const MotoristasLista = () => {
                         focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
                         transition-colors flex items-center gap-2"
               >
-                <Trash2 className="w-5 h-5" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
                 Excluir
               </button>
             </>
@@ -613,7 +622,7 @@ const MotoristasLista = () => {
           </div>
         </div>
         
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <select
               value={clienteFilter}
@@ -632,6 +641,23 @@ const MotoristasLista = () => {
               <circle cx="9" cy="7" r="4"></circle>
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+
+          <div className="relative">
+            <select
+              value={ativoFilter}
+              onChange={(e) => setAtivoFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todos (Ativo/Inativo)</option>
+              <option value="ativo">Somente Ativos</option>
+              <option value="inativo">Somente Inativos</option>
+            </select>
+            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
             </svg>
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
@@ -959,13 +985,6 @@ const MotoristasLista = () => {
                             <FilePen size={18} />
                           </button>
                           <button
-                            onClick={() => handleDelete(motorista)}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                            title="Excluir"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                          <button
                             onClick={(e) => handleToggleStatus(e, motorista)}
                             disabled={updatingStatus === motorista.motorista_id}
                             className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
@@ -1052,12 +1071,6 @@ const MotoristasLista = () => {
               onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome),
               color: 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300',
               disabled: !contextMenu.motorista!.telefone
-            },
-            {
-              icon: <Trash2 size={16} />,
-              label: 'Excluir Motorista',
-              onClick: () => handleDelete(contextMenu.motorista!),
-              color: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300'
             }
           ]}
         />
