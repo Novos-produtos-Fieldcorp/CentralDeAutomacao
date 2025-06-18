@@ -370,10 +370,10 @@ const AgregadosLista = () => {
   const filteredAgregados = agregados.filter(agregado => {
     const searchString = searchTerm.toLowerCase();
     return (
-      agregado.nome.toLowerCase().includes(searchString) ||
-      agregado.cpf.includes(searchString) ||
-      (agregado.email && agregado.email.toLowerCase().includes(searchString)) ||
-      (agregado.telefone && agregado.telefone.toString().includes(searchString))
+      (agregado.nome?.toLowerCase() || '').includes(searchString) ||
+      (agregado.cpf || '').includes(searchString) ||
+      (agregado.email?.toLowerCase() || '').includes(searchString) ||
+      (agregado.telefone?.toString() || '').includes(searchString)
     );
   });
 
@@ -548,10 +548,10 @@ const AgregadosLista = () => {
                     </div>
                     <div className="ml-4">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {agregado.nome}
+                        {agregado.nome || 'Nome não informado'}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {formatCPF(agregado.cpf)}
+                        {agregado.cpf ? formatCPF(agregado.cpf) : 'CPF não informado'}
                       </div>
                     </div>
                   </div>
