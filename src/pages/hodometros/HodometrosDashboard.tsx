@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart2, Calendar, TrendingUp, Truck, Users, 
   AlertTriangle, Activity, FileText, Camera, X, Eye,
   Gauge, AlertCircle, FileBarChart
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { supabase, testSupabaseConnection } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
@@ -98,7 +98,7 @@ const HodometrosDashboard = () => {
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
   const [todayReadings, setTodayReadings] = useState(0);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
+  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
   
   // Inconsistencies table state
@@ -471,7 +471,7 @@ const HodometrosDashboard = () => {
       
       const { data, error, count } = await supabase
         .from('hodometro')
-        .select('id_hodometro', { count: 'exact', head: true })
+        .select('id_hodometro', { count: 'exact' })
         .eq('company_id', companyId)
         .eq('data', today);
       
@@ -618,7 +618,7 @@ const HodometrosDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="bg-white dark:bg-background p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
@@ -659,7 +659,7 @@ const HodometrosDashboard = () => {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Daily Mileage */}
-        <div className="bg-white dark:bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <BarChart2 className="text-blue-500 dark:text-blue-400" size={20} />
             Quilometragem Diária
@@ -700,7 +700,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Driver Mileage */}
-        <div className="bg-white dark:bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <Users className="text-green-500 dark:text-green-400" size={20} />
             Quilometragem por Motorista
@@ -741,7 +741,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Vehicle Mileage */}
-        <div className="bg-white dark:bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <Truck className="text-purple-500 dark:text-purple-400" size={20} />
             Quilometragem por Veículo
@@ -782,7 +782,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Leituras por Motorista Chart and KM per Operation Chart */}
-        <div className="bg-white dark:bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white dark:bg-[#0f172a] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             Leituras por Motorista
@@ -824,7 +824,7 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* KM per Operation Chart */}
-      <div className="bg-white dark:bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
           <Gauge className="w-5 h-5 text-orange-500 dark:text-orange-400" />
           Quilômetros por Operação
@@ -865,7 +865,7 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* Inconsistencies Table */}
-      <div className="bg-white dark:bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
@@ -932,7 +932,7 @@ const HodometrosDashboard = () => {
                   <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-background divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredHodometros.map((hodometro) => {
                   const isElectric = hodometro.bateria !== null && hodometro.bateria !== undefined;
                   
@@ -1047,7 +1047,7 @@ const HodometrosDashboard = () => {
           onClick={() => setShowPhotoModal(false)}
         >
           <div 
-            className="bg-white dark:bg-background rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
             onClick={e => e.stopPropagation()}
           >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
@@ -1126,7 +1126,7 @@ const StatCard = ({
   const variant = colorVariants[color];
 
   return (
-    <div className="bg-white dark:bg-background p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
       <div className="flex flex-col items-center text-center">
         <div className={`p-3 ${variant.iconBg} rounded-xl mb-3`}>
           <Icon className={`w-6 h-6 ${variant.iconColor}`} />
