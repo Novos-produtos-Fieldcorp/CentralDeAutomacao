@@ -26,6 +26,7 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
   const [submitting, setSubmitting] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
+  const [documentType, setDocumentType] = useState<'cnh' | 'rg'>('cnh');
   
   const [formData, setFormData] = useState({
     nome: '',
@@ -157,8 +158,8 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
         throw new Error('Erro ao cadastrar ajudante: nenhum dado retornado');
       }
 
-      // Insert CNH if data is provided
-      if (formData.nr_registro || formData.categoria || formData.nome_pai || formData.nome_mae || formData.foto_cnh) {
+      // Insert CNH if data is provided and document type is CNH
+      if (documentType === 'cnh' && (formData.nr_registro || formData.categoria || formData.nome_pai || formData.nome_mae || formData.foto_cnh)) {
         const { error: cnhError } = await supabase
           .from('cnh_ajudante')
           .insert({
@@ -173,8 +174,8 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
         if (cnhError) throw cnhError;
       }
 
-      // Insert RG if data is provided
-      if (formData.nr_rg || formData.data_emissao || formData.orgao_expedidor || formData.filiacao || formData.foto_rg) {
+      // Insert RG if data is provided and document type is RG
+      if (documentType === 'rg' && (formData.nr_rg || formData.data_emissao || formData.orgao_expedidor || formData.filiacao || formData.foto_rg)) {
         const { error: rgError } = await supabase
           .from('rg_ajudante')
           .insert({
@@ -198,9 +199,9 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
             .select('id_estado')
             .eq('sigla_estado', formData.estado)
             .single();
-            
+
           if (estadoError) {
-            throw new Error(`Estado "${formData.estado}" não encontrado.`);
+            throw new Error(`Estado "${formData.estado}" não encontrado. Use a sigla do estado (ex: SP, RJ).`);
           }
           
           // Check if cidade exists
@@ -239,7 +240,7 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
           const { data: bairro, error: bairroError } = await supabase
             .from('bairro')
             .select('id_bairro')
-            .eq('bairro', formData.bairro)
+            .eq('bairro', formData.bairro || 'Centro')
             .eq('id_cidade', cidadeId)
             .maybeSingle();
 
@@ -254,7 +255,7 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
             const { data: newBairro, error: newBairroError } = await supabase
               .from('bairro')
               .insert({
-                bairro: formData.bairro,
+                bairro: formData.bairro || 'Centro',
                 id_cidade: cidadeId
               })
               .select()
@@ -271,7 +272,7 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
             .from('logradouro')
             .select('id_logradouro')
             .eq('logradouro', formData.logradouro)
-            .eq('nr_cep', formData.cep)
+            .eq('nr_cep', formData.cep || null)
             .eq('id_bairro', bairroId)
             .maybeSingle();
 
@@ -287,7 +288,7 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
               .from('logradouro')
               .insert({
                 logradouro: formData.logradouro,
-                nr_cep: formData.cep,
+                nr_cep: formData.cep || null,
                 id_bairro: bairroId
               })
               .select()
@@ -423,137 +424,170 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
             </div>
           </div>
 
-          {/* CNH Information */}
+          {/* Document Type Selection */}
           <div className="space-y-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-              Informações da CNH
+              Tipo de Documento
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Número da CNH
-                </label>
+            <div className="flex gap-4">
+              <label className="flex items-center">
                 <input
-                  type="text"
-                  name="nr_registro"
-                  value={formData.nr_registro}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nr_registro: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  type="radio"
+                  checked={documentType === 'cnh'}
+                  onChange={() => setDocumentType('cnh')}
+                  className="mr-2 rounded-full border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-              </div>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">CNH</span>
+              </label>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Categoria
-                </label>
-                <select
-                  name="categoria"
-                  value={formData.categoria}
-                  onChange={(e) => setFormData(prev => ({ ...prev, categoria: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                >
-                  <option value="">Selecione</option>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                  <option value="D">D</option>
-                  <option value="E">E</option>
-                  <option value="AB">AB</option>
-                  <option value="AC">AC</option>
-                  <option value="AD">AD</option>
-                  <option value="AE">AE</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nome do Pai
-                </label>
+              <label className="flex items-center">
                 <input
-                  type="text"
-                  name="nome_pai"
-                  value={formData.nome_pai}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nome_pai: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  type="radio"
+                  checked={documentType === 'rg'}
+                  onChange={() => setDocumentType('rg')}
+                  className="mr-2 rounded-full border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nome da Mãe
-                </label>
-                <input
-                  type="text"
-                  name="nome_mae"
-                  value={formData.nome_mae}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nome_mae: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </div>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">RG</span>
+              </label>
             </div>
           </div>
 
-          {/* RG Information */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-              Informações do RG
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Número do RG
-                </label>
-                <input
-                  type="text"
-                  name="nr_rg"
-                  value={formData.nr_rg}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nr_rg: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </div>
+          {/* CNH Information - Only show if CNH is selected */}
+          {documentType === 'cnh' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                Informações da CNH
+              </h3>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Data de Emissão
-                </label>
-                <input
-                  type="date"
-                  name="data_emissao"
-                  value={formData.data_emissao}
-                  onChange={(e) => setFormData(prev => ({ ...prev, data_emissao: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Órgão Expedidor
-                </label>
-                <input
-                  type="text"
-                  name="orgao_expedidor"
-                  value={formData.orgao_expedidor}
-                  onChange={(e) => setFormData(prev => ({ ...prev, orgao_expedidor: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Filiação
-                </label>
-                <input
-                  type="text"
-                  name="filiacao"
-                  value={formData.filiacao}
-                  onChange={(e) => setFormData(prev => ({ ...prev, filiacao: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Número da CNH
+                  </label>
+                  <input
+                    type="text"
+                    name="nr_registro"
+                    value={formData.nr_registro}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nr_registro: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Categoria
+                  </label>
+                  <select
+                    name="categoria"
+                    value={formData.categoria}
+                    onChange={(e) => setFormData(prev => ({ ...prev, categoria: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  >
+                    <option value="">Selecione</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                    <option value="E">E</option>
+                    <option value="AB">AB</option>
+                    <option value="AC">AC</option>
+                    <option value="AD">AD</option>
+                    <option value="AE">AE</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nome do Pai
+                  </label>
+                  <input
+                    type="text"
+                    name="nome_pai"
+                    value={formData.nome_pai}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nome_pai: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nome da Mãe
+                  </label>
+                  <input
+                    type="text"
+                    name="nome_mae"
+                    value={formData.nome_mae}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nome_mae: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* RG Information - Only show if RG is selected */}
+          {documentType === 'rg' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                Informações do RG
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Número do RG
+                  </label>
+                  <input
+                    type="text"
+                    name="nr_rg"
+                    value={formData.nr_rg}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nr_rg: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Data de Emissão
+                  </label>
+                  <input
+                    type="date"
+                    name="data_emissao"
+                    value={formData.data_emissao}
+                    onChange={(e) => setFormData(prev => ({ ...prev, data_emissao: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Órgão Expedidor
+                  </label>
+                  <input
+                    type="text"
+                    name="orgao_expedidor"
+                    value={formData.orgao_expedidor}
+                    onChange={(e) => setFormData(prev => ({ ...prev, orgao_expedidor: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Filiação
+                  </label>
+                  <input
+                    type="text"
+                    name="filiacao"
+                    value={formData.filiacao}
+                    onChange={(e) => setFormData(prev => ({ ...prev, filiacao: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Address Information */}
           <div className="space-y-6">
@@ -702,7 +736,7 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
             >
               {submitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   Salvando...
                 </>
               ) : (
