@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, ChevronDown, ChevronUp, Edit2, Trash2, Camera, X, BarChart2, Filter, AlertCircle, RefreshCw } from 'lucide-react';
+import { Search, Eye, ChevronDown, ChevronUp, Edit2, Trash2, Camera, X, BarChart2, Filter, AlertCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase, testSupabaseConnection } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -69,7 +69,7 @@ const HodometrosLista = () => {
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [showChartModal, setShowChartModal] = useState(false);
   const [selectedVehicleName, setSelectedVehicleName] = useState<string>('');
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
+  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
   const tableRef = React.useRef<HTMLDivElement>(null);
 
   const fetchHodometros = useCallback(async () => {
@@ -501,7 +501,12 @@ const HodometrosLista = () => {
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
-            <RefreshCw className="w-4 h-4 mr-2" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-2">
+              <path d="M21 2v6h-6"></path>
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+              <path d="M3 22v-6h6"></path>
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+            </svg>
             Tentar Novamente
           </button>
         </div>
@@ -802,7 +807,7 @@ const HodometrosLista = () => {
                                           </>
                                         )}
                                         <td className="px-6 py-4 whitespace-nowrap text-right">
-                                          <div className="flex items-center justify-end space-x-3">
+                                          <div className="flex items-center justify-end">
                                             <button
                                               onClick={(e) => handleShowPhoto(e, hodometro.foto_hodometro)}
                                               className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
@@ -810,22 +815,6 @@ const HodometrosLista = () => {
                                               title={hodometro.foto_hodometro ? "Ver foto do hodômetro" : "Sem foto disponível"}
                                             >
                                               <Camera size={18} />
-                                            </button>
-                                            <button
-                                              onClick={(e) => handleEdit(e, hodometro)}
-                                              className="text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300 
-                                                       transition-colors"
-                                              title="Editar"
-                                            >
-                                              <Edit2 size={18} />
-                                            </button>
-                                            <button
-                                              onClick={(e) => handleDelete(e, hodometro)}
-                                              className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                                                       transition-colors"
-                                              title="Excluir"
-                                            >
-                                              <Trash2 size={18} />
                                             </button>
                                           </div>
                                         </td>
