@@ -32,6 +32,11 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
   const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
   const [selectedAjudanteId, setSelectedAjudanteId] = useState<number | null>(null);
   const [deletingAjudante, setDeletingAjudante] = useState<number | null>(null);
+  const [previewDocument, setPreviewDocument] = useState<{
+    url: string | null;
+    type: 'cnh' | 'rg' | 'comprovante';
+    ajudanteId: number | null;
+  } | null>(null);
 
   useEffect(() => {
     if (isOpen && motorista) {
@@ -267,6 +272,14 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
   const handleEditAjudante = (ajudanteId: number) => {
     setSelectedAjudanteId(ajudanteId);
     setIsEditAjudanteModalOpen(true);
+  };
+
+  const handleViewDocument = (url: string | null, type: 'cnh' | 'rg' | 'comprovante', ajudanteId: number | null) => {
+    if (url) {
+      setPreviewDocument({ url, type, ajudanteId });
+    } else {
+      toast.error('Documento não disponível');
+    }
   };
 
   if (!isOpen || !motorista) return null;
@@ -734,7 +747,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                   <div className="space-y-6">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <UserCircle className="w-5 h-5 text-gray-400" />
+                        <Users className="w-5 h-5 text-gray-400" />
                         Ajudantes
                       </h3>
                       <button
@@ -811,21 +824,44 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                             {/* Document Information */}
                             <div className="mt-3 flex flex-wrap gap-2">
                               {ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0 && (
-                                <div className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200 rounded-full text-xs">
+                                <div 
+                                  className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200 rounded-full text-xs flex items-center gap-1 cursor-pointer hover:bg-green-200 dark:hover:bg-green-900/30 transition-colors"
+                                  onClick={() => handleViewDocument(ajudante.cnh_ajudante[0].foto_cnh, 'cnh', ajudante.id_ajudante)}
+                                >
+                                  <FileText className="w-3 h-3" />
                                   CNH cadastrada
                                 </div>
                               )}
                               {ajudante.rg_ajudante && ajudante.rg_ajudante.length > 0 && (
-                                <div className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200 rounded-full text-xs">
+                                <div 
+                                  className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200 rounded-full text-xs flex items-center gap-1 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-900/30 transition-colors"
+                                  onClick={() => handleViewDocument(ajudante.rg_ajudante[0].foto_rg, 'rg', ajudante.id_ajudante)}
+                                >
+                                  <FileText className="w-3 h-3" />
                                   RG cadastrado
                                 </div>
                               )}
                               {ajudante.comprovante_residencia && (
-                                <div className="px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200 rounded-full text-xs">
+                                <div 
+                                  className="px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200 rounded-full text-xs flex items-center gap-1 cursor-pointer hover:bg-purple-200 dark:hover:bg-purple-900/30 transition-colors"
+                                  onClick={() => handleViewDocument(ajudante.comprovante_residencia, 'comprovante', ajudante.id_ajudante)}
+                                >
+                                  <FileText className="w-3 h-3" />
                                   Comprovante de residência
                                 </div>
                               )}
                             </div>
+
+                            {/* Address Information (Compact) */}
+                            {ajudante.end_ajudante && ajudante.end_ajudante.length > 0 && ajudante.end_ajudante[0].logradouro && (
+                              <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <MapPin className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">
+                                  {ajudante.end_ajudante[0].logradouro.logradouro}, {ajudante.end_ajudante[0].nr_end || 'S/N'}, 
+                                  {ajudante.end_ajudante[0].logradouro.bairro?.cidade?.cidade}/{ajudante.end_ajudante[0].logradouro.bairro?.cidade?.estado?.sigla_estado}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -949,6 +985,57 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
               ) : (
                 <img
                   src={activeDocument}
+                  alt="Documento"
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document preview modal for ajudante documents */}
+      {previewDocument && previewDocument.url && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+          onClick={() => setPreviewDocument(null)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                {previewDocument.type === 'cnh' && 'CNH do Ajudante'}
+                {previewDocument.type === 'rg' && 'RG do Ajudante'}
+                {previewDocument.type === 'comprovante' && 'Comprovante de Residência do Ajudante'}
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openDocumentInNewTab(previewDocument.url)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Abrir em nova aba"
+                >
+                  <ExternalLink size={20} />
+                </button>
+                <button
+                  onClick={() => setPreviewDocument(null)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="relative h-[calc(90vh-80px)]">
+              {isPdf(previewDocument.url) ? (
+                <iframe 
+                  src={`${previewDocument.url}#toolbar=1`} 
+                  className="w-full h-full" 
+                  title="PDF Viewer"
+                />
+              ) : (
+                <img
+                  src={previewDocument.url}
                   alt="Documento"
                   className="w-full h-full object-contain"
                 />
