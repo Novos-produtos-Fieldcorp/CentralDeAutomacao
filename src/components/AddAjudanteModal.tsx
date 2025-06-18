@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, User, Phone, MapPin } from 'lucide-react';
+import { X, Loader2, User, Phone, MapPin, Camera, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCEP } from '../utils/format';
@@ -27,6 +27,11 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
   const [loadingCep, setLoadingCep] = useState(false);
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
   const [documentType, setDocumentType] = useState<'cnh' | 'rg'>('cnh');
+  const [uploading, setUploading] = useState<{cnh: boolean, rg: boolean, comprovante: boolean}>({
+    cnh: false,
+    rg: false,
+    comprovante: false
+  });
   
   const [formData, setFormData] = useState({
     nome: '',
@@ -123,6 +128,54 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'foto_cnh' | 'foto_rg' | 'comprovante_residencia') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('O arquivo é muito grande. Tamanho máximo: 5MB');
+      return;
+    }
+    
+    // Check file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Tipo de arquivo inválido. Use JPEG, PNG ou PDF');
+      return;
+    }
+    
+    try {
+      setUploading(prev => ({ ...prev, [field]: true }));
+      
+      // Create a unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `ajudante_${Date.now()}_${field}.${fileExt}`;
+      
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('imagensdocs')
+        .upload(fileName, file);
+        
+      if (error) throw error;
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('imagensdocs')
+        .getPublicUrl(fileName);
+        
+      // Update form data with the URL
+      setFormData(prev => ({ ...prev, [field]: publicUrl }));
+      
+      toast.success('Arquivo enviado com sucesso');
+    } catch (error) {
+      console.error('Erro ao enviar arquivo:', error);
+      toast.error('Erro ao enviar arquivo');
+    } finally {
+      setUploading(prev => ({ ...prev, [field]: false }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -142,7 +195,8 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
           cpf: formData.cpf,
           telefone: formData.telefone || null,
           genero: formData.genero || null,
-          motorista_id: motorista_id
+          motorista_id: motorista_id,
+          comprovante_residencia: formData.comprovante_residencia || null
         })
         .select()
         .single();
@@ -522,6 +576,50 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Foto da CNH
+                  </label>
+                  <div className="mt-1 flex items-center">
+                    <div className="flex-1">
+                      <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                        <div className="space-y-1 text-center">
+                          <Camera className="mx-auto h-12 w-12 text-gray-400" />
+                          <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                            <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                              {formData.foto_cnh ? 'Trocar arquivo' : 'Enviar arquivo'}
+                            </span>
+                            <input 
+                              id="foto_cnh" 
+                              name="foto_cnh" 
+                              type="file" 
+                              className="sr-only"
+                              onChange={(e) => handleFileUpload(e, 'foto_cnh')}
+                              accept="image/jpeg,image/png,application/pdf"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            PNG, JPG ou PDF até 5MB
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                    {uploading.cnh && (
+                      <div className="ml-4">
+                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                      </div>
+                    )}
+                    {formData.foto_cnh && !uploading.cnh && (
+                      <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
+                        <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Documento enviado
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -584,6 +682,50 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
                     onChange={(e) => setFormData(prev => ({ ...prev, filiacao: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Foto do RG
+                  </label>
+                  <div className="mt-1 flex items-center">
+                    <div className="flex-1">
+                      <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                        <div className="space-y-1 text-center">
+                          <Camera className="mx-auto h-12 w-12 text-gray-400" />
+                          <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                            <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                              {formData.foto_rg ? 'Trocar arquivo' : 'Enviar arquivo'}
+                            </span>
+                            <input 
+                              id="foto_rg" 
+                              name="foto_rg" 
+                              type="file" 
+                              className="sr-only"
+                              onChange={(e) => handleFileUpload(e, 'foto_rg')}
+                              accept="image/jpeg,image/png,application/pdf"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            PNG, JPG ou PDF até 5MB
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                    {uploading.rg && (
+                      <div className="ml-4">
+                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                      </div>
+                    )}
+                    {formData.foto_rg && !uploading.rg && (
+                      <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
+                        <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Documento enviado
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -716,6 +858,50 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
                   onChange={(e) => setFormData(prev => ({ ...prev, complemento: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Comprovante de Residência
+                </label>
+                <div className="mt-1 flex items-center">
+                  <div className="flex-1">
+                    <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                      <div className="space-y-1 text-center">
+                        <Camera className="mx-auto h-12 w-12 text-gray-400" />
+                        <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                          <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                            {formData.comprovante_residencia ? 'Trocar arquivo' : 'Enviar arquivo'}
+                          </span>
+                          <input 
+                            id="comprovante_residencia" 
+                            name="comprovante_residencia" 
+                            type="file" 
+                            className="sr-only"
+                            onChange={(e) => handleFileUpload(e, 'comprovante_residencia')}
+                            accept="image/jpeg,image/png,application/pdf"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          PNG, JPG ou PDF até 5MB
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                  {uploading.comprovante && (
+                    <div className="ml-4">
+                      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                    </div>
+                  )}
+                  {formData.comprovante_residencia && !uploading.comprovante && (
+                    <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
+                      <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Documento enviado
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
