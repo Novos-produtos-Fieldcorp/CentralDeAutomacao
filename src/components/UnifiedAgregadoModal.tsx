@@ -421,69 +421,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       ) : (
                         <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum endereço cadastrado</p>
                       )}
-                      
-                      {/* Comprovante de Residência */}
-                      <div className="mt-6">
-                        <h4 className="text-base font-medium text-gray-900 dark:text-white mb-3">
-                          Comprovante de Residência
-                        </h4>
-                        
-                        {documento?.foto_comprovante_residencia ? (
-                          <div className="relative aspect-[1.414] w-full max-w-md bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                            {isPdf(documento.foto_comprovante_residencia) ? (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                                <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                                <button
-                                  onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
-                                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
-                                >
-                                  <ExternalLink size={16} />
-                                  Abrir PDF
-                                </button>
-                              </div>
-                            ) : (
-                              <img
-                                src={documento.foto_comprovante_residencia}
-                                alt="Comprovante de Residência"
-                                className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
-                              />
-                            )}
-                          </div>
-                        ) : (
-                          <div className="relative">
-                            <input
-                              type="file"
-                              id="file-comprovante"
-                              onChange={(e) => handleFileUpload(e, 'comprovante')}
-                              className="sr-only"
-                              ref={fileInputRef}
-                              accept="image/jpeg,image/png,image/jpg,application/pdf"
-                            />
-                            <label
-                              htmlFor="file-comprovante"
-                              className="flex flex-col items-center justify-center w-full max-w-md aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
-                                        border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
-                                        hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
-                            >
-                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                {uploading.comprovante ? (
-                                  <Loader2 className="w-10 h-10 text-gray-400 animate-spin mb-4" />
-                                ) : (
-                                  <Camera className="w-10 h-10 text-gray-400 mb-4" />
-                                )}
-                                <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                                  <span className="font-semibold">Clique para enviar</span> ou arraste e solte
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  JPEG, PNG ou PDF (máx. 15MB)
-                                </p>
-                              </div>
-                            </label>
-                          </div>
-                        )}
-                      </div>
                     </div>
                   </div>
                 )}
@@ -491,57 +428,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                 {/* Documents Tab */}
                 {activeTab === 'documents' && (
                   <div className="space-y-6">
-                    {/* Vehicle Information */}
-                    <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <Truck className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-                        Informações do Veículo
-                      </h3>
-                      
-                      {veiculo ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</p>
-                            <p className="mt-1 text-sm text-gray-900 dark:text-white uppercase">{veiculo.placa}</p>
-                          </div>
-                          
-                          <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca/Modelo</p>
-                            <p className="mt-1 text-sm text-gray-900 dark:text-white">{veiculo.marca} {veiculo.tipo}</p>
-                          </div>
-                          
-                          <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Ano</p>
-                            <p className="mt-1 text-sm text-gray-900 dark:text-white">{veiculo.ano || '-'}</p>
-                          </div>
-                          
-                          <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tipologia</p>
-                            <p className="mt-1 text-sm text-gray-900 dark:text-white">{veiculo.tipologia || '-'}</p>
-                          </div>
-                          
-                          <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Peso</p>
-                            <p className="mt-1 text-sm text-gray-900 dark:text-white">{veiculo.peso || '-'}</p>
-                          </div>
-                          
-                          <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Cubagem</p>
-                            <p className="mt-1 text-sm text-gray-900 dark:text-white">{veiculo.cubagem || '-'}</p>
-                          </div>
-                          
-                          <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Rastreador</p>
-                            <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                              {veiculo.possui_rastreador ? `Sim (${veiculo.marca_rastreador || 'Não informado'})` : 'Não'}
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum veículo cadastrado</p>
-                      )}
-                    </div>
-                    
                     {/* CNH Document */}
                     <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -605,7 +491,71 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                         </div>
                       )}
                     </div>
-                    
+
+                    {/* Comprovante de Residência */}
+                    <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                        Comprovante de Residência
+                      </h3>
+                      
+                      {documento?.foto_comprovante_residencia ? (
+                        <div className="relative aspect-[1.414] w-full max-w-md bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                          {isPdf(documento.foto_comprovante_residencia) ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                              <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
+                              <button
+                                onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
+                              >
+                                <ExternalLink size={16} />
+                                Abrir PDF
+                              </button>
+                            </div>
+                          ) : (
+                            <img
+                              src={documento.foto_comprovante_residencia}
+                              alt="Comprovante de Residência"
+                              className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                              onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id="file-comprovante"
+                            onChange={(e) => handleFileUpload(e, 'comprovante')}
+                            className="sr-only"
+                            ref={fileInputRef}
+                            accept="image/jpeg,image/png,image/jpg,application/pdf"
+                          />
+                          <label
+                            htmlFor="file-comprovante"
+                            className="flex flex-col items-center justify-center w-full max-w-md aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
+                                      border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
+                                      hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                          >
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              {uploading.comprovante ? (
+                                <Loader2 className="w-10 h-10 text-gray-400 animate-spin mb-4" />
+                              ) : (
+                                <Camera className="w-10 h-10 text-gray-400 mb-4" />
+                              )}
+                              <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                <span className="font-semibold">Clique para enviar</span> ou arraste e solte
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                JPEG, PNG ou PDF (máx. 15MB)
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+
                     {/* CRV Document */}
                     {veiculo && (
                       <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -613,6 +563,23 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                           <FileText className="w-5 h-5 text-blue-500 dark:text-blue-400" />
                           CRV do Veículo
                         </h3>
+                        
+                        <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg mb-4">
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</span>
+                              <p className="text-base font-semibold text-gray-900 dark:text-white uppercase">{veiculo.placa}</p>
+                            </div>
+                            <div>
+                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca</span>
+                              <p className="text-base font-semibold text-gray-900 dark:text-white">{veiculo.marca}</p>
+                            </div>
+                            <div>
+                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Modelo</span>
+                              <p className="text-base font-semibold text-gray-900 dark:text-white">{veiculo.tipo}</p>
+                            </div>
+                          </div>
+                        </div>
                         
                         {documentoVeiculo?.foto_crv ? (
                           <div className="relative aspect-[1.414] w-full max-w-md bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
@@ -689,7 +656,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
                                  transition-colors flex items-center gap-2 text-sm"
                       >
-                        <Plus className="w-4 h-4" />
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M5 12h14"></path>
+                          <path d="M12 5v14"></path>
+                        </svg>
                         Adicionar Ajudante
                       </button>
                     </div>
