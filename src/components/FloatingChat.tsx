@@ -467,7 +467,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           thumbnail: contactResponse.data.avatar_url || contactResponse.data.thumbnail || '',
           source_id: contactResponse.data.contact_inboxes?.[0]?.source_id || '',
           availability_status: contactResponse.data.availability_status || 'offline',
-          last_seen_at: contactResponse.data.last_activity_at ? new Date(contactResponse.data.last_activity_at * 1000).toISOString() : '',
+          last_seen_at: contactResponse.data.last_seen_at || '',
           email: contactResponse.data.email,
           custom_attributes: contactResponse.data.custom_attributes || {}
         };
@@ -557,7 +557,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
       if (initialPhone) {
         const formattedNumber = formatPhoneNumber(initialPhone);
-        let contactToUse;
+        let contactToUse: Contact | undefined;
 
         try {
           // Tentar buscar o contato existente
@@ -600,58 +600,57 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             console.error('Erro ao criar contato:', error);
             throw new Error('Falha ao criar novo contato');
           }
-        }
 
-        // Criar nova conversa para o contato
-        try {
-          const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
-            inbox_id: inboxId.toString(),
-            contact_id: contactToUse.id.toString()
-          });
+          if (contactToUse) {
+          try {
+            const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
+              inbox_id: inboxId.toString(),
+              contact_id: contactToUse.id.toString()
+            });
 
-          if (!newConversationResponse.data) {
-            throw new Error('Não foi possível criar a conversa');
+            if (!newConversationResponse.data) {
+              throw new Error('Não foi possível criar a conversa');
+            }
+
+            const conversationToUse = newConversationResponse.data;
+
+            // Configurar o chat com o contato e conversa
+            setContact({
+              id: contactToUse.id,
+              name: contactToUse.name || initialName || formattedNumber,
+              phone_number: contactToUse.phone_number,
+              thumbnail: contactToUse.thumbnail || '',
+              source_id: contactToUse.contact_inboxes?.[0]?.source_id || '',
+              availability_status: contactToUse.availability_status || 'offline',
+              last_seen_at: contactToUse.last_seen_at || '',
+              email: contactToUse.email,
+              custom_attributes: contactToUse.custom_attributes || {}
+            });
+
+            setActiveConversation({
+              id: conversationToUse.id,
+              messages: []
+            });
+
+            await loadConversationMessages(conversationToUse.id);
+
+            setStorageConversations(prev => {
+              const filteredConversations = prev.filter(conv => conv.user.id !== contactToUse!.id);
+              return [...filteredConversations, {
+                user: {
+                  id: contactToUse!.id,
+                  name: contactToUse!.name,
+                  phone_number: contactToUse!.phone_number,
+                  thumbnail: contactToUse!.thumbnail || ''
+                },
+                conversationId: conversationToUse.id
+              }];
+            });
+          } catch (error) {
+            console.error('Erro ao criar conversa:', error);
+            throw new Error('Falha ao criar nova conversa');
           }
-
-          const conversationToUse = newConversationResponse.data;
-
-          // Configurar o chat com o contato e conversa
-          setContact({
-            id: contactToUse.id,
-            name: contactToUse.name || initialName || formattedNumber,
-            phone_number: contactToUse.phone_number,
-            thumbnail: contactToUse.avatar_url || contactToUse.thumbnail || '',
-            source_id: contactToUse.contact_inboxes?.[0]?.source_id || '',
-            availability_status: contactToUse.availability_status || 'offline',
-            last_seen_at: contactToUse.last_activity_at ? new Date(contactToUse.last_activity_at * 1000).toISOString() : '',
-            email: contactToUse.email,
-            custom_attributes: contactToUse.custom_attributes || {}
-          });
-
-          setActiveConversation({
-            id: conversationToUse.id,
-            messages: []
-          });
-
-          // Carregar mensagens iniciais
-          await loadConversationMessages(conversationToUse.id);
-
-          // Atualizar conversas armazenadas
-          setStorageConversations(prev => {
-            const filteredConversations = prev.filter(conv => conv.user.id !== contactToUse.id);
-            return [...filteredConversations, {
-              user: {
-                id: contactToUse.id,
-                name: contactToUse.name,
-                phone_number: contactToUse.phone_number,
-                thumbnail: contactToUse.avatar_url || contactToUse.thumbnail || ''
-              },
-              conversationId: conversationToUse.id
-            }];
-          });
-        } catch (error) {
-          console.error('Erro ao criar conversa:', error);
-          throw new Error('Falha ao criar nova conversa');
+        }
         }
       }
     } catch (error) {
