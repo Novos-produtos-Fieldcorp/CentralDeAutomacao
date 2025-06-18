@@ -539,7 +539,7 @@ const HodometrosLista = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-[#0f172a] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <input
@@ -585,7 +585,7 @@ const HodometrosLista = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-[#0f172a] rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
           <div className="flex items-center">
             <input
@@ -694,7 +694,7 @@ const HodometrosLista = () => {
                             </div>
                             
                             {/* Recharts Bar Chart */}
-                            <div className="h-64 w-full mb-6 bg-white dark:bg-[#0f172a] p-4 rounded-lg shadow-sm">
+                            <div className="h-64 w-full mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
                               <ResponsiveContainer width="100%" height="100%">
                                 <BarChart
                                   data={dailyData}
