@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart2, Calendar, TrendingUp, Truck, Users, 
   AlertTriangle, Activity, FileText, Camera, X, Eye,
   Gauge, AlertCircle, FileBarChart
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { supabase, testSupabaseConnection } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
@@ -98,7 +98,7 @@ const HodometrosDashboard = () => {
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
   const [todayReadings, setTodayReadings] = useState(0);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
+  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
   
   // Inconsistencies table state
@@ -471,7 +471,7 @@ const HodometrosDashboard = () => {
       
       const { data, error, count } = await supabase
         .from('hodometro')
-        .select('id_hodometro', { count: 'exact', head: true })
+        .select('id_hodometro', { count: 'exact' })
         .eq('company_id', companyId)
         .eq('data', today);
       
@@ -598,7 +598,7 @@ const HodometrosDashboard = () => {
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
         <div className="text-center">
           <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-2xl font-bold text-black dark:text-white mb-2">
             Problema de Conexão
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
@@ -606,7 +606,7 @@ const HodometrosDashboard = () => {
           </p>
           <button
             onClick={retryConnection}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="px-6 py-3 bg-blue-600 text-black dark:text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             Tentar Novamente
           </button>
@@ -618,7 +618,7 @@ const HodometrosDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="bg-white dark:bg-[#1B2537] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1F2937] p-4 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]">
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
@@ -659,27 +659,27 @@ const HodometrosDashboard = () => {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Daily Mileage */}
-        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <BarChart2 className="text-blue-500 dark:text-blue-400" size={20} />
-            Quilometragem Diária
-          </h3>
+        <div className="bg-white dark:bg-[#1F2937] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+          <div className="mb-6 flex items-center gap-2">
+  <BarChart2 className="text-blue-500" size={20} />
+  <h3 className="text-lg font-bold text-black dark:text-white">Quilometragem Diária</h3>
+</div>
           
           {dailyMileage.length > 0 ? (
             <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
               {dailyMileage.map((day, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                    <span className="text-sm text-black dark:text-gray-400">
                       {day.formattedDate}
                     </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-black dark:text-white">
                       {formatNumber(day.totalKm)} km
                     </span>
                   </div>
-                  <div className="h-2 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                  <div className="h-2 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
+                      className="h-full bg-blue-500 rounded-full transition-all duration-300"
                       style={{ 
                         width: `${Math.max(
                           5, 
@@ -692,35 +692,35 @@ const HodometrosDashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+            <div className="flex flex-col items-center justify-center h-60 bg-white dark:bg-[#1F2937] rounded-2xl shadow">
               <BarChart2 className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+              <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
             </div>
           )}
         </div>
 
         {/* Driver Mileage */}
-        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Users className="text-green-500 dark:text-green-400" size={20} />
-            Quilometragem por Motorista
-          </h3>
+        <div className="bg-white dark:bg-[#1F2937] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+          <div className="mb-6 flex items-center gap-2">
+  <Users className="text-green-500" size={20} />
+  <h3 className="text-lg font-bold text-black dark:text-white">Quilometragem por Motorista</h3>
+</div>
           
           {driverMileage.length > 0 ? (
             <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
               {driverMileage.map((driver, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                    <span className="text-sm text-black dark:text-gray-400">
                       {driver.nome}
                     </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-black dark:text-white">
                       {formatNumber(driver.totalKm)} km
                     </span>
                   </div>
-                  <div className="h-2 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
+                  <div className="h-2 bg-green-200 dark:bg-green-800 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all duration-300"
+                      className="h-full bg-green-500 rounded-full transition-all duration-300"
                       style={{ 
                         width: `${Math.max(
                           5, 
@@ -733,16 +733,16 @@ const HodometrosDashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+            <div className="flex flex-col items-center justify-center h-60 bg-white dark:bg-[#1F2937] rounded-2xl shadow">
               <Users className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+              <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
             </div>
           )}
         </div>
 
         {/* Vehicle Mileage */}
-        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+        <div className="bg-white dark:bg-[#1F2937] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+          <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
             <Truck className="text-purple-500 dark:text-purple-400" size={20} />
             Quilometragem por Veículo
           </h3>
@@ -752,16 +752,16 @@ const HodometrosDashboard = () => {
               {vehicleMileage.map((vehicle, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                    <span className="text-sm text-black dark:text-gray-400">
                       {vehicle.placa}
                     </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-black dark:text-white">
                       {formatNumber(vehicle.totalKm)} km
                     </span>
                   </div>
-                  <div className="h-2 bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
+                  <div className="h-2 bg-purple-200 dark:bg-purple-800 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-purple-500 dark:bg-purple-400 rounded-full transition-all duration-300"
+                      className="h-full bg-purple-500 rounded-full transition-all duration-300"
                       style={{ 
                         width: `${Math.max(
                           5, 
@@ -774,16 +774,16 @@ const HodometrosDashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+            <div className="flex flex-col items-center justify-center h-60 bg-white dark:bg-[#1F2937] rounded-2xl shadow">
               <Truck className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+              <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
             </div>
           )}
         </div>
 
         {/* Leituras por Motorista Chart and KM per Operation Chart */}
-        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+        <div className="bg-white dark:bg-[#1F2937] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+          <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
             <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             Leituras por Motorista
           </h3>
@@ -793,16 +793,16 @@ const HodometrosDashboard = () => {
               {driverReadings.map((driver, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                    <span className="text-sm text-black dark:text-gray-400">
                       {driver.nome}
                     </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-black dark:text-white">
                       {driver.count} {driver.count === 1 ? 'leitura' : 'leituras'}
                     </span>
                   </div>
-                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-2 bg-white dark:bg-[#1F2937] rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-amber-500 dark:bg-amber-500 rounded-full transition-all duration-300"
+                      className="h-full bg-orange-500 rounded-full transition-all duration-300"
                       style={{ 
                         width: `${Math.max(
                           5, 
@@ -815,17 +815,17 @@ const HodometrosDashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+            <div className="flex flex-col items-center justify-center h-60 bg-white dark:bg-[#1F2937] rounded-2xl shadow">
               <FileBarChart className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+              <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
             </div>
           )}
         </div>
       </div>
 
       {/* KM per Operation Chart */}
-      <div className="bg-white dark:bg-[#1B2537] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+      <div className="bg-white dark:bg-[#1F2937] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+        <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
           <Gauge className="w-5 h-5 text-orange-500 dark:text-orange-400" />
           Quilômetros por Operação
         </h3>
@@ -838,13 +838,13 @@ const HodometrosDashboard = () => {
                   <span className="text-sm text-gray-600 dark:text-gray-400">
                     {item.name}
                   </span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  <span className="text-sm font-medium text-black dark:text-white">
                     {formatNumber(item.value)} km
                   </span>
                 </div>
-                <div className="h-2 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
+                <div className="h-2 bg-orange-200 dark:bg-orange-800 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-orange-500 dark:bg-orange-400 rounded-full transition-all duration-300"
+                    className="h-full bg-orange-500 rounded-full transition-all duration-300"
                     style={{ 
                       width: `${Math.max(
                         5, 
@@ -857,19 +857,19 @@ const HodometrosDashboard = () => {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-white dark:bg-[#1F2937]/30 rounded-2xl">
             <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhum dado disponível para o período selecionado</p>
+            <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
           </div>
         )}
       </div>
 
       {/* Inconsistencies Table */}
-      <div className="bg-white dark:bg-[#1B2537] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+      <div className="bg-white dark:bg-[#1F2937] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            <h3 className="text-lg font-medium text-black dark:text-white">
               Inconsistência de Leitura
             </h3>
           </div>
@@ -882,8 +882,8 @@ const HodometrosDashboard = () => {
                 onClick={() => setVehicleTypeFilter('all')}
                 className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                   vehicleTypeFilter === 'all'
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                    ? 'bg-blue-600 text-black dark:text-white dark:bg-blue-400 dark:text-black dark:text-white'
+                    : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
                 }`}
               >
                 Todos
@@ -892,8 +892,8 @@ const HodometrosDashboard = () => {
                 onClick={() => setVehicleTypeFilter('automovel')}
                 className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                   vehicleTypeFilter === 'automovel'
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                    ? 'bg-blue-600 text-black dark:text-white dark:bg-blue-400 dark:text-black dark:text-white'
+                    : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
                 }`}
               >
                 Automóveis
@@ -902,8 +902,8 @@ const HodometrosDashboard = () => {
                 onClick={() => setVehicleTypeFilter('ciclomotor')}
                 className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                   vehicleTypeFilter === 'ciclomotor'
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                    ? 'bg-blue-600 text-black dark:text-white dark:bg-blue-400 dark:text-black dark:text-white'
+                    : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
                 }`}
               >
                 Ciclomotores
@@ -915,24 +915,24 @@ const HodometrosDashboard = () => {
         {filteredHodometros.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
+              <thead className="bg-gray-50 dark:bg-white dark:bg-[#1F2937]">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nome</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Data</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Placa</th>
                   
                   {vehicleTypeFilter === 'all' || vehicleTypeFilter === 'automovel' ? (
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Hodômetro</th>
                   ) : null}
                   
                   {vehicleTypeFilter === 'all' || vehicleTypeFilter === 'ciclomotor' ? (
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Trip</th>
                   ) : null}
                   
-                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Foto</th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-[#1B2537] divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="bg-white dark:bg-[#1F2937] divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredHodometros.map((hodometro) => {
                   const isElectric = hodometro.bateria !== null && hodometro.bateria !== undefined;
                   
@@ -943,20 +943,20 @@ const HodometrosDashboard = () => {
                   }
                   
                   return (
-                    <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <tr key={hodometro.id_hodometro} className="hover:bg-blue-50 dark:hover:bg-blue-900/10">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <div className="text-sm font-medium text-black dark:text-white">
                           {hodometro.motorista?.nome || 'Não informado'}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <div className="text-xs text-gray-400">
                           {hodometro.motorista?.cpf ? formatCPF(hodometro.motorista.cpf) : ''}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
+                        <div className="text-sm text-black dark:text-white">
                           {formatDateBR(hodometro.data)}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <div className="text-xs text-gray-400">
                           {hodometro.hora}
                         </div>
                       </td>
@@ -964,7 +964,7 @@ const HodometrosDashboard = () => {
                         <div className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase">
                           {hodometro.veiculo?.placa || 'Não informada'}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <div className="text-xs text-gray-400">
                           {hodometro.veiculo?.marca} {hodometro.veiculo?.tipo}
                         </div>
                       </td>
@@ -973,10 +973,10 @@ const HodometrosDashboard = () => {
                       {(vehicleTypeFilter === 'all' || vehicleTypeFilter === 'automovel') && !isElectric && (
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col">
-                            <div className="text-sm text-gray-900 dark:text-white">
+                            <div className="text-sm text-black dark:text-white">
                               Lido: {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <div className="text-xs text-gray-400 mt-1">
                               Informado: {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}
                             </div>
                           </div>
@@ -986,7 +986,7 @@ const HodometrosDashboard = () => {
                       {/* Hide these columns for automóveis */}
                       {(vehicleTypeFilter === 'all' || vehicleTypeFilter === 'automovel') && isElectric && (
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                          <div className="text-sm text-black dark:text-gray-400">-</div>
                         </td>
                       )}
                       
@@ -994,10 +994,10 @@ const HodometrosDashboard = () => {
                       {(vehicleTypeFilter === 'all' || vehicleTypeFilter === 'ciclomotor') && isElectric && (
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col">
-                            <div className="text-sm text-gray-900 dark:text-white">
+                            <div className="text-sm text-black dark:text-white">
                               Lida: {hodometro.trip_lida !== null ? formatNumber(hodometro.trip_lida) : '-'}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <div className="text-xs text-gray-400 mt-1">
                               Informada: {hodometro.trip_informada || '-'}
                             </div>
                           </div>
@@ -1007,7 +1007,7 @@ const HodometrosDashboard = () => {
                       {/* Hide these columns for ciclomotores */}
                       {(vehicleTypeFilter === 'all' || vehicleTypeFilter === 'ciclomotor') && !isElectric && (
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                          <div className="text-sm text-black dark:text-gray-400">-</div>
                         </td>
                       )}
                       
@@ -1033,9 +1033,9 @@ const HodometrosDashboard = () => {
             </table>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-40 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+          <div className="flex flex-col items-center justify-center h-40 bg-gray-50 dark:bg-white dark:bg-[#1F2937]/30 rounded-2xl">
             <Eye className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Nenhuma inconsistência encontrada</p>
+            <p className="text-gray-400">Nenhuma inconsistência encontrada</p>
           </div>
         )}
       </div>
@@ -1047,11 +1047,11 @@ const HodometrosDashboard = () => {
           onClick={() => setShowPhotoModal(false)}
         >
           <div 
-            className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
+            className="bg-white dark:bg-[#1F2937] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-none border-none"
             onClick={e => e.stopPropagation()}
           >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              <h3 className="text-lg font-medium text-black dark:text-white">
                 Foto do Hodômetro
               </h3>
               <button
@@ -1126,13 +1126,13 @@ const StatCard = ({
   const variant = colorVariants[color];
 
   return (
-    <div className="bg-white dark:bg-[#1B2537] p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg transition-all duration-300 transform hover:-translate-y-1">
       <div className="flex flex-col items-center text-center">
-        <div className={`p-3 ${variant.iconBg} rounded-xl mb-3`}>
+        <div className={`p-3 ${variant.iconBg} rounded-2xl mb-3`}>
           <Icon className={`w-6 h-6 ${variant.iconColor}`} />
         </div>
         
-        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+        <h3 className="text-sm font-medium text-gray-400 mb-2">
           {title}
         </h3>
         
