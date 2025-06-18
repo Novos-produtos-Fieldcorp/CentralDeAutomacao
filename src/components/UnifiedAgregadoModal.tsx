@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Save, Edit2, Users, User, Home } from 'lucide-react';
-import type { Veiculo, DocumentoVeiculo } from '../types/database';
+import { X, Truck, MapPin, FileText, Camera, Loader2, ExternalLink, Users, User, Home } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { VEHICLE_TYPES } from '../constants/vehicleTypes';
 import AddAjudanteModal from './AddAjudanteModal';
 import EditAjudanteModal from './EditAjudanteModal';
 
