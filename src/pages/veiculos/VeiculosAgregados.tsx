@@ -427,15 +427,20 @@ const VeiculosAgregados = () => {
           </div>
 
           <div className="flex gap-2">
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                     transition-colors flex items-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Adicionar Veículo
-            </button>
+            <div className="relative group">
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                         transition-colors flex items-center justify-center"
+                aria-label="Adicionar Veículo"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+              <div className="invisible group-hover:visible absolute z-10 w-auto px-1.5 py-0.5 text-xs text-white bg-gray-800 rounded shadow -bottom-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Adicionar Veículo
+              </div>
+            </div>
           </div>
         </div>
       </div>
