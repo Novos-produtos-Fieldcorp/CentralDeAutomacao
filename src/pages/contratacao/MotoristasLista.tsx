@@ -552,15 +552,7 @@ const MotoristasLista = () => {
               </button>
             </>
           )}
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                     transition-colors flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Novo Motorista
-          </button>
+
         </div>
       </div>
 
@@ -662,26 +654,42 @@ const MotoristasLista = () => {
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
-          <div className="relative">
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-            >
-              <option value="all">Todos os períodos</option>
-              <option value="today">Hoje</option>
-              <option value="2days">Últimos 2 dias</option>
-              <option value="15days">Últimos 15 dias</option>
-              <option value="30days">Último mês</option>
-              <option value="custom">Personalizado</option>
-            </select>
-            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-grow">
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+              >
+                <option value="all">Todos os períodos</option>
+                <option value="today">Hoje</option>
+                <option value="2days">Últimos 2 dias</option>
+                <option value="15days">Últimos 15 dias</option>
+                <option value="30days">Último mês</option>
+                <option value="custom">Personalizado</option>
+              </select>
+              <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            </div>
+            <div className="relative group">
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                         transition-colors flex items-center justify-center"
+                aria-label="Novo Motorista"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+              <div className="opacity-0 group-hover:opacity-100 absolute right-0 top-full mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
+                Novo Motorista
+              </div>
+            </div>
           </div>
         </div>
 

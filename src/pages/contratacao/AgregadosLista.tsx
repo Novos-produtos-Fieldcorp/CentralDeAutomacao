@@ -601,15 +601,7 @@ const AgregadosLista = () => {
               </button>
             </>
           )}
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                     transition-colors flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Novo Agregado
-          </button>
+
         </div>
       </div>
 
@@ -726,8 +718,8 @@ const AgregadosLista = () => {
           </div>
         </div>
         
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="relative">
+        <div className="mt-4 flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
@@ -747,6 +739,21 @@ const AgregadosLista = () => {
               <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+          
+          <div className="relative group self-center">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                       transition-colors flex items-center justify-center"
+              aria-label="Adicionar novo agregado"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+            <div className="invisible group-hover:visible absolute z-10 w-auto px-1.5 py-0.5 text-xs text-white bg-gray-800 rounded shadow -bottom-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              Novo Agregado
+            </div>
           </div>
         </div>
 
