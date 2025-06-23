@@ -1,5 +1,5 @@
 import React, { useState, useEffect, ReactNode, useCallback } from 'react';
-import { MapPin, Phone, Mail, Calendar, Filter, X, FileText, Truck, User, MessageCircle, ChevronLeft, ChevronRight, Search, Building2 } from 'lucide-react';
+import { MapPin, Phone, Mail, Calendar, Filter, X, FileText, Truck, User, MessageCircle, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, DocumentoMotorista, Veiculo } from '../../types/database';
 import DocumentViewer from '../../components/DocumentViewer';
@@ -12,12 +12,6 @@ import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 
 interface MotoristaWithDetails extends Motorista {
   veiculo?: Veiculo[];
-  cidade?: string;
-  estado?: string;
-  cliente?: {
-    cliente_id: number;
-    nome: string;
-  } | null;
 }
 
 interface KanbanColumn {
@@ -278,7 +272,7 @@ const ContratacaoKanban = () => {
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
       
-      // Build the query with filters - Updated to include address data through relationships
+      // Build the query with filters
       let query = supabase
         .from('motorista')
         .select(`
@@ -289,23 +283,7 @@ const ContratacaoKanban = () => {
           telefone,
           email,
           data_cadastro,
-          cpf,
-          cliente:cliente_id (
-            cliente_id,
-            nome
-          ),
-          end_motorista!inner (
-            logradouro!inner (
-              bairro!inner (
-                cidade!inner (
-                  nome_cidade,
-                  estado!inner (
-                    sigla_estado
-                  )
-                )
-              )
-            )
-          )
+          cpf
         `)
         .eq('st_cadastro', status)
         .eq('company_id', companyId);
@@ -331,28 +309,19 @@ const ContratacaoKanban = () => {
       
       if (error) throw error;
       
-      // Fetch vehicle data for each motorista and flatten address data
+      // Fetch vehicle data for each motorista
       const motoristasWithVehicles = await Promise.all(
         (motoristasData || []).map(async (motorista) => {
           const { data: veiculoData } = await supabase
             .from('veiculo')
-            .select('placa, tipologia, marca, tipo')
+            .select('placa, tipologia')
             .eq('motorista_id', motorista.motorista_id)
             .limit(1)
             .maybeSingle();
 
-          // Extract address data from nested structure
-          const endMotorista = motorista.end_motorista?.[0];
-          const cidade = endMotorista?.logradouro?.bairro?.cidade?.nome_cidade;
-          const estado = endMotorista?.logradouro?.bairro?.cidade?.estado?.sigla_estado;
-
           return {
             ...motorista,
             veiculo: veiculoData ? [veiculoData] : [],
-            cidade: cidade || undefined,
-            estado: estado || undefined,
-            // Remove the nested end_motorista object as we've flattened the data
-            end_motorista: undefined
           };
         })
       );
@@ -670,7 +639,6 @@ const ContratacaoKanban = () => {
                             className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-move hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
                             draggable
                             onDragStart={(e) => onDragStart(e, motorista.motorista_id, column.id)}
-                            onClick={() => handleViewDocument(motorista)}
                           >
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
@@ -714,65 +682,20 @@ const ContratacaoKanban = () => {
                               </div>
 
                               <div className="grid grid-cols-1 gap-1.5">
-                                {/* Show different information based on motorista type */}
-                                {motorista.funcao === 'Motorista' ? (
-                                  <>
-                                    {/* For Motoristas: Show city/state and client tag */}
-                                    {(motorista.cidade || motorista.estado) && (
-                                      <div className="flex items-center text-gray-600 dark:text-gray-300">
-                                        <MapPin size={14} className="mr-1.5 text-gray-400" />
-                                        <span className="text-xs truncate">
-                                          {motorista.cidade}{motorista.cidade && motorista.estado ? '/' : ''}{motorista.estado}
-                                        </span>
-                                      </div>
-                                    )}
-                                    
-                                    {motorista.telefone && (
-                                      <div className="flex items-center text-gray-600 dark:text-gray-300">
-                                        <Phone size={14} className="mr-1.5 text-gray-400" />
-                                        <span className="text-xs truncate">{motorista.telefone}</span>
-                                      </div>
-                                    )}
-                                    
-                                    {motorista.cliente && (
-                                      <div className="mt-1">
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
-                                          <Building2 size={12} className="mr-1" />
-                                          {motorista.cliente.nome}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </>
-                                ) : (
-                                  <>
-                                    {/* For Agregados: Show vehicle info, city/state and client tag */}
-                                    {motorista.veiculo?.[0] && (
-                                      <div className="flex items-center text-gray-600 dark:text-gray-300">
-                                        <Truck size={14} className="mr-1.5 text-gray-400" />
-                                        <span className="text-xs truncate">
-                                          {motorista.veiculo[0].placa?.toUpperCase()} - {motorista.veiculo[0].marca}
-                                        </span>
-                                      </div>
-                                    )}
-                                    
-                                    {(motorista.cidade || motorista.estado) && (
-                                      <div className="flex items-center text-gray-600 dark:text-gray-300">
-                                        <MapPin size={14} className="mr-1.5 text-gray-400" />
-                                        <span className="text-xs truncate">
-                                          {motorista.cidade}{motorista.cidade && motorista.estado ? '/' : ''}{motorista.estado}
-                                        </span>
-                                      </div>
-                                    )}
-                                    
-                                    {motorista.cliente && (
-                                      <div className="mt-1">
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
-                                          <Building2 size={12} className="mr-1" />
-                                          {motorista.cliente.nome}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </>
+                                {motorista.telefone && (
+                                  <div className="flex items-center text-gray-600 dark:text-gray-300">
+                                    <Phone size={14} className="mr-1.5 text-gray-400" />
+                                    <span className="text-xs truncate">{motorista.telefone}</span>
+                                  </div>
+                                )}
+
+                                {motorista.funcao === 'Agregado' && motorista.veiculo?.[0] && (
+                                  <div className="flex items-center text-gray-600 dark:text-gray-300">
+                                    <Truck size={14} className="mr-1.5 text-gray-400" />
+                                    <span className="text-xs truncate">
+                                      {motorista.veiculo[0].placa} - {motorista.veiculo[0].tipologia}
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                             </div>
