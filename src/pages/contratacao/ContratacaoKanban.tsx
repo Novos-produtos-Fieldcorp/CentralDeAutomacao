@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useFloatingChat } from '../../hooks/useFloatingChat';
 import { supabase } from '../../lib/supabase';
+import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
+import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 
 interface MotoristaWithDetails extends Motorista {
   veiculo?: Veiculo[];
@@ -30,6 +32,8 @@ const ContratacaoKanban = () => {
   const [loading, setLoading] = useState(true);
   const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
+  const [isUnifiedMotoristaModalOpen, setIsUnifiedMotoristaModalOpen] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(100);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -39,6 +43,8 @@ const ContratacaoKanban = () => {
     nome: string;
     endereco: any;
     veiculo: (Veiculo & { documento_veiculo: any[] }) | null;
+    motorista_id?: number;
+    funcao?: string;
   }>({ documento: null, nome: '', endereco: null, veiculo: null });
 
   const [columns, setColumns] = useState<KanbanColumn[]>([
@@ -406,63 +412,20 @@ const ContratacaoKanban = () => {
         documento: null,
         nome: motorista.nome,
         endereco: null,
-        veiculo: null
+        veiculo: null,
+        motorista_id: motorista.motorista_id,
+        funcao: motorista.funcao
       });
-      setIsDocumentViewerOpen(true);
 
-      // Fetch additional details only when viewing documents
-      const [documentoResponse, enderecoResponse, veiculoResponse] = await Promise.all([
-        supabase
-          .from('documento_motorista')
-          .select('*')
-          .eq('motorista_id', motorista.motorista_id)
-          .maybeSingle(),
-        supabase
-          .from('end_motorista')
-          .select(`
-            nr_end,
-            ds_complemento_end,
-            logradouro (
-              logradouro,
-              nr_cep,
-              bairro (
-                bairro,
-                cidade (
-                  cidade,
-                  estado (
-                    estado,
-                    sigla_estado
-                  )
-                )
-              )
-            )
-          `)
-          .eq('id_motorista', motorista.motorista_id)
-          .maybeSingle(),
-        supabase
-          .from('veiculo')
-          .select(`
-            *,
-            documento_veiculo (*)
-          `)
-          .eq('motorista_id', motorista.motorista_id)
-          .maybeSingle()
-      ]);
-
-      if (documentoResponse.error) throw new Error(`Erro ao buscar documentos: ${documentoResponse.error.message}`);
-      if (enderecoResponse.error) throw new Error(`Erro ao buscar endereço: ${enderecoResponse.error.message}`);
-      if (veiculoResponse.error) throw new Error(`Erro ao buscar veículo: ${veiculoResponse.error.message}`);
-
-      setSelectedMotorista({
-        documento: documentoResponse.data,
-        nome: motorista.nome,
-        endereco: enderecoResponse.data,
-        veiculo: veiculoResponse.data
-      });
+      // Open the appropriate modal based on the motorista's function
+      if (motorista.funcao === 'Agregado') {
+        setIsUnifiedAgregadoModalOpen(true);
+      } else {
+        setIsUnifiedMotoristaModalOpen(true);
+      }
     } catch (error) {
       console.error('Erro ao carregar documentos:', error);
       toast.error(error instanceof Error ? error.message : 'Erro ao carregar documentos');
-      setIsDocumentViewerOpen(false);
     }
   };
 
@@ -676,7 +639,6 @@ const ContratacaoKanban = () => {
                             className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-move hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
                             draggable
                             onDragStart={(e) => onDragStart(e, motorista.motorista_id, column.id)}
-                            onClick={() => handleViewDocument(motorista)}
                           >
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
@@ -784,6 +746,32 @@ const ContratacaoKanban = () => {
         endereco={selectedMotorista.endereco}
         veiculo={selectedMotorista.veiculo}
         isAgregado={funcaoFilter === 'Agregado'}
+      />
+
+      {/* Unified Agregado Modal */}
+      <UnifiedAgregadoModal
+        isOpen={isUnifiedAgregadoModalOpen}
+        onClose={() => setIsUnifiedAgregadoModalOpen(false)}
+        motorista={selectedMotorista.motorista_id ? { motorista_id: selectedMotorista.motorista_id, nome: selectedMotorista.nome } : null}
+        onSuccess={() => {
+          // Refresh data after changes
+          if (companyId) {
+            Promise.all(columns.map(column => fetchColumnData(column.id, column.currentPage)));
+          }
+        }}
+      />
+
+      {/* Unified Motorista Modal */}
+      <UnifiedMotoristaModal
+        isOpen={isUnifiedMotoristaModalOpen}
+        onClose={() => setIsUnifiedMotoristaModalOpen(false)}
+        motorista={selectedMotorista.motorista_id ? { motorista_id: selectedMotorista.motorista_id, nome: selectedMotorista.nome } : null}
+        onSuccess={() => {
+          // Refresh data after changes
+          if (companyId) {
+            Promise.all(columns.map(column => fetchColumnData(column.id, column.currentPage)));
+          }
+        }}
       />
     </div>
   );
