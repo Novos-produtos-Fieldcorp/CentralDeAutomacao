@@ -174,6 +174,7 @@ const Contratados = () => {
   const fetchContratados = async () => {
     try {
       setLoading(true);
+      // Primeiro, vamos buscar os dados básicos da view
       let query = supabase
         .from('vw_contratados_completo')
         .select('*')
@@ -215,11 +216,51 @@ const Contratados = () => {
 
       if (error) throw error;
 
+      // Log the data to check the ativo field
+      console.log('Fetched contratados:', data);
+
       // Extract unique cities from contratados
       const uniqueCities = new Set<string>();
       const uniqueVehicleTypes = new Set<string>();
       
-      data?.forEach(motorista => {
+      // Primeiro, vamos buscar os status ativos dos motoristas
+      const motoristaIds = data?.map(m => m.motorista_id) || [];
+      let ativosStatus: Record<number, boolean> = {};
+      
+      if (motoristaIds.length > 0) {
+        const { data: motoristas, error: motoristasError } = await supabase
+          .from('motorista')
+          .select('motorista_id, ativo')
+          .in('motorista_id', motoristaIds);
+          
+        if (motoristasError) {
+          console.error('Erro ao buscar status dos motoristas:', motoristasError);
+        } else {
+          // Criar um mapa de motorista_id para status ativo
+          motoristas?.forEach(m => {
+            ativosStatus[m.motorista_id] = m.ativo === true;
+          });
+        }
+      }
+      
+      // Processar os dados com os status ativos
+      const processedData = data?.map(motorista => {
+        const ativo = ativosStatus[motorista.motorista_id] === true;
+        
+        // Log para depuração
+        console.log('Processando motorista ID:', motorista.motorista_id, 
+                   'ativo:', ativo, 
+                   'tipo:', typeof ativo);
+        
+        return {
+          ...motorista,
+          ativo: ativo
+        };
+      }) || [];
+      
+      console.log('Dados processados:', JSON.parse(JSON.stringify(processedData)));
+      
+      processedData.forEach(motorista => {
         const cidade = motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade;
         if (cidade) {
           uniqueCities.add(cidade);
@@ -238,7 +279,7 @@ const Contratados = () => {
       setCidades(Array.from(uniqueCities).sort());
       setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
 
-      setContratados(data || []);
+      setContratados(processedData);
     } catch (error) {
       console.error('Error fetching contratados:', error);
       toast.error('Erro ao carregar contratados');
