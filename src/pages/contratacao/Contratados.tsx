@@ -132,30 +132,8 @@ const Contratados = () => {
     try {
       setLoading(true);
       let query = supabase
-        .from('motorista')
-        .select(`
-          *,
-          end_motorista (
-            logradouro (
-              bairro (
-                cidade (
-                  cidade
-                )
-              )
-            )
-          ),
-          cliente (
-            cliente_id,
-            nome
-          ),
-          veiculo (
-            placa,
-            tipologia,
-            marca,
-            tipo
-          )
-        `)
-        .eq('st_cadastro', 'contratado')
+        .from('vw_contratados_completo')
+        .select('*')
         .eq('company_id', companyId);
 
       // Apply date filter

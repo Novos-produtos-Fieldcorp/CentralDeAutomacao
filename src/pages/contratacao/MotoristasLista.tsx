@@ -126,26 +126,9 @@ const MotoristasLista = () => {
     try {
       setLoading(true);
       let query = supabase
-        .from('motorista')
-        .select(`
-          *,
-          end_motorista (
-            logradouro (
-              bairro (
-                cidade (
-                  cidade
-                )
-              )
-            )
-          ),
-          cliente (
-            cliente_id,
-            nome
-          )
-        `)
-        .eq('funcao', 'Motorista')
-        .eq('company_id', companyId);
-
+      .from('vw_motoristas_completo')
+      .select('*')
+      .eq('company_id', companyId);
       // Apply date filter
       if (dateFilter !== 'all') {
         const today = new Date();

@@ -556,29 +556,35 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       });
 
       if (initialPhone) {
-        const formattedNumber = formatPhoneNumber(initialPhone);
+        let formattedNumber = formatPhoneNumber(initialPhone);
+        // Garante que o número comece com "+" para formato internacional
+        if (!formattedNumber.startsWith('+')) {
+          formattedNumber = `+${formattedNumber}`;
+        }
+        // Validação simples: número deve ter pelo menos 12 dígitos (ex: +55 + 10 dígitos)
+        const digitsOnly = formattedNumber.replace(/\D/g, '');
+        if (digitsOnly.length < 12) {
+          setError('Número de telefone inválido. Por favor, insira o número completo com DDD e código do país.');
+          setLoading(false);
+          return;
+        }
         let contactToUse: Contact | undefined;
-
         try {
-          // Tentar buscar o contato existente
+          // Buscar usando apenas os dígitos, sem o +
           const searchResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/search`, {
             params: {
-              q: formattedNumber
+              q: digitsOnly
             }
           });
-
           if (searchResponse.data?.payload?.[0]) {
             contactToUse = searchResponse.data.payload[0];
           }
         } catch (error) {
-          console.log('Contato não encontrado, criando novo...');
+          console.log('Erro ao buscar contato:', error);
         }
-
-        // Se não encontrou o contato, criar um novo
         if (!contactToUse) {
           const contactNameToUse = initialName || additionalInfo?.name || 'Novo Contato';
           const contactEmail = initialEmail || additionalInfo?.email;
-
           try {
             const newContactResponse = await api.post(`/api/v1/accounts/${accountId}/contacts`, {
               name: contactNameToUse,
@@ -590,18 +596,16 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                 ...additionalInfo
               }
             });
-
             if (!newContactResponse.data) {
               throw new Error('Não foi possível criar o contato');
             }
-
             contactToUse = newContactResponse.data;
           } catch (error) {
             console.error('Erro ao criar contato:', error);
             throw new Error('Falha ao criar novo contato');
           }
-
-          if (contactToUse) {
+        }
+        if (contactToUse) {
           try {
             const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
               inbox_id: inboxId.toString(),
@@ -650,7 +654,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             console.error('Erro ao criar conversa:', error);
             throw new Error('Falha ao criar nova conversa');
           }
-        }
         }
       }
     } catch (error) {

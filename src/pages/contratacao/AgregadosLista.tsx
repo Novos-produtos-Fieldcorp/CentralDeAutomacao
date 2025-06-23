@@ -142,42 +142,9 @@ const AgregadosLista = () => {
     try {
       setLoading(true);
       let query = supabase
-        .from('motorista')
-        .select(`
-          *,
-          veiculo (
-            *,
-            documento_veiculo (
-              *,
-              pessoa_fisica_dono_veiculo (*),
-              pessoa_juridica_dono_veiculo (*)
-            )
-          ),
-          documento_motorista (*),
-          end_motorista (
-            nr_end,
-            ds_complemento_end,
-            logradouro (
-              logradouro,
-              nr_cep,
-              bairro (
-                bairro,
-                cidade (
-                  cidade,
-                  estado (
-                    sigla_estado
-                  )
-                )
-              )
-            )
-          ),
-          cliente (
-            cliente_id,
-            nome
-          )
-        `)
-        .eq('funcao', 'Agregado')
-        .eq('company_id', companyId);
+      .from('vw_agregados_completo')
+      .select('*')
+      .eq('company_id', companyId);
 
       // Apply date filter
       if (dateFilter !== 'all') {
