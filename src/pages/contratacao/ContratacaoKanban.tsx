@@ -278,7 +278,7 @@ const ContratacaoKanban = () => {
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
       
-      // Build the query with filters
+      // Build the query with filters - Updated to include address data through relationships
       let query = supabase
         .from('motorista')
         .select(`
@@ -290,11 +290,21 @@ const ContratacaoKanban = () => {
           email,
           data_cadastro,
           cpf,
-          cidade,
-          estado,
           cliente:cliente_id (
             cliente_id,
             nome
+          ),
+          end_motorista!inner (
+            logradouro!inner (
+              bairro!inner (
+                cidade!inner (
+                  nome_cidade,
+                  estado!inner (
+                    sigla_estado
+                  )
+                )
+              )
+            )
           )
         `)
         .eq('st_cadastro', status)
@@ -321,7 +331,7 @@ const ContratacaoKanban = () => {
       
       if (error) throw error;
       
-      // Fetch vehicle data for each motorista
+      // Fetch vehicle data for each motorista and flatten address data
       const motoristasWithVehicles = await Promise.all(
         (motoristasData || []).map(async (motorista) => {
           const { data: veiculoData } = await supabase
@@ -331,9 +341,18 @@ const ContratacaoKanban = () => {
             .limit(1)
             .maybeSingle();
 
+          // Extract address data from nested structure
+          const endMotorista = motorista.end_motorista?.[0];
+          const cidade = endMotorista?.logradouro?.bairro?.cidade?.nome_cidade;
+          const estado = endMotorista?.logradouro?.bairro?.cidade?.estado?.sigla_estado;
+
           return {
             ...motorista,
             veiculo: veiculoData ? [veiculoData] : [],
+            cidade: cidade || undefined,
+            estado: estado || undefined,
+            // Remove the nested end_motorista object as we've flattened the data
+            end_motorista: undefined
           };
         })
       );
