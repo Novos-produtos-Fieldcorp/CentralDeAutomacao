@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, Camera, X, Download, FileText, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, Camera, X, Download, AlertCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -36,7 +36,7 @@ interface HodometroReading {
 }
 
 const HodometrosRelatorio = () => {
-  const { query } = useCompanyData();
+  const {} = useCompanyData();
   const { companyId } = useAuth();
   const [hodometros, setHodometros] = useState<HodometroReading[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +88,7 @@ const HodometrosRelatorio = () => {
 
       if (error) throw error;
 
+      // @ts-ignore - Data from Supabase matches our interface
       setHodometros(data || []);
     } catch (error) {
       console.error('Error fetching hodometros:', error);
@@ -230,9 +231,9 @@ const HodometrosRelatorio = () => {
     <div className="space-y-6">
       {/* Filters Section */}
       <div className="bg-white dark:bg-[#1B2537] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex flex-col md:flex-row items-center gap-4">
           {/* Search */}
-          <div className="relative">
+          <div className="relative flex-grow w-full md:w-auto">
             <input
               type="text"
               placeholder="Buscar por motorista, CPF ou placa..."
@@ -245,29 +246,32 @@ const HodometrosRelatorio = () => {
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
+          {/* Period Selector */}
+          <div className="w-full md:w-48">
+            <PeriodSelector
+              periodType={periodType}
+              dateRange={dateRange}
+              onPeriodChange={updatePeriod}
+              onDateRangeChange={setDateRange}
+            />
+          </div>
+
           {/* Export Button */}
-          <div className="flex justify-end">
+          <div className="relative group">
             <button
               onClick={exportToExcel}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                       transition-colors flex items-center gap-2"
+                       transition-colors flex items-center justify-center"
               disabled={filteredHodometros.length === 0}
+              aria-label="Exportar Excel"
             >
               <Download className="w-5 h-5" />
-              Exportar Excel
             </button>
+            <div className="opacity-0 group-hover:opacity-100 absolute right-0 top-full mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
+              Exportar Excel
+            </div>
           </div>
-        </div>
-
-        {/* Period Selector */}
-        <div className="mt-4">
-          <PeriodSelector
-            periodType={periodType}
-            dateRange={dateRange}
-            onPeriodChange={updatePeriod}
-            onDateRangeChange={setDateRange}
-          />
         </div>
       </div>
 
