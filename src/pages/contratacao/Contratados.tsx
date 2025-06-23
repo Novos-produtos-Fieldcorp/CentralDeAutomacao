@@ -705,8 +705,8 @@ const Contratados = () => {
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="relative">
+        <div className="mt-4 flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
