@@ -46,10 +46,53 @@ interface MotoristaWithAddress extends Motorista {
   }[];
 }
 
+// Interface para a view de contratados
+export interface ViewContratado {
+  motorista_id?: number;
+  nome_motorista?: string;
+  cpf?: string;
+  dt_nascimento?: string;
+  genero?: string;
+  telefone?: string | number | null;
+  email?: string | null;
+  funcao?: string;
+  origem_usuario?: string;
+  st_cadastro?: string;
+  autorizacao_lgpd?: string;
+  company_id?: number;
+  data_cadastro?: string;
+  cliente_id?: number | null;
+  conversation_id?: string;
+  ativo?: boolean;
+  nr_end?: number | null;
+  ds_complemento_end?: string | null;
+  st_end?: boolean | null;
+  id_end_motorista?: number | null;
+  logradouro?: string | null;
+  nr_cep?: string | null;
+  nome_bairro?: string | null;
+  nome_cidade?: string | null;
+  nome_estado?: string | null;
+  sigla_estado?: string | null;
+  veiculo_id?: number | null;
+  placa?: string | null;
+  status_veiculo?: boolean | null;
+  marca?: string | null;
+  tipologia?: string | null;
+  ano?: string | null;
+  combustivel?: string | null;
+  peso?: string | null;
+  cubagem?: string | null;
+  possui_rastreador?: boolean | null;
+  marca_rastreador?: string | null;
+  cor?: string | null;
+  tipo?: string | null;
+}
+
 const Contratados = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const [contratados, setContratados] = useState<MotoristaWithAddress[]>([]);
+  const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -62,7 +105,7 @@ const Contratados = () => {
   const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
-  const [selectedMotorista, setSelectedMotorista] = useState<Motorista | null>(null);
+  const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
@@ -78,7 +121,7 @@ const Contratados = () => {
     visible: boolean;
     x: number;
     y: number;
-    motorista: Motorista | null;
+    motorista: ViewContratado | null;
   }>({
     visible: false,
     x: 0,
@@ -222,7 +265,7 @@ const Contratados = () => {
     }
   };
 
-  const handleViewDocument = async (motorista: Motorista) => {
+  const handleViewDocument = async (motorista: ViewContratado) => {
     try {
       setSelectedMotorista(motorista);
       setIsUnifiedModalOpen(true);
@@ -232,17 +275,17 @@ const Contratados = () => {
     }
   };
 
-  const handleUploadDocument = (motorista: Motorista) => {
+  const handleUploadDocument = (motorista: ViewContratado) => {
     setSelectedMotorista(motorista);
     setIsDocumentUploadOpen(true);
   };
 
-  const handleEdit = (motorista: Motorista) => {
+  const handleEdit = (motorista: ViewContratado) => {
     setSelectedMotorista(motorista);
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (motorista: Motorista) => {
+  const handleDelete = (motorista: ViewContratado) => {
     setSelectedMotorista(motorista);
     setIsDeleteModalOpen(true);
   };
@@ -283,7 +326,7 @@ const Contratados = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(filteredContratados.map(m => m.motorista_id)));
+      setSelectedItems(new Set(filteredContratados.map(m => m.motorista_id || 0)));
     }
     setSelectAll(!selectAll);
   };
@@ -300,7 +343,7 @@ const Contratados = () => {
       }
 
       // Update the list
-      setContratados(contratados.filter(m => !selectedItems.has(m.motorista_id)));
+      setContratados(contratados.filter(m => !selectedItems.has(m.motorista_id || 0)));
       toast.success(`${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
       
       // Reset selection
@@ -322,7 +365,7 @@ const Contratados = () => {
     setIsMassMessageModalOpen(true);
   };
 
-  const handleContextMenu = (e: React.MouseEvent, motorista: Motorista) => {
+  const handleContextMenu = (e: React.MouseEvent, motorista: ViewContratado) => {
     e.preventDefault();
     setContextMenu({
       visible: true,
@@ -350,16 +393,16 @@ const Contratados = () => {
     }
   };
 
-  const handleUpdateStatus = async (e: React.MouseEvent, motorista: Motorista, newStatus: string) => {
+  const handleUpdateStatus = async (e: React.MouseEvent, motorista: ViewContratado, newStatus: string) => {
     e.stopPropagation();
     try {
-      setUpdatingStatus(motorista.motorista_id);
+      setUpdatingStatus(motorista.motorista_id || 0);
       
       // Update the status in the database
       const { error } = await supabase
         .from('motorista')
         .update({ st_cadastro: newStatus })
-        .eq('motorista_id', motorista.motorista_id);
+        .eq('motorista_id', motorista.motorista_id || 0);
         
       if (error) throw error;
       
@@ -387,16 +430,16 @@ const Contratados = () => {
     }
   };
 
-  const handleUpdateCliente = async (e: React.MouseEvent, motorista: Motorista, clienteId: number | null) => {
+  const handleUpdateCliente = async (e: React.MouseEvent, motorista: ViewContratado, clienteId: number | null) => {
     e.stopPropagation();
     try {
-      setUpdatingCliente(motorista.motorista_id);
+      setUpdatingCliente(motorista.motorista_id || 0);
       
       // Update the cliente_id in the database
       const { error } = await supabase
         .from('motorista')
         .update({ cliente_id: clienteId })
-        .eq('motorista_id', motorista.motorista_id);
+        .eq('motorista_id', motorista.motorista_id || 0);
         
       if (error) throw error;
       
@@ -425,10 +468,10 @@ const Contratados = () => {
     }
   };
 
-  const handleToggleStatus = async (e: React.MouseEvent, motorista: Motorista) => {
+  const handleToggleStatus = async (e: React.MouseEvent, motorista: ViewContratado) => {
     e.stopPropagation();
     try {
-      setUpdatingStatus(motorista.motorista_id);
+      setUpdatingStatus(motorista.motorista_id || 0);
       
       // Update the ativo status in the database (toggle it)
       const newAtivo = !motorista.ativo;
@@ -436,7 +479,7 @@ const Contratados = () => {
       const { error } = await supabase
         .from('motorista')
         .update({ ativo: newAtivo })
-        .eq('motorista_id', motorista.motorista_id);
+        .eq('motorista_id', motorista.motorista_id || 0);
         
       if (error) throw error;
       
@@ -483,7 +526,7 @@ const Contratados = () => {
       cidadeMatch &&
       tipoVeiculoMatch &&
       ativoMatch &&
-      ((motorista.nome && motorista.nome.toLowerCase().includes(searchLower)) ||
+      ((motorista.nome_motorista && motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
        (motorista.cpf && motorista.cpf.includes(searchLower)) ||
        (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
        (typeof motorista.telefone === 'number' && motorista.telefone.toString().includes(searchLower)))
@@ -771,17 +814,17 @@ const Contratados = () => {
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {paginatedData.map((motorista) => (
                     <tr 
-                      key={motorista.motorista_id} 
+                      key={motorista.motorista_id || Math.random()} 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-                        selectedItems.has(motorista.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        selectedItems.has(motorista.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
                       onContextMenu={(e) => handleContextMenu(e, motorista)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
-                          checked={selectedItems.has(motorista.motorista_id)}
-                          onChange={() => handleSelectItem(motorista.motorista_id)}
+                          checked={selectedItems.has(motorista.motorista_id || 0)}
+                          onChange={() => handleSelectItem(motorista.motorista_id || 0)}
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                       </td>
@@ -796,7 +839,7 @@ const Contratados = () => {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {motorista.nome}
+                              {motorista.nome_motorista || ''}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
                               {motorista.funcao}
@@ -806,7 +849,7 @@ const Contratados = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {formatCPF(motorista.cpf)}
+                          {formatCPF(motorista.cpf || '')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -816,7 +859,7 @@ const Contratados = () => {
                           </div>
                           {motorista.telefone && (
                             <button
-                              onClick={() => startChat(motorista.telefone.toString(), motorista.nome)}
+                              onClick={() => startChat(motorista.telefone.toString(), motorista.nome_motorista || '')}
                               className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
                               title="Iniciar chat"
                             >
@@ -831,7 +874,7 @@ const Contratados = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
                           <button
-                            onClick={(e) => toggleStatusDropdown(e, motorista.motorista_id)}
+                            onClick={(e) => toggleStatusDropdown(e, motorista.motorista_id || 0)}
                             className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
                                      hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
@@ -942,7 +985,7 @@ const Contratados = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
                           <button
-                            onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id)}
+                            onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id || 0)}
                             className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
                                      hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
@@ -1004,9 +1047,9 @@ const Contratados = () => {
                         <div className="text-sm text-gray-900 dark:text-white">
                           {motorista.veiculo && motorista.veiculo.length > 0 ? (
                             <div>
-                              <div className="font-medium">{motorista.veiculo[0].placa.toUpperCase()}</div>
+                              <div className="font-medium">{motorista.veiculo[0].placa || ''}</div>
                               <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {motorista.veiculo[0].tipologia}
+                                {motorista.veiculo[0].tipologia || ''}
                               </div>
                             </div>
                           ) : (
@@ -1112,7 +1155,7 @@ const Contratados = () => {
             {
               icon: <MessageCircle size={16} />,
               label: 'Iniciar Chat',
-              onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome),
+              onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome_motorista || ''),
               color: 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300',
               disabled: !contextMenu.motorista!.telefone
             }
@@ -1132,7 +1175,7 @@ const Contratados = () => {
         isOpen={isDocumentViewerOpen}
         onClose={() => setIsDocumentViewerOpen(false)}
         documento={documento}
-        nome={selectedMotorista?.nome || ''}
+        nome={selectedMotorista?.nome_motorista || ''}
         cpf={selectedMotorista?.cpf}
         email={selectedMotorista?.email}
         telefone={selectedMotorista?.telefone?.toString()}
@@ -1145,7 +1188,7 @@ const Contratados = () => {
         isOpen={isDocumentUploadOpen}
         onClose={() => setIsDocumentUploadOpen(false)}
         motorista_id={selectedMotorista?.motorista_id || 0}
-        nome={selectedMotorista?.nome || ''}
+        nome={selectedMotorista?.nome_motorista || ''}
         onUploadSuccess={fetchContratados}
       />
 
@@ -1163,7 +1206,7 @@ const Contratados = () => {
         title="Confirmar Exclusão"
         message="Tem certeza que deseja excluir este motorista? Esta ação não pode ser desfeita."
         itemData={selectedMotorista ? [
-          { label: 'Nome', value: selectedMotorista.nome },
+          { label: 'Nome', value: selectedMotorista.nome_motorista },
           { label: 'CPF', value: formatCPF(selectedMotorista.cpf) },
           { label: 'Status', value: selectedMotorista.st_cadastro }
         ] : []}

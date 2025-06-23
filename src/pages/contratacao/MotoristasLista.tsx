@@ -21,30 +21,39 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 
-interface MotoristaWithAddress extends Motorista {
-  endereco?: {
-    logradouro?: {
-      logradouro?: string;
-      nr_cep?: string;
-      bairro?: {
-        bairro?: string;
-        cidade?: {
-          cidade?: string;
-          estado?: {
-            sigla_estado?: string;
-          };
-        };
-      };
-    };
-    nr_end?: number;
-    ds_complemento_end?: string;
-  } | null;
+export interface ViewMotorista {
+  motorista_id?: number;
+  nome_motorista?: string;
+  cpf?: string;
+  dt_nascimento?: string;
+  genero?: string;
+  telefone?: string | number | null;
+  email?: string | null;
+  funcao?: string;
+  origem_usuario?: string;
+  st_cadastro?: string;
+  autorizacao_lgpd?: string;
+  company_id?: number;
+  data_cadastro?: string;
+  cliente_id?: number | null;
+  conversation_id?: string;
+  ativo?: boolean;
+  nr_end?: number | null;
+  ds_complemento_end?: string | null;
+  st_end?: boolean | null;
+  id_end_motorista?: number | null;
+  logradouro?: string | null;
+  nr_cep?: string | null;
+  nome_bairro?: string | null;
+  nome_cidade?: string | null;
+  nome_estado?: string | null;
+  sigla_estado?: string | null;
 }
 
 const MotoristasLista = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const [motoristas, setMotoristas] = useState<MotoristaWithAddress[]>([]);
+  const [motoristas, setMotoristas] = useState<ViewMotorista[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -58,7 +67,7 @@ const MotoristasLista = () => {
   const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
-  const [selectedMotorista, setSelectedMotorista] = useState<Motorista | null>(null);
+  const [selectedMotorista, setSelectedMotorista] = useState<ViewMotorista | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
@@ -72,7 +81,7 @@ const MotoristasLista = () => {
     visible: boolean;
     x: number;
     y: number;
-    motorista: Motorista | null;
+    motorista: ViewMotorista | null;
   }>({
     visible: false,
     x: 0,
@@ -202,7 +211,7 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleViewDocument = async (motorista: Motorista) => {
+  const handleViewDocument = async (motorista: ViewMotorista) => {
     try {
       setSelectedMotorista(motorista);
       setIsUnifiedModalOpen(true);
@@ -212,17 +221,17 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleUploadDocument = (motorista: Motorista) => {
+  const handleUploadDocument = (motorista: ViewMotorista) => {
     setSelectedMotorista(motorista);
     setIsDocumentUploadOpen(true);
   };
 
-  const handleEdit = (motorista: Motorista) => {
+  const handleEdit = (motorista: ViewMotorista) => {
     setSelectedMotorista(motorista);
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (motorista: Motorista) => {
+  const handleDelete = (motorista: ViewMotorista) => {
     setSelectedMotorista(motorista);
     setIsDeleteModalOpen(true);
   };
@@ -263,7 +272,7 @@ const MotoristasLista = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(filteredMotoristas.map(m => m.motorista_id)));
+      setSelectedItems(new Set(filteredMotoristas.map(m => m.motorista_id || 0)));
     }
     setSelectAll(!selectAll);
   };
@@ -280,7 +289,7 @@ const MotoristasLista = () => {
       }
 
       // Update the list
-      setMotoristas(motoristas.filter(m => !selectedItems.has(m.motorista_id)));
+      setMotoristas(motoristas.filter(m => !selectedItems.has(m.motorista_id || 0)));
       toast.success(`${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
       
       // Reset selection
@@ -302,7 +311,7 @@ const MotoristasLista = () => {
     setIsMassMessageModalOpen(true);
   };
 
-  const handleContextMenu = (e: React.MouseEvent, motorista: Motorista) => {
+  const handleContextMenu = (e: React.MouseEvent, motorista: ViewMotorista) => {
     e.preventDefault();
     setContextMenu({
       visible: true,
@@ -330,10 +339,10 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleUpdateStatus = async (e: React.MouseEvent, motorista: Motorista, newStatus: string) => {
+  const handleUpdateStatus = async (e: React.MouseEvent, motorista: ViewMotorista, newStatus: string) => {
     e.stopPropagation();
     try {
-      setUpdatingStatus(motorista.motorista_id);
+      setUpdatingStatus(motorista.motorista_id || 0);
       
       // Update the status in the database
       const { error } = await supabase
@@ -362,10 +371,10 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleUpdateCliente = async (e: React.MouseEvent, motorista: Motorista, clienteId: number | null) => {
+  const handleUpdateCliente = async (e: React.MouseEvent, motorista: ViewMotorista, clienteId: number | null) => {
     e.stopPropagation();
     try {
-      setUpdatingCliente(motorista.motorista_id);
+      setUpdatingCliente(motorista.motorista_id || 0);
       
       // Update the cliente_id in the database
       const { error } = await supabase
@@ -400,10 +409,10 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleToggleStatus = async (e: React.MouseEvent, motorista: Motorista) => {
+  const handleToggleStatus = async (e: React.MouseEvent, motorista: ViewMotorista) => {
     e.stopPropagation();
     try {
-      setUpdatingStatus(motorista.motorista_id);
+      setUpdatingStatus(motorista.motorista_id || 0);
       
       // Update the ativo status in the database (toggle it)
       const newAtivo = !motorista.ativo;
@@ -433,7 +442,7 @@ const MotoristasLista = () => {
     }
   };
 
-  const getMotoristaCity = (motorista: MotoristaWithAddress): string | null => {
+  const getMotoristaCity = (motorista: ViewMotorista): string | null => {
     return motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || null;
   };
 
@@ -451,7 +460,7 @@ const MotoristasLista = () => {
       clienteMatch &&
       cidadeMatch &&
       ativoMatch &&
-      ((motorista.nome && motorista.nome.toLowerCase().includes(searchLower)) ||
+      ((motorista.nome_motorista && motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
        (motorista.cpf && motorista.cpf.includes(searchLower)) ||
        (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
        (typeof motorista.telefone === 'number' && motorista.telefone.toString().includes(searchLower)))
@@ -739,9 +748,9 @@ const MotoristasLista = () => {
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {paginatedData.map((motorista) => (
                     <tr 
-                      key={motorista.motorista_id} 
+                      key={motorista.motorista_id || Math.random()} 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-                        selectedItems.has(motorista.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        selectedItems.has(motorista.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
                       onContextMenu={(e) => handleContextMenu(e, motorista)}
                     >
@@ -760,14 +769,14 @@ const MotoristasLista = () => {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {motorista.nome}
+                              {motorista.nome_motorista || ''}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {formatCPF(motorista.cpf)}
+                          {formatCPF(motorista.cpf || '')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -777,7 +786,7 @@ const MotoristasLista = () => {
                           </div>
                           {motorista.telefone && (
                             <button
-                              onClick={() => startChat(motorista.telefone.toString(), motorista.nome)}
+                              onClick={() => startChat(motorista.telefone.toString(), motorista.nome_motorista || '')}
                               className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
                               title="Iniciar chat"
                             >
@@ -963,7 +972,7 @@ const MotoristasLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {formatDate(motorista.data_cadastro)}
+                          {formatDate(motorista.data_cadastro || '')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -1059,7 +1068,7 @@ const MotoristasLista = () => {
             {
               icon: <MessageCircle size={16} />,
               label: 'Iniciar Chat',
-              onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome),
+              onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome_motorista || ''),
               color: 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300',
               disabled: !contextMenu.motorista!.telefone
             }
@@ -1079,7 +1088,7 @@ const MotoristasLista = () => {
         isOpen={isDocumentViewerOpen}
         onClose={() => setIsDocumentViewerOpen(false)}
         documento={documento}
-        nome={selectedMotorista?.nome || ''}
+        nome={selectedMotorista?.nome_motorista || ''}
         cpf={selectedMotorista?.cpf}
         email={selectedMotorista?.email}
         telefone={selectedMotorista?.telefone?.toString()}
@@ -1092,7 +1101,7 @@ const MotoristasLista = () => {
         isOpen={isDocumentUploadOpen}
         onClose={() => setIsDocumentUploadOpen(false)}
         motorista_id={selectedMotorista?.motorista_id || 0}
-        nome={selectedMotorista?.nome || ''}
+        nome={selectedMotorista?.nome_motorista || ''}
         onUploadSuccess={fetchMotoristas}
       />
 
@@ -1116,8 +1125,8 @@ const MotoristasLista = () => {
         title="Confirmar Exclusão"
         message="Tem certeza que deseja excluir este motorista? Esta ação não pode ser desfeita."
         itemData={selectedMotorista ? [
-          { label: 'Nome', value: selectedMotorista.nome },
-          { label: 'CPF', value: formatCPF(selectedMotorista.cpf) },
+          { label: 'Nome', value: selectedMotorista.nome_motorista },
+          { label: 'CPF', value: formatCPF(selectedMotorista.cpf || '') },
           { label: 'Status', value: selectedMotorista.st_cadastro }
         ] : []}
       />

@@ -21,46 +21,52 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 import AgregadoDetailView from '../../components/AgregadoDetailView';
 
-interface MotoristaWithDetails extends Motorista {
-  veiculo?: (Veiculo & {
-    documento_veiculo: (DocumentoVeiculo & {
-      pessoa_fisica_dono_veiculo?: {
-        id_pessoa_fisica_dono_veiculo: number;
-        nome_dono_veiculo: string;
-        nr_rg: number;
-      };
-      pessoa_juridica_dono_veiculo?: {
-        id_pessoa_juridica_dono_veiculo: number;
-        cnpj: number;
-        inscricao_estadual: string;
-        razao_social: string;
-      };
-    })[];
-  })[];
-  documento?: DocumentoMotorista | null;
-  endereco?: {
-    logradouro?: {
-      logradouro?: string;
-      nr_cep?: string;
-      bairro?: {
-        bairro?: string;
-        cidade?: {
-          cidade?: string;
-          estado?: {
-            sigla_estado?: string;
-          };
-        };
-      };
-    };
-    nr_end?: number;
-    ds_complemento_end?: string;
-  } | null;
+export interface ViewAgregado {
+  motorista_id?: number;
+  nome_motorista?: string;
+  cpf?: string;
+  dt_nascimento?: string;
+  genero?: string;
+  telefone?: string | number | null;
+  email?: string | null;
+  funcao?: string;
+  origem_usuario?: string;
+  st_cadastro?: string;
+  autorizacao_lgpd?: string;
+  company_id?: number;
+  data_cadastro?: string;
+  cliente_id?: number | null;
+  conversation_id?: string;
+  ativo?: boolean;
+  nr_end?: number | null;
+  ds_complemento_end?: string | null;
+  st_end?: boolean | null;
+  id_end_motorista?: number | null;
+  logradouro?: string | null;
+  nr_cep?: string | null;
+  nome_bairro?: string | null;
+  nome_cidade?: string | null;
+  nome_estado?: string | null;
+  sigla_estado?: string | null;
+  veiculo_id?: number | null;
+  placa?: string | null;
+  status_veiculo?: boolean | null;
+  marca_veiculo?: string | null;
+  tipologia?: string | null;
+  ano?: string | null;
+  combustivel?: string | null;
+  peso?: string | null;
+  cubagem?: string | null;
+  possui_rastreador?: boolean | null;
+  marca_rastreador?: string | null;
+  cor?: string | null;
+  tipo?: string | null;
 }
 
 const AgregadosLista = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const [agregados, setAgregados] = useState<MotoristaWithDetails[]>([]);
+  const [agregados, setAgregados] = useState<ViewAgregado[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -74,7 +80,7 @@ const AgregadosLista = () => {
   const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
-  const [selectedAgregado, setSelectedAgregado] = useState<MotoristaWithDetails | null>(null);
+  const [selectedAgregado, setSelectedAgregado] = useState<ViewAgregado | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [clientes, setClientes] = useState<any[]>([]);
@@ -89,7 +95,7 @@ const AgregadosLista = () => {
     visible: boolean;
     x: number;
     y: number;
-    agregado: MotoristaWithDetails | null;
+    agregado: ViewAgregado | null;
   }>({
     visible: false,
     x: 0,
@@ -232,22 +238,22 @@ const AgregadosLista = () => {
     }
   };
 
-  const handleViewDetail = (agregado: MotoristaWithDetails) => {
+  const handleViewDetail = (agregado: ViewAgregado) => {
     setSelectedAgregado(agregado);
     setIsDetailViewOpen(true);
   };
 
-  const handleUploadDocument = (agregado: MotoristaWithDetails) => {
+  const handleUploadDocument = (agregado: ViewAgregado) => {
     setSelectedAgregado(agregado);
     setIsDocumentUploadOpen(true);
   };
 
-  const handleEdit = (agregado: MotoristaWithDetails) => {
+  const handleEdit = (agregado: ViewAgregado) => {
     setSelectedAgregado(agregado);
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (agregado: MotoristaWithDetails) => {
+  const handleDelete = (agregado: ViewAgregado) => {
     setSelectedAgregado(agregado);
     setIsDeleteModalOpen(true);
   };
@@ -288,7 +294,7 @@ const AgregadosLista = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(filteredAgregados.map(a => a.motorista_id)));
+      setSelectedItems(new Set(filteredAgregados.map(a => a.motorista_id || 0)));
     }
     setSelectAll(!selectAll);
   };
@@ -305,7 +311,7 @@ const AgregadosLista = () => {
       }
 
       // Update the list
-      setAgregados(agregados.filter(a => !selectedItems.has(a.motorista_id)));
+      setAgregados(agregados.filter(a => !selectedItems.has(a.motorista_id || 0)));
       toast.success(`${selectedItems.size} agregado${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
       
       // Reset selection
@@ -327,7 +333,7 @@ const AgregadosLista = () => {
     setIsMassMessageModalOpen(true);
   };
 
-  const handleContextMenu = (e: React.MouseEvent, agregado: MotoristaWithDetails) => {
+  const handleContextMenu = (e: React.MouseEvent, agregado: ViewAgregado) => {
     e.preventDefault();
     setContextMenu({
       visible: true,
@@ -355,16 +361,16 @@ const AgregadosLista = () => {
     }
   };
 
-  const handleUpdateStatus = async (e: React.MouseEvent, agregado: MotoristaWithDetails, newStatus: string) => {
+  const handleUpdateStatus = async (e: React.MouseEvent, agregado: ViewAgregado, newStatus: string) => {
     e.stopPropagation();
     try {
-      setUpdatingStatus(agregado.motorista_id);
+      setUpdatingStatus(agregado.motorista_id || 0);
       
       // Update the status in the database
       const { error } = await supabase
         .from('motorista')
         .update({ st_cadastro: newStatus })
-        .eq('motorista_id', agregado.motorista_id);
+        .eq('motorista_id', agregado.motorista_id || 0);
         
       if (error) throw error;
       
@@ -387,16 +393,16 @@ const AgregadosLista = () => {
     }
   };
 
-  const handleUpdateCliente = async (e: React.MouseEvent, agregado: MotoristaWithDetails, clienteId: number | null) => {
+  const handleUpdateCliente = async (e: React.MouseEvent, agregado: ViewAgregado, clienteId: number | null) => {
     e.stopPropagation();
     try {
-      setUpdatingCliente(agregado.motorista_id);
+      setUpdatingCliente(agregado.motorista_id || 0);
       
       // Update the cliente_id in the database
       const { error } = await supabase
         .from('motorista')
         .update({ cliente_id: clienteId })
-        .eq('motorista_id', agregado.motorista_id);
+        .eq('motorista_id', agregado.motorista_id || 0);
         
       if (error) throw error;
       
@@ -425,10 +431,10 @@ const AgregadosLista = () => {
     }
   };
 
-  const handleToggleStatus = async (e: React.MouseEvent, agregado: MotoristaWithDetails) => {
+  const handleToggleStatus = async (e: React.MouseEvent, agregado: ViewAgregado) => {
     e.stopPropagation();
     try {
-      setUpdatingStatus(agregado.motorista_id);
+      setUpdatingStatus(agregado.motorista_id || 0);
       
       // Update the ativo status in the database (toggle it)
       const newAtivo = !agregado.ativo;
@@ -436,7 +442,7 @@ const AgregadosLista = () => {
       const { error } = await supabase
         .from('motorista')
         .update({ ativo: newAtivo })
-        .eq('motorista_id', agregado.motorista_id);
+        .eq('motorista_id', agregado.motorista_id || 0);
         
       if (error) throw error;
       
@@ -458,11 +464,11 @@ const AgregadosLista = () => {
     }
   };
 
-  const getAgregadoCity = (agregado: MotoristaWithDetails): string | null => {
+  const getAgregadoCity = (agregado: ViewAgregado): string | null => {
     return agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || null;
   };
 
-  const getVehicleType = (agregado: MotoristaWithDetails): string | null => {
+  const getVehicleType = (agregado: ViewAgregado): string | null => {
     return agregado.veiculo && agregado.veiculo.length > 0 ? agregado.veiculo[0].tipologia : null;
   };
 
@@ -483,7 +489,7 @@ const AgregadosLista = () => {
       cidadeMatch &&
       tipoVeiculoMatch &&
       ativoMatch &&
-      ((agregado.nome && agregado.nome.toLowerCase().includes(searchLower)) ||
+      ((agregado.nome_motorista && agregado.nome_motorista.toLowerCase().includes(searchLower)) ||
        (agregado.cpf && agregado.cpf.includes(searchLower)) ||
        (typeof agregado.email === 'string' && agregado.email.toLowerCase().includes(searchLower)) ||
        (typeof agregado.telefone === 'number' && agregado.telefone.toString().includes(searchLower)) ||
@@ -787,17 +793,17 @@ const AgregadosLista = () => {
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {paginatedData.map((agregado) => (
                     <tr 
-                      key={agregado.motorista_id} 
+                      key={agregado.motorista_id || Math.random()} 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-                        selectedItems.has(agregado.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        selectedItems.has(agregado.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
                       onContextMenu={(e) => handleContextMenu(e, agregado)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
-                          checked={selectedItems.has(agregado.motorista_id)}
-                          onChange={() => handleSelectItem(agregado.motorista_id)}
+                          checked={selectedItems.has(agregado.motorista_id || 0)}
+                          onChange={() => handleSelectItem(agregado.motorista_id || 0)}
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                       </td>
@@ -808,14 +814,14 @@ const AgregadosLista = () => {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {agregado.nome}
+                              {agregado.nome_motorista || ''}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {formatCPF(agregado.cpf)}
+                          {formatCPF(agregado.cpf || '')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -825,7 +831,7 @@ const AgregadosLista = () => {
                           </div>
                           {agregado.telefone && (
                             <button
-                              onClick={() => startChat(agregado.telefone.toString(), agregado.nome)}
+                              onClick={() => startChat(agregado.telefone.toString(), agregado.nome_motorista || '')}
                               className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
                               title="Iniciar chat"
                             >
@@ -840,7 +846,7 @@ const AgregadosLista = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
                           <button
-                            onClick={(e) => toggleStatusDropdown(e, agregado.motorista_id)}
+                            onClick={(e) => toggleStatusDropdown(e, agregado.motorista_id || 0)}
                             className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
                                      hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
@@ -951,7 +957,7 @@ const AgregadosLista = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
                           <button
-                            onClick={(e) => toggleClienteDropdown(e, agregado.motorista_id)}
+                            onClick={(e) => toggleClienteDropdown(e, agregado.motorista_id || 0)}
                             className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
                                      hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
@@ -1007,7 +1013,7 @@ const AgregadosLista = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
                           {agregado.veiculo && agregado.veiculo[0] ? (
-                            <span className="uppercase">{agregado.veiculo[0].placa}</span>
+                            <span className="uppercase">{agregado.veiculo[0].placa || ''}</span>
                           ) : (
                             'Não informado'
                           )}
@@ -1022,7 +1028,7 @@ const AgregadosLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {formatDate(agregado.data_cadastro)}
+                          {formatDate(agregado.data_cadastro || '')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -1118,7 +1124,7 @@ const AgregadosLista = () => {
             {
               icon: <MessageCircle size={16} />,
               label: 'Iniciar Chat',
-              onClick: () => startChat(contextMenu.agregado!.telefone?.toString() || '', contextMenu.agregado!.nome),
+              onClick: () => startChat(contextMenu.agregado!.telefone?.toString() || '', contextMenu.agregado!.nome || ''),
               color: 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300',
               disabled: !contextMenu.agregado!.telefone
             }
@@ -1131,7 +1137,7 @@ const AgregadosLista = () => {
         isOpen={isDetailViewOpen}
         onClose={() => setIsDetailViewOpen(false)}
         agregado={selectedAgregado}
-        documento={selectedAgregado?.documento || null}
+        documento={selectedAgregado?.documento_motorista?.[0] || null}
         veiculo={selectedAgregado?.veiculo?.[0] || null}
         endereco={selectedAgregado?.endereco}
       />
@@ -1139,7 +1145,7 @@ const AgregadosLista = () => {
       <DocumentViewer
         isOpen={isDocumentViewerOpen}
         onClose={() => setIsDocumentViewerOpen(false)}
-        documento={selectedAgregado?.documento || null}
+        documento={selectedAgregado?.documento_motorista?.[0] || null}
         nome={selectedAgregado?.nome || ''}
         cpf={selectedAgregado?.cpf}
         email={selectedAgregado?.email}
@@ -1180,7 +1186,7 @@ const AgregadosLista = () => {
         message="Tem certeza que deseja excluir este agregado? Esta ação não pode ser desfeita."
         itemData={selectedAgregado ? [
           { label: 'Nome', value: selectedAgregado.nome },
-          { label: 'CPF', value: formatCPF(selectedAgregado.cpf) },
+          { label: 'CPF', value: formatCPF(selectedAgregado.cpf || '') },
           { label: 'Status', value: selectedAgregado.st_cadastro },
           { label: 'Veículo', value: selectedAgregado.veiculo?.[0]?.placa.toUpperCase() || 'Não informado' }
         ] : []}
