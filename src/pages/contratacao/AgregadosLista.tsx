@@ -193,9 +193,8 @@ const AgregadosLista = () => {
       const uniqueVehicleTypes = new Set<string>();
       
       data?.forEach(agregado => {
-        const cidade = agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade;
-        if (cidade) {
-          uniqueCities.add(cidade);
+        if (agregado.nome_cidade) {
+          uniqueCities.add(agregado.nome_cidade);
         }
         
         // Extract vehicle types
@@ -465,7 +464,7 @@ const AgregadosLista = () => {
   };
 
   const getAgregadoCity = (agregado: ViewAgregado): string | null => {
-    return agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || null;
+    return agregado.nome_cidade || null;
   };
 
   const getVehicleType = (agregado: ViewAgregado): string | null => {
@@ -785,15 +784,16 @@ const AgregadosLista = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedData.map((agregado) => (
+                  {paginatedData.map((agregado, index) => (
                     <tr 
-                      key={agregado.motorista_id || Math.random()} 
+                      key={`agregado-${agregado.motorista_id || 'new'}-${index}`} 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                         selectedItems.has(agregado.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
@@ -964,7 +964,7 @@ const AgregadosLista = () => {
                                      dark:focus:ring-offset-gray-800 text-left w-full"
                           >
                             <span className="truncate max-w-[150px]">
-                              {agregado.cliente?.nome || 'Sem cliente'}
+                              {agregado.cliente_id ? clientes.find(c => c.cliente_id === agregado.cliente_id)?.nome || 'Cliente não encontrado' : 'Sem cliente'}
                             </span>
                             <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
                           </button>
@@ -1012,18 +1012,19 @@ const AgregadosLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {agregado.veiculo && agregado.veiculo[0] ? (
-                            <span className="uppercase">{agregado.veiculo[0].placa || ''}</span>
+                          {getAgregadoCity(agregado) || 'Não informada'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {agregado.placa ? (
+                            <span className="uppercase">{agregado.placa}</span>
                           ) : (
                             'Não informado'
                           )}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {agregado.veiculo && agregado.veiculo[0] ? (
-                            `${agregado.veiculo[0].tipologia || ''}`
-                          ) : (
-                            ''
-                          )}
+                          {agregado.tipologia || ''}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

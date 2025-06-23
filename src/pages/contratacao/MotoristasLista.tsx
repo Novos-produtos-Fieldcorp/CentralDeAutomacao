@@ -443,7 +443,7 @@ const MotoristasLista = () => {
   };
 
   const getMotoristaCity = (motorista: ViewMotorista): string | null => {
-    return motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || null;
+    return motorista.nome_cidade || null;
   };
 
   const filteredMotoristas = motoristas.filter(motorista => {
@@ -919,7 +919,7 @@ const MotoristasLista = () => {
                                      dark:focus:ring-offset-gray-800 text-left w-full"
                           >
                             <span className="truncate max-w-[150px]">
-                              {motorista.cliente?.nome || 'Sem cliente'}
+                              {motorista.cliente_id ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || 'Cliente não encontrado' : 'Sem cliente'}
                             </span>
                             <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
                           </button>
