@@ -261,9 +261,8 @@ const Contratados = () => {
       console.log('Dados processados:', JSON.parse(JSON.stringify(processedData)));
       
       processedData.forEach(motorista => {
-        const cidade = motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade;
-        if (cidade) {
-          uniqueCities.add(cidade);
+        if (motorista.nome_cidade) {
+          uniqueCities.add(motorista.nome_cidade);
         }
         
         // Extract vehicle types
@@ -542,8 +541,9 @@ const Contratados = () => {
     }
   };
 
-  const getMotoristaCity = (motorista: MotoristaWithAddress): string | null => {
-    return motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || null;
+  const getMotoristaCity = (motorista: ViewContratado): string | null => {
+    // Usa o campo nome_cidade que já está disponível no ViewContratado
+    return motorista.nome_cidade || null;
   };
 
   const getVehicleType = (motorista: MotoristaWithAddress): string | null => {
