@@ -3,6 +3,7 @@ import { ClipboardList, Plus, Trash2, Clock, Link2, Users, Save, Loader2, AlertT
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { fetchWithRetry } from '../lib/fetchWithRetry';
 import toast from 'react-hot-toast';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { Navigate } from 'react-router-dom';
@@ -198,19 +199,17 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(id);
       
-      // Call the manual-summary-trigger edge function without Authorization header
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`, {
+      // Use fetchWithRetry for better error handling and retry logic
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
+      const options = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ group_id: id })
-      });
+      };
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao enviar resumo');
-      }
+      const response = await fetchWithRetry(url, options);
       
       toast.success('Resumo enviado com sucesso');
     } catch (error) {
