@@ -414,7 +414,7 @@ const Clientes = () => {
                 </div>
             </div>
 
-            <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
+            <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border-0 relative">
                 <div className="overflow-hidden">
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                         <div className="relative">
