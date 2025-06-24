@@ -920,7 +920,7 @@ const MotoristasLista = () => {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white" data-component-name="MotoristasLista">
-                              {motorista.nome || ''}
+                              {motorista.nome_motorista || motorista.nome || ''}
                             </div>
                           </div>
                         </div>
