@@ -44,7 +44,6 @@ const ResumosGrupo = () => {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [toggleLoading, setToggleLoading] = useState<number | null>(null);
-  const [sendingManualSummary, setSendingManualSummary] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'grupos' | 'historico'>('grupos');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -238,63 +237,8 @@ const ResumosGrupo = () => {
     }
   };
 
-  const sendManualSummary = async (id: number) => {
-    if (!companyId) return;
-    
-    try {
-      setSendingManualSummary(id);
-      
-      // Find the group data
-      const grupo = grupos.find(g => g.id === id);
-      if (!grupo) {
-        toast.error('Grupo não encontrado');
-        return;
-      }
-      
-      // Call the manual-summary-trigger Edge Function
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
-      
-      const payload = {
-        group_id: id,
-        company_id: companyId
-      };
-      
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Erro ao enviar resumo: ${response.status} - ${errorText}`);
-      }
-      
-      toast.success('Resumo enviado com sucesso');
-      
-      // Refresh history after sending a manual summary
-      fetchHistorico();
-    } catch (error) {
-      console.error('Error sending manual summary:', error);
-      
-      // Provide more specific error messages
-      if (error instanceof Error) {
-        if (error.message.includes('Failed to fetch')) {
-          toast.error('Erro de conexão. Verifique sua internet e tente novamente.');
-        } else if (error.message.includes('401') || error.message.includes('403')) {
-          toast.error('Erro de autenticação. Faça login novamente.');
-        } else {
-          toast.error(`Erro ao enviar resumo: ${error.message}`);
-        }
-      } else {
-        toast.error('Erro desconhecido ao enviar resumo');
-      }
-    } finally {
-      setSendingManualSummary(null);
-    }
+  const handleManualSummaryClick = () => {
+    toast.error('Funcionalidade de envio manual temporariamente indisponível');
   };
 
   const formatTime = (time: string) => {
@@ -492,19 +436,12 @@ const ResumosGrupo = () => {
                       
                       <div className="flex justify-between gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                         <button
-                          onClick={() => sendManualSummary(grupo.id)}
-                          disabled={!grupo.ativo || sendingManualSummary === grupo.id}
-                          className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 ${
-                            grupo.ativo
-                              ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30'
-                              : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500'
-                          }`}
+                          onClick={handleManualSummaryClick}
+                          disabled={true}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500"
+                          title="Funcionalidade temporariamente indisponível"
                         >
-                          {sendingManualSummary === grupo.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Send className="w-3.5 h-3.5" />
-                          )}
+                          <Send className="w-3.5 h-3.5" />
                           Enviar Agora
                         </button>
                         
