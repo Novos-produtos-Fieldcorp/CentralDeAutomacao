@@ -436,7 +436,7 @@ const ResumosGrupo = () => {
                               ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' 
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                           }`}>
-                            <Users className="w-5 h-5" />
+                            <ClipboardList className="w-5 h-5" />
                           </div>
                           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                             {grupo.nome_grupo}
