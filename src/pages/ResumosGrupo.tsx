@@ -258,88 +258,40 @@ const ResumosGrupo = () => {
       
       // Try to send data to n8n webhook
       try {
-        const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/26254d63-b40d-469a-b1d3-62ef2a624d7e';
+        const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
         
-        // Try different payload formats to see which one works
-        const webhookPayloads = [
-          // Format 1: Original format
-          {
-            "nome do grupo": grupo.nome_grupo,
-            "URL do grupo": grupo.url_grupo
+        // Prepare the webhook payload with the correct field names
+        const webhookData = {
+          "nome do grupo": grupo.nome_grupo,
+          "URL do grupo": grupo.url_grupo
+        };
+        
+        console.log('Enviando dados para webhook:', JSON.stringify(webhookData, null, 2));
+        
+        // Send the data to the webhook with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
-          // Format 2: Simple format
-          {
-            "nome_grupo": grupo.nome_grupo,
-            "url_grupo": grupo.url_grupo
-          },
-          // Format 3: With additional fields
-          {
-            "nome_grupo": grupo.nome_grupo,
-            "url_grupo": grupo.url_grupo,
-            "horario": grupo.horario,
-            "company_id": companyId
-          }
-        ];
+          body: JSON.stringify(webhookData),
+          signal: controller.signal
+        });
         
-        let webhookSuccess = false;
-        let lastError = null;
+        clearTimeout(timeoutId);
         
-        // Try each payload format
-        for (let i = 0; i < webhookPayloads.length; i++) {
-          const webhookData = webhookPayloads[i];
-          
-          console.log(`Tentativa ${i + 1} - Enviando dados para webhook:`, JSON.stringify(webhookData, null, 2));
-          
-          try {
-            // Send the data to the webhook with timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-            
-            const response = await fetch(webhookUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify(webhookData),
-              signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (response.ok) {
-              const responseText = await response.text();
-              console.log(`Tentativa ${i + 1} - Webhook response:`, responseText);
-              webhookSuccess = true;
-              break;
-            } else {
-              const errorText = await response.text();
-              console.error(`Tentativa ${i + 1} - Webhook response not OK:`, response.status, errorText);
-              lastError = new Error(`Webhook failed: ${response.status} - ${errorText}`);
-              
-              // If it's a 500 error, continue trying other formats
-              if (response.status !== 500) {
-                throw lastError;
-              }
-            }
-          } catch (fetchError: any) {
-            console.error(`Tentativa ${i + 1} - Error sending to webhook:`, fetchError);
-            lastError = fetchError;
-            
-            // If it's a timeout or network error, don't try other formats
-            if (fetchError.name === 'AbortError' || fetchError.message.includes('fetch')) {
-              break;
-            }
-          }
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Webhook response not OK:', response.status, errorText);
+          throw new Error(`Webhook failed: ${response.status} - ${errorText}`);
         }
         
-        if (!webhookSuccess && lastError) {
-          throw lastError;
-        }
-        
-        if (!webhookSuccess) {
-          throw new Error('Todas as tentativas de envio falharam');
-        }
+        const responseText = await response.text();
+        console.log('Webhook response:', responseText);
         
       } catch (webhookError: any) {
         console.error('Error sending to webhook:', webhookError);
