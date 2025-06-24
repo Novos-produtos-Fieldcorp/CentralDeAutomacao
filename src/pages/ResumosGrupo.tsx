@@ -408,13 +408,6 @@ const ResumosGrupo = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <div className="mb-6">
-          {/* Removed the h2 heading here */}
-          <p className="text-gray-600 dark:text-gray-400">
-            
-          </p>
-        </div>
-
         {/* Tabs */}
         <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
           <nav className="flex space-x-8" aria-label="Tabs">
