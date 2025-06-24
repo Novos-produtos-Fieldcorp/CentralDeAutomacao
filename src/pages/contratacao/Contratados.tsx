@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck } from 'lucide-react';
+import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -20,32 +20,6 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 
-interface MotoristaWithAddress extends Motorista {
-  endereco?: {
-    logradouro?: {
-      logradouro?: string;
-      nr_cep?: string;
-      bairro?: {
-        bairro?: string;
-        cidade?: {
-          cidade?: string;
-          estado?: {
-            sigla_estado?: string;
-          };
-        };
-      };
-    };
-    nr_end?: number;
-    ds_complemento_end?: string;
-  } | null;
-  veiculo?: {
-    placa: string;
-    tipologia: string;
-    marca?: string;
-    tipo?: string;
-  }[];
-}
-
 // Interface para a view de contratados
 export interface ViewContratado {
   motorista_id?: number;
@@ -57,7 +31,7 @@ export interface ViewContratado {
   email?: string | null;
   funcao?: string;
   origem_usuario?: string;
-  st_cadastro?: string;
+  st_cadastro?: string | null;
   autorizacao_lgpd?: string;
   company_id?: number;
   data_cadastro?: string;
@@ -87,6 +61,12 @@ export interface ViewContratado {
   marca_rastreador?: string | null;
   cor?: string | null;
   tipo?: string | null;
+  veiculo?: Array<{
+    placa: string;
+    tipologia: string;
+    marca?: string;
+    tipo?: string;
+  }>;
 }
 
 const Contratados = () => {
@@ -102,14 +82,55 @@ const Contratados = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isBulkActionsModalOpen, setIsBulkActionsModalOpen] = useState(false);
-  const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
   const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
-  const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
-  const [endereco, setEndereco] = useState<any | null>(null);
+  const [documento] = useState<DocumentoMotorista | null>(null);
+  const [endereco, setEndereco] = useState<{
+    logradouro?: {
+      logradouro?: string;
+      nr_cep?: string;
+      bairro?: {
+        bairro?: string;
+        cidade?: {
+          cidade?: string;
+          estado?: {
+            sigla_estado?: string;
+          };
+        };
+      };
+    };
+    nr_end?: number;
+    ds_complemento_end?: string;
+  } | null>(null);
+  
+  // Atualiza o endereco quando o selectedMotorista mudar
+  useEffect(() => {
+    if (selectedMotorista) {
+      setEndereco({
+        logradouro: {
+          logradouro: selectedMotorista.logradouro || undefined,
+          nr_cep: selectedMotorista.nr_cep || undefined,
+          bairro: {
+            bairro: selectedMotorista.nome_bairro || undefined,
+            cidade: {
+              cidade: selectedMotorista.nome_cidade || undefined,
+              estado: {
+                sigla_estado: selectedMotorista.sigla_estado || undefined
+              }
+            }
+          }
+        },
+        nr_end: selectedMotorista.nr_end || undefined,
+        ds_complemento_end: selectedMotorista.ds_complemento_end || undefined
+      });
+    } else {
+      setEndereco(null);
+    }
+  }, [selectedMotorista]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteFilter, setClienteFilter] = useState<string>('');
   const [cidadeFilter, setCidadeFilter] = useState<string>('');
@@ -129,6 +150,34 @@ const Contratados = () => {
     motorista: null,
   });
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
+
+  const convertToMotorista = (contratado: ViewContratado | null): Motorista | null => {
+    if (!contratado) return null;
+    
+    return {
+      motorista_id: contratado.motorista_id || 0,
+      cpf: contratado.cpf || '',
+      dt_nascimento: contratado.dt_nascimento || '',
+      genero: contratado.genero || '',
+      telefone: contratado.telefone ? Number(contratado.telefone) : null,
+      email: contratado.email || null,
+      funcao: contratado.funcao || '',
+      nome: contratado.nome_motorista || '',
+      origem_usuario: contratado.origem_usuario || '',
+      st_cadastro: contratado.st_cadastro || 'cadastrado',
+      autorizacao_lgpd: contratado.autorizacao_lgpd || '',
+      company_id: contratado.company_id || 0,
+      data_cadastro: contratado.data_cadastro || new Date().toISOString(),
+      cliente_id: contratado.cliente_id || 0,
+      ativo: contratado.ativo,
+      conversation_id: contratado.conversation_id || undefined,
+      cidade: contratado.nome_cidade || undefined,
+      // @ts-ignore - Propriedades opcionais
+      estado: contratado.sigla_estado || undefined,
+      documento_motorista: [],
+      documento_ajudante: []
+    } as Motorista;
+  };
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
   const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
@@ -267,7 +316,7 @@ const Contratados = () => {
         
         // Extract vehicle types
         if (motorista.veiculo && motorista.veiculo.length > 0) {
-          motorista.veiculo.forEach(veiculo => {
+          motorista.veiculo.forEach((veiculo: { tipologia?: string }) => {
             if (veiculo.tipologia) {
               uniqueVehicleTypes.add(veiculo.tipologia);
             }
@@ -325,10 +374,7 @@ const Contratados = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (motorista: ViewContratado) => {
-    setSelectedMotorista(motorista);
-    setIsDeleteModalOpen(true);
-  };
+
 
   const confirmDelete = async () => {
     if (!selectedMotorista) return;
@@ -546,31 +592,47 @@ const Contratados = () => {
     return motorista.nome_cidade || null;
   };
 
-  const getVehicleType = (motorista: MotoristaWithAddress): string | null => {
-    return motorista.veiculo && motorista.veiculo.length > 0 ? motorista.veiculo[0].tipologia : null;
-  };
 
-  const filteredContratados = contratados.filter(motorista => {
+  const filteredContratados = contratados.filter((motorista): boolean => {
     const searchLower = searchTerm.toLowerCase();
     const statusMatch = statusFilter ? motorista.st_cadastro === statusFilter : true;
-    const clienteMatch = clienteFilter ? motorista.cliente_id === parseInt(clienteFilter) : true;
+    
+    // Lógica para filtro de cliente
+    let clienteMatch = true;
+    if (clienteFilter === 'sem_cliente') {
+      clienteMatch = motorista.cliente_id === null || motorista.cliente_id === undefined;
+    } else if (clienteFilter) {
+      clienteMatch = motorista.cliente_id === parseInt(clienteFilter);
+    }
+    
     const cidadeMatch = cidadeFilter ? getMotoristaCity(motorista) === cidadeFilter : true;
-    const tipoVeiculoMatch = tipoVeiculoFilter ? 
-      (motorista.veiculo && motorista.veiculo.some(v => v.tipologia === tipoVeiculoFilter)) : true;
+    
+    // Lógica para filtro de veículo
+    let tipoVeiculoMatch = true;
+    if (tipoVeiculoFilter === 'sem_veiculo') {
+      tipoVeiculoMatch = !motorista.veiculo || motorista.veiculo.length === 0;
+    } else if (tipoVeiculoFilter) {
+      tipoVeiculoMatch = !!(motorista.veiculo && motorista.veiculo.some(v => v.tipologia === tipoVeiculoFilter));
+    }
+    
     const ativoMatch = ativoFilter === '' ? true : 
                       ativoFilter === 'active' ? motorista.ativo === true : 
                       ativoFilter === 'inactive' ? motorista.ativo === false : true;
     
-    return (
+    const searchMatch = Boolean(
+      (motorista.nome_motorista && motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
+      (motorista.cpf && motorista.cpf.includes(searchLower)) ||
+      (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
+      (motorista.telefone && motorista.telefone.toString().includes(searchLower))
+    );
+    
+    return Boolean(
       statusMatch &&
       clienteMatch &&
       cidadeMatch &&
       tipoVeiculoMatch &&
       ativoMatch &&
-      ((motorista.nome_motorista && motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
-       (motorista.cpf && motorista.cpf.includes(searchLower)) ||
-       (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
-       (typeof motorista.telefone === 'number' && motorista.telefone.toString().includes(searchLower)))
+      searchMatch
     );
   });
 
@@ -717,6 +779,7 @@ const Contratados = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todos os clientes</option>
+              <option value="sem_cliente">Sem cliente</option>
               {clientes.map(cliente => (
                 <option key={cliente.cliente_id} value={cliente.cliente_id}>
                   {cliente.nome}
@@ -756,6 +819,7 @@ const Contratados = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todos os tipos de veículo</option>
+              <option value="sem_veiculo">Sem veículo</option>
               {tiposVeiculo.map((tipo, index) => (
                 <option key={index} value={tipo}>
                   {tipo}
@@ -900,7 +964,7 @@ const Contratados = () => {
                           </div>
                           {motorista.telefone && (
                             <button
-                              onClick={() => startChat(motorista.telefone.toString(), motorista.nome_motorista || '')}
+                              onClick={() => startChat(motorista.telefone?.toString() || '', motorista.nome_motorista || '')}
                               className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
                               title="Iniciar chat"
                             >
@@ -930,7 +994,8 @@ const Contratados = () => {
                               motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200' :
                               'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                             }`}>
-                              {motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
+                              {!motorista.st_cadastro ? 'Indefinido' : 
+                               motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
                                motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
                             </span>
                             <ChevronDown size={14} className="text-gray-500 dark:text-gray-400" />
@@ -1032,8 +1097,8 @@ const Contratados = () => {
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
                                      dark:focus:ring-offset-gray-800 text-left w-full"
                           >
-                            <span className="truncate max-w-[150px]">
-                              {motorista.cliente?.nome || 'Sem cliente'}
+                            <span className="truncate max-w-[150px]" data-component-name="Contratados">
+                              {motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
                             </span>
                             <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
                           </button>
@@ -1177,7 +1242,7 @@ const Contratados = () => {
           actions={[
             {
               icon: <User size={16} />,
-              label: 'Visualizar Detalhes',
+              label: 'Visualizar Detalhes' as const satisfies string,
               onClick: () => handleViewDocument(contextMenu.motorista!),
               color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
             },
@@ -1208,7 +1273,7 @@ const Contratados = () => {
       <UnifiedMotoristaModal
         isOpen={isUnifiedModalOpen}
         onClose={() => setIsUnifiedModalOpen(false)}
-        motorista={selectedMotorista}
+        motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : undefined}
         onSuccess={fetchContratados}
       />
 
@@ -1222,7 +1287,7 @@ const Contratados = () => {
         telefone={selectedMotorista?.telefone?.toString()}
         dt_nascimento={selectedMotorista?.dt_nascimento}
         endereco={endereco}
-        st_cadastro={selectedMotorista?.st_cadastro}
+        st_cadastro={selectedMotorista?.st_cadastro || undefined}
       />
 
       <DocumentUploadModal
@@ -1247,10 +1312,10 @@ const Contratados = () => {
         title="Confirmar Exclusão"
         message="Tem certeza que deseja excluir este motorista? Esta ação não pode ser desfeita."
         itemData={selectedMotorista ? [
-          { label: 'Nome', value: selectedMotorista.nome_motorista },
-          { label: 'CPF', value: formatCPF(selectedMotorista.cpf) },
-          { label: 'Status', value: selectedMotorista.st_cadastro }
-        ] : []}
+          { label: 'Nome', value: selectedMotorista.nome_motorista || 'Não informado' },
+          { label: 'CPF', value: selectedMotorista.cpf ? formatCPF(selectedMotorista.cpf) : 'Não informado' },
+          { label: 'Status', value: selectedMotorista.st_cadastro || 'Não informado' }
+        ].filter(item => item.value !== 'Não informado') : []}
       />
 
       <BulkActionsModal

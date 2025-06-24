@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -46,7 +46,7 @@ function App() {
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/*" element={
                   <ProtectedRoute>
-                    <div className="min-h-screen bg-background relative">
+                    <div className="min-h-screen bg-background relative theme-transition">
                       <Navbar />
                       <main className="relative ml-20 transition-all duration-300 min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
                         <div className="max-w-[2000px] mx-auto p-8">
