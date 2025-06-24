@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error in manual summary trigger:', error);
+    console.error('Error in group summary trigger:', error);
     
     return new Response(
       JSON.stringify({
