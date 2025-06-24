@@ -199,22 +199,50 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(id);
       
-      // Use fetchWithRetry for better error handling and retry logic
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
-      const options = {
+      // Get the current session to get the access token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Usuário não autenticado');
+      }
+      
+      // Construct the correct URL for the Supabase Edge Function
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
+      
+      const options: RequestInit = {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ group_id: id })
+        body: JSON.stringify({ 
+          group_id: id,
+          company_id: companyId 
+        })
       };
       
-      const response = await fetchWithRetry(url, options);
+      console.log('Calling edge function:', functionUrl);
+      console.log('Request payload:', { group_id: id, company_id: companyId });
       
+      const response = await fetchWithRetry(functionUrl, options);
+      
+      console.log('Edge function response:', response);
       toast.success('Resumo enviado com sucesso');
     } catch (error) {
       console.error('Error sending manual summary:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao enviar resumo');
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          toast.error('Erro de conexão. Verifique sua internet e tente novamente.');
+        } else if (error.message.includes('401') || error.message.includes('403')) {
+          toast.error('Erro de autenticação. Faça login novamente.');
+        } else {
+          toast.error(`Erro ao enviar resumo: ${error.message}`);
+        }
+      } else {
+        toast.error('Erro desconhecido ao enviar resumo');
+      }
     } finally {
       setSendingManualSummary(null);
     }
