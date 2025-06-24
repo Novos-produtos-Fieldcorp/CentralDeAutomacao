@@ -287,9 +287,7 @@ const ResumosGrupo = () => {
             Resumos Automáticos para Grupos
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Configure resumos automáticos para serem enviados aos seus grupos de WhatsApp. 
-            Os resumos serão enviados diariamente no horário especificado, contendo informações 
-            relevantes sobre a operação do dia.
+            
           </p>
         </div>
 
