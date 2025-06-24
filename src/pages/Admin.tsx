@@ -419,7 +419,7 @@ const Admin = () => {
             >
               {saving ? (
                 <>
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   Salvando...
                 </>
               ) : (
