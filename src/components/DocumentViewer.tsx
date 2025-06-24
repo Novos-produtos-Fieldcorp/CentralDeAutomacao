@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, FileText, Camera, ExternalLink, Upload, Loader2, Phone, Mail, Calendar, Home, MapPin, Info, User, CreditCard } from 'lucide-react';
+import { useState } from 'react';
+import { X, FileText, Camera, ExternalLink, Home, CreditCard } from 'lucide-react';
 import type { DocumentoMotorista, Veiculo, DocumentoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 
@@ -33,7 +33,7 @@ interface DocumentViewerProps {
     documento_veiculo: DocumentoVeiculo[];
   }) | null;
   isAgregado?: boolean;
-  st_cadastro?: string;
+  st_cadastro?: string | null;
 }
 
 const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone, dt_nascimento, endereco, veiculo, isAgregado = false, st_cadastro }: DocumentViewerProps) => {
@@ -102,11 +102,11 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                         </div>
                       )}
                       
-                      {st_cadastro && (
+                      {st_cadastro != null && (
                         <div className="overflow-hidden">
                           <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</div>
                           <div className="text-base text-gray-900 dark:text-white break-words capitalize">
-                            {st_cadastro.replace('_', ' ')}
+                            {st_cadastro.replace(/_/g, ' ')}
                           </div>
                         </div>
                       )}

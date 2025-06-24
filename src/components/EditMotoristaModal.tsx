@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import type { Motorista, Veiculo, MotoristaWithAddress } from '../types/database';
+import type { Motorista, MotoristaWithAddress, Veiculo } from '../types/database';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { formatCEP } from '../utils/format';
@@ -31,16 +31,16 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
   const [veiculoData, setVeiculoData] = useState<Partial<Veiculo>>({
     placa: '',
     marca: '',
-    tipo: '',
+    tipologia: '',
     ano: '',
     cor: '',
-    tipologia: '',
+    tipo: '',
     combustivel: '',
     peso: '',
     cubagem: '',
     possui_rastreador: false,
     marca_rastreador: '',
-    motorista_id: ''
+    motorista_id: 0
   });
 
   const [enderecoData, setEnderecoData] = useState({
@@ -54,7 +54,32 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
   });
 
   const [veiculo, setVeiculo] = useState<Veiculo | null>(null);
-  const [endereco, setEndereco] = useState<any | null>(null);
+  interface EnderecoLogradouro {
+    id_logradouro: number;
+    logradouro: string;
+    nr_cep: string;
+    bairro?: {
+      id_bairro: number;
+      bairro: string;
+      cidade?: {
+        id_cidade: number;
+        cidade: string;
+        estado?: {
+          id_estado: number;
+          sigla_estado: string;
+        };
+      };
+    };
+  }
+
+  interface EnderecoMotorista {
+    id_end_motorista: number;
+    nr_end: number | null;
+    ds_complemento_end: string | null;
+    logradouro: EnderecoLogradouro | null;
+  }
+
+  const [endereco, setEndereco] = useState<EnderecoMotorista | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -127,7 +152,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
           cubagem: data.cubagem || '',
           possui_rastreador: data.possui_rastreador || false,
           marca_rastreador: data.marca_rastreador || '',
-          motorista_id: String(data.motorista_id) || ''
+          motorista_id: data.motorista_id || 0
         });
       }
     } catch (error) {
@@ -149,17 +174,17 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
           id_end_motorista,
           nr_end,
           ds_complemento_end,
-          logradouro (
+          logradouro:logradouro_id (
             id_logradouro,
             logradouro,
             nr_cep,
-            bairro (
+            bairro:bairro_id (
               id_bairro,
               bairro,
-              cidade (
+              cidade:cidade_id (
                 id_cidade,
                 cidade,
-                estado (
+                estado:estado_id (
                   id_estado,
                   sigla_estado
                 )
@@ -177,15 +202,40 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
       }
 
       if (data) {
-        setEndereco(data);
+        const enderecoData: EnderecoMotorista = {
+          id_end_motorista: data.id_end_motorista,
+          nr_end: data.nr_end,
+          ds_complemento_end: data.ds_complemento_end,
+          logradouro: data.logradouro ? {
+            id_logradouro: data.logradouro.id_logradouro,
+            logradouro: data.logradouro.logradouro,
+            nr_cep: data.logradouro.nr_cep,
+            bairro: data.logradouro.bairro ? {
+              id_bairro: data.logradouro.bairro.id_bairro,
+              bairro: data.logradouro.bairro.bairro,
+              cidade: data.logradouro.bairro.cidade ? {
+                id_cidade: data.logradouro.bairro.cidade.id_cidade,
+                cidade: data.logradouro.bairro.cidade.cidade,
+                estado: data.logradouro.bairro.cidade.estado ? {
+                  id_estado: data.logradouro.bairro.cidade.estado.id_estado,
+                  sigla_estado: data.logradouro.bairro.cidade.estado.sigla_estado
+                } : undefined
+              } : undefined
+            } : undefined
+          } : null
+        };
+
+        setEndereco(enderecoData);
+        
+        const logradouro = enderecoData.logradouro;
         setEnderecoData({
-          cep: data.logradouro?.nr_cep || '',
-          estado: data.logradouro?.bairro?.cidade?.estado?.id_estado?.toString() || '',
-          cidade: data.logradouro?.bairro?.cidade?.cidade || '',
-          bairro: data.logradouro?.bairro?.bairro || '',
-          logradouro: data.logradouro?.logradouro || '',
-          numero: data.nr_end?.toString() || '',
-          complemento: data.ds_complemento_end || ''
+          cep: logradouro?.nr_cep || '',
+          estado: logradouro?.bairro?.cidade?.estado?.id_estado?.toString() || '',
+          cidade: logradouro?.bairro?.cidade?.cidade || '',
+          bairro: logradouro?.bairro?.bairro || '',
+          logradouro: logradouro?.logradouro || '',
+          numero: enderecoData.nr_end?.toString() || '',
+          complemento: enderecoData.ds_complemento_end || ''
         });
       }
     } catch (error) {
@@ -237,6 +287,72 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     }
   };
 
+  const saveEndereco = async (motorista_id: number) => {
+    try {
+      // Verifica se já existe um endereço para o motorista
+      const { data: existingEndereco } = await supabase
+        .from('end_motorista')
+        .select('id_end_motorista')
+        .eq('id_motorista', motorista_id)
+        .eq('st_end', true)
+        .maybeSingle();
+
+      // Busca o ID do logradouro pelo CEP
+      const { data: logradouro } = await supabase
+        .from('logradouro')
+        .select('id_logradouro')
+        .eq('nr_cep', enderecoData.cep)
+        .maybeSingle();
+
+      let id_logradouro = logradouro?.id_logradouro;
+
+      // Se não encontrou o logradouro, cria um novo
+      if (!id_logradouro) {
+        const { data: newLogradouro, error: logradouroError } = await supabase
+          .from('logradouro')
+          .insert({
+            logradouro: enderecoData.logradouro,
+            nr_cep: enderecoData.cep,
+            id_bairro: null, // Será atualizado após criar o bairro
+            complemento: enderecoData.complemento
+          })
+          .select('id_logradouro')
+          .single();
+
+        if (logradouroError) throw logradouroError;
+        id_logradouro = newLogradouro.id_logradouro;
+      }
+
+      const enderecoPayload = {
+        id_motorista: motorista_id,
+        nr_end: enderecoData.numero ? parseInt(enderecoData.numero) : null,
+        ds_complemento_end: enderecoData.complemento || null,
+        id_logradouro,
+        st_end: true
+      };
+
+      if (existingEndereco) {
+        // Atualiza o endereço existente
+        const { error } = await supabase
+          .from('end_motorista')
+          .update(enderecoPayload)
+          .eq('id_end_motorista', existingEndereco.id_end_motorista);
+
+        if (error) throw error;
+      } else {
+        // Cria um novo endereço
+        const { error } = await supabase
+          .from('end_motorista')
+          .insert(enderecoPayload);
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Erro ao salvar endereço:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -255,6 +371,11 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
         .eq('motorista_id', motorista.motorista_id);
 
       if (motoristaError) throw motoristaError;
+
+      // Save address data
+      if (enderecoData.cep) {
+        await saveEndereco(motorista.motorista_id);
+      }
 
       // Update or create vehicle data if it's an agregado
       if (motorista.funcao === 'Agregado') {
@@ -302,10 +423,27 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
 
   const handleVeiculoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    setVeiculoData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }));
+    
+    // Define os campos que devem ser tratados como números
+    const numericFields = ['ano', 'peso', 'cubagem'];
+    
+    setVeiculoData((prev: Partial<Veiculo>) => {
+      let processedValue: string | number | boolean = value;
+      
+      // Converte para booleano se for um checkbox
+      if (type === 'checkbox') {
+        processedValue = (e.target as HTMLInputElement).checked;
+      } 
+      // Converte para número se for um campo numérico
+      else if (numericFields.includes(name)) {
+        processedValue = value === '' ? '' : Number(value);
+      }
+      
+      return {
+        ...prev,
+        [name]: processedValue
+      };
+    });
   };
 
   const handleEnderecoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X, Truck, User, MapPin, Phone, Mail, Calendar, CreditCard, FileText, Info, Camera, CheckCircle2, XCircle, ExternalLink, Edit2, Home, UserPlus, Users } from 'lucide-react';
-import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
+import { useState } from 'react';
+import { X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, CheckCircle2, XCircle, ExternalLink, Home } from 'lucide-react';
+import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
@@ -62,7 +62,6 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
   // Ensure we have the agregado data
   const nome = agregado.nome || '';
   const cpf = agregado.cpf || '';
-  const status = agregado.st_cadastro || '';
 
   const openDocumentInNewTab = (url: string | null) => {
     if (url) {
@@ -183,7 +182,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                           <div className="overflow-hidden">
                             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</div>
                             <div className="text-base text-gray-900 dark:text-white break-words capitalize">
-                              {agregado.st_cadastro.replace('_', ' ')}
+                              {agregado.st_cadastro ? agregado.st_cadastro.replace(/_/g, ' ') : 'Não informado'}
                             </div>
                           </div>
                         </div>

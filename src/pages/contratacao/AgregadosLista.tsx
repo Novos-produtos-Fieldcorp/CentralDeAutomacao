@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, Truck, Loader2, MapPin, FilePen, User } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import type { Motorista, DocumentoMotorista, Veiculo, DocumentoVeiculo } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
 import DocumentViewer from '../../components/DocumentViewer';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
@@ -198,12 +197,8 @@ const AgregadosLista = () => {
         }
         
         // Extract vehicle types
-        if (agregado.veiculo && agregado.veiculo.length > 0) {
-          agregado.veiculo.forEach(veiculo => {
-            if (veiculo.tipologia) {
-              uniqueVehicleTypes.add(veiculo.tipologia);
-            }
-          });
+        if (agregado.tipologia) {
+          uniqueVehicleTypes.add(agregado.tipologia);
         }
       });
       
@@ -247,12 +242,14 @@ const AgregadosLista = () => {
     setIsDocumentUploadOpen(true);
   };
 
-  const handleEdit = (agregado: ViewAgregado) => {
+  const handleEdit = (agregado: ViewAgregado | null) => {
+    if (!agregado) return;
     setSelectedAgregado(agregado);
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (agregado: ViewAgregado) => {
+  const handleDelete = (agregado: ViewAgregado | null) => {
+    if (!agregado) return;
     setSelectedAgregado(agregado);
     setIsDeleteModalOpen(true);
   };
@@ -463,37 +460,49 @@ const AgregadosLista = () => {
     }
   };
 
-  const getAgregadoCity = (agregado: ViewAgregado): string | null => {
-    return agregado.nome_cidade || null;
-  };
-
-  const getVehicleType = (agregado: ViewAgregado): string | null => {
-    return agregado.veiculo && agregado.veiculo.length > 0 ? agregado.veiculo[0].tipologia : null;
-  };
-
-  const filteredAgregados = agregados.filter(agregado => {
+  const filteredAgregados = (agregados || []).filter(agregado => {
+    if (!agregado) return false;
+    
     const searchLower = searchTerm.toLowerCase();
     const statusMatch = statusFilter ? agregado.st_cadastro === statusFilter : true;
-    const clienteMatch = clienteFilter ? agregado.cliente_id === parseInt(clienteFilter) : true;
-    const cidadeMatch = cidadeFilter ? getAgregadoCity(agregado) === cidadeFilter : true;
-    const tipoVeiculoMatch = tipoVeiculoFilter ? 
-      (agregado.veiculo && agregado.veiculo.some(v => v.tipologia === tipoVeiculoFilter)) : true;
-    const ativoMatch = ativoFilter === '' ? true : 
-                      ativoFilter === 'active' ? agregado.ativo === true : 
-                      ativoFilter === 'inactive' ? agregado.ativo === false : true;
     
-    return (
-      statusMatch &&
-      clienteMatch &&
-      cidadeMatch &&
-      tipoVeiculoMatch &&
-      ativoMatch &&
-      ((agregado.nome_motorista && agregado.nome_motorista.toLowerCase().includes(searchLower)) ||
-       (agregado.cpf && agregado.cpf.includes(searchLower)) ||
-       (typeof agregado.email === 'string' && agregado.email.toLowerCase().includes(searchLower)) ||
-       (typeof agregado.telefone === 'number' && agregado.telefone.toString().includes(searchLower)) ||
-       (agregado.veiculo && agregado.veiculo[0]?.placa && agregado.veiculo[0].placa.toLowerCase().includes(searchLower)))
-    );
+    // Lógica para filtro de cliente
+    let clienteMatch = true;
+    if (clienteFilter === 'sem_cliente') {
+      clienteMatch = agregado.cliente_id === null || agregado.cliente_id === undefined;
+    } else if (clienteFilter) {
+      clienteMatch = agregado.cliente_id === parseInt(clienteFilter);
+    }
+    
+    // Lógica para filtro de veículo
+    let veiculoMatch = true;
+    if (tipoVeiculoFilter === 'sem_veiculo') {
+      veiculoMatch = !agregado.veiculo_id;
+    } else if (tipoVeiculoFilter) {
+      veiculoMatch = agregado.tipologia === tipoVeiculoFilter;
+    }
+    
+    const cidadeMatch = cidadeFilter ? agregado.nome_cidade === cidadeFilter : true;
+    const ativoMatch = ativoFilter === '' ? true : 
+      (ativoFilter === 'true' ? agregado.ativo === true : agregado.ativo === false);
+    
+    try {
+      return (
+        statusMatch &&
+        clienteMatch &&
+        veiculoMatch &&
+        cidadeMatch &&
+        ativoMatch &&
+        ((agregado.nome_motorista?.toLowerCase().includes(searchLower)) ||
+         (agregado.cpf?.includes(searchLower)) ||
+         (typeof agregado.email === 'string' && agregado.email.toLowerCase().includes(searchLower)) ||
+         (agregado.telefone?.toString().includes(searchLower)) ||
+         (agregado.placa?.toLowerCase().includes(searchLower)))
+      );
+    } catch (error) {
+      console.error('Erro ao filtrar agregado:', error, agregado);
+      return false;
+    }
   });
 
   const {
@@ -640,6 +649,7 @@ const AgregadosLista = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todos os clientes</option>
+              <option value="sem_cliente">Sem cliente</option>
               {clientes.map(cliente => (
                 <option key={cliente.cliente_id} value={cliente.cliente_id}>
                   {cliente.nome}
@@ -679,6 +689,7 @@ const AgregadosLista = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todos os tipos de veículo</option>
+              <option value="sem_veiculo">Sem veículo</option>
               {tiposVeiculo.map((tipo, index) => (
                 <option key={index} value={tipo}>
                   {tipo}
@@ -1012,7 +1023,7 @@ const AgregadosLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {getAgregadoCity(agregado) || 'Não informada'}
+                          {agregado.nome_cidade || 'Não informada'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

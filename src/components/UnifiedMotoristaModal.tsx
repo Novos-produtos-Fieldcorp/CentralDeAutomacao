@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, User, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Phone, Mail, Calendar, CreditCard, Info, UserCircle, Home, Edit2, Save, Plus, Trash2, FilePen, Users, UserPlus } from 'lucide-react';
-import type { DocumentoMotorista, Veiculo, DocumentoVeiculo, Motorista, PessoaFisicaDonoVeiculo, PessoaJuridicaDonoVeiculo } from '../types/database';
+import { useState, useEffect } from 'react';
+import { X, User, MapPin, FileText, Camera, Loader2, ExternalLink, Phone, CreditCard, Home, Trash2, Users, UserPlus, Edit2, Upload, UserCircle } from 'lucide-react';
+import type { DocumentoMotorista, Motorista } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
-import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
@@ -152,15 +151,15 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
 
   const isPdf = (url: string | null) => url?.toLowerCase().endsWith('.pdf');
 
-  const handleDocumentUpload = async (file: File, documentType: string) => {
+  const handleDocumentUpload = async (file: File | Blob, documentType: string) => {
     if (!motorista || !file) return;
     
     try {
       setUploading(true);
       
       // Create a unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${motorista.motorista_id}_${documentType}_${Date.now()}.${fileExt}`;
+      const fileName = `${motorista.motorista_id}_${documentType}_${Date.now()}.${file instanceof File ? file.name.split('.').pop() : 'pdf'}`;
+      const fileExt = file instanceof File ? file.name.split('.').pop() : 'pdf';
 
       // For PDF files, we need to convert to base64 and then to blob to ensure proper MIME type
       let fileToUpload = file;
@@ -185,7 +184,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
       }
 
       // Upload to Supabase Storage
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('imagensdocs')
         .upload(fileName, fileToUpload, {
           cacheControl: '3600',
@@ -435,7 +434,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                           <div>
                             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</div>
                             <div className="text-base text-gray-900 dark:text-white break-words capitalize">
-                              {displayData.st_cadastro.replace('_', ' ')}
+                              {displayData.st_cadastro ? displayData.st_cadastro.replace(/_/g, ' ') : 'Não informado'}
                             </div>
                           </div>
                         </div>

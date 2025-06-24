@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen } from 'lucide-react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -21,33 +21,73 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 
-export interface ViewMotorista {
-  motorista_id?: number;
-  nome_motorista?: string;
-  cpf?: string;
-  dt_nascimento?: string;
-  genero?: string;
-  telefone?: string | number | null;
-  email?: string | null;
-  funcao?: string;
-  origem_usuario?: string;
-  st_cadastro?: string;
-  autorizacao_lgpd?: string;
-  company_id?: number;
-  data_cadastro?: string;
-  cliente_id?: number | null;
+// Função auxiliar para converter ViewMotorista para Motorista
+const toMotorista = (viewMotorista: ViewMotorista): Motorista => {
+  // Converter telefone para número se for string
+  const telefone = typeof viewMotorista.telefone === 'string' 
+    ? parseInt(viewMotorista.telefone, 10) || null 
+    : viewMotorista.telefone;
+
+  return {
+    ...viewMotorista,
+    nome: viewMotorista.nome || '',
+    dt_nascimento: viewMotorista.dt_nascimento || '',
+    telefone,
+    // Garantir que os campos obrigatórios tenham valores padrão
+    genero: viewMotorista.genero || '',
+    funcao: viewMotorista.funcao || '',
+    origem_usuario: viewMotorista.origem_usuario || '',
+    st_cadastro: viewMotorista.st_cadastro || '',
+    autorizacao_lgpd: viewMotorista.autorizacao_lgpd || '',
+  } as Motorista;
+};
+
+// Interface para representar os dados da view do motorista
+// Mantemos separado do tipo Motorista para evitar conflitos com campos opcionais
+interface ViewMotoristaBase {
+  motorista_id: number;
+  nome_motorista: string;
+  cpf: string;
+  dt_nascimento?: string; // Torna opcional para compatibilidade
+  genero: string;
+  telefone: string | number | null;
+  email: string | null;
+  funcao: string;
+  origem_usuario: string;
+  st_cadastro: string;
+  autorizacao_lgpd: string;
+  company_id: number;
+  data_cadastro: string;
+  cliente_id: number | null;
   conversation_id?: string;
-  ativo?: boolean;
-  nr_end?: number | null;
-  ds_complemento_end?: string | null;
-  st_end?: boolean | null;
-  id_end_motorista?: number | null;
-  logradouro?: string | null;
-  nr_cep?: string | null;
-  nome_bairro?: string | null;
-  nome_cidade?: string | null;
-  nome_estado?: string | null;
-  sigla_estado?: string | null;
+  ativo: boolean;
+  nr_end: number | null;
+  ds_complemento_end: string | null;
+  st_end: boolean | null;
+  id_end_motorista: number | null;
+  logradouro: string | null;
+  nr_cep: string | null;
+  nome_bairro: string | null;
+  nome_cidade: string | null;
+  nome_estado: string | null;
+  sigla_estado: string | null;
+}
+
+// Adicionamos campos opcionais para compatibilidade com o formulário
+export interface ViewMotorista extends Omit<ViewMotoristaBase, 'nome_motorista'> {
+  // Garantimos que os campos obrigatórios do Motorista estejam presentes
+  motorista_id: number;
+  nome: string; // Mapeado de nome_motorista
+  cpf: string;
+  telefone: string | number | null;
+  email: string | null;
+  company_id: number;
+  data_cadastro: string;
+  cliente_id: number | null;
+  // Adiciona propriedades opcionais para compatibilidade
+  documento_motorista?: any[];
+  veiculo?: any[];
+  endereco?: any;
 }
 
 const MotoristasLista = () => {
@@ -65,17 +105,13 @@ const MotoristasLista = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isBulkActionsModalOpen, setIsBulkActionsModalOpen] = useState(false);
   const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
-  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
-  const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
   const [selectedMotorista, setSelectedMotorista] = useState<ViewMotorista | null>(null);
-  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
-  const [selectAll, setSelectAll] = useState(false);
-  const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
-  const [endereco, setEndereco] = useState<any | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteFilter, setClienteFilter] = useState<string>('');
   const [cidadeFilter, setCidadeFilter] = useState<string>('');
+  const [veiculoFilter, setVeiculoFilter] = useState<string>('');
   const [cidades, setCidades] = useState<string[]>([]);
+  const [veiculos, setVeiculos] = useState<{veiculo_id: number, placa: string}[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -101,11 +137,34 @@ const MotoristasLista = () => {
     startDate: '',
     endDate: '',
   });
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+  const [documento] = useState<DocumentoMotorista | null>(null);
+  const [endereco] = useState<any | null>(null);
+  const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     fetchMotoristas();
     fetchClientes();
+    fetchVeiculos();
   }, [dateFilter, customDateRange]);
+  
+  const fetchVeiculos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .eq('company_id', companyId)
+        .order('placa');
+        
+      if (error) throw error;
+      setVeiculos(data || []);
+    } catch (error) {
+      console.error('Error fetching veiculos:', error);
+      toast.error('Erro ao carregar veículos');
+    }
+  };
 
   useEffect(() => {
     // Close context menu when clicking anywhere
@@ -177,9 +236,8 @@ const MotoristasLista = () => {
       // Extract unique cities from motoristas
       const uniqueCities = new Set<string>();
       data?.forEach(motorista => {
-        const cidade = motorista.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade;
-        if (cidade) {
-          uniqueCities.add(cidade);
+        if (motorista.nome_cidade) {
+          uniqueCities.add(motorista.nome_cidade);
         }
       });
       setCidades(Array.from(uniqueCities).sort());
@@ -211,13 +269,15 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleViewDocument = async (motorista: ViewMotorista) => {
+  const handleViewDocument = async (motorista: ViewMotorista | null) => {
+    if (!motorista) return;
+    
     try {
       setSelectedMotorista(motorista);
-      setIsUnifiedModalOpen(true);
+      setIsDocumentViewerOpen(true);
     } catch (error) {
-      console.error('Error fetching document details:', error);
-      toast.error('Erro ao carregar detalhes do documento');
+      console.error('Error loading document:', error);
+      toast.error('Erro ao carregar documento');
     }
   };
 
@@ -226,14 +286,10 @@ const MotoristasLista = () => {
     setIsDocumentUploadOpen(true);
   };
 
-  const handleEdit = (motorista: ViewMotorista) => {
+  const handleEdit = (motorista: ViewMotorista | null) => {
+    if (!motorista) return;
     setSelectedMotorista(motorista);
     setIsEditModalOpen(true);
-  };
-
-  const handleDelete = (motorista: ViewMotorista) => {
-    setSelectedMotorista(motorista);
-    setIsDeleteModalOpen(true);
   };
 
   const confirmDelete = async () => {
@@ -255,12 +311,12 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleSelectItem = (id: number) => {
+  const handleSelectItem = (motoristaId: number) => {
     const newSelectedItems = new Set(selectedItems);
-    if (selectedItems.has(id)) {
-      newSelectedItems.delete(id);
+    if (newSelectedItems.has(motoristaId)) {
+      newSelectedItems.delete(motoristaId);
     } else {
-      newSelectedItems.add(id);
+      newSelectedItems.add(motoristaId);
     }
     setSelectedItems(newSelectedItems);
     
@@ -272,7 +328,31 @@ const MotoristasLista = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(filteredMotoristas.map(m => m.motorista_id || 0)));
+      setSelectedItems(new Set(
+        motoristas
+          .filter(motorista => {
+            if (!motorista) return false;
+            const searchLower = searchTerm.toLowerCase();
+            const statusMatch = statusFilter ? motorista.st_cadastro === statusFilter : true;
+            const clienteMatch = clienteFilter ? motorista.cliente_id === parseInt(clienteFilter) : true;
+            const cidadeMatch = cidadeFilter ? motorista.nome_cidade === cidadeFilter : true;
+            const ativoMatch = ativoFilter ? 
+              (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false) : 
+              true;
+            
+            return (
+              statusMatch &&
+              clienteMatch &&
+              cidadeMatch &&
+              ativoMatch &&
+              (motorista.nome?.toLowerCase().includes(searchLower) ||
+               motorista.cpf?.includes(searchLower) ||
+               (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
+               motorista.telefone?.toString().includes(searchLower))
+            );
+          })
+          .map(m => m.motorista_id || 0)
+      ));
     }
     setSelectAll(!selectAll);
   };
@@ -302,8 +382,8 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleBulkAction = async (actionType: 'status' | 'client') => {
-    setBulkActionType(actionType);
+  const handleBulkAction = (type: 'status' | 'client') => {
+    setBulkActionType(type);
     setIsBulkActionsModalOpen(true);
   };
 
@@ -317,7 +397,7 @@ const MotoristasLista = () => {
       visible: true,
       x: e.clientX,
       y: e.clientY,
-      motorista,
+      motorista
     });
   };
 
@@ -442,29 +522,51 @@ const MotoristasLista = () => {
     }
   };
 
-  const getMotoristaCity = (motorista: ViewMotorista): string | null => {
-    return motorista.nome_cidade || null;
-  };
-
-  const filteredMotoristas = motoristas.filter(motorista => {
+  const filteredMotoristas = (motoristas || []).filter(motorista => {
+    if (!motorista) return false;
+    
     const searchLower = searchTerm.toLowerCase();
     const statusMatch = statusFilter ? motorista.st_cadastro === statusFilter : true;
-    const clienteMatch = clienteFilter ? motorista.cliente_id === parseInt(clienteFilter) : true;
-    const cidadeMatch = cidadeFilter ? getMotoristaCity(motorista) === cidadeFilter : true;
+    
+    // Lógica para filtro de cliente
+    let clienteMatch = true;
+    if (clienteFilter === 'sem_cliente') {
+      clienteMatch = motorista.cliente_id === null || motorista.cliente_id === undefined;
+    } else if (clienteFilter) {
+      clienteMatch = motorista.cliente_id === parseInt(clienteFilter);
+    }
+    
+    // Lógica para filtro de veículo
+    let veiculoMatch = true;
+    if (veiculoFilter === 'sem_veiculo') {
+      veiculoMatch = !motorista.veiculo || motorista.veiculo.length === 0;
+    } else if (veiculoFilter) {
+      veiculoMatch = !!(motorista.veiculo && motorista.veiculo.some((v: any) => 
+        v.veiculo_id === parseInt(veiculoFilter)
+      ));
+    }
+    
+    const cidadeMatch = cidadeFilter ? motorista.nome_cidade === cidadeFilter : true;
     const ativoMatch = ativoFilter ? 
       (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false) : 
       true;
     
-    return (
-      statusMatch &&
-      clienteMatch &&
-      cidadeMatch &&
-      ativoMatch &&
-      ((motorista.nome_motorista && motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
-       (motorista.cpf && motorista.cpf.includes(searchLower)) ||
-       (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
-       (typeof motorista.telefone === 'number' && motorista.telefone.toString().includes(searchLower)))
-    );
+    try {
+      return (
+        statusMatch &&
+        clienteMatch &&
+        veiculoMatch &&
+        cidadeMatch &&
+        ativoMatch &&
+        (motorista.nome?.toLowerCase().includes(searchLower) ||
+         motorista.cpf?.includes(searchLower) ||
+         (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
+         motorista.telefone?.toString().includes(searchLower))
+      );
+    } catch (error) {
+      console.error('Erro ao filtrar motorista:', error, motorista);
+      return false;
+    }
   });
 
   const {
@@ -614,6 +716,7 @@ const MotoristasLista = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todos os clientes</option>
+              <option value="sem_cliente">Sem cliente</option>
               {clientes.map(cliente => (
                 <option key={cliente.cliente_id} value={cliente.cliente_id}>
                   {cliente.nome}
@@ -625,6 +728,30 @@ const MotoristasLista = () => {
               <circle cx="9" cy="7" r="4"></circle>
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+          
+          <div className="relative">
+            <select
+              value={veiculoFilter}
+              onChange={(e) => setVeiculoFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todos os veículos</option>
+              <option value="sem_veiculo">Sem veículo</option>
+              {veiculos.map(veiculo => (
+                <option key={veiculo.veiculo_id} value={veiculo.veiculo_id}>
+                  {veiculo.placa}
+                </option>
+              ))}
+            </select>
+            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="8" width="20" height="10" rx="2"></rect>
+              <path d="M6 8V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4"></path>
+              <line x1="4" y1="14" x2="4.01" y2="14"></line>
+              <line x1="8" y1="14" x2="8.01" y2="14"></line>
+              <line x1="12" y1="14" x2="12.01" y2="14"></line>
             </svg>
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
@@ -769,7 +896,7 @@ const MotoristasLista = () => {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {motorista.nome_motorista || ''}
+                              {motorista.nome || ''}
                             </div>
                           </div>
                         </div>
@@ -786,7 +913,11 @@ const MotoristasLista = () => {
                           </div>
                           {motorista.telefone && (
                             <button
-                              onClick={() => startChat(motorista.telefone.toString(), motorista.nome_motorista || '')}
+                              onClick={() => {
+                                if (motorista.telefone) {
+                                  startChat(motorista.telefone.toString(), motorista.nome || '');
+                                }
+                              }}
                               className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
                               title="Iniciar chat"
                             >
@@ -808,6 +939,7 @@ const MotoristasLista = () => {
                                      dark:focus:ring-offset-gray-800"
                           >
                             <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              !motorista.st_cadastro ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' :
                               motorista.st_cadastro === 'contratado' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' :
                               motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200' :
                               motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200' :
@@ -816,7 +948,8 @@ const MotoristasLista = () => {
                               motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200' :
                               'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                             }`}>
-                              {motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
+                              {!motorista.st_cadastro ? 'Indefinido' :
+                               motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
                                motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
                             </span>
                             <ChevronDown size={14} className="text-gray-500 dark:text-gray-400" />
@@ -967,7 +1100,7 @@ const MotoristasLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {getMotoristaCity(motorista) || '-'}
+                          {motorista.nome_cidade || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1068,9 +1201,26 @@ const MotoristasLista = () => {
             {
               icon: <MessageCircle size={16} />,
               label: 'Iniciar Chat',
-              onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome_motorista || ''),
+              onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome || ''),
               color: 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300',
               disabled: !contextMenu.motorista!.telefone
+            },
+            // Divisor - usando um item de menu vazio estilizado
+            {
+              icon: <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-1" />,
+              label: '',
+              onClick: () => {},
+              disabled: true
+            },
+            {
+              icon: <Trash2 size={16} />,
+              label: 'Excluir Motorista',
+              onClick: () => {
+                setSelectedMotorista(contextMenu.motorista!);
+                setIsDeleteModalOpen(true);
+              },
+              color: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300',
+              disabled: false
             }
           ]}
         />
@@ -1080,7 +1230,7 @@ const MotoristasLista = () => {
       <UnifiedMotoristaModal
         isOpen={isUnifiedModalOpen}
         onClose={() => setIsUnifiedModalOpen(false)}
-        motorista={selectedMotorista}
+        motorista={selectedMotorista ? toMotorista(selectedMotorista) : undefined}
         onSuccess={fetchMotoristas}
       />
 
@@ -1088,10 +1238,10 @@ const MotoristasLista = () => {
         isOpen={isDocumentViewerOpen}
         onClose={() => setIsDocumentViewerOpen(false)}
         documento={documento}
-        nome={selectedMotorista?.nome_motorista || ''}
-        cpf={selectedMotorista?.cpf}
-        email={selectedMotorista?.email}
-        telefone={selectedMotorista?.telefone?.toString()}
+        nome={selectedMotorista?.nome || ''}
+        cpf={selectedMotorista?.cpf || undefined}
+        email={selectedMotorista?.email || undefined}
+        telefone={selectedMotorista?.telefone?.toString() || undefined}
         dt_nascimento={selectedMotorista?.dt_nascimento}
         endereco={endereco}
         st_cadastro={selectedMotorista?.st_cadastro}
@@ -1101,7 +1251,7 @@ const MotoristasLista = () => {
         isOpen={isDocumentUploadOpen}
         onClose={() => setIsDocumentUploadOpen(false)}
         motorista_id={selectedMotorista?.motorista_id || 0}
-        nome={selectedMotorista?.nome_motorista || ''}
+        nome={selectedMotorista?.nome || ''}
         onUploadSuccess={fetchMotoristas}
       />
 
@@ -1125,9 +1275,9 @@ const MotoristasLista = () => {
         title="Confirmar Exclusão"
         message="Tem certeza que deseja excluir este motorista? Esta ação não pode ser desfeita."
         itemData={selectedMotorista ? [
-          { label: 'Nome', value: selectedMotorista.nome_motorista },
+          { label: 'Nome', value: selectedMotorista.nome },
           { label: 'CPF', value: formatCPF(selectedMotorista.cpf || '') },
-          { label: 'Status', value: selectedMotorista.st_cadastro }
+          { label: 'Status', value: selectedMotorista.st_cadastro ?? '' }
         ] : []}
       />
 

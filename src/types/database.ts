@@ -1,3 +1,21 @@
+export interface EnderecoMotorista {
+  id_end_motorista: number;
+  nr_end: number | null;
+  ds_complemento_end: string | null;
+  st_end: boolean | null;
+  logradouro: string | null;
+  nr_cep: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  estado: string | null;
+  sigla_estado: string | null;
+}
+
+export interface MotoristaWithAddress extends Motorista {
+  endereco?: EnderecoMotorista;
+  veiculo?: Veiculo;
+}
+
 export interface Motorista {
   motorista_id: number;
   cpf: string;
@@ -170,7 +188,7 @@ export interface Cliente {
   telefone: number;
 }
 
-interface Company {
+export interface Company {
   company_id: number;
   nome_company: string;
   cnpj: string;
@@ -192,18 +210,13 @@ export interface Checklist {
   veiculo_id: number;
   company_id?: number;
   motorista?: Motorista;
-  veiculo?: Veiculo;
+  veiculo?: (Veiculo & { documento_veiculo: any[] }) | null;
   acessorios?: any;
   componentes?: any;
   farol?: any;
   fluidos?: any;
   fotos?: any;
-  documento?: DocumentoMotorista | null;
-  nome?: string;
-  endereco?: any;
-  veiculo?: (Veiculo & { documento_veiculo: any[] }) | null;
   documento: DocumentoMotorista | null;
   nome: string;
   endereco: any;
-  veiculo: (Veiculo & { documento_veiculo: any[] }) | null;
 }
