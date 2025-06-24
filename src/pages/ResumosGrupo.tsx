@@ -284,7 +284,7 @@ const ResumosGrupo = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            Sobre Resumos em Grupo
+            Resumos Automáticos para Grupos
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
             Configure resumos automáticos para serem enviados aos seus grupos de WhatsApp. 
@@ -329,11 +329,11 @@ const ResumosGrupo = () => {
             {grupos.map(grupo => (
               <div 
                 key={grupo.id} 
-                className={`bg-gray-800 rounded-lg border ${
+                className={`bg-white dark:bg-gray-800 rounded-lg border ${
                   grupo.ativo 
                     ? 'border-green-200 dark:border-green-800/30' 
                     : 'border-gray-200 dark:border-gray-700'
-                } border-white shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg`}
+                } shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg`}
               >
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
