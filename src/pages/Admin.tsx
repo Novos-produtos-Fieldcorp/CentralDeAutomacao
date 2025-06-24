@@ -12,7 +12,7 @@ interface AccessControl {
   checklist_access: boolean;
   motorista_access: boolean;
   hodometro_acsess: boolean;
-  resumos_access: boolean;
+  resumo_access: boolean;
   st_company: boolean;
 }
 
@@ -78,7 +78,7 @@ const Admin = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('company')
-        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumos_access, st_company')
+        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, st_company')
         .order('company_id', { ascending: true });
 
       if (error) throw error;
@@ -115,7 +115,7 @@ const Admin = () => {
             checklist_access: control.checklist_access,
             motorista_access: control.motorista_access,
             hodometro_acsess: control.hodometro_acsess,
-            resumos_access: control.resumos_access
+            resumo_access: control.resumo_access
           })
           .eq('company_id', control.company_id);
 
@@ -172,7 +172,7 @@ const Admin = () => {
           telefone: companyFormData.telefone.replace(/\D/g, ''),
           st_company: true,
           id_conta_wiseapp: companyFormData.id_conta_wiseapp,
-          resumos_access: false
+          resumo_access: false
         }])
         .select();
 
@@ -377,9 +377,9 @@ const Admin = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <button
-                          onClick={() => handleToggleAccess(index, 'resumos_access')}
+                          onClick={() => handleToggleAccess(index, 'resumo_access')}
                           className={`p-2 rounded-full ${
-                            control.resumos_access
+                            control.resumo_access
                               ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                               : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                           }`}
