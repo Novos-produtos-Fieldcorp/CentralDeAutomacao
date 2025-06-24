@@ -256,6 +256,55 @@ const ResumosGrupo = () => {
       // Adjust for Brasilia timezone (UTC-3)
       const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
       
+      // Try to send data to n8n webhook
+      try {
+        const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/26254d63-b40d-469a-b1d3-62ef2a624d7e';
+        
+        // Generate summary data
+        const summaryData = {
+          group_url: grupo.url_grupo,
+          group_name: grupo.nome_grupo,
+          company_id: companyId,
+          summary: {
+            company_name: "Empresa", // This would be fetched in a real implementation
+            date: new Date().toLocaleDateString('pt-BR', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              timeZone: 'America/Sao_Paulo'
+            }),
+            group_name: grupo.nome_grupo,
+            stats: {
+              motoristas: 0, // These would be fetched in a real implementation
+              agregados: 0,
+              hodometros_today: 0,
+              checklists_today: 0
+            }
+          }
+        };
+        
+        console.log('Sending data to webhook:', JSON.stringify(summaryData, null, 2));
+        
+        // Send the data to the webhook
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(summaryData)
+        });
+        
+        if (!response.ok) {
+          console.error('Webhook response not OK:', response.status, await response.text());
+        } else {
+          console.log('Webhook response:', await response.text());
+        }
+      } catch (webhookError) {
+        console.error('Error sending to webhook:', webhookError);
+        // Continue with database record even if webhook fails
+      }
+      
       // Create a manual summary record directly in the database
       const { error } = await supabase
         .from('envio_resumo')
@@ -291,9 +340,6 @@ const ResumosGrupo = () => {
     try {
       // Parse the ISO date string
       const date = new Date(dateTimeStr);
-      
-      // Adjust for Brasilia timezone (UTC-3)
-      const brasiliaTime = new Date(date.getTime() - (3 * 60 * 60 * 1000));
       
       // Format using Intl.DateTimeFormat for Brasilia timezone
       return new Intl.DateTimeFormat('pt-BR', {
@@ -512,6 +558,7 @@ const ResumosGrupo = () => {
                               <path d="m15 5 4 4"></path>
                             </svg>
                           </button>
+                          
                           <button
                             onClick={() => handleDelete(grupo.id)}
                             className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
