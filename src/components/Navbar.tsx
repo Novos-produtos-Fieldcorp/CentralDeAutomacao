@@ -4,6 +4,7 @@ import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDas
 import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
