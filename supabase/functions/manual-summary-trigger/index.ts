@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
   try {
     // This endpoint allows manual triggering of a summary for a specific group
-    const { group_id } = await req.json();
+    const { group_id, company_id } = await req.json();
     
     if (!group_id) {
       throw new Error('Missing required parameter: group_id');
