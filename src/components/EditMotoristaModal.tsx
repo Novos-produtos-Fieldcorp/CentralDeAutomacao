@@ -221,7 +221,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
           nr_cep: logradouroData?.nr_cep || null,
           bairro: bairroData?.bairro || null,
           cidade: cidadeData?.cidade || null,
-          estado: estadoData?.sigla_estado || null,
+          estado: estadoData?.id_estado?.toString() || null,
           sigla_estado: estadoData?.sigla_estado || null
         };
         

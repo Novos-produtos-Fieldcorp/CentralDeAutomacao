@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Truck, MapPin, PenTool as Tool, FileText, Camera, Loader2, ExternalLink, Upload, Save, ArrowLeft, Users, User, Home, Edit2 } from 'lucide-react';
+import { X, Truck, MapPin, FileText, Camera, Loader2, ExternalLink, Upload, Save, ArrowLeft, Users, User, Home, Edit2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCPF, formatPhone } from '../utils/format';
@@ -19,6 +19,7 @@ interface UnifiedAgregadoModalProps {
 const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: UnifiedAgregadoModalProps) => {
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'helpers'>('details');
   const [loading, setLoading] = useState(true);
+  const [motoristaData, setMotoristaData] = useState<any | null>(null);
   const [endereco, setEndereco] = useState<any | null>(null);
   const [veiculo, setVeiculo] = useState<any | null>(null);
   const [documento, setDocumento] = useState<any | null>(null);
@@ -49,6 +50,16 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
     
     try {
       setLoading(true);
+      
+      // Fetch motorista details first
+      const { data: motoristaDetails, error: motoristaError } = await supabase
+        .from('motorista')
+        .select('*')
+        .eq('motorista_id', motorista.motorista_id)
+        .single();
+      
+      if (motoristaError) throw motoristaError;
+      setMotoristaData(motoristaDetails);
       
       // Fetch address - Fixed column name from motorista_id to id_motorista
       const { data: enderecoData, error: enderecoError } = await supabase
@@ -266,6 +277,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
 
   if (!isOpen) return null;
 
+  // Use motoristaData if available, otherwise fall back to the original motorista prop
+  const displayMotorista = motoristaData || motorista;
+
   return (
     <div className="fixed inset-0 z-50">
       {/* Overlay background */}
@@ -280,9 +294,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
               <div className="flex items-center gap-3">
                 <Truck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {motorista?.nome || 'Detalhes do Agregado'}
+                  {displayMotorista?.nome || 'Detalhes do Agregado'}
                 </h2>
-                <span className="text-sm text-gray-500 dark:text-gray-400">• {motorista?.cpf ? formatCPF(motorista.cpf) : ''}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">• {displayMotorista?.cpf ? formatCPF(displayMotorista.cpf) : ''}</span>
               </div>
               <div className="flex items-center gap-4">
                 <button
@@ -362,32 +376,32 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome</p>
-                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{motorista?.nome}</p>
+                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{displayMotorista?.nome}</p>
                             </div>
                             
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">CPF</p>
-                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{motorista?.cpf ? formatCPF(motorista.cpf) : '-'}</p>
+                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{displayMotorista?.cpf ? formatCPF(displayMotorista.cpf) : '-'}</p>
                             </div>
                             
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Data de Nascimento</p>
-                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{motorista?.dt_nascimento ? motorista.dt_nascimento : '-'}</p>
+                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{displayMotorista?.dt_nascimento ? displayMotorista.dt_nascimento : '-'}</p>
                             </div>
                             
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</p>
-                              <p className="mt-1 text-sm text-gray-900 dark:text-white capitalize">{motorista?.st_cadastro?.replace('_', ' ') || '-'}</p>
+                              <p className="mt-1 text-sm text-gray-900 dark:text-white capitalize">{displayMotorista?.st_cadastro?.replace('_', ' ') || '-'}</p>
                             </div>
                             
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Telefone</p>
-                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{motorista?.telefone ? formatPhone(motorista.telefone.toString()) : 'Não informado'}</p>
+                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{displayMotorista?.telefone ? formatPhone(displayMotorista.telefone.toString()) : 'Não informado'}</p>
                             </div>
                             
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</p>
-                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{motorista?.email || 'Não informado'}</p>
+                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{displayMotorista?.email || 'Não informado'}</p>
                             </div>
                           </div>
                         </div>
@@ -906,7 +920,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       <EditMotoristaModal
         isOpen={isEditMotoristaModalOpen}
         onClose={() => setIsEditMotoristaModalOpen(false)}
-        motorista={motorista}
+        motorista={motoristaData || motorista}
         onUpdate={() => {
           fetchData();
           if (onSuccess) onSuccess();

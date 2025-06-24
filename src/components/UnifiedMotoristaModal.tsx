@@ -17,6 +17,7 @@ interface UnifiedMotoristaModalProps {
 const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: UnifiedMotoristaModalProps) => {
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'helpers'>('details');
   const [loading, setLoading] = useState(true);
+  const [motoristaData, setMotoristaData] = useState<any | null>(null);
   const [endereco, setEndereco] = useState<any | null>(null);
   const [documento, setDocumento] = useState<any | null>(null);
   const [ajudantes, setAjudantes] = useState<any[]>([]);
@@ -43,13 +44,14 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
       setLoading(true);
       
       // Fetch motorista details
-      const { data: motoristaData, error: motoristaError } = await supabase
+      const { data: motoristaDetails, error: motoristaError } = await supabase
         .from('motorista')
         .select('*')
         .eq('motorista_id', motorista.motorista_id)
         .single();
       
       if (motoristaError) throw motoristaError;
+      setMotoristaData(motoristaDetails);
       
       // Fetch address - Fixed column name from motorista_id to id_motorista
       const { data: enderecoData, error: enderecoError } = await supabase
@@ -189,6 +191,9 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
 
   if (!isOpen) return null;
 
+  // Use motoristaData if available, otherwise fall back to the original motorista prop
+  const displayMotorista = motoristaData || motorista;
+
   return (
     <div className="fixed inset-0 z-50">
       {/* Overlay background */}
@@ -203,9 +208,9 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
               <div className="flex items-center gap-3">
                 <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {motorista?.nome || 'Detalhes do Motorista'}
+                  {displayMotorista?.nome || 'Detalhes do Motorista'}
                 </h2>
-                <span className="text-sm text-gray-500 dark:text-gray-400">• {motorista?.cpf ? formatCPF(motorista.cpf) : ''}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">• {displayMotorista?.cpf ? formatCPF(displayMotorista.cpf) : ''}</span>
               </div>
               <div className="flex items-center gap-4">
                 <button
@@ -285,32 +290,32 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome</p>
-                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{motorista?.nome}</p>
+                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{displayMotorista?.nome}</p>
                             </div>
                             
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">CPF</p>
-                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{motorista?.cpf ? formatCPF(motorista.cpf) : '-'}</p>
+                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{displayMotorista?.cpf ? formatCPF(displayMotorista.cpf) : '-'}</p>
                             </div>
                             
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Data de Nascimento</p>
-                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{motorista?.dt_nascimento ? motorista.dt_nascimento : '-'}</p>
+                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{displayMotorista?.dt_nascimento ? displayMotorista.dt_nascimento : '-'}</p>
                             </div>
                             
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</p>
-                              <p className="mt-1 text-sm text-gray-900 dark:text-white capitalize">{motorista?.st_cadastro?.replace('_', ' ') || '-'}</p>
+                              <p className="mt-1 text-sm text-gray-900 dark:text-white capitalize">{displayMotorista?.st_cadastro?.replace('_', ' ') || '-'}</p>
                             </div>
                             
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Telefone</p>
-                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{motorista?.telefone ? formatPhone(motorista.telefone.toString()) : 'Não informado'}</p>
+                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{displayMotorista?.telefone ? formatPhone(displayMotorista.telefone.toString()) : 'Não informado'}</p>
                             </div>
                             
                             <div>
                               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</p>
-                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{motorista?.email || 'Não informado'}</p>
+                              <p className="mt-1 text-sm text-gray-900 dark:text-white">{displayMotorista?.email || 'Não informado'}</p>
                             </div>
                           </div>
                         </div>
@@ -625,7 +630,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
         isOpen={isDocumentUploadModalOpen}
         onClose={() => setIsDocumentUploadModalOpen(false)}
         motorista_id={motorista?.motorista_id}
-        nome={motorista?.nome || ''}
+        nome={displayMotorista?.nome || ''}
         onUploadSuccess={() => {
           fetchMotoristaDetails();
           setIsDocumentUploadModalOpen(false);
@@ -636,7 +641,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
       <EditMotoristaModal
         isOpen={isEditMotoristaModalOpen}
         onClose={() => setIsEditMotoristaModalOpen(false)}
-        motorista={motorista}
+        motorista={motoristaData || motorista}
         onUpdate={() => {
           fetchMotoristaDetails();
           if (onSuccess) onSuccess();
