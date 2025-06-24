@@ -198,12 +198,11 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(id);
       
-      // Call the manual-summary-trigger edge function
+      // Call the manual-summary-trigger edge function without Authorization header
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ group_id: id })
       });
