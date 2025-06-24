@@ -311,8 +311,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
           .insert({
             logradouro: enderecoData.logradouro,
             nr_cep: enderecoData.cep,
-            id_bairro: null, // Será atualizado após criar o bairro
-            complemento: enderecoData.complemento
+            id_bairro: null // Será atualizado após criar o bairro
           })
           .select('id_logradouro')
           .single();
