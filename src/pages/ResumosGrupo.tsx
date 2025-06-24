@@ -260,31 +260,13 @@ const ResumosGrupo = () => {
       try {
         const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/26254d63-b40d-469a-b1d3-62ef2a624d7e';
         
-        // Generate summary data
-        const summaryData = {
-          group_url: grupo.url_grupo,
-          group_name: grupo.nome_grupo,
-          company_id: companyId,
-          summary: {
-            company_name: "Empresa", // This would be fetched in a real implementation
-            date: new Date().toLocaleDateString('pt-BR', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              timeZone: 'America/Sao_Paulo'
-            }),
-            group_name: grupo.nome_grupo,
-            stats: {
-              motoristas: 0, // These would be fetched in a real implementation
-              agregados: 0,
-              hodometros_today: 0,
-              checklists_today: 0
-            }
-          }
+        // Send only the required fields as specified by the webhook
+        const webhookData = {
+          "nome do grupo": grupo.nome_grupo,
+          "URL do grupo": grupo.url_grupo
         };
         
-        console.log('Sending data to webhook:', JSON.stringify(summaryData, null, 2));
+        console.log('Sending data to webhook:', JSON.stringify(webhookData, null, 2));
         
         // Send the data to the webhook
         const response = await fetch(webhookUrl, {
@@ -292,17 +274,20 @@ const ResumosGrupo = () => {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(summaryData)
+          body: JSON.stringify(webhookData)
         });
         
         if (!response.ok) {
-          console.error('Webhook response not OK:', response.status, await response.text());
+          const errorText = await response.text();
+          console.error('Webhook response not OK:', response.status, errorText);
+          throw new Error(`Webhook failed: ${response.status} - ${errorText}`);
         } else {
           console.log('Webhook response:', await response.text());
         }
       } catch (webhookError) {
         console.error('Error sending to webhook:', webhookError);
-        // Continue with database record even if webhook fails
+        // Throw the error to be caught by the outer try-catch
+        throw webhookError;
       }
       
       // Create a manual summary record directly in the database
