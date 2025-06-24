@@ -252,8 +252,8 @@ const ResumosGrupo = () => {
         return;
       }
       
-      // Call the manual-summary-trigger Edge Function with retry mechanism
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
+      // Use the proxy path for development environment
+      const functionUrl = '/supabase-functions/v1/manual-summary-trigger';
       
       const payload = {
         group_id: id,
