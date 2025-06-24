@@ -57,6 +57,9 @@ Deno.serve(async (req) => {
     
     // Send webhook
     const webhookResult = await sendWebhook(grupo, summaryData);
+    
+    // Record the delivery in the database
+    await recordDelivery(grupo.id, grupo.company_id, 'success', 'Resumo enviado com sucesso');
 
     return new Response(
       JSON.stringify({
@@ -75,6 +78,16 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in group summary trigger:', error);
     
+    // If we have a group_id in the request, record the failure
+    try {
+      const { group_id, company_id } = await req.json();
+      if (group_id && company_id) {
+        await recordDelivery(group_id, company_id, 'error', error.message);
+      }
+    } catch (recordError) {
+      console.error('Error recording delivery failure:', recordError);
+    }
+    
     return new Response(
       JSON.stringify({
         success: false,
@@ -87,6 +100,26 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// Function to record delivery in the database
+async function recordDelivery(grupoId: number, companyId: number, status: 'success' | 'error', message: string) {
+  try {
+    const { error } = await supabase
+      .from('envio_resumo')
+      .insert({
+        grupo_id: grupoId,
+        company_id: companyId,
+        status: status,
+        mensagem: message
+      });
+      
+    if (error) {
+      console.error('Error recording delivery:', error);
+    }
+  } catch (error) {
+    console.error('Exception recording delivery:', error);
+  }
+}
 
 // Function to generate summary data for a group
 async function generateSummaryData(grupo: GrupoResumo) {

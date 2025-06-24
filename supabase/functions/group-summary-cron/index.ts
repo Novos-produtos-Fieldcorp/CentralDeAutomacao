@@ -59,6 +59,10 @@ Deno.serve(async (req) => {
           
           // Send webhook
           const webhookResult = await sendWebhook(grupo, summaryData);
+          
+          // Record successful delivery
+          await recordDelivery(grupo.id, grupo.company_id, 'success', 'Resumo enviado com sucesso');
+          
           results.push({
             group_id: grupo.id,
             group_name: grupo.nome_grupo,
@@ -67,6 +71,15 @@ Deno.serve(async (req) => {
           });
         } catch (groupError) {
           console.error(`Error processing group ${grupo.id}:`, groupError);
+          
+          // Record failed delivery
+          await recordDelivery(
+            grupo.id, 
+            grupo.company_id, 
+            'error', 
+            groupError instanceof Error ? groupError.message : 'Unknown error'
+          );
+          
           results.push({
             group_id: grupo.id,
             group_name: grupo.nome_grupo,
@@ -103,6 +116,26 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// Function to record delivery in the database
+async function recordDelivery(grupoId: number, companyId: number, status: 'success' | 'error', message: string) {
+  try {
+    const { error } = await supabase
+      .from('envio_resumo')
+      .insert({
+        grupo_id: grupoId,
+        company_id: companyId,
+        status: status,
+        mensagem: message
+      });
+      
+    if (error) {
+      console.error('Error recording delivery:', error);
+    }
+  } catch (error) {
+    console.error('Exception recording delivery:', error);
+  }
+}
 
 // Function to generate summary data for a group
 async function generateSummaryData(grupo: GrupoResumo) {
