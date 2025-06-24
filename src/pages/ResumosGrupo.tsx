@@ -199,27 +199,39 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(id);
       
-      // Construct the correct URL for the Supabase Edge Function
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
+      // Find the group data
+      const grupo = grupos.find(g => g.id === id);
+      if (!grupo) {
+        toast.error('Grupo não encontrado');
+        return;
+      }
+      
+      // N8N webhook endpoint
+      const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/26254d63-b40d-469a-b1d3-62ef2a624d7e';
+      
+      const payload = {
+        group_id: id,
+        company_id: companyId,
+        nome_grupo: grupo.nome_grupo,
+        url_grupo: grupo.url_grupo,
+        horario: grupo.horario,
+        ativo: grupo.ativo
+      };
       
       const options: RequestInit = {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
-          group_id: id,
-          company_id: companyId 
-        })
+        body: JSON.stringify(payload)
       };
       
-      console.log('Calling edge function:', functionUrl);
-      console.log('Request payload:', { group_id: id, company_id: companyId });
+      console.log('Calling N8N webhook:', webhookUrl);
+      console.log('Request payload:', payload);
       
-      const response = await fetchWithRetry(functionUrl, options);
+      const response = await fetchWithRetry(webhookUrl, options);
       
-      console.log('Edge function response:', response);
+      console.log('N8N webhook response:', response);
       toast.success('Resumo enviado com sucesso');
     } catch (error) {
       console.error('Error sending manual summary:', error);
