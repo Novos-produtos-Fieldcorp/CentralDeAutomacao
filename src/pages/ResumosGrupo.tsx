@@ -251,8 +251,21 @@ const ResumosGrupo = () => {
         return;
       }
       
+      // Check if Supabase environment variables are defined
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('Missing Supabase environment variables:', {
+          VITE_SUPABASE_URL: !!supabaseUrl,
+          VITE_SUPABASE_ANON_KEY: !!supabaseAnonKey
+        });
+        toast.error('Configuração do Supabase não encontrada. Verifique as variáveis de ambiente.');
+        return;
+      }
+      
       // Call the manual-summary-trigger Edge Function
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
+      const functionUrl = `${supabaseUrl}/functions/v1/manual-summary-trigger`;
       
       const payload = {
         group_id: id,
@@ -263,7 +276,7 @@ const ResumosGrupo = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${supabaseAnonKey}`
         },
         body: JSON.stringify(payload)
       });
