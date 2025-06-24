@@ -252,84 +252,41 @@ const ResumosGrupo = () => {
         return;
       }
       
-      // Use the direct Supabase URL for the edge function
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const functionUrl = `${supabaseUrl}/functions/v1/manual-summary-trigger`;
+      // Call the manual-summary-trigger Edge Function
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
       
       const payload = {
         group_id: id,
         company_id: companyId
       };
       
-      let lastError: Error | null = null;
-      const maxRetries = 3;
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify(payload)
+      });
       
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          console.log(`Attempt ${attempt}/${maxRetries} to send manual summary`);
-          
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
-          
-          const response = await fetch(functionUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-            },
-            body: JSON.stringify(payload),
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
-          }
-          
-          const result = await response.json();
-          
-          if (result.success) {
-            toast.success('Resumo enviado com sucesso');
-            // Refresh history after sending a manual summary
-            fetchHistorico();
-            return; // Success, exit the retry loop
-          } else {
-            throw new Error(result.error || 'Erro desconhecido');
-          }
-          
-        } catch (error) {
-          lastError = error instanceof Error ? error : new Error(String(error));
-          console.error(`Attempt ${attempt} failed:`, lastError.message);
-          
-          // If this is not the last attempt, wait before retrying
-          if (attempt < maxRetries) {
-            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
-            console.log(`Retrying in ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
-        }
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erro ao enviar resumo: ${response.status} - ${errorText}`);
       }
       
-      // If all retries failed, throw the last error
-      throw lastError || new Error('Falha após múltiplas tentativas');
+      toast.success('Resumo enviado com sucesso');
       
+      // Refresh history after sending a manual summary
+      fetchHistorico();
     } catch (error) {
       console.error('Error sending manual summary:', error);
       
       // Provide more specific error messages
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          toast.error('Timeout: O envio demorou muito para responder. Tente novamente.');
-        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        if (error.message.includes('Failed to fetch')) {
           toast.error('Erro de conexão. Verifique sua internet e tente novamente.');
         } else if (error.message.includes('401') || error.message.includes('403')) {
           toast.error('Erro de autenticação. Faça login novamente.');
-        } else if (error.message.includes('404')) {
-          toast.error('Função não encontrada. Verifique se a função está implantada no Supabase.');
-        } else if (error.message.includes('500')) {
-          toast.error('Erro interno do servidor. Tente novamente em alguns minutos.');
         } else {
           toast.error(`Erro ao enviar resumo: ${error.message}`);
         }
@@ -395,7 +352,7 @@ const ResumosGrupo = () => {
             Resumos Automáticos para Grupos
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Configure grupos para receber resumos automáticos dos dados da empresa
+            
           </p>
         </div>
 
