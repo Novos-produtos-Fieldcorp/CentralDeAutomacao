@@ -252,32 +252,28 @@ const ResumosGrupo = () => {
         return;
       }
       
-      // N8N webhook endpoint
-      const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/26254d63-b40d-469a-b1d3-62ef2a624d7e';
+      // Call the manual-summary-trigger Edge Function
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
       
       const payload = {
         group_id: id,
-        company_id: companyId,
-        nome_grupo: grupo.nome_grupo,
-        url_grupo: grupo.url_grupo,
-        horario: grupo.horario,
-        ativo: grupo.ativo
+        company_id: companyId
       };
       
-      const options: RequestInit = {
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify(payload)
-      };
+      });
       
-      console.log('Calling N8N webhook:', webhookUrl);
-      console.log('Request payload:', payload);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erro ao enviar resumo: ${response.status} - ${errorText}`);
+      }
       
-      const response = await fetchWithRetry(webhookUrl, options);
-      
-      console.log('N8N webhook response:', response);
       toast.success('Resumo enviado com sucesso');
       
       // Refresh history after sending a manual summary
@@ -324,7 +320,7 @@ const ResumosGrupo = () => {
 
   const filteredEnvios = envios.filter(envio => 
     envio.nome_grupo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    envio.mensagem.toLowerCase().includes(searchTerm.toLowerCase())
+    envio.mensagem?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
