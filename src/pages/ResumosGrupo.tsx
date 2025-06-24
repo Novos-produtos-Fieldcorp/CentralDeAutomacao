@@ -250,7 +250,7 @@ const ResumosGrupo = () => {
         </button>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             Sobre Resumos em Grupo
@@ -298,7 +298,7 @@ const ResumosGrupo = () => {
             {grupos.map(grupo => (
               <div 
                 key={grupo.id} 
-                className={`bg-white dark:bg-gray-800 rounded-lg border ${
+                className={`bg-gray-800 rounded-lg ${
                   grupo.ativo 
                     ? 'border-green-200 dark:border-green-800/30' 
                     : 'border-gray-200 dark:border-gray-700'
