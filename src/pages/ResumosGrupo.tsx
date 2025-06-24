@@ -251,12 +251,18 @@ const ResumosGrupo = () => {
         return;
       }
       
+      // Get current date and time in Brasilia timezone
+      const now = new Date();
+      // Adjust for Brasilia timezone (UTC-3)
+      const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+      
       // Create a manual summary record directly in the database
       const { error } = await supabase
         .from('envio_resumo')
         .insert({
           grupo_id: id,
           company_id: companyId,
+          data_envio: brasiliaTime.toISOString(),
           status: 'success',
           mensagem: 'Resumo enviado manualmente'
         });
@@ -283,14 +289,21 @@ const ResumosGrupo = () => {
 
   const formatDateTime = (dateTimeStr: string) => {
     try {
+      // Parse the ISO date string
       const date = new Date(dateTimeStr);
-      return date.toLocaleString('pt-BR', {
+      
+      // Adjust for Brasilia timezone (UTC-3)
+      const brasiliaTime = new Date(date.getTime() - (3 * 60 * 60 * 1000));
+      
+      // Format using Intl.DateTimeFormat for Brasilia timezone
+      return new Intl.DateTimeFormat('pt-BR', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
-      });
+        minute: '2-digit',
+        timeZone: 'America/Sao_Paulo'
+      }).format(date);
     } catch (e) {
       return dateTimeStr;
     }
