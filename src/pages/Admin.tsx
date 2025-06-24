@@ -39,6 +39,7 @@ const Admin = () => {
     id_conta_wiseapp: ''
   });
   const [creatingCompany, setCreatingCompany] = useState(false);
+  const [authError, setAuthError] = useState('');
   const navigate = useNavigate();
 
   // The admin password - in a real app, this would be stored securely
@@ -58,8 +59,16 @@ const Admin = () => {
       setIsAuthenticated(true);
       sessionStorage.setItem('adminAuth', 'true');
       fetchAccessControls();
+      setAuthError('');
     } else {
+      setAuthError('Senha incorreta');
       toast.error('Senha incorreta');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleAuthenticate();
     }
   };
 
@@ -217,8 +226,8 @@ const Admin = () => {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAuthenticate()}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  onKeyDown={handleKeyDown}
+                  className={`w-full px-4 py-2 border ${authError ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
                 />
                 <button
                   type="button"
@@ -228,6 +237,9 @@ const Admin = () => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
+              {authError && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{authError}</p>
+              )}
             </div>
             
             <button
