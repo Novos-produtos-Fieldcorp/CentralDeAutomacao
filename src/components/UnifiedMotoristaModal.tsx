@@ -47,7 +47,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
       
       if (motoristaError) throw motoristaError;
       
-      // Fetch address
+      // Fetch address - Fixed column name from motorista_id to id_motorista
       const { data: enderecoData, error: enderecoError } = await supabase
         .from('end_motorista')
         .select(`
@@ -67,7 +67,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
             )
           )
         `)
-        .eq('motorista_id', motorista.motorista_id)
+        .eq('id_motorista', motorista.motorista_id)
         .maybeSingle();
       
       if (enderecoError && enderecoError.code !== 'PGRST116') throw enderecoError;

@@ -44,7 +44,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
     try {
       setLoading(true);
       
-      // Fetch address
+      // Fetch address - Fixed column name from motorista_id to id_motorista
       const { data: enderecoData, error: enderecoError } = await supabase
         .from('end_motorista')
         .select(`
