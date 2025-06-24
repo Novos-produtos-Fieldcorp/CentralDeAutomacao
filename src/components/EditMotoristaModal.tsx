@@ -186,7 +186,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
             )
           )
         `)
-        .eq('motorista_id', motorista.motorista_id)
+        .eq('id_motorista', motorista.motorista_id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
