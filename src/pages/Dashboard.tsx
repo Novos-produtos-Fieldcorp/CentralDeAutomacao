@@ -152,10 +152,9 @@ const Dashboard = () => {
     {
       title: "Resumos em Grupo",
       icon: ClipboardList,
-      link: "",
-      description: "Aguarde! Estamos preparando algo incrível para revolucionar sua gestão de equipe...",
-      enabled: true,
-      isSpecial: true
+      link: "/resumos-grupo",
+      description: "Configure resumos automáticos para seus grupos de WhatsApp",
+      enabled: moduleAccess.resumos
     }
   ];
 

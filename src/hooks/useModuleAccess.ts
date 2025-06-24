@@ -9,6 +9,7 @@ interface ModuleAccess {
   hodometros: boolean;
   veiculos: boolean;
   clientes: boolean;
+  resumos: boolean;
 }
 
 export const useModuleAccess = () => {
@@ -19,7 +20,8 @@ export const useModuleAccess = () => {
     motoristas: true,
     hodometros: true,
     veiculos: true,
-    clientes: true
+    clientes: true,
+    resumos: true
   });
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export const useModuleAccess = () => {
         // Use supabase directly to avoid circular dependency with useCompanyData
         const { data: company, error: companyError } = await supabase
           .from('company')
-          .select('checklist_access, motorista_access, hodometro_acsess')
+          .select('checklist_access, motorista_access, hodometro_acsess, resumo_access')
           .eq('company_id', companyId)
           .maybeSingle();
 
@@ -47,7 +49,8 @@ export const useModuleAccess = () => {
             motoristas: true,
             hodometros: true,
             veiculos: true,
-            clientes: true
+            clientes: true,
+            resumos: true
           });
           return;
         }
@@ -58,7 +61,8 @@ export const useModuleAccess = () => {
             motoristas: company.motorista_access || false,
             hodometros: company.hodometro_acsess || false, // Note the typo in the column name
             veiculos: true, // Always enabled
-            clientes: true  // Always enabled
+            clientes: true,  // Always enabled
+            resumos: company.resumo_access || false
           });
         } else {
           // Default to all modules enabled if company data doesn't exist
@@ -67,7 +71,8 @@ export const useModuleAccess = () => {
             motoristas: true,
             hodometros: true,
             veiculos: true,
-            clientes: true
+            clientes: true,
+            resumos: true
           });
         }
       } catch (error) {
@@ -80,7 +85,8 @@ export const useModuleAccess = () => {
           motoristas: true,
           hodometros: true,
           veiculos: true,
-          clientes: true
+          clientes: true,
+          resumos: true
         });
       } finally {
         setLoading(false);
