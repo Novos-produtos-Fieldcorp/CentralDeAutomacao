@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, Truck, Loader2, MapPin, FilePen, User } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import type { Motorista, DocumentoMotorista, Veiculo, DocumentoVeiculo } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
 import DocumentViewer from '../../components/DocumentViewer';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
@@ -19,7 +18,7 @@ import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
-import AgregadoDetailView from '../../components/AgregadoDetailView';
+import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 
 export interface ViewAgregado {
   motorista_id?: number;
@@ -193,18 +192,13 @@ const AgregadosLista = () => {
       const uniqueVehicleTypes = new Set<string>();
       
       data?.forEach(agregado => {
-        const cidade = agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade;
-        if (cidade) {
-          uniqueCities.add(cidade);
+        if (agregado.nome_cidade) {
+          uniqueCities.add(agregado.nome_cidade);
         }
         
         // Extract vehicle types
-        if (agregado.veiculo && agregado.veiculo.length > 0) {
-          agregado.veiculo.forEach(veiculo => {
-            if (veiculo.tipologia) {
-              uniqueVehicleTypes.add(veiculo.tipologia);
-            }
-          });
+        if (agregado.tipologia) {
+          uniqueVehicleTypes.add(agregado.tipologia);
         }
       });
       
@@ -248,12 +242,14 @@ const AgregadosLista = () => {
     setIsDocumentUploadOpen(true);
   };
 
-  const handleEdit = (agregado: ViewAgregado) => {
+  const handleEdit = (agregado: ViewAgregado | null) => {
+    if (!agregado) return;
     setSelectedAgregado(agregado);
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (agregado: ViewAgregado) => {
+  const handleDelete = (agregado: ViewAgregado | null) => {
+    if (!agregado) return;
     setSelectedAgregado(agregado);
     setIsDeleteModalOpen(true);
   };
@@ -464,37 +460,49 @@ const AgregadosLista = () => {
     }
   };
 
-  const getAgregadoCity = (agregado: ViewAgregado): string | null => {
-    return agregado.end_motorista?.[0]?.logradouro?.bairro?.cidade?.cidade || null;
-  };
-
-  const getVehicleType = (agregado: ViewAgregado): string | null => {
-    return agregado.veiculo && agregado.veiculo.length > 0 ? agregado.veiculo[0].tipologia : null;
-  };
-
-  const filteredAgregados = agregados.filter(agregado => {
+  const filteredAgregados = (agregados || []).filter(agregado => {
+    if (!agregado) return false;
+    
     const searchLower = searchTerm.toLowerCase();
     const statusMatch = statusFilter ? agregado.st_cadastro === statusFilter : true;
-    const clienteMatch = clienteFilter ? agregado.cliente_id === parseInt(clienteFilter) : true;
-    const cidadeMatch = cidadeFilter ? getAgregadoCity(agregado) === cidadeFilter : true;
-    const tipoVeiculoMatch = tipoVeiculoFilter ? 
-      (agregado.veiculo && agregado.veiculo.some(v => v.tipologia === tipoVeiculoFilter)) : true;
-    const ativoMatch = ativoFilter === '' ? true : 
-                      ativoFilter === 'active' ? agregado.ativo === true : 
-                      ativoFilter === 'inactive' ? agregado.ativo === false : true;
     
-    return (
-      statusMatch &&
-      clienteMatch &&
-      cidadeMatch &&
-      tipoVeiculoMatch &&
-      ativoMatch &&
-      ((agregado.nome_motorista && agregado.nome_motorista.toLowerCase().includes(searchLower)) ||
-       (agregado.cpf && agregado.cpf.includes(searchLower)) ||
-       (typeof agregado.email === 'string' && agregado.email.toLowerCase().includes(searchLower)) ||
-       (typeof agregado.telefone === 'number' && agregado.telefone.toString().includes(searchLower)) ||
-       (agregado.veiculo && agregado.veiculo[0]?.placa && agregado.veiculo[0].placa.toLowerCase().includes(searchLower)))
-    );
+    // Lógica para filtro de cliente
+    let clienteMatch = true;
+    if (clienteFilter === 'sem_cliente') {
+      clienteMatch = agregado.cliente_id === null || agregado.cliente_id === undefined;
+    } else if (clienteFilter) {
+      clienteMatch = agregado.cliente_id === parseInt(clienteFilter);
+    }
+    
+    // Lógica para filtro de veículo
+    let veiculoMatch = true;
+    if (tipoVeiculoFilter === 'sem_veiculo') {
+      veiculoMatch = !agregado.veiculo_id;
+    } else if (tipoVeiculoFilter) {
+      veiculoMatch = agregado.tipologia === tipoVeiculoFilter;
+    }
+    
+    const cidadeMatch = cidadeFilter ? agregado.nome_cidade === cidadeFilter : true;
+    const ativoMatch = ativoFilter === '' ? true : 
+      (ativoFilter === 'true' ? agregado.ativo === true : agregado.ativo === false);
+    
+    try {
+      return (
+        statusMatch &&
+        clienteMatch &&
+        veiculoMatch &&
+        cidadeMatch &&
+        ativoMatch &&
+        ((agregado.nome_motorista?.toLowerCase().includes(searchLower)) ||
+         (agregado.cpf?.includes(searchLower)) ||
+         (typeof agregado.email === 'string' && agregado.email.toLowerCase().includes(searchLower)) ||
+         (agregado.telefone?.toString().includes(searchLower)) ||
+         (agregado.placa?.toLowerCase().includes(searchLower)))
+      );
+    } catch (error) {
+      console.error('Erro ao filtrar agregado:', error, agregado);
+      return false;
+    }
   });
 
   const {
@@ -641,6 +649,7 @@ const AgregadosLista = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todos os clientes</option>
+              <option value="sem_cliente">Sem cliente</option>
               {clientes.map(cliente => (
                 <option key={cliente.cliente_id} value={cliente.cliente_id}>
                   {cliente.nome}
@@ -680,6 +689,7 @@ const AgregadosLista = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
               <option value="">Todos os tipos de veículo</option>
+              <option value="sem_veiculo">Sem veículo</option>
               {tiposVeiculo.map((tipo, index) => (
                 <option key={index} value={tipo}>
                   {tipo}
@@ -785,15 +795,16 @@ const AgregadosLista = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedData.map((agregado) => (
+                  {paginatedData.map((agregado, index) => (
                     <tr 
-                      key={agregado.motorista_id || Math.random()} 
+                      key={`agregado-${agregado.motorista_id || 'new'}-${index}`} 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                         selectedItems.has(agregado.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
@@ -964,7 +975,7 @@ const AgregadosLista = () => {
                                      dark:focus:ring-offset-gray-800 text-left w-full"
                           >
                             <span className="truncate max-w-[150px]">
-                              {agregado.cliente?.nome || 'Sem cliente'}
+                              {agregado.cliente_id ? clientes.find(c => c.cliente_id === agregado.cliente_id)?.nome || 'Cliente não encontrado' : 'Sem cliente'}
                             </span>
                             <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
                           </button>
@@ -1012,18 +1023,19 @@ const AgregadosLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {agregado.veiculo && agregado.veiculo[0] ? (
-                            <span className="uppercase">{agregado.veiculo[0].placa || ''}</span>
+                          {agregado.nome_cidade || 'Não informada'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {agregado.placa ? (
+                            <span className="uppercase">{agregado.placa}</span>
                           ) : (
                             'Não informado'
                           )}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {agregado.veiculo && agregado.veiculo[0] ? (
-                            `${agregado.veiculo[0].tipologia || ''}`
-                          ) : (
-                            ''
-                          )}
+                          {agregado.tipologia || ''}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1133,13 +1145,14 @@ const AgregadosLista = () => {
       )}
 
       {/* Modals */}
-      <AgregadoDetailView
+      <UnifiedAgregadoModal
         isOpen={isDetailViewOpen}
         onClose={() => setIsDetailViewOpen(false)}
-        agregado={selectedAgregado}
-        documento={selectedAgregado?.documento_motorista?.[0] || null}
-        veiculo={selectedAgregado?.veiculo?.[0] || null}
-        endereco={selectedAgregado?.endereco}
+        motorista={selectedAgregado}
+        onSuccess={() => {
+          setIsDetailViewOpen(false);
+          // Add any success callback logic here if needed
+        }}
       />
 
       <DocumentViewer

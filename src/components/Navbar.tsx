@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
@@ -15,11 +15,11 @@ interface NavbarProps {
 const Navbar = () => {
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
-  const { loading, moduleAccess } = useModuleAccess();
+  const [, setIsManuallyExpanded] = useState(false);
+  const { moduleAccess } = useModuleAccess();
   const { companyId } = useAuth();
   const [companyName, setCompanyName] = useState('');
-  const { query } = useCompanyData();
+  const {} = useCompanyData();
   const [showCompanyTooltip, setShowCompanyTooltip] = useState(false);
 
   const fetchCompanyName = useCallback(async () => {
@@ -105,7 +105,7 @@ const Navbar = () => {
   return (
     <nav 
       className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 shadow-lg z-50
-                  transition-all duration-500 ease navbar-container
+                  transition-all duration-500 ease navbar-container theme-transition
                   ${isExpanded ? 'w-64' : 'w-20'}`}
     >
       <div className="flex flex-col h-full overflow-y-auto smooth-scroll">
