@@ -92,7 +92,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
 
       setEndereco(enderecoData);
       
-      // Fetch ajudantes if they exist
+      // Fetch ajudantes if they exist - Fixed column name from id_motorista to motorista_id
       const { data: ajudantesData, error: ajudantesError } = await supabase
         .from('documento_ajudante')
         .select(`
@@ -115,7 +115,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
             )
           )
         `)
-        .eq('id_motorista', motorista.motorista_id);
+        .eq('motorista_id', motorista.motorista_id);
         
       if (ajudantesError && ajudantesError.code !== 'PGRST116') {
         throw ajudantesError;
