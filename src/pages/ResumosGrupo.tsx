@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Plus, Trash2, Clock, Link2, Users, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search } from 'lucide-react';
+import { Users, Plus, Trash2, Clock, Link2, Send, Loader2, AlertTriangle, CheckCircle2, History, FileText, Calendar, Search } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -392,7 +392,7 @@ const ResumosGrupo = () => {
               </div>
             ) : grupos.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-                <ClipboardList className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   Nenhum grupo configurado
                 </h3>
@@ -436,7 +436,7 @@ const ResumosGrupo = () => {
                               ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' 
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                           }`}>
-                            <ClipboardList className="w-5 h-5" />
+                            <Users className="w-5 h-5" />
                           </div>
                           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                             {grupo.nome_grupo}
@@ -730,7 +730,11 @@ const ResumosGrupo = () => {
                     </>
                   ) : (
                     <>
-                      <Save className="w-4 h-4" />
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                      </svg>
                       Salvar
                     </>
                   )}
