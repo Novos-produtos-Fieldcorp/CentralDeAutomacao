@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, User, MapPin, FileText, Camera, Loader2, ExternalLink, Upload, Save, ArrowLeft, Users } from 'lucide-react';
+import { X, User, MapPin, FileText, Camera, Loader2, ExternalLink, Upload, Save, ArrowLeft, Users, Edit2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCPF, formatPhone } from '../utils/format';
 import DocumentUploadModal from './DocumentUploadModal';
+import EditMotoristaModal from './EditMotoristaModal';
+import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 
 interface UnifiedMotoristaModalProps {
   isOpen: boolean;
@@ -19,6 +21,8 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
   const [documento, setDocumento] = useState<any | null>(null);
   const [ajudantes, setAjudantes] = useState<any[]>([]);
   const [isDocumentUploadModalOpen, setIsDocumentUploadModalOpen] = useState(false);
+  const [isEditMotoristaModalOpen, setIsEditMotoristaModalOpen] = useState(false);
+  const [isDocumentFormOpen, setIsDocumentFormOpen] = useState(false);
   const [uploading, setUploading] = useState<{cnh: boolean, comprovante: boolean}>({
     cnh: false,
     comprovante: false
@@ -264,10 +268,19 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                       <div className="space-y-6">
                         {/* Personal Information */}
                         <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <User className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-                            Informações Pessoais
-                          </h3>
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                              <User className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                              Informações Pessoais
+                            </h3>
+                            <button
+                              onClick={() => setIsEditMotoristaModalOpen(true)}
+                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                              <Edit2 className="w-4 h-4 mr-1" />
+                              Editar
+                            </button>
+                          </div>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -365,13 +378,13 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                       <div className="space-y-6">
                         <div className="flex justify-end">
                           <button
-                            onClick={() => setIsDocumentUploadModalOpen(true)}
+                            onClick={() => setIsDocumentFormOpen(true)}
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
                                      transition-colors flex items-center gap-2"
                           >
-                            <Upload className="w-5 h-5" />
-                            Gerenciar Documentos
+                            <Edit2 className="w-5 h-5" />
+                            Editar Documentos
                           </button>
                         </div>
                         
@@ -616,6 +629,30 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
         onUploadSuccess={() => {
           fetchMotoristaDetails();
           setIsDocumentUploadModalOpen(false);
+        }}
+      />
+
+      {/* Edit Motorista Modal */}
+      <EditMotoristaModal
+        isOpen={isEditMotoristaModalOpen}
+        onClose={() => setIsEditMotoristaModalOpen(false)}
+        motorista={motorista}
+        onUpdate={() => {
+          fetchMotoristaDetails();
+          if (onSuccess) onSuccess();
+          setIsEditMotoristaModalOpen(false);
+        }}
+      />
+
+      {/* Document Form Modal */}
+      <DocumentoMotoristaForm
+        isOpen={isDocumentFormOpen}
+        onClose={() => setIsDocumentFormOpen(false)}
+        motorista_id={motorista?.motorista_id}
+        onSuccess={() => {
+          fetchMotoristaDetails();
+          if (onSuccess) onSuccess();
+          setIsDocumentFormOpen(false);
         }}
       />
     </div>
