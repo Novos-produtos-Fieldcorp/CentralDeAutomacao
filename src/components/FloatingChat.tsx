@@ -899,26 +899,44 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     try {
       const textData = newMessage.trim();
       if (textData) {
+        // Adiciona mensagem localmente antes da resposta da API
+        const tempMessage: Message = {
+          id: Date.now(),
+          content: textData,
+          created_at: new Date().toISOString(),
+          message_type: 'outgoing',
+          content_type: 'text',
+          status: 'sending',
+          sender: {
+            type: 'user',
+            name: 'Você',
+            phone_number: undefined
+          }
+        };
+        setActiveConversation(prev => prev ? { ...prev, messages: [...prev.messages, tempMessage] } : prev);
+        setMessages(prev => [...prev, tempMessage]);
+        setNewMessage('');
+        if (inputRef.current) {
+          inputRef.current.value = '';
+        }
+
         const response = await api.post(`/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`, {
           content: textData,
           message_type: 'outgoing'
         });
 
         if (response.data) {
-          const updatedConversation: Conversation = {
-            ...activeConversation,
-            messages: [...activeConversation.messages, response.data],
-            lastMessage: {
-              content: response.data.content,
-              created_at: response.data.created_at
-            }
-          };
-          setActiveConversation(updatedConversation);
-          setMessages(updatedConversation.messages);
-          setNewMessage('');
-          if (inputRef.current) {
-            inputRef.current.value = '';
-          }
+          // Substitui a mensagem temporária pela real
+          setActiveConversation(prev => {
+            if (!prev) return null;
+            const msgs = prev.messages.map(msg =>
+              msg.id === tempMessage.id ? response.data : msg
+            );
+            return { ...prev, messages: msgs };
+          });
+          setMessages(prev => prev.map(msg =>
+            msg.id === tempMessage.id ? response.data : msg
+          ));
         }
       }
     } catch (error) {
@@ -1313,8 +1331,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       new Date(message.created_at).toDateString() !== 
       new Date(activeConversation!.messages[index - 1].created_at).toDateString();
 
-    const isOutgoing = message.message_type === 'outgoing';
-    const isAgent = message.sender?.type === 'agent_bot';
+    // Mensagens do contato (usuário externo) ficam à esquerda, atendente/bot à direita
+    // Considera que o contato é identificado pelo phone_number igual ao contact.phone_number
+    const isContact = message.sender?.phone_number && contact?.phone_number && message.sender.phone_number === contact.phone_number;
+    const isAgentOrBot = !isContact;
 
     return (
       <div key={message.id} className="space-y-2">
@@ -1328,10 +1348,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
         <div
           className={`flex items-start gap-2 ${
-            isOutgoing ? 'justify-end' : 'justify-start'
+            isContact ? 'justify-start' : 'justify-end'
           }`}
         >
-          {!isOutgoing && (
+          {isContact && (
             <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
               {message.sender?.avatar_url || message.sender?.thumbnail ? (
                 <img 
@@ -1340,17 +1360,15 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                message.sender?.name?.[0]?.toUpperCase() || 'A'
+                message.sender?.name?.[0]?.toUpperCase() || 'C'
               )}
             </div>
           )}
           <div
             className={`max-w-[80%] rounded-lg p-3 ${
-              isOutgoing
-                ? 'bg-blue-500 text-white ml-auto'
-                : isAgent
-                ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                : 'bg-green-100 dark:bg-green-900 text-gray-900 dark:text-white'
+              isContact
+                ? 'bg-green-100 dark:bg-green-900 text-gray-900 dark:text-white'
+                : 'bg-blue-500 text-white ml-auto'
             }`}
           >
             {message.content_type === 'image' ? (
@@ -1384,20 +1402,20 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             )}
             <div className="flex items-center justify-between mt-1">
               <span className={`text-xs ${
-                isOutgoing
-                  ? 'text-blue-100' 
-                  : 'text-gray-500 dark:text-gray-400'
+                isContact
+                  ? 'text-gray-500 dark:text-gray-400'
+                  : 'text-blue-100'
               }`}>
                 {formatTime(message.created_at)}
               </span>
-              {!isOutgoing && (
+              {isContact && (
                 <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                   {message.sender?.name}
                 </span>
               )}
             </div>
           </div>
-          {isOutgoing && (
+          {isAgentOrBot && (
             <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
               {message.sender?.avatar_url || message.sender?.thumbnail ? (
                 <img 
@@ -1406,7 +1424,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                message.sender?.name?.[0]?.toUpperCase() || 'U'
+                message.sender?.name?.[0]?.toUpperCase() || 'A'
               )}
             </div>
           )}
