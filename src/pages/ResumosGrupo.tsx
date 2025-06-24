@@ -252,8 +252,9 @@ const ResumosGrupo = () => {
         return;
       }
       
-      // Use the proxy path for development environment
-      const functionUrl = '/supabase-functions/v1/manual-summary-trigger';
+      // Use the direct Supabase URL for the edge function
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const functionUrl = `${supabaseUrl}/functions/v1/manual-summary-trigger`;
       
       const payload = {
         group_id: id,
@@ -325,6 +326,8 @@ const ResumosGrupo = () => {
           toast.error('Erro de conexão. Verifique sua internet e tente novamente.');
         } else if (error.message.includes('401') || error.message.includes('403')) {
           toast.error('Erro de autenticação. Faça login novamente.');
+        } else if (error.message.includes('404')) {
+          toast.error('Função não encontrada. Verifique se a função está implantada no Supabase.');
         } else if (error.message.includes('500')) {
           toast.error('Erro interno do servidor. Tente novamente em alguns minutos.');
         } else {
