@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Trash2, Clock, Link2, Send, Loader2, AlertTriangle, CheckCircle2, History, FileText, Calendar, Search } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, Clock, Link2, Users, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -392,7 +392,7 @@ const ResumosGrupo = () => {
               </div>
             ) : grupos.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-                <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   Nenhum grupo configurado
                 </h3>
