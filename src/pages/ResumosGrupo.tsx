@@ -199,13 +199,6 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(id);
       
-      // Get the current session to get the access token
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('Usuário não autenticado');
-      }
-      
       // Construct the correct URL for the Supabase Edge Function
       const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
       
@@ -213,7 +206,7 @@ const ResumosGrupo = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify({ 
           group_id: id,
