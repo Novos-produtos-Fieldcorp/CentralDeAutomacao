@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
   try {
     // This endpoint allows manual triggering of a summary for a specific group
-    const { group_id } = await req.json();
+    const { group_id, company_id } = await req.json();
     
     if (!group_id) {
       throw new Error('Missing required parameter: group_id');
@@ -55,8 +55,8 @@ Deno.serve(async (req) => {
     // Generate summary data for this group
     const summaryData = await generateSummaryData(grupo);
     
-    // Send webhook
-    const webhookResult = await sendWebhook(grupo, summaryData);
+    // Send webhook with retry mechanism
+    const webhookResult = await sendWebhookWithRetry(grupo, summaryData);
     
     // Record the delivery in the database
     await recordDelivery(grupo.id, grupo.company_id, 'success', 'Resumo enviado com sucesso');
@@ -67,7 +67,8 @@ Deno.serve(async (req) => {
         message: `Summary sent successfully for group ${grupo.nome_grupo}`,
         data: {
           group_id: grupo.id,
-          group_name: grupo.nome_grupo
+          group_name: grupo.nome_grupo,
+          webhook_response: webhookResult
         }
       }),
       {
@@ -80,7 +81,8 @@ Deno.serve(async (req) => {
     
     // If we have a group_id in the request, record the failure
     try {
-      const { group_id, company_id } = await req.json();
+      const requestBody = await req.clone().json();
+      const { group_id, company_id } = requestBody;
       if (group_id && company_id) {
         await recordDelivery(group_id, company_id, 'error', error.message);
       }
@@ -202,8 +204,8 @@ async function generateSummaryData(grupo: GrupoResumo) {
   };
 }
 
-// Function to send webhook with summary data
-async function sendWebhook(grupo: GrupoResumo, summaryData: any) {
+// Function to send webhook with retry mechanism
+async function sendWebhookWithRetry(grupo: GrupoResumo, summaryData: any, maxRetries = 3) {
   const payload = {
     group_url: grupo.url_grupo,
     group_name: grupo.nome_grupo,
@@ -211,18 +213,54 @@ async function sendWebhook(grupo: GrupoResumo, summaryData: any) {
     summary: summaryData
   };
 
-  const response = await fetch(WEBHOOK_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  });
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Webhook attempt ${attempt}/${maxRetries} for group ${grupo.nome_grupo}`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Supabase-Edge-Function/1.0'
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to send webhook: ${response.status} - ${errorText}`);
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log(`Webhook sent successfully for group ${grupo.nome_grupo}`);
+      return result;
+      
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`Webhook attempt ${attempt} failed:`, lastError.message);
+      
+      // If this is not the last attempt, wait before retrying
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Exponential backoff, max 10s
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
   }
 
-  return await response.json();
+  // If all retries failed, throw the last error
+  throw new Error(`Failed to send webhook after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
+}
+
+// Legacy function for backward compatibility
+async function sendWebhook(grupo: GrupoResumo, summaryData: any) {
+  return sendWebhookWithRetry(grupo, summaryData);
 }
