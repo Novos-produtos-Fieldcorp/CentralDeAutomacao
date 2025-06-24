@@ -260,37 +260,122 @@ const ResumosGrupo = () => {
       try {
         const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/26254d63-b40d-469a-b1d3-62ef2a624d7e';
         
-        // Send only the required fields as specified by the webhook
-        const webhookData = {
-          "nome do grupo": grupo.nome_grupo,
-          "URL do grupo": grupo.url_grupo
-        };
-        
-        console.log('Sending data to webhook:', JSON.stringify(webhookData, null, 2));
-        
-        // Send the data to the webhook
-        const response = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
+        // Try different payload formats to see which one works
+        const webhookPayloads = [
+          // Format 1: Original format
+          {
+            "nome do grupo": grupo.nome_grupo,
+            "URL do grupo": grupo.url_grupo
           },
-          body: JSON.stringify(webhookData)
-        });
+          // Format 2: Simple format
+          {
+            "nome_grupo": grupo.nome_grupo,
+            "url_grupo": grupo.url_grupo
+          },
+          // Format 3: With additional fields
+          {
+            "nome_grupo": grupo.nome_grupo,
+            "url_grupo": grupo.url_grupo,
+            "horario": grupo.horario,
+            "company_id": companyId
+          }
+        ];
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Webhook response not OK:', response.status, errorText);
-          throw new Error(`Webhook failed: ${response.status} - ${errorText}`);
-        } else {
-          console.log('Webhook response:', await response.text());
+        let webhookSuccess = false;
+        let lastError = null;
+        
+        // Try each payload format
+        for (let i = 0; i < webhookPayloads.length; i++) {
+          const webhookData = webhookPayloads[i];
+          
+          console.log(`Tentativa ${i + 1} - Enviando dados para webhook:`, JSON.stringify(webhookData, null, 2));
+          
+          try {
+            // Send the data to the webhook with timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+            
+            const response = await fetch(webhookUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify(webhookData),
+              signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+              const responseText = await response.text();
+              console.log(`Tentativa ${i + 1} - Webhook response:`, responseText);
+              webhookSuccess = true;
+              break;
+            } else {
+              const errorText = await response.text();
+              console.error(`Tentativa ${i + 1} - Webhook response not OK:`, response.status, errorText);
+              lastError = new Error(`Webhook failed: ${response.status} - ${errorText}`);
+              
+              // If it's a 500 error, continue trying other formats
+              if (response.status !== 500) {
+                throw lastError;
+              }
+            }
+          } catch (fetchError: any) {
+            console.error(`Tentativa ${i + 1} - Error sending to webhook:`, fetchError);
+            lastError = fetchError;
+            
+            // If it's a timeout or network error, don't try other formats
+            if (fetchError.name === 'AbortError' || fetchError.message.includes('fetch')) {
+              break;
+            }
+          }
         }
-      } catch (webhookError) {
+        
+        if (!webhookSuccess && lastError) {
+          throw lastError;
+        }
+        
+        if (!webhookSuccess) {
+          throw new Error('Todas as tentativas de envio falharam');
+        }
+        
+      } catch (webhookError: any) {
         console.error('Error sending to webhook:', webhookError);
-        // Throw the error to be caught by the outer try-catch
-        throw webhookError;
+        
+        // Create a failed summary record
+        const { error: dbError } = await supabase
+          .from('envio_resumo')
+          .insert({
+            grupo_id: id,
+            company_id: companyId,
+            data_envio: brasiliaTime.toISOString(),
+            status: 'error',
+            mensagem: `Erro no webhook: ${webhookError.message || 'Erro desconhecido'}`
+          });
+          
+        if (dbError) {
+          console.error('Error saving failed summary:', dbError);
+        }
+        
+        // Show specific error message based on error type
+        if (webhookError.name === 'AbortError') {
+          toast.error('Timeout: O webhook demorou muito para responder');
+        } else if (webhookError.message.includes('500')) {
+          toast.error('Erro no servidor do webhook. Verifique se o workflow n8n está ativo e configurado corretamente.');
+        } else if (webhookError.message.includes('fetch')) {
+          toast.error('Erro de conexão com o webhook. Verifique sua conexão com a internet.');
+        } else {
+          toast.error(`Erro ao enviar resumo: ${webhookError.message}`);
+        }
+        
+        // Refresh history to show the failed attempt
+        fetchHistorico();
+        return;
       }
       
-      // Create a manual summary record directly in the database
+      // Create a successful summary record
       const { error } = await supabase
         .from('envio_resumo')
         .insert({
@@ -298,19 +383,21 @@ const ResumosGrupo = () => {
           company_id: companyId,
           data_envio: brasiliaTime.toISOString(),
           status: 'success',
-          mensagem: 'Resumo enviado manualmente'
+          mensagem: 'Resumo enviado manualmente com sucesso'
         });
         
-      if (error) throw error;
-      
-      // Show success message
-      toast.success('Resumo enviado com sucesso');
+      if (error) {
+        console.error('Error saving successful summary:', error);
+        toast.error('Resumo enviado, mas erro ao salvar no histórico');
+      } else {
+        toast.success('Resumo enviado com sucesso');
+      }
       
       // Refresh history
       fetchHistorico();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending manual summary:', error);
-      toast.error('Erro ao enviar resumo manual');
+      toast.error(`Erro inesperado: ${error.message}`);
     } finally {
       setSendingManualSummary(null);
     }
