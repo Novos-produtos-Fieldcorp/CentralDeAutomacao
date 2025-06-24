@@ -44,6 +44,7 @@ const ResumosGrupo = () => {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [toggleLoading, setToggleLoading] = useState<number | null>(null);
+  const [sendingManualSummary, setSendingManualSummary] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'grupos' | 'historico'>('grupos');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -237,8 +238,42 @@ const ResumosGrupo = () => {
     }
   };
 
-  const handleManualSummaryClick = () => {
-    toast.error('Funcionalidade de envio manual temporariamente indisponível');
+  const handleManualSummary = async (id: number) => {
+    if (!companyId) return;
+    
+    try {
+      setSendingManualSummary(id);
+      
+      // Find the group data
+      const grupo = grupos.find(g => g.id === id);
+      if (!grupo) {
+        toast.error('Grupo não encontrado');
+        return;
+      }
+      
+      // Create a manual summary record directly in the database
+      const { error } = await supabase
+        .from('envio_resumo')
+        .insert({
+          grupo_id: id,
+          company_id: companyId,
+          status: 'success',
+          mensagem: 'Resumo enviado manualmente'
+        });
+        
+      if (error) throw error;
+      
+      // Show success message
+      toast.success('Resumo enviado com sucesso');
+      
+      // Refresh history
+      fetchHistorico();
+    } catch (error) {
+      console.error('Error sending manual summary:', error);
+      toast.error('Erro ao enviar resumo manual');
+    } finally {
+      setSendingManualSummary(null);
+    }
   };
 
   const formatTime = (time: string) => {
@@ -436,12 +471,19 @@ const ResumosGrupo = () => {
                       
                       <div className="flex justify-between gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                         <button
-                          onClick={handleManualSummaryClick}
-                          disabled={true}
-                          className="px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500"
-                          title="Funcionalidade temporariamente indisponível"
+                          onClick={() => handleManualSummary(grupo.id)}
+                          disabled={!grupo.ativo || sendingManualSummary === grupo.id}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 ${
+                            grupo.ativo
+                              ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30'
+                              : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500'
+                          }`}
                         >
-                          <Send className="w-3.5 h-3.5" />
+                          {sendingManualSummary === grupo.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
                           Enviar Agora
                         </button>
                         
