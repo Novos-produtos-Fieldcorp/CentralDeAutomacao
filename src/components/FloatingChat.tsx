@@ -557,11 +557,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
       if (initialPhone) {
         let formattedNumber = formatPhoneNumber(initialPhone);
-        // Garante que o número comece com "+" para formato internacional
         if (!formattedNumber.startsWith('+')) {
           formattedNumber = `+${formattedNumber}`;
         }
-        // Validação simples: número deve ter pelo menos 12 dígitos (ex: +55 + 10 dígitos)
         const digitsOnly = formattedNumber.replace(/\D/g, '');
         if (digitsOnly.length < 12) {
           setError('Número de telefone inválido. Por favor, insira o número completo com DDD e código do país.');
@@ -570,7 +568,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
         let contactToUse: Contact | undefined;
         try {
-          // Buscar usando apenas os dígitos, sem o +
           const searchResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/search`, {
             params: {
               q: digitsOnly
@@ -607,52 +604,84 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
         if (contactToUse) {
           try {
-            const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
-              inbox_id: inboxId.toString(),
-              contact_id: contactToUse.id.toString()
-            });
-
-            if (!newConversationResponse.data) {
-              throw new Error('Não foi possível criar a conversa');
+            // Buscar conversas existentes para o contato e inbox
+            const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contactToUse.id}/conversations`);
+            let existingConversation = null;
+            if (conversationsResponse.data?.payload) {
+              existingConversation = conversationsResponse.data.payload.find((conv: any) => conv.inbox_id === inboxId);
             }
-
-            const conversationToUse = newConversationResponse.data;
-
-            // Configurar o chat com o contato e conversa
-            setContact({
-              id: contactToUse.id,
-              name: contactToUse.name || initialName || formattedNumber,
-              phone_number: contactToUse.phone_number,
-              thumbnail: contactToUse.thumbnail || '',
-              source_id: contactToUse.contact_inboxes?.[0]?.source_id || '',
-              availability_status: contactToUse.availability_status || 'offline',
-              last_seen_at: contactToUse.last_seen_at || '',
-              email: contactToUse.email,
-              custom_attributes: contactToUse.custom_attributes || {}
-            });
-
-            setActiveConversation({
-              id: conversationToUse.id,
-              messages: []
-            });
-
-            await loadConversationMessages(conversationToUse.id);
-
-            setStorageConversations(prev => {
-              const filteredConversations = prev.filter(conv => conv.user.id !== contactToUse!.id);
-              return [...filteredConversations, {
-                user: {
-                  id: contactToUse!.id,
-                  name: contactToUse!.name,
-                  phone_number: contactToUse!.phone_number,
-                  thumbnail: contactToUse!.thumbnail || ''
-                },
-                conversationId: conversationToUse.id
-              }];
-            });
+            if (existingConversation) {
+              // Se já existe conversa, abrir ela
+              setContact({
+                id: contactToUse.id,
+                name: contactToUse.name || initialName || formattedNumber,
+                phone_number: contactToUse.phone_number,
+                thumbnail: contactToUse.thumbnail || '',
+                source_id: contactToUse.contact_inboxes?.[0]?.source_id || '',
+                availability_status: contactToUse.availability_status || 'offline',
+                last_seen_at: contactToUse.last_seen_at || '',
+                email: contactToUse.email,
+                custom_attributes: contactToUse.custom_attributes || {}
+              });
+              setActiveConversation({
+                id: existingConversation.id,
+                messages: []
+              });
+              await loadConversationMessages(existingConversation.id);
+              setStorageConversations(prev => {
+                const filteredConversations = prev.filter(conv => conv.user.id !== contactToUse!.id);
+                return [...filteredConversations, {
+                  user: {
+                    id: contactToUse!.id,
+                    name: contactToUse!.name,
+                    phone_number: contactToUse!.phone_number,
+                    thumbnail: contactToUse!.thumbnail || ''
+                  },
+                  conversationId: existingConversation.id
+                }];
+              });
+            } else {
+              // Se não existe, criar nova conversa
+              const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
+                inbox_id: inboxId.toString(),
+                contact_id: contactToUse.id.toString()
+              });
+              if (!newConversationResponse.data) {
+                throw new Error('Não foi possível criar a conversa');
+              }
+              const conversationToUse = newConversationResponse.data;
+              setContact({
+                id: contactToUse.id,
+                name: contactToUse.name || initialName || formattedNumber,
+                phone_number: contactToUse.phone_number,
+                thumbnail: contactToUse.thumbnail || '',
+                source_id: contactToUse.contact_inboxes?.[0]?.source_id || '',
+                availability_status: contactToUse.availability_status || 'offline',
+                last_seen_at: contactToUse.last_seen_at || '',
+                email: contactToUse.email,
+                custom_attributes: contactToUse.custom_attributes || {}
+              });
+              setActiveConversation({
+                id: conversationToUse.id,
+                messages: []
+              });
+              await loadConversationMessages(conversationToUse.id);
+              setStorageConversations(prev => {
+                const filteredConversations = prev.filter(conv => conv.user.id !== contactToUse!.id);
+                return [...filteredConversations, {
+                  user: {
+                    id: contactToUse!.id,
+                    name: contactToUse!.name,
+                    phone_number: contactToUse!.phone_number,
+                    thumbnail: contactToUse!.thumbnail || ''
+                  },
+                  conversationId: conversationToUse.id
+                }];
+              });
+            }
           } catch (error) {
-            console.error('Erro ao criar conversa:', error);
-            throw new Error('Falha ao criar nova conversa');
+            console.error('Erro ao criar ou buscar conversa:', error);
+            throw new Error('Falha ao criar ou buscar conversa');
           }
         }
       }
