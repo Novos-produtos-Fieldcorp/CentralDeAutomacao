@@ -55,13 +55,16 @@ Deno.serve(async (req) => {
       for (const grupo of grupos) {
         try {
           // Generate summary data for this group
-          const summaryData = await generateSummaryData(grupo);
+          const summaryMessage = await generateSummaryData(grupo);
           
           // Send webhook with retry mechanism
-          const webhookResult = await sendWebhookWithRetry(grupo, summaryData);
+          const webhookResult = await sendWebhookWithRetry(grupo, summaryMessage);
           
-          // Record successful delivery
-          await recordDelivery(grupo.id, grupo.company_id, 'success', 'Resumo enviado com sucesso');
+          // Record delivery based on webhook response
+          const deliveryStatus = webhookResult.success ? 'success' : 'error';
+          const deliveryMessage = webhookResult.message || (webhookResult.success ? 'Resumo enviado com sucesso' : 'Falha no envio do resumo');
+          
+          await recordDelivery(grupo.id, grupo.company_id, deliveryStatus, deliveryMessage);
           
           results.push({
             group_id: grupo.id,
@@ -204,27 +207,25 @@ async function generateSummaryData(grupo: GrupoResumo) {
     throw new Error(`Error fetching checklists count: ${checklistsError.message}`);
   }
 
-  // Return formatted summary data
-  return {
-    company_name: company?.nome_company || 'Empresa',
-    date: formattedDate,
-    group_name: grupo.nome_grupo,
-    stats: {
-      motoristas: motoristasCount || 0,
-      agregados: agregadosCount || 0,
-      hodometros_today: hodometrosCount || 0,
-      checklists_today: checklistsCount || 0
-    }
-  };
+  // Format summary message
+  const summaryMessage = `📊 *Resumo Diário - ${company?.nome_company || 'Empresa'}*\n\n` +
+    `📅 Data: ${formattedDate}\n` +
+    `👥 Grupo: ${grupo.nome_grupo}\n\n` +
+    `📈 *Estatísticas do Dia:*\n` +
+    `🚛 Motoristas: ${motoristasCount || 0}\n` +
+    `🤝 Agregados: ${agregadosCount || 0}\n` +
+    `📏 Hodômetros registrados hoje: ${hodometrosCount || 0}\n` +
+    `✅ Checklists realizados hoje: ${checklistsCount || 0}`;
+
+  return summaryMessage;
 }
 
 // Function to send webhook with retry mechanism
-async function sendWebhookWithRetry(grupo: GrupoResumo, summaryData: any, maxRetries = 3) {
+async function sendWebhookWithRetry(grupo: GrupoResumo, summaryMessage: string, maxRetries = 3) {
   const payload = {
-    group_url: grupo.url_grupo,
-    group_name: grupo.nome_grupo,
-    company_id: grupo.company_id,
-    summary: summaryData
+    url: grupo.url_grupo,
+    nome: grupo.nome_grupo,
+    message: summaryMessage
   };
 
   let lastError: Error | null = null;
@@ -272,9 +273,4 @@ async function sendWebhookWithRetry(grupo: GrupoResumo, summaryData: any, maxRet
 
   // If all retries failed, throw the last error
   throw new Error(`Failed to send webhook after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
-}
-
-// Legacy function for backward compatibility
-async function sendWebhook(grupo: GrupoResumo, summaryData: any) {
-  return sendWebhookWithRetry(grupo, summaryData);
 }

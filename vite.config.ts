@@ -30,9 +30,9 @@ export default defineConfig({
         }
       },
       "/supabase-functions": {
-        target: process.env.VITE_SUPABASE_URL || "http://localhost:54321",
+        target: process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co",
         changeOrigin: true,
-        secure: false,
+        secure: true,
         rewrite: (path) => path.replace(/^\/supabase-functions/, "/functions"),
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {

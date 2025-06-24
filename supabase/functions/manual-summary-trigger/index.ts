@@ -58,8 +58,11 @@ Deno.serve(async (req) => {
     // Send webhook with retry mechanism
     const webhookResult = await sendWebhookWithRetry(grupo, summaryData);
     
-    // Record the delivery in the database
-    await recordDelivery(grupo.id, grupo.company_id, 'success', 'Resumo enviado com sucesso');
+    // Record the delivery in the database based on webhook response
+    const deliveryStatus = webhookResult.success ? 'success' : 'error';
+    const deliveryMessage = webhookResult.message || (webhookResult.success ? 'Resumo enviado com sucesso' : 'Falha no envio do resumo');
+    
+    await recordDelivery(grupo.id, grupo.company_id, deliveryStatus, deliveryMessage);
 
     return new Response(
       JSON.stringify({
@@ -84,7 +87,7 @@ Deno.serve(async (req) => {
       const requestBody = await req.clone().json();
       const { group_id, company_id } = requestBody;
       if (group_id && company_id) {
-        await recordDelivery(group_id, company_id, 'error', error.message);
+        await recordDelivery(group_id, company_id, 'error', error instanceof Error ? error.message : 'Unknown error');
       }
     } catch (recordError) {
       console.error('Error recording delivery failure:', recordError);
@@ -93,7 +96,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -190,27 +193,25 @@ async function generateSummaryData(grupo: GrupoResumo) {
     throw new Error(`Error fetching checklists count: ${checklistsError.message}`);
   }
 
-  // Return formatted summary data
-  return {
-    company_name: company?.nome_company || 'Empresa',
-    date: formattedDate,
-    group_name: grupo.nome_grupo,
-    stats: {
-      motoristas: motoristasCount || 0,
-      agregados: agregadosCount || 0,
-      hodometros_today: hodometrosCount || 0,
-      checklists_today: checklistsCount || 0
-    }
-  };
+  // Format summary message
+  const summaryMessage = `📊 *Resumo Diário - ${company?.nome_company || 'Empresa'}*\n\n` +
+    `📅 Data: ${formattedDate}\n` +
+    `👥 Grupo: ${grupo.nome_grupo}\n\n` +
+    `📈 *Estatísticas do Dia:*\n` +
+    `🚛 Motoristas: ${motoristasCount || 0}\n` +
+    `🤝 Agregados: ${agregadosCount || 0}\n` +
+    `📏 Hodômetros registrados hoje: ${hodometrosCount || 0}\n` +
+    `✅ Checklists realizados hoje: ${checklistsCount || 0}`;
+
+  return summaryMessage;
 }
 
 // Function to send webhook with retry mechanism
-async function sendWebhookWithRetry(grupo: GrupoResumo, summaryData: any, maxRetries = 3) {
+async function sendWebhookWithRetry(grupo: GrupoResumo, summaryMessage: string, maxRetries = 3) {
   const payload = {
-    group_url: grupo.url_grupo,
-    group_name: grupo.nome_grupo,
-    company_id: grupo.company_id,
-    summary: summaryData
+    url: grupo.url_grupo,
+    nome: grupo.nome_grupo,
+    message: summaryMessage
   };
 
   let lastError: Error | null = null;
@@ -258,9 +259,4 @@ async function sendWebhookWithRetry(grupo: GrupoResumo, summaryData: any, maxRet
 
   // If all retries failed, throw the last error
   throw new Error(`Failed to send webhook after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
-}
-
-// Legacy function for backward compatibility
-async function sendWebhook(grupo: GrupoResumo, summaryData: any) {
-  return sendWebhookWithRetry(grupo, summaryData);
 }
