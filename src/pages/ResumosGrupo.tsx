@@ -3,7 +3,6 @@ import { ClipboardList, Plus, Trash2, Clock, Link2, Users, Save, Loader2, AlertT
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { fetchWithRetry } from '../lib/fetchWithRetry';
 import toast from 'react-hot-toast';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { Navigate } from 'react-router-dom';
