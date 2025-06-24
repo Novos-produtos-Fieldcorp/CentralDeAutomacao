@@ -895,8 +895,8 @@ const MotoristasLista = () => {
                             <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {motorista.nome || ''}
+                            <div className="text-sm font-medium text-gray-900 dark:text-white" data-component-name="MotoristasLista">
+                              {motorista.nome_motorista || motorista.nome || ''}
                             </div>
                           </div>
                         </div>

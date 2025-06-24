@@ -1097,8 +1097,8 @@ const Contratados = () => {
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
                                      dark:focus:ring-offset-gray-800 text-left w-full"
                           >
-                            <span className="truncate max-w-[150px]">
-                              {motorista.cliente_id ? `Cliente ${motorista.cliente_id}` : 'Sem cliente'}
+                            <span className="truncate max-w-[150px]" data-component-name="Contratados">
+                              {motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
                             </span>
                             <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
                           </button>
