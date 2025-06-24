@@ -33,11 +33,16 @@ Deno.serve(async (req) => {
       throw new Error('Missing required parameter: group_id');
     }
 
+    if (!company_id) {
+      throw new Error('Missing required parameter: company_id');
+    }
+
     // Get group data
     const { data: grupo, error } = await supabase
       .from('grupo_resumo')
       .select('*')
       .eq('id', group_id)
+      .eq('company_id', company_id)
       .single();
 
     if (error) {
