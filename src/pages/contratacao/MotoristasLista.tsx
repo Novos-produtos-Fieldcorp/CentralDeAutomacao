@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import type { Motorista, DocumentoMotorista } from '../../types/database';
+import type { Motorista, MotoristaWithAddress, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
 import DocumentViewer from '../../components/DocumentViewer';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
@@ -22,24 +22,48 @@ import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 
 // Função auxiliar para converter ViewMotorista para Motorista
-const toMotorista = (viewMotorista: ViewMotorista): Motorista => {
-  // Converter telefone para número se for string
+const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
+  // Convert telefone to number if it's a string
   const telefone = typeof viewMotorista.telefone === 'string' 
-    ? parseInt(viewMotorista.telefone, 10) || null 
-    : viewMotorista.telefone;
+    ? parseInt(viewMotorista.telefone, 10) || 0 
+    : viewMotorista.telefone || 0;
 
-  return {
-    ...viewMotorista,
-    nome: viewMotorista.nome || '',
+  const motorista: Motorista = {
+    motorista_id: viewMotorista.motorista_id,
+    cpf: viewMotorista.cpf || '',
     dt_nascimento: viewMotorista.dt_nascimento || '',
-    telefone,
-    // Garantir que os campos obrigatórios tenham valores padrão
     genero: viewMotorista.genero || '',
-    funcao: viewMotorista.funcao || '',
+    telefone: telefone,
+    email: viewMotorista.email || null,
+    funcao: 'Motorista',
+    nome: viewMotorista.nome || '',
     origem_usuario: viewMotorista.origem_usuario || '',
     st_cadastro: viewMotorista.st_cadastro || '',
     autorizacao_lgpd: viewMotorista.autorizacao_lgpd || '',
-  } as Motorista;
+    company_id: viewMotorista.company_id || 0,
+    data_cadastro: viewMotorista.data_cadastro || '',
+    cliente_id: viewMotorista.cliente_id || 0,
+    ativo: viewMotorista.ativo || false
+  };
+
+  const motoristaWithAddress: MotoristaWithAddress = {
+    ...motorista,
+    endereco: viewMotorista.endereco ? {
+      id_end_motorista: viewMotorista.id_end_motorista || 0,
+      nr_end: viewMotorista.nr_end,
+      ds_complemento_end: viewMotorista.ds_complemento_end,
+      st_end: viewMotorista.st_end,
+      logradouro: viewMotorista.logradouro,
+      nr_cep: viewMotorista.nr_cep,
+      bairro: viewMotorista.nome_bairro,
+      cidade: viewMotorista.nome_cidade,
+      estado: viewMotorista.nome_estado,
+      sigla_estado: viewMotorista.sigla_estado
+    } : undefined,
+    veiculo: viewMotorista.veiculo ? viewMotorista.veiculo[0] : undefined
+  };
+
+  return motoristaWithAddress;
 };
 
 // Interface para representar os dados da view do motorista
@@ -896,7 +920,7 @@ const MotoristasLista = () => {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white" data-component-name="MotoristasLista">
-                              {motorista.nome_motorista || motorista.nome || ''}
+                              {motorista.nome || ''}
                             </div>
                           </div>
                         </div>
@@ -1111,9 +1135,12 @@ const MotoristasLista = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-3">
                           <button
-                            onClick={() => handleViewDocument(motorista)}
+                            onClick={() => {
+                              setSelectedMotorista(motorista);
+                              setIsUnifiedModalOpen(true);
+                            }}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                            title="Visualizar"
+                            title="Editar Motorista"
                           >
                             <FilePen size={18} />
                           </button>

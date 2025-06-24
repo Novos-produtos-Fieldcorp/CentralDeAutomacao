@@ -35,13 +35,16 @@
 
   body {
     @apply bg-background text-text-primary;
-    transition: background-color 500ms ease, color 500ms ease;
   }
-
-  * {
-    transition-property: background-color, border-color, color, fill, stroke, opacity, transform;
-    transition-duration: 500ms;
-    transition-timing-function: ease;
+  
+  /* Aplica transição apenas para mudanças de tema */
+  .theme-transition {
+    transition: background-color 100ms ease-out, color 100ms ease-out;
+  }
+  
+  /* Transição para cards */
+  .card-transition {
+    transition: background-color 100ms ease-out, border-color 100ms ease-out;
   }
 
   /* Custom Scrollbar Styles */

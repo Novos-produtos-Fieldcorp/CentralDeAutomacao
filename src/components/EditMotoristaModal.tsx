@@ -128,7 +128,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
       const { data, error } = await supabase
         .from('veiculo')
         .select('*')
-        .eq('motorista_id', motorista_id)
+        .eq('id_motorista', motorista_id)
         .eq('status_veiculo', true)
         .limit(1)
         .maybeSingle();
@@ -366,7 +366,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
           ...formData,
           telefone: formData.telefone ? Number(formData.telefone.replace(/\D/g, '')) : null
         })
-        .eq('motorista_id', motorista.motorista_id);
+        .eq('id_motorista', motorista.motorista_id);
 
       if (motoristaError) throw motoristaError;
 

@@ -54,7 +54,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
       const { data: documentoData, error: documentoError } = await supabase
         .from('documento_motorista')
         .select('*')
-        .eq('motorista_id', motorista.motorista_id)
+        .eq('id_motorista', motorista.motorista_id)
         .maybeSingle();
 
       if (documentoError && documentoError.code !== 'PGRST116') {
@@ -115,7 +115,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
             )
           )
         `)
-        .eq('motorista_id', motorista.motorista_id);
+        .eq('id_motorista', motorista.motorista_id);
         
       if (ajudantesError && ajudantesError.code !== 'PGRST116') {
         throw ajudantesError;
@@ -127,7 +127,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
       const { data: updatedMotorista, error: motoristaError } = await supabase
         .from('motorista')
         .select('*')
-        .eq('motorista_id', motorista.motorista_id)
+        .eq('id_motorista', motorista.motorista_id)
         .single();
         
       if (motoristaError) {
