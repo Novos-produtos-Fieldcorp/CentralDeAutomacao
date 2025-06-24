@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Plus, Trash2, Clock, Link2, Users, Save, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ClipboardList, Plus, Trash2, Clock, Link2, Users, Save, Loader2, AlertTriangle, CheckCircle2, Send } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -33,6 +33,7 @@ const ResumosGrupo = () => {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [toggleLoading, setToggleLoading] = useState<number | null>(null);
+  const [sendingManualSummary, setSendingManualSummary] = useState<number | null>(null);
 
   useEffect(() => {
     fetchGrupos();
@@ -191,6 +192,36 @@ const ResumosGrupo = () => {
     }
   };
 
+  const sendManualSummary = async (id: number) => {
+    if (!companyId) return;
+    
+    try {
+      setSendingManualSummary(id);
+      
+      // Call the manual-summary-trigger edge function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ group_id: id })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao enviar resumo');
+      }
+      
+      toast.success('Resumo enviado com sucesso');
+    } catch (error) {
+      console.error('Error sending manual summary:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao enviar resumo');
+    } finally {
+      setSendingManualSummary(null);
+    }
+  };
+
   const formatTime = (time: string) => {
     // Format time to display in 24h format (HH:MM)
     return time;
@@ -335,26 +366,45 @@ const ResumosGrupo = () => {
                     </div>
                   </div>
                   
-                  <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex justify-between gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                     <button
-                      onClick={() => handleEdit(grupo)}
-                      className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                               hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                      title="Editar grupo"
+                      onClick={() => sendManualSummary(grupo.id)}
+                      disabled={!grupo.ativo || sendingManualSummary === grupo.id}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 ${
+                        grupo.ativo
+                          ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500'
+                      }`}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                        <path d="m15 5 4 4"></path>
-                      </svg>
+                      {sendingManualSummary === grupo.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5" />
+                      )}
+                      Enviar Agora
                     </button>
-                    <button
-                      onClick={() => handleDelete(grupo.id)}
-                      className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                               hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                      title="Excluir grupo"
-                    >
-                      <Trash2 className="w-[18px] h-[18px]" />
-                    </button>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEdit(grupo)}
+                        className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                        title="Editar grupo"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                          <path d="m15 5 4 4"></path>
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(grupo.id)}
+                        className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        title="Excluir grupo"
+                      >
+                        <Trash2 className="w-[18px] h-[18px]" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
