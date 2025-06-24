@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? (error.message || 'Network error during webhook call or unknown error in Edge Function') : 'Unknown error in Edge Function'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -242,7 +242,7 @@ async function sendWebhookWithRetry(grupo: GrupoResumo, summaryMessage: string, 
 
       const result = await response.json();
       console.log(`Webhook sent successfully for group ${grupo.nome_grupo}`);
-      return result;
+      return { success: true, message: 'Webhook sent successfully', data: result };
       
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
@@ -257,6 +257,7 @@ async function sendWebhookWithRetry(grupo: GrupoResumo, summaryMessage: string, 
     }
   }
 
-  // If all retries failed, throw the last error
-  throw new Error(`Failed to send webhook after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
+  // If all retries failed, return error response with detailed message
+  const errorMessage = `Failed to send webhook after ${maxRetries} attempts: ${lastError?.message || 'Unknown network error'}`;
+  return { success: false, message: errorMessage };
 }
