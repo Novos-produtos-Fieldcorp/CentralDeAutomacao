@@ -18,7 +18,7 @@ import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
-import AgregadoDetailView from '../../components/AgregadoDetailView';
+import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 
 export interface ViewAgregado {
   motorista_id?: number;
@@ -1145,13 +1145,14 @@ const AgregadosLista = () => {
       )}
 
       {/* Modals */}
-      <AgregadoDetailView
+      <UnifiedAgregadoModal
         isOpen={isDetailViewOpen}
         onClose={() => setIsDetailViewOpen(false)}
-        agregado={selectedAgregado}
-        documento={selectedAgregado?.documento_motorista?.[0] || null}
-        veiculo={selectedAgregado?.veiculo?.[0] || null}
-        endereco={selectedAgregado?.endereco}
+        motorista={selectedAgregado}
+        onSuccess={() => {
+          setIsDetailViewOpen(false);
+          // Add any success callback logic here if needed
+        }}
       />
 
       <DocumentViewer
