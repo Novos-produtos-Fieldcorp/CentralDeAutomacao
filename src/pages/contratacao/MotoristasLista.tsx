@@ -133,9 +133,7 @@ const MotoristasLista = () => {
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteFilter, setClienteFilter] = useState<string>('');
   const [cidadeFilter, setCidadeFilter] = useState<string>('');
-  const [veiculoFilter, setVeiculoFilter] = useState<string>('');
   const [cidades, setCidades] = useState<string[]>([]);
-  const [veiculos, setVeiculos] = useState<{veiculo_id: number, placa: string}[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -171,24 +169,7 @@ const MotoristasLista = () => {
   useEffect(() => {
     fetchMotoristas();
     fetchClientes();
-    fetchVeiculos();
   }, [dateFilter, customDateRange]);
-  
-  const fetchVeiculos = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('veiculo')
-        .select('veiculo_id, placa')
-        .eq('company_id', companyId)
-        .order('placa');
-        
-      if (error) throw error;
-      setVeiculos(data || []);
-    } catch (error) {
-      console.error('Error fetching veiculos:', error);
-      toast.error('Erro ao carregar veículos');
-    }
-  };
 
   useEffect(() => {
     // Close context menu when clicking anywhere
@@ -560,16 +541,6 @@ const MotoristasLista = () => {
       clienteMatch = motorista.cliente_id === parseInt(clienteFilter);
     }
     
-    // Lógica para filtro de veículo
-    let veiculoMatch = true;
-    if (veiculoFilter === 'sem_veiculo') {
-      veiculoMatch = !motorista.veiculo || motorista.veiculo.length === 0;
-    } else if (veiculoFilter) {
-      veiculoMatch = !!(motorista.veiculo && motorista.veiculo.some((v: any) => 
-        v.veiculo_id === parseInt(veiculoFilter)
-      ));
-    }
-    
     const cidadeMatch = cidadeFilter ? motorista.nome_cidade === cidadeFilter : true;
     const ativoMatch = ativoFilter ? 
       (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false) : 
@@ -579,7 +550,6 @@ const MotoristasLista = () => {
       return (
         statusMatch &&
         clienteMatch &&
-        veiculoMatch &&
         cidadeMatch &&
         ativoMatch &&
         (motorista.nome?.toLowerCase().includes(searchLower) ||
@@ -756,31 +726,7 @@ const MotoristasLista = () => {
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
           
-          <div className="relative">
-            <select
-              value={veiculoFilter}
-              onChange={(e) => setVeiculoFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-            >
-              <option value="">Todos os veículos</option>
-              <option value="sem_veiculo">Sem veículo</option>
-              {veiculos.map(veiculo => (
-                <option key={veiculo.veiculo_id} value={veiculo.veiculo_id}>
-                  {veiculo.placa}
-                </option>
-              ))}
-            </select>
-            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="8" width="20" height="10" rx="2"></rect>
-              <path d="M6 8V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4"></path>
-              <line x1="4" y1="14" x2="4.01" y2="14"></line>
-              <line x1="8" y1="14" x2="8.01" y2="14"></line>
-              <line x1="12" y1="14" x2="12.01" y2="14"></line>
-            </svg>
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-          </div>
-
-          <div className="relative">
+<div className="relative">
             <select
               value={ativoFilter}
               onChange={(e) => setAtivoFilter(e.target.value)}
@@ -837,7 +783,7 @@ const MotoristasLista = () => {
         </div>
 
         {dateFilter === 'custom' && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Data inicial
