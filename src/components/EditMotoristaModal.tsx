@@ -43,7 +43,17 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     motorista_id: 0
   });
 
-  const [enderecoData, setEnderecoData] = useState({
+  interface EnderecoFormData {
+    cep: string;
+    estado: string;
+    cidade: string;
+    bairro: string;
+    logradouro: string;
+    numero: string;
+    complemento: string;
+  }
+
+  const [enderecoData, setEnderecoData] = useState<EnderecoFormData>({
     cep: '',
     estado: '',
     cidade: '',
@@ -54,32 +64,21 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
   });
 
   const [veiculo, setVeiculo] = useState<Veiculo | null>(null);
-  interface EnderecoLogradouro {
-    id_logradouro: number;
-    logradouro: string;
-    nr_cep: string;
-    bairro?: {
-      id_bairro: number;
-      bairro: string;
-      cidade?: {
-        id_cidade: number;
-        cidade: string;
-        estado?: {
-          id_estado: number;
-          sigla_estado: string;
-        };
-      };
-    };
-  }
-
+  
   interface EnderecoMotorista {
     id_end_motorista: number;
     nr_end: number | null;
     ds_complemento_end: string | null;
-    logradouro: EnderecoLogradouro | null;
+    st_end: boolean | null;
+    logradouro: string | null;
+    nr_cep: string | null;
+    bairro: string | null;
+    cidade: string | null;
+    estado: string | null;
+    sigla_estado: string | null;
   }
 
-  const [endereco, setEndereco] = useState<EnderecoMotorista | null>(null);
+  // Estado para armazenar os dados do endereço formatados para o formulário
 
   useEffect(() => {
     if (isOpen) {
@@ -105,7 +104,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
       }
 
       // Fetch address data
-      fetchEndereco(motorista.motorista_id);
+      fetchEndereco();
     }
   }, [motorista]);
 
@@ -161,30 +160,25 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     }
   };
 
-  const fetchEndereco = async (motorista_id: number) => {
-    if (!motorista_id) {
-      console.error('motorista_id is undefined');
-      return;
-    }
-    
+  const fetchEndereco = async () => {
+    if (!motorista?.motorista_id) return;
+
     try {
       const { data, error } = await supabase
         .from('end_motorista')
         .select(`
-          id_end_motorista,
-          nr_end,
-          ds_complemento_end,
-          logradouro:logradouro_id (
+          *,
+          logradouro:logradouro(
             id_logradouro,
             logradouro,
             nr_cep,
-            bairro:bairro_id (
+            bairro:bairro(
               id_bairro,
               bairro,
-              cidade:cidade_id (
+              cidade:cidade(
                 id_cidade,
                 cidade,
-                estado:estado_id (
+                estado:estado(
                   id_estado,
                   sigla_estado
                 )
@@ -192,50 +186,54 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
             )
           )
         `)
-        .eq('id_motorista', motorista_id)
-        .eq('st_end', true)
-        .limit(1)
-        .maybeSingle();
+        .eq('motorista_id', motorista.motorista_id)
+        .single();
 
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
       if (data) {
-        const enderecoData: EnderecoMotorista = {
+        // Extrai os dados aninhados, lidando com arrays ou objetos
+        const logradouroData = data.logradouro ? 
+          (Array.isArray(data.logradouro) ? data.logradouro[0] : data.logradouro) : 
+          null;
+        
+        const bairroData = logradouroData?.bairro ? 
+          (Array.isArray(logradouroData.bairro) ? logradouroData.bairro[0] : logradouroData.bairro) : 
+          null;
+          
+        const cidadeData = bairroData?.cidade ? 
+          (Array.isArray(bairroData.cidade) ? bairroData.cidade[0] : bairroData.cidade) : 
+          null;
+          
+        const estadoData = cidadeData?.estado ? 
+          (Array.isArray(cidadeData.estado) ? cidadeData.estado[0] : cidadeData.estado) : 
+          null;
+
+        // Cria o objeto de endereço formatado
+        const enderecoFormatado: EnderecoMotorista = {
           id_end_motorista: data.id_end_motorista,
           nr_end: data.nr_end,
           ds_complemento_end: data.ds_complemento_end,
-          logradouro: data.logradouro ? {
-            id_logradouro: data.logradouro.id_logradouro,
-            logradouro: data.logradouro.logradouro,
-            nr_cep: data.logradouro.nr_cep,
-            bairro: data.logradouro.bairro ? {
-              id_bairro: data.logradouro.bairro.id_bairro,
-              bairro: data.logradouro.bairro.bairro,
-              cidade: data.logradouro.bairro.cidade ? {
-                id_cidade: data.logradouro.bairro.cidade.id_cidade,
-                cidade: data.logradouro.bairro.cidade.cidade,
-                estado: data.logradouro.bairro.cidade.estado ? {
-                  id_estado: data.logradouro.bairro.cidade.estado.id_estado,
-                  sigla_estado: data.logradouro.bairro.cidade.estado.sigla_estado
-                } : undefined
-              } : undefined
-            } : undefined
-          } : null
+          st_end: data.st_end || null,
+          logradouro: logradouroData?.logradouro || null,
+          nr_cep: logradouroData?.nr_cep || null,
+          bairro: bairroData?.bairro || null,
+          cidade: cidadeData?.cidade || null,
+          estado: estadoData?.sigla_estado || null,
+          sigla_estado: estadoData?.sigla_estado || null
         };
-
-        setEndereco(enderecoData);
         
-        const logradouro = enderecoData.logradouro;
+        // Atualiza o estado do formulário de endereço
         setEnderecoData({
-          cep: logradouro?.nr_cep || '',
-          estado: logradouro?.bairro?.cidade?.estado?.id_estado?.toString() || '',
-          cidade: logradouro?.bairro?.cidade?.cidade || '',
-          bairro: logradouro?.bairro?.bairro || '',
-          logradouro: logradouro?.logradouro || '',
-          numero: enderecoData.nr_end?.toString() || '',
-          complemento: enderecoData.ds_complemento_end || ''
+          cep: enderecoFormatado.nr_cep || '',
+          estado: enderecoFormatado.estado || '',
+          cidade: enderecoFormatado.cidade || '',
+          bairro: enderecoFormatado.bairro || '',
+          logradouro: enderecoFormatado.logradouro || '',
+          numero: enderecoFormatado.nr_end?.toString() || '',
+          complemento: enderecoFormatado.ds_complemento_end || ''
         });
       }
     } catch (error) {
