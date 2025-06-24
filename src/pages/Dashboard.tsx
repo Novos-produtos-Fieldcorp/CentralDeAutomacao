@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardCheck, FileDown, Gauge, Store, Truck, Users, ClipboardList, Lock } from 'lucide-react';
+import { ClipboardCheck, FileDown, Gauge, Store, Truck, Users, Lock } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import ImportExportModal from '../components/ImportExportModal';
@@ -151,7 +151,7 @@ const Dashboard = () => {
     },
     {
       title: "Resumos em Grupo",
-      icon: ClipboardList,
+      icon: Users,
       link: "/resumos-grupo",
       description: "Configure resumos automáticos para seus grupos de WhatsApp",
       enabled: moduleAccess.resumos
