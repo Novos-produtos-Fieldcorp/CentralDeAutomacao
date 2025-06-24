@@ -43,7 +43,7 @@ const Admin = () => {
   const navigate = useNavigate();
 
   // The admin password - in a real app, this would be stored securely
-  const ADMIN_PASSWORD = 'wiseapp2025';
+  const ADMIN_PASSWORD = 'Wiseapp2025';
 
   useEffect(() => {
     // Check if admin is already authenticated in this session
