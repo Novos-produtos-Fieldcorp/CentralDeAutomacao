@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     const webhookResult = await sendWebhook(grupo, summaryData);
     
     // Record the delivery in the database
-    await recordDelivery(grupo.id, grupo.company_id, 'success', 'Resumo enviado com sucesso');
+    await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso');
 
     return new Response(
       JSON.stringify({
@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
     try {
       const { group_id, company_id } = await req.json();
       if (group_id && company_id) {
-        await recordDelivery(group_id, company_id, 'error', error.message);
+        await recordDelivery(group_id, company_id, false, error.message);
       }
     } catch (recordError) {
       console.error('Error recording delivery failure:', recordError);
@@ -107,13 +107,18 @@ Deno.serve(async (req) => {
 });
 
 // Function to record delivery in the database
-async function recordDelivery(grupoId: number, companyId: number, status: 'success' | 'error', message: string) {
+async function recordDelivery(grupoId: number, companyId: number, status: boolean, message: string) {
   try {
+    // Get current date and time in Brasilia timezone (UTC-3)
+    const now = new Date();
+    const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+    
     const { error } = await supabase
       .from('envio_resumo')
       .insert({
         grupo_id: grupoId,
         company_id: companyId,
+        data_envio: brasiliaTime.toISOString(),
         status: status,
         mensagem: message
       });
@@ -141,7 +146,10 @@ async function generateSummaryData(grupo: GrupoResumo) {
 
   // Get today's date in local format
   const today = new Date();
-  const formattedDate = today.toLocaleDateString('pt-BR', {
+  // Adjust for Brasilia timezone (UTC-3)
+  const brasiliaTime = new Date(today.getTime() - (3 * 60 * 60 * 1000));
+  
+  const formattedDate = brasiliaTime.toLocaleDateString('pt-BR', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -170,8 +178,8 @@ async function generateSummaryData(grupo: GrupoResumo) {
     throw new Error(`Error fetching agregados count: ${agregadosError.message}`);
   }
 
-  // Get today's hodometros count
-  const todayStr = today.toISOString().split('T')[0];
+  // Get today's hodometros count - using Brasilia date
+  const todayStr = brasiliaTime.toISOString().split('T')[0];
   const { count: hodometrosCount, error: hodometrosError } = await supabase
     .from('hodometro')
     .select('*', { count: 'exact', head: true })
@@ -182,7 +190,7 @@ async function generateSummaryData(grupo: GrupoResumo) {
     throw new Error(`Error fetching hodometros count: ${hodometrosError.message}`);
   }
 
-  // Get today's checklists count
+  // Get today's checklists count - using Brasilia date
   const { count: checklistsCount, error: checklistsError } = await supabase
     .from('checklist')
     .select('*', { count: 'exact', head: true })

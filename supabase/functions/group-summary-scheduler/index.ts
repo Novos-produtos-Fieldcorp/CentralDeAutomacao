@@ -59,6 +59,10 @@ Deno.serve(async (req) => {
           
           // Send webhook
           const webhookResult = await sendWebhook(grupo, summaryData);
+          
+          // Record successful delivery
+          await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso');
+          
           results.push({
             group_id: grupo.id,
             group_name: grupo.nome_grupo,
@@ -67,6 +71,15 @@ Deno.serve(async (req) => {
           });
         } catch (groupError) {
           console.error(`Error processing group ${grupo.id}:`, groupError);
+          
+          // Record failed delivery
+          await recordDelivery(
+            grupo.id, 
+            grupo.company_id, 
+            false, 
+            groupError instanceof Error ? groupError.message : 'Unknown error'
+          );
+          
           results.push({
             group_id: grupo.id,
             group_name: grupo.nome_grupo,
@@ -104,6 +117,31 @@ Deno.serve(async (req) => {
   }
 });
 
+// Function to record delivery in the database
+async function recordDelivery(grupoId: number, companyId: number, status: boolean, message: string) {
+  try {
+    // Get current date and time in Brasilia timezone (UTC-3)
+    const now = new Date();
+    const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+    
+    const { error } = await supabase
+      .from('envio_resumo')
+      .insert({
+        grupo_id: grupoId,
+        company_id: companyId,
+        data_envio: brasiliaTime.toISOString(),
+        status: status,
+        mensagem: message
+      });
+      
+    if (error) {
+      console.error('Error recording delivery:', error);
+    }
+  } catch (error) {
+    console.error('Exception recording delivery:', error);
+  }
+}
+
 // Function to generate summary data for a group
 async function generateSummaryData(grupo: GrupoResumo) {
   // Get company data
@@ -117,9 +155,11 @@ async function generateSummaryData(grupo: GrupoResumo) {
     throw new Error(`Error fetching company data: ${companyError.message}`);
   }
 
-  // Get today's date in local format
+  // Get today's date in local format - using Brasilia timezone
   const today = new Date();
-  const formattedDate = today.toLocaleDateString('pt-BR', {
+  const brasiliaTime = new Date(today.getTime() - (3 * 60 * 60 * 1000));
+  
+  const formattedDate = brasiliaTime.toLocaleDateString('pt-BR', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -148,8 +188,8 @@ async function generateSummaryData(grupo: GrupoResumo) {
     throw new Error(`Error fetching agregados count: ${agregadosError.message}`);
   }
 
-  // Get today's hodometros count
-  const todayStr = today.toISOString().split('T')[0];
+  // Get today's hodometros count - using Brasilia date
+  const todayStr = brasiliaTime.toISOString().split('T')[0];
   const { count: hodometrosCount, error: hodometrosError } = await supabase
     .from('hodometro')
     .select('*', { count: 'exact', head: true })
@@ -160,7 +200,7 @@ async function generateSummaryData(grupo: GrupoResumo) {
     throw new Error(`Error fetching hodometros count: ${hodometrosError.message}`);
   }
 
-  // Get today's checklists count
+  // Get today's checklists count - using Brasilia date
   const { count: checklistsCount, error: checklistsError } = await supabase
     .from('checklist')
     .select('*', { count: 'exact', head: true })
