@@ -537,7 +537,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
                                transition-colors flex items-center gap-2"
                     >
-                      <Edit2 className="w-5 h-5" />
+                      <Edit2 className="w-4 h-4" />
                       Editar
                     </button>
                   </div>
