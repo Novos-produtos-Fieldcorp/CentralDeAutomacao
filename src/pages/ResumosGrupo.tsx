@@ -546,7 +546,7 @@ const ResumosGrupo = () => {
                         <div className="space-y-3 mb-6">
                           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                             <Clock className="w-4 h-4 text-gray-400" />
-                            <span>Horário: {formatTime(grupo.horario)}</span>
+                            <span>Horario do envio: {formatTime(grupo.horario)}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                             <Link2 className="w-4 h-4 text-gray-400" />
@@ -772,7 +772,7 @@ const ResumosGrupo = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Horário do Resumo *
+                  Horario do envio *
                 </label>
                 <input
                   type="time"
