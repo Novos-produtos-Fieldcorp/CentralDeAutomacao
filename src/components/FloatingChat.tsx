@@ -127,6 +127,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     }
   });
 
+  console.log('API URL:', import.meta.env.VITE_CHAT_API_URL);
+
   const checkNetworkConnectivity = () => {
     return navigator.onLine;
   };
