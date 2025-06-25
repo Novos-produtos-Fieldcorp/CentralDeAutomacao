@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, User, Phone, MapPin, Camera, Upload, FileText, ExternalLink } from 'lucide-react';
+import { X, Loader2, User, Phone, MapPin, Camera, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCEP } from '../utils/format';
@@ -7,46 +7,15 @@ import { formatCEP } from '../utils/format';
 interface EditAjudanteModalProps {
   isOpen: boolean;
   onClose: () => void;
+  ajudante: any;
   onSuccess: () => void;
-  ajudanteId: number;
 }
 
-interface AjudanteData {
-  nome: string;
-  cpf: string;
-  telefone: string;
-  genero: string;
-  
-  // CNH
-  nr_registro: string;
-  categoria: string;
-  nome_pai: string;
-  nome_mae: string;
-  foto_cnh: string;
-  
-  // RG
-  nr_rg: string;
-  data_emissao: string;
-  orgao_expedidor: string;
-  filiacao: string;
-  foto_rg: string;
-  
-  // Endereço
-  cep: string;
-  estado: string;
-  cidade: string;
-  bairro: string;
-  logradouro: string;
-  numero: string;
-  complemento: string;
-  comprovante_residencia: string;
-}
-
-const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjudanteModalProps) => {
-  // ALL HOOKS MUST BE DECLARED FIRST - NO CONDITIONAL LOGIC BEFORE HOOKS
+const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudanteModalProps) => {
+  // Move all hooks to the top of the component
   const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [loadingCep, setLoadingCep] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
   const [documentType, setDocumentType] = useState<'cnh' | 'rg'>('cnh');
   const [uploading, setUploading] = useState<{cnh: boolean, rg: boolean, comprovante: boolean}>({
@@ -54,9 +23,8 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     rg: false,
     comprovante: false
   });
-  const [activeDocument, setActiveDocument] = useState<string | null>(null);
   
-  const [formData, setFormData] = useState<AjudanteData>({
+  const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
     telefone: '',
@@ -87,23 +55,31 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     comprovante_residencia: ''
   });
 
-  // Check if ajudanteId is valid - but don't return early
-  const isValidAjudanteId = ajudanteId && !isNaN(ajudanteId) && ajudanteId > 0;
+  const [endereco, setEndereco] = useState<any | null>(null);
+  const [cnhData, setCnhData] = useState<any | null>(null);
+  const [rgData, setRgData] = useState<any | null>(null);
 
-  // useEffect for handling invalid ID - conditional logic inside the effect
+  // useEffect hooks
   useEffect(() => {
-    if (isOpen && !isValidAjudanteId) {
-      toast.error('ID do ajudante inválido');
-      onClose();
-    }
-  }, [isOpen, isValidAjudanteId, onClose]);
-
-  useEffect(() => {
-    if (isOpen && isValidAjudanteId) {
+    if (isOpen) {
       fetchEstados();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && ajudante) {
       fetchAjudanteData();
     }
-  }, [isOpen, ajudanteId, isValidAjudanteId]);
+  }, [isOpen, ajudante]);
+
+  // Early return after all hooks
+  if (!isOpen) return null;
+  
+  // Check for valid ajudante ID
+  if (!ajudante || !ajudante.id_ajudante) {
+    console.error('Invalid ajudante ID:', ajudante);
+    return null;
+  }
 
   const fetchEstados = async () => {
     try {
@@ -124,31 +100,84 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     try {
       setLoading(true);
       
-      // Fetch ajudante basic data
-      const { data: ajudanteData, error: ajudanteError } = await supabase
-        .from('documento_ajudante')
-        .select('*')
-        .eq('id_ajudante', ajudanteId)
-        .single();
+      // Fetch ajudante details
+      setFormData({
+        nome: ajudante.nome || '',
+        cpf: ajudante.cpf ? String(ajudante.cpf) : '',
+        telefone: ajudante.telefone || '',
+        genero: ajudante.genero || '',
         
-      if (ajudanteError) throw ajudanteError;
+        // CNH
+        nr_registro: '',
+        categoria: '',
+        nome_pai: '',
+        nome_mae: '',
+        foto_cnh: '',
+        
+        // RG
+        nr_rg: '',
+        data_emissao: '',
+        orgao_expedidor: '',
+        filiacao: '',
+        foto_rg: '',
+        
+        // Endereço
+        cep: '',
+        estado: '',
+        cidade: '',
+        bairro: '',
+        logradouro: '',
+        numero: '',
+        complemento: '',
+        comprovante_residencia: ajudante.comprovante_residencia || ''
+      });
       
       // Fetch CNH data
       const { data: cnhData, error: cnhError } = await supabase
         .from('cnh_ajudante')
         .select('*')
-        .eq('id_ajudante', ajudanteId)
+        .eq('id_ajudante', ajudante.id_ajudante)
         .maybeSingle();
-        
+      
+      if (cnhError && cnhError.code !== 'PGRST116') throw cnhError;
+      
+      if (cnhData) {
+        setCnhData(cnhData);
+        setDocumentType('cnh');
+        setFormData(prev => ({
+          ...prev,
+          nr_registro: cnhData.nr_registro ? String(cnhData.nr_registro) : '',
+          categoria: cnhData.categoria || '',
+          nome_pai: cnhData.nome_pai || '',
+          nome_mae: cnhData.nome_mae || '',
+          foto_cnh: cnhData.foto_cnh || ''
+        }));
+      }
+      
       // Fetch RG data
       const { data: rgData, error: rgError } = await supabase
         .from('rg_ajudante')
         .select('*')
-        .eq('id_ajudante', ajudanteId)
+        .eq('id_ajudante', ajudante.id_ajudante)
         .maybeSingle();
-        
+      
+      if (rgError && rgError.code !== 'PGRST116') throw rgError;
+      
+      if (rgData) {
+        setRgData(rgData);
+        setDocumentType('rg');
+        setFormData(prev => ({
+          ...prev,
+          nr_rg: rgData.nr_rg ? String(rgData.nr_rg) : '',
+          data_emissao: rgData.data_emissao || '',
+          orgao_expedidor: rgData.orgao_expedidor || '',
+          filiacao: rgData.filiacao || '',
+          foto_rg: rgData.foto_rg || ''
+        }));
+      }
+      
       // Fetch address data
-      const { data: endData, error: endError } = await supabase
+      const { data: enderecoData, error: enderecoError } = await supabase
         .from('end_ajudante')
         .select(`
           nr_end,
@@ -168,52 +197,27 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
             )
           )
         `)
-        .eq('id_ajudante', ajudanteId)
+        .eq('id_ajudante', ajudante.id_ajudante)
         .maybeSingle();
       
-      // Determine document type based on available data
-      if (cnhData) {
-        setDocumentType('cnh');
-      } else if (rgData) {
-        setDocumentType('rg');
+      if (enderecoError && enderecoError.code !== 'PGRST116') throw enderecoError;
+      
+      if (enderecoData) {
+        setEndereco(enderecoData);
+        setFormData(prev => ({
+          ...prev,
+          cep: enderecoData.logradouro?.nr_cep || '',
+          estado: enderecoData.logradouro?.bairro?.cidade?.estado?.id_estado?.toString() || '',
+          cidade: enderecoData.logradouro?.bairro?.cidade?.cidade || '',
+          bairro: enderecoData.logradouro?.bairro?.bairro || '',
+          logradouro: enderecoData.logradouro?.logradouro || '',
+          numero: enderecoData.nr_end?.toString() || '',
+          complemento: enderecoData.ds_complemento_end || ''
+        }));
       }
-      
-      // Update form data
-      setFormData({
-        nome: ajudanteData.nome || '',
-        cpf: ajudanteData.cpf || '',
-        telefone: ajudanteData.telefone || '',
-        genero: ajudanteData.genero || '',
-        
-        // CNH
-        nr_registro: cnhData?.nr_registro?.toString() || '',
-        categoria: cnhData?.categoria || '',
-        nome_pai: cnhData?.nome_pai || '',
-        nome_mae: cnhData?.nome_mae || '',
-        foto_cnh: cnhData?.foto_cnh || '',
-        
-        // RG
-        nr_rg: rgData?.nr_rg?.toString() || '',
-        data_emissao: rgData?.data_emissao || '',
-        orgao_expedidor: rgData?.orgao_expedidor || '',
-        filiacao: rgData?.filiacao || '',
-        foto_rg: rgData?.foto_rg || '',
-        
-        // Endereço
-        cep: endData?.logradouro?.nr_cep || '',
-        estado: endData?.logradouro?.bairro?.cidade?.estado?.id_estado?.toString() || '',
-        cidade: endData?.logradouro?.bairro?.cidade?.cidade || '',
-        bairro: endData?.logradouro?.bairro?.bairro || '',
-        logradouro: endData?.logradouro?.logradouro || '',
-        numero: endData?.nr_end?.toString() || '',
-        complemento: endData?.ds_complemento_end || '',
-        comprovante_residencia: ajudanteData.comprovante_residencia || ''
-      });
-      
     } catch (error) {
-      console.error('Erro ao carregar dados do ajudante:', error);
+      console.error('Error fetching ajudante data:', error);
       toast.error('Erro ao carregar dados do ajudante');
-      onClose();
     } finally {
       setLoading(false);
     }
@@ -239,7 +243,7 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
         logradouro: data.logradouro || '',
         bairro: data.bairro || '',
         cidade: data.localidade || '',
-        estado: estado ? estado.id_estado.toString() : '', // Use a sigla do estado
+        estado: estado ? estado.id_estado.toString() : '',
         complemento: data.complemento || ''
       }));
 
@@ -284,7 +288,7 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
       
       // Create a unique file name
       const fileExt = file.name.split('.').pop();
-      const fileName = `ajudante_${ajudanteId}_${field}_${Date.now()}.${fileExt}`;
+      const fileName = `ajudante_${ajudante.id_ajudante}_${field}_${Date.now()}.${fileExt}`;
       
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
@@ -310,49 +314,30 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     }
   };
 
-  const openDocumentInNewTab = (url: string | null) => {
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const isPdf = (url: string | null) => url?.toLowerCase().endsWith('.pdf');
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       setSubmitting(true);
 
-      // Validate CPF format
-      if (!/^\d{11}$/.test(formData.cpf)) {
-        throw new Error('CPF inválido. Digite 11 números.');
-      }
-
-      // Update documento_ajudante
+      // Update ajudante basic info
       const { error: ajudanteError } = await supabase
         .from('documento_ajudante')
         .update({
           nome: formData.nome,
-          cpf: formData.cpf,
+          cpf: formData.cpf ? parseFloat(formData.cpf) : null,
           telefone: formData.telefone || null,
           genero: formData.genero || null,
           comprovante_residencia: formData.comprovante_residencia || null
         })
-        .eq('id_ajudante', ajudanteId);
+        .eq('id_ajudante', ajudante.id_ajudante);
 
       if (ajudanteError) throw ajudanteError;
 
-      // Update CNH if data is provided and document type is CNH
+      // Handle document type (CNH or RG)
       if (documentType === 'cnh') {
         // Check if CNH record exists
-        const { data: existingCnh } = await supabase
-          .from('cnh_ajudante')
-          .select('id_cnh_ajudante')
-          .eq('id_ajudante', ajudanteId)
-          .maybeSingle();
-          
-        if (existingCnh) {
+        if (cnhData) {
           // Update existing CNH
           const { error: cnhError } = await supabase
             .from('cnh_ajudante')
@@ -363,11 +348,11 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
               nome_mae: formData.nome_mae || null,
               foto_cnh: formData.foto_cnh || null
             })
-            .eq('id_cnh_ajudante', existingCnh.id_cnh_ajudante);
+            .eq('id_cnh_ajudante', cnhData.id_cnh_ajudante);
 
           if (cnhError) throw cnhError;
         } else {
-          // Insert new CNH
+          // Create new CNH record
           const { error: cnhError } = await supabase
             .from('cnh_ajudante')
             .insert({
@@ -376,29 +361,24 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
               nome_pai: formData.nome_pai || null,
               nome_mae: formData.nome_mae || null,
               foto_cnh: formData.foto_cnh || null,
-              id_ajudante: ajudanteId
+              id_ajudante: ajudante.id_ajudante
             });
 
           if (cnhError) throw cnhError;
         }
         
-        // Delete RG if it exists (since we're switching to CNH)
-        await supabase
-          .from('rg_ajudante')
-          .delete()
-          .eq('id_ajudante', ajudanteId);
-      }
-
-      // Update RG if data is provided and document type is RG
-      if (documentType === 'rg') {
+        // Delete RG if it exists and we're switching to CNH
+        if (rgData) {
+          const { error: deleteRgError } = await supabase
+            .from('rg_ajudante')
+            .delete()
+            .eq('id_rg_ajudante', rgData.id_rg_ajudante);
+            
+          if (deleteRgError) throw deleteRgError;
+        }
+      } else if (documentType === 'rg') {
         // Check if RG record exists
-        const { data: existingRg } = await supabase
-          .from('rg_ajudante')
-          .select('id_rg_ajudante')
-          .eq('id_ajudante', ajudanteId)
-          .maybeSingle();
-          
-        if (existingRg) {
+        if (rgData) {
           // Update existing RG
           const { error: rgError } = await supabase
             .from('rg_ajudante')
@@ -409,11 +389,11 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
               filiacao: formData.filiacao || null,
               foto_rg: formData.foto_rg || null
             })
-            .eq('id_rg_ajudante', existingRg.id_rg_ajudante);
+            .eq('id_rg_ajudante', rgData.id_rg_ajudante);
 
           if (rgError) throw rgError;
         } else {
-          // Insert new RG
+          // Create new RG record
           const { error: rgError } = await supabase
             .from('rg_ajudante')
             .insert({
@@ -422,20 +402,24 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
               orgao_expedidor: formData.orgao_expedidor || null,
               filiacao: formData.filiacao || null,
               foto_rg: formData.foto_rg || null,
-              id_ajudante: ajudanteId
+              id_ajudante: ajudante.id_ajudante
             });
 
           if (rgError) throw rgError;
         }
         
-        // Delete CNH if it exists (since we're switching to RG)
-        await supabase
-          .from('cnh_ajudante')
-          .delete()
-          .eq('id_ajudante', ajudanteId);
+        // Delete CNH if it exists and we're switching to RG
+        if (cnhData) {
+          const { error: deleteCnhError } = await supabase
+            .from('cnh_ajudante')
+            .delete()
+            .eq('id_cnh_ajudante', cnhData.id_cnh_ajudante);
+            
+          if (deleteCnhError) throw deleteCnhError;
+        }
       }
 
-      // Update address if all required fields are filled
+      // Handle address
       if (formData.logradouro && formData.cidade && formData.estado) {
         try {
           // First, find the estado_id based on sigla_estado
@@ -536,42 +520,45 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
             logradouroId = newLogradouro.id_logradouro;
           }
 
-          // Check if end_ajudante exists
-          const { data: existingEnd } = await supabase
+          // Check if endereco exists
+          const { data: existingEndereco, error: enderecoCheckError } = await supabase
             .from('end_ajudante')
             .select('id_end_ajudante')
-            .eq('id_ajudante', ajudanteId)
+            .eq('id_ajudante', ajudante.id_ajudante)
             .maybeSingle();
             
-          if (existingEnd) {
-            // Update existing end_ajudante
-            const { error: enderecoError } = await supabase
+          if (enderecoCheckError && enderecoCheckError.code !== 'PGRST116') {
+            throw enderecoCheckError;
+          }
+          
+          if (existingEndereco) {
+            // Update existing endereco
+            const { error: updateEnderecoError } = await supabase
               .from('end_ajudante')
               .update({
                 nr_end: formData.numero ? parseInt(formData.numero) : null,
                 ds_complemento_end: formData.complemento || null,
                 id_logradouro: logradouroId
               })
-              .eq('id_end_ajudante', existingEnd.id_end_ajudante);
+              .eq('id_end_ajudante', existingEndereco.id_end_ajudante);
 
-            if (enderecoError) throw enderecoError;
+            if (updateEnderecoError) throw updateEnderecoError;
           } else {
-            // Create new end_ajudante
-            const { error: enderecoError } = await supabase
+            // Create new endereco
+            const { error: newEnderecoError } = await supabase
               .from('end_ajudante')
               .insert({
                 nr_end: formData.numero ? parseInt(formData.numero) : null,
                 ds_complemento_end: formData.complemento || null,
-                id_ajudante: ajudanteId,
+                id_ajudante: ajudante.id_ajudante,
                 id_logradouro: logradouroId
               });
 
-            if (enderecoError) throw enderecoError;
+            if (newEnderecoError) throw newEnderecoError;
           }
         } catch (error) {
           console.error('Erro ao atualizar endereço:', error);
-          // Don't throw here, as address is optional
-          toast.error('Erro ao atualizar endereço, mas os outros dados foram atualizados');
+          toast.error('Erro ao atualizar endereço');
         }
       }
 
@@ -579,19 +566,12 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Erro ao atualizar ajudante:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar ajudante');
+      console.error('Error updating ajudante:', error);
+      toast.error('Erro ao atualizar ajudante');
     } finally {
       setSubmitting(false);
     }
   };
-
-  // CONDITIONAL RETURNS ONLY AFTER ALL HOOKS ARE DECLARED
-  if (!isOpen) return null;
-  
-  if (!isValidAjudanteId) {
-    return null;
-  }
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -796,78 +776,40 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
                       Foto da CNH
                     </label>
                     <div className="mt-1 flex items-center">
-                      {formData.foto_cnh ? (
-                        <div className="relative w-full">
-                          <div className="aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                            {isPdf(formData.foto_cnh) ? (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                                <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                                <div className="flex gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => setActiveDocument(formData.foto_cnh)}
-                                    className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
-                                  >
-                                    <FileText size={16} />
-                                    Visualizar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => openDocumentInNewTab(formData.foto_cnh)}
-                                    className="px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm flex items-center gap-1"
-                                  >
-                                    <ExternalLink size={16} />
-                                    Abrir
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <img
-                                src={formData.foto_cnh}
-                                alt="CNH"
-                                className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                onClick={() => setActiveDocument(formData.foto_cnh)}
+                      <div className="flex-1">
+                        <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                          <div className="space-y-1 text-center">
+                            <Camera className="mx-auto h-12 w-12 text-gray-400" />
+                            <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                              <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                {formData.foto_cnh ? 'Trocar arquivo' : 'Enviar arquivo'}
+                              </span>
+                              <input 
+                                id="foto_cnh" 
+                                name="foto_cnh" 
+                                type="file" 
+                                className="sr-only"
+                                onChange={(e) => handleFileUpload(e, 'foto_cnh')}
+                                accept="image/jpeg,image/png,application/pdf"
                               />
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, foto_cnh: '' }))}
-                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                            title="Remover documento"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex-1">
-                          <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                            <div className="space-y-1 text-center">
-                              <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                              <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                                <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                  Enviar arquivo
-                                </span>
-                                <input 
-                                  id="foto_cnh" 
-                                  name="foto_cnh" 
-                                  type="file" 
-                                  className="sr-only"
-                                  onChange={(e) => handleFileUpload(e, 'foto_cnh')}
-                                  accept="image/jpeg,image/png,application/pdf"
-                                />
-                              </div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                PNG, JPG ou PDF até 5MB
-                              </p>
                             </div>
-                          </label>
-                        </div>
-                      )}
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              PNG, JPG ou PDF até 5MB
+                            </p>
+                          </div>
+                        </label>
+                      </div>
                       {uploading.cnh && (
                         <div className="ml-4">
                           <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                        </div>
+                      )}
+                      {formData.foto_cnh && !uploading.cnh && (
+                        <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
+                          <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          Documento enviado
                         </div>
                       )}
                     </div>
@@ -941,78 +883,40 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
                       Foto do RG
                     </label>
                     <div className="mt-1 flex items-center">
-                      {formData.foto_rg ? (
-                        <div className="relative w-full">
-                          <div className="aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                            {isPdf(formData.foto_rg) ? (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                                <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                                <div className="flex gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => setActiveDocument(formData.foto_rg)}
-                                    className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
-                                  >
-                                    <FileText size={16} />
-                                    Visualizar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => openDocumentInNewTab(formData.foto_rg)}
-                                    className="px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm flex items-center gap-1"
-                                  >
-                                    <ExternalLink size={16} />
-                                    Abrir
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <img
-                                src={formData.foto_rg}
-                                alt="RG"
-                                className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                onClick={() => setActiveDocument(formData.foto_rg)}
+                      <div className="flex-1">
+                        <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                          <div className="space-y-1 text-center">
+                            <Camera className="mx-auto h-12 w-12 text-gray-400" />
+                            <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                              <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                {formData.foto_rg ? 'Trocar arquivo' : 'Enviar arquivo'}
+                              </span>
+                              <input 
+                                id="foto_rg" 
+                                name="foto_rg" 
+                                type="file" 
+                                className="sr-only"
+                                onChange={(e) => handleFileUpload(e, 'foto_rg')}
+                                accept="image/jpeg,image/png,application/pdf"
                               />
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, foto_rg: '' }))}
-                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                            title="Remover documento"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex-1">
-                          <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                            <div className="space-y-1 text-center">
-                              <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                              <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                                <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                  Enviar arquivo
-                                </span>
-                                <input 
-                                  id="foto_rg" 
-                                  name="foto_rg" 
-                                  type="file" 
-                                  className="sr-only"
-                                  onChange={(e) => handleFileUpload(e, 'foto_rg')}
-                                  accept="image/jpeg,image/png,application/pdf"
-                                />
-                              </div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                PNG, JPG ou PDF até 5MB
-                              </p>
                             </div>
-                          </label>
-                        </div>
-                      )}
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              PNG, JPG ou PDF até 5MB
+                            </p>
+                          </div>
+                        </label>
+                      </div>
                       {uploading.rg && (
                         <div className="ml-4">
                           <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                        </div>
+                      )}
+                      {formData.foto_rg && !uploading.rg && (
+                        <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
+                          <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          Documento enviado
                         </div>
                       )}
                     </div>
@@ -1155,78 +1059,40 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
                     Comprovante de Residência
                   </label>
                   <div className="mt-1 flex items-center">
-                    {formData.comprovante_residencia ? (
-                      <div className="relative w-full">
-                        <div className="aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                          {isPdf(formData.comprovante_residencia) ? (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                              <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                              <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveDocument(formData.comprovante_residencia)}
-                                  className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
-                                >
-                                  <FileText size={16} />
-                                  Visualizar
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => openDocumentInNewTab(formData.comprovante_residencia)}
-                                  className="px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm flex items-center gap-1"
-                                >
-                                  <ExternalLink size={16} />
-                                  Abrir
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <img
-                              src={formData.comprovante_residencia}
-                              alt="Comprovante de Residência"
-                              className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                              onClick={() => setActiveDocument(formData.comprovante_residencia)}
+                    <div className="flex-1">
+                      <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                        <div className="space-y-1 text-center">
+                          <Camera className="mx-auto h-12 w-12 text-gray-400" />
+                          <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                            <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                              {formData.comprovante_residencia ? 'Trocar arquivo' : 'Enviar arquivo'}
+                            </span>
+                            <input 
+                              id="comprovante_residencia" 
+                              name="comprovante_residencia" 
+                              type="file" 
+                              className="sr-only"
+                              onChange={(e) => handleFileUpload(e, 'comprovante_residencia')}
+                              accept="image/jpeg,image/png,application/pdf"
                             />
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, comprovante_residencia: '' }))}
-                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                          title="Remover documento"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex-1">
-                        <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                          <div className="space-y-1 text-center">
-                            <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                            <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                              <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                Enviar arquivo
-                              </span>
-                              <input 
-                                id="comprovante_residencia" 
-                                name="comprovante_residencia" 
-                                type="file" 
-                                className="sr-only"
-                                onChange={(e) => handleFileUpload(e, 'comprovante_residencia')}
-                                accept="image/jpeg,image/png,application/pdf"
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              PNG, JPG ou PDF até 5MB
-                            </p>
                           </div>
-                        </label>
-                      </div>
-                    )}
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            PNG, JPG ou PDF até 5MB
+                          </p>
+                        </div>
+                      </label>
+                    </div>
                     {uploading.comprovante && (
                       <div className="ml-4">
                         <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                      </div>
+                    )}
+                    {formData.comprovante_residencia && !uploading.comprovante && (
+                      <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
+                        <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Documento enviado
                       </div>
                     )}
                   </div>
@@ -1262,55 +1128,6 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
               </button>
             </div>
           </form>
-        )}
-
-        {/* Full-screen document viewer */}
-        {activeDocument && (
-          <div 
-            className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
-            onClick={() => setActiveDocument(null)}
-          >
-            <div 
-              className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Visualização do Documento
-                </h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openDocumentInNewTab(activeDocument)}
-                    className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    title="Abrir em nova aba"
-                  >
-                    <ExternalLink size={20} />
-                  </button>
-                  <button
-                    onClick={() => setActiveDocument(null)}
-                    className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-              </div>
-              <div className="relative h-[calc(90vh-80px)]">
-                {isPdf(activeDocument) ? (
-                  <iframe 
-                    src={`${activeDocument}#toolbar=1`} 
-                    className="w-full h-full" 
-                    title="PDF Viewer"
-                  />
-                ) : (
-                  <img
-                    src={activeDocument}
-                    alt="Documento"
-                    className="w-full h-full object-contain"
-                  />
-                )}
-              </div>
-            </div>
-          </div>
         )}
       </div>
     </div>
