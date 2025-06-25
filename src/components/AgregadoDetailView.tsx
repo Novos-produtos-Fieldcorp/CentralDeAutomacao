@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
   X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
-  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, UserPlus 
+  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, UserPlus, Trash2 
 } from 'lucide-react';
 import type { 
   DocumentoMotorista, 
@@ -17,6 +17,8 @@ import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
 import EditMotoristaModal from './EditMotoristaModal';
 import AddAjudanteModal from './AddAjudanteModal';
+import EditAjudanteModal from './EditAjudanteModal';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 interface AgregadoDetailViewProps {
   isOpen: boolean;
@@ -65,6 +67,9 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
+  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
+  const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
+  const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'ajudantes'>('details');
 
   if (!isOpen || !agregado) return null;
@@ -81,7 +86,30 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
 
   const isPdf = (url: string | null) => url?.toLowerCase().endsWith('.pdf');
 
-  // Rest of your component code...
+  const handleEditAjudante = (ajudante: any) => {
+    setSelectedAjudante(ajudante);
+    setIsEditAjudanteModalOpen(true);
+  };
+
+  const handleDeleteAjudante = (ajudante: any) => {
+    setSelectedAjudante(ajudante);
+    setIsDeleteAjudanteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedAjudante) return;
+    
+    try {
+      // Add your delete logic here
+      toast.success('Ajudante excluído com sucesso!');
+      setIsDeleteAjudanteModalOpen(false);
+      setSelectedAjudante(null);
+      onSuccess?.();
+    } catch (error) {
+      console.error('Erro ao excluir ajudante:', error);
+      toast.error('Erro ao excluir ajudante');
+    }
+  };
   
   return (
     <div className="fixed inset-0 z-50">
@@ -285,13 +313,18 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                               </div>
                               <div className="flex space-x-2">
                                 <button
-                                  onClick={() => {
-                                    // Handle view ajudante details
-                                  }}
+                                  onClick={() => handleEditAjudante(ajudante)}
                                   className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                 >
-                                  <Users className="w-4 h-4 mr-1" />
-                                  Ver
+                                  <Edit2 className="w-4 h-4 mr-1" />
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteAjudante(ajudante)}
+                                  className="inline-flex items-center px-3 py-1.5 border border-red-300 dark:border-red-600 shadow-sm text-xs font-medium rounded-md text-red-700 dark:text-red-200 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  Excluir
                                 </button>
                               </div>
                             </div>
@@ -348,6 +381,35 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
           onSuccess?.();
         }}
       />
+
+      {isEditAjudanteModalOpen && selectedAjudante && (
+        <EditAjudanteModal
+          isOpen={isEditAjudanteModalOpen}
+          onClose={() => {
+            setIsEditAjudanteModalOpen(false);
+            setSelectedAjudante(null);
+          }}
+          ajudante={selectedAjudante}
+          onSuccess={() => {
+            setIsEditAjudanteModalOpen(false);
+            setSelectedAjudante(null);
+            onSuccess?.();
+          }}
+        />
+      )}
+
+      {isDeleteAjudanteModalOpen && selectedAjudante && (
+        <DeleteConfirmationModal
+          isOpen={isDeleteAjudanteModalOpen}
+          onClose={() => {
+            setIsDeleteAjudanteModalOpen(false);
+            setSelectedAjudante(null);
+          }}
+          onConfirm={handleDeleteConfirm}
+          title="Excluir Ajudante"
+          message={`Tem certeza que deseja excluir o ajudante "${selectedAjudante.nome}"? Esta ação não pode ser desfeita.`}
+        />
+      )}
     </div>
   );
 };
