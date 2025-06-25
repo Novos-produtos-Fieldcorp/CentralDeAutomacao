@@ -688,43 +688,120 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                 const cpf = ajudante.cpf ? String(ajudante.cpf) : '';
                                 const telefone = ajudante.telefone || '';
                                 
+                                // Get document URLs
+                                const cnhDoc = ajudante.cnh_ajudante?.[0]?.foto_cnh;
+                                const rgDoc = ajudante.rg_ajudante?.[0]?.foto_rg;
+                                const comprovanteDoc = ajudante.comprovante_residencia;
+                                
                                 return (
                                   <li key={ajudanteId} className="px-4 py-4 sm:px-6">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center">
-                                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                          <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <div className="ml-4">
-                                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                            {nome}
-                                          </p>
-                                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                                            CPF: {formatCPF(cpf)}
-                                          </p>
-                                          {telefone && (
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                              Telefone: {formatPhone(telefone)}
+                                    <div className="flex flex-col space-y-3">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                            <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                          </div>
+                                          <div className="ml-4">
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                              {nome}
                                             </p>
-                                          )}
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                              CPF: {formatCPF(cpf)}
+                                            </p>
+                                            {telefone && (
+                                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                Telefone: {formatPhone(telefone)}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="flex space-x-2">
+                                          <button
+                                            onClick={() => handleEditAjudante(ajudante)}
+                                            className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                          >
+                                            <Edit2 className="w-4 h-4 mr-1" />
+                                            Editar
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteAjudante(ajudante)}
+                                            className="inline-flex items-center px-3 py-1.5 border border-red-300 dark:border-red-600 shadow-sm text-xs font-medium rounded-md text-red-700 dark:text-red-200 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                          >
+                                            <Trash2 className="w-4 h-4 mr-1" />
+                                            Excluir
+                                          </button>
                                         </div>
                                       </div>
-                                      <div className="flex space-x-2">
-                                        <button
-                                          onClick={() => handleEditAjudante(ajudante)}
-                                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                        >
-                                          <Edit2 className="w-4 h-4 mr-1" />
-                                          Editar
-                                        </button>
-                                        <button
-                                          onClick={() => handleDeleteAjudante(ajudante)}
-                                          className="inline-flex items-center px-3 py-1.5 border border-red-300 dark:border-red-600 shadow-sm text-xs font-medium rounded-md text-red-700 dark:text-red-200 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                        >
-                                          <Trash2 className="w-4 h-4 mr-1" />
-                                          Excluir
-                                        </button>
-                                      </div>
+                                      
+                                      {/* Document Thumbnails */}
+                                      {(cnhDoc || rgDoc || comprovanteDoc) && (
+                                        <div className="mt-2 flex items-center space-x-3 ml-14">
+                                          <div className="text-xs text-gray-500 dark:text-gray-400 mr-1">
+                                            Documentos:
+                                          </div>
+                                          <div className="flex -space-x-2">
+                                            {cnhDoc && (
+                                              <div 
+                                                className="h-8 w-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 overflow-hidden cursor-pointer hover:z-10 hover:scale-110 transition-transform"
+                                                onClick={() => openDocumentInNewTab(cnhDoc)}
+                                                title="CNH"
+                                              >
+                                                {isPdf(cnhDoc) ? (
+                                                  <div className="h-full w-full flex items-center justify-center bg-blue-100 dark:bg-blue-900/30">
+                                                    <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                  </div>
+                                                ) : (
+                                                  <img 
+                                                    src={cnhDoc} 
+                                                    alt="CNH" 
+                                                    className="h-full w-full object-cover"
+                                                  />
+                                                )}
+                                              </div>
+                                            )}
+                                            
+                                            {rgDoc && (
+                                              <div 
+                                                className="h-8 w-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 overflow-hidden cursor-pointer hover:z-10 hover:scale-110 transition-transform"
+                                                onClick={() => openDocumentInNewTab(rgDoc)}
+                                                title="RG"
+                                              >
+                                                {isPdf(rgDoc) ? (
+                                                  <div className="h-full w-full flex items-center justify-center bg-green-100 dark:bg-green-900/30">
+                                                    <FileText className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                  </div>
+                                                ) : (
+                                                  <img 
+                                                    src={rgDoc} 
+                                                    alt="RG" 
+                                                    className="h-full w-full object-cover"
+                                                  />
+                                                )}
+                                              </div>
+                                            )}
+                                            
+                                            {comprovanteDoc && (
+                                              <div 
+                                                className="h-8 w-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 overflow-hidden cursor-pointer hover:z-10 hover:scale-110 transition-transform"
+                                                onClick={() => openDocumentInNewTab(comprovanteDoc)}
+                                                title="Comprovante de Residência"
+                                              >
+                                                {isPdf(comprovanteDoc) ? (
+                                                  <div className="h-full w-full flex items-center justify-center bg-amber-100 dark:bg-amber-900/30">
+                                                    <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                                  </div>
+                                                ) : (
+                                                  <img 
+                                                    src={comprovanteDoc} 
+                                                    alt="Comprovante" 
+                                                    className="h-full w-full object-cover"
+                                                  />
+                                                )}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   </li>
                                 );
