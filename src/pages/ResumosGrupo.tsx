@@ -386,15 +386,16 @@ const ResumosGrupo = () => {
       // Parse the ISO date string
       const date = new Date(dateTimeStr);
       
-      // Format using Intl.DateTimeFormat for Brasilia timezone
-      return new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'America/Sao_Paulo'
-      }).format(date);
+      // Format date as DD/MM/YYYY
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      
+      // Format time as HH:MM
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
     } catch (e) {
       return dateTimeStr;
     }
