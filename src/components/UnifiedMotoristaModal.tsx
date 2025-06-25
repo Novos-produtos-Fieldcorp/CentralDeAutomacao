@@ -659,13 +659,16 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                 // Determine document type and number
                                 let documentType = 'Não informado';
                                 let documentNumber = 'Não informado';
+                                let documentPhoto = null;
                                 
                                 if (ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0) {
                                   documentType = 'CNH';
                                   documentNumber = ajudante.cnh_ajudante[0].nr_registro || 'Não informado';
+                                  documentPhoto = ajudante.cnh_ajudante[0].foto_cnh;
                                 } else if (ajudante.rg_ajudante && ajudante.rg_ajudante.length > 0) {
                                   documentType = 'RG';
                                   documentNumber = ajudante.rg_ajudante[0].nr_rg || 'Não informado';
+                                  documentPhoto = ajudante.rg_ajudante[0].foto_rg;
                                 }
                                 
                                 return (
@@ -673,45 +676,142 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                     key={ajudanteId}
                                     className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600"
                                   >
-                                    <div className="flex justify-between items-start">
-                                      <div>
-                                        <h4 className="text-base font-medium text-gray-900 dark:text-white">
-                                          {nome}
-                                        </h4>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                          CPF: {formatCPF(cpf)}
-                                        </p>
-                                        {telefone && (
-                                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                            Telefone: {formatPhone(telefone)}
-                                          </p>
-                                        )}
-                                        <div className="mt-2 space-y-1">
-                                          <p className="text-sm text-gray-600 dark:text-gray-300">
-                                            <span className="font-medium">Tipo de Documento:</span> {documentType}
-                                          </p>
-                                          <p className="text-sm text-gray-600 dark:text-gray-300">
-                                            <span className="font-medium">Número do Documento:</span> {documentNumber}
-                                          </p>
+                                    <div className="flex flex-col md:flex-row gap-4">
+                                      <div className="flex-1">
+                                        <div className="flex justify-between items-start">
+                                          <div>
+                                            <h4 className="text-base font-medium text-gray-900 dark:text-white">
+                                              {nome}
+                                            </h4>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                              CPF: {formatCPF(cpf)}
+                                            </p>
+                                            {telefone && (
+                                              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                                Telefone: {formatPhone(telefone)}
+                                              </p>
+                                            )}
+                                            <div className="mt-2 space-y-1">
+                                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                <span className="font-medium">Tipo de Documento:</span> {documentType}
+                                              </p>
+                                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                <span className="font-medium">Número do Documento:</span> {documentNumber}
+                                              </p>
+                                            </div>
+                                          </div>
+                                          <div className="flex gap-2">
+                                            <button
+                                              onClick={() => handleEditAjudante(ajudante)}
+                                              className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                                       hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                              title="Editar ajudante"
+                                            >
+                                              <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeleteAjudante(ajudante)}
+                                              className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                                       hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                              title="Excluir ajudante"
+                                            >
+                                              <Trash2 size={16} />
+                                            </button>
+                                          </div>
                                         </div>
                                       </div>
-                                      <div className="flex gap-2">
-                                        <button
-                                          onClick={() => handleEditAjudante(ajudante)}
-                                          className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                                                   hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                          title="Editar ajudante"
-                                        >
-                                          <Edit2 size={16} />
-                                        </button>
-                                        <button
-                                          onClick={() => handleDeleteAjudante(ajudante)}
-                                          className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                                                   hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                          title="Excluir ajudante"
-                                        >
-                                          <Trash2 size={16} />
-                                        </button>
+                                      
+                                      {/* Document previews */}
+                                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {/* ID Document (CNH or RG) */}
+                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                                          <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            {documentType}
+                                          </h5>
+                                          {documentPhoto ? (
+                                            <div className="relative aspect-video w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                              {isPdf(documentPhoto) ? (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                  <FileText className="w-8 h-8 text-gray-400 mb-1" />
+                                                  <p className="text-xs text-gray-500">PDF</p>
+                                                  <button
+                                                    onClick={() => openDocumentInNewTab(documentPhoto)}
+                                                    className="mt-2 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                                  >
+                                                    Abrir
+                                                  </button>
+                                                </div>
+                                              ) : (
+                                                <>
+                                                  <img
+                                                    src={documentPhoto}
+                                                    alt={`${documentType} do ajudante`}
+                                                    className="absolute inset-0 w-full h-full object-cover"
+                                                  />
+                                                  <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+                                                    <button
+                                                      onClick={() => openDocumentInNewTab(documentPhoto)}
+                                                      className="p-1 bg-white/80 rounded-full"
+                                                    >
+                                                      <ExternalLink size={14} className="text-blue-600" />
+                                                    </button>
+                                                  </div>
+                                                </>
+                                              )}
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center justify-center aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                Sem documento
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Comprovante de Residência */}
+                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                                          <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Comprovante de Residência
+                                          </h5>
+                                          {ajudante.comprovante_residencia ? (
+                                            <div className="relative aspect-video w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                              {isPdf(ajudante.comprovante_residencia) ? (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                  <FileText className="w-8 h-8 text-gray-400 mb-1" />
+                                                  <p className="text-xs text-gray-500">PDF</p>
+                                                  <button
+                                                    onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia)}
+                                                    className="mt-2 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                                  >
+                                                    Abrir
+                                                  </button>
+                                                </div>
+                                              ) : (
+                                                <>
+                                                  <img
+                                                    src={ajudante.comprovante_residencia}
+                                                    alt="Comprovante de residência"
+                                                    className="absolute inset-0 w-full h-full object-cover"
+                                                  />
+                                                  <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+                                                    <button
+                                                      onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia)}
+                                                      className="p-1 bg-white/80 rounded-full"
+                                                    >
+                                                      <ExternalLink size={14} className="text-blue-600" />
+                                                    </button>
+                                                  </div>
+                                                </>
+                                              )}
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center justify-center aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                Sem comprovante
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
