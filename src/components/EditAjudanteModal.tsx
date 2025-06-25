@@ -112,6 +112,11 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     try {
       setLoading(true);
       
+      // Validate ajudanteId before making any queries
+      if (!ajudanteId || isNaN(ajudanteId) || ajudanteId <= 0) {
+        throw new Error('ID do ajudante inválido');
+      }
+      
       // Fetch ajudante basic data
       const { data: ajudanteData, error: ajudanteError } = await supabase
         .from('documento_ajudante')
@@ -201,6 +206,10 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     } catch (error) {
       console.error('Erro ao carregar dados do ajudante:', error);
       toast.error('Erro ao carregar dados do ajudante');
+      // Close modal if ID is invalid
+      if (error instanceof Error && error.message === 'ID do ajudante inválido') {
+        onClose();
+      }
     } finally {
       setLoading(false);
     }
@@ -310,6 +319,11 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     
     try {
       setSubmitting(true);
+
+      // Validate ajudanteId before submitting
+      if (!ajudanteId || isNaN(ajudanteId) || ajudanteId <= 0) {
+        throw new Error('ID do ajudante inválido');
+      }
 
       // Validate CPF format
       if (!/^\d{11}$/.test(formData.cpf)) {
@@ -574,6 +588,11 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
   };
 
   if (!isOpen) return null;
+
+  // Don't render modal if ajudanteId is invalid
+  if (!ajudanteId || isNaN(ajudanteId) || ajudanteId <= 0) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
