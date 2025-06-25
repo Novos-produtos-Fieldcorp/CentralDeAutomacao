@@ -86,17 +86,20 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     comprovante_residencia: ''
   });
 
+  // Check if ajudanteId is valid
+  const isValidAjudanteId = ajudanteId && !isNaN(ajudanteId) && ajudanteId > 0;
+
   useEffect(() => {
-    if (isOpen && ajudanteId && !isNaN(ajudanteId) && ajudanteId > 0) {
+    if (isOpen && isValidAjudanteId) {
       fetchEstados();
       fetchAjudanteData();
-    } else if (isOpen && (!ajudanteId || isNaN(ajudanteId) || ajudanteId <= 0)) {
+    } else if (isOpen && !isValidAjudanteId) {
       // Close modal immediately if ID is invalid
       console.error('ID do ajudante inválido:', ajudanteId);
       toast.error('ID do ajudante inválido');
       onClose();
     }
-  }, [isOpen, ajudanteId]);
+  }, [isOpen, ajudanteId, isValidAjudanteId]);
 
   const fetchEstados = async () => {
     try {
@@ -118,7 +121,7 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
       setLoading(true);
       
       // Validate ajudanteId before making any queries
-      if (!ajudanteId || isNaN(ajudanteId) || ajudanteId <= 0) {
+      if (!isValidAjudanteId) {
         throw new Error('ID do ajudante inválido');
       }
       
@@ -326,7 +329,7 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
       setSubmitting(true);
 
       // Validate ajudanteId before submitting
-      if (!ajudanteId || isNaN(ajudanteId) || ajudanteId <= 0) {
+      if (!isValidAjudanteId) {
         throw new Error('ID do ajudante inválido');
       }
 
@@ -595,7 +598,7 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
   if (!isOpen) return null;
 
   // Don't render modal if ajudanteId is invalid
-  if (!ajudanteId || isNaN(ajudanteId) || ajudanteId <= 0) {
+  if (!isValidAjudanteId) {
     return null;
   }
 
@@ -1252,7 +1255,7 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
               <button
                 type="submit"
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                disabled={submitting}
+                disabled={submitting || !isValidAjudanteId}
               >
                 {submitting ? (
                   <>
