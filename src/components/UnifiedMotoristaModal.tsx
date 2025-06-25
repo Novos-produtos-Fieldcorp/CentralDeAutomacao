@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, User, MapPin, FileText, Camera, Loader2, ExternalLink, Users, Edit2 } from 'lucide-react';
+import { X, User, MapPin, FileText, Camera, Loader2, ExternalLink, Users, Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { formatCPF, formatPhone } from '../utils/format';
+import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentUploadModal from './DocumentUploadModal';
 import EditMotoristaModal from './EditMotoristaModal';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import AddAjudanteModal from './AddAjudanteModal';
+import EditAjudanteModal from './EditAjudanteModal';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 interface UnifiedMotoristaModalProps {
   isOpen: boolean;
@@ -30,6 +32,9 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
     comprovante: false
   });
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
+  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
+  const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
+  const [selectedAjudante, setSelectedAjudante] = useState<any | null>(null);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -230,6 +235,36 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
     setIsAddAjudanteModalOpen(true);
   };
 
+  const handleEditAjudante = (ajudante: any) => {
+    setSelectedAjudante(ajudante);
+    setIsEditAjudanteModalOpen(true);
+  };
+
+  const handleDeleteAjudante = (ajudante: any) => {
+    setSelectedAjudante(ajudante);
+    setIsDeleteAjudanteModalOpen(true);
+  };
+
+  const confirmDeleteAjudante = async () => {
+    if (!selectedAjudante) return;
+    
+    try {
+      const { error } = await supabase
+        .from('documento_ajudante')
+        .delete()
+        .eq('id_ajudante', selectedAjudante.id_ajudante);
+      
+      if (error) throw error;
+      
+      toast.success('Ajudante excluído com sucesso');
+      fetchMotoristaDetails(); // Refresh data
+      setIsDeleteAjudanteModalOpen(false);
+    } catch (error) {
+      console.error('Error deleting ajudante:', error);
+      toast.error('Erro ao excluir ajudante');
+    }
+  };
+
   const handleDocumentUploadSuccess = () => {
     fetchMotoristaDetails();
     setIsDocumentUploadModalOpen(false);
@@ -241,7 +276,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
   if (!motorista || !motoristaData) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Carregando...</h2>
             <button
@@ -379,7 +414,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                   Data de Nascimento
                                 </dt>
                                 <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                                  {displayMotorista?.dt_nascimento ? displayMotorista.dt_nascimento : '-'}
+                                  {displayMotorista?.dt_nascimento ? formatDate(displayMotorista.dt_nascimento) : '-'}
                                 </dd>
                               </div>
                               
@@ -456,7 +491,7 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                     CEP
                                   </dt>
                                   <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                                    {endereco.logradouro?.nr_cep || 'Não informado'}
+                                    {endereco.logradouro?.nr_cep ? formatCEP(endereco.logradouro.nr_cep) : 'Não informado'}
                                   </dd>
                                 </div>
                                 <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -689,6 +724,24 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                           </p>
                                         )}
                                       </div>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => handleEditAjudante(ajudante)}
+                                          className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                                   hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                          title="Editar ajudante"
+                                        >
+                                          <Edit2 className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteAjudante(ajudante)}
+                                          className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                                   hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                          title="Excluir ajudante"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
                                     </div>
                                     
                                     {/* Document Preview */}
@@ -912,6 +965,33 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
           fetchMotoristaDetails();
           setIsAddAjudanteModalOpen(false);
         }}
+      />
+
+      {/* Edit Ajudante Modal */}
+      <EditAjudanteModal
+        isOpen={isEditAjudanteModalOpen}
+        onClose={() => {
+          setIsEditAjudanteModalOpen(false);
+          setSelectedAjudante(null);
+        }}
+        ajudante={selectedAjudante}
+        onSuccess={() => {
+          fetchMotoristaDetails();
+          setIsEditAjudanteModalOpen(false);
+          setSelectedAjudante(null);
+        }}
+      />
+
+      {/* Delete Ajudante Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isDeleteAjudanteModalOpen}
+        onClose={() => {
+          setIsDeleteAjudanteModalOpen(false);
+          setSelectedAjudante(null);
+        }}
+        onConfirm={confirmDeleteAjudante}
+        title="Excluir Ajudante"
+        message={`Tem certeza que deseja excluir o ajudante "${selectedAjudante?.nome}"? Esta ação não pode ser desfeita.`}
       />
     </div>
   );
