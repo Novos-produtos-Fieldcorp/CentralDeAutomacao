@@ -60,6 +60,8 @@ export interface ViewAgregado {
   marca_rastreador?: string | null;
   cor?: string | null;
   tipo?: string | null;
+  // Helper information
+  nome_ajudante?: string;
 }
 
 const AgregadosLista = () => {
@@ -826,6 +828,11 @@ const AgregadosLista = () => {
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {agregado.nome_motorista || ''}
+                              {agregado.nome_ajudante && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Ajudante: {agregado.nome_ajudante}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -842,7 +849,7 @@ const AgregadosLista = () => {
                           </div>
                           {agregado.telefone && (
                             <button
-                              onClick={() => startChat(agregado.telefone.toString(), agregado.nome_motorista || '')}
+                              onClick={() => agregado.telefone && startChat(agregado.telefone.toString(), agregado.nome_motorista || '')}
                               className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
                               title="Iniciar chat"
                             >
@@ -873,7 +880,7 @@ const AgregadosLista = () => {
                               'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                             }`}>
                               {agregado.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
-                               agregado.st_cadastro.charAt(0).toUpperCase() + agregado.st_cadastro.slice(1)}
+                               agregado.st_cadastro ? (agregado.st_cadastro.charAt(0).toUpperCase() + agregado.st_cadastro.slice(1)) : 'Indefinido'}
                             </span>
                             <ChevronDown size={14} className="text-gray-500 dark:text-gray-400" />
                           </button>

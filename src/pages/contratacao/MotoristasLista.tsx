@@ -108,6 +108,8 @@ export interface ViewMotorista extends Omit<ViewMotoristaBase, 'nome_motorista'>
   company_id: number;
   data_cadastro: string;
   cliente_id: number | null;
+  // Ajudante information
+  nome_ajudante?: string;
   // Adiciona propriedades opcionais para compatibilidade
   documento_motorista?: any[];
   veiculo?: any[];
@@ -867,6 +869,11 @@ const MotoristasLista = () => {
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white" data-component-name="MotoristasLista">
                               {motorista.nome_motorista || motorista.nome || ''}
+                              {motorista.nome_ajudante && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Ajudante: {motorista.nome_ajudante}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1228,12 +1235,43 @@ const MotoristasLista = () => {
         onUploadSuccess={fetchMotoristas}
       />
 
-      <EditMotoristaModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        motorista={selectedMotorista}
-        onUpdate={fetchMotoristas}
-      />
+      {selectedMotorista && (
+        <EditMotoristaModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          motorista={{
+            motorista_id: selectedMotorista.motorista_id,
+            cpf: selectedMotorista.cpf || '',
+            dt_nascimento: selectedMotorista.dt_nascimento || '',
+            genero: selectedMotorista.genero || '',
+            telefone: selectedMotorista.telefone ? Number(selectedMotorista.telefone) : null,
+            email: selectedMotorista.email,
+            funcao: selectedMotorista.funcao || 'Motorista',
+            nome: selectedMotorista.nome || '',
+            origem_usuario: selectedMotorista.origem_usuario || '',
+            st_cadastro: selectedMotorista.st_cadastro || '',
+            autorizacao_lgpd: selectedMotorista.autorizacao_lgpd || '',
+            company_id: selectedMotorista.company_id || 0,
+            data_cadastro: selectedMotorista.data_cadastro || new Date().toISOString(),
+            cliente_id: selectedMotorista.cliente_id || 0,
+            ativo: selectedMotorista.ativo || false,
+            endereco: selectedMotorista.endereco || {
+              id_end_motorista: selectedMotorista.id_end_motorista || 0,
+              nr_end: selectedMotorista.nr_end,
+              ds_complemento_end: selectedMotorista.ds_complemento_end,
+              st_end: selectedMotorista.st_end,
+              logradouro: selectedMotorista.logradouro,
+              nr_cep: selectedMotorista.nr_cep,
+              bairro: selectedMotorista.nome_bairro,
+              cidade: selectedMotorista.nome_cidade,
+              estado: selectedMotorista.nome_estado,
+              sigla_estado: selectedMotorista.sigla_estado
+            },
+            veiculo: selectedMotorista.veiculo?.[0] || undefined
+          }}
+          onUpdate={fetchMotoristas}
+        />
+      )}
 
       <AddMotoristaModal
         isOpen={isAddModalOpen}
