@@ -263,21 +263,21 @@ const ResumosGrupo = () => {
       const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
       
       // Try to send data to n8n webhook
+      const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
+      
+      // Prepare the webhook payload with the correct field names
+      const webhookData = {
+        "nome do grupo": grupo.nome_grupo,
+        "URL do grupo": grupo.url_grupo
+      };
+      
+      console.log('Enviando dados para webhook:', JSON.stringify(webhookData, null, 2));
+      
+      // Send the data to the webhook with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       try {
-        const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
-        
-        // Prepare the webhook payload with the correct field names
-        const webhookData = {
-          "nome do grupo": grupo.nome_grupo,
-          "URL do grupo": grupo.url_grupo
-        };
-        
-        console.log('Enviando dados para webhook:', JSON.stringify(webhookData, null, 2));
-        
-        // Send the data to the webhook with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-        
         const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: {
@@ -290,89 +290,64 @@ const ResumosGrupo = () => {
         
         clearTimeout(timeoutId);
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Webhook response not OK:', response.status, errorText);
-          
-          // Create a failed summary record
-          const { error: dbError } = await supabase
-            .from('envio_resumo')
-            .insert({
-              grupo_id: id,
-              company_id: companyId,
-              data_envio: brasiliaTime.toISOString(),
-              status: 'error',
-              mensagem: `Erro ${response.status}: ${errorText || 'Sem detalhes'}`
-            });
-            
-          if (dbError) {
-            console.error('Error saving failed summary:', dbError);
+        // Get the full response text regardless of status
+        const responseText = await response.text();
+        console.log('Resposta completa do servidor:', response.status, responseText);
+        
+        // Determine message to save based on response
+        let statusToSave: 'success' | 'error';
+        let messageToSave: string;
+        
+        if (response.ok) {
+          statusToSave = 'success';
+          // Try to parse JSON response for more details
+          try {
+            const jsonResponse = JSON.parse(responseText);
+            messageToSave = jsonResponse.message || `Resposta: ${responseText}`;
+          } catch (e) {
+            // If not JSON, use the raw text
+            messageToSave = `Resposta: ${responseText}`;
           }
+        } else {
+          statusToSave = 'error';
+          messageToSave = `Erro ${response.status}: ${responseText}`;
           
-          // Show specific error message based on status code
+          // Show toast with error details
           if (response.status === 400) {
-            toast.error('Erro 400: Requisição inválida. Verifique os dados enviados.');
+            toast.error(`Erro 400: Requisição inválida - ${responseText}`);
           } else if (response.status === 404) {
-            toast.error('Erro 404: Endpoint não encontrado. Verifique a URL do webhook.');
+            toast.error(`Erro 404: Endpoint não encontrado - ${responseText}`);
           } else if (response.status === 500) {
-            toast.error('Erro 500: Erro interno do servidor. Tente novamente mais tarde.');
+            toast.error(`Erro 500: Erro interno do servidor - ${responseText}`);
           } else {
-            toast.error(`Erro ${response.status}: ${errorText || 'Falha ao enviar resumo'}`);
+            toast.error(`Erro ${response.status}: ${responseText}`);
           }
-          
-          // Refresh history to show the failed attempt
-          fetchHistorico();
-          return;
         }
         
-        // Try to parse the response as JSON to get the message
-        let responseMessage = 'Resumo enviado com sucesso';
-        let responseText = '';
-        
-        try {
-          responseText = await response.text();
-          if (responseText) {
-            try {
-              const responseData = JSON.parse(responseText);
-              if (responseData && responseData.message) {
-                responseMessage = responseData.message;
-              } else if (responseData && responseData.status) {
-                responseMessage = `Status: ${responseData.status}`;
-              }
-            } catch (parseError) {
-              console.log('Could not parse JSON response:', parseError);
-              // If not valid JSON, use the text response
-              if (responseText.length > 0) {
-                responseMessage = `Resposta: ${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}`;
-              }
-            }
-          }
-        } catch (textError) {
-          console.log('Could not get response text:', textError);
-        }
-        
-        // Create a successful summary record with the response message
+        // Save the result to the database
         const { error: dbError } = await supabase
           .from('envio_resumo')
           .insert({
             grupo_id: id,
             company_id: companyId,
             data_envio: brasiliaTime.toISOString(),
-            status: 'success',
-            mensagem: responseMessage
+            status: statusToSave,
+            mensagem: messageToSave
           });
           
         if (dbError) {
-          console.error('Error saving successful summary:', dbError);
-          toast.error('Resumo enviado, mas erro ao salvar no histórico');
-        } else {
+          console.error('Error saving summary record:', dbError);
+          toast.error('Erro ao salvar no histórico');
+        } else if (statusToSave === 'success') {
           toast.success('Resumo enviado com sucesso');
         }
         
-      } catch (webhookError: any) {
-        console.error('Error sending to webhook:', webhookError);
+      } catch (fetchError: any) {
+        // Handle network errors or timeouts
+        clearTimeout(timeoutId);
+        console.error('Fetch error:', fetchError);
         
-        // Create a failed summary record
+        // Create error record
         const { error: dbError } = await supabase
           .from('envio_resumo')
           .insert({
@@ -380,33 +355,26 @@ const ResumosGrupo = () => {
             company_id: companyId,
             data_envio: brasiliaTime.toISOString(),
             status: 'error',
-            mensagem: `Erro no webhook: ${webhookError.message || 'Erro desconhecido'}`
+            mensagem: `Erro de rede: ${fetchError.message || 'Erro desconhecido'}`
           });
           
         if (dbError) {
-          console.error('Error saving failed summary:', dbError);
+          console.error('Error saving error record:', dbError);
         }
         
-        // Show specific error message based on error type
-        if (webhookError.name === 'AbortError') {
+        // Show specific error message
+        if (fetchError.name === 'AbortError') {
           toast.error('Timeout: O webhook demorou muito para responder');
-        } else if (webhookError.message.includes('500')) {
-          toast.error('Erro no servidor do webhook. Verifique se o workflow n8n está ativo e configurado corretamente.');
-        } else if (webhookError.message.includes('fetch')) {
-          toast.error('Erro de conexão com o webhook. Verifique sua conexão com a internet.');
         } else {
-          toast.error(`Erro ao enviar resumo: ${webhookError.message}`);
+          toast.error(`Erro de rede: ${fetchError.message}`);
         }
-        
-        // Refresh history to show the failed attempt
-        fetchHistorico();
-        return;
       }
       
-      // Refresh history
+      // Refresh history to show the latest records
       fetchHistorico();
+      
     } catch (error: any) {
-      console.error('Error sending manual summary:', error);
+      console.error('Error in manual summary process:', error);
       toast.error(`Erro inesperado: ${error.message}`);
     } finally {
       setSendingManualSummary(null);
