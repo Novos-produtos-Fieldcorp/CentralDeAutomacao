@@ -17,6 +17,8 @@ interface GrupoResumo {
   horario: string;
   ativo: boolean;
   company_id: number;
+  icon_name?: string;
+  color_name?: string;
 }
 
 Deno.serve(async (req) => {

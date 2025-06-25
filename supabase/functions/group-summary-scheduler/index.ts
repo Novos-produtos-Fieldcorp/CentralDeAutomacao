@@ -17,6 +17,8 @@ interface GrupoResumo {
   horario: string;
   ativo: boolean;
   company_id: number;
+  icon_name?: string;
+  color_name?: string;
 }
 
 Deno.serve(async (req) => {
@@ -41,6 +43,15 @@ Deno.serve(async (req) => {
     console.log(`Current UTC time: ${now.toISOString()}`);
     console.log(`Current Brasilia time: ${brasiliaTime.toISOString()}`);
 
+    // Get the current Brasilia time from the database for verification
+    const { data: dbTimeData, error: dbTimeError } = await supabase.rpc('get_current_brasilia_time');
+    
+    if (dbTimeError) {
+      console.error('Error getting database time:', dbTimeError);
+    } else {
+      console.log(`Database Brasilia time: ${dbTimeData}`);
+    }
+
     // Query for active groups with matching schedule time
     const { data: grupos, error } = await supabase
       .from('grupo_resumo')
@@ -48,9 +59,7 @@ Deno.serve(async (req) => {
       .eq('ativo', true)
       .eq('horario', currentTime);
 
-    if (error) {
-      throw new Error(`Error fetching scheduled groups: ${error.message}`);
-    }
+    if (error) throw error;
 
     console.log(`Found ${grupos?.length || 0} groups scheduled for ${currentTime}`);
 
@@ -102,7 +111,8 @@ Deno.serve(async (req) => {
         results,
         currentTime,
         currentUtcTime: now.toISOString(),
-        currentBrasiliaTime: brasiliaTime.toISOString()
+        currentBrasiliaTime: brasiliaTime.toISOString(),
+        databaseBrasiliaTime: dbTimeData
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

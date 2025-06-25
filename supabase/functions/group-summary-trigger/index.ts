@@ -8,7 +8,7 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Webhook URL for sending summaries
-const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/26254d63-b40d-469a-b1d3-62ef2a624d7e';
+const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
 
 interface GrupoResumo {
   id: number;
@@ -17,6 +17,8 @@ interface GrupoResumo {
   horario: string;
   ativo: boolean;
   company_id: number;
+  icon_name?: string;
+  color_name?: string;
 }
 
 Deno.serve(async (req) => {
@@ -218,19 +220,21 @@ async function generateSummaryData(grupo: GrupoResumo) {
 
 // Function to send webhook with summary data
 async function sendWebhook(grupo: GrupoResumo, summaryData: any) {
-  const payload = {
-    group_url: grupo.url_grupo,
-    group_name: grupo.nome_grupo,
-    company_id: grupo.company_id,
-    summary: summaryData
+  // Prepare the webhook payload with the correct field names
+  const webhookData = {
+    "nome do grupo": grupo.nome_grupo,
+    "URL do grupo": grupo.url_grupo,
+    "summary": summaryData
   };
+
+  console.log('Sending webhook data:', JSON.stringify(webhookData, null, 2));
 
   const response = await fetch(WEBHOOK_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(webhookData)
   });
 
   if (!response.ok) {
