@@ -383,8 +383,18 @@ const ResumosGrupo = () => {
 
   const formatDateTime = (dateTimeStr: string) => {
     try {
-      // Simply display the date string exactly as it comes from the database
-      return dateTimeStr;
+      // Parse the ISO date string
+      const date = new Date(dateTimeStr);
+      
+      // Format using Intl.DateTimeFormat for Brasilia timezone
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Sao_Paulo'
+      }).format(date);
     } catch (e) {
       return dateTimeStr;
     }
@@ -662,7 +672,7 @@ const ResumosGrupo = () => {
                             <div className="flex items-center">
                               <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                               <span className="text-sm text-gray-900 dark:text-white">
-                                {envio.data_envio}
+                                {formatDateTime(envio.data_envio)}
                               </span>
                             </div>
                           </td>
