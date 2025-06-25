@@ -293,32 +293,29 @@ const ResumosGrupo = () => {
         let statusToSave: boolean;
         let messageToSave: string;
         
-        // Status codes 100-399 are considered successful
-        if (response.status >= 100 && response.status <= 399) {
-          statusToSave = true;
-          // Try to parse JSON response for more details
-          try {
-            const jsonResponse = JSON.parse(responseText);
-            messageToSave = jsonResponse.message || `Resposta: ${responseText}`;
-          } catch (e) {
-            // If not JSON, use the raw text
-            messageToSave = `Resposta: ${responseText}`;
-          }
-        } else {
-          // Status codes 400-550 are considered errors
-          statusToSave = false;
-          messageToSave = `Erro ${response.status}: ${responseText}`;
+        try {
+          // Try to parse the response as JSON
+          const jsonResponse = JSON.parse(responseText);
           
-          // Show toast with error details
-          if (response.status === 400) {
-            toast.error(`Erro 400: Requisição inválida - ${responseText}`);
-          } else if (response.status === 404) {
-            toast.error(`Erro 404: Endpoint não encontrado - ${responseText}`);
-          } else if (response.status === 500) {
-            toast.error(`Erro 500: Erro interno do servidor - ${responseText}`);
+          // Check the status in the JSON response
+          if (jsonResponse.status && jsonResponse.status >= 100 && jsonResponse.status <= 399) {
+            statusToSave = true;
+            messageToSave = jsonResponse.message || `Resposta: ${responseText}`;
+          } else if (jsonResponse.status && jsonResponse.status >= 400 && jsonResponse.status <= 550) {
+            statusToSave = false;
+            messageToSave = `Erro ${jsonResponse.status}: ${jsonResponse.message || responseText}`;
+            
+            // Show toast with error details
+            toast.error(`Erro ${jsonResponse.status}: ${jsonResponse.message || 'Erro desconhecido'}`);
           } else {
-            toast.error(`Erro ${response.status}: ${responseText}`);
+            // Fallback to HTTP status code if JSON status is not in expected range
+            statusToSave = response.status >= 100 && response.status <= 399;
+            messageToSave = jsonResponse.message || `Resposta: ${responseText}`;
           }
+        } catch (e) {
+          // If not JSON, use the HTTP status code
+          statusToSave = response.status >= 100 && response.status <= 399;
+          messageToSave = `Resposta: ${responseText}`;
         }
         
         // Save the result to the database
