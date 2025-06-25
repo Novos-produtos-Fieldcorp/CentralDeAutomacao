@@ -293,7 +293,8 @@ const ResumosGrupo = () => {
         let statusToSave: boolean;
         let messageToSave: string;
         
-        if (response.ok) {
+        // Status codes 100-399 are considered successful
+        if (response.status >= 100 && response.status <= 399) {
           statusToSave = true;
           // Try to parse JSON response for more details
           try {
@@ -304,6 +305,7 @@ const ResumosGrupo = () => {
             messageToSave = `Resposta: ${responseText}`;
           }
         } else {
+          // Status codes 400-550 are considered errors
           statusToSave = false;
           messageToSave = `Erro ${response.status}: ${responseText}`;
           
