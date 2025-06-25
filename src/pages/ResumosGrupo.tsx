@@ -290,13 +290,11 @@ const ResumosGrupo = () => {
         
         clearTimeout(timeoutId);
         
-        // Check if the response is OK (status 200-299)
         if (!response.ok) {
-          // Get the error text from the response
           const errorText = await response.text();
           console.error('Webhook response not OK:', response.status, errorText);
           
-          // Create a failed summary record with the error details
+          // Create a failed summary record
           const { error: dbError } = await supabase
             .from('envio_resumo')
             .insert({
@@ -311,7 +309,7 @@ const ResumosGrupo = () => {
             console.error('Error saving failed summary:', dbError);
           }
           
-          // Show error toast based on status code
+          // Show specific error message based on status code
           if (response.status === 400) {
             toast.error('Erro 400: Requisição inválida. Verifique os dados enviados.');
           } else if (response.status === 404) {
@@ -374,8 +372,7 @@ const ResumosGrupo = () => {
       } catch (webhookError: any) {
         console.error('Error sending to webhook:', webhookError);
         
-        // Create a failed summary record with the error message
-        const errorMessage = webhookError.message || 'Erro desconhecido';
+        // Create a failed summary record
         const { error: dbError } = await supabase
           .from('envio_resumo')
           .insert({
@@ -383,7 +380,7 @@ const ResumosGrupo = () => {
             company_id: companyId,
             data_envio: brasiliaTime.toISOString(),
             status: 'error',
-            mensagem: `Erro no webhook: ${errorMessage}`
+            mensagem: `Erro no webhook: ${webhookError.message || 'Erro desconhecido'}`
           });
           
         if (dbError) {
