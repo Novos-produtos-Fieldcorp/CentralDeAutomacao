@@ -257,119 +257,34 @@ const ResumosGrupo = () => {
         return;
       }
       
-      // Try to send data to n8n webhook
-      const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
+      // Call the manual-summary-trigger Edge Function
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
       
-      // Prepare the webhook payload with the correct field names
-      const webhookData = {
-        "nome do grupo": grupo.nome_grupo,
-        "URL do grupo": grupo.url_grupo
-      };
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          group_id: id,
+          company_id: companyId
+        })
+      });
       
-      console.log('Enviando dados para webhook:', JSON.stringify(webhookData, null, 2));
+      const responseData = await response.json();
       
-      // Send the data to the webhook with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
-      try {
-        const response = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(webhookData),
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        // Get the full response text regardless of status
-        const responseText = await response.text();
-        console.log('Resposta completa do servidor:', response.status, responseText);
-        
-        // Determine message to save based on response
-        let statusToSave: boolean;
-        let messageToSave: string;
-        
-        try {
-          // Try to parse the response as JSON
-          const jsonResponse = JSON.parse(responseText);
-          
-          // Check the status in the JSON response
-          if (jsonResponse.status && jsonResponse.status >= 100 && jsonResponse.status <= 399) {
-            statusToSave = true;
-            messageToSave = jsonResponse.message || `Resposta: ${responseText}`;
-          } else if (jsonResponse.status && jsonResponse.status >= 400 && jsonResponse.status <= 550) {
-            statusToSave = false;
-            messageToSave = `Erro ${jsonResponse.status}: ${jsonResponse.message || responseText}`;
-            
-            // Show toast with error details
-            toast.error(`Erro ${jsonResponse.status}: ${jsonResponse.message || 'Erro desconhecido'}`);
-          } else {
-            // Fallback to HTTP status code if JSON status is not in expected range
-            statusToSave = response.status >= 100 && response.status <= 399;
-            messageToSave = jsonResponse.message || `Resposta: ${responseText}`;
-          }
-        } catch (e) {
-          // If not JSON, use the HTTP status code
-          statusToSave = response.status >= 100 && response.status <= 399;
-          messageToSave = `Resposta: ${responseText}`;
-        }
-        
-        // Save the result to the database
-        const { error: dbError } = await supabase
-          .from('envio_resumo')
-          .insert({
-            grupo_id: id,
-            company_id: companyId,
-            data_envio: new Date().toISOString(), // This will be stored as is in the database
-            status: statusToSave,
-            mensagem: messageToSave
-          });
-          
-        if (dbError) {
-          console.error('Error saving summary record:', dbError);
-          toast.error('Erro ao salvar no histórico');
-        } else if (statusToSave) {
-          toast.success('Resumo enviado com sucesso');
-        }
-        
-      } catch (fetchError: any) {
-        // Handle network errors or timeouts
-        clearTimeout(timeoutId);
-        console.error('Fetch error:', fetchError);
-        
-        // Create error record
-        const { error: dbError } = await supabase
-          .from('envio_resumo')
-          .insert({
-            grupo_id: id,
-            company_id: companyId,
-            data_envio: new Date().toISOString(), // This will be stored as is in the database
-            status: false,
-            mensagem: `Erro de rede: ${fetchError.message || 'Erro desconhecido'}`
-          });
-          
-        if (dbError) {
-          console.error('Error saving error record:', dbError);
-        }
-        
-        // Show specific error message
-        if (fetchError.name === 'AbortError') {
-          toast.error('Timeout: O webhook demorou muito para responder');
-        } else {
-          toast.error(`Erro de rede: ${fetchError.message}`);
-        }
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Erro ao enviar resumo');
       }
+      
+      toast.success('Resumo enviado com sucesso');
       
       // Refresh history to show the latest records
       fetchHistorico();
       
     } catch (error: any) {
       console.error('Error in manual summary process:', error);
-      toast.error(`Erro inesperado: ${error.message}`);
+      toast.error(`Erro ao enviar resumo: ${error.message}`);
     } finally {
       setSendingManualSummary(null);
     }
@@ -783,6 +698,9 @@ const ResumosGrupo = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     required
                   />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    O horário deve ser informado no fuso horário de Brasília (UTC-3)
+                  </p>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

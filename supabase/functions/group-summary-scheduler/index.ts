@@ -8,7 +8,7 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Webhook URL for sending summaries
-const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/26254d63-b40d-469a-b1d3-62ef2a624d7e';
+const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
 
 interface GrupoResumo {
   id: number;
@@ -28,13 +28,18 @@ Deno.serve(async (req) => {
   try {
     // Get current time in UTC
     const now = new Date();
-    const currentHour = now.getUTCHours();
-    const currentMinute = now.getUTCMinutes();
     
-    // Format current time as HH:MM for comparison with database
-    const currentTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+    // Convert to Brasilia timezone (UTC-3)
+    const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+    const brasiliaHour = brasiliaTime.getUTCHours();
+    const brasiliaMinute = brasiliaTime.getUTCMinutes();
     
-    console.log(`Checking for scheduled summaries at ${currentTime} UTC`);
+    // Format Brasilia time as HH:MM for comparison with database
+    const currentTime = `${brasiliaHour.toString().padStart(2, '0')}:${brasiliaMinute.toString().padStart(2, '0')}`;
+    
+    console.log(`Checking for scheduled summaries at ${currentTime} Brasilia time (UTC-3)`);
+    console.log(`Current UTC time: ${now.toISOString()}`);
+    console.log(`Current Brasilia time: ${brasiliaTime.toISOString()}`);
 
     // Query for active groups with matching schedule time
     const { data: grupos, error } = await supabase
@@ -94,7 +99,10 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         message: `Processed ${grupos?.length || 0} groups`,
-        results
+        results,
+        currentTime,
+        currentUtcTime: now.toISOString(),
+        currentBrasiliaTime: brasiliaTime.toISOString()
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -227,19 +235,21 @@ async function generateSummaryData(grupo: GrupoResumo) {
 
 // Function to send webhook with summary data
 async function sendWebhook(grupo: GrupoResumo, summaryData: any) {
-  const payload = {
-    group_url: grupo.url_grupo,
-    group_name: grupo.nome_grupo,
-    company_id: grupo.company_id,
-    summary: summaryData
+  // Prepare the webhook payload with the correct field names
+  const webhookData = {
+    "nome do grupo": grupo.nome_grupo,
+    "URL do grupo": grupo.url_grupo,
+    "summary": summaryData
   };
+
+  console.log('Sending webhook data:', JSON.stringify(webhookData, null, 2));
 
   const response = await fetch(WEBHOOK_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(webhookData)
   });
 
   if (!response.ok) {
