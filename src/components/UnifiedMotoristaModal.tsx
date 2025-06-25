@@ -1,5 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, User, MapPin, FileText, Camera, Loader2, ExternalLink, Users, Edit2, Trash2, UserPlus } from 'lucide-react';
+import { 
+  X, 
+  User, 
+  MapPin, 
+  FileText, 
+  Camera, 
+  Loader2, 
+  ExternalLink, 
+  Users, 
+  Edit2, 
+  Trash2, 
+  UserPlus, 
+  Calendar, 
+  CheckCircle, 
+  Phone, 
+  Mail, 
+  Home, 
+  Mail as Mailbox,
+  Navigation
+} from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCPF, formatPhone } from '../utils/format';
@@ -385,131 +404,146 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                   {activeTab === 'details' && (
                     <div className="space-y-6">
                       {/* Personal Information */}
-                      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                        <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-                          <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 space-y-6 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <User className="w-5 h-5 text-blue-500" />
                             Informações Pessoais
                           </h3>
                           <button
                             onClick={() => setIsEditMotoristaModalOpen(true)}
-                            className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                           >
                             <Edit2 className="w-4 h-4 mr-1" />
                             Editar
                           </button>
                         </div>
-                        <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
-                          <dl className="sm:divide-y sm:divide-gray-200 dark:divide-gray-700">
-                            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                Nome Completo
-                              </dt>
-                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                {displayMotorista?.nome}
-                              </dd>
-                            </div>
-                            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                CPF
-                              </dt>
-                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                {displayMotorista?.cpf ? formatCPF(displayMotorista.cpf) : '-'}
-                              </dd>
-                            </div>
-                            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                Data de Nascimento
-                              </dt>
-                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                {displayMotorista?.dt_nascimento ? displayMotorista.dt_nascimento : '-'}
-                              </dd>
-                            </div>
-                            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                Status
-                              </dt>
-                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 capitalize">
-                                {displayMotorista?.st_cadastro?.replace('_', ' ') || '-'}
-                              </dd>
-                            </div>
-                            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                Telefone
-                              </dt>
-                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                {displayMotorista?.telefone ? formatPhone(displayMotorista.telefone.toString()) : 'Não informado'}
-                              </dd>
-                            </div>
-                            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                Email
-                              </dt>
-                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                {displayMotorista?.email || 'Não informado'}
-                              </dd>
-                            </div>
-                          </dl>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-1">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                              <User className="w-4 h-4 text-blue-400" />
+                              Nome Completo
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 pl-6">
+                              {displayMotorista?.nome || '-'}
+                            </dd>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-blue-400" />
+                              CPF
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 pl-6">
+                              {displayMotorista?.cpf ? formatCPF(displayMotorista.cpf) : '-'}
+                            </dd>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-blue-400" />
+                              Data de Nascimento
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 pl-6">
+                              {displayMotorista?.dt_nascimento || '-'}
+                            </dd>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-blue-400" />
+                              Status
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 pl-6 capitalize">
+                              {displayMotorista?.st_cadastro?.replace('_', ' ') || '-'}
+                            </dd>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                              <Phone className="w-4 h-4 text-blue-400" />
+                              Telefone
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 pl-6">
+                              {displayMotorista?.telefone ? formatPhone(displayMotorista.telefone.toString()) : 'Não informado'}
+                            </dd>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                              <Mail className="w-4 h-4 text-blue-400" />
+                              Email
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 pl-6">
+                              {displayMotorista?.email || 'Não informado'}
+                            </dd>
+                          </div>
                         </div>
                       </div>
                       
                       {/* Address Information */}
                       {endereco && (
-                        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                          <div className="px-4 py-5 sm:px-6">
-                            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                              <MapPin className="w-5 h-5 text-gray-400" />
-                              Endereço
-                            </h3>
-                          </div>
-                          <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
-                            <dl className="sm:divide-y sm:divide-gray-200 dark:divide-gray-700">
-                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                  Logradouro
-                                </dt>
-                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                  {endereco.logradouro?.logradouro ? 
-                                    `${endereco.logradouro.logradouro}, ${endereco.nr_end || 'S/N'}` : 
-                                    'Não informado'
-                                  }
-                                </dd>
-                              </div>
-                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                  Complemento
-                                </dt>
-                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                  {endereco.ds_complemento_end || 'Não informado'}
-                                </dd>
-                              </div>
-                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                  CEP
-                                </dt>
-                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                  {endereco.logradouro?.nr_cep || 'Não informado'}
-                                </dd>
-                              </div>
-                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                  Bairro
-                                </dt>
-                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                  {endereco.logradouro?.bairro?.bairro || 'Não informado'}
-                                </dd>
-                              </div>
-                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                  Cidade/Estado
-                                </dt>
-                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                  {endereco.logradouro?.bairro?.cidade?.cidade && endereco.logradouro?.bairro?.cidade?.estado?.sigla_estado ? 
-                                    `${endereco.logradouro.bairro.cidade.cidade}/${endereco.logradouro.bairro.cidade.estado.sigla_estado}` : 
-                                    'Não informado'
-                                  }
-                                </dd>
-                              </div>
-                            </dl>
+                        <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 space-y-6 border border-gray-200 dark:border-gray-700">
+                          <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <MapPin className="w-5 h-5 text-blue-500" />
+                            Endereço
+                          </h3>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-1">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-blue-400" />
+                                Logradouro
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 pl-6">
+                                {endereco.logradouro?.logradouro ? 
+                                  `${endereco.logradouro.logradouro}, ${endereco.nr_end || 'S/N'}` : 
+                                  'Não informado'}
+                              </dd>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                <Home className="w-4 h-4 text-blue-400" />
+                                Complemento
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 pl-6">
+                                {endereco.ds_complemento_end || 'Não informado'}
+                              </dd>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                <Mailbox className="w-4 h-4 text-blue-400" />
+                                CEP
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 pl-6">
+                                {endereco.logradouro?.nr_cep || 'Não informado'}
+                              </dd>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                <Navigation className="w-4 h-4 text-blue-400" />
+                                Bairro
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 pl-6">
+                                {endereco.logradouro?.bairro?.bairro || 'Não informado'}
+                              </dd>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-blue-400" />
+                                Cidade/Estado
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 pl-6">
+                                {endereco.logradouro?.bairro?.cidade?.cidade && endereco.logradouro?.bairro?.cidade?.estado?.sigla_estado ? 
+                                  `${endereco.logradouro.bairro.cidade.cidade}/${endereco.logradouro.bairro.cidade.estado.sigla_estado}` : 
+                                  'Não informado'}
+                              </dd>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -531,66 +565,77 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                       
                       {/* CNH Document */}
                       <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-                          CNH
-                        </h3>
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                            CNH - Carteira Nacional de Habilitação
+                          </h3>
+                        </div>
                         
-                        {documento?.foto_cnh ? (
-                          <div className="relative aspect-[1.414] w-full max-w-md bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                            {isPdf(documento.foto_cnh) ? (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                                <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                                <button
-                                  onClick={() => openDocumentInNewTab(documento.foto_cnh)}
-                                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
-                                >
-                                  <ExternalLink size={16} />
-                                  Abrir PDF
-                                </button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Informações da CNH */}
+                          <div className="space-y-4">
+                            <div className="space-y-1">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Número do Registro</dt>
+                              <dd className="text-sm text-gray-900 dark:text-gray-100">
+                                {documento?.nr_registro_cnh || 'Não informado'}
+                              </dd>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Categoria</dt>
+                                <dd className="text-sm text-gray-900 dark:text-gray-100">
+                                  {documento?.categoria_cnh || 'Não informada'}
+                                </dd>
+                              </div>
+                              <div className="space-y-1">
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Validade</dt>
+                                <dd className="text-sm text-gray-900 dark:text-gray-100">
+                                  {documento?.validade_cnh ? new Date(documento.validade_cnh).toLocaleDateString('pt-BR') : 'Não informada'}
+                                </dd>
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">UF</dt>
+                              <dd className="text-sm text-gray-900 dark:text-gray-100">
+                                {documento?.uf_cnh || 'Não informado'}
+                              </dd>
+                            </div>
+                          </div>
+                          
+                          {/* Imagem da CNH */}
+                          <div className="flex justify-center">
+                            {documento?.foto_cnh ? (
+                              <div className="relative aspect-[1.414] w-full max-w-md bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                {isPdf(documento.foto_cnh) ? (
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                                    <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                                    <p className="text-sm text-gray-500 text-center mb-4">Documento PDF</p>
+                                    <button
+                                      onClick={() => openDocumentInNewTab(documento.foto_cnh)}
+                                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
+                                    >
+                                      <ExternalLink size={16} />
+                                      Abrir PDF
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <img
+                                    src={documento.foto_cnh}
+                                    alt="CNH"
+                                    className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                                    onClick={() => setActiveDocument(documento.foto_cnh)}
+                                  />
+                                )}
                               </div>
                             ) : (
-                              <img
-                                src={documento.foto_cnh}
-                                alt="CNH"
-                                className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                onClick={() => setActiveDocument(documento.foto_cnh)}
-                              />
+                              <div className="w-full max-w-md aspect-[1.414] bg-gray-100 dark:bg-gray-700 rounded-lg flex flex-col items-center justify-center p-6 text-center">
+                                <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                                <p className="text-sm text-gray-500">Nenhum documento de CNH enviado</p>
+                              </div>
                             )}
                           </div>
-                        ) : (
-                          <div className="relative">
-                            <input
-                              type="file"
-                              id="file-cnh"
-                              onChange={(e) => handleFileUpload(e, 'cnh')}
-                              className="sr-only"
-                              ref={fileInputRef}
-                              accept="image/jpeg,image/png,image/jpg,application/pdf"
-                            />
-                            <label
-                              htmlFor="file-cnh"
-                              className="flex flex-col items-center justify-center w-full max-w-md aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
-                                        border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
-                                        hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
-                            >
-                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                {uploading.cnh ? (
-                                  <Loader2 className="w-10 h-10 text-gray-400 animate-spin mb-4" />
-                                ) : (
-                                  <Camera className="w-10 h-10 text-gray-400 mb-4" />
-                                )}
-                                <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                                  <span className="font-semibold">Clique para enviar</span> ou arraste e solte
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  JPEG, PNG ou PDF (máx. 15MB)
-                                </p>
-                              </div>
-                            </label>
-                          </div>
-                        )}
+                        </div>
                       </div>
                       
                       {/* Comprovante de Residência */}
@@ -601,10 +646,10 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                         </h3>
                         
                         {documento?.foto_comprovante_residencia ? (
-                          <div className="relative aspect-[1.414] w-full max-w-md bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                          <div className="relative w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
                             {isPdf(documento.foto_comprovante_residencia) ? (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                              <div className="w-full p-8 flex flex-col items-center justify-center">
+                                <FileText className="w-16 h-16 text-gray-400 mb-4" />
                                 <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
                                 <button
                                   onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
@@ -615,16 +660,18 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                 </button>
                               </div>
                             ) : (
-                              <img
-                                src={documento.foto_comprovante_residencia}
-                                alt="Comprovante de Residência"
-                                className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
-                              />
+                              <div className="w-full flex justify-center">
+                                <img
+                                  src={documento.foto_comprovante_residencia}
+                                  alt="Comprovante de Residência"
+                                  className="max-w-full max-h-[70vh] object-contain cursor-pointer"
+                                  onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
+                                />
+                              </div>
                             )}
                           </div>
                         ) : (
-                          <div className="relative">
+                          <div className="relative w-full">
                             <input
                               type="file"
                               id="file-comprovante"
@@ -635,15 +682,15 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                             />
                             <label
                               htmlFor="file-comprovante"
-                              className="flex flex-col items-center justify-center w-full max-w-md aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
+                              className="flex flex-col items-center justify-center w-full aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
                                         border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
                                         hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
                             >
-                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              <div className="flex flex-col items-center justify-center p-8 text-center">
                                 {uploading.comprovante ? (
-                                  <Loader2 className="w-10 h-10 text-gray-400 animate-spin mb-4" />
+                                  <Loader2 className="w-12 h-12 text-gray-400 animate-spin mb-4" />
                                 ) : (
-                                  <Camera className="w-10 h-10 text-gray-400 mb-4" />
+                                  <Camera className="w-12 h-12 text-gray-400 mb-4" />
                                 )}
                                 <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
                                   <span className="font-semibold">Clique para enviar</span> ou arraste e solte
