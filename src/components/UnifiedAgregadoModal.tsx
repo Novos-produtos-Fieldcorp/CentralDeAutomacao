@@ -825,6 +825,78 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                   <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'CPF não informado'}
                                   </p>
+                                  
+                                  {/* Document preview */}
+                                  <div className="flex mt-2 space-x-2">
+                                    {ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0 && ajudante.cnh_ajudante[0]?.foto_cnh && (
+                                      <div 
+                                        className="relative h-8 w-12 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden cursor-pointer group"
+                                        onClick={() => openDocumentInNewTab(ajudante.cnh_ajudante[0].foto_cnh)}
+                                      >
+                                        {isPdf(ajudante.cnh_ajudante[0].foto_cnh) ? (
+                                          <div className="absolute inset-0 flex items-center justify-center">
+                                            <FileText className="h-4 w-4 text-blue-500" />
+                                          </div>
+                                        ) : (
+                                          <img 
+                                            src={ajudante.cnh_ajudante[0].foto_cnh} 
+                                            alt="CNH" 
+                                            className="h-full w-full object-cover"
+                                          />
+                                        )}
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <ExternalLink className="h-3 w-3 text-white" />
+                                        </div>
+                                        <span className="absolute bottom-0 left-0 right-0 bg-blue-500 text-white text-[8px] text-center">CNH</span>
+                                      </div>
+                                    )}
+                                    
+                                    {ajudante.rg_ajudante && ajudante.rg_ajudante.length > 0 && ajudante.rg_ajudante[0]?.foto_rg && (
+                                      <div 
+                                        className="relative h-8 w-12 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden cursor-pointer group"
+                                        onClick={() => openDocumentInNewTab(ajudante.rg_ajudante[0].foto_rg)}
+                                      >
+                                        {isPdf(ajudante.rg_ajudante[0].foto_rg) ? (
+                                          <div className="absolute inset-0 flex items-center justify-center">
+                                            <FileText className="h-4 w-4 text-blue-500" />
+                                          </div>
+                                        ) : (
+                                          <img 
+                                            src={ajudante.rg_ajudante[0].foto_rg} 
+                                            alt="RG" 
+                                            className="h-full w-full object-cover"
+                                          />
+                                        )}
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <ExternalLink className="h-3 w-3 text-white" />
+                                        </div>
+                                        <span className="absolute bottom-0 left-0 right-0 bg-green-500 text-white text-[8px] text-center">RG</span>
+                                      </div>
+                                    )}
+                                    
+                                    {ajudante.comprovante_residencia && (
+                                      <div 
+                                        className="relative h-8 w-12 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden cursor-pointer group"
+                                        onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia)}
+                                      >
+                                        {isPdf(ajudante.comprovante_residencia) ? (
+                                          <div className="absolute inset-0 flex items-center justify-center">
+                                            <FileText className="h-4 w-4 text-blue-500" />
+                                          </div>
+                                        ) : (
+                                          <img 
+                                            src={ajudante.comprovante_residencia} 
+                                            alt="Comprovante" 
+                                            className="h-full w-full object-cover"
+                                          />
+                                        )}
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <ExternalLink className="h-3 w-3 text-white" />
+                                        </div>
+                                        <span className="absolute bottom-0 left-0 right-0 bg-purple-500 text-white text-[8px] text-center">Comp.</span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                               <div className="flex space-x-2">
