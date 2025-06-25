@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, User, Phone, MapPin, Camera, Upload, FileText, ExternalLink } from 'lucide-react';
+import { X, Loader2, User, Phone, MapPin, Camera, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCEP } from '../utils/format';
@@ -8,43 +8,21 @@ interface EditAjudanteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  ajudanteId: number;
+  ajudante: any;
 }
 
-interface AjudanteData {
-  nome: string;
-  cpf: string;
-  telefone: string;
-  genero: string;
-  
-  // CNH
-  nr_registro: string;
-  categoria: string;
-  nome_pai: string;
-  nome_mae: string;
-  foto_cnh: string;
-  
-  // RG
-  nr_rg: string;
-  data_emissao: string;
-  orgao_expedidor: string;
-  filiacao: string;
-  foto_rg: string;
-  
-  // Endereço
+interface ViaCepResponse {
   cep: string;
-  estado: string;
-  cidade: string;
-  bairro: string;
   logradouro: string;
-  numero: string;
   complemento: string;
-  comprovante_residencia: string;
+  bairro: string;
+  localidade: string;
+  uf: string;
+  erro?: boolean;
 }
 
-const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjudanteModalProps) => {
+const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudante }: EditAjudanteModalProps) => {
   const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [loadingCep, setLoadingCep] = useState(false);
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
   const [documentType, setDocumentType] = useState<'cnh' | 'rg'>('cnh');
@@ -53,9 +31,8 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     rg: false,
     comprovante: false
   });
-  const [activeDocument, setActiveDocument] = useState<string | null>(null);
   
-  const [formData, setFormData] = useState<AjudanteData>({
+  const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
     telefone: '',
@@ -86,20 +63,24 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     comprovante_residencia: ''
   });
 
-  // Check if ajudanteId is valid
-  const isValidAjudanteId = ajudanteId && !isNaN(ajudanteId) && ajudanteId > 0;
+  // Check if ajudante ID is valid
+  const isValidAjudanteId = ajudante && ajudante.id_ajudante && !isNaN(ajudante.id_ajudante) && ajudante.id_ajudante > 0;
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchEstados();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && isValidAjudanteId) {
-      fetchEstados();
       fetchAjudanteData();
     } else if (isOpen && !isValidAjudanteId) {
-      // Close modal immediately if ID is invalid
-      console.error('ID do ajudante inválido:', ajudanteId);
+      console.error('ID do ajudante inválido:', ajudante?.id_ajudante);
       toast.error('ID do ajudante inválido');
       onClose();
     }
-  }, [isOpen, ajudanteId, isValidAjudanteId]);
+  }, [isOpen, ajudante, isValidAjudanteId]);
 
   const fetchEstados = async () => {
     try {
@@ -117,37 +98,38 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
   };
 
   const fetchAjudanteData = async () => {
+    if (!isValidAjudanteId) {
+      throw new Error('ID do ajudante inválido');
+    }
+
     try {
-      setLoading(true);
-      
-      // Validate ajudanteId before making any queries
-      if (!isValidAjudanteId) {
-        throw new Error('ID do ajudante inválido');
-      }
-      
-      // Fetch ajudante basic data
+      // Fetch ajudante data
       const { data: ajudanteData, error: ajudanteError } = await supabase
         .from('documento_ajudante')
         .select('*')
-        .eq('id_ajudante', ajudanteId)
+        .eq('id_ajudante', ajudante.id_ajudante)
         .single();
-        
+
       if (ajudanteError) throw ajudanteError;
-      
+
       // Fetch CNH data
       const { data: cnhData, error: cnhError } = await supabase
         .from('cnh_ajudante')
         .select('*')
-        .eq('id_ajudante', ajudanteId)
+        .eq('id_ajudante', ajudante.id_ajudante)
         .maybeSingle();
-        
+
+      if (cnhError && cnhError.code !== 'PGRST116') throw cnhError;
+
       // Fetch RG data
       const { data: rgData, error: rgError } = await supabase
         .from('rg_ajudante')
         .select('*')
-        .eq('id_ajudante', ajudanteId)
+        .eq('id_ajudante', ajudante.id_ajudante)
         .maybeSingle();
-        
+
+      if (rgError && rgError.code !== 'PGRST116') throw rgError;
+
       // Fetch address data
       const { data: endData, error: endError } = await supabase
         .from('end_ajudante')
@@ -169,57 +151,52 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
             )
           )
         `)
-        .eq('id_ajudante', ajudanteId)
+        .eq('id_ajudante', ajudante.id_ajudante)
         .maybeSingle();
-      
-      // Determine document type based on available data
+
+      if (endError && endError.code !== 'PGRST116') throw endError;
+
+      // Set document type based on which document exists
       if (cnhData) {
         setDocumentType('cnh');
       } else if (rgData) {
         setDocumentType('rg');
       }
-      
+
       // Update form data
       setFormData({
         nome: ajudanteData.nome || '',
-        cpf: ajudanteData.cpf || '',
+        cpf: ajudanteData.cpf ? ajudanteData.cpf.toString() : '',
         telefone: ajudanteData.telefone || '',
         genero: ajudanteData.genero || '',
         
         // CNH
-        nr_registro: cnhData?.nr_registro?.toString() || '',
+        nr_registro: cnhData?.nr_registro ? cnhData.nr_registro.toString() : '',
         categoria: cnhData?.categoria || '',
         nome_pai: cnhData?.nome_pai || '',
         nome_mae: cnhData?.nome_mae || '',
         foto_cnh: cnhData?.foto_cnh || '',
         
         // RG
-        nr_rg: rgData?.nr_rg?.toString() || '',
-        data_emissao: rgData?.data_emissao || '',
+        nr_rg: rgData?.nr_rg ? rgData.nr_rg.toString() : '',
+        data_emissao: rgData?.data_emissao ? rgData.data_emissao.split('T')[0] : '',
         orgao_expedidor: rgData?.orgao_expedidor || '',
         filiacao: rgData?.filiacao || '',
         foto_rg: rgData?.foto_rg || '',
         
         // Endereço
         cep: endData?.logradouro?.nr_cep || '',
-        estado: endData?.logradouro?.bairro?.cidade?.estado?.id_estado?.toString() || '',
+        estado: endData?.logradouro?.bairro?.cidade?.estado?.id_estado.toString() || '',
         cidade: endData?.logradouro?.bairro?.cidade?.cidade || '',
         bairro: endData?.logradouro?.bairro?.bairro || '',
         logradouro: endData?.logradouro?.logradouro || '',
-        numero: endData?.nr_end?.toString() || '',
+        numero: endData?.nr_end ? endData.nr_end.toString() : '',
         complemento: endData?.ds_complemento_end || '',
         comprovante_residencia: ajudanteData.comprovante_residencia || ''
       });
-      
     } catch (error) {
       console.error('Erro ao carregar dados do ajudante:', error);
       toast.error('Erro ao carregar dados do ajudante');
-      // Close modal if ID is invalid
-      if (error instanceof Error && error.message === 'ID do ajudante inválido') {
-        onClose();
-      }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -268,7 +245,7 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'foto_cnh' | 'foto_rg' | 'comprovante_residencia') => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !isValidAjudanteId) return;
     
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
@@ -288,7 +265,7 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
       
       // Create a unique file name
       const fileExt = file.name.split('.').pop();
-      const fileName = `ajudante_${ajudanteId}_${field}_${Date.now()}.${fileExt}`;
+      const fileName = `ajudante_${ajudante.id_ajudante}_${field}.${fileExt}`;
       
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
@@ -314,137 +291,119 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     }
   };
 
-  const openDocumentInNewTab = (url: string | null) => {
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const isPdf = (url: string | null) => url?.toLowerCase().endsWith('.pdf');
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isValidAjudanteId) {
+      toast.error('ID do ajudante inválido');
+      return;
+    }
     
     try {
       setSubmitting(true);
 
-      // Validate ajudanteId before submitting
-      if (!isValidAjudanteId) {
-        throw new Error('ID do ajudante inválido');
-      }
-
-      // Validate CPF format
-      if (!/^\d{11}$/.test(formData.cpf)) {
-        throw new Error('CPF inválido. Digite 11 números.');
-      }
-
-      // Update documento_ajudante
+      // Update ajudante data
       const { error: ajudanteError } = await supabase
         .from('documento_ajudante')
         .update({
           nome: formData.nome,
-          cpf: formData.cpf,
+          cpf: formData.cpf ? parseFloat(formData.cpf) : null,
           telefone: formData.telefone || null,
           genero: formData.genero || null,
           comprovante_residencia: formData.comprovante_residencia || null
         })
-        .eq('id_ajudante', ajudanteId);
+        .eq('id_ajudante', ajudante.id_ajudante);
 
       if (ajudanteError) throw ajudanteError;
 
-      // Update CNH if data is provided and document type is CNH
+      // Handle CNH document
       if (documentType === 'cnh') {
-        // Check if CNH record exists
-        const { data: existingCnh } = await supabase
+        // Check if CNH exists
+        const { data: existingCnh, error: checkCnhError } = await supabase
           .from('cnh_ajudante')
           .select('id_cnh_ajudante')
-          .eq('id_ajudante', ajudanteId)
+          .eq('id_ajudante', ajudante.id_ajudante)
           .maybeSingle();
-          
+
+        if (checkCnhError && checkCnhError.code !== 'PGRST116') throw checkCnhError;
+
+        const cnhData = {
+          nr_registro: formData.nr_registro ? parseFloat(formData.nr_registro) : null,
+          categoria: formData.categoria || null,
+          nome_pai: formData.nome_pai || null,
+          nome_mae: formData.nome_mae || null,
+          foto_cnh: formData.foto_cnh || null,
+          id_ajudante: ajudante.id_ajudante
+        };
+
         if (existingCnh) {
           // Update existing CNH
-          const { error: cnhError } = await supabase
+          const { error: updateCnhError } = await supabase
             .from('cnh_ajudante')
-            .update({
-              nr_registro: formData.nr_registro ? parseFloat(formData.nr_registro) : null,
-              categoria: formData.categoria || null,
-              nome_pai: formData.nome_pai || null,
-              nome_mae: formData.nome_mae || null,
-              foto_cnh: formData.foto_cnh || null
-            })
+            .update(cnhData)
             .eq('id_cnh_ajudante', existingCnh.id_cnh_ajudante);
 
-          if (cnhError) throw cnhError;
+          if (updateCnhError) throw updateCnhError;
         } else {
           // Insert new CNH
-          const { error: cnhError } = await supabase
+          const { error: insertCnhError } = await supabase
             .from('cnh_ajudante')
-            .insert({
-              nr_registro: formData.nr_registro ? parseFloat(formData.nr_registro) : null,
-              categoria: formData.categoria || null,
-              nome_pai: formData.nome_pai || null,
-              nome_mae: formData.nome_mae || null,
-              foto_cnh: formData.foto_cnh || null,
-              id_ajudante: ajudanteId
-            });
+            .insert(cnhData);
 
-          if (cnhError) throw cnhError;
+          if (insertCnhError) throw insertCnhError;
         }
-        
-        // Delete RG if it exists (since we're switching to CNH)
+
+        // Delete RG if it exists
         await supabase
           .from('rg_ajudante')
           .delete()
-          .eq('id_ajudante', ajudanteId);
-      }
-
-      // Update RG if data is provided and document type is RG
-      if (documentType === 'rg') {
-        // Check if RG record exists
-        const { data: existingRg } = await supabase
+          .eq('id_ajudante', ajudante.id_ajudante);
+      } 
+      // Handle RG document
+      else if (documentType === 'rg') {
+        // Check if RG exists
+        const { data: existingRg, error: checkRgError } = await supabase
           .from('rg_ajudante')
           .select('id_rg_ajudante')
-          .eq('id_ajudante', ajudanteId)
+          .eq('id_ajudante', ajudante.id_ajudante)
           .maybeSingle();
-          
+
+        if (checkRgError && checkRgError.code !== 'PGRST116') throw checkRgError;
+
+        const rgData = {
+          nr_rg: formData.nr_rg ? parseFloat(formData.nr_rg) : null,
+          data_emissao: formData.data_emissao || null,
+          orgao_expedidor: formData.orgao_expedidor || null,
+          filiacao: formData.filiacao || null,
+          foto_rg: formData.foto_rg || null,
+          id_ajudante: ajudante.id_ajudante
+        };
+
         if (existingRg) {
           // Update existing RG
-          const { error: rgError } = await supabase
+          const { error: updateRgError } = await supabase
             .from('rg_ajudante')
-            .update({
-              nr_rg: formData.nr_rg ? parseFloat(formData.nr_rg) : null,
-              data_emissao: formData.data_emissao || null,
-              orgao_expedidor: formData.orgao_expedidor || null,
-              filiacao: formData.filiacao || null,
-              foto_rg: formData.foto_rg || null
-            })
+            .update(rgData)
             .eq('id_rg_ajudante', existingRg.id_rg_ajudante);
 
-          if (rgError) throw rgError;
+          if (updateRgError) throw updateRgError;
         } else {
           // Insert new RG
-          const { error: rgError } = await supabase
+          const { error: insertRgError } = await supabase
             .from('rg_ajudante')
-            .insert({
-              nr_rg: formData.nr_rg ? parseFloat(formData.nr_rg) : null,
-              data_emissao: formData.data_emissao || null,
-              orgao_expedidor: formData.orgao_expedidor || null,
-              filiacao: formData.filiacao || null,
-              foto_rg: formData.foto_rg || null,
-              id_ajudante: ajudanteId
-            });
+            .insert(rgData);
 
-          if (rgError) throw rgError;
+          if (insertRgError) throw insertRgError;
         }
-        
-        // Delete CNH if it exists (since we're switching to RG)
+
+        // Delete CNH if it exists
         await supabase
           .from('cnh_ajudante')
           .delete()
-          .eq('id_ajudante', ajudanteId);
+          .eq('id_ajudante', ajudante.id_ajudante);
       }
 
-      // Update address if all required fields are filled
+      // Handle address if provided
       if (formData.logradouro && formData.cidade && formData.estado) {
         try {
           // First, find the estado_id based on sigla_estado
@@ -546,41 +505,42 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
           }
 
           // Check if end_ajudante exists
-          const { data: existingEnd } = await supabase
+          const { data: existingEnd, error: checkEndError } = await supabase
             .from('end_ajudante')
             .select('id_end_ajudante')
-            .eq('id_ajudante', ajudanteId)
+            .eq('id_ajudante', ajudante.id_ajudante)
             .maybeSingle();
-            
+
+          if (checkEndError && checkEndError.code !== 'PGRST116') {
+            throw checkEndError;
+          }
+
+          const endData = {
+            nr_end: formData.numero ? parseInt(formData.numero) : null,
+            ds_complemento_end: formData.complemento || null,
+            id_ajudante: ajudante.id_ajudante,
+            id_logradouro: logradouroId
+          };
+
           if (existingEnd) {
             // Update existing end_ajudante
-            const { error: enderecoError } = await supabase
+            const { error: updateEndError } = await supabase
               .from('end_ajudante')
-              .update({
-                nr_end: formData.numero ? parseInt(formData.numero) : null,
-                ds_complemento_end: formData.complemento || null,
-                id_logradouro: logradouroId
-              })
+              .update(endData)
               .eq('id_end_ajudante', existingEnd.id_end_ajudante);
 
-            if (enderecoError) throw enderecoError;
+            if (updateEndError) throw updateEndError;
           } else {
             // Create new end_ajudante
-            const { error: enderecoError } = await supabase
+            const { error: insertEndError } = await supabase
               .from('end_ajudante')
-              .insert({
-                nr_end: formData.numero ? parseInt(formData.numero) : null,
-                ds_complemento_end: formData.complemento || null,
-                id_ajudante: ajudanteId,
-                id_logradouro: logradouroId
-              });
+              .insert(endData);
 
-            if (enderecoError) throw enderecoError;
+            if (insertEndError) throw insertEndError;
           }
         } catch (error) {
           console.error('Erro ao atualizar endereço:', error);
-          // Don't throw here, as address is optional
-          toast.error('Erro ao atualizar endereço, mas os outros dados foram atualizados');
+          toast.error('Erro ao atualizar endereço');
         }
       }
 
@@ -589,18 +549,13 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
       onClose();
     } catch (error) {
       console.error('Erro ao atualizar ajudante:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar ajudante');
+      toast.error('Erro ao atualizar ajudante');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (!isOpen) return null;
-
-  // Don't render modal if ajudanteId is invalid
-  if (!isValidAjudanteId) {
-    return null;
-  }
+  if (!isOpen || !isValidAjudanteId) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -617,710 +572,541 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
           </button>
         </div>
 
-        {loading ? (
-          <div className="p-6 flex justify-center">
-            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Personal Information */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Informações Pessoais
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nome *
+                </label>
+                <input
+                  type="text"
+                  name="nome"
+                  value={formData.nome}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  CPF *
+                </label>
+                <input
+                  type="text"
+                  name="cpf"
+                  value={formData.cpf}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 11) {
+                      setFormData(prev => ({ ...prev, cpf: value }));
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  required
+                  maxLength={11}
+                  placeholder="Digite o CPF (somente números)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Telefone
+                </label>
+                <input
+                  type="tel"
+                  name="telefone"
+                  value={formData.telefone}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    setFormData(prev => ({ ...prev, telefone: value }));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Gênero
+                </label>
+                <select
+                  name="genero"
+                  value={formData.genero}
+                  onChange={(e) => setFormData(prev => ({ ...prev, genero: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">Selecione</option>
+                  <option value="M">Masculino</option>
+                  <option value="F">Feminino</option>
+                  <option value="O">Outro</option>
+                </select>
+              </div>
+            </div>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Personal Information */}
+
+          {/* Document Type Selection */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Tipo de Documento
+            </h3>
+            
+            <div className="flex gap-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={documentType === 'cnh'}
+                  onChange={() => setDocumentType('cnh')}
+                  className="mr-2 rounded-full border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">CNH</span>
+              </label>
+              
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={documentType === 'rg'}
+                  onChange={() => setDocumentType('rg')}
+                  className="mr-2 rounded-full border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">RG</span>
+              </label>
+            </div>
+          </div>
+
+          {/* CNH Information - Only show if CNH is selected */}
+          {documentType === 'cnh' && (
             <div className="space-y-6">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                Informações Pessoais
+                Informações da CNH
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nome *
+                    Número da CNH
                   </label>
                   <input
                     type="text"
-                    name="nome"
-                    value={formData.nome}
-                    onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                    name="nr_registro"
+                    value={formData.nr_registro}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nr_registro: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    required
                   />
                 </div>
-
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    CPF *
-                  </label>
-                  <input
-                    type="text"
-                    name="cpf"
-                    value={formData.cpf}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      if (value.length <= 11) {
-                        setFormData(prev => ({ ...prev, cpf: value }));
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    required
-                    maxLength={11}
-                    placeholder="Digite o CPF (somente números)"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Telefone
-                  </label>
-                  <input
-                    type="tel"
-                    name="telefone"
-                    value={formData.telefone}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      setFormData(prev => ({ ...prev, telefone: value }));
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    placeholder="(00) 00000-0000"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Gênero
+                    Categoria
                   </label>
                   <select
-                    name="genero"
-                    value={formData.genero}
-                    onChange={(e) => setFormData(prev => ({ ...prev, genero: e.target.value }))}
+                    name="categoria"
+                    value={formData.categoria}
+                    onChange={(e) => setFormData(prev => ({ ...prev, categoria: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
                     <option value="">Selecione</option>
-                    <option value="M">Masculino</option>
-                    <option value="F">Feminino</option>
-                    <option value="O">Outro</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                    <option value="E">E</option>
+                    <option value="AB">AB</option>
+                    <option value="AC">AC</option>
+                    <option value="AD">AD</option>
+                    <option value="AE">AE</option>
                   </select>
                 </div>
-              </div>
-            </div>
-
-            {/* Document Type Selection */}
-            <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                Tipo de Documento
-              </h3>
-              
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    checked={documentType === 'cnh'}
-                    onChange={() => setDocumentType('cnh')}
-                    className="mr-2 rounded-full border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">CNH</span>
-                </label>
                 
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    checked={documentType === 'rg'}
-                    onChange={() => setDocumentType('rg')}
-                    className="mr-2 rounded-full border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">RG</span>
-                </label>
-              </div>
-            </div>
-
-            {/* CNH Information - Only show if CNH is selected */}
-            {documentType === 'cnh' && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                  Informações da CNH
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Número da CNH
-                    </label>
-                    <input
-                      type="text"
-                      name="nr_registro"
-                      value={formData.nr_registro}
-                      onChange={(e) => setFormData(prev => ({ ...prev, nr_registro: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Categoria
-                    </label>
-                    <select
-                      name="categoria"
-                      value={formData.categoria}
-                      onChange={(e) => setFormData(prev => ({ ...prev, categoria: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    >
-                      <option value="">Selecione</option>
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                      <option value="C">C</option>
-                      <option value="D">D</option>
-                      <option value="E">E</option>
-                      <option value="AB">AB</option>
-                      <option value="AC">AC</option>
-                      <option value="AD">AD</option>
-                      <option value="AE">AE</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Nome do Pai
-                    </label>
-                    <input
-                      type="text"
-                      name="nome_pai"
-                      value={formData.nome_pai}
-                      onChange={(e) => setFormData(prev => ({ ...prev, nome_pai: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Nome da Mãe
-                    </label>
-                    <input
-                      type="text"
-                      name="nome_mae"
-                      value={formData.nome_mae}
-                      onChange={(e) => setFormData(prev => ({ ...prev, nome_mae: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Foto da CNH
-                    </label>
-                    <div className="mt-1 flex items-center">
-                      {formData.foto_cnh ? (
-                        <div className="relative w-full">
-                          <div className="aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                            {isPdf(formData.foto_cnh) ? (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                                <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                                <div className="flex gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => setActiveDocument(formData.foto_cnh)}
-                                    className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
-                                  >
-                                    <FileText size={16} />
-                                    Visualizar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => openDocumentInNewTab(formData.foto_cnh)}
-                                    className="px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm flex items-center gap-1"
-                                  >
-                                    <ExternalLink size={16} />
-                                    Abrir
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <img
-                                src={formData.foto_cnh}
-                                alt="CNH"
-                                className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                onClick={() => setActiveDocument(formData.foto_cnh)}
-                              />
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, foto_cnh: '' }))}
-                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                            title="Remover documento"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex-1">
-                          <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                            <div className="space-y-1 text-center">
-                              <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                              <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                                <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                  Enviar arquivo
-                                </span>
-                                <input 
-                                  id="foto_cnh" 
-                                  name="foto_cnh" 
-                                  type="file" 
-                                  className="sr-only"
-                                  onChange={(e) => handleFileUpload(e, 'foto_cnh')}
-                                  accept="image/jpeg,image/png,application/pdf"
-                                />
-                              </div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                PNG, JPG ou PDF até 5MB
-                              </p>
-                            </div>
-                          </label>
-                        </div>
-                      )}
-                      {uploading.cnh && (
-                        <div className="ml-4">
-                          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* RG Information - Only show if RG is selected */}
-            {documentType === 'rg' && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                  Informações do RG
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Número do RG
-                    </label>
-                    <input
-                      type="text"
-                      name="nr_rg"
-                      value={formData.nr_rg}
-                      onChange={(e) => setFormData(prev => ({ ...prev, nr_rg: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Data de Emissão
-                    </label>
-                    <input
-                      type="date"
-                      name="data_emissao"
-                      value={formData.data_emissao}
-                      onChange={(e) => setFormData(prev => ({ ...prev, data_emissao: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Órgão Expedidor
-                    </label>
-                    <input
-                      type="text"
-                      name="orgao_expedidor"
-                      value={formData.orgao_expedidor}
-                      onChange={(e) => setFormData(prev => ({ ...prev, orgao_expedidor: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Filiação
-                    </label>
-                    <input
-                      type="text"
-                      name="filiacao"
-                      value={formData.filiacao}
-                      onChange={(e) => setFormData(prev => ({ ...prev, filiacao: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Foto do RG
-                    </label>
-                    <div className="mt-1 flex items-center">
-                      {formData.foto_rg ? (
-                        <div className="relative w-full">
-                          <div className="aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                            {isPdf(formData.foto_rg) ? (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                                <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                                <div className="flex gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => setActiveDocument(formData.foto_rg)}
-                                    className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
-                                  >
-                                    <FileText size={16} />
-                                    Visualizar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => openDocumentInNewTab(formData.foto_rg)}
-                                    className="px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm flex items-center gap-1"
-                                  >
-                                    <ExternalLink size={16} />
-                                    Abrir
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <img
-                                src={formData.foto_rg}
-                                alt="RG"
-                                className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                                onClick={() => setActiveDocument(formData.foto_rg)}
-                              />
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, foto_rg: '' }))}
-                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                            title="Remover documento"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex-1">
-                          <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                            <div className="space-y-1 text-center">
-                              <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                              <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                                <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                  Enviar arquivo
-                                </span>
-                                <input 
-                                  id="foto_rg" 
-                                  name="foto_rg" 
-                                  type="file" 
-                                  className="sr-only"
-                                  onChange={(e) => handleFileUpload(e, 'foto_rg')}
-                                  accept="image/jpeg,image/png,application/pdf"
-                                />
-                              </div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                PNG, JPG ou PDF até 5MB
-                              </p>
-                            </div>
-                          </label>
-                        </div>
-                      )}
-                      {uploading.rg && (
-                        <div className="ml-4">
-                          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Address Information */}
-            <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                Endereço
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    CEP
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      name="cep"
-                      value={formData.cep}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '');
-                        setFormData(prev => ({ ...prev, cep: value }));
-                        if (value.length === 8) {
-                          consultarCep(value);
-                        }
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      maxLength={8}
-                      placeholder="00000-000"
-                    />
-                    {loadingCep && (
-                      <div className="flex items-center px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg">
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      </div>
-                    )}
-                  </div>
-                  {formData.cep && formData.cep.length === 8 && (
-                    <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      {formatCEP(formData.cep)}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Estado
-                  </label>
-                  <select
-                    name="estado"
-                    value={formData.estado}
-                    onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="">Selecione um estado</option>
-                    {estados.map(estado => (
-                      <option key={estado.id_estado} value={estado.id_estado}>
-                        {estado.sigla_estado}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Cidade
+                    Nome do Pai
                   </label>
                   <input
                     type="text"
-                    name="cidade"
-                    value={formData.cidade}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cidade: e.target.value }))}
+                    name="nome_pai"
+                    value={formData.nome_pai}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nome_pai: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
-
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Bairro
+                    Nome da Mãe
                   </label>
                   <input
                     type="text"
-                    name="bairro"
-                    value={formData.bairro}
-                    onChange={(e) => setFormData(prev => ({ ...prev, bairro: e.target.value }))}
+                    name="nome_mae"
+                    value={formData.nome_mae}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nome_mae: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Logradouro
-                  </label>
-                  <input
-                    type="text"
-                    name="logradouro"
-                    value={formData.logradouro}
-                    onChange={(e) => setFormData(prev => ({ ...prev, logradouro: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Número
-                  </label>
-                  <input
-                    type="text"
-                    name="numero"
-                    value={formData.numero}
-                    onChange={(e) => {
-                      // Only allow numbers
-                      const value = e.target.value.replace(/\D/g, '');
-                      setFormData(prev => ({ ...prev, numero: value }));
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    placeholder="Digite apenas números"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Complemento
-                  </label>
-                  <input
-                    type="text"
-                    name="complemento"
-                    value={formData.complemento}
-                    onChange={(e) => setFormData(prev => ({ ...prev, complemento: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Comprovante de Residência
+                    Foto da CNH
                   </label>
                   <div className="mt-1 flex items-center">
-                    {formData.comprovante_residencia ? (
-                      <div className="relative w-full">
-                        <div className="aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                          {isPdf(formData.comprovante_residencia) ? (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                              <FileText className="w-12 h-12 text-gray-400 mb-2" />
-                              <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveDocument(formData.comprovante_residencia)}
-                                  className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
-                                >
-                                  <FileText size={16} />
-                                  Visualizar
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => openDocumentInNewTab(formData.comprovante_residencia)}
-                                  className="px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm flex items-center gap-1"
-                                >
-                                  <ExternalLink size={16} />
-                                  Abrir
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <img
-                              src={formData.comprovante_residencia}
-                              alt="Comprovante de Residência"
-                              className="absolute inset-0 w-full h-full object-contain cursor-pointer"
-                              onClick={() => setActiveDocument(formData.comprovante_residencia)}
+                    <div className="flex-1">
+                      <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                        <div className="space-y-1 text-center">
+                          <Camera className="mx-auto h-12 w-12 text-gray-400" />
+                          <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                            <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                              {formData.foto_cnh ? 'Trocar arquivo' : 'Enviar arquivo'}
+                            </span>
+                            <input 
+                              id="foto_cnh" 
+                              name="foto_cnh" 
+                              type="file" 
+                              className="sr-only"
+                              onChange={(e) => handleFileUpload(e, 'foto_cnh')}
+                              accept="image/jpeg,image/png,application/pdf"
                             />
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, comprovante_residencia: '' }))}
-                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                          title="Remover documento"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex-1">
-                        <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                          <div className="space-y-1 text-center">
-                            <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                            <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                              <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                Enviar arquivo
-                              </span>
-                              <input 
-                                id="comprovante_residencia" 
-                                name="comprovante_residencia" 
-                                type="file" 
-                                className="sr-only"
-                                onChange={(e) => handleFileUpload(e, 'comprovante_residencia')}
-                                accept="image/jpeg,image/png,application/pdf"
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              PNG, JPG ou PDF até 5MB
-                            </p>
                           </div>
-                        </label>
-                      </div>
-                    )}
-                    {uploading.comprovante && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            PNG, JPG ou PDF até 5MB
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                    {uploading.cnh && (
                       <div className="ml-4">
                         <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
                       </div>
                     )}
+                    {formData.foto_cnh && !uploading.cnh && (
+                      <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
+                        <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Documento enviado
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
+          )}
 
-            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                disabled={submitting}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                disabled={submitting || !isValidAjudanteId}
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    Salvar
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        )}
+          {/* RG Information - Only show if RG is selected */}
+          {documentType === 'rg' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                Informações do RG
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Número do RG
+                  </label>
+                  <input
+                    type="text"
+                    name="nr_rg"
+                    value={formData.nr_rg}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nr_rg: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Data de Emissão
+                  </label>
+                  <input
+                    type="date"
+                    name="data_emissao"
+                    value={formData.data_emissao}
+                    onChange={(e) => setFormData(prev => ({ ...prev, data_emissao: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Órgão Expedidor
+                  </label>
+                  <input
+                    type="text"
+                    name="orgao_expedidor"
+                    value={formData.orgao_expedidor}
+                    onChange={(e) => setFormData(prev => ({ ...prev, orgao_expedidor: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Filiação
+                  </label>
+                  <input
+                    type="text"
+                    name="filiacao"
+                    value={formData.filiacao}
+                    onChange={(e) => setFormData(prev => ({ ...prev, filiacao: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
 
-        {/* Full-screen document viewer */}
-        {activeDocument && (
-          <div 
-            className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
-            onClick={() => setActiveDocument(null)}
-          >
-            <div 
-              className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Visualização do Documento
-                </h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openDocumentInNewTab(activeDocument)}
-                    className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    title="Abrir em nova aba"
-                  >
-                    <ExternalLink size={20} />
-                  </button>
-                  <button
-                    onClick={() => setActiveDocument(null)}
-                    className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Foto do RG
+                  </label>
+                  <div className="mt-1 flex items-center">
+                    <div className="flex-1">
+                      <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                        <div className="space-y-1 text-center">
+                          <Camera className="mx-auto h-12 w-12 text-gray-400" />
+                          <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                            <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                              {formData.foto_rg ? 'Trocar arquivo' : 'Enviar arquivo'}
+                            </span>
+                            <input 
+                              id="foto_rg" 
+                              name="foto_rg" 
+                              type="file" 
+                              className="sr-only"
+                              onChange={(e) => handleFileUpload(e, 'foto_rg')}
+                              accept="image/jpeg,image/png,application/pdf"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            PNG, JPG ou PDF até 5MB
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                    {uploading.rg && (
+                      <div className="ml-4">
+                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                      </div>
+                    )}
+                    {formData.foto_rg && !uploading.rg && (
+                      <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
+                        <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Documento enviado
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="relative h-[calc(90vh-80px)]">
-                {isPdf(activeDocument) ? (
-                  <iframe 
-                    src={`${activeDocument}#toolbar=1`} 
-                    className="w-full h-full" 
-                    title="PDF Viewer"
+            </div>
+          )}
+
+          {/* Address Information */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Endereço
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  CEP
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    name="cep"
+                    value={formData.cep}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      setFormData(prev => ({ ...prev, cep: value }));
+                      if (value.length === 8) {
+                        consultarCep(value);
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    maxLength={8}
+                    placeholder="00000-000"
                   />
-                ) : (
-                  <img
-                    src={activeDocument}
-                    alt="Documento"
-                    className="w-full h-full object-contain"
-                  />
+                  {loadingCep && (
+                    <div className="flex items-center px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    </div>
+                  )}
+                </div>
+                {formData.cep && formData.cep.length === 8 && (
+                  <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {formatCEP(formData.cep)}
+                  </div>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Estado
+                </label>
+                <select
+                  name="estado"
+                  value={formData.estado}
+                  onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">Selecione um estado</option>
+                  {estados.map(estado => (
+                    <option key={estado.id_estado} value={estado.id_estado}>
+                      {estado.sigla_estado}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Cidade
+                </label>
+                <input
+                  type="text"
+                  name="cidade"
+                  value={formData.cidade}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cidade: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Bairro
+                </label>
+                <input
+                  type="text"
+                  name="bairro"
+                  value={formData.bairro}
+                  onChange={(e) => setFormData(prev => ({ ...prev, bairro: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Logradouro
+                </label>
+                <input
+                  type="text"
+                  name="logradouro"
+                  value={formData.logradouro}
+                  onChange={(e) => setFormData(prev => ({ ...prev, logradouro: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Número
+                </label>
+                <input
+                  type="text"
+                  name="numero"
+                  value={formData.numero}
+                  onChange={(e) => {
+                    // Only allow numbers
+                    const value = e.target.value.replace(/\D/g, '');
+                    setFormData(prev => ({ ...prev, numero: value }));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="Digite apenas números"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Complemento
+                </label>
+                <input
+                  type="text"
+                  name="complemento"
+                  value={formData.complemento}
+                  onChange={(e) => setFormData(prev => ({ ...prev, complemento: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Comprovante de Residência
+                </label>
+                <div className="mt-1 flex items-center">
+                  <div className="flex-1">
+                    <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                      <div className="space-y-1 text-center">
+                        <Camera className="mx-auto h-12 w-12 text-gray-400" />
+                        <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                          <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                            {formData.comprovante_residencia ? 'Trocar arquivo' : 'Enviar arquivo'}
+                          </span>
+                          <input 
+                            id="comprovante_residencia" 
+                            name="comprovante_residencia" 
+                            type="file" 
+                            className="sr-only"
+                            onChange={(e) => handleFileUpload(e, 'comprovante_residencia')}
+                            accept="image/jpeg,image/png,application/pdf"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          PNG, JPG ou PDF até 5MB
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                  {uploading.comprovante && (
+                    <div className="ml-4">
+                      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                    </div>
+                  )}
+                  {formData.comprovante_residencia && !uploading.comprovante && (
+                    <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
+                      <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Documento enviado
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        )}
+
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+              disabled={submitting}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              disabled={submitting || !isValidAjudanteId}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  Salvar
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
