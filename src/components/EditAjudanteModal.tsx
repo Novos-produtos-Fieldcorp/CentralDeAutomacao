@@ -43,6 +43,7 @@ interface AjudanteData {
 }
 
 const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjudanteModalProps) => {
+  // ALL HOOKS MUST BE DECLARED FIRST - NO CONDITIONAL LOGIC BEFORE HOOKS
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingCep, setLoadingCep] = useState(false);
@@ -86,23 +87,16 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     comprovante_residencia: ''
   });
 
-  // Check if ajudanteId is valid
+  // Check if ajudanteId is valid - but don't return early
   const isValidAjudanteId = ajudanteId && !isNaN(ajudanteId) && ajudanteId > 0;
 
-  // Early return if modal is not open or ID is invalid
-  if (!isOpen) return null;
-  
-  if (!isValidAjudanteId) {
-    // Close modal immediately and return null without logging error
-    React.useEffect(() => {
-      if (isOpen) {
-        toast.error('ID do ajudante inválido');
-        onClose();
-      }
-    }, [isOpen, onClose]);
-    
-    return null;
-  }
+  // useEffect for handling invalid ID - conditional logic inside the effect
+  useEffect(() => {
+    if (isOpen && !isValidAjudanteId) {
+      toast.error('ID do ajudante inválido');
+      onClose();
+    }
+  }, [isOpen, isValidAjudanteId, onClose]);
 
   useEffect(() => {
     if (isOpen && isValidAjudanteId) {
@@ -591,6 +585,13 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
       setSubmitting(false);
     }
   };
+
+  // CONDITIONAL RETURNS ONLY AFTER ALL HOOKS ARE DECLARED
+  if (!isOpen) return null;
+  
+  if (!isValidAjudanteId) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
