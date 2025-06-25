@@ -296,19 +296,26 @@ const ResumosGrupo = () => {
           throw new Error(`Webhook failed: ${response.status} - ${errorText}`);
         }
         
-        // Get the response message
+        // Try to parse the response as JSON to get the message
         let responseMessage = 'Resumo enviado com sucesso';
         try {
-          const responseData = await response.json();
+          const responseText = await response.text();
+          const responseData = JSON.parse(responseText);
           if (responseData && responseData.message) {
             responseMessage = responseData.message;
+          } else if (responseData && responseData.status) {
+            responseMessage = `Status: ${responseData.status}`;
           }
         } catch (parseError) {
           console.log('Could not parse JSON response, using default message');
-          // Use the default message if we can't parse the response
-          const responseText = await response.text();
-          if (responseText) {
-            responseMessage = `Resposta: ${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}`;
+          // Try to get the response text if JSON parsing fails
+          try {
+            const responseText = await response.text();
+            if (responseText && responseText.length > 0) {
+              responseMessage = `Resposta: ${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}`;
+            }
+          } catch (textError) {
+            console.log('Could not get response text, using default message');
           }
         }
         
@@ -333,7 +340,7 @@ const ResumosGrupo = () => {
       } catch (webhookError: any) {
         console.error('Error sending to webhook:', webhookError);
         
-        // Create a failed summary record
+        // Create a failed summary record with the error message
         const errorMessage = webhookError.message || 'Erro desconhecido';
         const { error: dbError } = await supabase
           .from('envio_resumo')
