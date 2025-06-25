@@ -1,11 +1,91 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Plus, Trash2, Clock, Link2, MessagesSquare, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search } from 'lucide-react';
+import { ClipboardList, Plus, Trash2, Clock, Link2, MessagesSquare, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search, Palette, X } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { Navigate } from 'react-router-dom';
+
+// Import all the message icons from Lucide
+import { 
+  MessageCircle, 
+  MessageCircleDashed, 
+  MessageCircleHeart, 
+  MessageCircleMore, 
+  MessageCirclePlus, 
+  MessageCircleQuestion, 
+  MessageCircleReply, 
+  MessageCircleWarning, 
+  MessageSquare, 
+  MessageSquareDashed, 
+  MessageSquareMore, 
+  MessageSquareQuote, 
+  MessageSquareText, 
+  MessageSquareWarning, 
+  MessagesSquare as MessagesSquareIcon,
+  Send as SendIcon,
+  Bell,
+  BellRing,
+  Users,
+  UserRound,
+  Truck,
+  TruckIcon,
+  Gauge,
+  ClipboardCheck,
+  FileBarChart,
+  BarChart,
+  PieChart,
+  LineChart,
+  Activity
+} from 'lucide-react';
+
+// Define icon options
+const iconOptions = [
+  { icon: MessageCircle, name: 'MessageCircle' },
+  { icon: MessageCircleDashed, name: 'MessageCircleDashed' },
+  { icon: MessageCircleHeart, name: 'MessageCircleHeart' },
+  { icon: MessageCircleMore, name: 'MessageCircleMore' },
+  { icon: MessageCirclePlus, name: 'MessageCirclePlus' },
+  { icon: MessageCircleQuestion, name: 'MessageCircleQuestion' },
+  { icon: MessageCircleReply, name: 'MessageCircleReply' },
+  { icon: MessageCircleWarning, name: 'MessageCircleWarning' },
+  { icon: MessageSquare, name: 'MessageSquare' },
+  { icon: MessageSquareDashed, name: 'MessageSquareDashed' },
+  { icon: MessageSquareMore, name: 'MessageSquareMore' },
+  { icon: MessageSquareQuote, name: 'MessageSquareQuote' },
+  { icon: MessageSquareText, name: 'MessageSquareText' },
+  { icon: MessageSquareWarning, name: 'MessageSquareWarning' },
+  { icon: MessagesSquareIcon, name: 'MessagesSquare' },
+  { icon: SendIcon, name: 'Send' },
+  { icon: Bell, name: 'Bell' },
+  { icon: BellRing, name: 'BellRing' },
+  { icon: Users, name: 'Users' },
+  { icon: UserRound, name: 'UserRound' },
+  { icon: Truck, name: 'Truck' },
+  { icon: TruckIcon, name: 'TruckIcon' },
+  { icon: Gauge, name: 'Gauge' },
+  { icon: ClipboardCheck, name: 'ClipboardCheck' },
+  { icon: FileBarChart, name: 'FileBarChart' },
+  { icon: BarChart, name: 'BarChart' },
+  { icon: PieChart, name: 'PieChart' },
+  { icon: LineChart, name: 'LineChart' },
+  { icon: Activity, name: 'Activity' }
+];
+
+// Define color options
+const colorOptions = [
+  { name: 'blue', bgLight: 'bg-blue-100', bgDark: 'dark:bg-blue-900/20', text: 'text-blue-600', textDark: 'dark:text-blue-400', border: 'border-blue-200', borderDark: 'dark:border-blue-800/30' },
+  { name: 'green', bgLight: 'bg-green-100', bgDark: 'dark:bg-green-900/20', text: 'text-green-600', textDark: 'dark:text-green-400', border: 'border-green-200', borderDark: 'dark:border-green-800/30' },
+  { name: 'red', bgLight: 'bg-red-100', bgDark: 'dark:bg-red-900/20', text: 'text-red-600', textDark: 'dark:text-red-400', border: 'border-red-200', borderDark: 'dark:border-red-800/30' },
+  { name: 'yellow', bgLight: 'bg-yellow-100', bgDark: 'dark:bg-yellow-900/20', text: 'text-yellow-600', textDark: 'dark:text-yellow-400', border: 'border-yellow-200', borderDark: 'dark:border-yellow-800/30' },
+  { name: 'purple', bgLight: 'bg-purple-100', bgDark: 'dark:bg-purple-900/20', text: 'text-purple-600', textDark: 'dark:text-purple-400', border: 'border-purple-200', borderDark: 'dark:border-purple-800/30' },
+  { name: 'indigo', bgLight: 'bg-indigo-100', bgDark: 'dark:bg-indigo-900/20', text: 'text-indigo-600', textDark: 'dark:text-indigo-400', border: 'border-indigo-200', borderDark: 'dark:border-indigo-800/30' },
+  { name: 'pink', bgLight: 'bg-pink-100', bgDark: 'dark:bg-pink-900/20', text: 'text-pink-600', textDark: 'dark:text-pink-400', border: 'border-pink-200', borderDark: 'dark:border-pink-800/30' },
+  { name: 'orange', bgLight: 'bg-orange-100', bgDark: 'dark:bg-orange-900/20', text: 'text-orange-600', textDark: 'dark:text-orange-400', border: 'border-orange-200', borderDark: 'dark:border-orange-800/30' },
+  { name: 'teal', bgLight: 'bg-teal-100', bgDark: 'dark:bg-teal-900/20', text: 'text-teal-600', textDark: 'dark:text-teal-400', border: 'border-teal-200', borderDark: 'dark:border-teal-800/30' },
+  { name: 'gray', bgLight: 'bg-gray-100', bgDark: 'dark:bg-gray-700', text: 'text-gray-600', textDark: 'dark:text-gray-400', border: 'border-gray-200', borderDark: 'dark:border-gray-700' }
+];
 
 interface GrupoResumo {
   id: number;
@@ -15,6 +95,8 @@ interface GrupoResumo {
   ativo: boolean;
   company_id: number;
   created_at: string;
+  icon_name?: string;
+  color_name?: string;
 }
 
 interface EnvioResumo {
@@ -37,7 +119,9 @@ const ResumosGrupo = () => {
   const [formData, setFormData] = useState({
     nome_grupo: '',
     url_grupo: '',
-    horario: '08:00'
+    horario: '08:00',
+    icon_name: 'MessagesSquare',
+    color_name: 'blue'
   });
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -48,6 +132,8 @@ const ResumosGrupo = () => {
   const [activeTab, setActiveTab] = useState<'grupos' | 'historico'>('grupos');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAccessPopup, setShowAccessPopup] = useState(false);
+  const [showIconSelector, setShowIconSelector] = useState(false);
+  const [showColorSelector, setShowColorSelector] = useState(false);
 
   useEffect(() => {
     fetchGrupos();
@@ -137,7 +223,9 @@ const ResumosGrupo = () => {
           .update({
             nome_grupo: formData.nome_grupo,
             url_grupo: formData.url_grupo,
-            horario: formData.horario
+            horario: formData.horario,
+            icon_name: formData.icon_name,
+            color_name: formData.color_name
           })
           .eq('id', editingId)
           .eq('company_id', companyId);
@@ -152,6 +240,8 @@ const ResumosGrupo = () => {
             nome_grupo: formData.nome_grupo,
             url_grupo: formData.url_grupo,
             horario: formData.horario,
+            icon_name: formData.icon_name,
+            color_name: formData.color_name,
             ativo: true,
             company_id: companyId
           });
@@ -164,10 +254,14 @@ const ResumosGrupo = () => {
       setFormData({
         nome_grupo: '',
         url_grupo: '',
-        horario: '08:00'
+        horario: '08:00',
+        icon_name: 'MessagesSquare',
+        color_name: 'blue'
       });
       setIsModalOpen(false);
       setEditingId(null);
+      setShowIconSelector(false);
+      setShowColorSelector(false);
       
       // Refresh the list
       fetchGrupos();
@@ -183,7 +277,9 @@ const ResumosGrupo = () => {
     setFormData({
       nome_grupo: grupo.nome_grupo,
       url_grupo: grupo.url_grupo,
-      horario: grupo.horario
+      horario: grupo.horario,
+      icon_name: grupo.icon_name || 'MessagesSquare',
+      color_name: grupo.color_name || 'blue'
     });
     setEditingId(grupo.id);
     setIsModalOpen(true);
@@ -320,6 +416,18 @@ const ResumosGrupo = () => {
     envio.mensagem?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Function to get the icon component by name
+  const getIconByName = (iconName: string) => {
+    const iconOption = iconOptions.find(option => option.name === iconName);
+    return iconOption ? iconOption.icon : MessagesSquareIcon;
+  };
+
+  // Function to get color classes by name
+  const getColorByName = (colorName: string) => {
+    const colorOption = colorOptions.find(option => option.name === colorName);
+    return colorOption || colorOptions[0]; // Default to first color if not found
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -329,10 +437,14 @@ const ResumosGrupo = () => {
             setFormData({
               nome_grupo: '',
               url_grupo: '',
-              horario: '08:00'
+              horario: '08:00',
+              icon_name: 'MessagesSquare',
+              color_name: 'blue'
             });
             setEditingId(null);
             setIsModalOpen(true);
+            setShowIconSelector(false);
+            setShowColorSelector(false);
           }}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
@@ -355,7 +467,7 @@ const ResumosGrupo = () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >
-              <MessagesSquare className="w-5 h-5" />
+              <MessagesSquareIcon className="w-5 h-5" />
               Grupos
             </button>
             <button
@@ -394,7 +506,9 @@ const ResumosGrupo = () => {
                       setFormData({
                         nome_grupo: '',
                         url_grupo: '',
-                        horario: '08:00'
+                        horario: '08:00',
+                        icon_name: 'MessagesSquare',
+                        color_name: 'blue'
                       });
                       setEditingId(null);
                       setIsModalOpen(true);
@@ -409,121 +523,128 @@ const ResumosGrupo = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {grupos.map(grupo => (
-                    <div 
-                      key={grupo.id} 
-                      className={`bg-white dark:bg-gray-800 rounded-lg border ${
-                        grupo.ativo 
-                          ? 'border-green-200 dark:border-green-800/30' 
-                          : 'border-gray-200 dark:border-gray-700'
-                      } shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg`}
-                    >
-                      <div className="p-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-full ${
-                              grupo.ativo 
-                                ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' 
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                            }`}>
-                              <MessagesSquare className="w-5 h-5" />
-                            </div>
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                              {grupo.nome_grupo}
-                            </h3>
-                          </div>
-                          <div className="flex items-center">
-                            <button
-                              onClick={() => toggleStatus(grupo.id, grupo.ativo)}
-                              disabled={toggleLoading === grupo.id}
-                              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  {grupos.map(grupo => {
+                    // Get icon component
+                    const IconComponent = getIconByName(grupo.icon_name || 'MessagesSquare');
+                    // Get color classes
+                    const colorClasses = getColorByName(grupo.color_name || 'blue');
+                    
+                    return (
+                      <div 
+                        key={grupo.id} 
+                        className={`bg-white dark:bg-gray-800 rounded-lg border ${
+                          grupo.ativo 
+                            ? colorClasses.border + ' ' + colorClasses.borderDark
+                            : 'border-gray-200 dark:border-gray-700'
+                        } shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg`}
+                      >
+                        <div className="p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-full ${
                                 grupo.ativo 
-                                  ? 'bg-green-500 dark:bg-green-600' 
-                                  : 'bg-gray-200 dark:bg-gray-700'
-                              } ${toggleLoading === grupo.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                              role="switch"
-                              aria-checked={grupo.ativo}
-                            >
-                              <span
-                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                  grupo.ativo ? 'translate-x-5' : 'translate-x-0'
-                                }`}
-                              />
-                              {toggleLoading === grupo.id && (
-                                <Loader2 
-                                  className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
+                                  ? colorClasses.bgLight + ' ' + colorClasses.bgDark + ' ' + colorClasses.text + ' ' + colorClasses.textDark
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                              }`}>
+                                <IconComponent className="w-5 h-5" />
+                              </div>
+                              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                                {grupo.nome_grupo}
+                              </h3>
+                            </div>
+                            <div className="flex items-center">
+                              <button
+                                onClick={() => toggleStatus(grupo.id, grupo.ativo)}
+                                disabled={toggleLoading === grupo.id}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                                  grupo.ativo 
+                                    ? 'bg-green-500 dark:bg-green-600' 
+                                    : 'bg-gray-200 dark:bg-gray-700'
+                                } ${toggleLoading === grupo.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                role="switch"
+                                aria-checked={grupo.ativo}
+                              >
+                                <span
+                                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                    grupo.ativo ? 'translate-x-5' : 'translate-x-0'
+                                  }`}
                                 />
-                              )}
-                            </button>
+                                {toggleLoading === grupo.id && (
+                                  <Loader2 
+                                    className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
+                                  />
+                                )}
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                        
-                        <div className="space-y-3 mb-6">
-                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <Clock className="w-4 h-4 text-gray-400" />
-                            <span>Horario do envio: {formatTime(grupo.horario)}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <Link2 className="w-4 h-4 text-gray-400" />
-                            <span className="truncate" title={grupo.url_grupo}>
-                              URL: {grupo.url_grupo.substring(0, 30)}...
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              grupo.ativo 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                            }`}>
-                              {grupo.ativo ? 'Ativo' : 'Inativo'}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex justify-between gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
-                          <button
-                            onClick={() => handleManualSummary(grupo.id)}
-                            disabled={!grupo.ativo || sendingManualSummary === grupo.id}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 ${
-                              grupo.ativo
-                                ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30'
-                                : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500'
-                            }`}
-                          >
-                            {sendingManualSummary === grupo.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Send className="w-3.5 h-3.5" />
-                            )}
-                            Enviar Agora
-                          </button>
                           
-                          <div className="flex gap-2">
+                          <div className="space-y-3 mb-6">
+                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                              <Clock className="w-4 h-4 text-gray-400" />
+                              <span>Horario do envio: {formatTime(grupo.horario)}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                              <Link2 className="w-4 h-4 text-gray-400" />
+                              <span className="truncate" title={grupo.url_grupo}>
+                                URL: {grupo.url_grupo.substring(0, 30)}...
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                grupo.ativo 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
+                                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              }`}>
+                                {grupo.ativo ? 'Ativo' : 'Inativo'}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-between gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                             <button
-                              onClick={() => handleEdit(grupo)}
-                              className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                                       hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                              title="Editar grupo"
+                              onClick={() => handleManualSummary(grupo.id)}
+                              disabled={!grupo.ativo || sendingManualSummary === grupo.id}
+                              className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 ${
+                                grupo.ativo
+                                  ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30'
+                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500'
+                              }`}
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                                <path d="m15 5 4 4"></path>
-                              </svg>
+                              {sendingManualSummary === grupo.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Send className="w-3.5 h-3.5" />
+                              )}
+                              Enviar Agora
                             </button>
                             
-                            <button
-                              onClick={() => handleDelete(grupo.id)}
-                              className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEdit(grupo)}
+                                className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                       hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                title="Editar grupo"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                                  <path d="m15 5 4 4"></path>
+                                </svg>
+                              </button>
+                              
+                              <button
+                                onClick={() => handleDelete(grupo.id)}
+                                className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
                                        hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                              title="Excluir grupo"
-                            >
-                              <Trash2 className="w-[18px] h-[18px]" />
-                            </button>
+                                title="Excluir grupo"
+                              >
+                                <Trash2 className="w-[18px] h-[18px]" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>
@@ -593,7 +714,7 @@ const ResumosGrupo = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <MessagesSquare className="w-4 h-4 text-gray-400 mr-2" />
+                              <MessagesSquareIcon className="w-4 h-4 text-gray-400 mr-2" />
                               <span className="text-sm font-medium text-gray-900 dark:text-white">
                                 {envio.nome_grupo}
                               </span>
@@ -701,6 +822,96 @@ const ResumosGrupo = () => {
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     O horário deve ser informado no fuso horário de Brasília (UTC-3)
                   </p>
+                </div>
+
+                {/* Icon Selector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Ícone
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className={`p-2 rounded-full ${getColorByName(formData.color_name).bgLight} ${getColorByName(formData.color_name).bgDark} ${getColorByName(formData.color_name).text} ${getColorByName(formData.color_name).textDark}`}
+                    >
+                      {React.createElement(getIconByName(formData.icon_name), { size: 20 })}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowIconSelector(!showIconSelector)}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 flex items-center gap-2"
+                    >
+                      {showIconSelector ? 'Fechar Seletor' : 'Escolher Ícone'}
+                    </button>
+                  </div>
+                  
+                  {showIconSelector && (
+                    <div className="mt-2 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50 max-h-40 overflow-y-auto">
+                      <div className="grid grid-cols-6 gap-2">
+                        {iconOptions.map((iconOption) => (
+                          <div
+                            key={iconOption.name}
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, icon_name: iconOption.name }));
+                              setShowIconSelector(false);
+                            }}
+                            className={`p-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center ${
+                              formData.icon_name === iconOption.name ? 'bg-blue-100 dark:bg-blue-900/20' : ''
+                            }`}
+                            title={iconOption.name}
+                          >
+                            {React.createElement(iconOption.icon, { 
+                              size: 20,
+                              className: formData.icon_name === iconOption.name 
+                                ? 'text-blue-600 dark:text-blue-400' 
+                                : 'text-gray-600 dark:text-gray-400'
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Color Selector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Cor
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className={`w-6 h-6 rounded-full ${getColorByName(formData.color_name).bgLight} ${getColorByName(formData.color_name).bgDark} border ${getColorByName(formData.color_name).border} ${getColorByName(formData.color_name).borderDark}`}
+                    ></div>
+                    <button
+                      type="button"
+                      onClick={() => setShowColorSelector(!showColorSelector)}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 flex items-center gap-2"
+                    >
+                      <Palette className="w-4 h-4" />
+                      {showColorSelector ? 'Fechar Seletor' : 'Escolher Cor'}
+                    </button>
+                  </div>
+                  
+                  {showColorSelector && (
+                    <div className="mt-2 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div className="grid grid-cols-5 gap-2">
+                        {colorOptions.map((colorOption) => (
+                          <div
+                            key={colorOption.name}
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, color_name: colorOption.name }));
+                              setShowColorSelector(false);
+                            }}
+                            className={`w-8 h-8 rounded-full ${colorOption.bgLight} ${colorOption.bgDark} cursor-pointer border-2 ${
+                              formData.color_name === colorOption.name 
+                                ? 'border-gray-900 dark:border-white' 
+                                : `border-${colorOption.name}-200 dark:border-${colorOption.name}-800/30`
+                            }`}
+                            title={colorOption.name}
+                          ></div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
