@@ -21,7 +21,7 @@ interface EnvioResumo {
   id: number;
   grupo_id: number;
   data_envio: string;
-  status: 'success' | 'error';
+  status: boolean;
   mensagem: string;
   nome_grupo: string;
 }
@@ -295,11 +295,11 @@ const ResumosGrupo = () => {
         console.log('Resposta completa do servidor:', response.status, responseText);
         
         // Determine message to save based on response
-        let statusToSave: 'success' | 'error';
+        let statusToSave: boolean;
         let messageToSave: string;
         
         if (response.ok) {
-          statusToSave = 'success';
+          statusToSave = true;
           // Try to parse JSON response for more details
           try {
             const jsonResponse = JSON.parse(responseText);
@@ -309,7 +309,7 @@ const ResumosGrupo = () => {
             messageToSave = `Resposta: ${responseText}`;
           }
         } else {
-          statusToSave = 'error';
+          statusToSave = false;
           messageToSave = `Erro ${response.status}: ${responseText}`;
           
           // Show toast with error details
@@ -338,7 +338,7 @@ const ResumosGrupo = () => {
         if (dbError) {
           console.error('Error saving summary record:', dbError);
           toast.error('Erro ao salvar no histórico');
-        } else if (statusToSave === 'success') {
+        } else if (statusToSave) {
           toast.success('Resumo enviado com sucesso');
         }
         
@@ -354,7 +354,7 @@ const ResumosGrupo = () => {
             grupo_id: id,
             company_id: companyId,
             data_envio: brasiliaTime.toISOString(),
-            status: 'error',
+            status: false,
             mensagem: `Erro de rede: ${fetchError.message || 'Erro desconhecido'}`
           });
           
@@ -691,11 +691,11 @@ const ResumosGrupo = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              envio.status === 'success'
+                              envio.status
                                 ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
                                 : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
                             }`}>
-                              {envio.status === 'success' ? (
+                              {envio.status ? (
                                 <>
                                   <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                                   Enviado
