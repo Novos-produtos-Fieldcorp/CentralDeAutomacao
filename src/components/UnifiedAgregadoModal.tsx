@@ -907,15 +907,18 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
         veiculo_id={veiculo?.veiculo_id}
       />
       
-      <EditAjudanteModal
-        isOpen={isEditAjudanteModalOpen}
-        onClose={() => setIsEditAjudanteModalOpen(false)}
-        onSuccess={() => {
-          fetchData();
-          setIsEditAjudanteModalOpen(false);
-        }}
-        ajudante={selectedAjudante}
-      />
+      {/* Edit Ajudante Modal - Only render when both conditions are met */}
+      {isEditAjudanteModalOpen && selectedAjudante && (
+        <EditAjudanteModal
+          isOpen={isEditAjudanteModalOpen}
+          onClose={() => setIsEditAjudanteModalOpen(false)}
+          onSuccess={() => {
+            fetchData();
+            setIsEditAjudanteModalOpen(false);
+          }}
+          ajudante={selectedAjudante}
+        />
+      )}
 
       <EditMotoristaModal
         isOpen={isEditMotoristaModalOpen}
