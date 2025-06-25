@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Plus, Trash2, Clock, Link2, Users, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search } from 'lucide-react';
+import { ClipboardList, Plus, Trash2, Clock, Link2, Bot, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -440,7 +440,7 @@ const ResumosGrupo = () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >
-              <Users className="w-5 h-5" />
+              <Bot className="w-5 h-5" />
               Grupos
             </button>
             <button
@@ -511,7 +511,7 @@ const ResumosGrupo = () => {
                                 ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' 
                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                             }`}>
-                              <Users className="w-5 h-5" />
+                              <Bot className="w-5 h-5" />
                             </div>
                             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                               {grupo.nome_grupo}
@@ -678,7 +678,7 @@ const ResumosGrupo = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <Users className="w-4 h-4 text-gray-400 mr-2" />
+                              <Bot className="w-4 h-4 text-gray-400 mr-2" />
                               <span className="text-sm font-medium text-gray-900 dark:text-white">
                                 {envio.nome_grupo}
                               </span>
