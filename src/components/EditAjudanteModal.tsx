@@ -87,9 +87,14 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
   });
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && ajudanteId && !isNaN(ajudanteId) && ajudanteId > 0) {
       fetchEstados();
       fetchAjudanteData();
+    } else if (isOpen && (!ajudanteId || isNaN(ajudanteId) || ajudanteId <= 0)) {
+      // Close modal immediately if ID is invalid
+      console.error('ID do ajudante inválido:', ajudanteId);
+      toast.error('ID do ajudante inválido');
+      onClose();
     }
   }, [isOpen, ajudanteId]);
 
