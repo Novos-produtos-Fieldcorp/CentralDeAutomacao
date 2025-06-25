@@ -1,9 +1,12 @@
 // Format CPF to Brazilian format (XXX.XXX.XXX-XX)
-export const formatCPF = (cpf: string | undefined | null): string => {
+export const formatCPF = (cpf: string | number | undefined | null): string => {
   if (!cpf) return '-';
   
+  // Convert to string first to handle both string and number inputs
+  const cpfString = String(cpf);
+  
   // Remove any non-digit characters and the 55 prefix if present
-  const cleanCPF = cpf.replace(/\D/g, '').replace(/^55/, '');
+  const cleanCPF = cpfString.replace(/\D/g, '').replace(/^55/, '');
   
   // Return formatted CPF if it has 11 digits
   if (cleanCPF.length === 11) {
@@ -11,15 +14,18 @@ export const formatCPF = (cpf: string | undefined | null): string => {
   }
   
   // Return original value if not valid
-  return cpf;
+  return cpfString;
 };
 
 // Format phone number to Brazilian format ((XX) XXXXX-XXXX)
-export const formatPhone = (phone: string | undefined | null): string => {
+export const formatPhone = (phone: string | number | undefined | null): string => {
   if (!phone) return '-';
   
+  // Convert to string first to handle both string and number inputs
+  const phoneString = String(phone);
+  
   // Remove any non-digit characters and the 55 prefix if present
-  const cleanPhone = phone.replace(/\D/g, '').replace(/^55/, '');
+  const cleanPhone = phoneString.replace(/\D/g, '').replace(/^55/, '');
   
   // Format as mobile or landline depending on length
   if (cleanPhone.length === 11) {
@@ -29,15 +35,18 @@ export const formatPhone = (phone: string | undefined | null): string => {
   }
   
   // Return original value if not valid
-  return phone;
+  return phoneString;
 };
 
 // Format CEP to Brazilian format (XXXXX-XXX)
-export const formatCEP = (cep: string | undefined | null): string => {
+export const formatCEP = (cep: string | number | undefined | null): string => {
   if (!cep) return '-';
   
+  // Convert to string first to handle both string and number inputs
+  const cepString = String(cep);
+  
   // Remove any non-digit characters
-  const cleanCEP = cep.replace(/\D/g, '');
+  const cleanCEP = cepString.replace(/\D/g, '');
   
   // Return formatted CEP if it has 8 digits
   if (cleanCEP.length === 8) {
@@ -45,7 +54,7 @@ export const formatCEP = (cep: string | undefined | null): string => {
   }
   
   // Return original value if not valid
-  return cep;
+  return cepString;
 };
 
 // Format date to Brazilian format (DD/MM/YYYY)
