@@ -290,33 +290,67 @@ const ResumosGrupo = () => {
         
         clearTimeout(timeoutId);
         
+        // Check if the response is OK (status 200-299)
         if (!response.ok) {
+          // Get the error text from the response
           const errorText = await response.text();
           console.error('Webhook response not OK:', response.status, errorText);
-          throw new Error(`Webhook failed: ${response.status} - ${errorText}`);
+          
+          // Create a failed summary record with the error details
+          const { error: dbError } = await supabase
+            .from('envio_resumo')
+            .insert({
+              grupo_id: id,
+              company_id: companyId,
+              data_envio: brasiliaTime.toISOString(),
+              status: 'error',
+              mensagem: `Erro ${response.status}: ${errorText || 'Sem detalhes'}`
+            });
+            
+          if (dbError) {
+            console.error('Error saving failed summary:', dbError);
+          }
+          
+          // Show error toast based on status code
+          if (response.status === 400) {
+            toast.error('Erro 400: Requisição inválida. Verifique os dados enviados.');
+          } else if (response.status === 404) {
+            toast.error('Erro 404: Endpoint não encontrado. Verifique a URL do webhook.');
+          } else if (response.status === 500) {
+            toast.error('Erro 500: Erro interno do servidor. Tente novamente mais tarde.');
+          } else {
+            toast.error(`Erro ${response.status}: ${errorText || 'Falha ao enviar resumo'}`);
+          }
+          
+          // Refresh history to show the failed attempt
+          fetchHistorico();
+          return;
         }
         
         // Try to parse the response as JSON to get the message
         let responseMessage = 'Resumo enviado com sucesso';
+        let responseText = '';
+        
         try {
-          const responseText = await response.text();
-          const responseData = JSON.parse(responseText);
-          if (responseData && responseData.message) {
-            responseMessage = responseData.message;
-          } else if (responseData && responseData.status) {
-            responseMessage = `Status: ${responseData.status}`;
-          }
-        } catch (parseError) {
-          console.log('Could not parse JSON response, using default message');
-          // Try to get the response text if JSON parsing fails
-          try {
-            const responseText = await response.text();
-            if (responseText && responseText.length > 0) {
-              responseMessage = `Resposta: ${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}`;
+          responseText = await response.text();
+          if (responseText) {
+            try {
+              const responseData = JSON.parse(responseText);
+              if (responseData && responseData.message) {
+                responseMessage = responseData.message;
+              } else if (responseData && responseData.status) {
+                responseMessage = `Status: ${responseData.status}`;
+              }
+            } catch (parseError) {
+              console.log('Could not parse JSON response:', parseError);
+              // If not valid JSON, use the text response
+              if (responseText.length > 0) {
+                responseMessage = `Resposta: ${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}`;
+              }
             }
-          } catch (textError) {
-            console.log('Could not get response text, using default message');
           }
+        } catch (textError) {
+          console.log('Could not get response text:', textError);
         }
         
         // Create a successful summary record with the response message
