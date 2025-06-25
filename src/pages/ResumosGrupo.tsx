@@ -763,7 +763,7 @@ const ResumosGrupo = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, url_grupo: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   required
-                  placeholder="https://chat.whatsapp.com/..."
+                  placeholder="https://api.outr.one/..."
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Você poderá encontrar essa url dentro das configurações da caixa de entrada do wiseapp
