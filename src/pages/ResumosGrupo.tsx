@@ -353,27 +353,59 @@ const ResumosGrupo = () => {
         return;
       }
       
-      // Call the manual-summary-trigger Edge Function
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
+      // Prepare the webhook payload with the correct field names
+      const webhookData = {
+        "nome do grupo": grupo.nome_grupo,
+        "URL do grupo": grupo.url_grupo
+      };
       
-      const response = await fetch(functionUrl, {
+      console.log('Enviando dados para webhook:', JSON.stringify(webhookData, null, 2));
+      
+      // Try to send data to n8n webhook directly
+      const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
+      
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          group_id: id,
-          company_id: companyId
-        })
+        body: JSON.stringify(webhookData)
       });
       
-      const responseData = await response.json();
+      // Get the full response text regardless of status
+      const responseText = await response.text();
+      console.log('Resposta completa do servidor:', response.status, responseText);
       
-      if (!response.ok) {
-        throw new Error(responseData.error || 'Erro ao enviar resumo');
+      // Determine message to save based on response
+      let statusToSave: boolean;
+      let messageToSave: string;
+      
+      if (response.ok) {
+        statusToSave = true;
+        messageToSave = 'Resumo enviado com sucesso';
+        toast.success('Resumo enviado com sucesso');
+      } else {
+        statusToSave = false;
+        messageToSave = `Erro ${response.status}: ${responseText}`;
+        toast.error(`Erro ao enviar resumo: ${response.status}`);
       }
       
-      toast.success('Resumo enviado com sucesso');
+      // Save the result to the database
+      const { error: dbError } = await supabase
+        .from('envio_resumo')
+        .insert({
+          grupo_id: id,
+          company_id: companyId,
+          data_envio: new Date().toISOString(),
+          status: statusToSave,
+          mensagem: messageToSave
+        });
+        
+      if (dbError) {
+        console.error('Error saving summary record:', dbError);
+        toast.error('Erro ao salvar no histórico');
+      }
       
       // Refresh history to show the latest records
       fetchHistorico();
@@ -381,6 +413,21 @@ const ResumosGrupo = () => {
     } catch (error: any) {
       console.error('Error in manual summary process:', error);
       toast.error(`Erro ao enviar resumo: ${error.message}`);
+      
+      // Try to save error record
+      try {
+        await supabase
+          .from('envio_resumo')
+          .insert({
+            grupo_id: id,
+            company_id: companyId,
+            data_envio: new Date().toISOString(),
+            status: false,
+            mensagem: `Erro: ${error.message || 'Erro desconhecido'}`
+          });
+      } catch (dbError) {
+        console.error('Error saving error record:', dbError);
+      }
     } finally {
       setSendingManualSummary(null);
     }
