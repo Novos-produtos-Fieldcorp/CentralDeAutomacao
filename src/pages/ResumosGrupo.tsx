@@ -257,11 +257,6 @@ const ResumosGrupo = () => {
         return;
       }
       
-      // Get current date and time in Brasilia timezone
-      const now = new Date();
-      // Adjust for Brasilia timezone (UTC-3)
-      const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-      
       // Try to send data to n8n webhook
       const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
       
@@ -330,7 +325,7 @@ const ResumosGrupo = () => {
           .insert({
             grupo_id: id,
             company_id: companyId,
-            data_envio: brasiliaTime.toISOString(),
+            data_envio: new Date().toISOString(), // This will be stored as is in the database
             status: statusToSave,
             mensagem: messageToSave
           });
@@ -353,7 +348,7 @@ const ResumosGrupo = () => {
           .insert({
             grupo_id: id,
             company_id: companyId,
-            data_envio: brasiliaTime.toISOString(),
+            data_envio: new Date().toISOString(), // This will be stored as is in the database
             status: false,
             mensagem: `Erro de rede: ${fetchError.message || 'Erro desconhecido'}`
           });
@@ -388,18 +383,8 @@ const ResumosGrupo = () => {
 
   const formatDateTime = (dateTimeStr: string) => {
     try {
-      // Parse the ISO date string
-      const date = new Date(dateTimeStr);
-      
-      // Format using Intl.DateTimeFormat for Brasilia timezone
-      return new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'America/Sao_Paulo'
-      }).format(date);
+      // Simply display the date string exactly as it comes from the database
+      return dateTimeStr;
     } catch (e) {
       return dateTimeStr;
     }
@@ -677,7 +662,7 @@ const ResumosGrupo = () => {
                             <div className="flex items-center">
                               <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                               <span className="text-sm text-gray-900 dark:text-white">
-                                {formatDateTime(envio.data_envio)}
+                                {envio.data_envio}
                               </span>
                             </div>
                           </td>
