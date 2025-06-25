@@ -428,6 +428,68 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                     </div>
                   </div>
 
+                  {/* Address Information */}
+                  {endereco && (
+                    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                      <div className="px-4 py-5 sm:px-6">
+                        <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                          <MapPin className="w-5 h-5 text-gray-400" />
+                          Endereço
+                        </h3>
+                      </div>
+                      <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                        <dl className="sm:divide-y sm:divide-gray-200 dark:divide-gray-700">
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Logradouro
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {endereco.logradouro?.logradouro ? 
+                                `${endereco.logradouro.logradouro}, ${endereco.nr_end || 'S/N'}` : 
+                                'Não informado'
+                              }
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Complemento
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {endereco.ds_complemento_end || 'Não informado'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              CEP
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {endereco.logradouro?.nr_cep ? formatCEP(endereco.logradouro.nr_cep) : 'Não informado'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Bairro
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {endereco.logradouro?.bairro?.bairro || 'Não informado'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Cidade/Estado
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {endereco.logradouro?.bairro?.cidade?.cidade && endereco.logradouro?.bairro?.cidade?.estado?.sigla_estado ? 
+                                `${endereco.logradouro.bairro.cidade.cidade}/${endereco.logradouro.bairro.cidade.estado.sigla_estado}` : 
+                                'Não informado'
+                              }
+                            </dd>
+                          </div>
+                        </dl>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Vehicle Information */}
                   {veiculo && (
                     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
@@ -464,6 +526,270 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                           </div>
                         </dl>
                       </div>
+                    </div>
+                  )}
+                </div>
+              ) : activeTab === 'documents' ? (
+                <div className="space-y-6">
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => setIsDocumentFormOpen(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                               transition-colors flex items-center gap-2"
+                    >
+                      <Edit2 className="w-5 h-5" />
+                      Editar Documentos
+                    </button>
+                  </div>
+                  
+                  {/* CNH Document */}
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                      CNH
+                    </h3>
+                    
+                    {documento?.foto_cnh ? (
+                      <div className="relative aspect-[1.414] w-full max-w-md bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                        {isPdf(documento.foto_cnh) ? (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
+                            <button
+                              onClick={() => openDocumentInNewTab(documento.foto_cnh)}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
+                            >
+                              <ExternalLink size={16} />
+                              Abrir PDF
+                            </button>
+                          </div>
+                        ) : (
+                          <img
+                            src={documento.foto_cnh}
+                            alt="CNH"
+                            className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                            onClick={() => setActiveDocument(documento.foto_cnh)}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id="file-cnh"
+                          onChange={(e) => handleFileUpload(e, 'cnh')}
+                          className="sr-only"
+                          ref={fileInputRef}
+                          accept="image/jpeg,image/png,image/jpg,application/pdf"
+                        />
+                        <label
+                          htmlFor="file-cnh"
+                          className="flex flex-col items-center justify-center w-full max-w-md aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
+                                    border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
+                                    hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            {uploading.cnh ? (
+                              <Loader2 className="w-10 h-10 text-gray-400 animate-spin mb-4" />
+                            ) : (
+                              <Camera className="w-10 h-10 text-gray-400 mb-4" />
+                            )}
+                            <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                              <span className="font-semibold">Clique para enviar</span> ou arraste e solte
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              JPEG, PNG ou PDF (máx. 15MB)
+                            </p>
+                          </div>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Comprovante de Residência */}
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                      <Home className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                      Comprovante de Residência
+                    </h3>
+                    
+                    <div className="mt-2">
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Comprovante Digital</p>
+                      
+                      {documento?.foto_comprovante_residencia ? (
+                        <div className="relative aspect-[1.414] w-full max-w-md bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                          {isPdf(documento.foto_comprovante_residencia) ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                              <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
+                              <button
+                                onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2"
+                              >
+                                <ExternalLink size={16} />
+                                Abrir PDF
+                              </button>
+                            </div>
+                          ) : (
+                            <img
+                              src={documento.foto_comprovante_residencia}
+                              alt="Comprovante de Residência"
+                              className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                              onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id="file-comprovante"
+                            onChange={(e) => handleFileUpload(e, 'comprovante')}
+                            className="sr-only"
+                            ref={fileInputRef}
+                            accept="image/jpeg,image/png,image/jpg,application/pdf"
+                          />
+                          <label
+                            htmlFor="file-comprovante"
+                            className="flex flex-col items-center justify-center w-full max-w-md aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
+                                      border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
+                                      hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                          >
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              {uploading.comprovante ? (
+                                <Loader2 className="w-10 h-10 text-gray-400 animate-spin mb-4" />
+                              ) : (
+                                <Camera className="w-10 h-10 text-gray-400 mb-4" />
+                              )}
+                              <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                <span className="font-semibold">Clique para enviar</span> ou arraste e solte
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                JPEG, PNG ou PDF (máx. 15MB)
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* CRV Document */}
+                  {veiculo && (
+                    <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                        CRV do Veículo
+                      </h3>
+                      
+                      <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg mb-4">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</span>
+                            
+                            <p className="text-base font-semibold text-gray-900 dark:text-white uppercase">{veiculo.placa}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca</span>
+                            <p className="text-base font-semibold text-gray-900 dark:text-white">{veiculo.marca}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Modelo</span>
+                            <p className="text-base font-semibold text-gray-900 dark:text-white">{veiculo.tipo}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-2 flex justify-between items-center">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          CRV Digital
+                        </label>
+                        {documentoVeiculo?.foto_crv && (
+                          <button
+                            onClick={() => openDocumentInNewTab(documentoVeiculo.foto_crv)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-xs"
+                          >
+                            <ExternalLink size={14} />
+                            Abrir em nova aba
+                          </button>
+                        )}
+                      </div>
+                      
+                      {documentoVeiculo?.foto_crv ? (
+                        <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                          {isPdf(documentoVeiculo.foto_crv) ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                              <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setActiveDocument(documentoVeiculo.foto_crv)}
+                                  className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
+                                >
+                                  <FileText size={16} />
+                                  Visualizar
+                                </button>
+                                <button
+                                  onClick={() => setIsVehicleDocumentsModalOpen(true)}
+                                  className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
+                                >
+                                  <Edit2 size={16} />
+                                  Editar
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <img
+                                src={documentoVeiculo.foto_crv}
+                                alt="CRV do veículo"
+                                className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                                onClick={() => setActiveDocument(documentoVeiculo.foto_crv)}
+                              />
+                              <div className="absolute bottom-2 right-2 flex gap-2">
+                                <button
+                                  onClick={() => setIsVehicleDocumentsModalOpen(true)}
+                                  className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id="file-crv"
+                            onChange={(e) => handleFileUpload(e, 'crv')}
+                            className="sr-only"
+                            ref={fileInputRef}
+                            accept="image/jpeg,image/png,image/jpg,application/pdf"
+                          />
+                          <label
+                            htmlFor="file-crv"
+                            className="flex flex-col items-center justify-center w-full aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
+                                      border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
+                                      hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                          >
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              {uploading.crv ? (
+                                <Loader2 className="w-10 h-10 text-gray-400 animate-spin mb-4" />
+                              ) : (
+                                <Camera className="w-10 h-10 text-gray-400 mb-4" />
+                              )}
+                              <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                <span className="font-semibold">Clique para enviar</span> ou arraste e solte
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                JPEG, PNG ou PDF (máx. 15MB)
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
