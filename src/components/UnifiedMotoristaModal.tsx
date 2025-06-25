@@ -7,7 +7,6 @@ import DocumentUploadModal from './DocumentUploadModal';
 import EditMotoristaModal from './EditMotoristaModal';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import AddAjudanteModal from './AddAjudanteModal';
-import EditAjudanteModal from './EditAjudanteModal';
 
 interface UnifiedMotoristaModalProps {
   isOpen: boolean;
@@ -31,8 +30,6 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
     comprovante: false
   });
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
-  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
-  const [selectedAjudante, setSelectedAjudante] = useState<any | null>(null);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -118,18 +115,16 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
         console.log('Raw ajudantes data:', ajudantesData);
         
         // Transform the data to match the expected structure
-        // Only include ajudantes that have a valid id_ajudante from the database
-        const formattedAjudantes = (ajudantesData || [])
-          .filter(ajudante => ajudante && ajudante.id_ajudante) // Only include records with valid IDs
-          .map(ajudante => {
-            console.log('Processing ajudante:', ajudante);
-            return {
-              ...ajudante,
-              nome: ajudante.nome || 'Ajudante sem nome',
-              cpf: ajudante.cpf || '',
-              telefone: ajudante.telefone || ''
-            };
-          });
+        const formattedAjudantes = (ajudantesData || []).map(ajudante => {
+          console.log('Processing ajudante:', ajudante);
+          return {
+            ...ajudante,
+            nome: ajudante.nome || 'Ajudante sem nome',
+            cpf: ajudante.cpf || '',
+            telefone: ajudante.telefone || '',
+            id_ajudante: ajudante.id_ajudante || Math.random().toString(36).substr(2, 9) // Fallback ID if not present
+          };
+        });
         
         console.log('Formatted ajudantes:', formattedAjudantes);
         setAjudantes(formattedAjudantes);
@@ -235,31 +230,26 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
     setIsAddAjudanteModalOpen(true);
   };
 
-  const handleEditAjudante = (ajudante: any) => {
-    setSelectedAjudante(ajudante);
-    setIsEditAjudanteModalOpen(true);
+  const handleDocumentUploadSuccess = () => {
+    fetchMotoristaDetails();
+    setIsDocumentUploadModalOpen(false);
   };
 
-  const handleDeleteAjudante = async (ajudante: any) => {
+  const handleDeleteAjudante = async (ajudanteId: number) => {
     try {
       const { error } = await supabase
         .from('documento_ajudante')
         .delete()
-        .eq('id_ajudante', ajudante.id_ajudante);
-      
+        .eq('id_ajudante', ajudanteId);
+        
       if (error) throw error;
       
       toast.success('Ajudante excluído com sucesso');
-      fetchMotoristaDetails(); // Refresh data
+      fetchMotoristaDetails();
     } catch (error) {
       console.error('Error deleting ajudante:', error);
       toast.error('Erro ao excluir ajudante');
     }
-  };
-
-  const handleDocumentUploadSuccess = () => {
-    fetchMotoristaDetails();
-    setIsDocumentUploadModalOpen(false);
   };
 
   if (!isOpen) return null;
@@ -641,148 +631,154 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                         </div>
                         
                         {Array.isArray(ajudantes) && ajudantes.length > 0 ? (
-                          <div className="grid grid-cols-1 gap-4">
+                          <div className="space-y-6">
                             {ajudantes.map((ajudante) => {
                               try {
-                                // Ensure we have a valid ajudante object with a valid database ID
-                                if (!ajudante || typeof ajudante !== 'object' || !ajudante.id_ajudante) {
+                                // Ensure we have a valid ajudante object
+                                if (!ajudante || typeof ajudante !== 'object') {
                                   console.warn('Invalid ajudante data:', ajudante);
                                   return null;
                                 }
                                 
-                                const ajudanteId = ajudante.id_ajudante; // Use the database ID directly
+                                const ajudanteId = ajudante.id_ajudante || Math.random().toString(36).substr(2, 9);
                                 const nome = ajudante.nome || 'Ajudante sem nome';
                                 // Ensure CPF is a string before formatting
                                 const cpf = ajudante.cpf ? String(ajudante.cpf) : '';
                                 const telefone = ajudante.telefone || '';
                                 
-                                // Determine document type and number
-                                let documentType = 'Não informado';
-                                let documentNumber = 'Não informado';
-                                let documentPhoto = null;
+                                // Determine document type (CNH or RG)
+                                const hasCnh = ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0;
+                                const hasRg = ajudante.rg_ajudante && ajudante.rg_ajudante.length > 0;
+                                const documentType = hasCnh ? 'CNH' : hasRg ? 'RG' : 'Não informado';
                                 
-                                if (ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0) {
-                                  documentType = 'CNH';
-                                  documentNumber = ajudante.cnh_ajudante[0].nr_registro || 'Não informado';
-                                  documentPhoto = ajudante.cnh_ajudante[0].foto_cnh;
-                                } else if (ajudante.rg_ajudante && ajudante.rg_ajudante.length > 0) {
-                                  documentType = 'RG';
-                                  documentNumber = ajudante.rg_ajudante[0].nr_rg || 'Não informado';
-                                  documentPhoto = ajudante.rg_ajudante[0].foto_rg;
-                                }
+                                // Get document details
+                                const documentNumber = hasCnh 
+                                  ? ajudante.cnh_ajudante[0]?.nr_registro 
+                                  : hasRg 
+                                    ? ajudante.rg_ajudante[0]?.nr_rg 
+                                    : null;
+                                
+                                // Get document photo URL
+                                const documentPhotoUrl = hasCnh 
+                                  ? ajudante.cnh_ajudante[0]?.foto_cnh 
+                                  : hasRg 
+                                    ? ajudante.rg_ajudante[0]?.foto_rg 
+                                    : null;
                                 
                                 return (
                                   <div 
                                     key={ajudanteId}
-                                    className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600"
+                                    className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-600"
                                   >
-                                    <div className="flex flex-col md:flex-row gap-4">
-                                      <div className="flex-1">
-                                        <div className="flex justify-between items-start">
-                                          <div>
-                                            <h4 className="text-base font-medium text-gray-900 dark:text-white">
-                                              {nome}
-                                            </h4>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                              CPF: {formatCPF(cpf)}
-                                            </p>
-                                            {telefone && (
-                                              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                                Telefone: {formatPhone(telefone)}
-                                              </p>
-                                            )}
-                                            <div className="mt-2 space-y-1">
-                                              <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                <span className="font-medium">Tipo de Documento:</span> {documentType}
-                                              </p>
-                                              <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                <span className="font-medium">Número do Documento:</span> {documentNumber}
-                                              </p>
-                                            </div>
-                                          </div>
-                                          <div className="flex gap-2">
-                                            <button
-                                              onClick={() => handleEditAjudante(ajudante)}
-                                              className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                                                       hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                              title="Editar ajudante"
-                                            >
-                                              <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                              onClick={() => handleDeleteAjudante(ajudante)}
-                                              className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                                                       hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                              title="Excluir ajudante"
-                                            >
-                                              <Trash2 size={16} />
-                                            </button>
-                                          </div>
-                                        </div>
+                                    <div className="flex justify-between items-start mb-4">
+                                      <div>
+                                        <h4 className="text-base font-medium text-gray-900 dark:text-white">
+                                          {nome}
+                                        </h4>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                          CPF: {formatCPF(cpf)}
+                                        </p>
+                                        {telefone && (
+                                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                            Telefone: {formatPhone(telefone)}
+                                          </p>
+                                        )}
                                       </div>
                                       
-                                      {/* Document previews */}
-                                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {/* ID Document (CNH or RG) */}
-                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                                          <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            {documentType}
-                                          </h5>
-                                          {documentPhoto ? (
-                                            <div className="relative aspect-video w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                                              {isPdf(documentPhoto) ? (
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => handleDeleteAjudante(ajudanteId)}
+                                          className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                                   hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                          title="Excluir ajudante"
+                                        >
+                                          <Trash2 className="w-[18px] h-[18px]" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Document Information */}
+                                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {/* ID Document (CNH or RG) */}
+                                      <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                                          Documento de Identificação
+                                        </h5>
+                                        <div className="space-y-2">
+                                          <div className="flex justify-between">
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">Tipo:</span>
+                                            <span className="text-xs font-medium text-gray-900 dark:text-white">{documentType}</span>
+                                          </div>
+                                          {documentNumber && (
+                                            <div className="flex justify-between">
+                                              <span className="text-xs text-gray-500 dark:text-gray-400">Número:</span>
+                                              <span className="text-xs font-medium text-gray-900 dark:text-white">{documentNumber}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Document Preview */}
+                                        {documentPhotoUrl ? (
+                                          <div className="mt-3">
+                                            <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                              {isPdf(documentPhotoUrl) ? (
                                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                                  <FileText className="w-8 h-8 text-gray-400 mb-1" />
-                                                  <p className="text-xs text-gray-500">PDF</p>
+                                                  <FileText className="w-8 h-8 text-gray-400 mb-2" />
+                                                  <p className="text-xs text-gray-500">Documento PDF</p>
                                                   <button
-                                                    onClick={() => openDocumentInNewTab(documentPhoto)}
-                                                    className="mt-2 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                                    onClick={() => openDocumentInNewTab(documentPhotoUrl)}
+                                                    className="mt-2 px-2 py-1 bg-blue-600 text-white rounded text-xs flex items-center gap-1"
                                                   >
+                                                    <ExternalLink size={12} />
                                                     Abrir
                                                   </button>
                                                 </div>
                                               ) : (
                                                 <>
                                                   <img
-                                                    src={documentPhoto}
-                                                    alt={`${documentType} do ajudante`}
-                                                    className="absolute inset-0 w-full h-full object-cover"
+                                                    src={documentPhotoUrl}
+                                                    alt={`${documentType} de ${nome}`}
+                                                    className="absolute inset-0 w-full h-full object-cover cursor-pointer"
+                                                    onClick={() => openDocumentInNewTab(documentPhotoUrl)}
                                                   />
-                                                  <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+                                                  <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
                                                     <button
-                                                      onClick={() => openDocumentInNewTab(documentPhoto)}
-                                                      className="p-1 bg-white/80 rounded-full"
+                                                      onClick={() => openDocumentInNewTab(documentPhotoUrl)}
+                                                      className="p-1 bg-blue-600 text-white rounded-full"
                                                     >
-                                                      <ExternalLink size={14} className="text-blue-600" />
+                                                      <ExternalLink size={14} />
                                                     </button>
                                                   </div>
                                                 </>
                                               )}
                                             </div>
-                                          ) : (
-                                            <div className="flex items-center justify-center aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                Sem documento
-                                              </p>
-                                            </div>
-                                          )}
-                                        </div>
+                                          </div>
+                                        ) : (
+                                          <div className="mt-3 flex items-center justify-center h-20 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Sem documento</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                      
+                                      {/* Comprovante de Residência */}
+                                      <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                                          Comprovante de Residência
+                                        </h5>
                                         
-                                        {/* Comprovante de Residência */}
-                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                                          <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Comprovante de Residência
-                                          </h5>
-                                          {ajudante.comprovante_residencia ? (
-                                            <div className="relative aspect-video w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                        {/* Document Preview */}
+                                        {ajudante.comprovante_residencia ? (
+                                          <div className="mt-3">
+                                            <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
                                               {isPdf(ajudante.comprovante_residencia) ? (
                                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                                  <FileText className="w-8 h-8 text-gray-400 mb-1" />
-                                                  <p className="text-xs text-gray-500">PDF</p>
+                                                  <FileText className="w-8 h-8 text-gray-400 mb-2" />
+                                                  <p className="text-xs text-gray-500">Documento PDF</p>
                                                   <button
                                                     onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia)}
-                                                    className="mt-2 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                                    className="mt-2 px-2 py-1 bg-blue-600 text-white rounded text-xs flex items-center gap-1"
                                                   >
+                                                    <ExternalLink size={12} />
                                                     Abrir
                                                   </button>
                                                 </div>
@@ -790,28 +786,43 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                                 <>
                                                   <img
                                                     src={ajudante.comprovante_residencia}
-                                                    alt="Comprovante de residência"
-                                                    className="absolute inset-0 w-full h-full object-cover"
+                                                    alt={`Comprovante de ${nome}`}
+                                                    className="absolute inset-0 w-full h-full object-cover cursor-pointer"
+                                                    onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia)}
                                                   />
-                                                  <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+                                                  <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
                                                     <button
                                                       onClick={() => openDocumentInNewTab(ajudante.comprovante_residencia)}
-                                                      className="p-1 bg-white/80 rounded-full"
+                                                      className="p-1 bg-blue-600 text-white rounded-full"
                                                     >
-                                                      <ExternalLink size={14} className="text-blue-600" />
+                                                      <ExternalLink size={14} />
                                                     </button>
                                                   </div>
                                                 </>
                                               )}
                                             </div>
-                                          ) : (
-                                            <div className="flex items-center justify-center aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                Sem comprovante
-                                              </p>
-                                            </div>
-                                          )}
-                                        </div>
+                                          </div>
+                                        ) : (
+                                          <div className="mt-3 flex items-center justify-center h-20 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Sem comprovante</p>
+                                          </div>
+                                        )}
+                                        
+                                        {/* Address Information */}
+                                        {ajudante.end_ajudante && (
+                                          <div className="mt-3 text-xs">
+                                            <p className="text-gray-500 dark:text-gray-400">
+                                              {ajudante.end_ajudante.logradouro?.logradouro}, 
+                                              {ajudante.end_ajudante.nr_end || 'S/N'}
+                                              {ajudante.end_ajudante.ds_complemento_end ? ` - ${ajudante.end_ajudante.ds_complemento_end}` : ''}
+                                            </p>
+                                            <p className="text-gray-500 dark:text-gray-400">
+                                              {ajudante.end_ajudante.logradouro?.bairro?.bairro}, 
+                                              {ajudante.end_ajudante.logradouro?.bairro?.cidade?.cidade}/
+                                              {ajudante.end_ajudante.logradouro?.bairro?.cidade?.estado?.sigla_estado}
+                                            </p>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   </div>
@@ -934,21 +945,6 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
         onSuccess={() => {
           fetchMotoristaDetails();
           setIsAddAjudanteModalOpen(false);
-        }}
-      />
-
-      {/* Edit Ajudante Modal */}
-      <EditAjudanteModal
-        isOpen={isEditAjudanteModalOpen}
-        onClose={() => {
-          setIsEditAjudanteModalOpen(false);
-          setSelectedAjudante(null);
-        }}
-        ajudante={selectedAjudante}
-        onSuccess={() => {
-          fetchMotoristaDetails();
-          setIsEditAjudanteModalOpen(false);
-          setSelectedAjudante(null);
         }}
       />
     </div>
