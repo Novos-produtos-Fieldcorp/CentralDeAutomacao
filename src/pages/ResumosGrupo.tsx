@@ -296,13 +296,45 @@ const ResumosGrupo = () => {
           throw new Error(`Webhook failed: ${response.status} - ${errorText}`);
         }
         
-        const responseText = await response.text();
-        console.log('Webhook response:', responseText);
+        // Get the response message
+        let responseMessage = 'Resumo enviado com sucesso';
+        try {
+          const responseData = await response.json();
+          if (responseData && responseData.message) {
+            responseMessage = responseData.message;
+          }
+        } catch (parseError) {
+          console.log('Could not parse JSON response, using default message');
+          // Use the default message if we can't parse the response
+          const responseText = await response.text();
+          if (responseText) {
+            responseMessage = `Resposta: ${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}`;
+          }
+        }
+        
+        // Create a successful summary record with the response message
+        const { error: dbError } = await supabase
+          .from('envio_resumo')
+          .insert({
+            grupo_id: id,
+            company_id: companyId,
+            data_envio: brasiliaTime.toISOString(),
+            status: 'success',
+            mensagem: responseMessage
+          });
+          
+        if (dbError) {
+          console.error('Error saving successful summary:', dbError);
+          toast.error('Resumo enviado, mas erro ao salvar no histórico');
+        } else {
+          toast.success('Resumo enviado com sucesso');
+        }
         
       } catch (webhookError: any) {
         console.error('Error sending to webhook:', webhookError);
         
         // Create a failed summary record
+        const errorMessage = webhookError.message || 'Erro desconhecido';
         const { error: dbError } = await supabase
           .from('envio_resumo')
           .insert({
@@ -310,7 +342,7 @@ const ResumosGrupo = () => {
             company_id: companyId,
             data_envio: brasiliaTime.toISOString(),
             status: 'error',
-            mensagem: `Erro no webhook: ${webhookError.message || 'Erro desconhecido'}`
+            mensagem: `Erro no webhook: ${errorMessage}`
           });
           
         if (dbError) {
@@ -331,24 +363,6 @@ const ResumosGrupo = () => {
         // Refresh history to show the failed attempt
         fetchHistorico();
         return;
-      }
-      
-      // Create a successful summary record
-      const { error } = await supabase
-        .from('envio_resumo')
-        .insert({
-          grupo_id: id,
-          company_id: companyId,
-          data_envio: brasiliaTime.toISOString(),
-          status: 'success',
-          mensagem: 'Resumo enviado manualmente com sucesso'
-        });
-        
-      if (error) {
-        console.error('Error saving successful summary:', error);
-        toast.error('Resumo enviado, mas erro ao salvar no histórico');
-      } else {
-        toast.success('Resumo enviado com sucesso');
       }
       
       // Refresh history
@@ -413,10 +427,10 @@ const ResumosGrupo = () => {
         </button>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
         {/* Tabs */}
-        <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-          <nav className="flex space-x-8" aria-label="Tabs">
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="flex space-x-8 px-6" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('grupos')}
               className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
@@ -442,264 +456,266 @@ const ResumosGrupo = () => {
           </nav>
         </div>
 
-        {/* Grupos Tab */}
-        {activeTab === 'grupos' && (
-          <>
-            {loading ? (
-              <div className="flex justify-center items-center py-12">
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-              </div>
-            ) : grupos.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-                <ClipboardList className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  Nenhum grupo configurado
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
-                  Adicione seu primeiro grupo para começar a receber resumos automáticos.
-                </p>
-                <button
-                  onClick={() => {
-                    setFormData({
-                      nome_grupo: '',
-                      url_grupo: '',
-                      horario: '08:00'
-                    });
-                    setEditingId(null);
-                    setIsModalOpen(true);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                           transition-colors inline-flex items-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  Adicionar Grupo
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {grupos.map(grupo => (
-                  <div 
-                    key={grupo.id} 
-                    className={`bg-white dark:bg-gray-800 rounded-lg border ${
-                      grupo.ativo 
-                        ? 'border-green-200 dark:border-green-800/30' 
-                        : 'border-gray-200 dark:border-gray-700'
-                    } shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg`}
+        <div className="p-6">
+          {/* Grupos Tab */}
+          {activeTab === 'grupos' && (
+            <>
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                </div>
+              ) : grupos.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+                  <ClipboardList className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    Nenhum grupo configurado
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+                    Adicione seu primeiro grupo para começar a receber resumos automáticos.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setFormData({
+                        nome_grupo: '',
+                        url_grupo: '',
+                        horario: '08:00'
+                      });
+                      setEditingId(null);
+                      setIsModalOpen(true);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                             transition-colors inline-flex items-center gap-2"
                   >
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-full ${
-                            grupo.ativo 
-                              ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' 
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                          }`}>
-                            <Users className="w-5 h-5" />
-                          </div>
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                            {grupo.nome_grupo}
-                          </h3>
-                        </div>
-                        <div className="flex items-center">
-                          <button
-                            onClick={() => toggleStatus(grupo.id, grupo.ativo)}
-                            disabled={toggleLoading === grupo.id}
-                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    <Plus className="w-5 h-5" />
+                    Adicionar Grupo
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {grupos.map(grupo => (
+                    <div 
+                      key={grupo.id} 
+                      className={`bg-white dark:bg-gray-800 rounded-lg border ${
+                        grupo.ativo 
+                          ? 'border-green-200 dark:border-green-800/30' 
+                          : 'border-gray-200 dark:border-gray-700'
+                      } shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg`}
+                    >
+                      <div className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-full ${
                               grupo.ativo 
-                                ? 'bg-green-500 dark:bg-green-600' 
-                                : 'bg-gray-200 dark:bg-gray-700'
-                            } ${toggleLoading === grupo.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            role="switch"
-                            aria-checked={grupo.ativo}
-                          >
-                            <span
-                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                grupo.ativo ? 'translate-x-5' : 'translate-x-0'
-                              }`}
-                            />
-                            {toggleLoading === grupo.id && (
-                              <Loader2 
-                                className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
+                                ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' 
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                            }`}>
+                              <Users className="w-5 h-5" />
+                            </div>
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                              {grupo.nome_grupo}
+                            </h3>
+                          </div>
+                          <div className="flex items-center">
+                            <button
+                              onClick={() => toggleStatus(grupo.id, grupo.ativo)}
+                              disabled={toggleLoading === grupo.id}
+                              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                                grupo.ativo 
+                                  ? 'bg-green-500 dark:bg-green-600' 
+                                  : 'bg-gray-200 dark:bg-gray-700'
+                              } ${toggleLoading === grupo.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              role="switch"
+                              aria-checked={grupo.ativo}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                  grupo.ativo ? 'translate-x-5' : 'translate-x-0'
+                                }`}
                               />
-                            )}
-                          </button>
+                              {toggleLoading === grupo.id && (
+                                <Loader2 
+                                  className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
+                                />
+                              )}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="space-y-3 mb-6">
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <Clock className="w-4 h-4 text-gray-400" />
-                          <span>Horário: {formatTime(grupo.horario)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <Link2 className="w-4 h-4 text-gray-400" />
-                          <span className="truncate" title={grupo.url_grupo}>
-                            URL: {grupo.url_grupo.substring(0, 30)}...
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            grupo.ativo 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                          }`}>
-                            {grupo.ativo ? 'Ativo' : 'Inativo'}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-between gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
-                        <button
-                          onClick={() => handleManualSummary(grupo.id)}
-                          disabled={!grupo.ativo || sendingManualSummary === grupo.id}
-                          className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 ${
-                            grupo.ativo
-                              ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30'
-                              : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500'
-                          }`}
-                        >
-                          {sendingManualSummary === grupo.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Send className="w-3.5 h-3.5" />
-                          )}
-                          Enviar Agora
-                        </button>
                         
-                        <div className="flex gap-2">
+                        <div className="space-y-3 mb-6">
+                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <Clock className="w-4 h-4 text-gray-400" />
+                            <span>Horário: {formatTime(grupo.horario)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <Link2 className="w-4 h-4 text-gray-400" />
+                            <span className="truncate" title={grupo.url_grupo}>
+                              URL: {grupo.url_grupo.substring(0, 30)}...
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              grupo.ativo 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                            }`}>
+                              {grupo.ativo ? 'Ativo' : 'Inativo'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                           <button
-                            onClick={() => handleEdit(grupo)}
-                            className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                                     hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                            title="Editar grupo"
+                            onClick={() => handleManualSummary(grupo.id)}
+                            disabled={!grupo.ativo || sendingManualSummary === grupo.id}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 ${
+                              grupo.ativo
+                                ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500'
+                            }`}
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                              <path d="m15 5 4 4"></path>
-                            </svg>
+                            {sendingManualSummary === grupo.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Send className="w-3.5 h-3.5" />
+                            )}
+                            Enviar Agora
                           </button>
                           
-                          <button
-                            onClick={() => handleDelete(grupo.id)}
-                            className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                                     hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                            title="Excluir grupo"
-                          >
-                            <Trash2 className="w-[18px] h-[18px]" />
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEdit(grupo)}
+                              className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                       hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                              title="Editar grupo"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                                <path d="m15 5 4 4"></path>
+                              </svg>
+                            </button>
+                            
+                            <button
+                              onClick={() => handleDelete(grupo.id)}
+                              className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                       hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title="Excluir grupo"
+                            >
+                              <Trash2 className="w-[18px] h-[18px]" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
+                  ))}
+                </div>
+              )}
+            </>
+          )}
 
-        {/* Histórico Tab */}
-        {activeTab === 'historico' && (
-          <>
-            <div className="mb-6">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Buscar por nome do grupo ou mensagem..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                           dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                           focus:border-blue-500 text-gray-900 dark:text-gray-100"
-                />
-                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          {/* Histórico Tab */}
+          {activeTab === 'historico' && (
+            <>
+              <div className="mb-6">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Buscar por nome do grupo ou mensagem..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
+                             dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
+                             focus:border-blue-500 text-gray-900 dark:text-gray-100"
+                  />
+                  <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                </div>
               </div>
-            </div>
-            
-            {loadingHistory ? (
-              <div className="flex justify-center items-center py-12">
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-              </div>
-            ) : filteredEnvios.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-                <History className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  Nenhum envio registrado
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                  O histórico de envios será exibido aqui após o primeiro resumo ser enviado.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Data/Hora
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Grupo
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Mensagem
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {filteredEnvios.map((envio) => (
-                      <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                            <span className="text-sm text-gray-900 dark:text-white">
-                              {formatDateTime(envio.data_envio)}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <Users className="w-4 h-4 text-gray-400 mr-2" />
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">
-                              {envio.nome_grupo}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            envio.status === 'success'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-                          }`}>
-                            {envio.status === 'success' ? (
-                              <>
-                                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                                Enviado
-                              </>
-                            ) : (
-                              <>
-                                <AlertTriangle className="w-3.5 h-3.5 mr-1" />
-                                Falha
-                              </>
-                            )}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 dark:text-white max-w-xs truncate">
-                            {envio.mensagem || 'Resumo enviado com sucesso'}
-                          </div>
-                        </td>
+              
+              {loadingHistory ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                </div>
+              ) : filteredEnvios.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+                  <History className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    Nenhum envio registrado
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                    O histórico de envios será exibido aqui após o primeiro resumo ser enviado.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Data/Hora
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Grupo
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Mensagem
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
-        )}
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {filteredEnvios.map((envio) => (
+                        <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                              <span className="text-sm text-gray-900 dark:text-white">
+                                {formatDateTime(envio.data_envio)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <Users className="w-4 h-4 text-gray-400 mr-2" />
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                {envio.nome_grupo}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              envio.status === 'success'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                                : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                            }`}>
+                              {envio.status === 'success' ? (
+                                <>
+                                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                                  Enviado
+                                </>
+                              ) : (
+                                <>
+                                  <AlertTriangle className="w-3.5 h-3.5 mr-1" />
+                                  Falha
+                                </>
+                              )}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900 dark:text-white max-w-xs truncate">
+                              {envio.mensagem || 'Resumo enviado com sucesso'}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Add/Edit Group Modal */}
