@@ -89,15 +89,25 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
   // Check if ajudanteId is valid
   const isValidAjudanteId = ajudanteId && !isNaN(ajudanteId) && ajudanteId > 0;
 
+  // Early return if modal is not open or ID is invalid
+  if (!isOpen) return null;
+  
+  if (!isValidAjudanteId) {
+    // Close modal immediately and return null without logging error
+    React.useEffect(() => {
+      if (isOpen) {
+        toast.error('ID do ajudante inválido');
+        onClose();
+      }
+    }, [isOpen, onClose]);
+    
+    return null;
+  }
+
   useEffect(() => {
     if (isOpen && isValidAjudanteId) {
       fetchEstados();
       fetchAjudanteData();
-    } else if (isOpen && !isValidAjudanteId) {
-      // Close modal immediately if ID is invalid
-      console.error('ID do ajudante inválido:', ajudanteId);
-      toast.error('ID do ajudante inválido');
-      onClose();
     }
   }, [isOpen, ajudanteId, isValidAjudanteId]);
 
@@ -119,11 +129,6 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
   const fetchAjudanteData = async () => {
     try {
       setLoading(true);
-      
-      // Validate ajudanteId before making any queries
-      if (!isValidAjudanteId) {
-        throw new Error('ID do ajudante inválido');
-      }
       
       // Fetch ajudante basic data
       const { data: ajudanteData, error: ajudanteError } = await supabase
@@ -214,10 +219,7 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     } catch (error) {
       console.error('Erro ao carregar dados do ajudante:', error);
       toast.error('Erro ao carregar dados do ajudante');
-      // Close modal if ID is invalid
-      if (error instanceof Error && error.message === 'ID do ajudante inválido') {
-        onClose();
-      }
+      onClose();
     } finally {
       setLoading(false);
     }
@@ -327,11 +329,6 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
     
     try {
       setSubmitting(true);
-
-      // Validate ajudanteId before submitting
-      if (!isValidAjudanteId) {
-        throw new Error('ID do ajudante inválido');
-      }
 
       // Validate CPF format
       if (!/^\d{11}$/.test(formData.cpf)) {
@@ -594,13 +591,6 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
       setSubmitting(false);
     }
   };
-
-  if (!isOpen) return null;
-
-  // Don't render modal if ajudanteId is invalid
-  if (!isValidAjudanteId) {
-    return null;
-  }
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -1255,7 +1245,7 @@ const EditAjudanteModal = ({ isOpen, onClose, onSuccess, ajudanteId }: EditAjuda
               <button
                 type="submit"
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                disabled={submitting || !isValidAjudanteId}
+                disabled={submitting}
               >
                 {submitting ? (
                   <>
