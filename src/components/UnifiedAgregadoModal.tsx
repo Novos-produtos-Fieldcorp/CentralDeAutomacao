@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Truck, MapPin, FileText, Camera, Loader2, ExternalLink, Upload, Save, ArrowLeft, Users, User, Home, Edit2, Trash2 } from 'lucide-react';
+import { X, Truck, MapPin, FileText, Camera, Loader2, ExternalLink, Upload, Save, ArrowLeft, Users, User, Home, Edit2, Trash2, UserPlus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
@@ -405,7 +405,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             Data de Nascimento
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motoristaData.dt_nascimento ? formatDate(motoristaData.dt_nascimento) : 'Não informado'}
+                            {motoristaData?.dt_nascimento ? formatDate(motoristaData.dt_nascimento) : 'Não informado'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -413,7 +413,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             Telefone
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motoristaData.telefone ? formatPhone(motoristaData.telefone.toString()) : 'Não informado'}
+                            {motoristaData?.telefone ? formatPhone(motoristaData.telefone.toString()) : 'Não informado'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -421,7 +421,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             E-mail
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motoristaData.email || 'Não informado'}
+                            {motoristaData?.email || 'Não informado'}
                           </dd>
                         </div>
                       </dl>
