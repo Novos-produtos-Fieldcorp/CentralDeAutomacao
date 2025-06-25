@@ -654,6 +654,18 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                 const cpf = ajudante.cpf ? String(ajudante.cpf) : '';
                                 const telefone = ajudante.telefone || '';
                                 
+                                // Determine document type and number
+                                let documentType = 'Não informado';
+                                let documentNumber = 'Não informado';
+                                
+                                if (ajudante.cnh_ajudante && ajudante.cnh_ajudante.length > 0) {
+                                  documentType = 'CNH';
+                                  documentNumber = ajudante.cnh_ajudante[0].nr_registro || 'Não informado';
+                                } else if (ajudante.rg_ajudante && ajudante.rg_ajudante.length > 0) {
+                                  documentType = 'RG';
+                                  documentNumber = ajudante.rg_ajudante[0].nr_rg || 'Não informado';
+                                }
+                                
                                 return (
                                   <div 
                                     key={ajudanteId}
@@ -672,6 +684,14 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                             Telefone: {formatPhone(telefone)}
                                           </p>
                                         )}
+                                        <div className="mt-2 space-y-1">
+                                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                                            <span className="font-medium">Tipo de Documento:</span> {documentType}
+                                          </p>
+                                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                                            <span className="font-medium">Número do Documento:</span> {documentNumber}
+                                          </p>
+                                        </div>
                                       </div>
                                       <div className="flex gap-2">
                                         <button
