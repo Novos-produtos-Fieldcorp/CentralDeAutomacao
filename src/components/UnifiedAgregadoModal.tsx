@@ -16,6 +16,14 @@ interface UnifiedAgregadoModalProps {
   onSuccess?: () => void;
 }
 
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('pt-BR');
+};
+
+const formatCEP = (cep: string) => {
+  return cep.replace(/(\d{5})(\d{3})/, '$1-$2');
+};
+
 const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: UnifiedAgregadoModalProps) => {
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'helpers'>('details');
   const [loading, setLoading] = useState(true);
@@ -1079,7 +1087,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       )}
 
       {/* Modals */}
-      {isEditModalOpen && (
+      {isEditMotoristaModalOpen && (
         <EditMotoristaModal
           isOpen={isEditMotoristaModalOpen}
           onClose={() => setIsEditMotoristaModalOpen(false)}
