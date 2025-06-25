@@ -292,6 +292,40 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     };
   }, [activeConversation?.id, lastMessageId]);
 
+  useEffect(() => {
+    // Carregar inboxes assim que o chat for aberto
+    const fetchInboxes = async () => {
+      try {
+        const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
+        const apiKey = localStorage.getItem('wiseapp_token');
+        if (!accountId || !apiKey) return;
+        const api = axios.create({
+          baseURL: '/api',
+          headers: {
+            'api_access_token': apiKey,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
+        if (response.data?.payload) {
+          const allInboxes = response.data.payload.map((inbox: any) => ({
+            ...inbox,
+            isOpen: true // ou lógica de horário se quiser
+          }));
+          setAvailableInboxes(allInboxes);
+          setShowInboxSelector(true);
+          setSelectedInboxId(null); // Não seleciona automaticamente
+        } else {
+          setAvailableInboxes([]);
+        }
+      } catch (error) {
+        setAvailableInboxes([]);
+      }
+    };
+    if (showChat) fetchInboxes();
+  }, [showChat]);
+
   const handleError = (error: unknown) => {
     console.error('Error:', error);
     
