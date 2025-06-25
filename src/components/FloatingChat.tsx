@@ -119,7 +119,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const apiKey = localStorage.getItem('wiseapp_token');
 
   const api = axios.create({
-    baseURL: import.meta.env.VITE_CHAT_API_URL || '/api',
+   baseURL: import.meta.env.VITE_CHAT_API_URL || '/api',
     headers: {
       'api_access_token': apiKey,
       'Content-Type': 'application/json',
@@ -288,7 +288,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         const apiKey = localStorage.getItem('wiseapp_token');
         if (!accountId || !apiKey) return;
         const api = axios.create({
-          baseURL: import.meta.env.VITE_CHAT_API_URL || '/api',
+          baseURL: '/api',
           headers: {
             'api_access_token': apiKey,
             'Content-Type': 'application/json',
@@ -346,7 +346,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const fetchInboxes = async (accountId: string, apiKey: string) => {
     try {
       const api = axios.create({
-        baseURL: import.meta.env.VITE_CHAT_API_URL || '/api',
+        baseURL: '/api',
         headers: {
           'api_access_token': apiKey,
           'Content-Type': 'application/json',
@@ -413,7 +413,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const loadContactInfo = async (contactId: number) => {
     try {
       const api = axios.create({
-        baseURL: import.meta.env.VITE_CHAT_API_URL || '/api',
+        baseURL: '/api',
         headers: {
           'api_access_token': apiKey,
           'Content-Type': 'application/json',
@@ -447,7 +447,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const loadAllContactConversations = async (contactId: number) => {
     try {
       const api = axios.create({
-        baseURL: import.meta.env.VITE_CHAT_API_URL || '/api',
+        baseURL: '/api',
         headers: {
           'api_access_token': apiKey,
           'Content-Type': 'application/json',
@@ -511,7 +511,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       }
 
       const api = axios.create({
-        baseURL: import.meta.env.VITE_CHAT_API_URL || '/api',
+        baseURL: '/api',
         headers: {
           'api_access_token': apiKey,
           'Content-Type': 'application/json',
@@ -661,7 +661,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const loadConversationMessages = async (conversationId: number, page: number = 1, perPage: number = 20) => {
     try {
       const api = axios.create({
-        baseURL: import.meta.env.VITE_CHAT_API_URL || '/api',
+        baseURL: '/api',
         headers: {
           'api_access_token': apiKey,
           'Content-Type': 'application/json',
