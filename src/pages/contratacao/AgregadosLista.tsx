@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, FileText, Filter, X, ChevronDown, ChevronUp, CreditCard, Phone, Mail, Calendar, MapPin, Truck, User, MessageCircle, Users } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, FileText, Filter, X, ChevronDown, ChevronUp, CreditCard, Phone, Mail, Calendar, MapPin, Truck, User, MessageCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -115,7 +115,7 @@ const AgregadosLista = () => {
       
       // Fetch all agregados with their documents, vehicles, and addresses
       const { data, error } = await supabase
-        .from('motorista')
+        .from('vw_agregados_completo')
         .select(`
           *,
           documento_motorista(*),
@@ -140,7 +140,6 @@ const AgregadosLista = () => {
           cliente(*)
         `)
         .eq('company_id', companyId)
-        .eq('funcao', 'Agregado')
         .order('nome');
 
       if (error) throw error;
@@ -213,20 +212,10 @@ const AgregadosLista = () => {
 
       if (statusError) throw statusError;
 
-      // Fetch cidade options through the address relationship
+      // Fetch cidade options
       const { data: cidadeData, error: cidadeError } = await supabase
         .from('motorista')
-        .select(`
-          end_motorista(
-            logradouro(
-              bairro(
-                cidade(
-                  cidade
-                )
-              )
-            )
-          )
-        `)
+        .select('cidade')
         .eq('funcao', 'Agregado')
         .eq('company_id', companyId);
 
@@ -243,18 +232,7 @@ const AgregadosLista = () => {
 
       // Process and set options
       const uniqueStatuses = [...new Set(statusData?.map(item => item.st_cadastro).filter(Boolean))];
-      
-      // Extract unique cities from the nested structure
-      const uniqueCidades = [...new Set(
-        cidadeData
-          ?.flatMap(item => 
-            item.end_motorista?.flatMap(endereco => 
-              endereco.logradouro?.bairro?.cidade?.cidade
-            ) || []
-          )
-          .filter(Boolean)
-      )];
-      
+      const uniqueCidades = [...new Set(cidadeData?.map(item => item.cidade).filter(Boolean))];
       const uniqueTipologias = [...new Set(tipologiaData?.map(item => item.tipologia).filter(Boolean))];
 
       setStatusOptions(uniqueStatuses);
@@ -460,9 +438,8 @@ const AgregadosLista = () => {
       // Apply status filter
       const matchesStatus = !filters.status || motorista.st_cadastro === filters.status;
 
-      // Apply cidade filter - check through the address relationship
-      const matchesCidade = !filters.cidade || 
-        (motorista.endereco?.logradouro?.bairro?.cidade?.cidade === filters.cidade);
+      // Apply cidade filter
+      const matchesCidade = !filters.cidade || motorista.cidade === filters.cidade;
 
       // Apply cliente filter
       const matchesCliente = !filters.cliente || 
@@ -988,7 +965,7 @@ const AgregadosLista = () => {
                                     <span className="font-medium">Cliente:</span> {motorista.cliente?.nome || 'Não atribuído'}
                                   </p>
                                   <p>
-                                    <span className="font-medium">Cidade:</span> {motorista.endereco?.logradouro?.bairro?.cidade?.cidade || 'Não informada'}
+                                    <span className="font-medium">Cidade:</span> {motorista.cidade || 'Não informada'}
                                   </p>
                                 </div>
                                 <div className="flex gap-2 mt-2">
