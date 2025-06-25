@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, User, MapPin, FileText, Camera, Loader2, ExternalLink, Users, Edit2 } from 'lucide-react';
+import { X, User, MapPin, FileText, Camera, Loader2, ExternalLink, Users, Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCPF, formatPhone } from '../utils/format';
@@ -7,6 +7,7 @@ import DocumentUploadModal from './DocumentUploadModal';
 import EditMotoristaModal from './EditMotoristaModal';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import AddAjudanteModal from './AddAjudanteModal';
+import EditAjudanteModal from './EditAjudanteModal';
 
 interface UnifiedMotoristaModalProps {
   isOpen: boolean;
@@ -30,6 +31,8 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
     comprovante: false
   });
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
+  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
+  const [selectedAjudante, setSelectedAjudante] = useState<any | null>(null);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -228,6 +231,28 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
 
   const handleAddAjudante = () => {
     setIsAddAjudanteModalOpen(true);
+  };
+
+  const handleEditAjudante = (ajudante: any) => {
+    setSelectedAjudante(ajudante);
+    setIsEditAjudanteModalOpen(true);
+  };
+
+  const handleDeleteAjudante = async (ajudante: any) => {
+    try {
+      const { error } = await supabase
+        .from('documento_ajudante')
+        .delete()
+        .eq('id_ajudante', ajudante.id_ajudante);
+      
+      if (error) throw error;
+      
+      toast.success('Ajudante excluído com sucesso');
+      fetchMotoristaDetails(); // Refresh data
+    } catch (error) {
+      console.error('Error deleting ajudante:', error);
+      toast.error('Erro ao excluir ajudante');
+    }
   };
 
   const handleDocumentUploadSuccess = () => {
@@ -648,6 +673,24 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                                           </p>
                                         )}
                                       </div>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => handleEditAjudante(ajudante)}
+                                          className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                                   hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                          title="Editar ajudante"
+                                        >
+                                          <Edit2 size={16} />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteAjudante(ajudante)}
+                                          className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                                   hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                          title="Excluir ajudante"
+                                        >
+                                          <Trash2 size={16} />
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 );
@@ -769,6 +812,21 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
         onSuccess={() => {
           fetchMotoristaDetails();
           setIsAddAjudanteModalOpen(false);
+        }}
+      />
+
+      {/* Edit Ajudante Modal */}
+      <EditAjudanteModal
+        isOpen={isEditAjudanteModalOpen}
+        onClose={() => {
+          setIsEditAjudanteModalOpen(false);
+          setSelectedAjudante(null);
+        }}
+        ajudante={selectedAjudante}
+        onSuccess={() => {
+          fetchMotoristaDetails();
+          setIsEditAjudanteModalOpen(false);
+          setSelectedAjudante(null);
         }}
       />
     </div>
