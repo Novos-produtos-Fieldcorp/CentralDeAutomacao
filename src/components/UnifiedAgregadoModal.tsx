@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Truck, MapPin, FileText, Camera, Loader2, ExternalLink, Upload, Save, ArrowLeft, Users, User, Home, Edit2, Trash2 } from 'lucide-react';
+import { X, Truck, MapPin, FileText, Camera, Loader2, ExternalLink, Upload, Save, ArrowLeft, Users, User, Home, Edit2, Trash2, UserPlus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
@@ -9,6 +9,7 @@ import EditMotoristaModal from './EditMotoristaModal';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import VehicleDocumentsModal from './veiculos/VehicleDocumentsModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
+import LoadingSpinner from './LoadingSpinner';
 
 interface UnifiedAgregadoModalProps {
   isOpen: boolean;
@@ -330,219 +331,234 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
             
             {/* Content */}
             <div className="p-6">
-              {/* Tabs */}
-              <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-                <nav className="-mb-px flex space-x-8">
-                  <button
-                    onClick={() => setActiveTab('details')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'details'
-                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Detalhes
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('documents')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'documents'
-                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Documentos
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('helpers')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'helpers'
-                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Ajudantes
-                  </button>
-                </nav>
-              </div>
-
-              {activeTab === 'details' ? (
-                <div className="space-y-6">
-                  {/* Personal Information */}
-                  <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                    <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                        Informações Pessoais
-                      </h3>
-                      <button
-                        onClick={() => setIsEditMotoristaModalOpen(true)}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        <Edit2 className="w-4 h-4 mr-1" />
-                        Editar
-                      </button>
-                    </div>
-                    <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
-                      <dl className="sm:divide-y sm:divide-gray-200 dark:divide-gray-700">
-                        <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            Nome Completo
-                          </dt>
-                          <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {nome}
-                          </dd>
-                        </div>
-                        <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            CPF
-                          </dt>
-                          <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {formatCPF(cpf)}
-                          </dd>
-                        </div>
-                        <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            Data de Nascimento
-                          </dt>
-                          <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motoristaData.dt_nascimento ? formatDate(motoristaData.dt_nascimento) : 'Não informado'}
-                          </dd>
-                        </div>
-                        <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            Telefone
-                          </dt>
-                          <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motoristaData.telefone ? formatPhone(motoristaData.telefone.toString()) : 'Não informado'}
-                          </dd>
-                        </div>
-                        <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            E-mail
-                          </dt>
-                          <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motoristaData.email || 'Não informado'}
-                          </dd>
-                        </div>
-                      </dl>
-                    </div>
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <LoadingSpinner />
+                </div>
+              ) : !motoristaData ? (
+                <div className="text-center py-12">
+                  <div className="text-gray-500 dark:text-gray-400">
+                    <p className="text-lg font-medium">Dados não encontrados</p>
+                    <p className="text-sm mt-2">Não foi possível carregar as informações do motorista.</p>
                   </div>
-
-                  {/* Vehicle Information */}
-                  {veiculo && (
-                    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                      <div className="px-4 py-5 sm:px-6">
-                        <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                          Veículo
-                        </h3>
-                      </div>
-                      <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
-                        <dl className="sm:divide-y sm:divide-gray-200 dark:divide-gray-700">
-                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              Placa
-                            </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {veiculo.placa}
-                            </dd>
-                          </div>
-                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              Marca/Modelo
-                            </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {veiculo.marca} {veiculo.tipologia}
-                            </dd>
-                          </div>
-                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              Ano
-                            </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {veiculo.ano}
-                            </dd>
-                          </div>
-                        </dl>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : (
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      Ajudantes
-                    </h3>
-                    <button
-                      onClick={() => setIsAddAjudanteModalOpen(true)}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Adicionar Ajudante
-                    </button>
+                <>
+                  {/* Tabs */}
+                  <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+                    <nav className="-mb-px flex space-x-8">
+                      <button
+                        onClick={() => setActiveTab('details')}
+                        className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                          activeTab === 'details'
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                        }`}
+                      >
+                        Detalhes
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('documents')}
+                        className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                          activeTab === 'documents'
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                        }`}
+                      >
+                        Documentos
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('helpers')}
+                        className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                          activeTab === 'helpers'
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                        }`}
+                      >
+                        Ajudantes
+                      </button>
+                    </nav>
                   </div>
-                  
-                  {ajudantes.length > 0 ? (
-                    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                      <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {ajudantes.map((ajudante) => (
-                          <li key={ajudante.id_ajudante} className="px-4 py-4 sm:px-6">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <div className="ml-4">
-                                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {ajudante.nome}
-                                  </p>
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'CPF não informado'}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={() => handleEditAjudante(ajudante)}
-                                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                >
-                                  <Edit2 className="w-4 h-4 mr-1" />
-                                  Editar
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteAjudante(ajudante)}
-                                  className="inline-flex items-center px-3 py-1.5 border border-red-300 dark:border-red-600 shadow-sm text-xs font-medium rounded-md text-red-700 dark:text-red-200 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                >
-                                  <Trash2 className="w-4 h-4 mr-1" />
-                                  Excluir
-                                </button>
-                              </div>
+
+                  {activeTab === 'details' ? (
+                    <div className="space-y-6">
+                      {/* Personal Information */}
+                      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                        <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+                          <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                            Informações Pessoais
+                          </h3>
+                          <button
+                            onClick={() => setIsEditMotoristaModalOpen(true)}
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            <Edit2 className="w-4 h-4 mr-1" />
+                            Editar
+                          </button>
+                        </div>
+                        <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                          <dl className="sm:divide-y sm:divide-gray-200 dark:divide-gray-700">
+                            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                Nome Completo
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                {nome}
+                              </dd>
                             </div>
-                          </li>
-                        ))}
-                      </ul>
+                            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                CPF
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                {formatCPF(cpf)}
+                              </dd>
+                            </div>
+                            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                Data de Nascimento
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                {motoristaData.dt_nascimento ? formatDate(motoristaData.dt_nascimento) : 'Não informado'}
+                              </dd>
+                            </div>
+                            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                Telefone
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                {motoristaData.telefone ? formatPhone(motoristaData.telefone.toString()) : 'Não informado'}
+                              </dd>
+                            </div>
+                            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                E-mail
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                {motoristaData.email || 'Não informado'}
+                              </dd>
+                            </div>
+                          </dl>
+                        </div>
+                      </div>
+
+                      {/* Vehicle Information */}
+                      {veiculo && (
+                        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                          <div className="px-4 py-5 sm:px-6">
+                            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                              Veículo
+                            </h3>
+                          </div>
+                          <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                            <dl className="sm:divide-y sm:divide-gray-200 dark:divide-gray-700">
+                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                  Placa
+                                </dt>
+                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                  {veiculo.placa}
+                                </dd>
+                              </div>
+                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                  Marca/Modelo
+                                </dt>
+                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                  {veiculo.marca} {veiculo.tipologia}
+                                </dd>
+                              </div>
+                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                  Ano
+                                </dt>
+                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                  {veiculo.ano}
+                                </dd>
+                              </div>
+                            </dl>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="text-center py-12">
-                      <Users className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                        Nenhum ajudante encontrado
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Adicione um novo ajudante para começar.
-                      </p>
-                      <div className="mt-6">
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                          Ajudantes
+                        </h3>
                         <button
                           onClick={() => setIsAddAjudanteModalOpen(true)}
-                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
-                          <UserPlus className="-ml-1 mr-2 h-5 w-5" />
+                          <UserPlus className="w-4 h-4 mr-2" />
                           Adicionar Ajudante
                         </button>
                       </div>
+                      
+                      {ajudantes.length > 0 ? (
+                        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                            {ajudantes.map((ajudante) => (
+                              <li key={ajudante.id_ajudante} className="px-4 py-4 sm:px-6">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                      <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div className="ml-4">
+                                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {ajudante.nome}
+                                      </p>
+                                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'CPF não informado'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={() => handleEditAjudante(ajudante)}
+                                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                      <Edit2 className="w-4 h-4 mr-1" />
+                                      Editar
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteAjudante(ajudante)}
+                                      className="inline-flex items-center px-3 py-1.5 border border-red-300 dark:border-red-600 shadow-sm text-xs font-medium rounded-md text-red-700 dark:text-red-200 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-1" />
+                                      Excluir
+                                    </button>
+                                  </div>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <Users className="mx-auto h-12 w-12 text-gray-400" />
+                          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Nenhum ajudante encontrado
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Adicione um novo ajudante para começar.
+                          </p>
+                          <div className="mt-6">
+                            <button
+                              onClick={() => setIsAddAjudanteModalOpen(true)}
+                              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                              <UserPlus className="-ml-1 mr-2 h-5 w-5" />
+                              Adicionar Ajudante
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
+                </>
               )}
             </div>
           </div>
