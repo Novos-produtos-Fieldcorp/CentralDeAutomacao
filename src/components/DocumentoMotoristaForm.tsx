@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { X, Loader2, CreditCard, Home, FileText, Camera, Upload, ExternalLink } from 'lucide-react';
 import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
+import { BaseModal } from './BaseModal';
 
 interface DocumentoMotoristaFormProps {
   isOpen: boolean;
@@ -212,20 +213,15 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Documentos do Motorista
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
+    <>
+      <BaseModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Documentos do Motorista"
+        size="2xl"
+        maxHeight="90vh"
+        className="overflow-hidden"
+      >
         {loading ? (
           <div className="p-6 flex justify-center">
             <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
@@ -834,57 +830,34 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
             </div>
           </form>
         )}
+      </BaseModal>
 
-        {/* Full-screen document viewer */}
-        {activeDocument && (
-          <div 
-            className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
-            onClick={() => setActiveDocument(null)}
-          >
-            <div 
-              className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Visualização do Documento
-                </h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openDocumentInNewTab(activeDocument)}
-                    className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    title="Abrir em nova aba"
-                  >
-                    <ExternalLink size={20} />
-                  </button>
-                  <button
-                    onClick={() => setActiveDocument(null)}
-                    className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-              </div>
-              <div className="relative h-[calc(90vh-80px)]">
-                {isPdf(activeDocument) ? (
-                  <iframe 
-                    src={`${activeDocument}#toolbar=1`} 
-                    className="w-full h-full" 
-                    title="PDF Viewer"
-                  />
-                ) : (
-                  <img
-                    src={activeDocument}
-                    alt="Documento"
-                    className="w-full h-full object-contain"
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+      {/* Full-screen document viewer */}
+      <BaseModal
+        isOpen={!!activeDocument}
+        onClose={() => setActiveDocument(null)}
+        title="Visualização do Documento"
+        size="2xl"
+        maxHeight="90vh"
+        className="p-0"
+      >
+        <div className="relative h-[calc(90vh-80px)]">
+          {activeDocument && isPdf(activeDocument) ? (
+            <iframe 
+              src={`${activeDocument}#toolbar=1`} 
+              className="w-full h-full" 
+              title="PDF Viewer"
+            />
+          ) : (
+            <img
+              src={activeDocument || ''}
+              alt="Documento"
+              className="w-full h-full object-contain"
+            />
+          )}
+        </div>
+      </BaseModal>
+    </>
   );
 };
 
