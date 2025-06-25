@@ -118,16 +118,18 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
         console.log('Raw ajudantes data:', ajudantesData);
         
         // Transform the data to match the expected structure
-        const formattedAjudantes = (ajudantesData || []).map(ajudante => {
-          console.log('Processing ajudante:', ajudante);
-          return {
-            ...ajudante,
-            nome: ajudante.nome || 'Ajudante sem nome',
-            cpf: ajudante.cpf || '',
-            telefone: ajudante.telefone || '',
-            id_ajudante: ajudante.id_ajudante || Math.random().toString(36).substr(2, 9) // Fallback ID if not present
-          };
-        });
+        // Only include ajudantes that have a valid id_ajudante from the database
+        const formattedAjudantes = (ajudantesData || [])
+          .filter(ajudante => ajudante && ajudante.id_ajudante) // Only include records with valid IDs
+          .map(ajudante => {
+            console.log('Processing ajudante:', ajudante);
+            return {
+              ...ajudante,
+              nome: ajudante.nome || 'Ajudante sem nome',
+              cpf: ajudante.cpf || '',
+              telefone: ajudante.telefone || ''
+            };
+          });
         
         console.log('Formatted ajudantes:', formattedAjudantes);
         setAjudantes(formattedAjudantes);
@@ -642,13 +644,13 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
                           <div className="grid grid-cols-1 gap-4">
                             {ajudantes.map((ajudante) => {
                               try {
-                                // Ensure we have a valid ajudante object
-                                if (!ajudante || typeof ajudante !== 'object') {
+                                // Ensure we have a valid ajudante object with a valid database ID
+                                if (!ajudante || typeof ajudante !== 'object' || !ajudante.id_ajudante) {
                                   console.warn('Invalid ajudante data:', ajudante);
                                   return null;
                                 }
                                 
-                                const ajudanteId = ajudante.id_ajudante || Math.random().toString(36).substr(2, 9);
+                                const ajudanteId = ajudante.id_ajudante; // Use the database ID directly
                                 const nome = ajudante.nome || 'Ajudante sem nome';
                                 // Ensure CPF is a string before formatting
                                 const cpf = ajudante.cpf ? String(ajudante.cpf) : '';
