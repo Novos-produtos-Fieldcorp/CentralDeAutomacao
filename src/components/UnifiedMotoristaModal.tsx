@@ -815,22 +815,20 @@ const UnifiedMotoristaModal = ({ isOpen, onClose, motorista, onSuccess }: Unifie
         }}
       />
 
-      {/* Edit Ajudante Modal - Only render when both conditions are met */}
-      {isEditAjudanteModalOpen && selectedAjudante && (
-        <EditAjudanteModal
-          isOpen={isEditAjudanteModalOpen}
-          onClose={() => {
-            setIsEditAjudanteModalOpen(false);
-            setSelectedAjudante(null);
-          }}
-          ajudante={selectedAjudante}
-          onSuccess={() => {
-            fetchMotoristaDetails();
-            setIsEditAjudanteModalOpen(false);
-            setSelectedAjudante(null);
-          }}
-        />
-      )}
+      {/* Edit Ajudante Modal */}
+      <EditAjudanteModal
+        isOpen={isEditAjudanteModalOpen}
+        onClose={() => {
+          setIsEditAjudanteModalOpen(false);
+          setSelectedAjudante(null);
+        }}
+        ajudante={selectedAjudante}
+        onSuccess={() => {
+          fetchMotoristaDetails();
+          setIsEditAjudanteModalOpen(false);
+          setSelectedAjudante(null);
+        }}
+      />
     </div>
   );
 };
