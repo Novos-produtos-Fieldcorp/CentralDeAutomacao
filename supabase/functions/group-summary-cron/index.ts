@@ -33,8 +33,8 @@ Deno.serve(async (req) => {
     
     // Convert to Brasilia timezone (UTC-3)
     const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-    const brasiliaHour = brasiliaTime.getUTCHours();
-    const brasiliaMinute = brasiliaTime.getUTCMinutes();
+    const brasiliaHour = brasiliaTime.getHours();
+    const brasiliaMinute = brasiliaTime.getMinutes();
     
     // Format Brasilia time as HH:MM for comparison with database
     const currentTime = `${brasiliaHour.toString().padStart(2, '0')}:${brasiliaMinute.toString().padStart(2, '0')}`;
@@ -44,12 +44,12 @@ Deno.serve(async (req) => {
     console.log(`Current Brasilia time: ${brasiliaTime.toISOString()}`);
 
     // Get the current Brasilia time from the database for verification
-    const { data: dbTimeData, error: dbTimeError } = await supabase.rpc('get_current_brasilia_time');
+    const { data: dbTimeData, error: dbTimeError } = await supabase.rpc('get_current_brasilia_time_details');
     
     if (dbTimeError) {
       console.error('Error getting database time:', dbTimeError);
     } else {
-      console.log(`Database Brasilia time: ${dbTimeData}`);
+      console.log(`Database time details:`, dbTimeData);
     }
 
     // Query for active groups with matching schedule time

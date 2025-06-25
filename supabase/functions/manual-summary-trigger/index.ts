@@ -59,6 +59,21 @@ Deno.serve(async (req) => {
       throw new Error(`Group with ID ${group_id} is inactive`);
     }
 
+    // Log the current time in both UTC and Brasilia timezone
+    const now = new Date();
+    const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+    console.log(`Current UTC time: ${now.toISOString()}`);
+    console.log(`Current Brasilia time: ${brasiliaTime.toISOString()}`);
+    
+    // Get the current Brasilia time from the database for verification
+    const { data: dbTimeData, error: dbTimeError } = await supabase.rpc('get_current_brasilia_time_details');
+    
+    if (dbTimeError) {
+      console.error('Error getting database time:', dbTimeError);
+    } else {
+      console.log(`Database time details:`, dbTimeData);
+    }
+
     // Generate summary data for this group
     const summaryData = await generateSummaryData(grupo);
     
@@ -66,7 +81,7 @@ Deno.serve(async (req) => {
     const webhookResult = await sendWebhook(grupo, summaryData);
     
     // Record the delivery in the database
-    await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso');
+    await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso (manual)');
 
     return new Response(
       JSON.stringify({
@@ -74,7 +89,13 @@ Deno.serve(async (req) => {
         message: `Summary sent successfully for group ${grupo.nome_grupo}`,
         data: {
           group_id: grupo.id,
-          group_name: grupo.nome_grupo
+          group_name: grupo.nome_grupo,
+          webhook_result: webhookResult,
+          current_time: {
+            utc: now.toISOString(),
+            brasilia: brasiliaTime.toISOString(),
+            database: dbTimeData
+          }
         }
       }),
       {
