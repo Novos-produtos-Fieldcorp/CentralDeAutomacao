@@ -191,6 +191,7 @@ const ResumosGrupo = () => {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [timeDetails, setTimeDetails] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'grupos' | 'historico'>('grupos');
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
 
   // Form state for add/edit modal
   const [formData, setFormData] = useState<{
@@ -456,6 +457,40 @@ const ResumosGrupo = () => {
     }
   };
 
+  const handleToggleStatus = async (e: React.MouseEvent, grupo: GrupoResumo) => {
+    e.stopPropagation();
+    try {
+      setUpdatingStatus(grupo.id);
+      
+      // Toggle the status
+      const newStatus = !grupo.ativo;
+      
+      const { error } = await supabase
+        .from('grupo_resumo')
+        .update({ ativo: newStatus })
+        .eq('id', grupo.id)
+        .eq('company_id', companyId);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setGrupos(prev => 
+        prev.map(g => 
+          g.id === grupo.id 
+            ? { ...g, ativo: newStatus } 
+            : g
+        )
+      );
+      
+      toast.success(`Grupo ${newStatus ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error toggling group status:', error);
+      toast.error('Erro ao atualizar status do grupo');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   const filteredGrupos = grupos.filter(grupo => 
     grupo.nome_grupo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     grupo.url_grupo.toLowerCase().includes(searchTerm.toLowerCase())
@@ -605,13 +640,28 @@ const ResumosGrupo = () => {
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          grupo.ativo 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
-                            : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-                        }`}>
-                          {grupo.ativo ? 'Ativo' : 'Inativo'}
-                        </span>
+                        <button
+                          onClick={(e) => handleToggleStatus(e, grupo)}
+                          disabled={updatingStatus === grupo.id}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                            grupo.ativo 
+                              ? 'bg-green-500 dark:bg-green-600' 
+                              : 'bg-gray-200 dark:bg-gray-700'
+                          } ${updatingStatus === grupo.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          role="switch"
+                          aria-checked={grupo.ativo}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              grupo.ativo ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                          {updatingStatus === grupo.id && (
+                            <Loader2 
+                              className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
+                            />
+                          )}
+                        </button>
                         
                         <button
                           onClick={() => handleSendManualSummary(grupo.id)}
