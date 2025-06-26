@@ -246,18 +246,25 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(prev => ({ ...prev, [grupo.id]: true }));
       
-      const { data, error } = await supabase.functions.invoke('manual-summary-trigger', {
-        body: {
+      // Call the manual-summary-trigger edge function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           group_id: grupo.id,
           company_id: companyId
-        }
+        })
       });
       
-      if (error) {
-        throw new Error(`Failed to trigger manual summary: ${error.message}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to trigger manual summary: ${response.status} - ${errorText}`);
       }
       
-      console.log('Manual summary result:', data);
+      const result = await response.json();
+      console.log('Manual summary result:', result);
       
       toast.success('Resumo enviado com sucesso');
       

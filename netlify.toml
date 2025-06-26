@@ -6,4 +6,10 @@
   from = "/api/*"
   to = "https://chat.wiseapp360.com/api/:splat"
   status = 200
+  force = true 
+
+[[redirects]]
+  from = "/supabase-functions/*"
+  to = "https://zp1v56uxy8rdx5ypatb0ockcb9tr6a.supabase.co/functions/v1/:splat"
+  status = 200
   force = true
