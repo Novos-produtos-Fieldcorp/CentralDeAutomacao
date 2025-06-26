@@ -186,6 +186,7 @@ export interface Cliente {
   company_id: number;
   email: string;
   telefone: number;
+  cor?: string; // Cor opcional para identificação visual do cliente
 }
 
 export interface Company {

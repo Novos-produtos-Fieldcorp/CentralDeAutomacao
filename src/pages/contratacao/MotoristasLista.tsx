@@ -139,6 +139,45 @@ const MotoristasLista = () => {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
+  
+  // Refs para os dropdowns
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const clienteDropdownRef = useRef<HTMLDivElement>(null);
+  const cidadeDropdownRef = useRef<HTMLDivElement>(null);
+  const ativoDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Funções para alternar os dropdowns
+  const handleToggleStatusDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowStatusDropdown(!showStatusDropdown);
+    setShowCidadeDropdown(false);
+    setShowClienteDropdown(false);
+    setShowAtivoDropdown(false);
+  };
+  
+  const handleToggleCidadeDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowCidadeDropdown(!showCidadeDropdown);
+    setShowStatusDropdown(false);
+    setShowClienteDropdown(false);
+    setShowAtivoDropdown(false);
+  };
+  
+  const handleToggleClienteDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowClienteDropdown(!showClienteDropdown);
+    setShowStatusDropdown(false);
+    setShowCidadeDropdown(false);
+    setShowAtivoDropdown(false);
+  };
+  
+  const handleToggleAtivoDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowAtivoDropdown(!showAtivoDropdown);
+    setShowStatusDropdown(false);
+    setShowCidadeDropdown(false);
+    setShowClienteDropdown(false);
+  };
   const [cidades, setCidades] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -203,19 +242,28 @@ const MotoristasLista = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showStatusDropdown && !event.composedPath().some((el: any) => el.id === 'status-dropdown')) {
-        setShowStatusDropdown(false);
-      }
-      if (showCidadeDropdown && !event.composedPath().some((el: any) => el.id === 'cidade-dropdown')) {
-        setShowCidadeDropdown(false);
-      }
-      if (showClienteDropdown && !event.composedPath().some((el: any) => el.id === 'cliente-dropdown')) {
-        setShowClienteDropdown(false);
-      }
-      if (showAtivoDropdown && !event.composedPath().some((el: any) => el.id === 'ativo-dropdown')) {
-        setShowAtivoDropdown(false);
-      }
-    };
+    const target = event.target as HTMLElement;
+    
+    // Verifica se o clique foi fora do dropdown de status
+    if (showStatusDropdown && statusDropdownRef.current && !statusDropdownRef.current.contains(target)) {
+      setShowStatusDropdown(false);
+    }
+    
+    // Verifica se o clique foi fora do dropdown de cidades
+    if (showCidadeDropdown && cidadeDropdownRef.current && !cidadeDropdownRef.current.contains(target)) {
+      setShowCidadeDropdown(false);
+    }
+    
+    // Verifica se o clique foi fora do dropdown de clientes
+    if (showClienteDropdown && clienteDropdownRef.current && !clienteDropdownRef.current.contains(target)) {
+      setShowClienteDropdown(false);
+    }
+    
+    // Verifica se o clique foi fora do dropdown de ativo/inativo
+    if (showAtivoDropdown && ativoDropdownRef.current && !ativoDropdownRef.current.contains(target)) {
+      setShowAtivoDropdown(false);
+    }
+  };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
@@ -290,6 +338,17 @@ const MotoristasLista = () => {
     }
   };
 
+  // Cores padrão para os clientes (apenas fundo, sem borda)
+  const defaultClientColors = [
+    'bg-blue-100 dark:bg-blue-900/30',
+    'bg-green-100 dark:bg-green-900/30',
+    'bg-yellow-100 dark:bg-yellow-900/30',
+    'bg-red-100 dark:bg-red-900/30',
+    'bg-purple-100 dark:bg-purple-900/30',
+    'bg-pink-100 dark:bg-pink-900/30',
+    'bg-indigo-100 dark:bg-indigo-900/30',
+  ];
+
   const fetchClientes = async () => {
     try {
       const { data, error } = await supabase
@@ -301,7 +360,13 @@ const MotoristasLista = () => {
 
       if (error) throw error;
 
-      setClientes(data || []);
+      // Adiciona uma cor a cada cliente (usando o índice para selecionar uma cor)
+      const clientesComCores = (data || []).map((cliente, index) => ({
+        ...cliente,
+        cor: defaultClientColors[index % defaultClientColors.length]
+      }));
+
+      setClientes(clientesComCores);
     } catch (error) {
       console.error('Error fetching clientes:', error);
       toast.error('Erro ao carregar clientes');
@@ -350,7 +415,12 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleSelectItem = (motoristaId: number) => {
+  const handleSelectItem = (motoristaId: number, e?: React.ChangeEvent<HTMLInputElement> | React.MouseEvent) => {
+    // Impede a propagação do evento para evitar fechar dropdowns ou acionar outros eventos
+    if (e && 'stopPropagation' in e) {
+      e.stopPropagation();
+    }
+    
     const newSelectedItems = new Set(selectedItems);
     if (newSelectedItems.has(motoristaId)) {
       newSelectedItems.delete(motoristaId);
@@ -359,11 +429,16 @@ const MotoristasLista = () => {
     }
     setSelectedItems(newSelectedItems);
     
-    // Update selectAll state
+    // Atualiza o estado de selecionar todos
     setSelectAll(newSelectedItems.size === filteredMotoristas.length);
   };
 
-  const handleSelectAll = () => {
+  const handleSelectAll = (e?: React.ChangeEvent<HTMLInputElement> | React.MouseEvent) => {
+    // Impede a propagação do evento para evitar fechar dropdowns ou acionar outros eventos
+    if (e && 'stopPropagation' in e) {
+      e.stopPropagation();
+    }
+    
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
@@ -460,54 +535,16 @@ const MotoristasLista = () => {
     });
   };
 
-  const toggleStatusDropdown = (e: React.MouseEvent, motoristaId: number) => {
+  const handleRowStatusDropdown = (e: React.MouseEvent, motoristaId: number) => {
     e.stopPropagation();
-    if (statusDropdownOpen === motoristaId) {
-      setStatusDropdownOpen(null);
-    } else {
-      setStatusDropdownOpen(motoristaId);
-    }
+    setStatusDropdownOpen(statusDropdownOpen === motoristaId ? null : motoristaId);
+    setClienteDropdownOpen(null);
   };
 
-  const toggleClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
+  const handleRowClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
     e.stopPropagation();
-    if (clienteDropdownOpen === motoristaId) {
-      setClienteDropdownOpen(null);
-    } else {
-      setClienteDropdownOpen(motoristaId);
-    }
-  };
-
-  const handleUpdateStatus = async (e: React.MouseEvent, motorista: ViewMotorista, newStatus: string) => {
-    e.stopPropagation();
-    try {
-      setUpdatingStatus(motorista.motorista_id || 0);
-      
-      // Update the status in the database
-      const { error } = await supabase
-        .from('motorista')
-        .update({ st_cadastro: newStatus })
-        .eq('motorista_id', motorista.motorista_id);
-        
-      if (error) throw error;
-      
-      // Update the local state
-      setMotoristas(prev => 
-        prev.map(m => 
-          m.motorista_id === motorista.motorista_id 
-            ? { ...m, st_cadastro: newStatus } 
-            : m
-        )
-      );
-      
-      toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Erro ao atualizar status');
-    } finally {
-      setUpdatingStatus(null);
-      setStatusDropdownOpen(null);
-    }
+    setClienteDropdownOpen(clienteDropdownOpen === motoristaId ? null : motoristaId);
+    setStatusDropdownOpen(null);
   };
 
   const handleUpdateCliente = async (e: React.MouseEvent, motorista: ViewMotorista, clienteId: number | null) => {
@@ -545,6 +582,37 @@ const MotoristasLista = () => {
     } finally {
       setUpdatingCliente(null);
       setClienteDropdownOpen(null);
+    }
+  };
+
+  const handleUpdateStatus = async (e: React.MouseEvent, motorista: ViewMotorista, newStatus: string) => {
+    e.stopPropagation();
+    try {
+      setUpdatingStatus(motorista.motorista_id || 0);
+      
+      const { error } = await supabase
+        .from('motorista')
+        .update({ st_cadastro: newStatus })
+        .eq('motorista_id', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setMotoristas(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { ...m, st_cadastro: newStatus } 
+            : m
+        )
+      );
+      
+      toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Erro ao atualizar status');
+    } finally {
+      setUpdatingStatus(null);
+      setStatusDropdownOpen(null);
     }
   };
 
@@ -594,16 +662,13 @@ const MotoristasLista = () => {
     let clienteMatch = true;
     if (clienteFilter.length > 0) {
       if (clienteFilter.includes('sem_cliente')) {
-        // Se 'sem_cliente' está selecionado, inclui registros sem cliente
         clienteMatch = motorista.cliente_id === null || motorista.cliente_id === undefined;
       } else {
-        // Verifica se o cliente do motorista está na lista de clientes selecionados
         clienteMatch = motorista.cliente_id !== null && 
           motorista.cliente_id !== undefined &&
           clienteFilter.includes(motorista.cliente_id.toString());
       }
       
-      // Se 'sem_cliente' está selecionado junto com outros clientes, combina os resultados
       if (clienteFilter.includes('sem_cliente') && clienteFilter.length > 1) {
         clienteMatch = clienteMatch || (motorista.cliente_id === null || motorista.cliente_id === undefined);
       }
@@ -737,23 +802,27 @@ const MotoristasLista = () => {
             )}
           </div>
 
-          <div className="relative">
+          <div className="relative group" ref={statusDropdownRef}>
             <button
               type="button"
+              id="status-dropdown-button"
               className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+              onClick={handleToggleStatusDropdown}
+              aria-expanded={showStatusDropdown}
+              aria-haspopup="listbox"
+              aria-labelledby="status-dropdown-button"
             >
               <span className="truncate">
                 {statusFilter.length === 0 ? 'Todos os status' : `${statusFilter.length} selecionado(s)`}
               </span>
               <div className="absolute inset-y-0 right-2 flex items-center">
-                <ChevronDown className="h-4 w-4 text-gray-400 transition-transform" />
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
               </div>
               <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </button>
             
             {showStatusDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto" id="status-dropdown-menu">
                 <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
                   <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
                     <span>Selecionar status</span>
@@ -770,23 +839,28 @@ const MotoristasLista = () => {
                   </div>
                 </div>
                 <div className="max-h-48 overflow-y-auto">
-                  {['cadastrado', 'qualificado', 'documentacao', 'contrato_enviado', 'contratado', 'repescagem', 'rejeitado'].map((status, index) => (
+                  {['cadastrado', 'qualificado', 'documentacao', 'contrato_enviado', 'contratado', 'repescagem', 'rejeitado', 'gestao_risco'].map((status, index) => (
                     <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <label className="flex items-center space-x-2 cursor-pointer">
+                      <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                           checked={statusFilter.includes(status)}
                           onChange={(e) => {
+                            // Não precisamos de stopPropagation aqui, pois o onChange não propaga o clique
                             if (e.target.checked) {
                               setStatusFilter([...statusFilter, status]);
                             } else {
                               setStatusFilter(statusFilter.filter(s => s !== status));
                             }
                           }}
+                          onClick={(e) => {
+                            // Impede que o clique no checkbox feche o dropdown
+                            e.stopPropagation();
+                          }}
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-200 capitalize">
-                          {status === 'contrato_enviado' ? 'Contrato Enviado' : status}
+                          {status === 'contrato_enviado' ? 'Contrato Enviado' : status === 'gestao_risco' ? 'Gestão de Risco' : status}
                         </span>
                       </label>
                     </div>
@@ -796,17 +870,21 @@ const MotoristasLista = () => {
             )}
           </div>
 
-          <div className="relative group">
+          <div className="relative group" ref={cidadeDropdownRef}>
             <button
               type="button"
+              id="cidade-dropdown-button"
               className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
+              onClick={handleToggleCidadeDropdown}
+              aria-expanded={showCidadeDropdown}
+              aria-haspopup="listbox"
+              aria-labelledby="cidade-dropdown-button"
             >
               <span className="truncate">
                 {cidadeFilter.length === 0 ? 'Todas as cidades' : `${cidadeFilter.length} selecionada(s)`}
               </span>
               <div className="absolute inset-y-0 right-2 flex items-center">
-                <ChevronDown className="h-4 w-4 text-gray-400 transition-transform" />
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
               </div>
               <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </button>
@@ -831,17 +909,22 @@ const MotoristasLista = () => {
                 <div className="max-h-48 overflow-y-auto">
                   {cidades.map((cidade, index) => (
                     <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <label className="flex items-center space-x-2 cursor-pointer">
+                      <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                           checked={cidadeFilter.includes(cidade)}
                           onChange={(e) => {
+                            // Não precisamos de stopPropagation aqui, pois o onChange não propaga o clique
                             if (e.target.checked) {
                               setCidadeFilter([...cidadeFilter, cidade]);
                             } else {
                               setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
                             }
+                          }}
+                          onClick={(e) => {
+                            // Impede que o clique no checkbox feche o dropdown
+                            e.stopPropagation();
                           }}
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-200">{cidade}</span>
@@ -855,11 +938,15 @@ const MotoristasLista = () => {
         </div>
         
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative group">
+          <div className="relative group" ref={clienteDropdownRef}>
             <button
               type="button"
+              id="cliente-dropdown-button"
               className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              onClick={() => setShowClienteDropdown(!showClienteDropdown)}
+              onClick={handleToggleClienteDropdown}
+              aria-expanded={showClienteDropdown}
+              aria-haspopup="listbox"
+              aria-labelledby="cliente-dropdown-button"
             >
               <span className="truncate">
                 {clienteFilter.length === 0 
@@ -869,7 +956,7 @@ const MotoristasLista = () => {
                     : `${clienteFilter.length} cliente(s)`}
               </span>
               <div className="absolute inset-y-0 right-2 flex items-center">
-                <ChevronDown className="h-4 w-4 text-gray-400 transition-transform" />
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
               </div>
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -908,7 +995,7 @@ const MotoristasLista = () => {
                 <div className="max-h-48 overflow-y-auto">
                   {/* Opção "Sem cliente" */}
                   <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                    <label className="flex items-center space-x-2 cursor-pointer">
+                    <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
@@ -928,18 +1015,23 @@ const MotoristasLista = () => {
                   {/* Lista de clientes */}
                   {clientes.map(cliente => (
                     <div key={cliente.cliente_id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <label className="flex items-center space-x-2 cursor-pointer">
+                      <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                           checked={clienteFilter.includes(cliente.cliente_id.toString())}
                           onChange={(e) => {
+                            // Não precisamos de stopPropagation aqui, pois o onChange não propaga o clique
                             const clienteId = cliente.cliente_id.toString();
                             if (e.target.checked) {
                               setClienteFilter([...clienteFilter, clienteId]);
                             } else {
                               setClienteFilter(clienteFilter.filter(id => id !== clienteId));
                             }
+                          }}
+                          onClick={(e) => {
+                            // Impede que o clique no checkbox feche o dropdown
+                            e.stopPropagation();
                           }}
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-200">{cliente.nome}</span>
@@ -951,20 +1043,21 @@ const MotoristasLista = () => {
             )}
           </div>
           
-          <div className="relative group" id="ativo-dropdown">
+          <div className="relative group" ref={ativoDropdownRef}>
             <button
               type="button"
+              id="ativo-dropdown-button"
               className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowAtivoDropdown(!showAtivoDropdown);
-              }}
+              onClick={handleToggleAtivoDropdown}
+              aria-expanded={showAtivoDropdown}
+              aria-haspopup="listbox"
+              aria-labelledby="ativo-dropdown-button"
             >
               <span className="truncate">
                 {!ativoFilter ? 'Todos (Ativo/Inativo)' : ativoFilter === 'ativo' ? 'Somente Ativos' : 'Somente Inativos'}
               </span>
               <div className="absolute inset-y-0 right-2 flex items-center">
-                <ChevronDown className="h-4 w-4 text-gray-400 transition-transform" />
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showAtivoDropdown ? 'transform rotate-180' : ''}`} />
               </div>
               <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </button>
@@ -1084,7 +1177,14 @@ const MotoristasLista = () => {
               <input
                 type="checkbox"
                 checked={selectAll}
-                onChange={handleSelectAll}
+                onChange={(e) => {
+                  handleSelectAll(e);
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  // Impede que o clique no checkbox feche dropdowns ou acione outros eventos
+                  e.stopPropagation();
+                }}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
               />
               <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -1122,8 +1222,15 @@ const MotoristasLista = () => {
                         <input
                           type="checkbox"
                           checked={selectedItems.has(motorista.motorista_id)}
-                          onChange={() => handleSelectItem(motorista.motorista_id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          onChange={(e) => {
+                            // Usa o evento para evitar propagação
+                            handleSelectItem(motorista.motorista_id, e);
+                            e.stopPropagation();
+                          }}
+                          onClick={(e) => {
+                            // Impede que o clique no checkbox feche dropdowns ou acione outros eventos
+                            e.stopPropagation();
+                          }}
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1173,29 +1280,34 @@ const MotoristasLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
-                          <button
-                            onClick={(e) => toggleStatusDropdown(e, motorista.motorista_id)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
-                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                                     dark:focus:ring-offset-gray-800"
-                          >
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              !motorista.st_cadastro ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' :
-                              motorista.st_cadastro === 'contratado' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' :
-                              motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200' :
-                              motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200' :
-                              motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200' :
-                              motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200' :
-                              motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200' :
-                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                            }`}>
-                              {!motorista.st_cadastro ? 'Indefinido' :
-                               motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
-                               motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
-                            </span>
-                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400" />
-                          </button>
+                          <div className="flex items-center">
+                            <button
+                              onClick={(e) => handleRowStatusDropdown(e, motorista.motorista_id || 0)}
+                              className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                !motorista.st_cadastro ? 'bg-gray-100 dark:bg-gray-700' :
+                                motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30' :
+                                motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 dark:bg-red-900/30' :
+                                motorista.st_cadastro === 'gestao_risco' ? 'bg-rose-100 dark:bg-rose-900/30' :
+                                motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                                motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                                motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 dark:bg-purple-900/30' :
+                                motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 dark:bg-orange-900/30' :
+                                'bg-gray-100 dark:bg-gray-700'
+                              }`}
+                              title={!motorista.st_cadastro ? 'Indefinido' :
+                                     motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
+                                     motorista.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
+                                     motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
+                            >
+                              <span className="truncate max-w-[130px] text-left">
+                                {!motorista.st_cadastro ? 'Indefinido' :
+                                 motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
+                                 motorista.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
+                                 motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
+                              </span>
+                              <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
+                            </button>
+                          </div>
                           
                           {statusDropdownOpen === motorista.motorista_id && (
                             <div 
@@ -1273,6 +1385,16 @@ const MotoristasLista = () => {
                                 >
                                   Rejeitado
                                 </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'gestao_risco')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    motorista.st_cadastro === 'gestao_risco' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Gestão de Risco
+                                </button>
                               </div>
                             </div>
                           )}
@@ -1286,18 +1408,23 @@ const MotoristasLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
-                          <button
-                            onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
-                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                                     dark:focus:ring-offset-gray-800 text-left w-full"
-                          >
-                            <span className="truncate max-w-[150px]">
-                              {motorista.cliente_id ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || 'Cliente não encontrado' : 'Sem cliente'}
-                            </span>
-                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                          </button>
+                          <div className="flex items-center">
+                            <button
+                              onClick={(e) => handleRowClienteDropdown(e, motorista.motorista_id || 0)}
+                              className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                motorista.cliente_id 
+                                  ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor || 
+                                    'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
+                                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
+                              }`}
+                              title={motorista.cliente_id ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome : 'Sem cliente'}
+                            >
+                              <span className="truncate max-w-[130px] text-left">
+                                {motorista.cliente_id ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || 'Cliente não encontrado' : 'Sem cliente'}
+                              </span>
+                              <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
+                            </button>
+                          </div>
                           
                           {clienteDropdownOpen === motorista.motorista_id && (
                             <div 
