@@ -549,15 +549,15 @@ const ResumosGrupo = () => {
                   return (
                     <div 
                       key={grupo.id} 
-                      className={`${colorClasses.bg} ${colorClasses.darkBg} ${colorClasses.border} ${colorClasses.darkBorder} border rounded-xl p-6 shadow-md ${colorClasses.hoverBg} ${colorClasses.darkHoverBg} transition-colors`}
+                      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
-                          <div className={`p-3 bg-white/50 dark:bg-gray-800/50 rounded-full`}>
+                          <div className={`p-3 ${colorClasses.bg} ${colorClasses.darkBg} rounded-full`}>
                             <IconComponent className={`w-6 h-6 ${colorClasses.text} ${colorClasses.darkText}`} />
                           </div>
                           <div>
-                            <h3 className={`text-lg font-semibold ${colorClasses.text} ${colorClasses.darkText}`}>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                               {grupo.nome_grupo}
                             </h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
