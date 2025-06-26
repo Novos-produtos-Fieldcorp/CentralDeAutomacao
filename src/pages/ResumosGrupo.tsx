@@ -1,28 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Plus, Search, Edit2, Trash2, Clock, CheckCircle2, XCircle, 
-  MessagesSquare, Users, Truck, FileText, Calendar, BarChart2, 
-  Settings, Bell, Mail, Phone, Home, User, Briefcase, Coffee,
-  Heart, Star, Music, Film, Book, Camera, Compass, Map, Gift,
-  Award, Bookmark, Clipboard, Database, Folder, Globe, Image,
-  Key, Link, Lock, Monitor, Moon, Sun, Paperclip, Percent, 
-  Printer, Radio, Save, Server, Share2, ShoppingBag, ShoppingCart,
-  Smartphone, Speaker, Tag, Terminal, ThumbsUp, Tool, Trash, 
-  Tv, Umbrella, Video, Wifi, Zap, AlertCircle, AlertTriangle, 
-  Archive, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, AtSign, 
-  Battery, BellOff, Bluetooth, Bold, Box, Calendar as CalendarIcon,
-  Cast, Circle, Cloud, Code, Command, Copy, CreditCard, Crop, 
-  Download, Droplet, ExternalLink, Eye, EyeOff, Facebook, FastForward, 
-  Feather, File, Flag, Frown, Gitlab, Grid, Hash, Headphones, 
-  HelpCircle, Inbox, Instagram, Italic, Layers, Layout, LifeBuoy, 
-  Loader, MapPin, Maximize, Meh, Menu, MessageCircle, Mic, Minimize, 
-  MoreHorizontal, MoreVertical, Move, Navigation, Octagon, Package, 
-  Pause, Play, Power, RefreshCw, RotateCw, Scissors, Search as SearchIcon, 
-  Send, Settings as SettingsIcon, Shield, Shuffle, Sidebar, Slash, 
-  Sliders, Smile, Square, Twitter, Type, Underline, Upload, UserCheck, 
-  UserMinus, UserPlus, UserX, Watch, Wind, X, Youtube, Zap as ZapIcon,
-  Loader2
-} from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Clock, CheckCircle2, XCircle, MessagesSquare, Users, Truck, FileText, Calendar, BarChart2, Settings, Bell, Mail, Phone, Home, User, Briefcase, Coffee, Heart, Star, Music, Film, Book, Camera, Compass, Map, Gift, Award, Bookmark, Clipboard, Database, Folder, Globe, Image, Key, Link, Lock, Monitor, Moon, Sun, Paperclip, Percent, Printer, Radio, Save, Server, Share2, ShoppingBag, ShoppingCart, Smartphone, Speaker, Tag, Terminal, ThumbsUp, PenTool as Tool, Trash, Tv, Umbrella, Video, Wifi, Zap, AlertCircle, AlertTriangle, Archive, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, AtSign, Battery, BellOff, Bluetooth, Bold, Box, Calendar as CalendarIcon, Cast, Circle, Cloud, Code, Command, Copy, CreditCard, Crop, Download, Droplet, ExternalLink, Eye, EyeOff, Facebook, FastForward, Feather, File, Flag, Frown, Gitlab, Grid, Hash, Headphones, HelpCircle, Inbox, Instagram, Italic, Layers, Layout, LifeBuoy, Loader, MapPin, Maximize, Meh, Menu, MessageCircle, Mic, Minimize, MoreHorizontal, MoreVertical, Move, Navigation, Octagon, Package, Pause, Play, Power, RefreshCw, RotateCw, Scissors, Search as SearchIcon, Send, Settings as SettingsIcon, Shield, Shuffle, Sidebar, Slash, Sliders, Smile, Square, Twitter, Type, Underline, Upload, UserCheck, UserMinus, UserPlus, UserX, Watch, Wind, X, Youtube, Zap as ZapIcon, Loader2 } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
