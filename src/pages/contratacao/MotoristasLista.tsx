@@ -138,6 +138,7 @@ const MotoristasLista = () => {
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
+  const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
   const [cidades, setCidades] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -199,6 +200,28 @@ const MotoristasLista = () => {
       document.removeEventListener('click', handleClick);
     };
   }, [contextMenu.visible, statusDropdownOpen, clienteDropdownOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showStatusDropdown && !event.composedPath().some((el: any) => el.id === 'status-dropdown')) {
+        setShowStatusDropdown(false);
+      }
+      if (showCidadeDropdown && !event.composedPath().some((el: any) => el.id === 'cidade-dropdown')) {
+        setShowCidadeDropdown(false);
+      }
+      if (showClienteDropdown && !event.composedPath().some((el: any) => el.id === 'cliente-dropdown')) {
+        setShowClienteDropdown(false);
+      }
+      if (showAtivoDropdown && !event.composedPath().some((el: any) => el.id === 'ativo-dropdown')) {
+        setShowAtivoDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStatusDropdown, showCidadeDropdown, showClienteDropdown, showAtivoDropdown]);
 
   const fetchMotoristas = async () => {
     try {
@@ -724,7 +747,7 @@ const MotoristasLista = () => {
                 {statusFilter.length === 0 ? 'Todos os status' : `${statusFilter.length} selecionado(s)`}
               </span>
               <div className="absolute inset-y-0 right-2 flex items-center">
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
+                <ChevronDown className="h-4 w-4 text-gray-400 transition-transform" />
               </div>
               <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </button>
@@ -783,7 +806,7 @@ const MotoristasLista = () => {
                 {cidadeFilter.length === 0 ? 'Todas as cidades' : `${cidadeFilter.length} selecionada(s)`}
               </span>
               <div className="absolute inset-y-0 right-2 flex items-center">
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
+                <ChevronDown className="h-4 w-4 text-gray-400 transition-transform" />
               </div>
               <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </button>
@@ -846,7 +869,7 @@ const MotoristasLista = () => {
                     : `${clienteFilter.length} cliente(s)`}
               </span>
               <div className="absolute inset-y-0 right-2 flex items-center">
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
+                <ChevronDown className="h-4 w-4 text-gray-400 transition-transform" />
               </div>
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -928,21 +951,63 @@ const MotoristasLista = () => {
             )}
           </div>
           
-          <div className="relative">
-            <select
-              value={ativoFilter}
-              onChange={(e) => setAtivoFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+          <div className="relative group" id="ativo-dropdown">
+            <button
+              type="button"
+              className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAtivoDropdown(!showAtivoDropdown);
+              }}
             >
-              <option value="">Todos (Ativo/Inativo)</option>
-              <option value="ativo">Somente Ativos</option>
-              <option value="inativo">Somente Inativos</option>
-            </select>
-            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-            </svg>
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+              <span className="truncate">
+                {!ativoFilter ? 'Todos (Ativo/Inativo)' : ativoFilter === 'ativo' ? 'Somente Ativos' : 'Somente Inativos'}
+              </span>
+              <div className="absolute inset-y-0 right-2 flex items-center">
+                <ChevronDown className="h-4 w-4 text-gray-400 transition-transform" />
+              </div>
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            </button>
+            
+            {showAtivoDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+                <div className="py-1">
+                  <div 
+                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                    onClick={() => {
+                      setAtivoFilter('');
+                      setShowAtivoDropdown(false);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <span>Todos (Ativo/Inativo)</span>
+                    </div>
+                  </div>
+                  <div 
+                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                    onClick={() => {
+                      setAtivoFilter('ativo');
+                      setShowAtivoDropdown(false);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <span>Somente Ativos</span>
+                    </div>
+                  </div>
+                  <div 
+                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                    onClick={() => {
+                      setAtivoFilter('inativo');
+                      setShowAtivoDropdown(false);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <span>Somente Inativos</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -959,13 +1024,13 @@ const MotoristasLista = () => {
                 <option value="30days">Último mês</option>
                 <option value="custom">Personalizado</option>
               </select>
-              <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                 <line x1="16" y1="2" x2="16" y2="6"></line>
                 <line x1="8" y1="2" x2="8" y2="6"></line>
                 <line x1="3" y1="10" x2="21" y2="10"></line>
               </svg>
-              <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+              <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </div>
             <div className="relative group">
               <button
@@ -1064,7 +1129,7 @@ const MotoristasLista = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                            <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white" data-component-name="MotoristasLista">

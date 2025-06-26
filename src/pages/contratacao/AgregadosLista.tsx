@@ -159,6 +159,7 @@ const AgregadosLista = () => {
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
   const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
   const [cidades, setCidades] = useState<string[]>([]);
   
@@ -245,13 +246,18 @@ const AgregadosLista = () => {
       if (cidadeDropdownRef.current && !cidadeDropdownRef.current.contains(target)) {
         setShowCidadeDropdown(false);
       }
+      
+      // Check if click is outside ativo dropdown
+      if (showAtivoDropdown && !event.composedPath().some((el: any) => el.id === 'ativo-dropdown')) {
+        setShowAtivoDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [showAtivoDropdown]);
 
   const fetchAgregados = async () => {
     try {
@@ -811,22 +817,60 @@ const AgregadosLista = () => {
             )}
           </div>
 
-          <div className="relative">
-            <div className="relative w-full">
-              <select
-                value={ativoFilter}
-                onChange={(e) => setAtivoFilter(e.target.value)}
-                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-              >
-                <option value="">Todos (Ativos/Inativos)</option>
-                <option value="active">Somente Ativos</option>
-                <option value="inactive">Somente Inativos</option>
-              </select>
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <ChevronDown className="h-4 w-4 text-gray-400" />
+          <div className="relative group">
+            <button
+              type="button"
+              className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              onClick={() => setShowAtivoDropdown(!showAtivoDropdown)}
+            >
+              <span className="truncate">
+                {!ativoFilter ? 'Todos (Ativos/Inativos)' : ativoFilter === 'active' ? 'Somente Ativos' : 'Somente Inativos'}
+              </span>
+              <div className="absolute inset-y-0 right-2 flex items-center">
+                <ChevronDown className="h-4 w-4 text-gray-400 transition-transform" />
               </div>
-            </div>
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            </button>
+            
+            {showAtivoDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+                <div className="py-1">
+                  <div 
+                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                    onClick={() => {
+                      setAtivoFilter('');
+                      setShowAtivoDropdown(false);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <span>Todos (Ativos/Inativos)</span>
+                    </div>
+                  </div>
+                  <div 
+                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'active' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                    onClick={() => {
+                      setAtivoFilter('active');
+                      setShowAtivoDropdown(false);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <span>Somente Ativos</span>
+                    </div>
+                  </div>
+                  <div 
+                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inactive' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                    onClick={() => {
+                      setAtivoFilter('inactive');
+                      setShowAtivoDropdown(false);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <span>Somente Inativos</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
@@ -1069,25 +1113,40 @@ const AgregadosLista = () => {
         
         <div className="mt-4 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-            >
-              <option value="all">Todos os períodos</option>
-              <option value="today">Hoje</option>
-              <option value="2days">Últimos 2 dias</option>
-              <option value="15days">Últimos 15 dias</option>
-              <option value="30days">Último mês</option>
-              <option value="custom">Personalizado</option>
-            </select>
-            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            <div className="relative">
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+              >
+                <option value="all">Todos os períodos</option>
+                <option value="today">Hoje</option>
+                <option value="2days">Últimos 2 dias</option>
+                <option value="15days">Últimos 15 dias</option>
+                <option value="30days">Último mês</option>
+                <option value="custom">Personalizado</option>
+              </select>
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
           </div>
           
           <div className="relative group self-center">
