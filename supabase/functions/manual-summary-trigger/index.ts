@@ -24,7 +24,10 @@ interface GrupoResumo {
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { 
+      headers: corsHeaders,
+      status: 200
+    });
   }
 
   try {
@@ -107,7 +110,7 @@ Deno.serve(async (req) => {
         }
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         status: 200,
       }
     );
@@ -116,7 +119,8 @@ Deno.serve(async (req) => {
     
     // If we have a group_id in the request, record the failure
     try {
-      const { group_id, company_id } = await req.json();
+      const requestBody = await req.clone().json();
+      const { group_id, company_id } = requestBody;
       if (group_id && company_id) {
         await recordDelivery(group_id, company_id, false, error.message);
       }
@@ -130,7 +134,7 @@ Deno.serve(async (req) => {
         error: error.message
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         status: 500,
       }
     );
