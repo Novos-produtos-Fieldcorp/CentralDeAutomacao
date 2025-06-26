@@ -15,6 +15,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TimeDebugModal from '../components/TimeDebugModal';
+import { convertBrasiliaToUTC, convertUTCToBrasilia } from '../utils/time';
 
 interface GrupoResumo {
   id: number;
@@ -86,7 +87,14 @@ const ResumosGrupo = () => {
         .order('nome_grupo');
 
       if (error) throw error;
-      setGrupos(data || []);
+      
+      // Convert UTC times from database to Brasilia time for display
+      const gruposWithLocalTime = (data || []).map(grupo => ({
+        ...grupo,
+        horario: convertUTCToBrasilia(grupo.horario)
+      }));
+      
+      setGrupos(gruposWithLocalTime);
     } catch (error) {
       console.error('Error fetching grupos:', error);
       toast.error('Erro ao carregar grupos');
@@ -142,17 +150,28 @@ const ResumosGrupo = () => {
 
   const handleAddGrupo = async () => {
     try {
+      // Convert Brasilia time to UTC for storage in the database
+      const utcHorario = convertBrasiliaToUTC(formData.horario);
+      
       const { data, error } = await supabase
         .from('grupo_resumo')
         .insert({
           ...formData,
+          horario: utcHorario, // Store UTC time in the database
           company_id: companyId
         })
         .select()
         .single();
 
       if (error) throw error;
-      setGrupos([...grupos, data]);
+      
+      // Convert the UTC time back to Brasilia time for display
+      const newGrupo = {
+        ...data,
+        horario: convertUTCToBrasilia(data.horario)
+      };
+      
+      setGrupos([...grupos, newGrupo]);
       setIsAddModalOpen(false);
       resetForm();
       toast.success('Grupo adicionado com sucesso');
@@ -166,12 +185,15 @@ const ResumosGrupo = () => {
     if (!selectedGrupo) return;
 
     try {
+      // Convert Brasilia time to UTC for storage in the database
+      const utcHorario = convertBrasiliaToUTC(formData.horario);
+      
       const { error } = await supabase
         .from('grupo_resumo')
         .update({
           nome_grupo: formData.nome_grupo,
           url_grupo: formData.url_grupo,
-          horario: formData.horario,
+          horario: utcHorario, // Store UTC time in the database
           icon_name: formData.icon_name,
           color_name: formData.color_name
         })
@@ -185,7 +207,7 @@ const ResumosGrupo = () => {
               ...grupo, 
               nome_grupo: formData.nome_grupo,
               url_grupo: formData.url_grupo,
-              horario: formData.horario,
+              horario: formData.horario, // Keep Brasilia time for display
               icon_name: formData.icon_name,
               color_name: formData.color_name
             } 
@@ -754,7 +776,7 @@ const ResumosGrupo = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Horário de Envio *
+                  Horário de Envio (Brasília) *
                 </label>
                 <input
                   type="time"
@@ -763,6 +785,9 @@ const ResumosGrupo = () => {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   required
                 />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Horário no fuso de Brasília (UTC-3)
+                </p>
               </div>
               
               <div>
@@ -864,7 +889,7 @@ const ResumosGrupo = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Horário de Envio *
+                  Horário de Envio (Brasília) *
                 </label>
                 <input
                   type="time"
@@ -873,6 +898,9 @@ const ResumosGrupo = () => {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   required
                 />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Horário no fuso de Brasília (UTC-3)
+                </p>
               </div>
               
               <div>
