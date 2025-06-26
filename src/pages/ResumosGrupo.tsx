@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Loader2, Calendar, MessagesSquare, Trash2, 
   BarChart2, Clock, Link2, Send, Edit2, AlertTriangle,
-  CheckCircle2, XCircle, RefreshCw, Settings, Smartphone,
+  CheckCircle2, XCircle, Settings, Smartphone,
   LayoutList, History, Users, Bell, FileText, Home,
   Truck, Gauge, ClipboardCheck, Store, Mail, Phone,
   Map, Star, Heart, Bookmark, Flag, Award
@@ -637,7 +637,7 @@ const ResumosGrupo = () => {
                               className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                               title={expandedGroups.has(grupo.id) ? "Ocultar histórico" : "Ver histórico"}
                             >
-                              <RefreshCw className="w-5 h-5" />
+                              <LayoutList className="w-5 h-5" />
                             </button>
                             <button
                               onClick={() => handleSendManualSummary(grupo)}
