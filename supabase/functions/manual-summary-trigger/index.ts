@@ -49,15 +49,33 @@ Deno.serve(async (req) => {
       .single();
 
     if (error) {
-      throw new Error(`Error fetching group: ${error.message}`);
+      const errorMessage = `Error fetching group: ${error.message}`;
+      console.error(errorMessage);
+      
+      // Record the error in the database
+      await recordDelivery(group_id, company_id, false, errorMessage);
+      
+      throw new Error(errorMessage);
     }
 
     if (!grupo) {
-      throw new Error(`Group with ID ${group_id} not found`);
+      const errorMessage = `Group with ID ${group_id} not found`;
+      console.error(errorMessage);
+      
+      // Record the error in the database
+      await recordDelivery(group_id, company_id, false, errorMessage);
+      
+      throw new Error(errorMessage);
     }
 
     if (!grupo.ativo) {
-      throw new Error(`Group with ID ${group_id} is inactive`);
+      const errorMessage = `Group with ID ${group_id} is inactive`;
+      console.error(errorMessage);
+      
+      // Record the error in the database
+      await recordDelivery(group_id, company_id, false, errorMessage);
+      
+      throw new Error(errorMessage);
     }
 
     // Generate summary data for this group
@@ -65,28 +83,38 @@ Deno.serve(async (req) => {
     
     console.log('Generated summary data:', JSON.stringify(summaryData, null, 2));
     
-    // Send webhook
-    const webhookResult = await sendWebhook(grupo, summaryData);
-    console.log('Webhook result:', webhookResult);
-    
-    // Record the delivery in the database
-    await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso');
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Summary sent successfully for group ${grupo.nome_grupo}`,
-        data: {
-          group_id: grupo.id,
-          group_name: grupo.nome_grupo,
-          webhook_result: webhookResult
+    try {
+      // Send webhook
+      const webhookResult = await sendWebhook(grupo, summaryData);
+      console.log('Webhook result:', webhookResult);
+      
+      // Record successful delivery
+      await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso');
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Summary sent successfully for group ${grupo.nome_grupo}`,
+          data: {
+            group_id: grupo.id,
+            group_name: grupo.nome_grupo,
+            webhook_result: webhookResult
+          }
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
         }
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
+      );
+    } catch (webhookError) {
+      const errorMessage = `Error sending webhook: ${webhookError.message}`;
+      console.error(errorMessage);
+      
+      // Record the webhook error in the database
+      await recordDelivery(grupo.id, grupo.company_id, false, errorMessage);
+      
+      throw new Error(errorMessage);
+    }
   } catch (error) {
     console.error('Error in group summary trigger:', error);
     
@@ -116,11 +144,13 @@ Deno.serve(async (req) => {
 // Function to record delivery in the database
 async function recordDelivery(grupoId: number, companyId: number, status: boolean, message: string) {
   try {
+    console.log(`Recording delivery: group_id=${grupoId}, company_id=${companyId}, status=${status}, message=${message}`);
+    
     // Get current date and time in Brasilia timezone (UTC-3)
     const now = new Date();
     const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
     
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('envio_resumo')
       .insert({
         grupo_id: grupoId,
@@ -128,10 +158,13 @@ async function recordDelivery(grupoId: number, companyId: number, status: boolea
         data_envio: brasiliaTime.toISOString(),
         status: status,
         mensagem: message
-      });
+      })
+      .select();
       
     if (error) {
       console.error('Error recording delivery:', error);
+    } else {
+      console.log('Successfully recorded delivery:', data);
     }
   } catch (error) {
     console.error('Exception recording delivery:', error);
