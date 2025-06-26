@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, Truck, Loader2, MapPin, FilePen, User } from 'lucide-react';
+import type { MotoristaWithAddress, EnderecoMotorista } from '../../types/database';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
 import DocumentViewer from '../../components/DocumentViewer';
@@ -21,47 +22,96 @@ import ContextMenu from '../../components/ContextMenu';
 import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 
 export interface ViewAgregado {
-  motorista_id?: number;
-  nome_motorista?: string;
-  cpf?: string;
-  dt_nascimento?: string;
-  genero?: string;
-  telefone?: string | number | null;
-  email?: string | null;
-  funcao?: string;
-  origem_usuario?: string;
-  st_cadastro?: string;
-  autorizacao_lgpd?: string;
-  company_id?: number;
-  data_cadastro?: string;
-  cliente_id?: number | null;
-  conversation_id?: string;
-  ativo?: boolean;
+  // Identificação básica
+  motorista_id: number;
+  nome: string;
+  nome_motorista?: string; // Alias para compatibilidade
+  cpf: string;
+  
+  // Dados pessoais
+  dt_nascimento: string;
+  genero: string;
+  telefone: string | number | null;
+  email: string | null;
+  funcao: string;
+  origem_usuario: string;
+  st_cadastro: string;
+  autorizacao_lgpd: string;
+  
+  // Dados da empresa
+  company_id: number;
+  data_cadastro: string;
+  cliente_id: number | null;
+  ativo: boolean;
+  
+  // Dados do cliente
+  cliente?: {
+    id: number;
+    nome: string;
+    // Adicione outras propriedades do cliente conforme necessário
+  };
+  
+  // Endereço (estrutura aninhada)
+  endereco?: {
+    id_end_motorista?: number | null;
+    nr_end?: number | null;
+    ds_complemento_end?: string | null;
+    st_end?: boolean | null;
+    logradouro?: string | null;
+    nr_cep?: string | null;
+    bairro?: string | null;
+    nome_bairro?: string | null;
+    cidade?: string | null;
+    nome_cidade?: string | null;
+    estado?: string | null;
+    nome_estado?: string | null;
+    sigla_estado?: string | null;
+  };
+  
+  // Campos de endereço alternativos (para compatibilidade)
+  id_end_motorista?: number | null;
   nr_end?: number | null;
   ds_complemento_end?: string | null;
   st_end?: boolean | null;
-  id_end_motorista?: number | null;
   logradouro?: string | null;
   nr_cep?: string | null;
   nome_bairro?: string | null;
   nome_cidade?: string | null;
   nome_estado?: string | null;
   sigla_estado?: string | null;
+  
+  // Veículo
+  veiculo?: Array<{
+    veiculo_id: number;
+    placa: string | null;
+    tipologia?: string | null;
+    marca_veiculo?: string | null;
+    ano?: string | null;
+    combustivel?: string | null;
+    peso?: string | null;
+    cubagem?: string | null;
+    possui_rastreador?: boolean | null;
+    marca_rastreador?: string | null;
+    cor?: string | null;
+    tipo?: string | null;
+  }>;
+  
+  // Propriedade tipologia no nível raiz para compatibilidade
+  tipologia?: string | null;
+  
+  // Documentos
+  documento_motorista?: Array<{
+    id: number;
+    // Adicione propriedades dos documentos conforme necessário
+  }>;
+  
+  // Propriedades de relacionamento
   veiculo_id?: number | null;
   placa?: string | null;
-  status_veiculo?: boolean | null;
-  marca_veiculo?: string | null;
-  tipologia?: string | null;
-  ano?: string | null;
-  combustivel?: string | null;
-  peso?: string | null;
-  cubagem?: string | null;
-  possui_rastreador?: boolean | null;
-  marca_rastreador?: string | null;
-  cor?: string | null;
-  tipo?: string | null;
-  // Helper information
-  nome_ajudante?: string;
+  conversation_id?: string;
+  
+  // Outras propriedades
+  nome_ajudante?: string | null;
 }
 
 const AgregadosLista = () => {
@@ -69,8 +119,25 @@ const AgregadosLista = () => {
   const { startChat } = useFloatingChat();
   const [agregados, setAgregados] = useState<ViewAgregado[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clientesLoading, setClientesLoading] = useState(true);
+  
+
+  // Função para alternar status selecionado
+  const toggleStatus = (status: string) => {
+    setStatusFilter((prev: string[]) => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  };
+  
+  // Função para limpar todos os status
+  const clearStatusFilter = () => {
+    setStatusFilter([]);
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
@@ -85,11 +152,27 @@ const AgregadosLista = () => {
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [clientes, setClientes] = useState<any[]>([]);
-  const [clienteFilter, setClienteFilter] = useState<string>('');
-  const [cidadeFilter, setCidadeFilter] = useState<string>('');
-  const [cidades, setCidades] = useState<string[]>([]);
-  const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string>('');
+  const [clienteFilter, setClienteFilter] = useState<string[]>([]);
+  const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
+  const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
+  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
+  const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
+  const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
+  const [cidades, setCidades] = useState<string[]>([]);
+  
+  // Opções de status para o filtro
+  const statusOptions = [
+    { value: 'cadastrado', label: 'Cadastrado' },
+    { value: 'qualificado', label: 'Qualificado' },
+    { value: 'documentacao', label: 'Documentação' },
+    { value: 'contrato_enviado', label: 'Contrato Enviado' },
+    { value: 'contratado', label: 'Contratado' },
+    { value: 'repescagem', label: 'Repescagem' },
+    { value: 'rejeitado', label: 'Rejeitado' }
+  ];
+
   const [isDetailViewOpen, setIsDetailViewOpen] = useState(false);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -115,6 +198,10 @@ const AgregadosLista = () => {
     startDate: '',
     endDate: '',
   });
+
+  // Refs for dropdowns
+  const clienteDropdownRef = useRef<HTMLDivElement>(null);
+  const cidadeDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchAgregados();
@@ -144,6 +231,27 @@ const AgregadosLista = () => {
       document.removeEventListener('click', handleClick);
     };
   }, [contextMenu.visible, statusDropdownOpen, clienteDropdownOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Check if click is outside client dropdown
+      if (clienteDropdownRef.current && !clienteDropdownRef.current.contains(target)) {
+        setShowClienteDropdown(false);
+      }
+      
+      // Check if click is outside city dropdown
+      if (cidadeDropdownRef.current && !cidadeDropdownRef.current.contains(target)) {
+        setShowCidadeDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const fetchAgregados = async () => {
     try {
@@ -218,19 +326,22 @@ const AgregadosLista = () => {
 
   const fetchClientes = async () => {
     try {
+      setClientesLoading(true);
       const { data, error } = await supabase
         .from('cliente')
         .select('*')
         .eq('company_id', companyId)
-        .eq('st_cliente', true)
         .order('nome');
 
       if (error) throw error;
 
+      console.log('Fetched clientes:', data);
       setClientes(data || []);
     } catch (error) {
       console.error('Error fetching clientes:', error);
       toast.error('Erro ao carregar clientes');
+    } finally {
+      setClientesLoading(false);
     }
   };
 
@@ -250,10 +361,17 @@ const AgregadosLista = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (agregado: ViewAgregado | null) => {
-    if (!agregado) return;
+  // Função para manipular o menu de contexto
+  const handleContextMenu = (e: React.MouseEvent, agregado: ViewAgregado) => {
+    e.preventDefault();
     setSelectedAgregado(agregado);
-    setIsDeleteModalOpen(true);
+    // Implementar lógica de menu de contexto se necessário
+  };
+
+  // Função para alternar o dropdown de status
+  const toggleStatusDropdown = (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    setStatusDropdownOpen(prev => prev === id ? null : id);
   };
 
   const confirmDelete = async () => {
@@ -331,24 +449,6 @@ const AgregadosLista = () => {
     setIsMassMessageModalOpen(true);
   };
 
-  const handleContextMenu = (e: React.MouseEvent, agregado: ViewAgregado) => {
-    e.preventDefault();
-    setContextMenu({
-      visible: true,
-      x: e.clientX,
-      y: e.clientY,
-      agregado,
-    });
-  };
-
-  const toggleStatusDropdown = (e: React.MouseEvent, agregadoId: number) => {
-    e.stopPropagation();
-    if (statusDropdownOpen === agregadoId) {
-      setStatusDropdownOpen(null);
-    } else {
-      setStatusDropdownOpen(agregadoId);
-    }
-  };
 
   const toggleClienteDropdown = (e: React.MouseEvent, agregadoId: number) => {
     e.stopPropagation();
@@ -358,8 +458,8 @@ const AgregadosLista = () => {
       setClienteDropdownOpen(agregadoId);
     }
   };
-
   const handleUpdateStatus = async (e: React.MouseEvent, agregado: ViewAgregado, newStatus: string) => {
+    e.stopPropagation();
     e.stopPropagation();
     try {
       setUpdatingStatus(agregado.motorista_id || 0);
@@ -466,29 +566,43 @@ const AgregadosLista = () => {
     if (!agregado) return false;
     
     const searchLower = searchTerm.toLowerCase();
-    const statusMatch = statusFilter ? agregado.st_cadastro === statusFilter : true;
+    // Filtro de status
+    if (statusFilter.length > 0 && !statusFilter.includes(agregado.st_cadastro)) {
+      return false;
+    }
     
     // Lógica para filtro de cliente
     let clienteMatch = true;
-    if (clienteFilter === 'sem_cliente') {
-      clienteMatch = agregado.cliente_id === null || agregado.cliente_id === undefined;
-    } else if (clienteFilter) {
-      clienteMatch = agregado.cliente_id === parseInt(clienteFilter);
+    if (clienteFilter.length > 0) {
+      if (clienteFilter.includes('sem_cliente')) {
+        clienteMatch = agregado.cliente_id === null || agregado.cliente_id === undefined;
+      } else if (agregado.cliente_id) {
+        clienteMatch = clienteFilter.includes(agregado.cliente_id.toString());
+      } else {
+        clienteMatch = false;
+      }
     }
     
     // Lógica para filtro de veículo
     let veiculoMatch = true;
-    if (tipoVeiculoFilter === 'sem_veiculo') {
-      veiculoMatch = !agregado.veiculo_id;
-    } else if (tipoVeiculoFilter) {
-      veiculoMatch = agregado.tipologia === tipoVeiculoFilter;
+    if (tipoVeiculoFilter.length > 0) {
+      if (tipoVeiculoFilter.includes('sem_veiculo')) {
+        veiculoMatch = !agregado.veiculo_id;
+      } else {
+        veiculoMatch = agregado.tipologia ? tipoVeiculoFilter.includes(agregado.tipologia) : false;
+      }
     }
     
-    const cidadeMatch = cidadeFilter ? agregado.nome_cidade === cidadeFilter : true;
+    const cidadeMatch = cidadeFilter.length > 0 ? (agregado.nome_cidade ? cidadeFilter.includes(agregado.nome_cidade) : false) : true;
     const ativoMatch = ativoFilter === '' ? true : 
       (ativoFilter === 'true' ? agregado.ativo === true : agregado.ativo === false);
     
     try {
+      // Verifica se o status do agregado está na lista de status filtrados
+      const statusMatch = statusFilter.length > 0 
+        ? (agregado.st_cadastro ? statusFilter.includes(agregado.st_cadastro) : false)
+        : true;
+        
       return (
         statusMatch &&
         clienteMatch &&
@@ -591,115 +705,337 @@ const AgregadosLista = () => {
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar por nome, CPF, email, telefone ou placa..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            {searchTerm && (
+            <div className="relative w-full">
+              <input
+                type="text"
+                placeholder="Buscar por nome, CPF, email, telefone ou placa..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="relative group">
+            <div className="relative w-full">
               <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                type="button"
+                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowStatusDropdown(!showStatusDropdown);
+                  setShowClienteDropdown(false);
+                  setShowCidadeDropdown(false);
+                }}
               >
-                <X size={16} />
+                <div className="flex-1 truncate text-left">
+                  {statusFilter.length === 0 ? 'Todos os status' : `${statusFilter.length} selecionado(s)`}
+                </div>
               </button>
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+            </div>
+            
+            {showStatusDropdown && (
+              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span>Selecionar status</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        clearStatusFilter();
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {statusOptions.map((status) => (
+                    <div key={status.value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          checked={statusFilter.includes(status.value)}
+                          onChange={() => toggleStatus(status.value)}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{status.label}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
           <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-            >
-              <option value="">Todos os status</option>
-              <option value="cadastrado">Cadastrado</option>
-              <option value="qualificado">Qualificado</option>
-              <option value="documentacao">Documentação</option>
-              <option value="contrato_enviado">Contrato Enviado</option>
-              <option value="contratado">Contratado</option>
-              <option value="repescagem">Repescagem</option>
-              <option value="rejeitado">Rejeitado</option>
-            </select>
-            <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-          </div>
-
-          <div className="relative">
-            <select
-              value={ativoFilter}
-              onChange={(e) => setAtivoFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-            >
-              <option value="">Todos (Ativos/Inativos)</option>
-              <option value="active">Somente Ativos</option>
-              <option value="inactive">Somente Inativos</option>
-            </select>
-            <User className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            <div className="relative w-full">
+              <select
+                value={ativoFilter}
+                onChange={(e) => setAtivoFilter(e.target.value)}
+                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+              >
+                <option value="">Todos (Ativos/Inativos)</option>
+                <option value="active">Somente Ativos</option>
+                <option value="inactive">Somente Inativos</option>
+              </select>
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
           </div>
         </div>
         
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative">
-            <select
-              value={clienteFilter}
-              onChange={(e) => setClienteFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-            >
-              <option value="">Todos os clientes</option>
-              <option value="sem_cliente">Sem cliente</option>
-              {clientes.map(cliente => (
-                <option key={cliente.cliente_id} value={cliente.cliente_id}>
-                  {cliente.nome}
-                </option>
-              ))}
-            </select>
-            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          <div className="relative group" ref={clienteDropdownRef}>
+            <div className="relative w-full">
+              <button
+                type="button"
+                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowClienteDropdown(!showClienteDropdown);
+                  setShowCidadeDropdown(false);
+                }}
+                disabled={clientesLoading}
+              >
+                <div className="flex-1 truncate text-left">
+                  {clientesLoading ? 'Carregando...' : 
+                   clienteFilter.length === 0 ? 'Todos os clientes' : `${clienteFilter.length} selecionado(s)`}
+                </div>
+              </button>
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                {clientesLoading ? (
+                  <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
+                ) : (
+                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
+                )}
+              </div>
+            </div>
+            
+            {showClienteDropdown && !clientesLoading && (
+              <div 
+                className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span>Selecionar clientes</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setClienteFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                        checked={clienteFilter.includes('sem_cliente')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setClienteFilter([...clienteFilter, 'sem_cliente']);
+                          } else {
+                            setClienteFilter(clienteFilter.filter(c => c !== 'sem_cliente'));
+                          }
+                        }}
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-200">Sem cliente</span>
+                    </label>
+                  </div>
+                  {clientes.map((cliente) => {
+                    // Skip rendering if cliente or cliente.id is undefined
+                    if (!cliente || cliente.id === undefined || cliente.id === null) {
+                      return null;
+                    }
+                    const clienteId = cliente.id.toString();
+                    return (
+                      <div key={clienteId} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                            checked={clienteFilter.includes(clienteId)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setClienteFilter([...clienteFilter, clienteId]);
+                              } else {
+                                setClienteFilter(clienteFilter.filter(c => c !== clienteId));
+                              }
+                            }}
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-200">{cliente.nome || 'Cliente sem nome'}</span>
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="relative">
-            <select
-              value={cidadeFilter}
-              onChange={(e) => setCidadeFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-            >
-              <option value="">Todas as cidades</option>
-              {cidades.map((cidade, index) => (
-                <option key={index} value={cidade}>
-                  {cidade}
-                </option>
-              ))}
-            </select>
-            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          <div className="relative group" ref={cidadeDropdownRef}>
+            <div className="relative w-full">
+              <button
+                type="button"
+                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCidadeDropdown(!showCidadeDropdown);
+                  setShowClienteDropdown(false);
+                }}
+              >
+                <div className="flex-1 truncate text-left">
+                  {cidadeFilter.length === 0 ? 'Todas as cidades' : `${cidadeFilter.length} selecionada(s)`}
+                </div>
+              </button>
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+            </div>
+            
+            {showCidadeDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span>Selecionar cidades</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCidadeFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {cidades.map((cidade, index) => (
+                    <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          checked={cidadeFilter.includes(cidade)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCidadeFilter([...cidadeFilter, cidade]);
+                            } else {
+                              setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
+                            }
+                          }}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{cidade}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="relative">
-            <select
-              value={tipoVeiculoFilter}
-              onChange={(e) => setTipoVeiculoFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-            >
-              <option value="">Todos os tipos de veículo</option>
-              <option value="sem_veiculo">Sem veículo</option>
-              {tiposVeiculo.map((tipo, index) => (
-                <option key={index} value={tipo}>
-                  {tipo}
-                </option>
-              ))}
-            </select>
-            <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+          <div className="relative group">
+            <div className="relative w-full">
+              <button
+                type="button"
+                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
+              >
+                <div className="flex-1 truncate text-left">
+                  {tipoVeiculoFilter.length === 0 ? 'Todos os tipos' : `${tipoVeiculoFilter.length} selecionado(s)`}
+                </div>
+              </button>
+              <Truck className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showTipoVeiculoDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+            </div>
+            
+            {showTipoVeiculoDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span>Selecionar tipos</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTipoVeiculoFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                        checked={tipoVeiculoFilter.includes('sem_veiculo')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setTipoVeiculoFilter([...tipoVeiculoFilter, 'sem_veiculo']);
+                          } else {
+                            setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== 'sem_veiculo'));
+                          }
+                        }}
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-200">Sem veículo</span>
+                    </label>
+                  </div>
+                  {tiposVeiculo.map((tipo, index) => (
+                    <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          checked={tipoVeiculoFilter.includes(tipo)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setTipoVeiculoFilter([...tipoVeiculoFilter, tipo]);
+                            } else {
+                              setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== tipo));
+                            }
+                          }}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{tipo}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
@@ -1004,19 +1340,26 @@ const AgregadosLista = () => {
                                   Sem cliente
                                 </button>
                                 
-                                {clientes.map(cliente => (
-                                  <button
-                                    key={cliente.cliente_id}
-                                    onClick={(e) => handleUpdateCliente(e, agregado, cliente.cliente_id)}
-                                    className={`block w-full text-left px-4 py-2 text-sm truncate ${
-                                      agregado.cliente_id === cliente.cliente_id
-                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                    }`}
-                                  >
-                                    {cliente.nome}
-                                  </button>
-                                ))}
+                                {clientes.map((cliente) => {
+                                  // Skip rendering if cliente or cliente.id is undefined
+                                  if (!cliente || cliente.id === undefined || cliente.id === null) {
+                                    return null;
+                                  }
+                                  const clienteId = cliente.id.toString();
+                                  return (
+                                    <button
+                                      key={clienteId}
+                                      onClick={(e) => handleUpdateCliente(e, agregado, cliente.id)}
+                                      className={`block w-full text-left px-4 py-2 text-sm truncate ${
+                                        agregado.cliente_id === cliente.id
+                                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                      }`}
+                                    >
+                                      {cliente.nome || 'Cliente sem nome'}
+                                    </button>
+                                  );
+                                })}
                               </div>
                             </div>
                           )}
@@ -1162,20 +1505,131 @@ const AgregadosLista = () => {
         }}
       />
 
-      <DocumentViewer
-        isOpen={isDocumentViewerOpen}
-        onClose={() => setIsDocumentViewerOpen(false)}
-        documento={selectedAgregado?.documento_motorista?.[0] || null}
-        nome={selectedAgregado?.nome || ''}
-        cpf={selectedAgregado?.cpf}
-        email={selectedAgregado?.email}
-        telefone={selectedAgregado?.telefone?.toString()}
-        dt_nascimento={selectedAgregado?.dt_nascimento}
-        endereco={selectedAgregado?.endereco}
-        veiculo={selectedAgregado?.veiculo?.[0]}
-        isAgregado={true}
-        st_cadastro={selectedAgregado?.st_cadastro}
-      />
+      {selectedAgregado && (() => {
+        // Transformar o selectedAgregado em um objeto MotoristaWithAddress
+        // Criar objeto veículo compatível com o tipo Veiculo
+        const veiculo = selectedAgregado.veiculo?.[0] ? {
+          veiculo_id: selectedAgregado.veiculo[0].veiculo_id || 0,
+          placa: selectedAgregado.veiculo[0].placa || '',
+          status_veiculo: true, // Valor padrão
+          marca: selectedAgregado.veiculo[0].marca_veiculo || '',
+          tipologia: selectedAgregado.veiculo[0].tipologia || '',
+          ano: selectedAgregado.veiculo[0].ano || '',
+          combustivel: selectedAgregado.veiculo[0].combustivel || '',
+          peso: selectedAgregado.veiculo[0].peso || '',
+          cubagem: selectedAgregado.veiculo[0].cubagem || '',
+          possui_rastreador: selectedAgregado.veiculo[0].possui_rastreador || false,
+          marca_rastreador: selectedAgregado.veiculo[0].marca_rastreador || '',
+          motorista_id: selectedAgregado.motorista_id || 0,
+          cor: selectedAgregado.veiculo[0].cor || '',
+          tipo: selectedAgregado.veiculo[0].tipo || '',
+          documento_veiculo: []
+        } : undefined;
+
+        // Criar objeto motorista compatível com o tipo MotoristaWithAddress
+        const motoristaWithAddress: MotoristaWithAddress = {
+          motorista_id: selectedAgregado.motorista_id || 0,
+          cpf: selectedAgregado.cpf || '',
+          dt_nascimento: selectedAgregado.dt_nascimento || '',
+          genero: selectedAgregado.genero || '',
+          telefone: selectedAgregado.telefone ? Number(selectedAgregado.telefone) : null,
+          email: selectedAgregado.email || null,
+          funcao: selectedAgregado.funcao || '',
+          nome: selectedAgregado.nome || selectedAgregado.nome_motorista || '',
+          origem_usuario: selectedAgregado.origem_usuario || '',
+          st_cadastro: selectedAgregado.st_cadastro || '',
+          autorizacao_lgpd: selectedAgregado.autorizacao_lgpd || '',
+          company_id: selectedAgregado.company_id || 0,
+          data_cadastro: selectedAgregado.data_cadastro || '',
+          cliente_id: selectedAgregado.cliente_id || 0,
+          ativo: selectedAgregado.ativo || false,
+          endereco: {
+            id_end_motorista: selectedAgregado.id_end_motorista || 0,
+            nr_end: selectedAgregado.nr_end !== null && selectedAgregado.nr_end !== undefined 
+              ? Number(selectedAgregado.nr_end) 
+              : null,
+            ds_complemento_end: selectedAgregado.ds_complemento_end || null,
+            st_end: selectedAgregado.st_end !== null && selectedAgregado.st_end !== undefined 
+              ? selectedAgregado.st_end 
+              : null,
+            logradouro: selectedAgregado.logradouro || selectedAgregado.endereco?.logradouro || null,
+            nr_cep: selectedAgregado.nr_cep || (selectedAgregado.endereco as any)?.cep?.replace(/\D/g, '') || null,
+            bairro: selectedAgregado.nome_bairro || selectedAgregado.endereco?.bairro || null,
+            cidade: selectedAgregado.nome_cidade || selectedAgregado.endereco?.cidade || null,
+            estado: selectedAgregado.nome_estado || selectedAgregado.endereco?.estado || null,
+            sigla_estado: selectedAgregado.sigla_estado || 
+              (selectedAgregado.endereco?.estado ? selectedAgregado.endereco.estado.substring(0, 2).toUpperCase() : null)
+          },
+          veiculo: veiculo,
+          documento_motorista: [] // Inicializa vazio por enquanto, já que não temos os dados completos
+        };
+
+        // Função para formatar o endereço para o DocumentViewer
+        const formatEndereco = (endereco: EnderecoMotorista | null | undefined) => {
+          if (!endereco) return undefined;
+          
+          const result: {
+            logradouro?: {
+              logradouro?: string;
+              nr_cep?: string;
+              bairro?: {
+                bairro?: string;
+                cidade?: {
+                  cidade?: string;
+                  estado?: {
+                    sigla_estado?: string;
+                  };
+                };
+              };
+            };
+            nr_end?: number;
+            ds_complemento_end?: string;
+          } = {};
+          
+          if (endereco.logradouro) {
+            result.logradouro = {
+              logradouro: endereco.logradouro || undefined,
+              nr_cep: endereco.nr_cep?.toString() || undefined,
+              bairro: endereco.bairro ? {
+                bairro: endereco.bairro,
+                cidade: endereco.cidade ? {
+                  cidade: endereco.cidade,
+                  estado: endereco.sigla_estado ? {
+                    sigla_estado: endereco.sigla_estado
+                  } : undefined
+                } : undefined
+              } : undefined
+            };
+          }
+          
+          if (endereco.nr_end) {
+            result.nr_end = endereco.nr_end;
+          }
+          
+          if (endereco.ds_complemento_end) {
+            result.ds_complemento_end = endereco.ds_complemento_end;
+          }
+          
+          return Object.keys(result).length > 0 ? result : undefined;
+        };
+
+        return (
+          <DocumentViewer
+            isOpen={isDocumentViewerOpen}
+            onClose={() => setIsDocumentViewerOpen(false)}
+            documento={null} // Definido como null por enquanto, já que não temos os documentos
+            nome={motoristaWithAddress.nome || ''}
+            cpf={motoristaWithAddress.cpf || undefined}
+            email={motoristaWithAddress.email || undefined}
+            telefone={motoristaWithAddress.telefone?.toString() || undefined}
+            dt_nascimento={motoristaWithAddress.dt_nascimento || undefined}
+            endereco={formatEndereco(motoristaWithAddress.endereco)}
+            veiculo={veiculo || null}
+            isAgregado={true}
+            st_cadastro={motoristaWithAddress.st_cadastro || null}
+          />
+        );
+      })()}
 
       <DocumentUploadModal
         isOpen={isDocumentUploadOpen}
@@ -1185,12 +1639,68 @@ const AgregadosLista = () => {
         onUploadSuccess={fetchAgregados}
       />
 
-      <EditMotoristaModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        motorista={selectedAgregado}
-        onUpdate={fetchAgregados}
-      />
+      {selectedAgregado && (
+        <EditMotoristaModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedAgregado(null);
+          }}
+          motorista={{
+            motorista_id: selectedAgregado.motorista_id,
+            cpf: selectedAgregado.cpf,
+            dt_nascimento: selectedAgregado.dt_nascimento,
+            genero: selectedAgregado.genero,
+            telefone: selectedAgregado.telefone ? Number(selectedAgregado.telefone) : null,
+            email: selectedAgregado.email,
+            funcao: selectedAgregado.funcao,
+            nome: selectedAgregado.nome || selectedAgregado.nome_motorista || '',
+            origem_usuario: selectedAgregado.origem_usuario,
+            st_cadastro: selectedAgregado.st_cadastro,
+            autorizacao_lgpd: selectedAgregado.autorizacao_lgpd,
+            company_id: selectedAgregado.company_id,
+            data_cadastro: selectedAgregado.data_cadastro,
+            cliente_id: selectedAgregado.cliente_id || 0,
+            ativo: selectedAgregado.ativo || false,
+            endereco: {
+              id_end_motorista: selectedAgregado.id_end_motorista || 0,
+              nr_end: selectedAgregado.nr_end !== null && selectedAgregado.nr_end !== undefined 
+                ? Number(selectedAgregado.nr_end) 
+                : null,
+              ds_complemento_end: selectedAgregado.ds_complemento_end || null,
+              st_end: selectedAgregado.st_end || null,
+              logradouro: selectedAgregado.logradouro || selectedAgregado.endereco?.logradouro || null,
+              nr_cep: selectedAgregado.nr_cep || (selectedAgregado.endereco as any)?.cep?.replace(/\D/g, '') || null,
+              bairro: selectedAgregado.nome_bairro || selectedAgregado.endereco?.bairro || null,
+              cidade: selectedAgregado.nome_cidade || selectedAgregado.endereco?.cidade || null,
+              estado: selectedAgregado.nome_estado || selectedAgregado.endereco?.estado || null,
+              sigla_estado: selectedAgregado.sigla_estado || 
+                (selectedAgregado.endereco?.estado ? selectedAgregado.endereco.estado.substring(0, 2).toUpperCase() : null)
+            },
+            veiculo: selectedAgregado.veiculo?.[0] ? {
+              veiculo_id: selectedAgregado.veiculo[0].veiculo_id || 0,
+              placa: selectedAgregado.veiculo[0].placa || '',
+              status_veiculo: true,
+              marca: selectedAgregado.veiculo[0].marca_veiculo || '',
+              tipologia: selectedAgregado.veiculo[0].tipologia || '',
+              ano: selectedAgregado.veiculo[0].ano || '',
+              combustivel: selectedAgregado.veiculo[0].combustivel || '',
+              peso: selectedAgregado.veiculo[0].peso || '',
+              cubagem: selectedAgregado.veiculo[0].cubagem || '',
+              possui_rastreador: selectedAgregado.veiculo[0].possui_rastreador || false,
+              marca_rastreador: selectedAgregado.veiculo[0].marca_rastreador || '',
+              motorista_id: selectedAgregado.motorista_id,
+              cor: selectedAgregado.veiculo[0].cor || '',
+              tipo: selectedAgregado.veiculo[0].tipo || ''
+            } : undefined,
+            documento_motorista: []
+          }}
+          onUpdate={() => {
+            fetchAgregados();
+            setSelectedAgregado(null);
+          }}
+        />
+      )}
 
       <AddAgregadoModal
         isOpen={isAddModalOpen}
@@ -1208,7 +1718,7 @@ const AgregadosLista = () => {
           { label: 'Nome', value: selectedAgregado.nome },
           { label: 'CPF', value: formatCPF(selectedAgregado.cpf || '') },
           { label: 'Status', value: selectedAgregado.st_cadastro },
-          { label: 'Veículo', value: selectedAgregado.veiculo?.[0]?.placa.toUpperCase() || 'Não informado' }
+          { label: 'Veículo', value: (selectedAgregado.veiculo?.[0]?.placa || '').toUpperCase() || 'Não informado' }
         ] : []}
       />
 

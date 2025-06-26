@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2 } from 'lucide-react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, Check } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -134,7 +134,8 @@ const MotoristasLista = () => {
   const [selectedMotorista, setSelectedMotorista] = useState<ViewMotorista | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteFilter, setClienteFilter] = useState<string>('');
-  const [cidadeFilter, setCidadeFilter] = useState<string>('');
+  const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
+  const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [cidades, setCidades] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -342,7 +343,7 @@ const MotoristasLista = () => {
             const searchLower = searchTerm.toLowerCase();
             const statusMatch = statusFilter ? motorista.st_cadastro === statusFilter : true;
             const clienteMatch = clienteFilter ? motorista.cliente_id === parseInt(clienteFilter) : true;
-            const cidadeMatch = cidadeFilter ? motorista.nome_cidade === cidadeFilter : true;
+            const cidadeMatch = cidadeFilter.length > 0 ? (motorista.nome_cidade ? cidadeFilter.includes(motorista.nome_cidade) : false) : true;
             const ativoMatch = ativoFilter ? 
               (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false) : 
               true;
@@ -543,7 +544,7 @@ const MotoristasLista = () => {
       clienteMatch = motorista.cliente_id === parseInt(clienteFilter);
     }
     
-    const cidadeMatch = cidadeFilter ? motorista.nome_cidade === cidadeFilter : true;
+    const cidadeMatch = cidadeFilter.length > 0 ? (motorista.nome_cidade ? cidadeFilter.includes(motorista.nome_cidade) : false) : true;
     const ativoMatch = ativoFilter ? 
       (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false) : 
       true;
@@ -686,21 +687,59 @@ const MotoristasLista = () => {
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
 
-          <div className="relative">
-            <select
-              value={cidadeFilter}
-              onChange={(e) => setCidadeFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+          <div className="relative group">
+            <button
+              type="button"
+              className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
             >
-              <option value="">Todas as cidades</option>
-              {cidades.map((cidade, index) => (
-                <option key={index} value={cidade}>
-                  {cidade}
-                </option>
-              ))}
-            </select>
-            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+              <span className="truncate">
+                {cidadeFilter.length === 0 ? 'Todas as cidades' : `${cidadeFilter.length} selecionada(s)`}
+              </span>
+              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
+            </button>
+            <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+            
+            {showCidadeDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span>Selecionar cidades</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCidadeFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {cidades.map((cidade, index) => (
+                    <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          checked={cidadeFilter.includes(cidade)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCidadeFilter([...cidadeFilter, cidade]);
+                            } else {
+                              setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
+                            }
+                          }}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{cidade}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
