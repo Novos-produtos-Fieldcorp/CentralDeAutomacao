@@ -28,29 +28,25 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get current time in UTC
-    const now = new Date();
-    
-    // Convert to Brasilia timezone (UTC-3)
-    const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-    const brasiliaHour = brasiliaTime.getHours();
-    const brasiliaMinute = brasiliaTime.getMinutes();
-    
-    // Format Brasilia time as HH:MM for comparison with database
-    const currentTime = `${brasiliaHour.toString().padStart(2, '0')}:${brasiliaMinute.toString().padStart(2, '0')}`;
-    
-    console.log(`Checking for scheduled summaries at ${currentTime} Brasilia time (UTC-3)`);
-    console.log(`Current UTC time: ${now.toISOString()}`);
-    console.log(`Current Brasilia time: ${brasiliaTime.toISOString()}`);
-
-    // Get the current Brasilia time from the database for verification
+    // Get the current Brasilia time from the database
     const { data: dbTimeData, error: dbTimeError } = await supabase.rpc('get_current_brasilia_time_details');
     
     if (dbTimeError) {
       console.error('Error getting database time:', dbTimeError);
-    } else {
-      console.log(`Database time details:`, dbTimeData);
+      throw new Error('Failed to get current Brasilia time from database.');
     }
+    
+    // Use the formatted_time property from the database response
+    const currentTime = dbTimeData.formatted_time;
+    
+    // For logging purposes, we'll still calculate the time manually to compare
+    const now = new Date();
+    const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+    
+    console.log(`Checking for scheduled summaries at ${currentTime} Brasilia time (from DB)`);
+    console.log(`Current UTC time: ${now.toISOString()}`);
+    console.log(`Current Brasilia time (calculated): ${brasiliaTime.toISOString()}`);
+    console.log(`Database time details:`, dbTimeData);
 
     // Query for active groups with matching schedule time
     const { data: grupos, error } = await supabase

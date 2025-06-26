@@ -46,12 +46,6 @@ Deno.serve(async (req) => {
 
     console.log(`Processing manual summary for group_id: ${group_id}, company_id: ${company_id}`);
 
-    // Log the current time in both UTC and Brasilia timezone
-    const now = new Date();
-    const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-    console.log(`Current UTC time: ${now.toISOString()}`);
-    console.log(`Current Brasilia time: ${brasiliaTime.toISOString()}`);
-    
     // Get the current Brasilia time from the database for verification
     const { data: dbTimeData, error: dbTimeError } = await supabase.rpc('get_current_brasilia_time_details');
     
@@ -96,7 +90,7 @@ Deno.serve(async (req) => {
     
     // Record the delivery in the database
     console.log('Recording delivery in database...');
-    await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso (manual)');
+    await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado manualmente');
     console.log('Delivery recorded successfully');
 
     return new Response(
@@ -108,8 +102,6 @@ Deno.serve(async (req) => {
           group_name: grupo.nome_grupo,
           webhook_result: webhookResult,
           current_time: {
-            utc: now.toISOString(),
-            brasilia: brasiliaTime.toISOString(),
             database: dbTimeData
           }
         }
