@@ -28,7 +28,31 @@ export default defineConfig({
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
           'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization, api_access_token, Accept'
         }
+      },
+      "/functions": {
+        target: process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/functions/, "/functions"),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('Supabase proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('Supabase Request headers:', proxyReq.getHeaders());
+            console.log('Sending Supabase Request to the Target:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('Supabase Response headers:', proxyRes.headers);
+            console.log('Received Supabase Response from the Target:', proxyRes.statusCode, req.url);
+          });
+        },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+          'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization, Accept'
+        }
       }
     }
   }
-}); 
+});
