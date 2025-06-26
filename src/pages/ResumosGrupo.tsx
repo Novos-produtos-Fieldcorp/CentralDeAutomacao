@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Plus, Trash2, Clock, Link2, MessagesSquare, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search } from 'lucide-react';
+import { ClipboardList, Plus, Trash2, Clock, Link2, MessagesSquare, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search, Users, Building2, Mail, Phone, Bell, AlertCircle, Zap, Heart, Star, BookOpen, Bookmark, FileCheck, FileText as FileText2, Truck, ShoppingBag, Package, Map, MapPin, Compass, Globe, Home, Settings, BarChart2 } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -14,7 +14,8 @@ interface GrupoResumo {
   horario: string;
   ativo: boolean;
   company_id: number;
-  created_at: string;
+  icon_name?: string;
+  color_name?: string;
 }
 
 interface EnvioResumo {
@@ -25,6 +26,48 @@ interface EnvioResumo {
   mensagem: string;
   nome_grupo: string;
 }
+
+// Lista de ícones disponíveis
+const availableIcons = [
+  { name: 'MessagesSquare', component: MessagesSquare, label: 'Mensagens' },
+  { name: 'Users', component: Users, label: 'Usuários' },
+  { name: 'Building2', component: Building2, label: 'Empresa' },
+  { name: 'Mail', component: Mail, label: 'Email' },
+  { name: 'Phone', component: Phone, label: 'Telefone' },
+  { name: 'Bell', component: Bell, label: 'Notificação' },
+  { name: 'AlertCircle', component: AlertCircle, label: 'Alerta' },
+  { name: 'Zap', component: Zap, label: 'Raio' },
+  { name: 'Heart', component: Heart, label: 'Coração' },
+  { name: 'Star', component: Star, label: 'Estrela' },
+  { name: 'BookOpen', component: BookOpen, label: 'Livro' },
+  { name: 'Bookmark', component: Bookmark, label: 'Marcador' },
+  { name: 'FileCheck', component: FileCheck, label: 'Arquivo' },
+  { name: 'FileText2', component: FileText2, label: 'Documento' },
+  { name: 'Truck', component: Truck, label: 'Caminhão' },
+  { name: 'ShoppingBag', component: ShoppingBag, label: 'Compras' },
+  { name: 'Package', component: Package, label: 'Pacote' },
+  { name: 'Map', component: Map, label: 'Mapa' },
+  { name: 'MapPin', component: MapPin, label: 'Localização' },
+  { name: 'Compass', component: Compass, label: 'Bússola' },
+  { name: 'Globe', component: Globe, label: 'Globo' },
+  { name: 'Home', component: Home, label: 'Casa' },
+  { name: 'Settings', component: Settings, label: 'Configurações' },
+  { name: 'BarChart2', component: BarChart2, label: 'Gráfico' }
+];
+
+// Lista de cores disponíveis
+const availableColors = [
+  { name: 'blue', label: 'Azul', bgClass: 'bg-blue-100 dark:bg-blue-900/20', textClass: 'text-blue-600 dark:text-blue-400', hoverBgClass: 'group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40', borderClass: 'border-blue-200 dark:border-blue-800/30' },
+  { name: 'green', label: 'Verde', bgClass: 'bg-green-100 dark:bg-green-900/20', textClass: 'text-green-600 dark:text-green-400', hoverBgClass: 'group-hover:bg-green-200 dark:group-hover:bg-green-800/40', borderClass: 'border-green-200 dark:border-green-800/30' },
+  { name: 'red', label: 'Vermelho', bgClass: 'bg-red-100 dark:bg-red-900/20', textClass: 'text-red-600 dark:text-red-400', hoverBgClass: 'group-hover:bg-red-200 dark:group-hover:bg-red-800/40', borderClass: 'border-red-200 dark:border-red-800/30' },
+  { name: 'yellow', label: 'Amarelo', bgClass: 'bg-yellow-100 dark:bg-yellow-900/20', textClass: 'text-yellow-600 dark:text-yellow-400', hoverBgClass: 'group-hover:bg-yellow-200 dark:group-hover:bg-yellow-800/40', borderClass: 'border-yellow-200 dark:border-yellow-800/30' },
+  { name: 'purple', label: 'Roxo', bgClass: 'bg-purple-100 dark:bg-purple-900/20', textClass: 'text-purple-600 dark:text-purple-400', hoverBgClass: 'group-hover:bg-purple-200 dark:group-hover:bg-purple-800/40', borderClass: 'border-purple-200 dark:border-purple-800/30' },
+  { name: 'pink', label: 'Rosa', bgClass: 'bg-pink-100 dark:bg-pink-900/20', textClass: 'text-pink-600 dark:text-pink-400', hoverBgClass: 'group-hover:bg-pink-200 dark:group-hover:bg-pink-800/40', borderClass: 'border-pink-200 dark:border-pink-800/30' },
+  { name: 'indigo', label: 'Índigo', bgClass: 'bg-indigo-100 dark:bg-indigo-900/20', textClass: 'text-indigo-600 dark:text-indigo-400', hoverBgClass: 'group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/40', borderClass: 'border-indigo-200 dark:border-indigo-800/30' },
+  { name: 'orange', label: 'Laranja', bgClass: 'bg-orange-100 dark:bg-orange-900/20', textClass: 'text-orange-600 dark:text-orange-400', hoverBgClass: 'group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40', borderClass: 'border-orange-200 dark:border-orange-800/30' },
+  { name: 'teal', label: 'Turquesa', bgClass: 'bg-teal-100 dark:bg-teal-900/20', textClass: 'text-teal-600 dark:text-teal-400', hoverBgClass: 'group-hover:bg-teal-200 dark:group-hover:bg-teal-800/40', borderClass: 'border-teal-200 dark:border-teal-800/30' },
+  { name: 'gray', label: 'Cinza', bgClass: 'bg-gray-100 dark:bg-gray-700', textClass: 'text-gray-600 dark:text-gray-400', hoverBgClass: 'group-hover:bg-gray-200 dark:group-hover:bg-gray-600', borderClass: 'border-gray-200 dark:border-gray-700' }
+];
 
 const ResumosGrupo = () => {
   const { companyId } = useAuth();
@@ -37,7 +80,9 @@ const ResumosGrupo = () => {
   const [formData, setFormData] = useState({
     nome_grupo: '',
     url_grupo: '',
-    horario: '08:00'
+    horario: '08:00',
+    icon_name: 'MessagesSquare',
+    color_name: 'blue'
   });
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -137,7 +182,9 @@ const ResumosGrupo = () => {
           .update({
             nome_grupo: formData.nome_grupo,
             url_grupo: formData.url_grupo,
-            horario: formData.horario
+            horario: formData.horario,
+            icon_name: formData.icon_name,
+            color_name: formData.color_name
           })
           .eq('id', editingId)
           .eq('company_id', companyId);
@@ -152,6 +199,8 @@ const ResumosGrupo = () => {
             nome_grupo: formData.nome_grupo,
             url_grupo: formData.url_grupo,
             horario: formData.horario,
+            icon_name: formData.icon_name,
+            color_name: formData.color_name,
             ativo: true,
             company_id: companyId
           });
@@ -164,7 +213,9 @@ const ResumosGrupo = () => {
       setFormData({
         nome_grupo: '',
         url_grupo: '',
-        horario: '08:00'
+        horario: '08:00',
+        icon_name: 'MessagesSquare',
+        color_name: 'blue'
       });
       setIsModalOpen(false);
       setEditingId(null);
@@ -183,7 +234,9 @@ const ResumosGrupo = () => {
     setFormData({
       nome_grupo: grupo.nome_grupo,
       url_grupo: grupo.url_grupo,
-      horario: grupo.horario
+      horario: grupo.horario,
+      icon_name: grupo.icon_name || 'MessagesSquare',
+      color_name: grupo.color_name || 'blue'
     });
     setEditingId(grupo.id);
     setIsModalOpen(true);
@@ -298,24 +351,29 @@ const ResumosGrupo = () => {
           const jsonResponse = JSON.parse(responseText);
           
           // Check the status in the JSON response
-          if (jsonResponse.status && jsonResponse.status >= 100 && jsonResponse.status <= 399) {
-            statusToSave = true;
-            messageToSave = jsonResponse.message || `Resposta: ${responseText}`;
-          } else if (jsonResponse.status && jsonResponse.status >= 400 && jsonResponse.status <= 550) {
+          if (jsonResponse.status && jsonResponse.status === "400") {
+            // Status 400 means there was an error, but it's a known error
             statusToSave = false;
-            messageToSave = `Erro ${jsonResponse.status}: ${jsonResponse.message || responseText}`;
+            messageToSave = jsonResponse.message || `Erro: ${responseText}`;
             
             // Show toast with error details
-            toast.error(`Erro ${jsonResponse.status}: ${jsonResponse.message || 'Erro desconhecido'}`);
+            toast.error(jsonResponse.message || 'Erro desconhecido');
           } else {
-            // Fallback to HTTP status code if JSON status is not in expected range
-            statusToSave = response.status >= 100 && response.status <= 399;
+            // Any other status is considered a success
+            statusToSave = true;
             messageToSave = jsonResponse.message || `Resposta: ${responseText}`;
+            toast.success('Resumo enviado com sucesso');
           }
         } catch (e) {
           // If not JSON, use the HTTP status code
-          statusToSave = response.status >= 100 && response.status <= 399;
+          statusToSave = response.status >= 200 && response.status < 400;
           messageToSave = `Resposta: ${responseText}`;
+          
+          if (statusToSave) {
+            toast.success('Resumo enviado com sucesso');
+          } else {
+            toast.error(`Erro ${response.status}: ${responseText}`);
+          }
         }
         
         // Save the result to the database
@@ -332,8 +390,6 @@ const ResumosGrupo = () => {
         if (dbError) {
           console.error('Error saving summary record:', dbError);
           toast.error('Erro ao salvar no histórico');
-        } else if (statusToSave) {
-          toast.success('Resumo enviado com sucesso');
         }
         
       } catch (fetchError: any) {
@@ -405,6 +461,17 @@ const ResumosGrupo = () => {
     envio.mensagem?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Função para obter o ícone pelo nome
+  const getIconByName = (iconName: string) => {
+    const icon = availableIcons.find(i => i.name === iconName);
+    return icon ? icon.component : MessagesSquare;
+  };
+
+  // Função para obter a cor pelo nome
+  const getColorByName = (colorName: string) => {
+    return availableColors.find(c => c.name === colorName) || availableColors[0];
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -414,7 +481,9 @@ const ResumosGrupo = () => {
             setFormData({
               nome_grupo: '',
               url_grupo: '',
-              horario: '08:00'
+              horario: '08:00',
+              icon_name: 'MessagesSquare',
+              color_name: 'blue'
             });
             setEditingId(null);
             setIsModalOpen(true);
@@ -479,7 +548,9 @@ const ResumosGrupo = () => {
                       setFormData({
                         nome_grupo: '',
                         url_grupo: '',
-                        horario: '08:00'
+                        horario: '08:00',
+                        icon_name: 'MessagesSquare',
+                        color_name: 'blue'
                       });
                       setEditingId(null);
                       setIsModalOpen(true);
@@ -494,121 +565,127 @@ const ResumosGrupo = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {grupos.map(grupo => (
-                    <div 
-                      key={grupo.id} 
-                      className={`bg-white dark:bg-gray-800 rounded-lg border ${
-                        grupo.ativo 
-                          ? 'border-green-200 dark:border-green-800/30' 
-                          : 'border-gray-200 dark:border-gray-700'
-                      } shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg`}
-                    >
-                      <div className="p-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-full ${
-                              grupo.ativo 
-                                ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' 
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                            }`}>
-                              <MessagesSquare className="w-5 h-5" />
-                            </div>
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                              {grupo.nome_grupo}
-                            </h3>
-                          </div>
-                          <div className="flex items-center">
-                            <button
-                              onClick={() => toggleStatus(grupo.id, grupo.ativo)}
-                              disabled={toggleLoading === grupo.id}
-                              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  {grupos.map(grupo => {
+                    // Obter o componente do ícone e a cor
+                    const IconComponent = getIconByName(grupo.icon_name || 'MessagesSquare');
+                    const colorStyle = getColorByName(grupo.color_name || 'blue');
+                    
+                    return (
+                      <div 
+                        key={grupo.id} 
+                        className={`bg-white dark:bg-gray-800 rounded-lg border ${
+                          grupo.ativo 
+                            ? colorStyle.borderClass
+                            : 'border-gray-200 dark:border-gray-700'
+                        } shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg`}
+                      >
+                        <div className="p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-full ${
                                 grupo.ativo 
-                                  ? 'bg-green-500 dark:bg-green-600' 
-                                  : 'bg-gray-200 dark:bg-gray-700'
-                              } ${toggleLoading === grupo.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                              role="switch"
-                              aria-checked={grupo.ativo}
-                            >
-                              <span
-                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                  grupo.ativo ? 'translate-x-5' : 'translate-x-0'
-                                }`}
-                              />
-                              {toggleLoading === grupo.id && (
-                                <Loader2 
-                                  className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
+                                  ? colorStyle.bgClass
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                              }`}>
+                                <IconComponent className={grupo.ativo ? colorStyle.textClass : 'text-gray-500 dark:text-gray-400'} size={20} />
+                              </div>
+                              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                                {grupo.nome_grupo}
+                              </h3>
+                            </div>
+                            <div className="flex items-center">
+                              <button
+                                onClick={() => toggleStatus(grupo.id, grupo.ativo)}
+                                disabled={toggleLoading === grupo.id}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                                  grupo.ativo 
+                                    ? 'bg-green-500 dark:bg-green-600' 
+                                    : 'bg-gray-200 dark:bg-gray-700'
+                                } ${toggleLoading === grupo.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                role="switch"
+                                aria-checked={grupo.ativo}
+                              >
+                                <span
+                                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                    grupo.ativo ? 'translate-x-5' : 'translate-x-0'
+                                  }`}
                                 />
-                              )}
-                            </button>
+                                {toggleLoading === grupo.id && (
+                                  <Loader2 
+                                    className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
+                                  />
+                                )}
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                        
-                        <div className="space-y-3 mb-6">
-                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <Clock className="w-4 h-4 text-gray-400" />
-                            <span>Horario do envio: {formatTime(grupo.horario)}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <Link2 className="w-4 h-4 text-gray-400" />
-                            <span className="truncate" title={grupo.url_grupo}>
-                              URL: {grupo.url_grupo.substring(0, 30)}...
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              grupo.ativo 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                            }`}>
-                              {grupo.ativo ? 'Ativo' : 'Inativo'}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex justify-between gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
-                          <button
-                            onClick={() => handleManualSummary(grupo.id)}
-                            disabled={!grupo.ativo || sendingManualSummary === grupo.id}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 ${
-                              grupo.ativo
-                                ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30'
-                                : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500'
-                            }`}
-                          >
-                            {sendingManualSummary === grupo.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Send className="w-3.5 h-3.5" />
-                            )}
-                            Enviar Agora
-                          </button>
                           
-                          <div className="flex gap-2">
+                          <div className="space-y-3 mb-6">
+                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                              <Clock className="w-4 h-4 text-gray-400" />
+                              <span>Horario do envio: {formatTime(grupo.horario)}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                              <Link2 className="w-4 h-4 text-gray-400" />
+                              <span className="truncate" title={grupo.url_grupo}>
+                                URL: {grupo.url_grupo.substring(0, 30)}...
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                grupo.ativo 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
+                                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              }`}>
+                                {grupo.ativo ? 'Ativo' : 'Inativo'}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-between gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                             <button
-                              onClick={() => handleEdit(grupo)}
-                              className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                                       hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                              title="Editar grupo"
+                              onClick={() => handleManualSummary(grupo.id)}
+                              disabled={!grupo.ativo || sendingManualSummary === grupo.id}
+                              className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 ${
+                                grupo.ativo
+                                  ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30'
+                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500'
+                              }`}
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                                <path d="m15 5 4 4"></path>
-                              </svg>
+                              {sendingManualSummary === grupo.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Send className="w-3.5 h-3.5" />
+                              )}
+                              Enviar Agora
                             </button>
                             
-                            <button
-                              onClick={() => handleDelete(grupo.id)}
-                              className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEdit(grupo)}
+                                className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
+                                       hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                title="Editar grupo"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                                  <path d="m15 5 4 4"></path>
+                                </svg>
+                              </button>
+                              
+                              <button
+                                onClick={() => handleDelete(grupo.id)}
+                                className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
                                        hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                              title="Excluir grupo"
-                            >
-                              <Trash2 className="w-[18px] h-[18px]" />
-                            </button>
+                                title="Excluir grupo"
+                              >
+                                <Trash2 className="w-[18px] h-[18px]" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>
@@ -783,6 +860,79 @@ const ResumosGrupo = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     required
                   />
+                </div>
+
+                {/* Seleção de ícone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Ícone
+                  </label>
+                  <div className="grid grid-cols-6 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-300 dark:border-gray-600 rounded-lg">
+                    {availableIcons.map((icon) => (
+                      <button
+                        key={icon.name}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, icon_name: icon.name }))}
+                        className={`p-2 rounded-lg flex items-center justify-center ${
+                          formData.icon_name === icon.name
+                            ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                        title={icon.label}
+                      >
+                        <icon.component size={20} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Seleção de cor */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Cor
+                  </label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {availableColors.map((color) => (
+                      <button
+                        key={color.name}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, color_name: color.name }))}
+                        className={`p-2 rounded-lg flex items-center justify-center ${
+                          formData.color_name === color.name
+                            ? 'ring-2 ring-offset-2 ring-blue-500'
+                            : ''
+                        }`}
+                        title={color.label}
+                      >
+                        <div className={`w-6 h-6 rounded-full ${color.bgClass} ${color.textClass} flex items-center justify-center`}>
+                          <div className="w-4 h-4 rounded-full"></div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Visualização */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Visualização
+                  </label>
+                  <div className="p-4 border border-gray-300 dark:border-gray-600 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      {(() => {
+                        const IconComponent = getIconByName(formData.icon_name);
+                        const colorStyle = getColorByName(formData.color_name);
+                        return (
+                          <div className={`p-2 rounded-full ${colorStyle.bgClass}`}>
+                            <IconComponent className={colorStyle.textClass} size={20} />
+                          </div>
+                        );
+                      })()}
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {formData.nome_grupo || 'Nome do Grupo'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
