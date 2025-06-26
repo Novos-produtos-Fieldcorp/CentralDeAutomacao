@@ -423,8 +423,8 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(grupoId);
       
-      // Call the edge function to trigger a manual summary
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`, {
+      // Use the proxied path configured in netlify.toml
+      const response = await fetch('/supabase-functions/manual-summary-trigger', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
