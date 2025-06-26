@@ -189,7 +189,6 @@ const ResumosGrupo = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sendingManualSummary, setSendingManualSummary] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState<string>('');
-  const [showTimeDebug, setShowTimeDebug] = useState(false);
   const [timeDetails, setTimeDetails] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'grupos' | 'historico'>('grupos');
 
@@ -657,47 +656,6 @@ const ResumosGrupo = () => {
                   </button>
                 </div>
               )}
-
-              {/* Time Debug Section */}
-              <div className="mt-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-gray-800 dark:text-white">Horário do Sistema</h2>
-                  <button
-                    onClick={() => setShowTimeDebug(!showTimeDebug)}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    {showTimeDebug ? 'Ocultar detalhes' : 'Mostrar detalhes'}
-                  </button>
-                </div>
-                
-                {showTimeDebug && timeDetails && (
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Horário Atual (Brasília)</h3>
-                        <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {timeDetails.formatted_time}
-                        </p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Horário UTC</h3>
-                        <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {new Date(timeDetails.utc_time).toISOString().split('T')[1].substring(0, 5)}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4">
-                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Detalhes Técnicos</h3>
-                      <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-xs font-mono overflow-x-auto">
-                        <pre className="text-gray-800 dark:text-gray-200">
-                          {JSON.stringify(timeDetails, null, 2)}
-                        </pre>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
             </>
           )}
 
