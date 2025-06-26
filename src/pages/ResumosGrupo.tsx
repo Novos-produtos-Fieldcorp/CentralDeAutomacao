@@ -832,7 +832,7 @@ const ResumosGrupo = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Cor
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-8 gap-4">
                   {Object.keys(colorMap).map((colorName) => {
                     const colorClasses = colorMap[colorName];
                     return (
@@ -840,18 +840,13 @@ const ResumosGrupo = () => {
                         key={colorName}
                         type="button"
                         onClick={() => setFormData({ ...formData, color_name: colorName })}
-                        className={`p-2 rounded-lg ${colorClasses.bg} ${colorClasses.darkBg} ${
+                        className={`w-8 h-8 rounded-full ${colorClasses.bg} ${colorClasses.darkBg} ${
                           formData.color_name === colorName
                             ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800'
                             : ''
                         }`}
-                      >
-                        <div className="flex items-center justify-center">
-                          <span className={`capitalize ${colorClasses.text} ${colorClasses.darkText}`}>
-                            {colorName}
-                          </span>
-                        </div>
-                      </button>
+                        title={colorName}
+                      />
                     );
                   })}
                 </div>
@@ -974,7 +969,7 @@ const ResumosGrupo = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Cor
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-8 gap-4">
                   {Object.keys(colorMap).map((colorName) => {
                     const colorClasses = colorMap[colorName];
                     return (
@@ -982,18 +977,13 @@ const ResumosGrupo = () => {
                         key={colorName}
                         type="button"
                         onClick={() => setFormData({ ...formData, color_name: colorName })}
-                        className={`p-2 rounded-lg ${colorClasses.bg} ${colorClasses.darkBg} ${
+                        className={`w-8 h-8 rounded-full ${colorClasses.bg} ${colorClasses.darkBg} ${
                           formData.color_name === colorName
                             ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800'
                             : ''
                         }`}
-                      >
-                        <div className="flex items-center justify-center">
-                          <span className={`capitalize ${colorClasses.text} ${colorClasses.darkText}`}>
-                            {colorName}
-                          </span>
-                        </div>
-                      </button>
+                        title={colorName}
+                      />
                     );
                   })}
                 </div>
