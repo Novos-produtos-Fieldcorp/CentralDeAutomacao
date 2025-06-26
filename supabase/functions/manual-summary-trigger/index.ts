@@ -1,20 +1,3 @@
-/*
-  # Manual Summary Trigger Edge Function
-
-  This function handles manual summary trigger requests from the frontend.
-  
-  1. Functionality
-    - Receives group_id and company_id from the request
-    - Validates the input parameters
-    - Triggers the summary generation process
-    - Returns success/error response
-  
-  2. Security
-    - CORS headers for cross-origin requests
-    - Input validation
-    - Error handling
-*/
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const corsHeaders = {
