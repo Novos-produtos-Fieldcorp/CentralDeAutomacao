@@ -39,6 +39,8 @@ Deno.serve(async (req) => {
       throw new Error('Missing required parameter: company_id');
     }
 
+    console.log(`Manual summary trigger requested for group_id: ${group_id}, company_id: ${company_id}`);
+
     // Get group data
     const { data: grupo, error } = await supabase
       .from('grupo_resumo')
@@ -61,13 +63,13 @@ Deno.serve(async (req) => {
     // Generate summary data for this group
     const summaryData = await generateSummaryData(grupo);
     
+    console.log('Generated summary data:', JSON.stringify(summaryData, null, 2));
+    
     // Send webhook
     const webhookResult = await sendWebhook(grupo, summaryData);
+    console.log('Webhook result:', webhookResult);
     
-    // Record the delivery in the database - using Brasilia timezone
-    const now = new Date();
-    const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-    
+    // Record the delivery in the database
     await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso');
 
     return new Response(
@@ -76,7 +78,8 @@ Deno.serve(async (req) => {
         message: `Summary sent successfully for group ${grupo.nome_grupo}`,
         data: {
           group_id: grupo.id,
-          group_name: grupo.nome_grupo
+          group_name: grupo.nome_grupo,
+          webhook_result: webhookResult
         }
       }),
       {
@@ -91,10 +94,6 @@ Deno.serve(async (req) => {
     try {
       const { group_id, company_id } = await req.json();
       if (group_id && company_id) {
-        // Record the delivery in the database - using Brasilia timezone
-        const now = new Date();
-        const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-        
         await recordDelivery(group_id, company_id, false, error.message);
       }
     } catch (recordError) {
@@ -231,20 +230,31 @@ async function sendWebhook(grupo: GrupoResumo, summaryData: any) {
     "summary": summaryData
   };
 
-  console.log('Sending webhook data:', JSON.stringify(webhookData, null, 2));
+  console.log('Sending webhook data to:', WEBHOOK_URL);
+  console.log('Webhook payload:', JSON.stringify(webhookData, null, 2));
 
-  const response = await fetch(WEBHOOK_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(webhookData)
-  });
+  try {
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(webhookData)
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to send webhook: ${response.status} - ${errorText}`);
+    console.log('Webhook response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Webhook error response: ${errorText}`);
+      throw new Error(`Failed to send webhook: ${response.status} - ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('Webhook response data:', responseData);
+    return responseData;
+  } catch (error) {
+    console.error('Error sending webhook:', error);
+    throw new Error(`Error sending webhook: ${error.message}`);
   }
-
-  return await response.json();
 }
