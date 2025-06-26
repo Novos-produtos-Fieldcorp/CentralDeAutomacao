@@ -589,14 +589,11 @@ const ResumosGrupo = () => {
                         
                         <div className="flex items-center gap-2 mb-4">
                           <Link2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                          <a 
-                            href={grupo.url_grupo} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline truncate"
+                          <span 
+                            className="text-sm text-gray-600 dark:text-gray-400 truncate"
                           >
                             {grupo.url_grupo}
-                          </a>
+                          </span>
                         </div>
                         
                         <div className="flex justify-between items-center mt-6">
