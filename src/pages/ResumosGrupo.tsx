@@ -3,7 +3,9 @@ import {
   Plus, Loader2, Calendar, MessagesSquare, Trash2, 
   BarChart2, Clock, Link2, Send, Edit2, AlertTriangle,
   CheckCircle2, XCircle, RefreshCw, Settings, Smartphone,
-  LayoutList, History
+  LayoutList, History, Users, Bell, FileText, Home,
+  Truck, Gauge, ClipboardCheck, Store, Mail, Phone,
+  Map, Star, Heart, Bookmark, Flag, Award
 } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
@@ -396,7 +398,23 @@ const ResumosGrupo = () => {
       BarChart2: <BarChart2 />,
       Calendar: <Calendar />,
       Smartphone: <Smartphone />,
-      Settings: <Settings />
+      Settings: <Settings />,
+      Users: <Users />,
+      Bell: <Bell />,
+      FileText: <FileText />,
+      Home: <Home />,
+      Truck: <Truck />,
+      Gauge: <Gauge />,
+      ClipboardCheck: <ClipboardCheck />,
+      Store: <Store />,
+      Mail: <Mail />,
+      Phone: <Phone />,
+      Map: <Map />,
+      Star: <Star />,
+      Heart: <Heart />,
+      Bookmark: <Bookmark />,
+      Flag: <Flag />,
+      Award: <Award />
     };
     
     return iconMap[iconName] || <MessagesSquare />;
@@ -419,7 +437,23 @@ const ResumosGrupo = () => {
     { value: 'BarChart2', component: <BarChart2 /> },
     { value: 'Calendar', component: <Calendar /> },
     { value: 'Smartphone', component: <Smartphone /> },
-    { value: 'Settings', component: <Settings /> }
+    { value: 'Settings', component: <Settings /> },
+    { value: 'Users', component: <Users /> },
+    { value: 'Bell', component: <Bell /> },
+    { value: 'FileText', component: <FileText /> },
+    { value: 'Home', component: <Home /> },
+    { value: 'Truck', component: <Truck /> },
+    { value: 'Gauge', component: <Gauge /> },
+    { value: 'ClipboardCheck', component: <ClipboardCheck /> },
+    { value: 'Store', component: <Store /> },
+    { value: 'Mail', component: <Mail /> },
+    { value: 'Phone', component: <Phone /> },
+    { value: 'Map', component: <Map /> },
+    { value: 'Star', component: <Star /> },
+    { value: 'Heart', component: <Heart /> },
+    { value: 'Bookmark', component: <Bookmark /> },
+    { value: 'Flag', component: <Flag /> },
+    { value: 'Award', component: <Award /> }
   ];
 
   const colorOptions = [
