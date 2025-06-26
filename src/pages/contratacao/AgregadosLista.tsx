@@ -159,6 +159,7 @@ const AgregadosLista = () => {
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
   const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
   const [cidades, setCidades] = useState<string[]>([]);
   
@@ -170,7 +171,8 @@ const AgregadosLista = () => {
     { value: 'contrato_enviado', label: 'Contrato Enviado' },
     { value: 'contratado', label: 'Contratado' },
     { value: 'repescagem', label: 'Repescagem' },
-    { value: 'rejeitado', label: 'Rejeitado' }
+    { value: 'rejeitado', label: 'Rejeitado' },
+    { value: 'gestao_risco', label: 'Gestão de Risco' }
   ];
 
   const [isDetailViewOpen, setIsDetailViewOpen] = useState(false);
@@ -245,13 +247,18 @@ const AgregadosLista = () => {
       if (cidadeDropdownRef.current && !cidadeDropdownRef.current.contains(target)) {
         setShowCidadeDropdown(false);
       }
+      
+      // Check if click is outside ativo dropdown
+      if (showAtivoDropdown && !event.composedPath().some((el: any) => el.id === 'ativo-dropdown')) {
+        setShowAtivoDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [showAtivoDropdown]);
 
   const fetchAgregados = async () => {
     try {
@@ -259,7 +266,8 @@ const AgregadosLista = () => {
       let query = supabase
       .from('vw_agregados_completo')
       .select('*')
-      .eq('company_id', companyId);
+      .eq('company_id', companyId)
+      .eq('funcao', 'Agregado'); // Filtra apenas os registros onde a função é 'Agregado' (com A maiúsculo)
 
       // Apply date filter
       if (dateFilter !== 'all') {
@@ -297,6 +305,14 @@ const AgregadosLista = () => {
 
       if (error) throw error;
 
+      console.log('Dados retornados da consulta de agregados:', data);
+      console.log('Total de registros:', data?.length);
+      
+      if (data && data.length > 0) {
+        console.log('Primeiro registro:', data[0]);
+        console.log('Campos disponíveis no primeiro registro:', Object.keys(data[0]));
+      }
+
       // Extract unique cities from agregados
       const uniqueCities = new Set<string>();
       const uniqueVehicleTypes = new Set<string>();
@@ -324,22 +340,63 @@ const AgregadosLista = () => {
     }
   };
 
+  // Cores padrão para os clientes (apenas fundo, sem borda)
+  const defaultClientColors = [
+    'bg-blue-100 dark:bg-blue-900/30',
+    'bg-green-100 dark:bg-green-900/30',
+    'bg-yellow-100 dark:bg-yellow-900/30',
+    'bg-red-100 dark:bg-red-900/30',
+    'bg-purple-100 dark:bg-purple-900/30',
+    'bg-pink-100 dark:bg-pink-900/30',
+    'bg-indigo-100 dark:bg-indigo-900/30',
+  ];
+
   const fetchClientes = async () => {
     try {
+      console.log('Iniciando carregamento de clientes...');
       setClientesLoading(true);
-      const { data, error } = await supabase
+      
+      console.log('Company ID:', companyId);
+      const { data, error, status } = await supabase
         .from('cliente')
         .select('*')
         .eq('company_id', companyId)
+        .eq('st_cliente', true)  // Filtra apenas clientes ativos
         .order('nome');
 
-      if (error) throw error;
+      console.log('Resposta da API - Status:', status);
+      console.log('Dados retornados:', data);
+      
+      if (error) {
+        console.error('Erro na consulta:', error);
+        throw error;
+      }
 
-      console.log('Fetched clientes:', data);
-      setClientes(data || []);
-    } catch (error) {
-      console.error('Error fetching clientes:', error);
-      toast.error('Erro ao carregar clientes');
+      if (!data || data.length === 0) {
+        console.warn('Nenhum cliente ativo encontrado para a empresa');
+      } else {
+        // Mapeando os dados para garantir que usamos o campo correto (cliente_id)
+        // e adicionando uma cor a cada cliente
+        const clientesMapeados = data.map((cliente, index) => ({
+          ...cliente,
+          id: cliente.cliente_id, // Garantindo que o campo id existe
+          nome: cliente.nome || 'Cliente sem nome',
+          cor: defaultClientColors[index % defaultClientColors.length] // Adiciona uma cor baseada no índice
+        }));
+        
+        console.log(`Encontrados ${clientesMapeados.length} clientes ativos`);
+        console.log('Lista de clientes:', clientesMapeados.map(c => ({ id: c.id, nome: c.nome, cor: c.cor })));
+        
+        setClientes(clientesMapeados);
+      }
+    } catch (err) {
+      const error = err as Error;
+      console.error('Erro detalhado ao carregar clientes:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
+      toast.error('Erro ao carregar clientes. Verifique o console para mais detalhes.');
     } finally {
       setClientesLoading(false);
     }
@@ -783,22 +840,60 @@ const AgregadosLista = () => {
             )}
           </div>
 
-          <div className="relative">
-            <div className="relative w-full">
-              <select
-                value={ativoFilter}
-                onChange={(e) => setAtivoFilter(e.target.value)}
-                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-              >
-                <option value="">Todos (Ativos/Inativos)</option>
-                <option value="active">Somente Ativos</option>
-                <option value="inactive">Somente Inativos</option>
-              </select>
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <ChevronDown className="h-4 w-4 text-gray-400" />
+          <div className="relative group">
+            <button
+              type="button"
+              className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              onClick={() => setShowAtivoDropdown(!showAtivoDropdown)}
+            >
+              <span className="truncate">
+                {!ativoFilter ? 'Todos (Ativos/Inativos)' : ativoFilter === 'active' ? 'Somente Ativos' : 'Somente Inativos'}
+              </span>
+              <div className="absolute inset-y-0 right-2 flex items-center">
+                <ChevronDown className="h-4 w-4 text-gray-400 transition-transform" />
               </div>
-            </div>
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            </button>
+            
+            {showAtivoDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+                <div className="py-1">
+                  <div 
+                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                    onClick={() => {
+                      setAtivoFilter('');
+                      setShowAtivoDropdown(false);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <span>Todos (Ativos/Inativos)</span>
+                    </div>
+                  </div>
+                  <div 
+                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'active' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                    onClick={() => {
+                      setAtivoFilter('active');
+                      setShowAtivoDropdown(false);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <span>Somente Ativos</span>
+                    </div>
+                  </div>
+                  <div 
+                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inactive' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                    onClick={() => {
+                      setAtivoFilter('inactive');
+                      setShowAtivoDropdown(false);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <span>Somente Inativos</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
@@ -1041,25 +1136,40 @@ const AgregadosLista = () => {
         
         <div className="mt-4 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-            >
-              <option value="all">Todos os períodos</option>
-              <option value="today">Hoje</option>
-              <option value="2days">Últimos 2 dias</option>
-              <option value="15days">Últimos 15 dias</option>
-              <option value="30days">Último mês</option>
-              <option value="custom">Personalizado</option>
-            </select>
-            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            <div className="relative">
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+              >
+                <option value="all">Todos os períodos</option>
+                <option value="today">Hoje</option>
+                <option value="2days">Últimos 2 dias</option>
+                <option value="15days">Últimos 15 dias</option>
+                <option value="30days">Último mês</option>
+                <option value="custom">Personalizado</option>
+              </select>
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
           </div>
           
           <div className="relative group self-center">
@@ -1114,7 +1224,7 @@ const AgregadosLista = () => {
                 type="checkbox"
                 checked={selectAll}
                 onChange={handleSelectAll}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-blue-600 mr-2"
               />
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {selectedItems.size > 0 ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}` : 'Selecionar todos'}
@@ -1199,27 +1309,34 @@ const AgregadosLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
-                          <button
-                            onClick={(e) => toggleStatusDropdown(e, agregado.motorista_id || 0)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
-                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                                     dark:focus:ring-offset-gray-800"
-                          >
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              agregado.st_cadastro === 'contratado' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' :
-                              agregado.st_cadastro === 'rejeitado' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200' :
-                              agregado.st_cadastro === 'documentacao' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200' :
-                              agregado.st_cadastro === 'qualificado' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200' :
-                              agregado.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200' :
-                              agregado.st_cadastro === 'repescagem' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200' :
-                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                            }`}>
-                              {agregado.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
-                               agregado.st_cadastro ? (agregado.st_cadastro.charAt(0).toUpperCase() + agregado.st_cadastro.slice(1)) : 'Indefinido'}
-                            </span>
-                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400" />
-                          </button>
+                          <div className="flex items-center">
+                            <button
+                              onClick={(e) => toggleStatusDropdown(e, agregado.motorista_id || 0)}
+                              className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                !agregado.st_cadastro ? 'bg-gray-100 dark:bg-gray-700' :
+                                agregado.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30' :
+                                agregado.st_cadastro === 'rejeitado' ? 'bg-red-100 dark:bg-red-900/30' :
+                                agregado.st_cadastro === 'documentacao' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                                agregado.st_cadastro === 'qualificado' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                                agregado.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 dark:bg-purple-900/30' :
+                                agregado.st_cadastro === 'repescagem' ? 'bg-orange-100 dark:bg-orange-900/30' :
+                                agregado.st_cadastro === 'gestao_risco' ? 'bg-rose-100 dark:bg-rose-900/30' :
+                                'bg-gray-100 dark:bg-gray-700'
+                              }`}
+                              title={!agregado.st_cadastro ? 'Indefinido' : 
+                                     agregado.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
+                                     agregado.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
+                                     agregado.st_cadastro.charAt(0).toUpperCase() + agregado.st_cadastro.slice(1)}
+                            >
+                              <span className="truncate max-w-[130px] text-left">
+                                {!agregado.st_cadastro ? 'Indefinido' : 
+                                 agregado.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' :
+                                 agregado.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
+                                 agregado.st_cadastro.charAt(0).toUpperCase() + agregado.st_cadastro.slice(1)}
+                              </span>
+                              <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
+                            </button>
+                          </div>
                           
                           {statusDropdownOpen === agregado.motorista_id && (
                             <div 
@@ -1297,6 +1414,16 @@ const AgregadosLista = () => {
                                 >
                                   Rejeitado
                                 </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, agregado, 'gestao_risco')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    agregado.st_cadastro === 'gestao_risco' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Gestão de Risco
+                                </button>
                               </div>
                             </div>
                           )}
@@ -1310,18 +1437,23 @@ const AgregadosLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
-                          <button
-                            onClick={(e) => toggleClienteDropdown(e, agregado.motorista_id || 0)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
-                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                                     dark:focus:ring-offset-gray-800 text-left w-full"
-                          >
-                            <span className="truncate max-w-[150px]">
-                              {agregado.cliente_id ? clientes.find(c => c.cliente_id === agregado.cliente_id)?.nome || 'Cliente não encontrado' : 'Sem cliente'}
-                            </span>
-                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                          </button>
+                          <div className="flex items-center">
+                            <button
+                              onClick={(e) => toggleClienteDropdown(e, agregado.motorista_id || 0)}
+                              className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                agregado.cliente_id 
+                                  ? clientes.find(c => c.cliente_id === agregado.cliente_id)?.cor || 
+                                    'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
+                                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
+                              }`}
+                              title={agregado.cliente_id ? clientes.find(c => c.cliente_id === agregado.cliente_id)?.nome : 'Sem cliente'}
+                            >
+                              <span className="truncate max-w-[130px] text-left">
+                                {agregado.cliente_id ? clientes.find(c => c.cliente_id === agregado.cliente_id)?.nome || 'Cliente não encontrado' : 'Sem cliente'}
+                              </span>
+                              <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
+                            </button>
+                          </div>
                           
                           {clienteDropdownOpen === agregado.motorista_id && (
                             <div 

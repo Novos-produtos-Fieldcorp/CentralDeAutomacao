@@ -1,5 +1,5 @@
-import React, { useState, useEffect, ReactNode, useCallback } from 'react';
-import { MapPin, Phone, Mail, Calendar, Filter, X, FileText, Truck, User, MessageCircle, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, FileText, MessageCircle, Filter, X, User, ChevronLeft, ChevronRight, Truck, Phone } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, DocumentoMotorista, Veiculo } from '../../types/database';
 import DocumentViewer from '../../components/DocumentViewer';
@@ -27,7 +27,7 @@ interface KanbanColumn {
 }
 
 const ContratacaoKanban = () => {
-  const { query, companyId } = useCompanyData();
+  const { companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
   const [loading, setLoading] = useState(true);
   const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
@@ -82,7 +82,7 @@ const ContratacaoKanban = () => {
       loading: false
     },
     { 
-      id: 'gr', 
+      id: 'gestao_risco', 
       title: 'Gestão de Risco', 
       color: 'bg-pink-50/80 dark:bg-pink-900/30',
       borderColor: 'border-pink-100 dark:border-pink-800/40',
@@ -179,7 +179,7 @@ const ContratacaoKanban = () => {
     }
   }, [funcaoFilter, itemsPerPage, companyId]); // Add companyId to dependencies
 
-  const fetchColumnCount = async (status: string, companyId: string) => {
+  const fetchColumnCount = async (status: string, companyId: number) => {
     try {
       // Get all motoristas with this status
       const { data, error } = await supabase
@@ -283,7 +283,14 @@ const ContratacaoKanban = () => {
           telefone,
           email,
           data_cadastro,
-          cpf
+          cpf,
+          dt_nascimento,
+          genero,
+          origem_usuario,
+          autorizacao_lgpd,
+          company_id,
+          cliente_id,
+          ativo
         `)
         .eq('st_cadastro', status)
         .eq('company_id', companyId);
@@ -314,15 +321,31 @@ const ContratacaoKanban = () => {
         (motoristasData || []).map(async (motorista) => {
           const { data: veiculoData } = await supabase
             .from('veiculo')
-            .select('placa, tipologia')
+            .select('*')
             .eq('motorista_id', motorista.motorista_id)
             .limit(1)
             .maybeSingle();
 
           return {
             ...motorista,
-            veiculo: veiculoData ? [veiculoData] : [],
-          };
+            veiculo: veiculoData ? [{
+              veiculo_id: veiculoData.veiculo_id,
+              placa: veiculoData.placa,
+              status_veiculo: veiculoData.status_veiculo,
+              marca: veiculoData.marca,
+              tipologia: veiculoData.tipologia,
+              ano: veiculoData.ano,
+              combustivel: veiculoData.combustivel,
+              peso: veiculoData.peso,
+              cubagem: veiculoData.cubagem,
+              possui_rastreador: veiculoData.possui_rastreador,
+              marca_rastreador: veiculoData.marca_rastreador,
+              motorista_id: veiculoData.motorista_id,
+              cor: veiculoData.cor,
+              tipo: veiculoData.tipo,
+              company_id: veiculoData.company_id
+            }] : [],
+          } as MotoristaWithDetails;
         })
       );
       
@@ -507,13 +530,7 @@ const ContratacaoKanban = () => {
       : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit'
-    });
-  };
+
 
   const filterButtons = [
     { value: 'todos', label: 'Todos' },

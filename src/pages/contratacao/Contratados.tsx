@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import type { Motorista, DocumentoMotorista } from '../../types/database';
+import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database'; // Adicionando tipos necessários
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
 import DocumentViewer from '../../components/DocumentViewer';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
@@ -75,9 +75,13 @@ const Contratados = () => {
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
+  const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
+  const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -131,13 +135,40 @@ const Contratados = () => {
       setEndereco(null);
     }
   }, [selectedMotorista]);
+  
   const [clientes, setClientes] = useState<any[]>([]);
-  const [clienteFilter, setClienteFilter] = useState<string>('');
-  const [cidadeFilter, setCidadeFilter] = useState<string>('');
+  const [clienteFilter, setClienteFilter] = useState<string[]>([]);
+  const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
   const [cidades, setCidades] = useState<string[]>([]);
-  const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string>('');
+  const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
   const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  
+
+
+  // Efeito para fechar dropdowns ao clicar fora deles
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showStatusDropdown && !(event.target as HTMLElement).closest('#status-dropdown')) {
+        setShowStatusDropdown(false);
+      }
+      if (showClienteDropdown && !(event.target as HTMLElement).closest('#cliente-dropdown')) {
+        setShowClienteDropdown(false);
+      }
+      if (showCidadeDropdown && !(event.target as HTMLElement).closest('#cidade-dropdown')) {
+        setShowCidadeDropdown(false);
+      }
+      if (showTipoVeiculoDropdown && !(event.target as HTMLElement).closest('#tipo-veiculo-dropdown')) {
+        setShowTipoVeiculoDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown]);
+  
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -149,12 +180,13 @@ const Contratados = () => {
     y: 0,
     motorista: null,
   });
+  
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
 
-  const convertToMotorista = (contratado: ViewContratado | null): Motorista | null => {
+  const convertToMotorista = (contratado: ViewContratado | null): MotoristaWithAddress | null => {
     if (!contratado) return null;
     
-    return {
+    const motoristaBase: Motorista = {
       motorista_id: contratado.motorista_id || 0,
       cpf: contratado.cpf || '',
       dt_nascimento: contratado.dt_nascimento || '',
@@ -162,21 +194,63 @@ const Contratados = () => {
       telefone: contratado.telefone ? Number(contratado.telefone) : null,
       email: contratado.email || null,
       funcao: contratado.funcao || '',
-      nome: contratado.nome_motorista || '',
+      nome: contratado.nome_motorista || 'Nome não informado',
       origem_usuario: contratado.origem_usuario || '',
       st_cadastro: contratado.st_cadastro || 'cadastrado',
       autorizacao_lgpd: contratado.autorizacao_lgpd || '',
       company_id: contratado.company_id || 0,
       data_cadastro: contratado.data_cadastro || new Date().toISOString(),
       cliente_id: contratado.cliente_id || 0,
-      ativo: contratado.ativo,
-      conversation_id: contratado.conversation_id || undefined,
-      cidade: contratado.nome_cidade || undefined,
-      // @ts-ignore - Propriedades opcionais
-      estado: contratado.sigla_estado || undefined,
+      ativo: contratado.ativo || false,
+      conversation_id: contratado.conversation_id,
+      cidade: contratado.nome_cidade || undefined, // Garantindo que seja string | undefined
       documento_motorista: [],
       documento_ajudante: []
-    } as Motorista;
+    };
+    
+    // Criando o objeto de endereço se houver informações disponíveis
+    const endereco: EnderecoMotorista | undefined = 
+      (contratado.logradouro || contratado.nr_cep || contratado.nome_bairro || contratado.nome_cidade || contratado.sigla_estado)
+        ? {
+            id_end_motorista: contratado.id_end_motorista || 0,
+            nr_end: contratado.nr_end || null,
+            ds_complemento_end: contratado.ds_complemento_end || null,
+            st_end: contratado.st_end || null,
+            logradouro: contratado.logradouro || null,
+            nr_cep: contratado.nr_cep || null,
+            bairro: contratado.nome_bairro || null,
+            cidade: contratado.nome_cidade || null,
+            estado: contratado.nome_estado || null,
+            sigla_estado: contratado.sigla_estado || null
+          }
+        : undefined;
+    
+    // Criando o objeto de veículo se houver informações disponíveis
+    const veiculo: Veiculo | undefined = contratado.veiculo_id || contratado.placa || contratado.tipologia
+      ? {
+          veiculo_id: contratado.veiculo_id || 0,
+          placa: contratado.placa || '',
+          status_veiculo: contratado.status_veiculo || false,
+          marca: contratado.marca || '',
+          tipologia: contratado.tipologia || '',
+          ano: contratado.ano || '',
+          combustivel: contratado.combustivel || '',
+          peso: contratado.peso || '',
+          cubagem: contratado.cubagem || '',
+          possui_rastreador: contratado.possui_rastreador || false,
+          marca_rastreador: contratado.marca_rastreador || '',
+          motorista_id: contratado.motorista_id || 0,
+          cor: contratado.cor || '',
+          tipo: contratado.tipo || ''
+        }
+      : undefined;
+    
+    // Retornando o objeto MotoristaWithAddress
+    return {
+      ...motoristaBase,
+      ...(endereco && { endereco }),
+      ...(veiculo && { veiculo })
+    };
   };
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
@@ -336,6 +410,17 @@ const Contratados = () => {
     }
   };
 
+  // Cores padrão para os clientes (apenas fundo, sem borda)
+  const defaultClientColors = [
+    'bg-blue-100 dark:bg-blue-900/30',
+    'bg-green-100 dark:bg-green-900/30',
+    'bg-yellow-100 dark:bg-yellow-900/30',
+    'bg-red-100 dark:bg-red-900/30',
+    'bg-purple-100 dark:bg-purple-900/30',
+    'bg-pink-100 dark:bg-pink-900/30',
+    'bg-indigo-100 dark:bg-indigo-900/30',
+  ];
+
   const fetchClientes = async () => {
     try {
       const { data, error } = await supabase
@@ -347,7 +432,13 @@ const Contratados = () => {
 
       if (error) throw error;
 
-      setClientes(data || []);
+      // Adiciona uma cor a cada cliente
+      const clientesComCor = (data || []).map((cliente, index) => ({
+        ...cliente,
+        cor: defaultClientColors[index % defaultClientColors.length] || 'bg-gray-100 dark:bg-gray-700',
+      }));
+
+      setClientes(clientesComCor);
     } catch (error) {
       console.error('Error fetching clientes:', error);
       toast.error('Erro ao carregar clientes');
@@ -406,6 +497,92 @@ const Contratados = () => {
     
     // Update selectAll state
     setSelectAll(newSelectedItems.size === filteredContratados.length);
+  };
+  
+  // Funções para manipular filtros de múltipla seleção
+  const toggleFilterOption = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo', value: string) => {
+    switch (filterType) {
+      case 'status':
+        setStatusFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(v => v !== value) 
+            : [...prev, value]
+        );
+        break;
+      case 'cliente':
+        setClienteFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(v => v !== value) 
+            : [...prev, value]
+        );
+        break;
+      case 'cidade':
+        setCidadeFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(v => v !== value) 
+            : [...prev, value]
+        );
+        break;
+      case 'tipoVeiculo':
+        setTipoVeiculoFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(v => v !== value) 
+            : [...prev, value]
+        );
+        break;
+    }
+  };
+  
+  const clearFilter = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo') => {
+    switch (filterType) {
+      case 'status':
+        setStatusFilter([]);
+        break;
+      case 'cliente':
+        setClienteFilter([]);
+        break;
+      case 'cidade':
+        setCidadeFilter([]);
+        break;
+      case 'tipoVeiculo':
+        setTipoVeiculoFilter([]);
+        break;
+    }
+  };
+  
+  const getFilterButtonText = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo') => {
+    const filterMap = {
+      status: { 
+        label: 'Status', 
+        filter: statusFilter,
+        allText: 'Todos os status'
+      },
+      cliente: { 
+        label: 'Cliente', 
+        filter: clienteFilter,
+        allText: 'Todos os clientes'
+      },
+      cidade: { 
+        label: 'Cidade', 
+        filter: cidadeFilter,
+        allText: 'Todas as cidades'
+      },
+      tipoVeiculo: { 
+        label: 'Tipo de Veículo', 
+        filter: tipoVeiculoFilter,
+        allText: 'Todos os tipos de veículo'
+      }
+    };
+    
+    const { filter, allText } = filterMap[filterType];
+    
+    if (filter.length === 0) return allText;
+    if (filter.length === 1) {
+      if (filter[0] === 'sem_cliente') return 'Sem cliente';
+      if (filter[0] === 'sem_veiculo') return 'Sem veículo';
+      return `${filter[0]}`;
+    }
+    return `${filter.length} selecionado(s)`;
   };
 
   const handleSelectAll = () => {
@@ -595,24 +772,49 @@ const Contratados = () => {
 
   const filteredContratados = contratados.filter((motorista): boolean => {
     const searchLower = searchTerm.toLowerCase();
-    const statusMatch = statusFilter ? motorista.st_cadastro === statusFilter : true;
     
-    // Lógica para filtro de cliente
+    // Lógica para filtro de status (multiseleção)
+    const statusMatch = statusFilter.length === 0 || 
+      (motorista.st_cadastro && statusFilter.includes(motorista.st_cadastro));
+    
+    // Lógica para filtro de cliente (multiseleção)
     let clienteMatch = true;
-    if (clienteFilter === 'sem_cliente') {
-      clienteMatch = motorista.cliente_id === null || motorista.cliente_id === undefined;
-    } else if (clienteFilter) {
-      clienteMatch = motorista.cliente_id === parseInt(clienteFilter);
+    if (clienteFilter.length > 0) {
+      if (clienteFilter.includes('sem_cliente')) {
+        // Se 'sem_cliente' está selecionado, inclui registros sem cliente
+        clienteMatch = motorista.cliente_id === null || motorista.cliente_id === undefined;
+      } else {
+        // Verifica se o cliente do motorista está na lista de clientes selecionados
+        clienteMatch = motorista.cliente_id !== null && 
+          motorista.cliente_id !== undefined &&
+          clienteFilter.includes(motorista.cliente_id.toString());
+      }
+      
+      // Se 'sem_cliente' está selecionado junto com outros clientes, combina os resultados
+      if (clienteFilter.includes('sem_cliente') && clienteFilter.length > 1) {
+        clienteMatch = clienteMatch || (motorista.cliente_id === null || motorista.cliente_id === undefined);
+      }
     }
     
-    const cidadeMatch = cidadeFilter ? getMotoristaCity(motorista) === cidadeFilter : true;
+    // Lógica para filtro de cidade (multiseleção)
+    const cidadeMatch = cidadeFilter.length === 0 || 
+      (motorista.nome_cidade && cidadeFilter.includes(motorista.nome_cidade));
     
-    // Lógica para filtro de veículo
+    // Lógica para filtro de tipo de veículo (multiseleção)
     let tipoVeiculoMatch = true;
-    if (tipoVeiculoFilter === 'sem_veiculo') {
-      tipoVeiculoMatch = !motorista.veiculo || motorista.veiculo.length === 0;
-    } else if (tipoVeiculoFilter) {
-      tipoVeiculoMatch = !!(motorista.veiculo && motorista.veiculo.some(v => v.tipologia === tipoVeiculoFilter));
+    if (tipoVeiculoFilter.length > 0) {
+      if (tipoVeiculoFilter.includes('sem_veiculo')) {
+        tipoVeiculoMatch = !motorista.veiculo || motorista.veiculo.length === 0;
+      } else {
+        tipoVeiculoMatch = !!(motorista.veiculo && motorista.veiculo.some(v => 
+          v.tipologia && tipoVeiculoFilter.includes(v.tipologia)
+        ));
+      }
+      
+      // Se 'sem_veiculo' está selecionado junto com outros tipos, combina os resultados
+      if (tipoVeiculoFilter.includes('sem_veiculo') && tipoVeiculoFilter.length > 1) {
+        tipoVeiculoMatch = tipoVeiculoMatch || (!motorista.veiculo || motorista.veiculo.length === 0);
+      }
     }
     
     const ativoMatch = ativoFilter === '' ? true : 
@@ -737,23 +939,61 @@ const Contratados = () => {
             )}
           </div>
 
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+          <div className="relative" id="status-dropdown">
+            <button
+              type="button"
+              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
             >
-              <option value="">Todos os status</option>
-              <option value="cadastrado">Cadastrado</option>
-              <option value="qualificado">Qualificado</option>
-              <option value="documentacao">Documentação</option>
-              <option value="contrato_enviado">Contrato Enviado</option>
-              <option value="contratado">Contratado</option>
-              <option value="repescagem">Repescagem</option>
-              <option value="rejeitado">Rejeitado</option>
-            </select>
+              <span>{getFilterButtonText('status')}</span>
+              <div className="flex items-center">
+                {statusFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('status');
+                    }}
+                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+            </button>
             <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            {showStatusDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os status</span>
+                  <button 
+                    type="button" 
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setStatusFilter([]);
+                    }}
+                  >
+                    Limpar
+                  </button>
+                </div>
+                {['cadastrado', 'qualificado', 'documentacao', 'contrato_enviado', 'contratado', 'repescagem', 'rejeitado', 'gestao_risco'].map((status) => (
+                  <div key={status} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`status-${status}`}
+                      checked={statusFilter.includes(status)}
+                      onChange={() => toggleFilterOption('status', status)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`status-${status}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300 capitalize">
+                      {status.replace('_', ' ')}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="relative">
@@ -772,62 +1012,206 @@ const Contratados = () => {
         </div>
         
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative">
-            <select
-              value={clienteFilter}
-              onChange={(e) => setClienteFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+          <div className="relative" id="cliente-dropdown">
+            <button
+              type="button"
+              onClick={() => setShowClienteDropdown(!showClienteDropdown)}
+              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
             >
-              <option value="">Todos os clientes</option>
-              <option value="sem_cliente">Sem cliente</option>
-              {clientes.map(cliente => (
-                <option key={cliente.cliente_id} value={cliente.cliente_id}>
-                  {cliente.nome}
-                </option>
-              ))}
-            </select>
+              <span>{getFilterButtonText('cliente')}</span>
+              <div className="flex items-center">
+                {clienteFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('cliente');
+                    }}
+                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+            </button>
             <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
               <circle cx="9" cy="7" r="4"></circle>
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            {showClienteDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os clientes</span>
+                  <button 
+                    type="button" 
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setClienteFilter([]);
+                    }}
+                  >
+                    Limpar
+                  </button>
+                </div>
+                <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                  <input
+                    type="checkbox"
+                    id="cliente-sem_cliente"
+                    checked={clienteFilter.includes('sem_cliente')}
+                    onChange={() => toggleFilterOption('cliente', 'sem_cliente')}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <label htmlFor="cliente-sem_cliente" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    Sem cliente
+                  </label>
+                </div>
+                {clientes.map(cliente => (
+                  <div key={cliente.cliente_id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`cliente-${cliente.cliente_id}`}
+                      checked={clienteFilter.includes(cliente.cliente_id.toString())}
+                      onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`cliente-${cliente.cliente_id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {cliente.nome}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="relative">
-            <select
-              value={cidadeFilter}
-              onChange={(e) => setCidadeFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+          <div className="relative" id="cidade-dropdown">
+            <button
+              type="button"
+              onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
+              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
             >
-              <option value="">Todas as cidades</option>
-              {cidades.map((cidade, index) => (
-                <option key={index} value={cidade}>
-                  {cidade}
-                </option>
-              ))}
-            </select>
+              <span>{getFilterButtonText('cidade')}</span>
+              <div className="flex items-center">
+                {cidadeFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('cidade');
+                    }}
+                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+            </button>
             <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            {showCidadeDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as cidades</span>
+                  <button 
+                    type="button" 
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCidadeFilter([]);
+                    }}
+                  >
+                    Limpar
+                  </button>
+                </div>
+                {cidades.map((cidade, index) => (
+                  <div key={index} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`cidade-${index}`}
+                      checked={cidadeFilter.includes(cidade)}
+                      onChange={() => toggleFilterOption('cidade', cidade)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`cidade-${index}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {cidade}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="relative">
-            <select
-              value={tipoVeiculoFilter}
-              onChange={(e) => setTipoVeiculoFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+          <div className="relative" id="tipo-veiculo-dropdown">
+            <button
+              type="button"
+              onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
+              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
             >
-              <option value="">Todos os tipos de veículo</option>
-              <option value="sem_veiculo">Sem veículo</option>
-              {tiposVeiculo.map((tipo, index) => (
-                <option key={index} value={tipo}>
-                  {tipo}
-                </option>
-              ))}
-            </select>
+              <span>{getFilterButtonText('tipoVeiculo')}</span>
+              <div className="flex items-center">
+                {tipoVeiculoFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('tipoVeiculo');
+                    }}
+                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showTipoVeiculoDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+            </button>
             <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+            {showTipoVeiculoDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os tipos de veículo</span>
+                  <button 
+                    type="button" 
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTipoVeiculoFilter([]);
+                    }}
+                  >
+                    Limpar
+                  </button>
+                </div>
+                <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                  <input
+                    type="checkbox"
+                    id="tipo-veiculo-sem_veiculo"
+                    checked={tipoVeiculoFilter.includes('sem_veiculo')}
+                    onChange={() => toggleFilterOption('tipoVeiculo', 'sem_veiculo')}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <label htmlFor="tipo-veiculo-sem_veiculo" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    Sem veículo
+                  </label>
+                </div>
+                {tiposVeiculo.map((tipo, index) => (
+                  <div key={index} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`tipo-veiculo-${index}`}
+                      checked={tipoVeiculoFilter.includes(tipo)}
+                      onChange={() => toggleFilterOption('tipoVeiculo', tipo)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`tipo-veiculo-${index}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {tipo}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -978,28 +1362,33 @@ const Contratados = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
-                          <button
-                            onClick={(e) => toggleStatusDropdown(e, motorista.motorista_id || 0)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
-                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                                     dark:focus:ring-offset-gray-800"
-                          >
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              motorista.st_cadastro === 'contratado' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' :
-                              motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200' :
-                              motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200' :
-                              motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200' :
-                              motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200' :
-                              motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200' :
-                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                            }`}>
-                              {!motorista.st_cadastro ? 'Indefinido' : 
-                               motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
-                               motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
-                            </span>
-                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400" />
-                          </button>
+                          <div className="flex items-center">
+                            <button
+                              onClick={(e) => toggleStatusDropdown(e, motorista.motorista_id || 0)}
+                              className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30' :
+                                motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 dark:bg-red-900/30' :
+                                motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                                motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                                motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 dark:bg-purple-900/30' :
+                                motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 dark:bg-orange-900/30' :
+                                motorista.st_cadastro === 'gestao_risco' ? 'bg-rose-100 dark:bg-rose-900/30' :
+                                'bg-gray-100 dark:bg-gray-700'
+                              }`}
+                              title={!motorista.st_cadastro ? 'Indefinido' : 
+                                     motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' :
+                                     motorista.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
+                                     motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
+                            >
+                              <span className="truncate max-w-[130px] text-left">
+                                {!motorista.st_cadastro ? 'Indefinido' : 
+                                 motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' :
+                                 motorista.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
+                                 motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
+                              </span>
+                              <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
+                            </button>
+                          </div>
                           
                           {statusDropdownOpen === motorista.motorista_id && (
                             <div 
@@ -1077,6 +1466,16 @@ const Contratados = () => {
                                 >
                                   Rejeitado
                                 </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'gestao_risco')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    motorista.st_cadastro === 'gestao_risco' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Gestão de Risco
+                                </button>
                               </div>
                             </div>
                           )}
@@ -1090,18 +1489,23 @@ const Contratados = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
-                          <button
-                            onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id || 0)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium
-                                     hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                                     dark:focus:ring-offset-gray-800 text-left w-full"
-                          >
-                            <span className="truncate max-w-[150px]" data-component-name="Contratados">
-                              {motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
-                            </span>
-                            <ChevronDown size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                          </button>
+                          <div className="flex items-center">
+                            <button
+                              onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id || 0)}
+                              className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                motorista.cliente_id 
+                                  ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor || 
+                                    'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
+                                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
+                              }`}
+                              title={motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
+                            >
+                              <span className="truncate max-w-[130px] text-left">
+                                {motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
+                              </span>
+                              <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
+                            </button>
+                          </div>
                           
                           {clienteDropdownOpen === motorista.motorista_id && (
                             <div 
@@ -1283,11 +1687,11 @@ const Contratados = () => {
         documento={documento}
         nome={selectedMotorista?.nome_motorista || ''}
         cpf={selectedMotorista?.cpf}
-        email={selectedMotorista?.email}
+        email={selectedMotorista?.email || undefined}
         telefone={selectedMotorista?.telefone?.toString()}
         dt_nascimento={selectedMotorista?.dt_nascimento}
         endereco={endereco}
-        st_cadastro={selectedMotorista?.st_cadastro || undefined}
+        st_cadastro={selectedMotorista?.st_cadastro || 'cadastrado'}
       />
 
       <DocumentUploadModal
