@@ -268,11 +268,19 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(prev => ({ ...prev, [grupo.id]: true }));
       
+      // Get the current session to include the authorization header
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        throw new Error('Não foi possível obter a sessão do usuário');
+      }
+      
       // Call the manual-summary-trigger edge function
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           group_id: grupo.id,
