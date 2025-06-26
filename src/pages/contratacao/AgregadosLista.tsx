@@ -326,20 +326,48 @@ const AgregadosLista = () => {
 
   const fetchClientes = async () => {
     try {
+      console.log('Iniciando carregamento de clientes...');
       setClientesLoading(true);
-      const { data, error } = await supabase
+      
+      console.log('Company ID:', companyId);
+      const { data, error, status } = await supabase
         .from('cliente')
         .select('*')
         .eq('company_id', companyId)
+        .eq('st_cliente', true)  // Filtra apenas clientes ativos
         .order('nome');
 
-      if (error) throw error;
+      console.log('Resposta da API - Status:', status);
+      console.log('Dados retornados:', data);
+      
+      if (error) {
+        console.error('Erro na consulta:', error);
+        throw error;
+      }
 
-      console.log('Fetched clientes:', data);
-      setClientes(data || []);
-    } catch (error) {
-      console.error('Error fetching clientes:', error);
-      toast.error('Erro ao carregar clientes');
+      if (!data || data.length === 0) {
+        console.warn('Nenhum cliente ativo encontrado para a empresa');
+      } else {
+        // Mapeando os dados para garantir que usamos o campo correto (cliente_id)
+        const clientesMapeados = data.map(cliente => ({
+          ...cliente,
+          id: cliente.cliente_id, // Garantindo que o campo id existe
+          nome: cliente.nome || 'Cliente sem nome'
+        }));
+        
+        console.log(`Encontrados ${clientesMapeados.length} clientes ativos`);
+        console.log('Lista de clientes:', clientesMapeados.map(c => ({ id: c.id, nome: c.nome })));
+        
+        setClientes(clientesMapeados);
+      }
+    } catch (err) {
+      const error = err as Error;
+      console.error('Erro detalhado ao carregar clientes:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
+      toast.error('Erro ao carregar clientes. Verifique o console para mais detalhes.');
     } finally {
       setClientesLoading(false);
     }
@@ -1114,7 +1142,7 @@ const AgregadosLista = () => {
                 type="checkbox"
                 checked={selectAll}
                 onChange={handleSelectAll}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-blue-600 mr-2"
               />
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {selectedItems.size > 0 ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}` : 'Selecionar todos'}
