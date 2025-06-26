@@ -246,8 +246,12 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(prev => ({ ...prev, [grupo.id]: true }));
       
-      // Call the manual-summary-trigger edge function
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`, {
+      // Use the proxied endpoint for development
+      const apiUrl = import.meta.env.DEV 
+        ? '/supabase-functions/manual-summary-trigger'
+        : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

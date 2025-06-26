@@ -28,7 +28,29 @@ export default defineConfig({
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
           'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization, api_access_token, Accept'
         }
+      },
+      "/supabase-functions": {
+        target: process.env.VITE_SUPABASE_URL || "https://your-project.supabase.co",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/supabase-functions/, "/functions/v1"),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('supabase functions proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('Supabase Functions Request:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('Supabase Functions Response:', proxyRes.statusCode, req.url);
+          });
+        },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
       }
     }
   }
-}); 
+});
