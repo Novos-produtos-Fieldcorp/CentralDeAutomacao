@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Clock, Database, Globe, RefreshCw, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { convertBrasiliaToUTC, convertUTCToBrasilia } from '../utils/time';
 
 interface TimeDebugModalProps {
   isOpen: boolean;
@@ -71,9 +72,25 @@ const TimeDebugModal: React.FC<TimeDebugModalProps> = ({ isOpen, onClose }) => {
     return new Date(utcTime.getTime() - 3 * 60 * 60 * 1000);
   };
 
+  // Format time as HH:MM
+  const formatTimeHHMM = (date: Date) => {
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  };
+
   if (!isOpen) return null;
 
   const brasiliaTime = getBrasiliaTime();
+  const brasiliaTimeHHMM = formatTimeHHMM(brasiliaTime);
+  
+  // Get UTC time in HH:MM format
+  const utcTime = new Date(
+    browserTime.getTime() + browserTime.getTimezoneOffset() * 60 * 1000
+  );
+  const utcTimeHHMM = formatTimeHHMM(utcTime);
+  
+  // Convert between formats for demonstration
+  const brasiliaToUTC = convertBrasiliaToUTC(brasiliaTimeHHMM);
+  const utcToBrasilia = convertUTCToBrasilia(utcTimeHHMM);
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -134,6 +151,9 @@ const TimeDebugModal: React.FC<TimeDebugModalProps> = ({ isOpen, onClose }) => {
                 <div className="text-lg font-semibold text-gray-900 dark:text-white">
                   {browserTime.toUTCString()}
                 </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Formato HH:MM: {utcTimeHHMM}
+                </div>
               </div>
               
               <div>
@@ -144,7 +164,7 @@ const TimeDebugModal: React.FC<TimeDebugModalProps> = ({ isOpen, onClose }) => {
                   {formatDate(brasiliaTime)} {formatTime(brasiliaTime)}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Formato HH:MM: {brasiliaTime.getHours().toString().padStart(2, '0')}:{brasiliaTime.getMinutes().toString().padStart(2, '0')}
+                  Formato HH:MM: {brasiliaTimeHHMM}
                 </div>
               </div>
               
@@ -154,6 +174,40 @@ const TimeDebugModal: React.FC<TimeDebugModalProps> = ({ isOpen, onClose }) => {
                 </div>
                 <div className="text-sm font-mono text-gray-900 dark:text-white break-all">
                   {browserTime.toISOString()}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Time Conversion Test Section */}
+          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800/30">
+            <h3 className="text-base font-medium text-green-800 dark:text-green-200 mb-4 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-green-600 dark:text-green-400" />
+              Teste de Conversão de Horários
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">
+                  Brasília → UTC
+                </div>
+                <div className="text-lg font-semibold text-green-900 dark:text-green-100">
+                  {brasiliaTimeHHMM} → {brasiliaToUTC}
+                </div>
+                <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  Horário de Brasília convertido para UTC
+                </div>
+              </div>
+              
+              <div>
+                <div className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">
+                  UTC → Brasília
+                </div>
+                <div className="text-lg font-semibold text-green-900 dark:text-green-100">
+                  {utcTimeHHMM} → {utcToBrasilia}
+                </div>
+                <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  Horário UTC convertido para Brasília
                 </div>
               </div>
             </div>
