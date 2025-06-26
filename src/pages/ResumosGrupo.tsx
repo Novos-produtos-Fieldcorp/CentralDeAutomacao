@@ -1,11 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { ClipboardList, Plus, Trash2, Clock, Link2, MessagesSquare, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search, Users, Building2, Mail, Phone, Bell, AlertCircle, Zap, Heart, Star, BookOpen, Bookmark, FileCheck, FileText as FileText2, Truck, ShoppingBag, Package, Map, MapPin, Compass, Globe, Home, Settings, BarChart2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Plus, Search, Edit2, Trash2, Clock, CheckCircle2, XCircle, 
+  MessagesSquare, Users, Truck, FileText, Calendar, BarChart2, 
+  Settings, Bell, Mail, Phone, Home, User, Briefcase, Coffee,
+  Heart, Star, Music, Film, Book, Camera, Compass, Map, Gift,
+  Award, Bookmark, Clipboard, Database, Folder, Globe, Image,
+  Key, Link, Lock, Monitor, Moon, Sun, Paperclip, Percent, 
+  Printer, Radio, Save, Server, Share2, ShoppingBag, ShoppingCart,
+  Smartphone, Speaker, Tag, Terminal, ThumbsUp, Tool, Trash, 
+  Tv, Umbrella, Video, Wifi, Zap, AlertCircle, AlertTriangle, 
+  Archive, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, AtSign, 
+  Battery, BellOff, Bluetooth, Bold, Box, Calendar as CalendarIcon,
+  Cast, Circle, Cloud, Code, Command, Copy, CreditCard, Crop, 
+  Download, Droplet, ExternalLink, Eye, EyeOff, Facebook, FastForward, 
+  Feather, File, Flag, Frown, Gitlab, Grid, Hash, Headphones, 
+  HelpCircle, Inbox, Instagram, Italic, Layers, Layout, LifeBuoy, 
+  Loader, MapPin, Maximize, Meh, Menu, MessageCircle, Mic, Minimize, 
+  MoreHorizontal, MoreVertical, Move, Navigation, Octagon, Package, 
+  Pause, Play, Power, RefreshCw, RotateCw, Scissors, Search as SearchIcon, 
+  Send, Settings as SettingsIcon, Shield, Shuffle, Sidebar, Slash, 
+  Sliders, Smile, Square, Twitter, Type, Underline, Upload, UserCheck, 
+  UserMinus, UserPlus, UserX, Watch, Wind, X, Youtube, Zap as ZapIcon,
+  Loader2
+} from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { useModuleAccess } from '../hooks/useModuleAccess';
-import { Navigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 interface GrupoResumo {
   id: number;
@@ -21,104 +43,211 @@ interface GrupoResumo {
 interface EnvioResumo {
   id: number;
   grupo_id: number;
+  company_id: number;
   data_envio: string;
   status: boolean;
   mensagem: string;
-  nome_grupo: string;
+  created_at: string;
+  grupo?: {
+    nome_grupo: string;
+    icon_name?: string;
+    color_name?: string;
+  };
 }
 
-// Lista de ícones disponíveis
-const availableIcons = [
-  { name: 'MessagesSquare', component: MessagesSquare, label: 'Mensagens' },
-  { name: 'Users', component: Users, label: 'Usuários' },
-  { name: 'Building2', component: Building2, label: 'Empresa' },
-  { name: 'Mail', component: Mail, label: 'Email' },
-  { name: 'Phone', component: Phone, label: 'Telefone' },
-  { name: 'Bell', component: Bell, label: 'Notificação' },
-  { name: 'AlertCircle', component: AlertCircle, label: 'Alerta' },
-  { name: 'Zap', component: Zap, label: 'Raio' },
-  { name: 'Heart', component: Heart, label: 'Coração' },
-  { name: 'Star', component: Star, label: 'Estrela' },
-  { name: 'BookOpen', component: BookOpen, label: 'Livro' },
-  { name: 'Bookmark', component: Bookmark, label: 'Marcador' },
-  { name: 'FileCheck', component: FileCheck, label: 'Arquivo' },
-  { name: 'FileText2', component: FileText2, label: 'Documento' },
-  { name: 'Truck', component: Truck, label: 'Caminhão' },
-  { name: 'ShoppingBag', component: ShoppingBag, label: 'Compras' },
-  { name: 'Package', component: Package, label: 'Pacote' },
-  { name: 'Map', component: Map, label: 'Mapa' },
-  { name: 'MapPin', component: MapPin, label: 'Localização' },
-  { name: 'Compass', component: Compass, label: 'Bússola' },
-  { name: 'Globe', component: Globe, label: 'Globo' },
-  { name: 'Home', component: Home, label: 'Casa' },
-  { name: 'Settings', component: Settings, label: 'Configurações' },
-  { name: 'BarChart2', component: BarChart2, label: 'Gráfico' }
-];
+// Map of icon names to components
+const iconMap: Record<string, React.ElementType> = {
+  MessagesSquare,
+  Users,
+  Truck,
+  FileText,
+  Calendar,
+  BarChart2,
+  Settings,
+  Bell,
+  Mail,
+  Phone,
+  Home,
+  User,
+  Briefcase,
+  Coffee,
+  Heart,
+  Star,
+  Music,
+  Film,
+  Book,
+  Camera,
+  Compass,
+  Map,
+  Gift,
+  Award,
+  Bookmark,
+  Clipboard,
+  Database,
+  Folder,
+  Globe,
+  Image,
+  Key,
+  Link,
+  Lock,
+  Monitor,
+  Moon,
+  Sun,
+  Paperclip,
+  Percent,
+  Printer,
+  Radio,
+  Save,
+  Server,
+  Share2,
+  ShoppingBag,
+  ShoppingCart,
+  Smartphone,
+  Speaker,
+  Tag,
+  Terminal,
+  ThumbsUp,
+  Tool,
+  Trash,
+  Tv,
+  Umbrella,
+  Video,
+  Wifi,
+  Zap
+};
 
-// Lista de cores disponíveis
-const availableColors = [
-  { name: 'blue', label: 'Azul', bgClass: 'bg-blue-100 dark:bg-blue-900/20', textClass: 'text-blue-600 dark:text-blue-400', hoverBgClass: 'group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40', borderClass: 'border-blue-200 dark:border-blue-800/30' },
-  { name: 'green', label: 'Verde', bgClass: 'bg-green-100 dark:bg-green-900/20', textClass: 'text-green-600 dark:text-green-400', hoverBgClass: 'group-hover:bg-green-200 dark:group-hover:bg-green-800/40', borderClass: 'border-green-200 dark:border-green-800/30' },
-  { name: 'red', label: 'Vermelho', bgClass: 'bg-red-100 dark:bg-red-900/20', textClass: 'text-red-600 dark:text-red-400', hoverBgClass: 'group-hover:bg-red-200 dark:group-hover:bg-red-800/40', borderClass: 'border-red-200 dark:border-red-800/30' },
-  { name: 'yellow', label: 'Amarelo', bgClass: 'bg-yellow-100 dark:bg-yellow-900/20', textClass: 'text-yellow-600 dark:text-yellow-400', hoverBgClass: 'group-hover:bg-yellow-200 dark:group-hover:bg-yellow-800/40', borderClass: 'border-yellow-200 dark:border-yellow-800/30' },
-  { name: 'purple', label: 'Roxo', bgClass: 'bg-purple-100 dark:bg-purple-900/20', textClass: 'text-purple-600 dark:text-purple-400', hoverBgClass: 'group-hover:bg-purple-200 dark:group-hover:bg-purple-800/40', borderClass: 'border-purple-200 dark:border-purple-800/30' },
-  { name: 'pink', label: 'Rosa', bgClass: 'bg-pink-100 dark:bg-pink-900/20', textClass: 'text-pink-600 dark:text-pink-400', hoverBgClass: 'group-hover:bg-pink-200 dark:group-hover:bg-pink-800/40', borderClass: 'border-pink-200 dark:border-pink-800/30' },
-  { name: 'indigo', label: 'Índigo', bgClass: 'bg-indigo-100 dark:bg-indigo-900/20', textClass: 'text-indigo-600 dark:text-indigo-400', hoverBgClass: 'group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/40', borderClass: 'border-indigo-200 dark:border-indigo-800/30' },
-  { name: 'orange', label: 'Laranja', bgClass: 'bg-orange-100 dark:bg-orange-900/20', textClass: 'text-orange-600 dark:text-orange-400', hoverBgClass: 'group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40', borderClass: 'border-orange-200 dark:border-orange-800/30' },
-  { name: 'teal', label: 'Turquesa', bgClass: 'bg-teal-100 dark:bg-teal-900/20', textClass: 'text-teal-600 dark:text-teal-400', hoverBgClass: 'group-hover:bg-teal-200 dark:group-hover:bg-teal-800/40', borderClass: 'border-teal-200 dark:border-teal-800/30' },
-  { name: 'gray', label: 'Cinza', bgClass: 'bg-gray-100 dark:bg-gray-700', textClass: 'text-gray-600 dark:text-gray-400', hoverBgClass: 'group-hover:bg-gray-200 dark:group-hover:bg-gray-600', borderClass: 'border-gray-200 dark:border-gray-700' }
-];
+// Map of color names to Tailwind classes
+const colorMap: Record<string, { bg: string; text: string; border: string; hoverBg: string; darkBg: string; darkText: string; darkBorder: string; darkHoverBg: string }> = {
+  blue: {
+    bg: 'bg-blue-100',
+    text: 'text-blue-800',
+    border: 'border-blue-200',
+    hoverBg: 'hover:bg-blue-200',
+    darkBg: 'dark:bg-blue-900/20',
+    darkText: 'dark:text-blue-200',
+    darkBorder: 'dark:border-blue-800/30',
+    darkHoverBg: 'dark:hover:bg-blue-900/30'
+  },
+  green: {
+    bg: 'bg-green-100',
+    text: 'text-green-800',
+    border: 'border-green-200',
+    hoverBg: 'hover:bg-green-200',
+    darkBg: 'dark:bg-green-900/20',
+    darkText: 'dark:text-green-200',
+    darkBorder: 'dark:border-green-800/30',
+    darkHoverBg: 'dark:hover:bg-green-900/30'
+  },
+  red: {
+    bg: 'bg-red-100',
+    text: 'text-red-800',
+    border: 'border-red-200',
+    hoverBg: 'hover:bg-red-200',
+    darkBg: 'dark:bg-red-900/20',
+    darkText: 'dark:text-red-200',
+    darkBorder: 'dark:border-red-800/30',
+    darkHoverBg: 'dark:hover:bg-red-900/30'
+  },
+  yellow: {
+    bg: 'bg-yellow-100',
+    text: 'text-yellow-800',
+    border: 'border-yellow-200',
+    hoverBg: 'hover:bg-yellow-200',
+    darkBg: 'dark:bg-yellow-900/20',
+    darkText: 'dark:text-yellow-200',
+    darkBorder: 'dark:border-yellow-800/30',
+    darkHoverBg: 'dark:hover:bg-yellow-900/30'
+  },
+  purple: {
+    bg: 'bg-purple-100',
+    text: 'text-purple-800',
+    border: 'border-purple-200',
+    hoverBg: 'hover:bg-purple-200',
+    darkBg: 'dark:bg-purple-900/20',
+    darkText: 'dark:text-purple-200',
+    darkBorder: 'dark:border-purple-800/30',
+    darkHoverBg: 'dark:hover:bg-purple-900/30'
+  },
+  pink: {
+    bg: 'bg-pink-100',
+    text: 'text-pink-800',
+    border: 'border-pink-200',
+    hoverBg: 'hover:bg-pink-200',
+    darkBg: 'dark:bg-pink-900/20',
+    darkText: 'dark:text-pink-200',
+    darkBorder: 'dark:border-pink-800/30',
+    darkHoverBg: 'dark:hover:bg-pink-900/30'
+  },
+  indigo: {
+    bg: 'bg-indigo-100',
+    text: 'text-indigo-800',
+    border: 'border-indigo-200',
+    hoverBg: 'hover:bg-indigo-200',
+    darkBg: 'dark:bg-indigo-900/20',
+    darkText: 'dark:text-indigo-200',
+    darkBorder: 'dark:border-indigo-800/30',
+    darkHoverBg: 'dark:hover:bg-indigo-900/30'
+  },
+  gray: {
+    bg: 'bg-gray-100',
+    text: 'text-gray-800',
+    border: 'border-gray-200',
+    hoverBg: 'hover:bg-gray-200',
+    darkBg: 'dark:bg-gray-700/50',
+    darkText: 'dark:text-gray-200',
+    darkBorder: 'dark:border-gray-600/30',
+    darkHoverBg: 'dark:hover:bg-gray-700/70'
+  }
+};
 
 const ResumosGrupo = () => {
   const { companyId } = useAuth();
-  const { moduleAccess } = useModuleAccess();
+  const [loading, setLoading] = useState(true);
   const [grupos, setGrupos] = useState<GrupoResumo[]>([]);
   const [envios, setEnvios] = useState<EnvioResumo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedGrupo, setSelectedGrupo] = useState<GrupoResumo | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sendingManualSummary, setSendingManualSummary] = useState<number | null>(null);
+  const [currentTime, setCurrentTime] = useState<string>('');
+  const [showTimeDebug, setShowTimeDebug] = useState(false);
+  const [timeDetails, setTimeDetails] = useState<any>(null);
+
+  // Form state for add/edit modal
+  const [formData, setFormData] = useState<{
+    nome_grupo: string;
+    url_grupo: string;
+    horario: string;
+    ativo: boolean;
+    icon_name: string;
+    color_name: string;
+  }>({
     nome_grupo: '',
     url_grupo: '',
     horario: '08:00',
+    ativo: true,
     icon_name: 'MessagesSquare',
     color_name: 'blue'
   });
-  const [submitting, setSubmitting] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [toggleLoading, setToggleLoading] = useState<number | null>(null);
-  const [sendingManualSummary, setSendingManualSummary] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'grupos' | 'historico'>('grupos');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAccessPopup, setShowAccessPopup] = useState(false);
 
   useEffect(() => {
-    fetchGrupos();
-    fetchHistorico();
-    
-    // Check if user has access to this module
-    if (!moduleAccess.resumos) {
-      setShowAccessPopup(true);
+    if (companyId) {
+      fetchGrupos();
+      fetchEnvios();
+      fetchCurrentTime();
     }
-  }, [companyId, moduleAccess.resumos]);
-
-  // Redirect if user doesn't have access to this module and closes the popup
-  if (!moduleAccess.resumos && !showAccessPopup) {
-    return <Navigate to="/" replace />;
-  }
+  }, [companyId]);
 
   const fetchGrupos = async () => {
-    if (!companyId) return;
-    
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('grupo_resumo')
         .select('*')
         .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
+        .order('nome_grupo');
 
       if (error) throw error;
       setGrupos(data || []);
@@ -130,942 +259,862 @@ const ResumosGrupo = () => {
     }
   };
 
-  const fetchHistorico = async () => {
-    if (!companyId) return;
-    
+  const fetchEnvios = async () => {
     try {
-      setLoadingHistory(true);
       const { data, error } = await supabase
         .from('envio_resumo')
-        .select('*, grupo_resumo!inner(nome_grupo)')
+        .select(`
+          *,
+          grupo:grupo_id (
+            nome_grupo,
+            icon_name,
+            color_name
+          )
+        `)
         .eq('company_id', companyId)
-        .order('data_envio', { ascending: false });
+        .order('data_envio', { ascending: false })
+        .limit(100);
 
       if (error) throw error;
-      
-      // Format the data to include the group name
-      const formattedData = data?.map(item => ({
-        id: item.id,
-        grupo_id: item.grupo_id,
-        data_envio: item.data_envio,
-        status: item.status,
-        mensagem: item.mensagem,
-        nome_grupo: item.grupo_resumo.nome_grupo
-      })) || [];
-      
-      setEnvios(formattedData);
+      setEnvios(data || []);
     } catch (error) {
-      console.error('Error fetching history:', error);
+      console.error('Error fetching envios:', error);
       toast.error('Erro ao carregar histórico de envios');
-    } finally {
-      setLoadingHistory(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!companyId) return;
-    
+  const fetchCurrentTime = async () => {
     try {
-      setSubmitting(true);
-      
-      // Validate URL format
-      if (!formData.url_grupo.startsWith('https://')) {
-        toast.error('A URL deve começar com https://');
-        return;
-      }
-      
-      if (editingId) {
-        // Update existing group
-        const { error } = await supabase
-          .from('grupo_resumo')
-          .update({
-            nome_grupo: formData.nome_grupo,
-            url_grupo: formData.url_grupo,
-            horario: formData.horario,
-            icon_name: formData.icon_name,
-            color_name: formData.color_name
-          })
-          .eq('id', editingId)
-          .eq('company_id', companyId);
+      const { data, error } = await supabase.rpc('get_current_brasilia_time');
+      if (error) throw error;
+      setCurrentTime(data || '');
 
-        if (error) throw error;
-        toast.success('Grupo atualizado com sucesso');
-      } else {
-        // Create new group
-        const { error } = await supabase
-          .from('grupo_resumo')
-          .insert({
-            nome_grupo: formData.nome_grupo,
-            url_grupo: formData.url_grupo,
-            horario: formData.horario,
-            icon_name: formData.icon_name,
-            color_name: formData.color_name,
-            ativo: true,
-            company_id: companyId
-          });
-
-        if (error) throw error;
-        toast.success('Grupo adicionado com sucesso');
-      }
-      
-      // Reset form and close modal
-      setFormData({
-        nome_grupo: '',
-        url_grupo: '',
-        horario: '08:00',
-        icon_name: 'MessagesSquare',
-        color_name: 'blue'
-      });
-      setIsModalOpen(false);
-      setEditingId(null);
-      
-      // Refresh the list
-      fetchGrupos();
+      // Fetch detailed time information for debugging
+      const { data: details, error: detailsError } = await supabase.rpc('get_current_brasilia_time_details');
+      if (detailsError) throw detailsError;
+      setTimeDetails(details);
     } catch (error) {
-      console.error('Error saving grupo:', error);
-      toast.error('Erro ao salvar grupo');
-    } finally {
-      setSubmitting(false);
+      console.error('Error fetching current time:', error);
     }
   };
 
-  const handleEdit = (grupo: GrupoResumo) => {
+  const handleOpenAddModal = () => {
+    setFormData({
+      nome_grupo: '',
+      url_grupo: '',
+      horario: '08:00',
+      ativo: true,
+      icon_name: 'MessagesSquare',
+      color_name: 'blue'
+    });
+    setIsAddModalOpen(true);
+  };
+
+  const handleOpenEditModal = (grupo: GrupoResumo) => {
+    setSelectedGrupo(grupo);
     setFormData({
       nome_grupo: grupo.nome_grupo,
       url_grupo: grupo.url_grupo,
       horario: grupo.horario,
+      ativo: grupo.ativo,
       icon_name: grupo.icon_name || 'MessagesSquare',
       color_name: grupo.color_name || 'blue'
     });
-    setEditingId(grupo.id);
-    setIsModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    setDeletingId(id);
+  const handleOpenDeleteModal = (grupo: GrupoResumo) => {
+    setSelectedGrupo(grupo);
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!deletingId || !companyId) return;
+  const handleAddGrupo = async () => {
+    try {
+      if (!formData.nome_grupo || !formData.url_grupo) {
+        toast.error('Preencha todos os campos obrigatórios');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('grupo_resumo')
+        .insert({
+          nome_grupo: formData.nome_grupo,
+          url_grupo: formData.url_grupo,
+          horario: formData.horario,
+          ativo: formData.ativo,
+          company_id: companyId,
+          icon_name: formData.icon_name,
+          color_name: formData.color_name
+        })
+        .select();
+
+      if (error) throw error;
+      
+      setGrupos([...(data || []), ...grupos]);
+      setIsAddModalOpen(false);
+      toast.success('Grupo adicionado com sucesso');
+    } catch (error) {
+      console.error('Error adding grupo:', error);
+      toast.error('Erro ao adicionar grupo');
+    }
+  };
+
+  const handleEditGrupo = async () => {
+    if (!selectedGrupo) return;
+    
+    try {
+      if (!formData.nome_grupo || !formData.url_grupo) {
+        toast.error('Preencha todos os campos obrigatórios');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('grupo_resumo')
+        .update({
+          nome_grupo: formData.nome_grupo,
+          url_grupo: formData.url_grupo,
+          horario: formData.horario,
+          ativo: formData.ativo,
+          icon_name: formData.icon_name,
+          color_name: formData.color_name
+        })
+        .eq('id', selectedGrupo.id)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+      
+      // Update the grupos state
+      setGrupos(grupos.map(g => 
+        g.id === selectedGrupo.id 
+          ? { ...g, 
+              nome_grupo: formData.nome_grupo, 
+              url_grupo: formData.url_grupo, 
+              horario: formData.horario, 
+              ativo: formData.ativo,
+              icon_name: formData.icon_name,
+              color_name: formData.color_name
+            } 
+          : g
+      ));
+      
+      // Update the envios state to reflect the changes in grupo name and icon
+      setEnvios(envios.map(e => 
+        e.grupo_id === selectedGrupo.id 
+          ? { 
+              ...e, 
+              grupo: { 
+                ...e.grupo, 
+                nome_grupo: formData.nome_grupo,
+                icon_name: formData.icon_name,
+                color_name: formData.color_name
+              } 
+            } 
+          : e
+      ));
+      
+      setIsEditModalOpen(false);
+      toast.success('Grupo atualizado com sucesso');
+    } catch (error) {
+      console.error('Error updating grupo:', error);
+      toast.error('Erro ao atualizar grupo');
+    }
+  };
+
+  const handleDeleteGrupo = async () => {
+    if (!selectedGrupo) return;
     
     try {
       const { error } = await supabase
         .from('grupo_resumo')
         .delete()
-        .eq('id', deletingId)
+        .eq('id', selectedGrupo.id)
         .eq('company_id', companyId);
 
       if (error) throw error;
       
-      setGrupos(grupos.filter(g => g.id !== deletingId));
-      toast.success('Grupo excluído com sucesso');
+      setGrupos(grupos.filter(g => g.id !== selectedGrupo.id));
       setIsDeleteModalOpen(false);
+      toast.success('Grupo excluído com sucesso');
     } catch (error) {
       console.error('Error deleting grupo:', error);
       toast.error('Erro ao excluir grupo');
-    } finally {
-      setDeletingId(null);
     }
   };
 
-  const toggleStatus = async (id: number, currentStatus: boolean) => {
-    if (!companyId) return;
-    
+  const handleSendManualSummary = async (grupoId: number) => {
     try {
-      setToggleLoading(id);
-      const { error } = await supabase
-        .from('grupo_resumo')
-        .update({ ativo: !currentStatus })
-        .eq('id', id)
-        .eq('company_id', companyId);
-
-      if (error) throw error;
+      setSendingManualSummary(grupoId);
       
-      // Update local state
-      setGrupos(grupos.map(g => 
-        g.id === id ? { ...g, ativo: !currentStatus } : g
-      ));
+      // Call the edge function to trigger a manual summary
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          group_id: grupoId,
+          company_id: companyId
+        })
+      });
       
-      toast.success(`Grupo ${!currentStatus ? 'ativado' : 'desativado'} com sucesso`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to send summary: ${response.status} - ${errorText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success('Resumo enviado com sucesso');
+        // Refresh the envios list
+        fetchEnvios();
+      } else {
+        throw new Error(result.error || 'Erro desconhecido ao enviar resumo');
+      }
     } catch (error) {
-      console.error('Error toggling status:', error);
-      toast.error('Erro ao alterar status do grupo');
-    } finally {
-      setToggleLoading(null);
-    }
-  };
-
-  const handleManualSummary = async (id: number) => {
-    if (!companyId) return;
-    
-    try {
-      setSendingManualSummary(id);
-      
-      // Find the group data
-      const grupo = grupos.find(g => g.id === id);
-      if (!grupo) {
-        toast.error('Grupo não encontrado');
-        return;
-      }
-      
-      // Try to send data to n8n webhook
-      const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
-      
-      // Prepare the webhook payload with the correct field names
-      const webhookData = {
-        "nome do grupo": grupo.nome_grupo,
-        "URL do grupo": grupo.url_grupo
-      };
-      
-      console.log('Enviando dados para webhook:', JSON.stringify(webhookData, null, 2));
-      
-      // Send the data to the webhook with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
-      try {
-        const response = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(webhookData),
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        // Get the full response text regardless of status
-        const responseText = await response.text();
-        console.log('Resposta completa do servidor:', response.status, responseText);
-        
-        // Determine message to save based on response
-        let statusToSave: boolean;
-        let messageToSave: string;
-        
-        try {
-          // Try to parse the response as JSON
-          const jsonResponse = JSON.parse(responseText);
-          
-          // Check the status in the JSON response
-          if (jsonResponse.status && jsonResponse.status === "400") {
-            // Status 400 means there was an error, but it's a known error
-            statusToSave = false;
-            messageToSave = jsonResponse.message || `Erro: ${responseText}`;
-            
-            // Show toast with error details
-            toast.error(jsonResponse.message || 'Erro desconhecido');
-          } else {
-            // Any other status is considered a success
-            statusToSave = true;
-            messageToSave = jsonResponse.message || `Resposta: ${responseText}`;
-            toast.success('Resumo enviado com sucesso');
-          }
-        } catch (e) {
-          // If not JSON, use the HTTP status code
-          statusToSave = response.status >= 200 && response.status < 400;
-          messageToSave = `Resposta: ${responseText}`;
-          
-          if (statusToSave) {
-            toast.success('Resumo enviado com sucesso');
-          } else {
-            toast.error(`Erro ${response.status}: ${responseText}`);
-          }
-        }
-        
-        // Save the result to the database
-        const { error: dbError } = await supabase
-          .from('envio_resumo')
-          .insert({
-            grupo_id: id,
-            company_id: companyId,
-            data_envio: new Date().toISOString(), // This will be stored as is in the database
-            status: statusToSave,
-            mensagem: messageToSave
-          });
-          
-        if (dbError) {
-          console.error('Error saving summary record:', dbError);
-          toast.error('Erro ao salvar no histórico');
-        }
-        
-      } catch (fetchError: any) {
-        // Handle network errors or timeouts
-        clearTimeout(timeoutId);
-        console.error('Fetch error:', fetchError);
-        
-        // Create error record
-        const { error: dbError } = await supabase
-          .from('envio_resumo')
-          .insert({
-            grupo_id: id,
-            company_id: companyId,
-            data_envio: new Date().toISOString(), // This will be stored as is in the database
-            status: false,
-            mensagem: `Erro de rede: ${fetchError.message || 'Erro desconhecido'}`
-          });
-          
-        if (dbError) {
-          console.error('Error saving error record:', dbError);
-        }
-        
-        // Show specific error message
-        if (fetchError.name === 'AbortError') {
-          toast.error('Timeout: O webhook demorou muito para responder');
-        } else {
-          toast.error(`Erro de rede: ${fetchError.message}`);
-        }
-      }
-      
-      // Refresh history to show the latest records
-      fetchHistorico();
-      
-    } catch (error: any) {
-      console.error('Error in manual summary process:', error);
-      toast.error(`Erro inesperado: ${error.message}`);
+      console.error('Error sending manual summary:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao enviar resumo');
     } finally {
       setSendingManualSummary(null);
     }
   };
 
-  const formatTime = (time: string) => {
-    // Format time to display in 24h format (HH:MM)
-    return time;
-  };
-
-  const formatDateTime = (dateTimeStr: string) => {
-    try {
-      // Parse the ISO date string
-      const date = new Date(dateTimeStr);
-      
-      // Format date as DD/MM/YYYY
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-      
-      // Format time as HH:MM
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      
-      return `${day}/${month}/${year}, ${hours}:${minutes}`;
-    } catch (e) {
-      return dateTimeStr;
-    }
-  };
-
-  const filteredEnvios = envios.filter(envio => 
-    envio.nome_grupo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    envio.mensagem?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredGrupos = grupos.filter(grupo => 
+    grupo.nome_grupo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    grupo.url_grupo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Função para obter o ícone pelo nome
-  const getIconByName = (iconName: string) => {
-    const icon = availableIcons.find(i => i.name === iconName);
-    return icon ? icon.component : MessagesSquare;
+  const filteredEnvios = envios.filter(envio => 
+    envio.grupo?.nome_grupo.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Function to render the appropriate icon component
+  const renderIcon = (iconName: string | undefined) => {
+    const IconComponent = iconName && iconMap[iconName] ? iconMap[iconName] : MessagesSquare;
+    return <IconComponent />;
   };
 
-  // Função para obter a cor pelo nome
-  const getColorByName = (colorName: string) => {
-    return availableColors.find(c => c.name === colorName) || availableColors[0];
+  // Function to get color classes based on color name
+  const getColorClasses = (colorName: string | undefined) => {
+    return colorName && colorMap[colorName] ? colorMap[colorName] : colorMap.blue;
   };
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Resumos em Grupo</h1>
         <button
-          onClick={() => {
-            setFormData({
-              nome_grupo: '',
-              url_grupo: '',
-              horario: '08:00',
-              icon_name: 'MessagesSquare',
-              color_name: 'blue'
-            });
-            setEditingId(null);
-            setIsModalOpen(true);
-          }}
+          onClick={handleOpenAddModal}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
                    transition-colors flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
-          Adicionar Grupo
+          Novo Grupo
         </button>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-        {/* Tabs */}
-        <div className="border-b border-gray-200 dark:border-gray-700">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
-            <button
-              onClick={() => setActiveTab('grupos')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                activeTab === 'grupos'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              <MessagesSquare className="w-5 h-5" />
-              Grupos
-            </button>
-            <button
-              onClick={() => setActiveTab('historico')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                activeTab === 'historico'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              <History className="w-5 h-5" />
-              Histórico de Envios
-            </button>
-          </nav>
-        </div>
-
-        <div className="p-6">
-          {/* Grupos Tab */}
-          {activeTab === 'grupos' && (
-            <>
-              {loading ? (
-                <div className="flex justify-center items-center py-12">
-                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                </div>
-              ) : grupos.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-                  <ClipboardList className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    Nenhum grupo configurado
-                  </h3>
-                  <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
-                    Adicione seu primeiro grupo para começar a receber resumos automáticos.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setFormData({
-                        nome_grupo: '',
-                        url_grupo: '',
-                        horario: '08:00',
-                        icon_name: 'MessagesSquare',
-                        color_name: 'blue'
-                      });
-                      setEditingId(null);
-                      setIsModalOpen(true);
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                             transition-colors inline-flex items-center gap-2"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Adicionar Grupo
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {grupos.map(grupo => {
-                    // Obter o componente do ícone e a cor
-                    const IconComponent = getIconByName(grupo.icon_name || 'MessagesSquare');
-                    const colorStyle = getColorByName(grupo.color_name || 'blue');
-                    
-                    return (
-                      <div 
-                        key={grupo.id} 
-                        className={`bg-white dark:bg-gray-800 rounded-lg border ${
-                          grupo.ativo 
-                            ? colorStyle.borderClass
-                            : 'border-gray-200 dark:border-gray-700'
-                        } shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg`}
-                      >
-                        <div className="p-6">
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`p-2 rounded-full ${
-                                grupo.ativo 
-                                  ? colorStyle.bgClass
-                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                              }`}>
-                                <IconComponent className={grupo.ativo ? colorStyle.textClass : 'text-gray-500 dark:text-gray-400'} size={20} />
-                              </div>
-                              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                                {grupo.nome_grupo}
-                              </h3>
-                            </div>
-                            <div className="flex items-center">
-                              <button
-                                onClick={() => toggleStatus(grupo.id, grupo.ativo)}
-                                disabled={toggleLoading === grupo.id}
-                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                                  grupo.ativo 
-                                    ? 'bg-green-500 dark:bg-green-600' 
-                                    : 'bg-gray-200 dark:bg-gray-700'
-                                } ${toggleLoading === grupo.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                role="switch"
-                                aria-checked={grupo.ativo}
-                              >
-                                <span
-                                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                    grupo.ativo ? 'translate-x-5' : 'translate-x-0'
-                                  }`}
-                                />
-                                {toggleLoading === grupo.id && (
-                                  <Loader2 
-                                    className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
-                                  />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-3 mb-6">
-                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                              <Clock className="w-4 h-4 text-gray-400" />
-                              <span>Horario do envio: {formatTime(grupo.horario)}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                              <Link2 className="w-4 h-4 text-gray-400" />
-                              <span className="truncate" title={grupo.url_grupo}>
-                                URL: {grupo.url_grupo.substring(0, 30)}...
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                grupo.ativo 
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
-                                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                              }`}>
-                                {grupo.ativo ? 'Ativo' : 'Inativo'}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex justify-between gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
-                            <button
-                              onClick={() => handleManualSummary(grupo.id)}
-                              disabled={!grupo.ativo || sendingManualSummary === grupo.id}
-                              className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 ${
-                                grupo.ativo
-                                  ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30'
-                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500'
-                              }`}
-                            >
-                              {sendingManualSummary === grupo.id ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <Send className="w-3.5 h-3.5" />
-                              )}
-                              Enviar Agora
-                            </button>
-                            
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleEdit(grupo)}
-                                className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
-                                       hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                title="Editar grupo"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                                  <path d="m15 5 4 4"></path>
-                                </svg>
-                              </button>
-                              
-                              <button
-                                onClick={() => handleDelete(grupo.id)}
-                                className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                                       hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                title="Excluir grupo"
-                              >
-                                <Trash2 className="w-[18px] h-[18px]" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Histórico Tab */}
-          {activeTab === 'historico' && (
-            <>
-              <div className="mb-6">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Buscar por nome do grupo ou mensagem..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                             dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                             focus:border-blue-500 text-gray-900 dark:text-gray-100"
-                  />
-                  <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-                </div>
-              </div>
-              
-              {loadingHistory ? (
-                <div className="flex justify-center items-center py-12">
-                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                </div>
-              ) : filteredEnvios.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-                  <History className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    Nenhum envio registrado
-                  </h3>
-                  <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                    O histórico de envios será exibido aqui após o primeiro resumo ser enviado.
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-800">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Data/Hora
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Grupo
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Mensagem
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {filteredEnvios.map((envio) => (
-                        <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                              <span className="text-sm text-gray-900 dark:text-white">
-                                {formatDateTime(envio.data_envio)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <MessagesSquare className="w-4 h-4 text-gray-400 mr-2" />
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                {envio.nome_grupo}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              envio.status
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-                            }`}>
-                              {envio.status ? (
-                                <>
-                                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                                  Enviado
-                                </>
-                              ) : (
-                                <>
-                                  <AlertTriangle className="w-3.5 h-3.5 mr-1" />
-                                  Falha
-                                </>
-                              )}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900 dark:text-white max-w-xs truncate">
-                              {envio.mensagem || 'Resumo enviado com sucesso'}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
-          )}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Buscar por nome do grupo..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
+                     dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
+                     focus:border-blue-500 text-gray-900 dark:text-gray-100"
+          />
+          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
         </div>
       </div>
 
-      {/* Add/Edit Group Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-black/50"></div>
-          <div className="flex items-center justify-center min-h-screen p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full relative z-50">
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {editingId ? 'Editar Grupo' : 'Adicionar Grupo'}
-                </h2>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 6 6 18"></path>
-                    <path d="m6 6 12 12"></path>
-                  </svg>
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nome do Grupo *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nome_grupo}
-                    onChange={(e) => setFormData(prev => ({ ...prev, nome_grupo: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    required
-                    placeholder="Ex: Equipe Operacional"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    URL do Webhook *
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.url_grupo}
-                    onChange={(e) => setFormData(prev => ({ ...prev, url_grupo: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    required
-                    placeholder="https://api.outr.one/..."
-                  />
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Você poderá encontrar essa url dentro das configurações da caixa de entrada do wiseapp
-                  </p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Horario do envio *
-                  </label>
-                  <input
-                    type="time"
-                    value={formData.horario}
-                    onChange={(e) => setFormData(prev => ({ ...prev, horario: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    required
-                  />
-                </div>
-
-                {/* Seleção de ícone */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Ícone
-                  </label>
-                  <div className="grid grid-cols-6 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-300 dark:border-gray-600 rounded-lg">
-                    {availableIcons.map((icon) => (
-                      <button
-                        key={icon.name}
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, icon_name: icon.name }))}
-                        className={`p-2 rounded-lg flex items-center justify-center ${
-                          formData.icon_name === icon.name
-                            ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
-                        title={icon.label}
-                      >
-                        <icon.component size={20} />
-                      </button>
-                    ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredGrupos.map(grupo => {
+          const colorClasses = getColorClasses(grupo.color_name);
+          const IconComponent = grupo.icon_name && iconMap[grupo.icon_name] ? iconMap[grupo.icon_name] : MessagesSquare;
+          
+          return (
+            <div 
+              key={grupo.id} 
+              className={`${colorClasses.bg} ${colorClasses.darkBg} ${colorClasses.border} ${colorClasses.darkBorder} border rounded-xl p-6 shadow-md ${colorClasses.hoverBg} ${colorClasses.darkHoverBg} transition-colors`}
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 bg-white/50 dark:bg-gray-800/50 rounded-full`}>
+                    <IconComponent className={`w-6 h-6 ${colorClasses.text} ${colorClasses.darkText}`} />
+                  </div>
+                  <div>
+                    <h3 className={`text-lg font-semibold ${colorClasses.text} ${colorClasses.darkText}`}>
+                      {grupo.nome_grupo}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Envio diário às {grupo.horario}
+                    </p>
                   </div>
                 </div>
-
-                {/* Seleção de cor */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Cor
-                  </label>
-                  <div className="grid grid-cols-5 gap-2">
-                    {availableColors.map((color) => (
-                      <button
-                        key={color.name}
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, color_name: color.name }))}
-                        className={`p-2 rounded-lg flex items-center justify-center ${
-                          formData.color_name === color.name
-                            ? 'ring-2 ring-offset-2 ring-blue-500'
-                            : ''
-                        }`}
-                        title={color.label}
-                      >
-                        <div className={`w-6 h-6 rounded-full ${color.bgClass} ${color.textClass} flex items-center justify-center`}>
-                          <div className="w-4 h-4 rounded-full"></div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Visualização */}
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Visualização
-                  </label>
-                  <div className="p-4 border border-gray-300 dark:border-gray-600 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      {(() => {
-                        const IconComponent = getIconByName(formData.icon_name);
-                        const colorStyle = getColorByName(formData.color_name);
-                        return (
-                          <div className={`p-2 rounded-full ${colorStyle.bgClass}`}>
-                            <IconComponent className={colorStyle.textClass} size={20} />
-                          </div>
-                        );
-                      })()}
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {formData.nome_grupo || 'Nome do Grupo'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex gap-2">
                   <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                    disabled={submitting}
+                    onClick={() => handleOpenEditModal(grupo)}
+                    className="p-2 bg-white/80 dark:bg-gray-800/80 rounded-lg hover:bg-white dark:hover:bg-gray-700 transition-colors"
+                    title="Editar grupo"
                   >
-                    Cancelar
+                    <Edit2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                   </button>
                   <button
-                    type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    disabled={submitting}
+                    onClick={() => handleOpenDeleteModal(grupo)}
+                    className="p-2 bg-white/80 dark:bg-gray-800/80 rounded-lg hover:bg-white dark:hover:bg-gray-700 transition-colors"
+                    title="Excluir grupo"
                   >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Salvando...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4" />
-                        Salvar
-                      </>
-                    )}
+                    <Trash2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                   </button>
                 </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-black/50"></div>
-          <div className="flex items-center justify-center min-h-screen p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full relative z-50">
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <AlertTriangle className="text-red-500" size={24} />
-                  Confirmar Exclusão
-                </h2>
-                <button
-                  onClick={() => setIsDeleteModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 6 6 18"></path>
-                    <path d="m6 6 12 12"></path>
-                  </svg>
-                </button>
               </div>
-
-              <div className="p-6 space-y-4">
-                <p className="text-gray-700 dark:text-gray-300">
-                  Tem certeza que deseja excluir este grupo? Esta ação não pode ser desfeita.
-                </p>
-
-                <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-100 dark:border-red-800/30">
-                  <p className="text-sm text-red-800 dark:text-red-200">
-                    O grupo não receberá mais resumos automáticos após a exclusão.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
-                <button
-                  onClick={() => setIsDeleteModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  Excluir
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Access Popup */}
-      {showAccessPopup && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-black/50"></div>
-          <div className="flex items-center justify-center min-h-screen p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl relative z-50">
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <AlertTriangle className="text-amber-500" size={24} />
-                  Acesso Bloqueado
-                </h2>
-              </div>
-
-              <div className="p-6 space-y-4">
-                <p className="text-gray-700 dark:text-gray-300">
-                  Para adquirir acesso ao módulo de Resumos em Grupo, entre em contato pelo WhatsApp:
-                </p>
-
-                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800/30">
+              
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <ExternalLink className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   <a 
-                    href="https://w.app/iinydz" 
+                    href={grupo.url_grupo} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 font-medium"
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline truncate"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                    </svg>
-                    Clique aqui para entrar em contato
+                    {grupo.url_grupo}
                   </a>
                 </div>
+                
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Horário: {grupo.horario}
+                  </span>
+                </div>
               </div>
-
-              <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              
+              <div className="flex justify-between items-center">
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  grupo.ativo 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
+                    : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                }`}>
+                  {grupo.ativo ? 'Ativo' : 'Inativo'}
+                </span>
+                
                 <button
-                  onClick={() => setShowAccessPopup(false)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  onClick={() => handleSendManualSummary(grupo.id)}
+                  disabled={sendingManualSummary === grupo.id}
+                  className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Voltar
+                  {sendingManualSummary === grupo.id ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Enviar Agora
+                    </>
+                  )}
                 </button>
               </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {filteredGrupos.length === 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center border border-gray-200 dark:border-gray-700">
+          <MessagesSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            Nenhum grupo encontrado
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">
+            {searchTerm ? 'Nenhum grupo corresponde à sua busca.' : 'Você ainda não tem nenhum grupo configurado.'}
+          </p>
+          <button
+            onClick={handleOpenAddModal}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                     transition-colors inline-flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Novo Grupo
+          </button>
+        </div>
+      )}
+
+      {/* Delivery History Section */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Histórico de Envios</h2>
+        
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Grupo
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Data/Hora
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Mensagem
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredEnvios.length > 0 ? (
+                  filteredEnvios.map((envio) => {
+                    const colorClasses = getColorClasses(envio.grupo?.color_name);
+                    const IconComponent = envio.grupo?.icon_name && iconMap[envio.grupo.icon_name] 
+                      ? iconMap[envio.grupo.icon_name] 
+                      : MessagesSquare;
+                    
+                    return (
+                      <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className={`flex-shrink-0 h-10 w-10 ${colorClasses.bg} ${colorClasses.darkBg} rounded-full flex items-center justify-center`}>
+                              <IconComponent className={`h-5 w-5 ${colorClasses.text} ${colorClasses.darkText}`} />
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {envio.grupo?.nome_grupo || 'Grupo desconhecido'}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {new Date(envio.data_envio).toLocaleDateString('pt-BR')}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {new Date(envio.data_envio).toLocaleTimeString('pt-BR')}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            envio.status 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                          }`}>
+                            {envio.status ? (
+                              <CheckCircle2 className="w-4 h-4 mr-1" />
+                            ) : (
+                              <XCircle className="w-4 h-4 mr-1" />
+                            )}
+                            {envio.status ? 'Sucesso' : 'Falha'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {envio.mensagem || (envio.status ? 'Resumo enviado com sucesso' : 'Falha no envio do resumo')}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                      Nenhum envio encontrado
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Add Group Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Novo Grupo
+              </h2>
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nome do Grupo *
+                </label>
+                <input
+                  type="text"
+                  value={formData.nome_grupo}
+                  onChange={(e) => setFormData({ ...formData, nome_grupo: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  URL do Grupo *
+                </label>
+                <input
+                  type="text"
+                  value={formData.url_grupo}
+                  onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  required
+                  placeholder="https://chat.whatsapp.com/..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Horário de Envio *
+                </label>
+                <input
+                  type="time"
+                  value={formData.horario}
+                  onChange={(e) => setFormData({ ...formData, horario: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Ícone
+                </label>
+                <div className="grid grid-cols-8 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-300 dark:border-gray-600 rounded-lg">
+                  {Object.keys(iconMap).map((iconName) => {
+                    const IconComponent = iconMap[iconName];
+                    return (
+                      <button
+                        key={iconName}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, icon_name: iconName })}
+                        className={`p-2 rounded-lg ${
+                          formData.icon_name === iconName
+                            ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                            : 'hover:bg-gray-100 text-gray-600 dark:hover:bg-gray-700 dark:text-gray-400'
+                        }`}
+                      >
+                        <IconComponent className="w-5 h-5" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Cor
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {Object.keys(colorMap).map((colorName) => {
+                    const colorClasses = colorMap[colorName];
+                    return (
+                      <button
+                        key={colorName}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, color_name: colorName })}
+                        className={`p-2 rounded-lg ${colorClasses.bg} ${colorClasses.darkBg} ${
+                          formData.color_name === colorName
+                            ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800'
+                            : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-center">
+                          <span className={`capitalize ${colorClasses.text} ${colorClasses.darkText}`}>
+                            {colorName}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="ativo"
+                  checked={formData.ativo}
+                  onChange={(e) => setFormData({ ...formData, ativo: e.target.checked })}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="ativo" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  Ativo
+                </label>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleAddGrupo}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Adicionar
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Edit Group Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Editar Grupo
+              </h2>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nome do Grupo *
+                </label>
+                <input
+                  type="text"
+                  value={formData.nome_grupo}
+                  onChange={(e) => setFormData({ ...formData, nome_grupo: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  URL do Grupo *
+                </label>
+                <input
+                  type="text"
+                  value={formData.url_grupo}
+                  onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Horário de Envio *
+                </label>
+                <input
+                  type="time"
+                  value={formData.horario}
+                  onChange={(e) => setFormData({ ...formData, horario: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Ícone
+                </label>
+                <div className="grid grid-cols-8 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-300 dark:border-gray-600 rounded-lg">
+                  {Object.keys(iconMap).map((iconName) => {
+                    const IconComponent = iconMap[iconName];
+                    return (
+                      <button
+                        key={iconName}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, icon_name: iconName })}
+                        className={`p-2 rounded-lg ${
+                          formData.icon_name === iconName
+                            ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                            : 'hover:bg-gray-100 text-gray-600 dark:hover:bg-gray-700 dark:text-gray-400'
+                        }`}
+                      >
+                        <IconComponent className="w-5 h-5" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Cor
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {Object.keys(colorMap).map((colorName) => {
+                    const colorClasses = colorMap[colorName];
+                    return (
+                      <button
+                        key={colorName}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, color_name: colorName })}
+                        className={`p-2 rounded-lg ${colorClasses.bg} ${colorClasses.darkBg} ${
+                          formData.color_name === colorName
+                            ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800'
+                            : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-center">
+                          <span className={`capitalize ${colorClasses.text} ${colorClasses.darkText}`}>
+                            {colorName}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="ativo-edit"
+                  checked={formData.ativo}
+                  onChange={(e) => setFormData({ ...formData, ativo: e.target.checked })}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="ativo-edit" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  Ativo
+                </label>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEditGrupo}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Group Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <AlertTriangle className="text-red-500" size={24} />
+                Confirmar Exclusão
+              </h2>
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-gray-700 dark:text-gray-300">
+                Tem certeza que deseja excluir o grupo "{selectedGrupo?.nome_grupo}"? Esta ação não pode ser desfeita.
+              </p>
+
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg space-y-2">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="font-medium">Nome:</span> {selectedGrupo?.nome_grupo}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="font-medium">URL:</span> {selectedGrupo?.url_grupo}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="font-medium">Horário:</span> {selectedGrupo?.horario}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteGrupo}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Time Debug Section */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white">Informações do Sistema</h2>
+          <button
+            onClick={() => setShowTimeDebug(!showTimeDebug)}
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            {showTimeDebug ? 'Ocultar detalhes' : 'Mostrar detalhes'}
+          </button>
+        </div>
+        
+        {showTimeDebug && timeDetails && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Horário Atual (Brasília)</h3>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {timeDetails.formatted_time}
+                </p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Horário UTC</h3>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {new Date(timeDetails.utc_time).toISOString().split('T')[1].substring(0, 5)}
+                </p>
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Detalhes Técnicos</h3>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-xs font-mono overflow-x-auto">
+                <pre className="text-gray-800 dark:text-gray-200">
+                  {JSON.stringify(timeDetails, null, 2)}
+                </pre>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
