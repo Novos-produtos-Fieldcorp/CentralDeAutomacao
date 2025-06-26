@@ -5,7 +5,7 @@ import {
   CheckCircle2, XCircle, Settings, Smartphone,
   LayoutList, History, Users, Bell, FileText, Home,
   Truck, Gauge, ClipboardCheck, Store, Mail, Phone,
-  Map, Star, Heart, Bookmark, Flag, Award
+  Map, Star, Heart, Bookmark, Flag, Award, Bug
 } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import TimeDebugModal from '../components/TimeDebugModal';
 
 interface GrupoResumo {
   id: number;
@@ -47,6 +48,7 @@ const ResumosGrupo = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isTimeDebugModalOpen, setIsTimeDebugModalOpen] = useState(false);
   const [selectedGrupo, setSelectedGrupo] = useState<GrupoResumo | null>(null);
   const [formData, setFormData] = useState({
     nome_grupo: '',
@@ -244,107 +246,26 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(prev => ({ ...prev, [grupo.id]: true }));
       
-      // Get company data
-      const { data: company, error: companyError } = await supabase
-        .from('company')
-        .select('nome_company')
-        .eq('company_id', companyId)
-        .single();
-
-      if (companyError) throw companyError;
-
-      // Get today's date in local format
-      const today = new Date();
-      const formattedDate = today.toLocaleDateString('pt-BR', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-
-      // Get motoristas count
-      const { count: motoristasCount, error: motoristasError } = await supabase
-        .from('motorista')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .eq('funcao', 'Motorista');
-
-      if (motoristasError) throw motoristasError;
-
-      // Get agregados count
-      const { count: agregadosCount, error: agregadosError } = await supabase
-        .from('motorista')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .eq('funcao', 'Agregado');
-
-      if (agregadosError) throw agregadosError;
-
-      // Get today's hodometros count
-      const todayStr = today.toISOString().split('T')[0];
-      const { count: hodometrosCount, error: hodometrosError } = await supabase
-        .from('hodometro')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .eq('data', todayStr);
-
-      if (hodometrosError) throw hodometrosError;
-
-      // Get today's checklists count
-      const { count: checklistsCount, error: checklistsError } = await supabase
-        .from('checklist')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .eq('data', todayStr);
-
-      if (checklistsError) throw checklistsError;
-
-      // Prepare summary data
-      const summaryData = {
-        company_name: company?.nome_company || 'Empresa',
-        date: formattedDate,
-        group_name: grupo.nome_grupo,
-        stats: {
-          motoristas: motoristasCount || 0,
-          agregados: agregadosCount || 0,
-          hodometros_today: hodometrosCount || 0,
-          checklists_today: checklistsCount || 0
-        }
-      };
-
-      // Send directly to webhook
-      const webhookData = {
-        "nome do grupo": grupo.nome_grupo,
-        "URL do grupo": grupo.url_grupo,
-        "summary": summaryData
-      };
-
-      const response = await fetch(WEBHOOK_URL, {
+      // Call the manual-summary-trigger edge function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(webhookData)
+        body: JSON.stringify({
+          group_id: grupo.id,
+          company_id: companyId
+        })
       });
-
+      
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to send webhook: ${response.status} - ${errorText}`);
+        throw new Error(`Failed to trigger manual summary: ${response.status} - ${errorText}`);
       }
-
-      // Record the delivery in the database
-      const { error: recordError } = await supabase
-        .from('envio_resumo')
-        .insert({
-          grupo_id: grupo.id,
-          company_id: companyId,
-          data_envio: new Date().toISOString(),
-          status: true,
-          mensagem: 'Resumo enviado manualmente'
-        });
-
-      if (recordError) throw recordError;
-
+      
+      const result = await response.json();
+      console.log('Manual summary result:', result);
+      
       toast.success('Resumo enviado com sucesso');
       
       // Refresh the delivery history
@@ -472,18 +393,29 @@ const ResumosGrupo = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Resumos em Grupo</h1>
-        <button
-          onClick={() => {
-            setIsAddModalOpen(true);
-            resetForm();
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                   transition-colors flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          Novo Grupo
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsTimeDebugModalOpen(true)}
+            className="p-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 
+                     focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 
+                     transition-colors"
+            title="Diagnóstico de Fuso Horário"
+          >
+            <Bug className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => {
+              setIsAddModalOpen(true);
+              resetForm();
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                     transition-colors flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Novo Grupo
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -1040,6 +972,12 @@ const ResumosGrupo = () => {
           </div>
         </div>
       )}
+
+      {/* Time Debug Modal */}
+      <TimeDebugModal 
+        isOpen={isTimeDebugModalOpen}
+        onClose={() => setIsTimeDebugModalOpen(false)}
+      />
     </div>
   );
 };
