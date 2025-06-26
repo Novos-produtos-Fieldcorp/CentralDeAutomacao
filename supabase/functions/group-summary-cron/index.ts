@@ -36,34 +36,40 @@ Deno.serve(async (req) => {
       throw new Error('Failed to get current Brasilia time from database.');
     }
     
-    // Use the formatted_time property from the database response
-    const currentTime = dbTimeData.formatted_time;
+    // IMPORTANT FIX: Use UTC time for comparison since horario is stored in UTC
+    // Construct UTC time string from UTC hour and minute
+    const utcHour = dbTimeData.utc_hour.toString().padStart(2, '0');
+    const utcMinute = dbTimeData.utc_minute.toString().padStart(2, '0');
+    const currentUtcTime = `${utcHour}:${utcMinute}`;
     
     // For logging purposes, we'll still calculate the time manually to compare
     const now = new Date();
     const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
     
-    console.log(`Checking for scheduled summaries at ${currentTime} Brasilia time (from DB)`);
+    console.log(`Checking for scheduled summaries at ${currentUtcTime} UTC time (from DB)`);
     console.log(`Current UTC time: ${now.toISOString()}`);
     console.log(`Current Brasilia time (calculated): ${brasiliaTime.toISOString()}`);
     console.log(`Database time details:`, dbTimeData);
+    console.log(`Using UTC time string for comparison: ${currentUtcTime}`);
 
-    // Query for active groups with matching schedule time
+    // Query for active groups with matching schedule time (using UTC time)
     const { data: grupos, error } = await supabase
       .from('grupo_resumo')
       .select('*')
       .eq('ativo', true)
-      .eq('horario', currentTime);
+      .eq('horario', currentUtcTime);
 
     if (error) throw error;
 
-    console.log(`Found ${grupos?.length || 0} groups scheduled for ${currentTime}`);
+    console.log(`Found ${grupos?.length || 0} groups scheduled for ${currentUtcTime} UTC`);
 
     // Process each group
     const results = [];
     if (grupos && grupos.length > 0) {
       for (const grupo of grupos) {
         try {
+          console.log(`Processing group: ${grupo.nome_grupo} (ID: ${grupo.id})`);
+          
           // Generate summary data for this group
           const summaryData = await generateSummaryData(grupo);
           
@@ -105,10 +111,10 @@ Deno.serve(async (req) => {
         success: true,
         message: `Processed ${grupos?.length || 0} groups`,
         results,
-        currentTime,
-        currentUtcTime: now.toISOString(),
-        currentBrasiliaTime: brasiliaTime.toISOString(),
-        databaseBrasiliaTime: dbTimeData
+        currentUtcTime,
+        currentBrasiliaTime: dbTimeData.formatted_time,
+        currentUtcTimeString: currentUtcTime,
+        databaseTimeDetails: dbTimeData
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
