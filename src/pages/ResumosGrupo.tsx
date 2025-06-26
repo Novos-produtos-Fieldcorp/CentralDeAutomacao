@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Plus, Trash2, Clock, Link2, MessagesSquare, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search, Users, Building2, Briefcase, Truck, Gauge, Bell, Zap, MessageSquare } from 'lucide-react';
+import { ClipboardList, Plus, Trash2, Clock, Link2, MessagesSquare, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search, Users, Building2, Mail, Phone, Bell, AlertCircle, Zap, Heart, Star, BookOpen, Bookmark, FileCheck, FileText as FileText2, Truck, ShoppingBag, Package, Map, MapPin, Compass, Globe, Home, Settings, BarChart2 } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -27,30 +27,46 @@ interface EnvioResumo {
   nome_grupo: string;
 }
 
-// Available icons for group customization
+// Lista de ícones disponíveis
 const availableIcons = [
-  { name: 'MessagesSquare', component: MessagesSquare },
-  { name: 'Users', component: Users },
-  { name: 'Building2', component: Building2 },
-  { name: 'Briefcase', component: Briefcase },
-  { name: 'Truck', component: Truck },
-  { name: 'Gauge', component: Gauge },
-  { name: 'Bell', component: Bell },
-  { name: 'Zap', component: Zap },
-  { name: 'MessageSquare', component: MessageSquare }
+  { name: 'MessagesSquare', component: MessagesSquare, label: 'Mensagens' },
+  { name: 'Users', component: Users, label: 'Usuários' },
+  { name: 'Building2', component: Building2, label: 'Empresa' },
+  { name: 'Mail', component: Mail, label: 'Email' },
+  { name: 'Phone', component: Phone, label: 'Telefone' },
+  { name: 'Bell', component: Bell, label: 'Notificação' },
+  { name: 'AlertCircle', component: AlertCircle, label: 'Alerta' },
+  { name: 'Zap', component: Zap, label: 'Raio' },
+  { name: 'Heart', component: Heart, label: 'Coração' },
+  { name: 'Star', component: Star, label: 'Estrela' },
+  { name: 'BookOpen', component: BookOpen, label: 'Livro' },
+  { name: 'Bookmark', component: Bookmark, label: 'Marcador' },
+  { name: 'FileCheck', component: FileCheck, label: 'Arquivo' },
+  { name: 'FileText2', component: FileText2, label: 'Documento' },
+  { name: 'Truck', component: Truck, label: 'Caminhão' },
+  { name: 'ShoppingBag', component: ShoppingBag, label: 'Compras' },
+  { name: 'Package', component: Package, label: 'Pacote' },
+  { name: 'Map', component: Map, label: 'Mapa' },
+  { name: 'MapPin', component: MapPin, label: 'Localização' },
+  { name: 'Compass', component: Compass, label: 'Bússola' },
+  { name: 'Globe', component: Globe, label: 'Globo' },
+  { name: 'Home', component: Home, label: 'Casa' },
+  { name: 'Settings', component: Settings, label: 'Configurações' },
+  { name: 'BarChart2', component: BarChart2, label: 'Gráfico' }
 ];
 
-// Available colors for group customization
+// Lista de cores disponíveis
 const availableColors = [
-  { name: 'blue', bgLight: 'bg-blue-100', bgDark: 'dark:bg-blue-900/20', text: 'text-blue-600', textDark: 'dark:text-blue-400' },
-  { name: 'green', bgLight: 'bg-green-100', bgDark: 'dark:bg-green-900/20', text: 'text-green-600', textDark: 'dark:text-green-400' },
-  { name: 'purple', bgLight: 'bg-purple-100', bgDark: 'dark:bg-purple-900/20', text: 'text-purple-600', textDark: 'dark:text-purple-400' },
-  { name: 'orange', bgLight: 'bg-orange-100', bgDark: 'dark:bg-orange-900/20', text: 'text-orange-600', textDark: 'dark:text-orange-400' },
-  { name: 'red', bgLight: 'bg-red-100', bgDark: 'dark:bg-red-900/20', text: 'text-red-600', textDark: 'dark:text-red-400' },
-  { name: 'amber', bgLight: 'bg-amber-100', bgDark: 'dark:bg-amber-900/20', text: 'text-amber-600', textDark: 'dark:text-amber-400' },
-  { name: 'indigo', bgLight: 'bg-indigo-100', bgDark: 'dark:bg-indigo-900/20', text: 'text-indigo-600', textDark: 'dark:text-indigo-400' },
-  { name: 'pink', bgLight: 'bg-pink-100', bgDark: 'dark:bg-pink-900/20', text: 'text-pink-600', textDark: 'dark:text-pink-400' },
-  { name: 'teal', bgLight: 'bg-teal-100', bgDark: 'dark:bg-teal-900/20', text: 'text-teal-600', textDark: 'dark:text-teal-400' }
+  { name: 'blue', label: 'Azul', bgClass: 'bg-blue-100 dark:bg-blue-900/20', textClass: 'text-blue-600 dark:text-blue-400', hoverBgClass: 'group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40', borderClass: 'border-blue-200 dark:border-blue-800/30' },
+  { name: 'green', label: 'Verde', bgClass: 'bg-green-100 dark:bg-green-900/20', textClass: 'text-green-600 dark:text-green-400', hoverBgClass: 'group-hover:bg-green-200 dark:group-hover:bg-green-800/40', borderClass: 'border-green-200 dark:border-green-800/30' },
+  { name: 'red', label: 'Vermelho', bgClass: 'bg-red-100 dark:bg-red-900/20', textClass: 'text-red-600 dark:text-red-400', hoverBgClass: 'group-hover:bg-red-200 dark:group-hover:bg-red-800/40', borderClass: 'border-red-200 dark:border-red-800/30' },
+  { name: 'yellow', label: 'Amarelo', bgClass: 'bg-yellow-100 dark:bg-yellow-900/20', textClass: 'text-yellow-600 dark:text-yellow-400', hoverBgClass: 'group-hover:bg-yellow-200 dark:group-hover:bg-yellow-800/40', borderClass: 'border-yellow-200 dark:border-yellow-800/30' },
+  { name: 'purple', label: 'Roxo', bgClass: 'bg-purple-100 dark:bg-purple-900/20', textClass: 'text-purple-600 dark:text-purple-400', hoverBgClass: 'group-hover:bg-purple-200 dark:group-hover:bg-purple-800/40', borderClass: 'border-purple-200 dark:border-purple-800/30' },
+  { name: 'pink', label: 'Rosa', bgClass: 'bg-pink-100 dark:bg-pink-900/20', textClass: 'text-pink-600 dark:text-pink-400', hoverBgClass: 'group-hover:bg-pink-200 dark:group-hover:bg-pink-800/40', borderClass: 'border-pink-200 dark:border-pink-800/30' },
+  { name: 'indigo', label: 'Índigo', bgClass: 'bg-indigo-100 dark:bg-indigo-900/20', textClass: 'text-indigo-600 dark:text-indigo-400', hoverBgClass: 'group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/40', borderClass: 'border-indigo-200 dark:border-indigo-800/30' },
+  { name: 'orange', label: 'Laranja', bgClass: 'bg-orange-100 dark:bg-orange-900/20', textClass: 'text-orange-600 dark:text-orange-400', hoverBgClass: 'group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40', borderClass: 'border-orange-200 dark:border-orange-800/30' },
+  { name: 'teal', label: 'Turquesa', bgClass: 'bg-teal-100 dark:bg-teal-900/20', textClass: 'text-teal-600 dark:text-teal-400', hoverBgClass: 'group-hover:bg-teal-200 dark:group-hover:bg-teal-800/40', borderClass: 'border-teal-200 dark:border-teal-800/30' },
+  { name: 'gray', label: 'Cinza', bgClass: 'bg-gray-100 dark:bg-gray-700', textClass: 'text-gray-600 dark:text-gray-400', hoverBgClass: 'group-hover:bg-gray-200 dark:group-hover:bg-gray-600', borderClass: 'border-gray-200 dark:border-gray-700' }
 ];
 
 const ResumosGrupo = () => {
@@ -294,29 +310,29 @@ const ResumosGrupo = () => {
         return;
       }
       
-      // Use the proxy URL for Edge Functions in development
-      const functionUrl = `/supabase-edge-functions/manual-summary-trigger`;
+      // Try to send data to n8n webhook
+      const webhookUrl = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
       
       // Prepare the webhook payload with the correct field names
-      const functionData = {
-        group_id: id,
-        company_id: companyId
+      const webhookData = {
+        "nome do grupo": grupo.nome_grupo,
+        "URL do grupo": grupo.url_grupo
       };
       
-      console.log('Enviando dados para function:', JSON.stringify(functionData, null, 2));
+      console.log('Enviando dados para webhook:', JSON.stringify(webhookData, null, 2));
       
-      // Send the data to the function with timeout
+      // Send the data to the webhook with timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
       try {
-        const response = await fetch(functionUrl, {
+        const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          body: JSON.stringify(functionData),
+          body: JSON.stringify(webhookData),
           signal: controller.signal
         });
         
@@ -335,18 +351,22 @@ const ResumosGrupo = () => {
           const jsonResponse = JSON.parse(responseText);
           
           // Check the status in the JSON response
-          if (jsonResponse.success === true) {
+          if (jsonResponse.status && jsonResponse.status === "400") {
+            // Status 400 means there was an error, but it's a known error
+            statusToSave = false;
+            messageToSave = jsonResponse.message || `Erro: ${responseText}`;
+            
+            // Show toast with error details
+            toast.error(jsonResponse.message || 'Erro desconhecido');
+          } else {
+            // Any other status is considered a success
             statusToSave = true;
             messageToSave = jsonResponse.message || `Resposta: ${responseText}`;
             toast.success('Resumo enviado com sucesso');
-          } else {
-            statusToSave = false;
-            messageToSave = jsonResponse.error || `Erro: ${responseText}`;
-            toast.error(messageToSave);
           }
         } catch (e) {
           // If not JSON, use the HTTP status code
-          statusToSave = response.status >= 200 && response.status < 300;
+          statusToSave = response.status >= 200 && response.status < 400;
           messageToSave = `Resposta: ${responseText}`;
           
           if (statusToSave) {
@@ -356,16 +376,45 @@ const ResumosGrupo = () => {
           }
         }
         
+        // Save the result to the database
+        const { error: dbError } = await supabase
+          .from('envio_resumo')
+          .insert({
+            grupo_id: id,
+            company_id: companyId,
+            data_envio: new Date().toISOString(), // This will be stored as is in the database
+            status: statusToSave,
+            mensagem: messageToSave
+          });
+          
+        if (dbError) {
+          console.error('Error saving summary record:', dbError);
+          toast.error('Erro ao salvar no histórico');
+        }
+        
       } catch (fetchError: any) {
         // Handle network errors or timeouts
         clearTimeout(timeoutId);
         console.error('Fetch error:', fetchError);
         
+        // Create error record
+        const { error: dbError } = await supabase
+          .from('envio_resumo')
+          .insert({
+            grupo_id: id,
+            company_id: companyId,
+            data_envio: new Date().toISOString(), // This will be stored as is in the database
+            status: false,
+            mensagem: `Erro de rede: ${fetchError.message || 'Erro desconhecido'}`
+          });
+          
+        if (dbError) {
+          console.error('Error saving error record:', dbError);
+        }
+        
         // Show specific error message
         if (fetchError.name === 'AbortError') {
-          toast.error('Timeout: O servidor demorou muito para responder (15s)');
-        } else if (fetchError.message?.includes('socket hang up')) {
-          toast.error('Conexão perdida com o servidor. Tente novamente.');
+          toast.error('Timeout: O webhook demorou muito para responder');
         } else {
           toast.error(`Erro de rede: ${fetchError.message}`);
         }
@@ -412,16 +461,15 @@ const ResumosGrupo = () => {
     envio.mensagem?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Get icon component by name
-  const getIconComponent = (iconName: string) => {
+  // Função para obter o ícone pelo nome
+  const getIconByName = (iconName: string) => {
     const icon = availableIcons.find(i => i.name === iconName);
     return icon ? icon.component : MessagesSquare;
   };
 
-  // Get color classes by name
-  const getColorClasses = (colorName: string) => {
-    const color = availableColors.find(c => c.name === colorName);
-    return color || availableColors[0]; // Default to first color if not found
+  // Função para obter a cor pelo nome
+  const getColorByName = (colorName: string) => {
+    return availableColors.find(c => c.name === colorName) || availableColors[0];
   };
 
   return (
@@ -518,15 +566,16 @@ const ResumosGrupo = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {grupos.map(grupo => {
-                    const IconComponent = getIconComponent(grupo.icon_name || 'MessagesSquare');
-                    const colorClasses = getColorClasses(grupo.color_name || 'blue');
+                    // Obter o componente do ícone e a cor
+                    const IconComponent = getIconByName(grupo.icon_name || 'MessagesSquare');
+                    const colorStyle = getColorByName(grupo.color_name || 'blue');
                     
                     return (
                       <div 
                         key={grupo.id} 
                         className={`bg-white dark:bg-gray-800 rounded-lg border ${
                           grupo.ativo 
-                            ? 'border-green-200 dark:border-green-800/30' 
+                            ? colorStyle.borderClass
                             : 'border-gray-200 dark:border-gray-700'
                         } shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg`}
                       >
@@ -535,10 +584,10 @@ const ResumosGrupo = () => {
                             <div className="flex items-center gap-3">
                               <div className={`p-2 rounded-full ${
                                 grupo.ativo 
-                                  ? `${colorClasses.bgLight} ${colorClasses.bgDark} ${colorClasses.text} ${colorClasses.textDark}` 
+                                  ? colorStyle.bgClass
                                   : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                               }`}>
-                                <IconComponent className="w-5 h-5" />
+                                <IconComponent className={grupo.ativo ? colorStyle.textClass : 'text-gray-500 dark:text-gray-400'} size={20} />
                               </div>
                               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                                 {grupo.nome_grupo}
@@ -802,7 +851,7 @@ const ResumosGrupo = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Horario do envio (Horário de Brasília) *
+                    Horario do envio *
                   </label>
                   <input
                     type="time"
@@ -811,65 +860,78 @@ const ResumosGrupo = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     required
                   />
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    O horário é baseado no fuso horário de Brasília (UTC-3)
-                  </p>
                 </div>
-                
-                {/* Icon Selection */}
+
+                {/* Seleção de ícone */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Ícone
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {availableIcons.map(icon => {
-                      const IconComp = icon.component;
-                      const isSelected = formData.icon_name === icon.name;
-                      const colorClasses = getColorClasses(formData.color_name);
-                      
-                      return (
-                        <button
-                          key={icon.name}
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, icon_name: icon.name }))}
-                          className={`p-2 rounded-lg flex items-center justify-center ${
-                            isSelected 
-                              ? `${colorClasses.bgLight} ${colorClasses.bgDark} ${colorClasses.text} ${colorClasses.textDark} ring-2 ring-blue-500`
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                          }`}
-                        >
-                          <IconComp className="w-5 h-5" />
-                        </button>
-                      );
-                    })}
+                  <div className="grid grid-cols-6 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-300 dark:border-gray-600 rounded-lg">
+                    {availableIcons.map((icon) => (
+                      <button
+                        key={icon.name}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, icon_name: icon.name }))}
+                        className={`p-2 rounded-lg flex items-center justify-center ${
+                          formData.icon_name === icon.name
+                            ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                        title={icon.label}
+                      >
+                        <icon.component size={20} />
+                      </button>
+                    ))}
                   </div>
                 </div>
-                
-                {/* Color Selection */}
+
+                {/* Seleção de cor */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Cor
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {availableColors.map(color => {
-                      const isSelected = formData.color_name === color.name;
-                      const IconComp = getIconComponent(formData.icon_name);
-                      
-                      return (
-                        <button
-                          key={color.name}
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, color_name: color.name }))}
-                          className={`p-2 rounded-lg flex items-center justify-center ${
-                            isSelected 
-                              ? `${color.bgLight} ${color.bgDark} ${color.text} ${color.textDark} ring-2 ring-blue-500`
-                              : `${color.bgLight} ${color.bgDark} ${color.text} ${color.textDark} opacity-60 hover:opacity-100`
-                          }`}
-                        >
-                          <IconComp className="w-5 h-5" />
-                        </button>
-                      );
-                    })}
+                  <div className="grid grid-cols-5 gap-2">
+                    {availableColors.map((color) => (
+                      <button
+                        key={color.name}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, color_name: color.name }))}
+                        className={`p-2 rounded-lg flex items-center justify-center ${
+                          formData.color_name === color.name
+                            ? 'ring-2 ring-offset-2 ring-blue-500'
+                            : ''
+                        }`}
+                        title={color.label}
+                      >
+                        <div className={`w-6 h-6 rounded-full ${color.bgClass} ${color.textClass} flex items-center justify-center`}>
+                          <div className="w-4 h-4 rounded-full"></div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Visualização */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Visualização
+                  </label>
+                  <div className="p-4 border border-gray-300 dark:border-gray-600 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      {(() => {
+                        const IconComponent = getIconByName(formData.icon_name);
+                        const colorStyle = getColorByName(formData.color_name);
+                        return (
+                          <div className={`p-2 rounded-full ${colorStyle.bgClass}`}>
+                            <IconComponent className={colorStyle.textClass} size={20} />
+                          </div>
+                        );
+                      })()}
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {formData.nome_grupo || 'Nome do Grupo'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
