@@ -786,13 +786,13 @@ const ResumosGrupo = () => {
       {/* Add Group Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Novo Grupo
               </h2>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nome do Grupo *
@@ -852,13 +852,13 @@ const ResumosGrupo = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Ícone
                 </label>
-                <div className="flex flex-wrap gap-3 mt-2">
+                <div className="grid grid-cols-5 gap-2 mt-2">
                   {iconOptions.map(icon => (
                     <button
                       key={icon.value}
                       type="button"
                       onClick={() => setFormData({ ...formData, icon_name: icon.value })}
-                      className={`p-3 rounded-lg transition-colors ${
+                      className={`p-2 rounded-lg transition-colors ${
                         formData.icon_name === icon.value
                           ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 ring-2 ring-blue-500'
                           : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -874,7 +874,7 @@ const ResumosGrupo = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Cor
                 </label>
-                <div className="flex flex-wrap gap-3 mt-2">
+                <div className="flex gap-3 mt-2">
                   {colorOptions.map(color => (
                     <button
                       key={color.value}
@@ -890,7 +890,7 @@ const ResumosGrupo = () => {
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => setIsAddModalOpen(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
@@ -911,13 +911,13 @@ const ResumosGrupo = () => {
       {/* Edit Group Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Editar Grupo
               </h2>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nome do Grupo *
@@ -962,13 +962,13 @@ const ResumosGrupo = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Ícone
                 </label>
-                <div className="flex flex-wrap gap-3 mt-2">
+                <div className="grid grid-cols-5 gap-2 mt-2">
                   {iconOptions.map(icon => (
                     <button
                       key={icon.value}
                       type="button"
                       onClick={() => setFormData({ ...formData, icon_name: icon.value })}
-                      className={`p-3 rounded-lg transition-colors ${
+                      className={`p-2 rounded-lg transition-colors ${
                         formData.icon_name === icon.value
                           ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 ring-2 ring-blue-500'
                           : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -984,7 +984,7 @@ const ResumosGrupo = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Cor
                 </label>
-                <div className="flex flex-wrap gap-3 mt-2">
+                <div className="flex gap-3 mt-2">
                   {colorOptions.map(color => (
                     <button
                       key={color.value}
@@ -1000,7 +1000,7 @@ const ResumosGrupo = () => {
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
