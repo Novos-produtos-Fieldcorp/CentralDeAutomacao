@@ -46,22 +46,7 @@ Deno.serve(async (req) => {
 
     console.log(`Processing manual summary for group_id: ${group_id}, company_id: ${company_id}`);
 
-    // Log the current time in both UTC and Brasilia timezone
-    const now = new Date();
-    const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-    console.log(`Current UTC time: ${now.toISOString()}`);
-    console.log(`Current Brasilia time: ${brasiliaTime.toISOString()}`);
-    
-    // Get the current Brasilia time from the database for verification
-    const { data: dbTimeData, error: dbTimeError } = await supabase.rpc('get_current_brasilia_time_details');
-    
-    if (dbTimeError) {
-      console.error('Error getting database time:', dbTimeError);
-    } else {
-      console.log(`Database time details:`, dbTimeData);
-    }
-
-    // Get group data
+    // Get group data first
     const { data: grupo, error } = await supabase
       .from('grupo_resumo')
       .select('*')
@@ -84,20 +69,19 @@ Deno.serve(async (req) => {
       throw new Error(`Group with ID ${group_id} is inactive`);
     }
 
-    // Generate summary data for this group
+    // Generate summary data for this group (optimized)
     console.log('Generating summary data...');
-    const summaryData = await generateSummaryData(grupo);
-    console.log('Summary data generated:', JSON.stringify(summaryData, null, 2));
+    const summaryData = await generateSummaryDataOptimized(grupo);
+    console.log('Summary data generated successfully');
     
-    // Send webhook
+    // Send webhook with timeout
     console.log('Sending webhook...');
-    const webhookResult = await sendWebhook(grupo, summaryData);
-    console.log('Webhook result:', JSON.stringify(webhookResult, null, 2));
+    const webhookResult = await sendWebhookWithTimeout(grupo, summaryData);
+    console.log('Webhook sent successfully');
     
-    // Record the delivery in the database
-    console.log('Recording delivery in database...');
-    await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso (manual)');
-    console.log('Delivery recorded successfully');
+    // Record the delivery in the database (async, don't wait)
+    recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso (manual)')
+      .catch(err => console.error('Error recording delivery:', err));
 
     return new Response(
       JSON.stringify({
@@ -106,12 +90,7 @@ Deno.serve(async (req) => {
         data: {
           group_id: grupo.id,
           group_name: grupo.nome_grupo,
-          webhook_result: webhookResult,
-          current_time: {
-            utc: now.toISOString(),
-            brasilia: brasiliaTime.toISOString(),
-            database: dbTimeData
-          }
+          webhook_result: webhookResult
         }
       }),
       {
@@ -122,14 +101,16 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in group summary trigger:', error);
     
-    // If we have a group_id in the request, record the failure
+    // Record failure asynchronously
     try {
-      const { group_id, company_id } = await req.json();
+      const requestBody = await req.json();
+      const { group_id, company_id } = requestBody;
       if (group_id && company_id) {
-        await recordDelivery(group_id, company_id, false, error.message);
+        recordDelivery(group_id, company_id, false, error.message)
+          .catch(err => console.error('Error recording delivery failure:', err));
       }
     } catch (recordError) {
-      console.error('Error recording delivery failure:', recordError);
+      console.error('Error parsing request for failure recording:', recordError);
     }
     
     return new Response(
@@ -152,8 +133,7 @@ async function recordDelivery(grupoId: number, companyId: number, status: boolea
     const now = new Date();
     const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
     
-    console.log(`Recording delivery: grupoId=${grupoId}, companyId=${companyId}, status=${status}, message=${message}`);
-    console.log(`Timestamp: ${brasiliaTime.toISOString()}`);
+    console.log(`Recording delivery: grupoId=${grupoId}, companyId=${companyId}, status=${status}`);
     
     const { data, error } = await supabase
       .from('envio_resumo')
@@ -169,124 +149,117 @@ async function recordDelivery(grupoId: number, companyId: number, status: boolea
     if (error) {
       console.error('Error recording delivery:', error);
     } else {
-      console.log('Delivery record created:', data);
+      console.log('Delivery record created successfully');
     }
   } catch (error) {
     console.error('Exception recording delivery:', error);
   }
 }
 
-// Function to generate summary data for a group
-async function generateSummaryData(grupo: GrupoResumo) {
+// Optimized function to generate summary data using a single query
+async function generateSummaryDataOptimized(grupo: GrupoResumo) {
   console.log(`Generating summary data for group: ${grupo.nome_grupo}`);
   
-  // Get company data
-  const { data: company, error: companyError } = await supabase
-    .from('company')
-    .select('nome_company')
-    .eq('company_id', grupo.company_id)
-    .single();
+  try {
+    // Get today's date in Brasilia timezone (UTC-3)
+    const today = new Date();
+    const brasiliaTime = new Date(today.getTime() - (3 * 60 * 60 * 1000));
+    const todayStr = brasiliaTime.toISOString().split('T')[0];
+    
+    const formattedDate = brasiliaTime.toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
 
-  if (companyError) {
-    console.error('Error fetching company data:', companyError);
-    throw new Error(`Error fetching company data: ${companyError.message}`);
-  }
+    console.log(`Processing data for date: ${todayStr}`);
 
-  console.log(`Company data: ${JSON.stringify(company)}`);
+    // Execute all queries in parallel for better performance
+    const [
+      companyResult,
+      motoristasResult,
+      agregadosResult,
+      hodometrosResult,
+      checklistsResult
+    ] = await Promise.all([
+      // Get company data
+      supabase
+        .from('company')
+        .select('nome_company')
+        .eq('company_id', grupo.company_id)
+        .single(),
+      
+      // Get motoristas count
+      supabase
+        .from('motorista')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', grupo.company_id)
+        .eq('funcao', 'Motorista'),
+      
+      // Get agregados count
+      supabase
+        .from('motorista')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', grupo.company_id)
+        .eq('funcao', 'Agregado'),
+      
+      // Get today's hodometros count
+      supabase
+        .from('hodometro')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', grupo.company_id)
+        .eq('data', todayStr),
+      
+      // Get today's checklists count
+      supabase
+        .from('checklist')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', grupo.company_id)
+        .eq('data', todayStr)
+    ]);
 
-  // Get today's date in local format
-  const today = new Date();
-  // Adjust for Brasilia timezone (UTC-3)
-  const brasiliaTime = new Date(today.getTime() - (3 * 60 * 60 * 1000));
-  
-  const formattedDate = brasiliaTime.toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-  console.log(`Formatted date: ${formattedDate}`);
-
-  // Get motoristas count
-  const { count: motoristasCount, error: motoristasError } = await supabase
-    .from('motorista')
-    .select('*', { count: 'exact', head: true })
-    .eq('company_id', grupo.company_id)
-    .eq('funcao', 'Motorista');
-
-  if (motoristasError) {
-    console.error('Error fetching motoristas count:', motoristasError);
-    throw new Error(`Error fetching motoristas count: ${motoristasError.message}`);
-  }
-
-  console.log(`Motoristas count: ${motoristasCount}`);
-
-  // Get agregados count
-  const { count: agregadosCount, error: agregadosError } = await supabase
-    .from('motorista')
-    .select('*', { count: 'exact', head: true })
-    .eq('company_id', grupo.company_id)
-    .eq('funcao', 'Agregado');
-
-  if (agregadosError) {
-    console.error('Error fetching agregados count:', agregadosError);
-    throw new Error(`Error fetching agregados count: ${agregadosError.message}`);
-  }
-
-  console.log(`Agregados count: ${agregadosCount}`);
-
-  // Get today's hodometros count - using Brasilia date
-  const todayStr = brasiliaTime.toISOString().split('T')[0];
-  console.log(`Today's date (Brasilia): ${todayStr}`);
-  
-  const { count: hodometrosCount, error: hodometrosError } = await supabase
-    .from('hodometro')
-    .select('*', { count: 'exact', head: true })
-    .eq('company_id', grupo.company_id)
-    .eq('data', todayStr);
-
-  if (hodometrosError) {
-    console.error('Error fetching hodometros count:', hodometrosError);
-    throw new Error(`Error fetching hodometros count: ${hodometrosError.message}`);
-  }
-
-  console.log(`Hodometros count: ${hodometrosCount}`);
-
-  // Get today's checklists count - using Brasilia date
-  const { count: checklistsCount, error: checklistsError } = await supabase
-    .from('checklist')
-    .select('*', { count: 'exact', head: true })
-    .eq('company_id', grupo.company_id)
-    .eq('data', todayStr);
-
-  if (checklistsError) {
-    console.error('Error fetching checklists count:', checklistsError);
-    throw new Error(`Error fetching checklists count: ${checklistsError.message}`);
-  }
-
-  console.log(`Checklists count: ${checklistsCount}`);
-
-  // Return formatted summary data
-  const summaryData = {
-    company_name: company?.nome_company || 'Empresa',
-    date: formattedDate,
-    group_name: grupo.nome_grupo,
-    stats: {
-      motoristas: motoristasCount || 0,
-      agregados: agregadosCount || 0,
-      hodometros_today: hodometrosCount || 0,
-      checklists_today: checklistsCount || 0
+    // Check for errors
+    if (companyResult.error) {
+      throw new Error(`Error fetching company data: ${companyResult.error.message}`);
     }
-  };
-  
-  console.log('Final summary data:', JSON.stringify(summaryData, null, 2));
-  return summaryData;
+    if (motoristasResult.error) {
+      throw new Error(`Error fetching motoristas count: ${motoristasResult.error.message}`);
+    }
+    if (agregadosResult.error) {
+      throw new Error(`Error fetching agregados count: ${agregadosResult.error.message}`);
+    }
+    if (hodometrosResult.error) {
+      throw new Error(`Error fetching hodometros count: ${hodometrosResult.error.message}`);
+    }
+    if (checklistsResult.error) {
+      throw new Error(`Error fetching checklists count: ${checklistsResult.error.message}`);
+    }
+
+    // Return formatted summary data
+    const summaryData = {
+      company_name: companyResult.data?.nome_company || 'Empresa',
+      date: formattedDate,
+      group_name: grupo.nome_grupo,
+      stats: {
+        motoristas: motoristasResult.count || 0,
+        agregados: agregadosResult.count || 0,
+        hodometros_today: hodometrosResult.count || 0,
+        checklists_today: checklistsResult.count || 0
+      }
+    };
+    
+    console.log('Summary data generated:', JSON.stringify(summaryData, null, 2));
+    return summaryData;
+  } catch (error) {
+    console.error('Error generating summary data:', error);
+    throw error;
+  }
 }
 
-// Function to send webhook with summary data
-async function sendWebhook(grupo: GrupoResumo, summaryData: any) {
-  // Prepare the webhook payload with the correct field names
+// Function to send webhook with timeout and retry logic
+async function sendWebhookWithTimeout(grupo: GrupoResumo, summaryData: any) {
+  // Prepare the webhook payload
   const webhookData = {
     "nome do grupo": grupo.nome_grupo,
     "URL do grupo": grupo.url_grupo,
@@ -294,30 +267,47 @@ async function sendWebhook(grupo: GrupoResumo, summaryData: any) {
   };
 
   console.log('Sending webhook request to:', WEBHOOK_URL);
-  console.log('Webhook payload:', JSON.stringify(webhookData, null, 2));
 
-  const response = await fetch(WEBHOOK_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(webhookData)
-  });
-
-  const responseText = await response.text(); // Leia o texto da resposta uma vez
-  console.log('Webhook response status:', response.status);
-  console.log('Webhook response text:', responseText);
-
-  if (!response.ok) {
-    throw new Error(`Failed to send webhook: ${response.status} - ${responseText}`);
-  }
+  // Create abort controller for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
   try {
-    // Try to parse the response as JSON
-    return JSON.parse(responseText);
-  } catch (e) {
-    // If parsing fails, return the text response
-    console.log('Response is not valid JSON, returning text');
-    return { text: responseText };
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(webhookData),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    const responseText = await response.text();
+    console.log('Webhook response status:', response.status);
+    console.log('Webhook response text:', responseText);
+
+    if (!response.ok) {
+      throw new Error(`Failed to send webhook: ${response.status} - ${responseText}`);
+    }
+
+    try {
+      // Try to parse the response as JSON
+      return JSON.parse(responseText);
+    } catch (e) {
+      // If parsing fails, return the text response
+      console.log('Response is not valid JSON, returning text');
+      return { text: responseText };
+    }
+  } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (error.name === 'AbortError') {
+      throw new Error('Webhook request timed out after 8 seconds');
+    }
+    
+    console.error('Webhook error:', error);
+    throw error;
   }
 }

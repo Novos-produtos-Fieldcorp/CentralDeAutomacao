@@ -33,15 +33,25 @@ export default defineConfig({
         target: process.env.VITE_SUPABASE_URL || "https://your-project.supabase.co",
         changeOrigin: true,
         secure: true,
-        proxyTimeout: 120000,
-        timeout: 120000,
+        proxyTimeout: 15000, // 15 seconds
+        timeout: 15000, // 15 seconds
         rewrite: (path) => path.replace(/^\/supabase-edge-functions/, "/functions/v1"),
         configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
+          proxy.on('error', (err, req, res) => {
             console.log('Supabase Edge Function proxy error', err);
+            // Handle proxy errors gracefully
+            if (!res.headersSent) {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ 
+                success: false, 
+                error: 'Connection timeout or server error' 
+              }));
+            }
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
             console.log('Sending Edge Function Request:', req.method, req.url);
+            // Set timeout headers
+            proxyReq.setTimeout(15000);
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
             console.log('Edge Function Response:', proxyRes.statusCode, req.url);

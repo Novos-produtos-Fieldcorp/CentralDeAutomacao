@@ -307,7 +307,7 @@ const ResumosGrupo = () => {
       
       // Send the data to the function with timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
       try {
         const response = await fetch(functionUrl, {
@@ -363,7 +363,9 @@ const ResumosGrupo = () => {
         
         // Show specific error message
         if (fetchError.name === 'AbortError') {
-          toast.error('Timeout: O servidor demorou muito para responder');
+          toast.error('Timeout: O servidor demorou muito para responder (15s)');
+        } else if (fetchError.message?.includes('socket hang up')) {
+          toast.error('Conexão perdida com o servidor. Tente novamente.');
         } else {
           toast.error(`Erro de rede: ${fetchError.message}`);
         }
