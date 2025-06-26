@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, Check } from 'lucide-react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -122,7 +122,7 @@ const MotoristasLista = () => {
   const [motoristas, setMotoristas] = useState<ViewMotorista[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
@@ -133,9 +133,11 @@ const MotoristasLista = () => {
   const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
   const [selectedMotorista, setSelectedMotorista] = useState<ViewMotorista | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
-  const [clienteFilter, setClienteFilter] = useState<string>('');
+  const [clienteFilter, setClienteFilter] = useState<string[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [cidades, setCidades] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -241,16 +243,22 @@ const MotoristasLista = () => {
 
       if (error) throw error;
 
+      // Mapear os dados para garantir a compatibilidade com a interface ViewMotorista
+      const motoristasMapeados = data?.map(motorista => ({
+        ...motorista,
+        nome: motorista.nome || motorista.nome_motorista || 'N/A', // Usa nome_motorista se nome não estiver disponível
+      }));
+
       // Extract unique cities from motoristas
       const uniqueCities = new Set<string>();
-      data?.forEach(motorista => {
+      motoristasMapeados?.forEach(motorista => {
         if (motorista.nome_cidade) {
           uniqueCities.add(motorista.nome_cidade);
         }
       });
       setCidades(Array.from(uniqueCities).sort());
 
-      setMotoristas(data || []);
+      setMotoristas(motoristasMapeados || []);
     } catch (error) {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
@@ -341,25 +349,45 @@ const MotoristasLista = () => {
           .filter(motorista => {
             if (!motorista) return false;
             const searchLower = searchTerm.toLowerCase();
-            const statusMatch = statusFilter ? motorista.st_cadastro === statusFilter : true;
-            const clienteMatch = clienteFilter ? motorista.cliente_id === parseInt(clienteFilter) : true;
-            const cidadeMatch = cidadeFilter.length > 0 ? (motorista.nome_cidade ? cidadeFilter.includes(motorista.nome_cidade) : false) : true;
-            const ativoMatch = ativoFilter ? 
-              (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false) : 
-              true;
             
-            return (
-              statusMatch &&
-              clienteMatch &&
-              cidadeMatch &&
-              ativoMatch &&
+            // Filtro de status (multiseleção)
+            const statusMatch = statusFilter.length === 0 || 
+              (motorista.st_cadastro && statusFilter.includes(motorista.st_cadastro));
+            
+            // Filtro de cliente (multiseleção)
+            let clienteMatch = true;
+            if (clienteFilter.length > 0) {
+              if (clienteFilter.includes('sem_cliente')) {
+                clienteMatch = motorista.cliente_id === null || motorista.cliente_id === undefined;
+              } else {
+                clienteMatch = motorista.cliente_id !== null && 
+                  motorista.cliente_id !== undefined &&
+                  clienteFilter.includes(motorista.cliente_id.toString());
+              }
+              
+              if (clienteFilter.includes('sem_cliente') && clienteFilter.length > 1) {
+                clienteMatch = clienteMatch || (motorista.cliente_id === null || motorista.cliente_id === undefined);
+              }
+            }
+            
+            // Filtro de cidade (multiseleção)
+            const cidadeMatch = cidadeFilter.length === 0 || 
+              (motorista.nome_cidade && cidadeFilter.includes(motorista.nome_cidade));
+              
+            // Filtro de ativo/inativo (seleção única)
+            const ativoMatch = !ativoFilter || 
+              (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false);
+            
+            // Verificação de busca por texto
+            const searchMatch = searchTerm === '' ||
               (motorista.nome?.toLowerCase().includes(searchLower) ||
                motorista.cpf?.includes(searchLower) ||
                (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
-               motorista.telefone?.toString().includes(searchLower))
-            );
+               motorista.telefone?.toString().includes(searchLower));
+            
+            return statusMatch && clienteMatch && cidadeMatch && ativoMatch && searchMatch;
           })
-          .map(m => m.motorista_id || 0)
+          .map(motorista => motorista.motorista_id)
       ));
     }
     setSelectAll(!selectAll);
@@ -534,32 +562,47 @@ const MotoristasLista = () => {
     if (!motorista) return false;
     
     const searchLower = searchTerm.toLowerCase();
-    const statusMatch = statusFilter ? motorista.st_cadastro === statusFilter : true;
     
-    // Lógica para filtro de cliente
+    // Lógica para filtro de status (multiseleção)
+    const statusMatch = statusFilter.length === 0 || 
+      (motorista.st_cadastro && statusFilter.includes(motorista.st_cadastro));
+    
+    // Lógica para filtro de cliente (multiseleção)
     let clienteMatch = true;
-    if (clienteFilter === 'sem_cliente') {
-      clienteMatch = motorista.cliente_id === null || motorista.cliente_id === undefined;
-    } else if (clienteFilter) {
-      clienteMatch = motorista.cliente_id === parseInt(clienteFilter);
+    if (clienteFilter.length > 0) {
+      if (clienteFilter.includes('sem_cliente')) {
+        // Se 'sem_cliente' está selecionado, inclui registros sem cliente
+        clienteMatch = motorista.cliente_id === null || motorista.cliente_id === undefined;
+      } else {
+        // Verifica se o cliente do motorista está na lista de clientes selecionados
+        clienteMatch = motorista.cliente_id !== null && 
+          motorista.cliente_id !== undefined &&
+          clienteFilter.includes(motorista.cliente_id.toString());
+      }
+      
+      // Se 'sem_cliente' está selecionado junto com outros clientes, combina os resultados
+      if (clienteFilter.includes('sem_cliente') && clienteFilter.length > 1) {
+        clienteMatch = clienteMatch || (motorista.cliente_id === null || motorista.cliente_id === undefined);
+      }
     }
     
-    const cidadeMatch = cidadeFilter.length > 0 ? (motorista.nome_cidade ? cidadeFilter.includes(motorista.nome_cidade) : false) : true;
-    const ativoMatch = ativoFilter ? 
-      (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false) : 
-      true;
+    // Lógica para filtro de cidade (já está em multiseleção)
+    const cidadeMatch = cidadeFilter.length === 0 || 
+      (motorista.nome_cidade && cidadeFilter.includes(motorista.nome_cidade));
+      
+    // Lógica para filtro de ativo/inativo (seleção única)
+    const ativoMatch = !ativoFilter || 
+      (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false);
+    
+    // Verificação de busca por texto
+    const searchMatch = searchTerm === '' ||
+      (motorista.nome?.toLowerCase().includes(searchLower) ||
+       motorista.cpf?.includes(searchLower) ||
+       (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
+       motorista.telefone?.toString().includes(searchLower));
     
     try {
-      return (
-        statusMatch &&
-        clienteMatch &&
-        cidadeMatch &&
-        ativoMatch &&
-        (motorista.nome?.toLowerCase().includes(searchLower) ||
-         motorista.cpf?.includes(searchLower) ||
-         (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
-         motorista.telefone?.toString().includes(searchLower))
-      );
+      return statusMatch && clienteMatch && cidadeMatch && ativoMatch && searchMatch;
     } catch (error) {
       console.error('Erro ao filtrar motorista:', error, motorista);
       return false;
@@ -655,36 +698,79 @@ const MotoristasLista = () => {
               placeholder="Buscar por nome, CPF, email ou telefone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <div className="absolute inset-y-0 left-3 flex items-center">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
             {searchTerm && (
               <button
+                type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
-                <X size={16} />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
 
           <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            <button
+              type="button"
+              className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
             >
-              <option value="">Todos os status</option>
-              <option value="cadastrado">Cadastrado</option>
-              <option value="qualificado">Qualificado</option>
-              <option value="documentacao">Documentação</option>
-              <option value="contrato_enviado">Contrato Enviado</option>
-              <option value="contratado">Contratado</option>
-              <option value="repescagem">Repescagem</option>
-              <option value="rejeitado">Rejeitado</option>
-            </select>
-            <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+              <span className="truncate">
+                {statusFilter.length === 0 ? 'Todos os status' : `${statusFilter.length} selecionado(s)`}
+              </span>
+              <div className="absolute inset-y-0 right-2 flex items-center">
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+              <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            </button>
+            
+            {showStatusDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span>Selecionar status</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setStatusFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {['cadastrado', 'qualificado', 'documentacao', 'contrato_enviado', 'contratado', 'repescagem', 'rejeitado'].map((status, index) => (
+                    <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          checked={statusFilter.includes(status)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setStatusFilter([...statusFilter, status]);
+                            } else {
+                              setStatusFilter(statusFilter.filter(s => s !== status));
+                            }
+                          }}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200 capitalize">
+                          {status === 'contrato_enviado' ? 'Contrato Enviado' : status}
+                        </span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="relative group">
@@ -696,9 +782,11 @@ const MotoristasLista = () => {
               <span className="truncate">
                 {cidadeFilter.length === 0 ? 'Todas as cidades' : `${cidadeFilter.length} selecionada(s)`}
               </span>
-              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
+              <div className="absolute inset-y-0 right-2 flex items-center">
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+              <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </button>
-            <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
             
             {showCidadeDropdown && (
               <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
@@ -744,30 +832,103 @@ const MotoristasLista = () => {
         </div>
         
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative">
-            <select
-              value={clienteFilter}
-              onChange={(e) => setClienteFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+          <div className="relative group">
+            <button
+              type="button"
+              className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              onClick={() => setShowClienteDropdown(!showClienteDropdown)}
             >
-              <option value="">Todos os clientes</option>
-              <option value="sem_cliente">Sem cliente</option>
-              {clientes.map(cliente => (
-                <option key={cliente.cliente_id} value={cliente.cliente_id}>
-                  {cliente.nome}
-                </option>
-              ))}
-            </select>
-            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+              <span className="truncate">
+                {clienteFilter.length === 0 
+                  ? 'Todos os clientes' 
+                  : clienteFilter.length === 1 && clienteFilter[0] === 'sem_cliente'
+                    ? 'Sem cliente'
+                    : `${clienteFilter.length} cliente(s)`}
+              </span>
+              <div className="absolute inset-y-0 right-2 flex items-center">
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </button>
+            
+            {showClienteDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span>Selecionar clientes</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setClienteFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {/* Opção "Sem cliente" */}
+                  <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                        checked={clienteFilter.includes('sem_cliente')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setClienteFilter([...clienteFilter, 'sem_cliente']);
+                          } else {
+                            setClienteFilter(clienteFilter.filter(id => id !== 'sem_cliente'));
+                          }
+                        }}
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-200">Sem cliente</span>
+                    </label>
+                  </div>
+                  
+                  {/* Lista de clientes */}
+                  {clientes.map(cliente => (
+                    <div key={cliente.cliente_id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          checked={clienteFilter.includes(cliente.cliente_id.toString())}
+                          onChange={(e) => {
+                            const clienteId = cliente.cliente_id.toString();
+                            if (e.target.checked) {
+                              setClienteFilter([...clienteFilter, clienteId]);
+                            } else {
+                              setClienteFilter(clienteFilter.filter(id => id !== clienteId));
+                            }
+                          }}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{cliente.nome}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
-<div className="relative">
+          <div className="relative">
             <select
               value={ativoFilter}
               onChange={(e) => setAtivoFilter(e.target.value)}
@@ -907,7 +1068,7 @@ const MotoristasLista = () => {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white" data-component-name="MotoristasLista">
-                              {motorista.nome_motorista || motorista.nome || ''}
+                              {motorista.nome || 'N/A'}
                               {motorista.nome_ajudante && (
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
                                   Ajudante: {motorista.nome_ajudante}
