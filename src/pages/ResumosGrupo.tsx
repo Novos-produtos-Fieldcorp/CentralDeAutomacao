@@ -423,34 +423,139 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(grupoId);
       
-      // Use the proxied path configured in netlify.toml
-      const response = await fetch('/supabase-functions/manual-summary-trigger', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          group_id: grupoId,
-          company_id: companyId
-        })
+      // Find the selected group
+      const grupo = grupos.find(g => g.id === grupoId);
+      if (!grupo) {
+        throw new Error('Grupo não encontrado');
+      }
+      
+      // Get company data
+      const { data: company, error: companyError } = await supabase
+        .from('company')
+        .select('nome_company')
+        .eq('company_id', companyId)
+        .single();
+        
+      if (companyError) throw companyError;
+      
+      // Get today's date in local format
+      const today = new Date();
+      const formattedDate = today.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       });
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to send summary: ${response.status} - ${errorText}`);
+      // Get motoristas count
+      const { count: motoristasCount, error: motoristasError } = await supabase
+        .from('motorista')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('funcao', 'Motorista');
+        
+      if (motoristasError) throw motoristasError;
+      
+      // Get agregados count
+      const { count: agregadosCount, error: agregadosError } = await supabase
+        .from('motorista')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('funcao', 'Agregado');
+        
+      if (agregadosError) throw agregadosError;
+      
+      // Get today's hodometros count
+      const todayStr = today.toISOString().split('T')[0];
+      const { count: hodometrosCount, error: hodometrosError } = await supabase
+        .from('hodometro')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('data', todayStr);
+        
+      if (hodometrosError) throw hodometrosError;
+      
+      // Get today's checklists count
+      const { count: checklistsCount, error: checklistsError } = await supabase
+        .from('checklist')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('data', todayStr);
+        
+      if (checklistsError) throw checklistsError;
+      
+      // Prepare summary data
+      const summaryData = {
+        company_name: company?.nome_company || 'Empresa',
+        date: formattedDate,
+        group_name: grupo.nome_grupo,
+        stats: {
+          motoristas: motoristasCount || 0,
+          agregados: agregadosCount || 0,
+          hodometros_today: hodometrosCount || 0,
+          checklists_today: checklistsCount || 0
+        }
+      };
+      
+      // Prepare webhook payload
+      const webhookData = {
+        "nome do grupo": grupo.nome_grupo,
+        "URL do grupo": grupo.url_grupo,
+        "summary": summaryData
+      };
+      
+      // Send directly to the webhook
+      const webhookResponse = await fetch('https://n8nqp.wiseapp360.com/webhook/resumo-grupo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(webhookData)
+      });
+      
+      if (!webhookResponse.ok) {
+        const errorText = await webhookResponse.text();
+        throw new Error(`Erro ao enviar para webhook: ${webhookResponse.status} - ${errorText}`);
       }
       
-      const result = await response.json();
+      // Record the delivery in the database
+      const now = new Date();
+      const { error: recordError } = await supabase
+        .from('envio_resumo')
+        .insert({
+          grupo_id: grupoId,
+          company_id: companyId,
+          data_envio: now.toISOString(),
+          status: true,
+          mensagem: 'Resumo enviado manualmente com sucesso'
+        });
+        
+      if (recordError) throw recordError;
       
-      if (result.success) {
-        toast.success('Resumo enviado com sucesso');
-        // Refresh the envios list
-        fetchEnvios();
-      } else {
-        throw new Error(result.error || 'Erro desconhecido ao enviar resumo');
-      }
+      toast.success('Resumo enviado com sucesso');
+      // Refresh the envios list
+      fetchEnvios();
     } catch (error) {
       console.error('Error sending manual summary:', error);
+      
+      // Record the failed delivery
+      if (grupoId) {
+        try {
+          const now = new Date();
+          await supabase
+            .from('envio_resumo')
+            .insert({
+              grupo_id: grupoId,
+              company_id: companyId,
+              data_envio: now.toISOString(),
+              status: false,
+              mensagem: error instanceof Error ? error.message : 'Erro desconhecido ao enviar resumo'
+            });
+        } catch (recordError) {
+          console.error('Error recording failed delivery:', recordError);
+        }
+      }
+      
       toast.error(error instanceof Error ? error.message : 'Erro ao enviar resumo');
     } finally {
       setSendingManualSummary(null);
