@@ -11,7 +11,7 @@ export async function fetchWithRetry<T = any>(
     }
 
     // Validate URL before attempting fetch
-    if (!url || !url.startsWith('http')) {
+    if (!url || !url.startsWith('http') && !url.startsWith('/')) {
       throw new Error('URL da API inválida');
     }
 
@@ -46,7 +46,7 @@ export async function fetchWithRetry<T = any>(
       console.error('Network error: Failed to fetch. Possible CORS or connectivity issue.');
       
       // Check if the error is specifically for the Supabase connection
-      if (url.includes('supabase.co')) {
+      if (url.includes('supabase.co') || url.includes('supabase-edge-functions')) {
         throw new Error('A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.');
       } else {
         throw new Error('Erro de rede: Falha ao buscar. Possível problema de CORS ou conectividade.');
@@ -94,9 +94,16 @@ export async function proxyRequest<T = any>(
     throw new Error('ID da conta é obrigatório. Verifique os parâmetros da URL.');
   }
   
-  // Build URL for the proxy function
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  let proxyUrl = `${baseUrl}/functions/v1/proxy-wiseapp?endpoint=${encodeURIComponent(endpoint)}&account_id=${account}&api_key=${token}`;
+  // Build URL for the proxy function - use proxy in development
+  let proxyUrl: string;
+  if (import.meta.env.DEV) {
+    // In development, use the Vite proxy
+    proxyUrl = `/supabase-edge-functions/proxy-wiseapp?endpoint=${encodeURIComponent(endpoint)}&account_id=${account}&api_key=${token}`;
+  } else {
+    // In production, use the direct Supabase URL
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+    proxyUrl = `${baseUrl}/functions/v1/proxy-wiseapp?endpoint=${encodeURIComponent(endpoint)}&account_id=${account}&api_key=${token}`;
+  }
   
   // Add any additional query parameters
   if (Object.keys(params).length > 0) {

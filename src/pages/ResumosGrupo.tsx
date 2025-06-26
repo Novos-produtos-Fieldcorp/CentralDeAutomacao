@@ -294,8 +294,8 @@ const ResumosGrupo = () => {
         return;
       }
       
-      // Try to send data to edge function
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`;
+      // Use the proxy URL for Edge Functions in development
+      const functionUrl = `/supabase-edge-functions/manual-summary-trigger`;
       
       // Prepare the webhook payload with the correct field names
       const functionData = {
