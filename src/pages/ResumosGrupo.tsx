@@ -661,7 +661,7 @@ const ResumosGrupo = () => {
               {/* Time Debug Section */}
               <div className="mt-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-gray-800 dark:text-white">Informações do Sistema</h2>
+                  <h2 className="text-xl font-bold text-gray-800 dark:text-white">Horário do Sistema</h2>
                   <button
                     onClick={() => setShowTimeDebug(!showTimeDebug)}
                     className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
