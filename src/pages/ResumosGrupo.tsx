@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Plus, Trash2, Clock, Link2, MessagesSquare, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search, Users, Building2, Mail, Phone, Bell, AlertCircle, Zap, Heart, Star, BookOpen, Bookmark, FileCheck, FileText2, Truck, ShoppingBag, Package, Map, MapPin, Compass, Globe, Home, Settings, BarChart2 } from 'lucide-react';
+import { ClipboardList, Plus, Trash2, Clock, Link2, MessagesSquare, Save, Loader2, AlertTriangle, CheckCircle2, Send, History, FileText, Calendar, Search, Users, Building2, Mail, Phone, Bell, AlertCircle, Zap, Heart, Star, BookOpen, Bookmark, FileCheck, FileText as FileText2, Truck, ShoppingBag, Package, Map, MapPin, Compass, Globe, Home, Settings, BarChart2 } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
