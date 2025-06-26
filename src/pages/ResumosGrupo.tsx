@@ -843,7 +843,7 @@ const ResumosGrupo = () => {
                       key={icon.value}
                       type="button"
                       onClick={() => setFormData({ ...formData, icon_name: icon.value })}
-                      className={`p-1.5 rounded-lg transition-colors ${
+                      className={`p-1 rounded-lg transition-colors ${
                         formData.icon_name === icon.value
                           ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 ring-2 ring-blue-500'
                           : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -953,7 +953,7 @@ const ResumosGrupo = () => {
                       key={icon.value}
                       type="button"
                       onClick={() => setFormData({ ...formData, icon_name: icon.value })}
-                      className={`p-1.5 rounded-lg transition-colors ${
+                      className={`p-1 rounded-lg transition-colors ${
                         formData.icon_name === icon.value
                           ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 ring-2 ring-blue-500'
                           : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
