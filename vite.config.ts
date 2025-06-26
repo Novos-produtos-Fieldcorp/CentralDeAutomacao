@@ -33,6 +33,8 @@ export default defineConfig({
         target: process.env.VITE_SUPABASE_URL || "https://your-project.supabase.co",
         changeOrigin: true,
         secure: true,
+        proxyTimeout: 120000,
+        timeout: 120000,
         rewrite: (path) => path.replace(/^\/supabase-edge-functions/, "/functions/v1"),
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
