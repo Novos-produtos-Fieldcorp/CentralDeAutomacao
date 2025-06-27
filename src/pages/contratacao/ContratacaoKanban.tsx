@@ -1,17 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Search, FileText, MessageCircle, Filter, X, User, ChevronLeft, ChevronRight, Truck, Phone } from 'lucide-react';
+import { Search, FilePen, MessageCircle, Filter, X, User, ChevronLeft, ChevronRight, Truck, Phone, MapPin } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import type { Motorista, DocumentoMotorista, Veiculo } from '../../types/database';
-import DocumentViewer from '../../components/DocumentViewer';
+import { useAuth } from '../../context/AuthContext';
+import type { Motorista, Veiculo } from '../../types/database';
+import { useFloatingChat } from '../../hooks/useFloatingChat';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { useFloatingChat } from '../../hooks/useFloatingChat';
-import { supabase } from '../../lib/supabase';
 import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 
-interface MotoristaWithDetails extends Motorista {
+interface MotoristaWithDetails extends Omit<Motorista, 'nome'> {
+  end_motorista?: {
+    id_end_motorista?: number;
+    cidade?: string | null;
+    estado?: string | null;
+    sigla_estado?: string | null;
+    logradouro?: string | null;
+    nr_end?: number | null;
+    ds_complemento_end?: string | null;
+    bairro?: string | null;
+    nr_cep?: string | null;
+  };
+  nome_cliente?: string | null;
   veiculo?: Veiculo[];
+  documento_motorista?: any[];
+  endereco?: any;
+  nome: string | null; // Sobrescrevendo o tipo de nome para permitir null
+  nome_cidade?: string | null;
+  sigla_estado?: string | null;
 }
 
 interface KanbanColumn {
@@ -29,23 +46,20 @@ interface KanbanColumn {
 const ContratacaoKanban = () => {
   const { companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
+  // Usando o hook de autenticação
+  useAuth(); // Apenas para garantir que o usuário está autenticado
+  
   const [loading, setLoading] = useState(true);
   const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
-  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
-  const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
-  const [isUnifiedMotoristaModalOpen, setIsUnifiedMotoristaModalOpen] = useState(false);
-  const [itemsPerPage, setItemsPerPage] = useState(100);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [selectedMotorista, setSelectedMotorista] = useState<{
-    documento: DocumentoMotorista | null;
-    nome: string;
-    endereco: any;
-    veiculo: (Veiculo & { documento_veiculo: any[] }) | null;
-    motorista_id?: number;
-    funcao?: string;
-  }>({ documento: null, nome: '', endereco: null, veiculo: null });
+  const [selectedMotorista, setSelectedMotorista] = useState<MotoristaWithDetails | null>(null);
+  
+  // Estados para os modais
+  const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
+  const [isUnifiedMotoristaModalOpen, setIsUnifiedMotoristaModalOpen] = useState(false);
 
   const [columns, setColumns] = useState<KanbanColumn[]>([
     { 
@@ -268,16 +282,17 @@ const ContratacaoKanban = () => {
     ));
     
     try {
+      console.log('Buscando dados para status:', status);
       // Calculate pagination parameters
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
       
-      // Build the query with filters
+      // Build the query with filters using the complete view
       let query = supabase
-        .from('motorista')
+        .from('vw_motoristas_completo')
         .select(`
           motorista_id,
-          nome,
+          nome_motorista as nome,
           funcao,
           st_cadastro,
           telefone,
@@ -290,19 +305,33 @@ const ContratacaoKanban = () => {
           autorizacao_lgpd,
           company_id,
           cliente_id,
-          ativo
+          ativo,
+          nome_cidade,
+          nome_estado,
+          sigla_estado,
+          logradouro,
+          nr_end,
+          ds_complemento_end,
+          nome_bairro,
+          nr_cep
         `)
         .eq('st_cadastro', status)
         .eq('company_id', companyId);
 
       // Apply function filter if not 'todos'
       if (funcaoFilter !== 'todos') {
-        query = query.eq('funcao', funcaoFilter);
+        // Match both title case and lowercase variations
+        query = query.or(
+          `and(funcao.eq.${funcaoFilter},funcao.eq.${funcaoFilter.toLowerCase()})`
+        );
+      } else {
+        // When 'todos' is selected, include both 'Motorista'/'motorista' and 'Agregado'/'agregado'
+        query = query.or('funcao.eq.Motorista,funcao.eq.motorista,funcao.eq.Agregado,funcao.eq.agregado');
       }
       
       // Apply search filter if provided
       if (debouncedSearchTerm) {
-        query = query.or(`nome.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
+        query = query.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
       }
       
       // Apply sorting by data_cadastro (newest first)
@@ -311,14 +340,148 @@ const ContratacaoKanban = () => {
       // Apply pagination
       query = query.range(from, to);
       
-      // Execute the query
-      const { data: motoristasData, error } = await query;
+      // Primeiro, buscar apenas os dados básicos dos motoristas
+      console.log('Executando query para motoristas...');
       
-      if (error) throw error;
+      // First, get data from vw_motoristas_completo
+      let motoristasData: any[] = [];
       
-      // Fetch vehicle data for each motorista
+      try {
+        const { data: motoristasData1, error: error1 } = await query.select('*');
+        
+        if (error1) {
+          console.error('Erro na consulta de motoristas (vw_motoristas_completo):', error1);
+          throw error1;
+        }
+        
+        motoristasData = motoristasData1 || [];
+        
+        // If we're looking for agregados or all, also check vw_agregados_completo
+        if (funcaoFilter === 'Agregado' || funcaoFilter === 'todos') {
+          let agregadosQuery = supabase
+            .from('vw_agregados_completo')
+            .select('*')
+            .eq('st_cadastro', status)
+            .eq('company_id', companyId);
+            
+          // Always filter for Agregado in this view
+          agregadosQuery = agregadosQuery.eq('funcao', 'Agregado');
+          
+          // Apply search filter if provided
+          if (debouncedSearchTerm) {
+            agregadosQuery = agregadosQuery.or(
+              `nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`
+            );
+          }
+          
+          // Apply sorting by data_cadastro (newest first)
+          agregadosQuery = agregadosQuery.order('data_cadastro', { ascending: false });
+          
+          // Apply pagination
+          agregadosQuery = agregadosQuery.range(from, to);
+          
+          const { data: agregadosData, error: error2 } = await agregadosQuery;
+          
+          if (error2) {
+            console.error('Erro na consulta de agregados (vw_agregados_completo):', error2);
+            // Don't throw here, we still have motoristas data
+          } else if (agregadosData && agregadosData.length > 0) {
+            // Merge the results, ensuring we don't have duplicates
+            const existingIds = new Set(motoristasData.map(m => m.motorista_id));
+            const newAgregados = agregadosData.filter((a: any) => !existingIds.has(a.motorista_id));
+            motoristasData = [...motoristasData, ...newAgregados];
+          }
+        }
+      } catch (err) {
+        const error = err as {
+          message: string;
+          details?: string;
+          hint?: string;
+          code?: string;
+        };
+        console.error('Erro ao buscar dados:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
+      
+      console.log('Dados de motoristas recebidos para', status, ':', motoristasData);
+      
+      if (!motoristasData || motoristasData.length === 0) {
+        console.warn('Nenhum motorista encontrado para o status:', status);
+        // Atualizar a coluna com array vazio
+        setColumns(prev => prev.map(col => 
+          col.id === status 
+            ? { ...col, motoristas: [], loading: false, totalCount: 0 } 
+            : col
+        ));
+        return;
+      }
+      
+      // Já temos todos os dados necessários da view, incluindo endereços
+      const motoristasComEndereco = motoristasData.map((motorista: any) => {
+        // Extrair o primeiro nome para exibição
+        const primeiroNome = motorista.nome_motorista ? motorista.nome_motorista.split(' ')[0] : '';
+        
+        return {
+          ...motorista,
+          nome: motorista.nome_motorista, // Garantir que o nome está mapeado corretamente
+          // Mapeando os campos da view para os nomes esperados pelo componente
+          cidade: motorista.nome_cidade,
+          estado: motorista.nome_estado,
+          sigla_estado: motorista.sigla_estado,
+          bairro: motorista.nome_bairro,
+          end_motorista: {
+            logradouro: motorista.logradouro,
+            nr_end: motorista.nr_end,
+            ds_complemento_end: motorista.ds_complemento_end,
+            bairro: motorista.nome_bairro,
+            cidade: motorista.nome_cidade,
+            estado: motorista.nome_estado,
+            sigla_estado: motorista.sigla_estado,
+            nr_cep: motorista.nr_cep
+          },
+          primeiroNome // Adicionando o primeiro nome para exibição
+        };
+      });
+      
+      console.log('Motoristas com endereços:', motoristasComEndereco);
+      
+      // Buscar clientes em uma consulta separada
+      const clienteIds = [...new Set(motoristasComEndereco
+        .filter((m: any) => m.cliente_id)
+        .map((m: any) => m.cliente_id)
+      )];
+      
+      console.log('Buscando clientes com IDs:', clienteIds);
+      
+      let clientesData: any[] = [];
+      if (clienteIds.length > 0) {
+        const { data: clientes, error: clientesError } = await supabase
+          .from('cliente')
+          .select('cliente_id, nome')
+          .in('cliente_id', clienteIds);
+          
+        if (clientesError) {
+          console.error('Erro ao buscar clientes:', clientesError);
+        } else {
+          clientesData = clientes || [];
+          console.log('Clientes encontrados:', clientesData);
+        }
+      }
+      
+      // Criar um mapa de cliente_id para nome do cliente
+      const clienteMap = clientesData.reduce((acc: Record<number, string>, cliente: any) => {
+        acc[cliente.cliente_id] = cliente.nome;
+        return acc;
+      }, {});
+      
+      // Buscar veículos e montar dados finais
       const motoristasWithVehicles = await Promise.all(
-        (motoristasData || []).map(async (motorista) => {
+        motoristasComEndereco.map(async (motorista: any) => {
           const { data: veiculoData } = await supabase
             .from('veiculo')
             .select('*')
@@ -326,6 +489,9 @@ const ContratacaoKanban = () => {
             .limit(1)
             .maybeSingle();
 
+          // Encontrar o nome do cliente usando o mapa
+          const nomeCliente = motorista.cliente_id ? clienteMap[motorista.cliente_id] : null;
+          
           return {
             ...motorista,
             veiculo: veiculoData ? [{
@@ -333,6 +499,7 @@ const ContratacaoKanban = () => {
               placa: veiculoData.placa,
               status_veiculo: veiculoData.status_veiculo,
               marca: veiculoData.marca,
+              modelo: veiculoData.modelo,
               tipologia: veiculoData.tipologia,
               ano: veiculoData.ano,
               combustivel: veiculoData.combustivel,
@@ -345,16 +512,23 @@ const ContratacaoKanban = () => {
               tipo: veiculoData.tipo,
               company_id: veiculoData.company_id
             }] : [],
-          } as MotoristaWithDetails;
+            nome_cidade: motorista.end_motorista?.[0]?.cidade || null,
+            sigla_estado: motorista.end_motorista?.[0]?.sigla_estado || null,
+            nome_cliente: nomeCliente || null
+          };
         })
       );
       
+      console.log('Motoristas com veículos:', motoristasWithVehicles);
+      
       // Update the column data
-      setColumns(prev => prev.map(col => {
+      console.log('Atualizando coluna', status, 'com', motoristasWithVehicles.length, 'itens');
+      setColumns((prev: any[]) => prev.map((col: any) => {
         if (col.id === status) {
           return {
             ...col,
             motoristas: motoristasWithVehicles,
+            totalCount: motoristasWithVehicles.length, // Atualiza a contagem total
             currentPage: page,
             loading: false
           };
@@ -420,35 +594,26 @@ const ContratacaoKanban = () => {
     }
   };
 
-  const handleStartChat = (motorista: MotoristaWithDetails, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (motorista.telefone) {
-      startChat(motorista.telefone.toString());
-    } else {
-      toast.error('Este motorista não possui telefone cadastrado');
+  const handleStartChat = (motorista: MotoristaWithDetails) => {
+    if (!motorista?.telefone) {
+      toast.error('Número de telefone não disponível para este motorista');
+      return;
     }
+    
+    // Usando a assinatura correta do startChat
+    startChat(motorista.telefone.toString());
   };
 
-  const handleViewDocument = async (motorista: MotoristaWithDetails) => {
-    try {
-      setSelectedMotorista({
-        documento: null,
-        nome: motorista.nome,
-        endereco: null,
-        veiculo: null,
-        motorista_id: motorista.motorista_id,
-        funcao: motorista.funcao
-      });
-
-      // Open the appropriate modal based on the motorista's function
-      if (motorista.funcao === 'Agregado') {
-        setIsUnifiedAgregadoModalOpen(true);
-      } else {
-        setIsUnifiedMotoristaModalOpen(true);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar documentos:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao carregar documentos');
+  const handleViewDocument = (motorista: MotoristaWithDetails) => {
+    if (!motorista) return;
+    
+    // Usando o motorista diretamente, já que a interface já está correta
+    setSelectedMotorista(motorista);
+    
+    if (motorista.funcao === 'Agregado') {
+      setIsUnifiedAgregadoModalOpen(true);
+    } else {
+      setIsUnifiedMotoristaModalOpen(true);
     }
   };
 
@@ -522,12 +687,6 @@ const ContratacaoKanban = () => {
     if (status !== currentStatus) {
       await updateStatus(motorista_id, status, currentStatus);
     }
-  };
-
-  const getStatusBadgeStyle = (funcao: string) => {
-    return funcao === 'Motorista'
-      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-      : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
   };
 
 
@@ -650,70 +809,113 @@ const ContratacaoKanban = () => {
                           {searchTerm ? 'Nenhum resultado encontrado' : 'Nenhum item nesta coluna'}
                         </div>
                       ) : (
-                        column.motoristas.map(motorista => (
+                        column.motoristas.map((motorista, index) => (
                           <div
-                            key={motorista.motorista_id}
-                            className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-move hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
+                            key={`${motorista.motorista_id}-${motorista.st_cadastro}-${index}`}
+                            className="group bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-move hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 flex flex-col"
                             draggable
                             onDragStart={(e) => onDragStart(e, motorista.motorista_id, column.id)}
                           >
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="flex-shrink-0 h-9 w-9 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                                    {motorista.funcao === 'Motorista' ? (
-                                      <User className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-                                    ) : (
-                                      <Truck className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-                                    )}
-                                  </div>
-                                  <div>
-                                    <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
-                                      {motorista.nome}
-                                    </h4>
-                                    <span className={`inline-block px-2 py-0.5 text-xs rounded-full mt-0.5 ${getStatusBadgeStyle(motorista.funcao)}`}>
+                            {/* Cabeçalho com nome e função */}
+                            <div className="mb-2">
+                              <div className="flex items-start gap-2">
+                                <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                                  motorista.funcao === 'Agregado' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-blue-100 dark:bg-blue-900/30'
+                                }`}>
+                                  {motorista.funcao === 'Agregado' ? (
+                                    <Truck className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                  ) : (
+                                    <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" title={motorista.nome || ''}>
+                                    {motorista.nome}
+                                  </h4>
+                                  <div className="mt-1">
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                      motorista.funcao === 'Agregado' 
+                                        ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200' 
+                                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200'
+                                    }`}>
                                       {motorista.funcao}
                                     </span>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  {motorista.telefone && (
-                                    <button 
-                                      onClick={(e) => handleStartChat(motorista, e)}
-                                      className="p-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                      title="Iniciar chat"
-                                    >
-                                      <MessageCircle size={16} />
-                                    </button>
-                                  )}
-                                  <button 
+                              </div>
+                            </div>
+
+                            {/* Informações do motorista */}
+                            <div className="space-y-2 mt-1">
+                              {motorista.end_motorista?.cidade && (
+                                <div className="flex items-center text-xs text-gray-600 dark:text-gray-300">
+                                  <MapPin size={12} className="mr-1.5 text-gray-400 flex-shrink-0" />
+                                  <span className="truncate">
+                                    {motorista.end_motorista.cidade} - {motorista.end_motorista.sigla_estado}
+                                  </span>
+                                </div>
+                              )}
+
+                              {motorista.telefone && (
+                                <div className="flex items-center text-xs text-gray-600 dark:text-gray-300">
+                                  <Phone size={12} className="mr-1.5 text-gray-400 flex-shrink-0" />
+                                  <a 
+                                    href={`tel:${motorista.telefone}`} 
+                                    className="hover:text-blue-500 hover:underline truncate"
+                                    onClick={(e) => e.stopPropagation()}
+                                    title={`Ligar para ${motorista.telefone}`}
+                                  >
+                                    {motorista.telefone}
+                                  </a>
+                                </div>
+                              )}
+
+                              {motorista.funcao === 'Agregado' && motorista.veiculo?.[0] && (
+                                <div className="flex items-center text-xs text-gray-600 dark:text-gray-300">
+                                  <Truck size={12} className="mr-1.5 text-gray-400 flex-shrink-0" />
+                                  <span className="truncate">
+                                    {motorista.veiculo[0].placa} - {motorista.veiculo[0].marca} {motorista.veiculo[0].modelo}
+                                  </span>
+                                </div>
+                              )}
+
+                              {motorista.nome_cliente && (
+                                <div className="pt-1">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200 truncate max-w-full">
+                                    {motorista.nome_cliente}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Botões de ação */}
+                            <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Data de cadastro: {motorista.data_cadastro ? new Date(motorista.data_cadastro).toLocaleDateString('pt-BR') : 'N/A'}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {motorista.telefone && (
+                                  <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleViewDocument(motorista);
+                                      handleStartChat(motorista);
                                     }}
-                                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                    className="p-1 text-gray-400 hover:text-blue-500 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    title="Iniciar chat"
                                   >
-                                    <FileText size={16} className="text-gray-500 dark:text-gray-400" />
+                                    <MessageCircle size={14} className="text-green-500" />
                                   </button>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-1 gap-1.5">
-                                {motorista.telefone && (
-                                  <div className="flex items-center text-gray-600 dark:text-gray-300">
-                                    <Phone size={14} className="mr-1.5 text-gray-400" />
-                                    <span className="text-xs truncate">{motorista.telefone}</span>
-                                  </div>
                                 )}
-
-                                {motorista.funcao === 'Agregado' && motorista.veiculo?.[0] && (
-                                  <div className="flex items-center text-gray-600 dark:text-gray-300">
-                                    <Truck size={14} className="mr-1.5 text-gray-400" />
-                                    <span className="text-xs truncate">
-                                      {motorista.veiculo[0].placa} - {motorista.veiculo[0].tipologia}
-                                    </span>
-                                  </div>
-                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewDocument(motorista);
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-blue-500 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                                  title="Ver documentos"
+                                >
+                                  <FilePen size={14} className="text-blue-500" />
+                                </button>
                               </div>
                             </div>
                           </div>
@@ -755,26 +957,16 @@ const ContratacaoKanban = () => {
         </div>
       </div>
 
-      <DocumentViewer
-        isOpen={isDocumentViewerOpen}
-        onClose={() => setIsDocumentViewerOpen(false)}
-        documento={selectedMotorista.documento}
-        nome={selectedMotorista.nome}
-        endereco={selectedMotorista.endereco}
-        veiculo={selectedMotorista.veiculo}
-        isAgregado={funcaoFilter === 'Agregado'}
-      />
-
-      {/* Unified Agregado Modal */}
+{/* Unified Agregado Modal */}
       <UnifiedAgregadoModal
         isOpen={isUnifiedAgregadoModalOpen}
         onClose={() => setIsUnifiedAgregadoModalOpen(false)}
-        motorista={selectedMotorista.motorista_id ? { motorista_id: selectedMotorista.motorista_id, nome: selectedMotorista.nome } : null}
+        motorista={selectedMotorista!}
         onSuccess={() => {
-          // Refresh data after changes
-          if (companyId) {
-            Promise.all(columns.map(column => fetchColumnData(column.id, column.currentPage)));
-          }
+          // Atualizar a lista após alguma alteração
+          columns.forEach(column => {
+            fetchColumnData(column.id, column.currentPage);
+          });
         }}
       />
 
@@ -782,12 +974,12 @@ const ContratacaoKanban = () => {
       <UnifiedMotoristaModal
         isOpen={isUnifiedMotoristaModalOpen}
         onClose={() => setIsUnifiedMotoristaModalOpen(false)}
-        motorista={selectedMotorista.motorista_id ? { motorista_id: selectedMotorista.motorista_id, nome: selectedMotorista.nome } : null}
+        motorista={selectedMotorista!}
         onSuccess={() => {
-          // Refresh data after changes
-          if (companyId) {
-            Promise.all(columns.map(column => fetchColumnData(column.id, column.currentPage)));
-          }
+          // Atualizar a lista após alguma alteração
+          columns.forEach(column => {
+            fetchColumnData(column.id, column.currentPage);
+          });
         }}
       />
     </div>

@@ -141,6 +141,7 @@ export interface Veiculo {
   placa: string;
   status_veiculo: boolean;
   marca: string;
+  modelo?: string;
   tipologia: string;
   ano: string;
   combustivel: string;
