@@ -977,18 +977,27 @@ const Contratados = () => {
                     Limpar
                   </button>
                 </div>
-                {['cadastrado', 'qualificado', 'documentacao', 'contrato_enviado', 'contratado', 'repescagem', 'rejeitado', 'gestao_risco'].map((status) => (
-                  <div key={status} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                {[
+                  { value: 'cadastrado', label: 'Cadastrado' },
+                  { value: 'qualificado', label: 'Qualificado' },
+                  { value: 'documentacao', label: 'Documentação' },
+                  { value: 'gestao_risco', label: 'Gestão de Risco' },
+                  { value: 'contrato_enviado', label: 'Contrato Enviado' },
+                  { value: 'contratado', label: 'Contratado' },
+                  { value: 'repescagem', label: 'Repescagem' },
+                  { value: 'rejeitado', label: 'Rejeitado' }
+                ].map(({ value, label }) => (
+                  <div key={value} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
                     <input
                       type="checkbox"
-                      id={`status-${status}`}
-                      checked={statusFilter.includes(status)}
-                      onChange={() => toggleFilterOption('status', status)}
+                      id={`status-${value}`}
+                      checked={statusFilter.includes(value)}
+                      onChange={() => toggleFilterOption('status', value)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       onClick={(e) => e.stopPropagation()}
                     />
-                    <label htmlFor={`status-${status}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300 capitalize">
-                      {status.replace('_', ' ')}
+                    <label htmlFor={`status-${value}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {label}
                     </label>
                   </div>
                 ))}
@@ -1427,6 +1436,16 @@ const Contratados = () => {
                                   Documentação
                                 </button>
                                 <button
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'gestao_risco')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    motorista.st_cadastro === 'gestao_risco' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Gestão de Risco
+                                </button>
+                                <button
                                   onClick={(e) => handleUpdateStatus(e, motorista, 'contrato_enviado')}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
                                     motorista.st_cadastro === 'contrato_enviado' 
@@ -1466,16 +1485,7 @@ const Contratados = () => {
                                 >
                                   Rejeitado
                                 </button>
-                                <button
-                                  onClick={(e) => handleUpdateStatus(e, motorista, 'gestao_risco')}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    motorista.st_cadastro === 'gestao_risco' 
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Gestão de Risco
-                                </button>
+
                               </div>
                             </div>
                           )}
@@ -1705,7 +1715,41 @@ const Contratados = () => {
       <EditMotoristaModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        motorista={selectedMotorista}
+        motorista={selectedMotorista ? (() => {
+          const motoristaWithAddress: MotoristaWithAddress = {
+            ...selectedMotorista as unknown as Motorista,
+            nome: selectedMotorista.nome_motorista || '',
+            endereco: {
+              id_end_motorista: selectedMotorista.id_end_motorista || 0,
+              nr_end: selectedMotorista.nr_end ?? null,
+              ds_complemento_end: selectedMotorista.ds_complemento_end ?? null,
+              st_end: selectedMotorista.st_end ?? null,
+              logradouro: selectedMotorista.logradouro ?? null,
+              nr_cep: selectedMotorista.nr_cep ?? null,
+              bairro: selectedMotorista.nome_bairro ?? null,
+              cidade: selectedMotorista.nome_cidade ?? null,
+              estado: selectedMotorista.nome_estado ?? null,
+              sigla_estado: selectedMotorista.sigla_estado ?? null
+            },
+            veiculo: selectedMotorista.veiculo_id ? {
+              veiculo_id: selectedMotorista.veiculo_id,
+              placa: selectedMotorista.placa || '',
+              status_veiculo: selectedMotorista.status_veiculo || false,
+              marca: selectedMotorista.marca || '',
+              tipologia: selectedMotorista.tipologia || '',
+              ano: selectedMotorista.ano || '',
+              combustivel: selectedMotorista.combustivel || '',
+              peso: selectedMotorista.peso || '',
+              cubagem: selectedMotorista.cubagem || '',
+              possui_rastreador: selectedMotorista.possui_rastreador || false,
+              marca_rastreador: selectedMotorista.marca_rastreador || '',
+              motorista_id: selectedMotorista.motorista_id || 0,
+              cor: selectedMotorista.cor || '',
+              tipo: selectedMotorista.tipo || ''
+            } : undefined
+          };
+          return motoristaWithAddress;
+        })() : null}
         onUpdate={fetchContratados}
       />
 

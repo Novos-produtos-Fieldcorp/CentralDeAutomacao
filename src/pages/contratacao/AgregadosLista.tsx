@@ -173,11 +173,11 @@ const AgregadosLista = () => {
     { value: 'cadastrado', label: 'Cadastrado' },
     { value: 'qualificado', label: 'Qualificado' },
     { value: 'documentacao', label: 'Documentação' },
+    { value: 'gestao_risco', label: 'Gestão de Risco' },
     { value: 'contrato_enviado', label: 'Contrato Enviado' },
     { value: 'contratado', label: 'Contratado' },
     { value: 'repescagem', label: 'Repescagem' },
-    { value: 'rejeitado', label: 'Rejeitado' },
-    { value: 'gestao_risco', label: 'Gestão de Risco' }
+    { value: 'rejeitado', label: 'Rejeitado' }
   ];
 
   const [isDetailViewOpen, setIsDetailViewOpen] = useState(false);
@@ -1522,6 +1522,16 @@ const AgregadosLista = () => {
                                   Documentação
                                 </button>
                                 <button
+                                  onClick={(e) => handleUpdateStatus(e, agregado, 'gestao_risco')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    agregado.st_cadastro === 'gestao_risco' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Gestão de Risco
+                                </button>
+                                <button
                                   onClick={(e) => handleUpdateStatus(e, agregado, 'contrato_enviado')}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
                                     agregado.st_cadastro === 'contrato_enviado' 
@@ -1561,16 +1571,7 @@ const AgregadosLista = () => {
                                 >
                                   Rejeitado
                                 </button>
-                                <button
-                                  onClick={(e) => handleUpdateStatus(e, agregado, 'gestao_risco')}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    agregado.st_cadastro === 'gestao_risco' 
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Gestão de Risco
-                                </button>
+
                               </div>
                             </div>
                           )}

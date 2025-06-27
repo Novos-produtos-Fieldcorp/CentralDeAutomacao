@@ -910,7 +910,7 @@ const MotoristasLista = () => {
                   </div>
                 </div>
                 <div className="max-h-48 overflow-y-auto">
-                  {['cadastrado', 'qualificado', 'documentacao', 'contrato_enviado', 'contratado', 'repescagem', 'rejeitado', 'gestao_risco'].map((status, index) => (
+                  {['cadastrado', 'qualificado', 'documentacao', 'gestao_risco', 'contrato_enviado', 'contratado', 'repescagem', 'rejeitado'].map((status, index) => (
                     <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                       <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
                         <input
@@ -1417,6 +1417,16 @@ const MotoristasLista = () => {
                                   Documentação
                                 </button>
                                 <button
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'gestao_risco')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    motorista.st_cadastro === 'gestao_risco' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Gestão de Risco
+                                </button>
+                                <button
                                   onClick={(e) => handleUpdateStatus(e, motorista, 'contrato_enviado')}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
                                     motorista.st_cadastro === 'contrato_enviado' 
@@ -1456,16 +1466,7 @@ const MotoristasLista = () => {
                                 >
                                   Rejeitado
                                 </button>
-                                <button
-                                  onClick={(e) => handleUpdateStatus(e, motorista, 'gestao_risco')}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    motorista.st_cadastro === 'gestao_risco' 
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Gestão de Risco
-                                </button>
+
                               </div>
                             </div>
                           )}
