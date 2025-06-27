@@ -5,7 +5,7 @@ import {
   CheckCircle2, XCircle, Settings, Smartphone,
   LayoutList, History, Users, Bell, FileText, Home,
   Truck, Gauge, ClipboardCheck, Store, Mail, Phone,
-  Map, Star, Heart, Bookmark, Flag, Award, Bug
+  Map, Star, Heart, Bookmark, Flag, Award
 } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
@@ -420,15 +420,6 @@ const ResumosGrupo = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Resumos em Grupo</h1>
         <div className="flex gap-2">
-          <button
-            onClick={() => setIsTimeDebugModalOpen(true)}
-            className="p-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 
-                     focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 
-                     transition-colors"
-            title="Diagnóstico de Fuso Horário"
-          >
-            <Bug className="w-5 h-5" />
-          </button>
           <button
             onClick={() => {
               setIsAddModalOpen(true);
