@@ -1,29 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Loader2, Calendar, MessagesSquare, Trash2, 
-  BarChart2, Clock, Link2, Send, Edit2, AlertTriangle,
-  CheckCircle2, XCircle, Settings, Smartphone,
-  LayoutList, History, Users, Bell, FileText, Home,
-  Truck, Gauge, ClipboardCheck, Store, Mail, Phone,
-  Map, Star, Heart, Bookmark, Flag, Award,
-  Zap, Briefcase, Coffee, Compass, Database, Headphones,
-  Image, Key, Layers, Music, Package, Printer, 
-  Radio, Shield, ShoppingBag, Smile, Sun, Terminal,
-  Umbrella, Video, Wifi, Zap, Activity, Anchor, 
-  Archive, AtSign, Battery, Book, Box, Camera, 
-  Cast, Cloud, Code, Command, Copy, CreditCard,
-  Disc, Download, Droplet, Eye, Facebook, Film,
-  Filter, Folder, Gift, GitBranch, Globe, Grid,
-  HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy,
-  Link, Linkedin, List, Lock, Map, Maximize, Menu,
-  MessageCircle, Mic, Monitor, Moon, Move, Navigation,
-  Octagon, Paperclip, Pause, Percent, Play, Plus,
-  Power, Refresh, RotateCcw, Save, Search, Server,
-  Settings, Share, ShoppingCart, Slash, Sliders, 
-  Smartphone, Speaker, Square, Tag, Target, ThumbsUp,
-  Trash, Twitter, Upload, User, Video, Voicemail,
-  Volume, Watch, Wind, Youtube
-} from 'lucide-react';
+import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Zap, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Map, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Plus, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Settings, Share, ShoppingCart, Slash, Sliders, Smartphone, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Video, Voicemail, Volume, Watch, Wind, Youtube } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
