@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2 } from 'lucide-react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, ArrowLeftRight } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -489,6 +489,40 @@ const MotoristasLista = () => {
       ));
     }
     setSelectAll(!selectAll);
+  };
+
+  const handleChangeRole = async (motorista: ViewMotorista, newRole: 'Motorista' | 'Agregado') => {
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from('motoristas')
+        .update({ funcao: newRole })
+        .eq('motorista_id', motorista.motorista_id);
+
+      if (error) throw error;
+
+      // Update local state
+      setMotoristas(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { ...m, funcao: newRole } 
+            : m
+        )
+      );
+
+      toast.success(`Motorista ${motorista.nome} agora é um ${newRole}`);
+      
+      // If in filtered view, refresh the list
+      if (searchTerm) {
+        fetchMotoristas();
+      }
+    } catch (error) {
+      console.error('Error changing role:', error);
+      toast.error('Erro ao alterar função do motorista');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBulkDelete = async () => {
@@ -1488,6 +1522,18 @@ const MotoristasLista = () => {
                             title="Editar Motorista"
                           >
                             <FilePen size={18} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Tem certeza que deseja transformar ${motorista.nome} em um Agregado?`)) {
+                                handleChangeRole(motorista, 'Agregado');
+                              }
+                            }}
+                            className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
+                            title="Transformar em Agregado"
+                          >
+                            <ArrowLeftRight size={18} />
                           </button>
                           <button
                             onClick={(e) => handleToggleStatus(e, motorista)}

@@ -749,7 +749,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       
                       <div className="mb-2 flex justify-between items-center">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          CRV Digital
+
                         </label>
                         {documentoVeiculo?.foto_crv && (
                           <button

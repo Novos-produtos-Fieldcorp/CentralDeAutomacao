@@ -358,6 +358,15 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     try {
       setSubmitting(true);
 
+      // Validate required fields
+      if (!formData.telefone) {
+        throw new Error('O telefone é obrigatório.');
+      }
+
+      if (!formData.dt_nascimento) {
+        throw new Error('A data de nascimento é obrigatória.');
+      }
+
       // Update motorista data
       const { error: motoristaError } = await supabase
         .from('motorista')
@@ -532,7 +541,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Telefone
+                  Telefone *
                 </label>
                 <input
                   type="tel"
@@ -540,12 +549,13 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
                   value={formData.telefone}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Data de Nascimento
+                  Data de Nascimento *
                 </label>
                 <input
                   type="date"
@@ -553,6 +563,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
                   value={formData.dt_nascimento}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  required
                 />
               </div>
 

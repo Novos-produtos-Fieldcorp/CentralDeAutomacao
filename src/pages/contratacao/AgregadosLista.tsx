@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, Truck, Loader2, MapPin, FilePen, User } from 'lucide-react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, Truck, Loader2, MapPin, FilePen, User, ArrowLeftRight } from 'lucide-react';
 import type { MotoristaWithAddress, EnderecoMotorista } from '../../types/database';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -120,8 +120,8 @@ const AgregadosLista = () => {
   const [agregados, setAgregados] = useState<ViewAgregado[]>([]);
   const [loading, setLoading] = useState(true);
   const [clientesLoading, setClientesLoading] = useState(true);
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   
-
   // Função para alternar status selecionado
   const toggleStatus = (status: string) => {
     setStatusFilter((prev: string[]) => 
@@ -188,7 +188,6 @@ const AgregadosLista = () => {
     y: 0,
     agregado: null,
   });
-  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
   const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
   const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
@@ -467,33 +466,43 @@ const AgregadosLista = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(filteredAgregados.map(a => a.motorista_id || 0)));
+      const allIds = new Set(agregados.map(a => a.motorista_id).filter((id): id is number => !!id));
+      setSelectedItems(allIds);
     }
     setSelectAll(!selectAll);
   };
 
+  const handleMassMessage = () => {
+    setIsMassMessageModalOpen(true);
+  };
+
   const handleBulkDelete = async () => {
+    if (selectedItems.size === 0) {
+      toast.error('Nenhum agregado selecionado para exclusão');
+      return;
+    }
+
     try {
-      // Delete all selected items
-      for (const id of selectedItems) {
-        const { error } = await query('motorista')
-          .delete()
-          .eq('motorista_id', id);
+      const { error } = await supabase
+        .from('motoristas')
+        .delete()
+        .in('motorista_id', Array.from(selectedItems));
 
-        if (error) throw error;
-      }
+      if (error) throw error;
 
-      // Update the list
-      setAgregados(agregados.filter(a => !selectedItems.has(a.motorista_id || 0)));
-      toast.success(`${selectedItems.size} agregado${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
+      // Update the local state to remove the deleted items
+      setAgregados(prev => prev.filter(a => !selectedItems.has(a.motorista_id || 0)));
       
       // Reset selection
       setSelectedItems(new Set());
       setSelectAll(false);
-      setIsBulkDeleteModalOpen(false);
+      
+      toast.success(`${selectedItems.size} agregado(s) excluído(s) com sucesso`);
     } catch (error) {
       console.error('Error deleting agregados:', error);
       toast.error('Erro ao excluir agregados');
+    } finally {
+      setIsBulkDeleteModalOpen(false);
     }
   };
 
@@ -501,11 +510,6 @@ const AgregadosLista = () => {
     setBulkActionType(actionType);
     setIsBulkActionsModalOpen(true);
   };
-
-  const handleMassMessage = () => {
-    setIsMassMessageModalOpen(true);
-  };
-
 
   const toggleClienteDropdown = (e: React.MouseEvent, agregadoId: number) => {
     e.stopPropagation();
@@ -586,33 +590,131 @@ const AgregadosLista = () => {
     }
   };
 
-  const handleToggleStatus = async (e: React.MouseEvent, agregado: ViewAgregado) => {
-    e.stopPropagation();
+  const handleChangeRole = async (agregado: ViewAgregado, newRole: 'Motorista' | 'Agregado') => {
+    if (!agregado.motorista_id) {
+      console.error('ID do motorista não encontrado');
+      toast.error('Erro ao alterar função: ID do motorista não encontrado');
+      return;
+    }
+
     try {
-      setUpdatingStatus(agregado.motorista_id || 0);
+      setUpdatingStatus(agregado.motorista_id);
       
-      // Update the ativo status in the database (toggle it)
-      const newAtivo = !agregado.ativo;
+      console.log('Atualizando função para:', newRole, 'no motorista ID:', agregado.motorista_id);
       
-      const { error } = await supabase
+      const updateData = { 
+        funcao: newRole,
+        // Se estiver mudando para motorista, ativa automaticamente
+        ...(newRole === 'Motorista' && { ativo: true })
+      };
+      
+      console.log('Dados de atualização:', updateData);
+      
+      // Primeiro, verifica se o registro existe
+      const { data: existingData, error: fetchError } = await supabase
         .from('motorista')
-        .update({ ativo: newAtivo })
-        .eq('motorista_id', agregado.motorista_id || 0);
-        
-      if (error) throw error;
+        .select('*')
+        .eq('motorista_id', agregado.motorista_id)
+        .single();
+
+      if (fetchError) {
+        console.error('Erro ao buscar motorista:', fetchError);
+        throw new Error(`Erro ao verificar motorista: ${fetchError.message}`);
+      }
+
+      if (!existingData) {
+        throw new Error('Motorista não encontrado no banco de dados');
+      }
+
+      console.log('Dados atuais do motorista:', existingData);
       
-      // Update the local state
-      setAgregados(prev => 
-        prev.map(a => 
+      // Tenta fazer o update
+      const { data, error } = await supabase
+        .from('motorista')
+        .update(updateData)
+        .eq('motorista_id', agregado.motorista_id)
+        .select();
+
+      if (error) {
+        console.error('Erro na resposta do Supabase:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw new Error(`Erro ao atualizar: ${error.message}`);
+      }
+      
+      console.log('Resposta do Supabase:', data);
+
+      // Atualiza o estado local
+      setAgregados((prevAgregados: ViewAgregado[]) =>
+        prevAgregados.map((a: ViewAgregado) =>
           a.motorista_id === agregado.motorista_id 
-            ? { ...a, ativo: newAtivo } 
+            ? { 
+                ...a, 
+                ...updateData
+              } 
             : a
         )
       );
+
+      toast.success(`Função alterada para ${newRole} com sucesso!`);
       
-      toast.success(`Agregado ${newAtivo ? 'ativado' : 'desativado'} com sucesso`);
+      // Recarrega a lista para garantir que os filtros sejam aplicados corretamente
+      const currentSearchTerm = (document.querySelector('input[type="search"]') as HTMLInputElement)?.value || '';
+      const hasActiveFilters = currentSearchTerm || statusFilter.length > 0 || ativoFilter || clienteFilter.length > 0;
+      
+      if (hasActiveFilters) {
+        console.log('Recarregando lista de agregados devido a filtros ativos');
+        try {
+          await fetchAgregados();
+        } catch (fetchError) {
+          console.error('Erro ao recarregar lista:', fetchError);
+          // Não interrompe o fluxo se apenas o reload falhar
+        }
+      }
     } catch (error) {
-      console.error('Error updating ativo status:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      console.error('Erro detalhado ao alterar função do motorista:', {
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+        agregadoId: agregado.motorista_id,
+        newRole,
+        timestamp: new Date().toISOString()
+      });
+      toast.error(`Erro ao alterar função: ${errorMessage}`);
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  const handleToggleStatus = async (e: React.MouseEvent, agregado: ViewAgregado) => {
+    e.stopPropagation();
+    const newStatus = !agregado.ativo;
+
+    try {
+      setUpdatingStatus(agregado.motorista_id || 0);
+      
+      const { error } = await supabase
+        .from('motoristas')
+        .update({ ativo: newStatus })
+        .eq('motorista_id', agregado.motorista_id);
+
+      if (error) throw error;
+
+      // Atualiza o estado local
+      setAgregados(prevAgregados =>
+        prevAgregados.map(a =>
+          a.motorista_id === agregado.motorista_id 
+            ? { ...a, ativo: newStatus } 
+            : a
+        )
+      );
+
+      toast.success(`Agregado ${newStatus ? 'ativado' : 'desativado'} com sucesso!`);
+    } catch (error) {
+      console.error('Erro ao atualizar status do agregado:', error);
       toast.error('Erro ao atualizar status do agregado');
     } finally {
       setUpdatingStatus(null);
@@ -1533,6 +1635,18 @@ const AgregadosLista = () => {
                             title="Visualizar"
                           >
                             <FilePen size={18} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Tem certeza que deseja transformar ${agregado.nome} em um Motorista?`)) {
+                                handleChangeRole(agregado, 'Motorista');
+                              }
+                            }}
+                            className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
+                            title="Transformar em Motorista"
+                          >
+                            <ArrowLeftRight size={18} />
                           </button>
                           <button
                             onClick={(e) => handleToggleStatus(e, agregado)}
