@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, Truck, Loader2, MapPin, FilePen, User, ArrowLeftRight } from 'lucide-react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, Truck, Loader2, MapPin, FilePen, User, ArrowLeftRight, AlertTriangle } from 'lucide-react';
 import type { MotoristaWithAddress, EnderecoMotorista } from '../../types/database';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -192,6 +192,18 @@ const AgregadosLista = () => {
   const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
   const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const [roleChangeModal, setRoleChangeModal] = useState<{
+    isOpen: boolean;
+    agregado: ViewAgregado | null;
+    newRole: 'Motorista' | 'Agregado' | null;
+    isLoading: boolean;
+  }>({
+    isOpen: false,
+    agregado: null,
+    newRole: null,
+    isLoading: false,
+  });
+
   const [customDateRange, setCustomDateRange] = useState<{
     startDate: string;
     endDate: string;
@@ -390,15 +402,15 @@ const AgregadosLista = () => {
       }
     } catch (err) {
       const error = err as Error;
-      console.error('Erro detalhado ao carregar clientes:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
-      toast.error('Erro ao carregar clientes. Verifique o console para mais detalhes.');
-    } finally {
-      setClientesLoading(false);
+      console.error('Erro detalhado ao carregar clientes:', error);
     }
+  };
+
+  // Função para manipular o menu de contexto
+  const handleContextMenu = (e: React.MouseEvent, agregado: ViewAgregado) => {
+    e.preventDefault();
+    setSelectedAgregado(agregado);
+    // Implementar lógica de menu de contexto se necessário
   };
 
   const handleViewDetail = (agregado: ViewAgregado) => {
@@ -415,13 +427,6 @@ const AgregadosLista = () => {
     if (!agregado) return;
     setSelectedAgregado(agregado);
     setIsEditModalOpen(true);
-  };
-
-  // Função para manipular o menu de contexto
-  const handleContextMenu = (e: React.MouseEvent, agregado: ViewAgregado) => {
-    e.preventDefault();
-    setSelectedAgregado(agregado);
-    // Implementar lógica de menu de contexto se necessário
   };
 
   // Função para alternar o dropdown de status
@@ -448,6 +453,65 @@ const AgregadosLista = () => {
       toast.error('Erro ao excluir agregado');
     }
   };
+
+  const filteredAgregados = (agregados || []).filter(agregado => {
+    if (!agregado) return false;
+    
+    const searchLower = searchTerm.toLowerCase();
+    // Filtro de status
+    if (statusFilter.length > 0 && !statusFilter.includes(agregado.st_cadastro)) {
+      return false;
+    }
+    
+    // Lógica para filtro de cliente
+    let clienteMatch = true;
+    if (clienteFilter.length > 0) {
+      if (clienteFilter.includes('sem_cliente')) {
+        clienteMatch = agregado.cliente_id === null || agregado.cliente_id === undefined;
+      } else if (agregado.cliente_id) {
+        clienteMatch = clienteFilter.includes(agregado.cliente_id.toString());
+      } else {
+        clienteMatch = false;
+      }
+    }
+    
+    // Lógica para filtro de veículo
+    let veiculoMatch = true;
+    if (tipoVeiculoFilter.length > 0) {
+      if (tipoVeiculoFilter.includes('sem_veiculo')) {
+        veiculoMatch = !agregado.veiculo_id;
+      } else {
+        veiculoMatch = agregado.tipologia ? tipoVeiculoFilter.includes(agregado.tipologia) : false;
+      }
+    }
+    
+    const cidadeMatch = cidadeFilter.length > 0 ? (agregado.nome_cidade ? cidadeFilter.includes(agregado.nome_cidade) : false) : true;
+    const ativoMatch = ativoFilter === '' ? true : 
+      (ativoFilter === 'true' ? agregado.ativo === true : agregado.ativo === false);
+    
+    try {
+      // Verifica se o status do agregado está na lista de status filtrados
+      const statusMatch = statusFilter.length > 0 
+        ? (agregado.st_cadastro ? statusFilter.includes(agregado.st_cadastro) : false)
+        : true;
+        
+      return (
+        statusMatch &&
+        clienteMatch &&
+        veiculoMatch &&
+        cidadeMatch &&
+        ativoMatch &&
+        ((agregado.nome_motorista?.toLowerCase().includes(searchLower)) ||
+         (agregado.cpf?.includes(searchLower)) ||
+         (typeof agregado.email === 'string' && agregado.email.toLowerCase().includes(searchLower)) ||
+         (agregado.telefone?.toString().includes(searchLower)) ||
+         (agregado.placa?.toLowerCase().includes(searchLower)))
+      );
+    } catch (error) {
+      console.error('Erro ao filtrar agregado:', error, agregado);
+      return false;
+    }
+  });
 
   const handleSelectItem = (id: number) => {
     const newSelectedItems = new Set(selectedItems);
@@ -586,84 +650,75 @@ const AgregadosLista = () => {
       toast.error('Erro ao atualizar cliente');
     } finally {
       setUpdatingCliente(null);
-      setClienteDropdownOpen(null);
     }
   };
 
-  const handleChangeRole = async (agregado: ViewAgregado, newRole: 'Motorista' | 'Agregado') => {
-    if (!agregado.motorista_id) {
-      console.error('ID do motorista não encontrado');
-      toast.error('Erro ao alterar função: ID do motorista não encontrado');
-      return;
-    }
+  // Função para abrir o modal de confirmação de mudança de função
+  const openRoleChangeModal = (agregado: ViewAgregado, newRole: 'Motorista' | 'Agregado') => {
+    setRoleChangeModal({
+      isOpen: true,
+      agregado,
+      newRole,
+      isLoading: false,
+    });
+  };
 
+  // Função para confirmar a mudança de função
+  const handleRoleChangeConfirm = async () => {
+    if (!roleChangeModal.agregado || !roleChangeModal.newRole) return;
+    
+    setRoleChangeModal(prev => ({ ...prev, isLoading: true }));
+    
     try {
-      setUpdatingStatus(agregado.motorista_id);
-      
-      console.log('Atualizando função para:', newRole, 'no motorista ID:', agregado.motorista_id);
-      
-      const updateData = { 
-        funcao: newRole,
-        // Se estiver mudando para motorista, ativa automaticamente
-        ...(newRole === 'Motorista' && { ativo: true })
+      const updateData = {
+        funcao: roleChangeModal.newRole,
+        ativo: roleChangeModal.newRole === 'Motorista' ? true : roleChangeModal.agregado.ativo
       };
       
-      console.log('Dados de atualização:', updateData);
-      
-      // Primeiro, verifica se o registro existe
-      const { data: existingData, error: fetchError } = await supabase
-        .from('motorista')
-        .select('*')
-        .eq('motorista_id', agregado.motorista_id)
-        .single();
-
-      if (fetchError) {
-        console.error('Erro ao buscar motorista:', fetchError);
-        throw new Error(`Erro ao verificar motorista: ${fetchError.message}`);
-      }
-
-      if (!existingData) {
-        throw new Error('Motorista não encontrado no banco de dados');
-      }
-
-      console.log('Dados atuais do motorista:', existingData);
-      
-      // Tenta fazer o update
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('motorista')
         .update(updateData)
-        .eq('motorista_id', agregado.motorista_id)
-        .select();
-
+        .eq('motorista_id', roleChangeModal.agregado.motorista_id);
+      
       if (error) {
         console.error('Erro na resposta do Supabase:', {
           message: error.message,
           details: error.details,
           hint: error.hint,
-          code: error.code
+          code: error.code,
+          stack: new Error().stack
         });
+        
+        // Verifica se o erro é relacionado a permissões
+        if (error.code === '42501') {
+          throw new Error('Sem permissão para atualizar este registro');
+        }
+        
         throw new Error(`Erro ao atualizar: ${error.message}`);
       }
       
-      console.log('Resposta do Supabase:', data);
-
       // Atualiza o estado local
-      setAgregados((prevAgregados: ViewAgregado[]) =>
-        prevAgregados.map((a: ViewAgregado) =>
-          a.motorista_id === agregado.motorista_id 
-            ? { 
-                ...a, 
-                ...updateData
-              } 
+      setAgregados(prev => 
+        prev.map(a => 
+          a.motorista_id === roleChangeModal.agregado?.motorista_id 
+            ? { ...a, ...updateData } 
             : a
         )
       );
-
-      toast.success(`Função alterada para ${newRole} com sucesso!`);
+      
+      toast.success(`Função alterada com sucesso para ${roleChangeModal.newRole}!`, { duration: 3000 });
+      
+      // Fecha o modal
+      setRoleChangeModal({
+        isOpen: false,
+        agregado: null,
+        newRole: null,
+        isLoading: false,
+      });
       
       // Recarrega a lista para garantir que os filtros sejam aplicados corretamente
       const currentSearchTerm = (document.querySelector('input[type="search"]') as HTMLInputElement)?.value || '';
-      const hasActiveFilters = currentSearchTerm || statusFilter.length > 0 || ativoFilter || clienteFilter.length > 0;
+      const hasActiveFilters = currentSearchTerm || roleChangeModal.agregado?.st_cadastro || roleChangeModal.agregado?.ativo;
       
       if (hasActiveFilters) {
         console.log('Recarregando lista de agregados devido a filtros ativos');
@@ -677,15 +732,18 @@ const AgregadosLista = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error('Erro detalhado ao alterar função do motorista:', {
-        error: errorMessage,
-        stack: error instanceof Error ? error.stack : undefined,
-        agregadoId: agregado.motorista_id,
-        newRole,
-        timestamp: new Date().toISOString()
+        error,
+        message: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined
       });
-      toast.error(`Erro ao alterar função: ${errorMessage}`);
-    } finally {
-      setUpdatingStatus(null);
+      
+      toast.error(`Erro ao alterar função: ${errorMessage}`, { duration: 5000 });
+      
+      // Mantém o modal aberto em caso de erro, mas remove o estado de carregamento
+      setRoleChangeModal(prev => ({
+        ...prev,
+        isLoading: false
+      }));
     }
   };
 
@@ -721,64 +779,7 @@ const AgregadosLista = () => {
     }
   };
 
-  const filteredAgregados = (agregados || []).filter(agregado => {
-    if (!agregado) return false;
-    
-    const searchLower = searchTerm.toLowerCase();
-    // Filtro de status
-    if (statusFilter.length > 0 && !statusFilter.includes(agregado.st_cadastro)) {
-      return false;
-    }
-    
-    // Lógica para filtro de cliente
-    let clienteMatch = true;
-    if (clienteFilter.length > 0) {
-      if (clienteFilter.includes('sem_cliente')) {
-        clienteMatch = agregado.cliente_id === null || agregado.cliente_id === undefined;
-      } else if (agregado.cliente_id) {
-        clienteMatch = clienteFilter.includes(agregado.cliente_id.toString());
-      } else {
-        clienteMatch = false;
-      }
-    }
-    
-    // Lógica para filtro de veículo
-    let veiculoMatch = true;
-    if (tipoVeiculoFilter.length > 0) {
-      if (tipoVeiculoFilter.includes('sem_veiculo')) {
-        veiculoMatch = !agregado.veiculo_id;
-      } else {
-        veiculoMatch = agregado.tipologia ? tipoVeiculoFilter.includes(agregado.tipologia) : false;
-      }
-    }
-    
-    const cidadeMatch = cidadeFilter.length > 0 ? (agregado.nome_cidade ? cidadeFilter.includes(agregado.nome_cidade) : false) : true;
-    const ativoMatch = ativoFilter === '' ? true : 
-      (ativoFilter === 'true' ? agregado.ativo === true : agregado.ativo === false);
-    
-    try {
-      // Verifica se o status do agregado está na lista de status filtrados
-      const statusMatch = statusFilter.length > 0 
-        ? (agregado.st_cadastro ? statusFilter.includes(agregado.st_cadastro) : false)
-        : true;
-        
-      return (
-        statusMatch &&
-        clienteMatch &&
-        veiculoMatch &&
-        cidadeMatch &&
-        ativoMatch &&
-        ((agregado.nome_motorista?.toLowerCase().includes(searchLower)) ||
-         (agregado.cpf?.includes(searchLower)) ||
-         (typeof agregado.email === 'string' && agregado.email.toLowerCase().includes(searchLower)) ||
-         (agregado.telefone?.toString().includes(searchLower)) ||
-         (agregado.placa?.toLowerCase().includes(searchLower)))
-      );
-    } catch (error) {
-      console.error('Erro ao filtrar agregado:', error, agregado);
-      return false;
-    }
-  });
+
 
   const {
     currentPage,
@@ -1639,9 +1640,7 @@ const AgregadosLista = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (window.confirm(`Tem certeza que deseja transformar ${agregado.nome} em um Motorista?`)) {
-                                handleChangeRole(agregado, 'Motorista');
-                              }
+                              openRoleChangeModal(agregado, 'Motorista');
                             }}
                             className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
                             title="Transformar em Motorista"
@@ -1997,6 +1996,72 @@ const AgregadosLista = () => {
           })
           .filter(Boolean)}
       />
+
+      {/* Modal de confirmação de mudança de função */}
+      {roleChangeModal.isOpen && roleChangeModal.agregado && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-full">
+                  <AlertTriangle className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white text-center mb-2">
+                Confirmar mudança de função
+              </h3>
+              
+              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mb-6">
+                Tem certeza que deseja transformar <span className="font-semibold">{roleChangeModal.agregado?.nome || roleChangeModal.agregado?.nome_motorista}</span> em um <span className="font-semibold">{roleChangeModal.newRole}</span>?
+              </p>
+
+              <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 mb-6">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertTriangle className="h-5 w-5 text-yellow-400 dark:text-yellow-300" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      {roleChangeModal.newRole === 'Motorista' 
+                        ? 'Ao transformar em Motorista, o registro será ativado automaticamente.' 
+                        : 'Ao transformar em Agregado, o registro poderá ser desativado manualmente.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setRoleChangeModal({ isOpen: false, agregado: null, newRole: null, isLoading: false })}
+                  disabled={roleChangeModal.isLoading}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRoleChangeConfirm}
+                  disabled={roleChangeModal.isLoading}
+                  className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    roleChangeModal.isLoading ? 'pl-10' : ''
+                  }`}
+                >
+                  {roleChangeModal.isLoading ? (
+                    <>
+                      <Loader2 className="absolute w-4 h-4 mr-2 -ml-1 text-white animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    `Confirmar para ${roleChangeModal.agregado?.nome || roleChangeModal.agregado?.nome_motorista || ''}`
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
