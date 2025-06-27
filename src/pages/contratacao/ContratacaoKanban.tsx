@@ -342,10 +342,64 @@ const ContratacaoKanban = () => {
       
       // Primeiro, buscar apenas os dados básicos dos motoristas
       console.log('Executando query para motoristas...');
-      const { data: motoristasData, error } = await query.select('*');
       
-      if (error) {
-        console.error('Erro na consulta de motoristas:', {
+      // First, get data from vw_motoristas_completo
+      let motoristasData: any[] = [];
+      
+      try {
+        const { data: motoristasData1, error: error1 } = await query.select('*');
+        
+        if (error1) {
+          console.error('Erro na consulta de motoristas (vw_motoristas_completo):', error1);
+          throw error1;
+        }
+        
+        motoristasData = motoristasData1 || [];
+        
+        // If we're looking for agregados or all, also check vw_agregados_completo
+        if (funcaoFilter === 'Agregado' || funcaoFilter === 'todos') {
+          let agregadosQuery = supabase
+            .from('vw_agregados_completo')
+            .select('*')
+            .eq('st_cadastro', status)
+            .eq('company_id', companyId);
+            
+          // Always filter for Agregado in this view
+          agregadosQuery = agregadosQuery.eq('funcao', 'Agregado');
+          
+          // Apply search filter if provided
+          if (debouncedSearchTerm) {
+            agregadosQuery = agregadosQuery.or(
+              `nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`
+            );
+          }
+          
+          // Apply sorting by data_cadastro (newest first)
+          agregadosQuery = agregadosQuery.order('data_cadastro', { ascending: false });
+          
+          // Apply pagination
+          agregadosQuery = agregadosQuery.range(from, to);
+          
+          const { data: agregadosData, error: error2 } = await agregadosQuery;
+          
+          if (error2) {
+            console.error('Erro na consulta de agregados (vw_agregados_completo):', error2);
+            // Don't throw here, we still have motoristas data
+          } else if (agregadosData && agregadosData.length > 0) {
+            // Merge the results, ensuring we don't have duplicates
+            const existingIds = new Set(motoristasData.map(m => m.motorista_id));
+            const newAgregados = agregadosData.filter((a: any) => !existingIds.has(a.motorista_id));
+            motoristasData = [...motoristasData, ...newAgregados];
+          }
+        }
+      } catch (err) {
+        const error = err as {
+          message: string;
+          details?: string;
+          hint?: string;
+          code?: string;
+        };
+        console.error('Erro ao buscar dados:', {
           message: error.message,
           details: error.details,
           hint: error.hint,
