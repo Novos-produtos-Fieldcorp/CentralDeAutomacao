@@ -156,6 +156,11 @@ const AgregadosLista = () => {
   const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
   const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
+  const clienteDropdownRef = useRef<HTMLDivElement>(null);
+  const cidadeDropdownRef = useRef<HTMLDivElement>(null);
+  const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const ativoDropdownRef = useRef<HTMLDivElement>(null);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -212,13 +217,25 @@ const AgregadosLista = () => {
     endDate: '',
   });
 
-  // Refs for dropdowns
-  const clienteDropdownRef = useRef<HTMLDivElement>(null);
-  const cidadeDropdownRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    fetchAgregados();
-    fetchClientes();
+    let isMounted = true;
+
+    const fetchData = async () => {
+      try {
+        await fetchAgregados();
+        if (isMounted) {
+          await fetchClientes();
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [dateFilter, customDateRange]);
 
   useEffect(() => {
@@ -263,13 +280,23 @@ const AgregadosLista = () => {
       if (showAtivoDropdown && !event.composedPath().some((el: any) => el.id === 'ativo-dropdown')) {
         setShowAtivoDropdown(false);
       }
+      
+      // Close tipo veiculo dropdown if open
+      if (showTipoVeiculoDropdown && !event.composedPath().some((el: any) => el.id === 'tipo-veiculo-dropdown')) {
+        setShowTipoVeiculoDropdown(false);
+      }
+      
+      // Close status dropdown if open
+      if (showStatusDropdown && !event.composedPath().some((el: any) => el.id === 'status-dropdown')) {
+        setShowStatusDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showAtivoDropdown]);
+  }, [showAtivoDropdown, showTipoVeiculoDropdown, showStatusDropdown]);
 
   const fetchAgregados = async () => {
     try {
@@ -385,24 +412,24 @@ const AgregadosLista = () => {
 
       if (!data || data.length === 0) {
         console.warn('Nenhum cliente ativo encontrado para a empresa');
+        setClientes([]);
       } else {
-        // Mapeando os dados para garantir que usamos o campo correto (cliente_id)
-        // e adicionando uma cor a cada cliente
         const clientesMapeados = data.map((cliente, index) => ({
           ...cliente,
-          id: cliente.cliente_id, // Garantindo que o campo id existe
+          id: cliente.id || cliente.cliente_id,
           nome: cliente.nome || 'Cliente sem nome',
-          cor: defaultClientColors[index % defaultClientColors.length] // Adiciona uma cor baseada no índice
+          cor: defaultClientColors[index % defaultClientColors.length]
         }));
         
         console.log(`Encontrados ${clientesMapeados.length} clientes ativos`);
-        console.log('Lista de clientes:', clientesMapeados.map(c => ({ id: c.id, nome: c.nome, cor: c.cor })));
-        
         setClientes(clientesMapeados);
       }
     } catch (err) {
       const error = err as Error;
       console.error('Erro detalhado ao carregar clientes:', error);
+      toast.error('Erro ao carregar a lista de clientes');
+    } finally {
+      setClientesLoading(false);
     }
   };
 
@@ -570,49 +597,39 @@ const AgregadosLista = () => {
     }
   };
 
-  const handleBulkAction = async (actionType: 'status' | 'client') => {
-    setBulkActionType(actionType);
-    setIsBulkActionsModalOpen(true);
-  };
-
-  const toggleClienteDropdown = (e: React.MouseEvent, agregadoId: number) => {
-    e.stopPropagation();
-    if (clienteDropdownOpen === agregadoId) {
-      setClienteDropdownOpen(null);
-    } else {
-      setClienteDropdownOpen(agregadoId);
-    }
-  };
   const handleUpdateStatus = async (e: React.MouseEvent, agregado: ViewAgregado, newStatus: string) => {
-    e.stopPropagation();
     e.stopPropagation();
     try {
       setUpdatingStatus(agregado.motorista_id || 0);
       
-      // Update the status in the database
+      // Atualiza o status do agregado localmente para feedback imediato
+      setAgregados(prev => prev.map(a => 
+        a.motorista_id === agregado.motorista_id 
+          ? { ...a, st_cadastro: newStatus }
+          : a
+      ));
+      
+      // Atualiza no banco de dados
       const { error } = await supabase
-        .from('motorista')
+        .from('motoristas')
         .update({ st_cadastro: newStatus })
-        .eq('motorista_id', agregado.motorista_id || 0);
-        
+        .eq('motorista_id', agregado.motorista_id);
+      
       if (error) throw error;
       
-      // Update the local state
-      setAgregados(prev => 
-        prev.map(a => 
-          a.motorista_id === agregado.motorista_id 
-            ? { ...a, st_cadastro: newStatus } 
-            : a
-        )
-      );
-      
-      toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
+      toast.success(`Status atualizado para ${newStatus} com sucesso!`);
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error('Erro ao atualizar status:', error);
       toast.error('Erro ao atualizar status');
+      
+      // Reverte a alteração em caso de erro
+      setAgregados(prev => prev.map(a => 
+        a.motorista_id === agregado.motorista_id 
+          ? { ...a, st_cadastro: agregado.st_cadastro }
+          : a
+      ));
     } finally {
-      setUpdatingStatus(null);
-      setStatusDropdownOpen(null);
+      setUpdatingStatus(0);
     }
   };
 
@@ -1002,31 +1019,51 @@ const AgregadosLista = () => {
         
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative group" ref={clienteDropdownRef}>
-            <div className="relative w-full">
-              <button
-                type="button"
-                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowClienteDropdown(!showClienteDropdown);
-                  setShowCidadeDropdown(false);
-                }}
-                disabled={clientesLoading}
-              >
-                <div className="flex-1 truncate text-left">
-                  {clientesLoading ? 'Carregando...' : 
-                   clienteFilter.length === 0 ? 'Todos os clientes' : `${clienteFilter.length} selecionado(s)`}
-                </div>
-              </button>
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <button
+              type="button"
+              id="cliente-dropdown-button"
+              className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowClienteDropdown(!showClienteDropdown);
+                setShowCidadeDropdown(false);
+              }}
+              disabled={clientesLoading}
+              aria-expanded={showClienteDropdown}
+              aria-haspopup="listbox"
+              aria-labelledby="cliente-dropdown-button"
+            >
+              <span className="truncate">
+                {clientesLoading ? 'Carregando...' : 
+                 clienteFilter.length === 0 
+                  ? 'Todos os clientes' 
+                  : clienteFilter.length === 1 && clienteFilter[0] === 'sem_cliente'
+                    ? 'Sem cliente'
+                    : `${clienteFilter.length} cliente(s)`}
+              </span>
+              <div className="absolute inset-y-0 right-2 flex items-center">
                 {clientesLoading ? (
                   <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
                 ) : (
                   <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
                 )}
               </div>
-            </div>
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </button>
             
             {showClienteDropdown && !clientesLoading && (
               <div 
@@ -1049,8 +1086,9 @@ const AgregadosLista = () => {
                   </div>
                 </div>
                 <div className="max-h-48 overflow-y-auto">
+                  {/* No Client Option */}
                   <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                    <label className="flex items-center space-x-2 cursor-pointer">
+                    <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
@@ -1059,22 +1097,23 @@ const AgregadosLista = () => {
                           if (e.target.checked) {
                             setClienteFilter([...clienteFilter, 'sem_cliente']);
                           } else {
-                            setClienteFilter(clienteFilter.filter(c => c !== 'sem_cliente'));
+                            setClienteFilter(clienteFilter.filter(id => id !== 'sem_cliente'));
                           }
                         }}
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-200">Sem cliente</span>
                     </label>
                   </div>
+                  
+                  {/* Clients List */}
                   {clientes.map((cliente) => {
-                    // Skip rendering if cliente or cliente.id is undefined
                     if (!cliente || cliente.id === undefined || cliente.id === null) {
                       return null;
                     }
                     const clienteId = cliente.id.toString();
                     return (
                       <div key={clienteId} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                        <label className="flex items-center space-x-2 cursor-pointer">
+                        <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
@@ -1083,11 +1122,16 @@ const AgregadosLista = () => {
                               if (e.target.checked) {
                                 setClienteFilter([...clienteFilter, clienteId]);
                               } else {
-                                setClienteFilter(clienteFilter.filter(c => c !== clienteId));
+                                setClienteFilter(clienteFilter.filter(id => id !== clienteId));
                               }
                             }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
                           />
-                          <span className="text-sm text-gray-700 dark:text-gray-200">{cliente.nome || 'Cliente sem nome'}</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-200">
+                            {cliente.nome || 'Cliente sem nome'}
+                          </span>
                         </label>
                       </div>
                     );
