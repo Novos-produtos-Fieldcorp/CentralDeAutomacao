@@ -1,261 +1,105 @@
 import { createClient } from 'npm:@supabase/supabase-js';
-import { corsHeaders } from '../_shared/cors.ts';
-
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+};
 // Initialize Supabase client with environment variables
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
 // Webhook URL for sending summaries
 const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
-
-interface GrupoResumo {
-  id: number;
-  nome_grupo: string;
-  url_grupo: string;
-  horario: string;
-  ativo: boolean;
-  company_id: number;
-  icon_name?: string;
-  color_name?: string;
-}
-
-Deno.serve(async (req) => {
+Deno.serve(async (req)=>{
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', {
+      headers: corsHeaders
+    });
   }
-
   try {
     // Get the current Brasilia time from the database
     const { data: dbTimeData, error: dbTimeError } = await supabase.rpc('get_current_brasilia_time_details');
-    
     if (dbTimeError) {
       console.error('Error getting database time:', dbTimeError);
       throw new Error('Failed to get current Brasilia time from database.');
     }
-    
+    const currentUtcHour = String(dbTimeData.utc_hour).padStart(2, '0');
+    const currentUtcMinute = String(dbTimeData.utc_minute).padStart(2, '0');
+    const currentUtcTime = `${currentUtcHour}:${currentUtcMinute}`; // e.g., "10:30"
+    const currentBrasiliaTime = dbTimeData.formatted_time; // For logging/debugging
+    console.log(`Current UTC Time (from DB): ${currentUtcTime}`);
+    console.log(`Current Brasilia Time (from DB): ${currentBrasiliaTime}`);
+    // Query for active groups matching the current UTC time
     // IMPORTANT FIX: Use UTC time for comparison since horario is stored in UTC
-    // Construct UTC time string from UTC hour and minute
-    const utcHour = dbTimeData.utc_hour.toString().padStart(2, '0');
-    const utcMinute = dbTimeData.utc_minute.toString().padStart(2, '0');
-    const currentUtcTime = `${utcHour}:${utcMinute}`;
-    
-    // For logging purposes, we'll still calculate the time manually to compare
-    const now = new Date();
-    const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-    
-    console.log(`Checking for scheduled summaries at ${currentUtcTime} UTC time (from DB)`);
-    console.log(`Current UTC time: ${now.toISOString()}`);
-    console.log(`Current Brasilia time (calculated): ${brasiliaTime.toISOString()}`);
-    console.log(`Database time details:`, dbTimeData);
-    console.log(`Using UTC time string for comparison: ${currentUtcTime}`);
-
-    // Query for active groups with matching schedule time (using UTC time)
-    const { data: grupos, error } = await supabase
-      .from('grupo_resumo')
-      .select('*')
-      .eq('ativo', true)
-      .eq('horario', currentUtcTime);
-
-    if (error) throw error;
-
-    console.log(`Found ${grupos?.length || 0} groups scheduled for ${currentUtcTime} UTC`);
-
-    // Process each group
-    const results = [];
-    if (grupos && grupos.length > 0) {
-      for (const grupo of grupos) {
-        try {
-          console.log(`Processing group: ${grupo.nome_grupo} (ID: ${grupo.id})`);
-          
-          // Generate summary data for this group
-          const summaryData = await generateSummaryData(grupo);
-          
-          // Send webhook
-          const webhookResult = await sendWebhook(grupo, summaryData);
-          
-          // Record successful delivery
-          await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso');
-          
-          results.push({
-            group_id: grupo.id,
-            group_name: grupo.nome_grupo,
-            status: 'success',
-            message: 'Summary sent successfully'
-          });
-        } catch (groupError) {
-          console.error(`Error processing group ${grupo.id}:`, groupError);
-          
-          // Record failed delivery
-          await recordDelivery(
-            grupo.id, 
-            grupo.company_id, 
-            false, 
-            groupError instanceof Error ? groupError.message : 'Unknown error'
-          );
-          
-          results.push({
-            group_id: grupo.id,
-            group_name: grupo.nome_grupo,
-            status: 'error',
-            message: groupError.message
-          });
-        }
+    const { data: grupos, error: gruposError } = await supabase.from('grupo_resumo').select('*').eq('ativo', true).eq('horario', currentUtcTime);
+    if (gruposError) {
+      console.error('Error fetching groups:', gruposError);
+      throw new Error('Failed to fetch group summaries.');
+    }
+    if (!grupos || grupos.length === 0) {
+      console.log('No active groups found for current time.');
+      return new Response('No groups to process.', {
+        status: 200,
+        headers: corsHeaders
+      });
+    }
+    console.log(`Found ${grupos.length} groups to process.`);
+    // Process each matching group
+    for (const grupo of grupos){
+      try {
+        console.log(`Processing group: ${grupo.nome_grupo} (ID: ${grupo.id})`);
+        // Apenas envie os dados do grupo diretamente
+        await sendWebhook(grupo); // Chame sendWebhook passando apenas o objeto grupo
+        await recordDelivery(grupo, 'success', 'Webhook sent successfully.');
+        console.log(`Successfully processed group: ${grupo.nome_grupo}`);
+      } catch (groupProcessError) {
+        console.error(`Error processing group ${grupo.nome_grupo}:`, groupProcessError);
+        await recordDelivery(grupo, 'failed', `Failed to send webhook: ${groupProcessError.message}`);
       }
     }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Processed ${grupos?.length || 0} groups`,
-        results,
-        currentUtcTime,
-        currentBrasiliaTime: dbTimeData.formatted_time,
-        currentUtcTimeString: currentUtcTime,
-        databaseTimeDetails: dbTimeData
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
+    return new Response('Group summary processing complete.', {
+      status: 200,
+      headers: corsHeaders
+    });
   } catch (error) {
-    console.error('Error in group summary scheduler:', error);
-    
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
+    console.error('Edge Function error:', error.message);
+    return new Response(`Error: ${error.message}`, {
+      status: 500,
+      headers: corsHeaders
+    });
   }
 });
-
-// Function to record delivery in the database
-async function recordDelivery(grupoId: number, companyId: number, status: boolean, message: string) {
+// Function to record webhook delivery status
+async function recordDelivery(grupo, status, message) {
   try {
-    // Get current date and time in Brasilia timezone (UTC-3)
-    const now = new Date();
-    const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-    
-    const { error } = await supabase
-      .from('envio_resumo')
-      .insert({
-        grupo_id: grupoId,
-        company_id: companyId,
-        data_envio: brasiliaTime.toISOString(),
-        status: status,
-        mensagem: message
-      });
-      
+    // Fetch current Brasilia time for data_envio
+    const { data: dbTimeData, error: dbTimeError } = await supabase.rpc('get_current_brasilia_time_details');
+    if (dbTimeError) {
+      console.error('Error getting database time for recordDelivery:', dbTimeData);
+      throw new Error('Failed to get current Brasilia time for recording delivery.');
+    }
+    const dataEnvio = dbTimeData.formatted_time; // Use formatted_time for `data_envio`
+    const { error } = await supabase.from('envio_resumo').insert({
+      grupo_id: grupo.id,
+      data_envio: dataEnvio,
+      status: status,
+      mensagem: message
+    });
     if (error) {
       console.error('Error recording delivery:', error);
     }
   } catch (error) {
-    console.error('Exception recording delivery:', error);
+    console.error('Critical error in recordDelivery:', error.message);
   }
 }
-
-// Function to generate summary data for a group
-async function generateSummaryData(grupo: GrupoResumo) {
-  // Get company data
-  const { data: company, error: companyError } = await supabase
-    .from('company')
-    .select('nome_company')
-    .eq('company_id', grupo.company_id)
-    .single();
-
-  if (companyError) {
-    throw new Error(`Error fetching company data: ${companyError.message}`);
-  }
-
-  // Get today's date in local format - using Brasilia timezone
-  const today = new Date();
-  const brasiliaTime = new Date(today.getTime() - (3 * 60 * 60 * 1000));
-  
-  const formattedDate = brasiliaTime.toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-  // Get motoristas count
-  const { count: motoristasCount, error: motoristasError } = await supabase
-    .from('motorista')
-    .select('*', { count: 'exact', head: true })
-    .eq('company_id', grupo.company_id)
-    .eq('funcao', 'Motorista');
-
-  if (motoristasError) {
-    throw new Error(`Error fetching motoristas count: ${motoristasError.message}`);
-  }
-
-  // Get agregados count
-  const { count: agregadosCount, error: agregadosError } = await supabase
-    .from('motorista')
-    .select('*', { count: 'exact', head: true })
-    .eq('company_id', grupo.company_id)
-    .eq('funcao', 'Agregado');
-
-  if (agregadosError) {
-    throw new Error(`Error fetching agregados count: ${agregadosError.message}`);
-  }
-
-  // Get today's hodometros count - using Brasilia date
-  const todayStr = brasiliaTime.toISOString().split('T')[0];
-  const { count: hodometrosCount, error: hodometrosError } = await supabase
-    .from('hodometro')
-    .select('*', { count: 'exact', head: true })
-    .eq('company_id', grupo.company_id)
-    .eq('data', todayStr);
-
-  if (hodometrosError) {
-    throw new Error(`Error fetching hodometros count: ${hodometrosError.message}`);
-  }
-
-  // Get today's checklists count - using Brasilia date
-  const { count: checklistsCount, error: checklistsError } = await supabase
-    .from('checklist')
-    .select('*', { count: 'exact', head: true })
-    .eq('company_id', grupo.company_id)
-    .eq('data', todayStr);
-
-  if (checklistsError) {
-    throw new Error(`Error fetching checklists count: ${checklistsError.message}`);
-  }
-
-  // Return formatted summary data
-  return {
-    company_name: company?.nome_company || 'Empresa',
-    date: formattedDate,
-    group_name: grupo.nome_grupo,
-    stats: {
-      motoristas: motoristasCount || 0,
-      agregados: agregadosCount || 0,
-      hodometros_today: hodometrosCount || 0,
-      checklists_today: checklistsCount || 0
-    }
-  };
-}
-
-// Function to send webhook with summary data
-async function sendWebhook(grupo: GrupoResumo, summaryData: any) {
-  // Prepare the webhook payload with the correct field names
+// Function to send webhook with the specified group data
+async function sendWebhook(grupo) {
+  // Prepare the webhook payload with ONLY the fields you need
   const webhookData = {
-    "nome do grupo": grupo.nome_grupo,
-    "URL do grupo": grupo.url_grupo,
-    "summary": summaryData
+    "nome_do_grupo": grupo.nome_grupo,
+    "url_do_grupo": grupo.url_grupo
   };
-
-  console.log('Sending webhook data:', JSON.stringify(webhookData, null, 2));
-
+  console.log('Sending webhook data (nome_grupo and url_grupo only):', JSON.stringify(webhookData, null, 2));
   const response = await fetch(WEBHOOK_URL, {
     method: 'POST',
     headers: {
@@ -263,11 +107,9 @@ async function sendWebhook(grupo: GrupoResumo, summaryData: any) {
     },
     body: JSON.stringify(webhookData)
   });
-
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to send webhook: ${response.status} - ${errorText}`);
+    const errorBody = await response.text();
+    throw new Error(`Webhook request failed with status ${response.status}: ${errorBody}`);
   }
-
-  return await response.json();
+  console.log('Webhook sent successfully!');
 }
