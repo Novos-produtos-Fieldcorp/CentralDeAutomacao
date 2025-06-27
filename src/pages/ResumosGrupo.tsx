@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube } from 'lucide-react';
+import { 
+  Plus, Loader2, Calendar, MessagesSquare, Trash2, 
+  BarChart2, Clock, Link2, Send, Edit2, AlertTriangle,
+  CheckCircle2, XCircle, Settings, Smartphone,
+  LayoutList, History, Users, Bell, FileText, Home,
+  Truck, Gauge, ClipboardCheck, Store, Mail, Phone,
+  Map, Star, Heart, Bookmark, Flag, Award, Bug
+} from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -261,15 +268,11 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(prev => ({ ...prev, [grupo.id]: true }));
       
-      // Use the hardcoded token for authorization
-      const authToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
-      
       // Call the manual-summary-trigger edge function
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           group_id: grupo.id,
@@ -354,101 +357,7 @@ const ResumosGrupo = () => {
       Heart: <Heart />,
       Bookmark: <Bookmark />,
       Flag: <Flag />,
-      Award: <Award />,
-      Zap: <Zap />,
-      Briefcase: <Briefcase />,
-      Coffee: <Coffee />,
-      Compass: <Compass />,
-      Database: <Database />,
-      Headphones: <Headphones />,
-      Image: <Image />,
-      Key: <Key />,
-      Layers: <Layers />,
-      Music: <Music />,
-      Package: <Package />,
-      Printer: <Printer />,
-      Radio: <Radio />,
-      Shield: <Shield />,
-      ShoppingBag: <ShoppingBag />,
-      Smile: <Smile />,
-      Sun: <Sun />,
-      Terminal: <Terminal />,
-      Umbrella: <Umbrella />,
-      Video: <Video />,
-      Wifi: <Wifi />,
-      Activity: <Activity />,
-      Anchor: <Anchor />,
-      Archive: <Archive />,
-      AtSign: <AtSign />,
-      Battery: <Battery />,
-      Book: <Book />,
-      Box: <Box />,
-      Camera: <Camera />,
-      Cast: <Cast />,
-      Cloud: <Cloud />,
-      Code: <Code />,
-      Command: <Command />,
-      Copy: <Copy />,
-      CreditCard: <CreditCard />,
-      Disc: <Disc />,
-      Download: <Download />,
-      Droplet: <Droplet />,
-      Eye: <Eye />,
-      Facebook: <Facebook />,
-      Film: <Film />,
-      Filter: <Filter />,
-      Folder: <Folder />,
-      Gift: <Gift />,
-      GitBranch: <GitBranch />,
-      Globe: <Globe />,
-      Grid: <Grid />,
-      HardDrive: <HardDrive />,
-      Hash: <Hash />,
-      Instagram: <Instagram />,
-      Laptop: <Laptop />,
-      Leaf: <Leaf />,
-      LifeBuoy: <LifeBuoy />,
-      Link: <Link />,
-      Linkedin: <Linkedin />,
-      List: <List />,
-      Lock: <Lock />,
-      Maximize: <Maximize />,
-      Menu: <Menu />,
-      MessageCircle: <MessageCircle />,
-      Mic: <Mic />,
-      Monitor: <Monitor />,
-      Moon: <Moon />,
-      Move: <Move />,
-      Navigation: <Navigation />,
-      Octagon: <Octagon />,
-      Paperclip: <Paperclip />,
-      Pause: <Pause />,
-      Percent: <Percent />,
-      Play: <Play />,
-      Power: <Power />,
-      Refresh: <Refresh />,
-      RotateCcw: <RotateCcw />,
-      Save: <Save />,
-      Search: <Search />,
-      Server: <Server />,
-      Share: <Share />,
-      ShoppingCart: <ShoppingCart />,
-      Slash: <Slash />,
-      Sliders: <Sliders />,
-      Speaker: <Speaker />,
-      Square: <Square />,
-      Tag: <Tag />,
-      Target: <Target />,
-      ThumbsUp: <ThumbsUp />,
-      Trash: <Trash />,
-      Twitter: <Twitter />,
-      Upload: <Upload />,
-      User: <User />,
-      Voicemail: <Voicemail />,
-      Volume: <Volume />,
-      Watch: <Watch />,
-      Wind: <Wind />,
-      Youtube: <Youtube />
+      Award: <Award />
     };
     
     return iconMap[iconName] || <MessagesSquare />;
@@ -487,101 +396,7 @@ const ResumosGrupo = () => {
     { value: 'Heart', component: <Heart /> },
     { value: 'Bookmark', component: <Bookmark /> },
     { value: 'Flag', component: <Flag /> },
-    { value: 'Award', component: <Award /> },
-    { value: 'Zap', component: <Zap /> },
-    { value: 'Briefcase', component: <Briefcase /> },
-    { value: 'Coffee', component: <Coffee /> },
-    { value: 'Compass', component: <Compass /> },
-    { value: 'Database', component: <Database /> },
-    { value: 'Headphones', component: <Headphones /> },
-    { value: 'Image', component: <Image /> },
-    { value: 'Key', component: <Key /> },
-    { value: 'Layers', component: <Layers /> },
-    { value: 'Music', component: <Music /> },
-    { value: 'Package', component: <Package /> },
-    { value: 'Printer', component: <Printer /> },
-    { value: 'Radio', component: <Radio /> },
-    { value: 'Shield', component: <Shield /> },
-    { value: 'ShoppingBag', component: <ShoppingBag /> },
-    { value: 'Smile', component: <Smile /> },
-    { value: 'Sun', component: <Sun /> },
-    { value: 'Terminal', component: <Terminal /> },
-    { value: 'Umbrella', component: <Umbrella /> },
-    { value: 'Video', component: <Video /> },
-    { value: 'Wifi', component: <Wifi /> },
-    { value: 'Activity', component: <Activity /> },
-    { value: 'Anchor', component: <Anchor /> },
-    { value: 'Archive', component: <Archive /> },
-    { value: 'AtSign', component: <AtSign /> },
-    { value: 'Battery', component: <Battery /> },
-    { value: 'Book', component: <Book /> },
-    { value: 'Box', component: <Box /> },
-    { value: 'Camera', component: <Camera /> },
-    { value: 'Cast', component: <Cast /> },
-    { value: 'Cloud', component: <Cloud /> },
-    { value: 'Code', component: <Code /> },
-    { value: 'Command', component: <Command /> },
-    { value: 'Copy', component: <Copy /> },
-    { value: 'CreditCard', component: <CreditCard /> },
-    { value: 'Disc', component: <Disc /> },
-    { value: 'Download', component: <Download /> },
-    { value: 'Droplet', component: <Droplet /> },
-    { value: 'Eye', component: <Eye /> },
-    { value: 'Facebook', component: <Facebook /> },
-    { value: 'Film', component: <Film /> },
-    { value: 'Filter', component: <Filter /> },
-    { value: 'Folder', component: <Folder /> },
-    { value: 'Gift', component: <Gift /> },
-    { value: 'GitBranch', component: <GitBranch /> },
-    { value: 'Globe', component: <Globe /> },
-    { value: 'Grid', component: <Grid /> },
-    { value: 'HardDrive', component: <HardDrive /> },
-    { value: 'Hash', component: <Hash /> },
-    { value: 'Instagram', component: <Instagram /> },
-    { value: 'Laptop', component: <Laptop /> },
-    { value: 'Leaf', component: <Leaf /> },
-    { value: 'LifeBuoy', component: <LifeBuoy /> },
-    { value: 'Link', component: <Link /> },
-    { value: 'Linkedin', component: <Linkedin /> },
-    { value: 'List', component: <List /> },
-    { value: 'Lock', component: <Lock /> },
-    { value: 'Maximize', component: <Maximize /> },
-    { value: 'Menu', component: <Menu /> },
-    { value: 'MessageCircle', component: <MessageCircle /> },
-    { value: 'Mic', component: <Mic /> },
-    { value: 'Monitor', component: <Monitor /> },
-    { value: 'Moon', component: <Moon /> },
-    { value: 'Move', component: <Move /> },
-    { value: 'Navigation', component: <Navigation /> },
-    { value: 'Octagon', component: <Octagon /> },
-    { value: 'Paperclip', component: <Paperclip /> },
-    { value: 'Pause', component: <Pause /> },
-    { value: 'Percent', component: <Percent /> },
-    { value: 'Play', component: <Play /> },
-    { value: 'Power', component: <Power /> },
-    { value: 'Refresh', component: <Refresh /> },
-    { value: 'RotateCcw', component: <RotateCcw /> },
-    { value: 'Save', component: <Save /> },
-    { value: 'Search', component: <Search /> },
-    { value: 'Server', component: <Server /> },
-    { value: 'Share', component: <Share /> },
-    { value: 'ShoppingCart', component: <ShoppingCart /> },
-    { value: 'Slash', component: <Slash /> },
-    { value: 'Sliders', component: <Sliders /> },
-    { value: 'Speaker', component: <Speaker /> },
-    { value: 'Square', component: <Square /> },
-    { value: 'Tag', component: <Tag /> },
-    { value: 'Target', component: <Target /> },
-    { value: 'ThumbsUp', component: <ThumbsUp /> },
-    { value: 'Trash', component: <Trash /> },
-    { value: 'Twitter', component: <Twitter /> },
-    { value: 'Upload', component: <Upload /> },
-    { value: 'User', component: <User /> },
-    { value: 'Voicemail', component: <Voicemail /> },
-    { value: 'Volume', component: <Volume /> },
-    { value: 'Watch', component: <Watch /> },
-    { value: 'Wind', component: <Wind /> },
-    { value: 'Youtube', component: <Youtube /> }
+    { value: 'Award', component: <Award /> }
   ];
 
   const colorOptions = [
@@ -601,6 +416,15 @@ const ResumosGrupo = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Resumos em Grupo</h1>
         <div className="flex gap-2">
+          <button
+            onClick={() => setIsTimeDebugModalOpen(true)}
+            className="p-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 
+                     focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 
+                     transition-colors"
+            title="Diagnóstico de Fuso Horário"
+          >
+            <Bug className="w-5 h-5" />
+          </button>
           <button
             onClick={() => {
               setIsAddModalOpen(true);
@@ -801,7 +625,7 @@ const ResumosGrupo = () => {
                                   className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between"
                                 >
                                   <div>
-                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                    <div className="text-sm text-gray-900 dark:text-white">
                                       {formatDateTime(envio.data_envio)}
                                     </div>
                                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -970,13 +794,13 @@ const ResumosGrupo = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Ícone
                 </label>
-                <div className="flex flex-wrap gap-1 mt-2 max-h-40 overflow-y-auto p-2 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="grid grid-cols-7 gap-1 mt-2">
                   {iconOptions.map(icon => (
                     <button
                       key={icon.value}
                       type="button"
                       onClick={() => setFormData({ ...formData, icon_name: icon.value })}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`p-1 rounded-lg transition-colors ${
                         formData.icon_name === icon.value
                           ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 ring-2 ring-blue-500'
                           : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -1083,13 +907,13 @@ const ResumosGrupo = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Ícone
                 </label>
-                <div className="flex flex-wrap gap-1 mt-2 max-h-40 overflow-y-auto p-2 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="grid grid-cols-7 gap-1 mt-2">
                   {iconOptions.map(icon => (
                     <button
                       key={icon.value}
                       type="button"
                       onClick={() => setFormData({ ...formData, icon_name: icon.value })}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`p-1 rounded-lg transition-colors ${
                         formData.icon_name === icon.value
                           ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 ring-2 ring-blue-500'
                           : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
