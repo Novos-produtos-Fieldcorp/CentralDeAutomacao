@@ -36,6 +36,10 @@ export interface Motorista {
   documento_motorista?: DocumentoMotorista[];
   documento_ajudante?: DocumentoAjudante[];
   ativo?: boolean;
+  gr_motorista_id?: number | null;
+  gr_motorista_motivo?: string | null;
+  empresa_motorista?: string | null;
+  status_motorista?: string | null;
 }
 
 export interface DocumentoMotorista {
@@ -92,6 +96,10 @@ export interface DocumentoAjudante {
   comprovante_residencia?: string | null;
   telefone?: string | null;
   genero?: string | null;
+  gr_ajudante_id?: number | null;
+  gr_ajudante_motivo?: string | null;
+  empresa_ajudante?: string | null;
+  status_ajudante?: string | null;
 }
 
 export interface CnhAjudante {
@@ -221,4 +229,27 @@ export interface Checklist {
   documento: DocumentoMotorista | null;
   nome: string;
   endereco: any;
+}
+
+export interface GestaoRisco {
+  id: number;
+  motorista_id?: number;
+  ajudante_id?: number;
+  empresa_id: number;
+  status_id: number;
+  motivo?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GrEmpresa {
+  id: number;
+  nome: string;
+  created_at: string;
+}
+
+export interface GrStatus {
+  id: number;
+  status: string;
+  created_at: string;
 }
