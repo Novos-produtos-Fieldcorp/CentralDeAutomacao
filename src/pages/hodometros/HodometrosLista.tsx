@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, BarChart2, Download, X, Calendar, User, Truck, ChevronDown, ChevronUp, Eye, Clock } from 'lucide-react';
+import { Search, BarChart2, Download, X, Calendar, User, Truck, ChevronDown, ChevronUp, Eye, Clock, Camera } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -63,6 +63,8 @@ const HodometrosLista = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleData | null>(null);
   const [showChartModal, setShowChartModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   const fetchVehicleData = useCallback(async () => {
     try {
@@ -331,6 +333,16 @@ const HodometrosLista = () => {
     return num.toLocaleString('pt-BR');
   };
 
+  const handleShowPhoto = (photo: string | null, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (photo) {
+      setSelectedPhoto(photo);
+      setShowPhotoModal(true);
+    } else {
+      toast.error('Nenhuma foto disponível');
+    }
+  };
+
   const exportToExcel = () => {
     try {
       // Prepare main vehicle data
@@ -406,7 +418,8 @@ const HodometrosLista = () => {
           'Bateria': reading.bateria !== null ? `${reading.bateria}%` : '-',
           'KM Rodado': reading.km_rodado !== null ? formatNumber(reading.km_rodado) : '-',
           'Trip Lida': reading.trip_lida !== null ? formatNumber(reading.trip_lida) : '-',
-          'Trip Informada': reading.trip_informada || '-'
+          'Trip Informada': reading.trip_informada || '-',
+          'Tem Foto': reading.foto_hodometro ? 'Sim' : 'Não'
         }));
         
         if (readingsData.length > 0) {
@@ -424,7 +437,8 @@ const HodometrosLista = () => {
             { wch: 10 }, // Bateria
             { wch: 12 }, // KM Rodado
             { wch: 12 }, // Trip Lida
-            { wch: 15 }  // Trip Informada
+            { wch: 15 }, // Trip Informada
+            { wch: 10 }  // Tem Foto
           ];
         }
       });
@@ -613,6 +627,7 @@ const HodometrosLista = () => {
                                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Hodômetro</th>
                                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Trip</th>
                                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">KM Rodado</th>
+                                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">Foto</th>
                                 </tr>
                               </thead>
                               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -678,11 +693,26 @@ const HodometrosLista = () => {
                                         {formatNumber(reading.km_rodado)} km
                                       </div>
                                     </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-center">
+                                      {reading.foto_hodometro ? (
+                                        <button
+                                          onClick={(e) => handleShowPhoto(reading.foto_hodometro, e)}
+                                          className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                                          title="Ver foto do hodômetro"
+                                        >
+                                          <Camera size={16} />
+                                        </button>
+                                      ) : (
+                                        <span className="text-gray-400 dark:text-gray-600">
+                                          <Camera size={16} className="inline-block opacity-50" />
+                                        </span>
+                                      )}
+                                    </td>
                                   </tr>
                                 ))}
                                 {vehicle.readings.length === 0 && (
                                   <tr>
-                                    <td colSpan={5} className="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                                    <td colSpan={6} className="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
                                       Nenhuma leitura encontrada para este veículo
                                     </td>
                                   </tr>
@@ -716,6 +746,53 @@ const HodometrosLista = () => {
           data={selectedVehicle.dailyData}
           driverName={`Veículo: ${selectedVehicle.placa} - ${selectedVehicle.marca} ${selectedVehicle.tipo}`}
         />
+      )}
+
+      {/* Photo Modal */}
+      {showPhotoModal && selectedPhoto && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowPhotoModal(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                Foto do Hodômetro
+              </h3>
+              <button
+                onClick={() => setShowPhotoModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="relative aspect-video">
+              <img
+                src={selectedPhoto}
+                alt="Foto do Hodômetro"
+                className="absolute inset-0 w-full h-full object-contain"
+              />
+            </div>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <a
+                href={selectedPhoto}
+                download="hodometro.jpg"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                         transition-colors flex items-center gap-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Download size={16} />
+                Baixar Imagem
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
