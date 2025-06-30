@@ -1,41 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, Camera, X, Download, FileText, AlertCircle, BarChart2 } from 'lucide-react';
+import { Search, BarChart2, Download, X, Calendar, User, Truck } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import { useDateRange } from '../../hooks/useDateRange';
-import { formatCPF } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as XLSX from 'xlsx';
 import MileageChartModal from '../../components/hodometros/MileageChartModal';
-import DriverMileageChart from '../../components/hodometros/DriverMileageChart';
-
-interface HodometroReading {
-  id_hodometro: number;
-  data: string;
-  hora: string;
-  hod_informado: number | null;
-  hod_lido: number | null;
-  km_rodado: number | null;
-  bateria: number | null;
-  foto_hodometro: string | null;
-  trip_lida: number | null;
-  trip_informada: string | null;
-  comparacao_leitura: boolean | null;
-  motorista: {
-    motorista_id: number;
-    nome: string;
-    cpf: string;
-  };
-  veiculo: {
-    veiculo_id: number;
-    placa: string;
-    marca: string;
-    tipo: string;
-  };
-}
 
 interface DailyData {
   date: string;
@@ -48,25 +21,26 @@ interface DriverData {
   nome: string;
   totalKm: number;
   dailyData: DailyData[];
+  avgKmPerDay: number;
+  daysWithReadings: number;
 }
 
 const HodometrosLista = () => {
-  const { query } = useCompanyData();
   const { companyId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
   const [driverData, setDriverData] = useState<DriverData[]>([]);
   const [selectedDriver, setSelectedDriver] = useState<DriverData | null>(null);
   const [showChartModal, setShowChartModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchDriverData = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
 
-      if (!dateRange.startDate || !dateRange.endDate) {
+      if (!dateRange.startDate || !dateRange.endDate || !companyId) {
         toast.error('Selecione um período para gerar o relatório');
         return;
       }
@@ -77,14 +51,7 @@ const HodometrosLista = () => {
           id_hodometro,
           data,
           hora,
-          hod_lido,
-          hod_informado,
           km_rodado,
-          bateria,
-          foto_hodometro,
-          trip_lida,
-          trip_informada,
-          comparacao_leitura,
           motorista:motorista_id (
             motorista_id,
             nome,
@@ -109,6 +76,7 @@ const HodometrosLista = () => {
         nome: string;
         totalKm: number;
         dailyData: Map<string, number>;
+        daysWithReadings: Set<string>;
       }>();
 
       (data || []).forEach(hodometro => {
@@ -123,7 +91,8 @@ const HodometrosLista = () => {
         const driverData = driverMap.get(driverId) || {
           nome: driverName,
           totalKm: 0,
-          dailyData: new Map<string, number>()
+          dailyData: new Map<string, number>(),
+          daysWithReadings: new Set<string>()
         };
 
         // Add km to total
@@ -133,26 +102,38 @@ const HodometrosLista = () => {
         const dailyKm = driverData.dailyData.get(date) || 0;
         driverData.dailyData.set(date, dailyKm + km);
 
+        // Add date to days with readings
+        driverData.daysWithReadings.add(date);
+
         // Update driver data
         driverMap.set(driverId, driverData);
       });
 
       // Convert to array and sort by total km (descending)
-      const driversArray: DriverData[] = Array.from(driverMap.entries()).map(([motorista_id, data]) => ({
-        motorista_id,
-        nome: data.nome,
-        totalKm: data.totalKm,
-        dailyData: Array.from(data.dailyData.entries()).map(([date, km]) => ({
-          date,
-          km,
-          formattedDate: formatDateBR(date)
-        })).sort((a, b) => a.date.localeCompare(b.date)) // Sort by date ascending
-      })).sort((a, b) => b.totalKm - a.totalKm);
+      const driversArray: DriverData[] = Array.from(driverMap.entries()).map(([motorista_id, data]) => {
+        const daysWithReadings = data.daysWithReadings.size;
+        const avgKmPerDay = daysWithReadings > 0 ? data.totalKm / daysWithReadings : 0;
+        
+        return {
+          motorista_id,
+          nome: data.nome,
+          totalKm: data.totalKm,
+          avgKmPerDay,
+          daysWithReadings,
+          dailyData: Array.from(data.dailyData.entries()).map(([date, km]) => ({
+            date,
+            km,
+            formattedDate: formatDateBR(date)
+          })).sort((a, b) => a.date.localeCompare(b.date)) // Sort by date ascending
+        };
+      }).sort((a, b) => b.totalKm - a.totalKm);
 
       setDriverData(driversArray);
     } catch (error) {
       console.error('Error fetching driver data:', error);
-      toast.error('Erro ao carregar dados de quilometragem');
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      setError(errorMessage);
+      toast.error('Erro ao carregar dados de quilometragem: ' + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -161,15 +142,6 @@ const HodometrosLista = () => {
   useEffect(() => {
     fetchDriverData();
   }, [fetchDriverData]);
-
-  const handleShowPhoto = (photo: string | null) => {
-    if (photo) {
-      setSelectedPhoto(photo);
-      setShowPhotoModal(true);
-    } else {
-      toast.error('Nenhuma foto disponível');
-    }
-  };
 
   const handleViewChart = (driver: DriverData) => {
     setSelectedDriver(driver);
@@ -196,8 +168,8 @@ const HodometrosLista = () => {
       const exportData = driverData.map(driver => ({
         'Motorista': driver.nome,
         'Total KM': driver.totalKm.toLocaleString('pt-BR'),
-        'Média Diária': (driver.totalKm / Math.max(1, driver.dailyData.length)).toLocaleString('pt-BR', { maximumFractionDigits: 1 }),
-        'Dias com Leitura': driver.dailyData.length
+        'Média Diária': driver.avgKmPerDay.toLocaleString('pt-BR', { maximumFractionDigits: 1 }),
+        'Dias com Leitura': driver.daysWithReadings
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -231,6 +203,28 @@ const HodometrosLista = () => {
 
   if (loading) {
     return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white dark:bg-[#1B2537] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3 text-red-500 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <h3 className="text-lg font-medium">Erro ao carregar dados</h3>
+        </div>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+        <button 
+          onClick={fetchDriverData}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -300,7 +294,7 @@ const HodometrosLista = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
-                        {driver.nome.charAt(0)}
+                        <User className="h-5 w-5" />
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -316,12 +310,12 @@ const HodometrosLista = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {formatNumber(driver.totalKm / Math.max(1, driver.dailyData.length))} km
+                      {formatNumber(driver.avgKmPerDay)} km
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {driver.dailyData.length}
+                      {driver.daysWithReadings}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -329,6 +323,7 @@ const HodometrosLista = () => {
                       onClick={() => handleViewChart(driver)}
                       className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                       title="Ver gráfico de quilometragem"
+                      disabled={driver.dailyData.length === 0}
                     >
                       <BarChart2 size={18} />
                     </button>
@@ -355,53 +350,6 @@ const HodometrosLista = () => {
           data={selectedDriver.dailyData}
           driverName={selectedDriver.nome}
         />
-      )}
-
-      {/* Photo Modal */}
-      {showPhotoModal && selectedPhoto && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowPhotoModal(false)}
-        >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Foto do Hodômetro
-              </h3>
-              <button
-                onClick={() => setShowPhotoModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="relative aspect-video">
-              <img
-                src={selectedPhoto}
-                alt="Foto do Hodômetro"
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-            </div>
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-              <a
-                href={selectedPhoto}
-                download="hodometro.jpg"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                         transition-colors flex items-center gap-2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Download size={16} />
-                Baixar Imagem
-              </a>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
