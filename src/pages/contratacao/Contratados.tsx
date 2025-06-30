@@ -60,10 +60,12 @@ const Contratados = () => {
             cliente_id,
             nome
           ),
-          integracao,
-          integracao_data,
-          treinamento,
-          treinamento_data
+          motorista_eventos_cliente (
+            integracao,
+            integracao_data,
+            treinamento,
+            treinamento_data
+          )
         `)
         .eq('st_cadastro', 'contratado')
         .eq('company_id', companyId)
@@ -71,11 +73,18 @@ const Contratados = () => {
 
       if (error) throw error;
 
-      // Transform the data to include cliente_nome
-      const transformedData = (data || []).map(item => ({
-        ...item,
-        cliente_nome: item.cliente?.nome || 'Sem cliente'
-      }));
+      // Transform the data to include cliente_nome and eventos data
+      const transformedData = (data || []).map(item => {
+        const eventos = item.motorista_eventos_cliente?.[0] || {};
+        return {
+          ...item,
+          cliente_nome: item.cliente?.nome || 'Sem cliente',
+          integracao: eventos.integracao || false,
+          integracao_data: eventos.integracao_data || null,
+          treinamento: eventos.treinamento || false,
+          treinamento_data: eventos.treinamento_data || null
+        };
+      });
 
       setContratados(transformedData);
     } catch (error) {
@@ -113,18 +122,40 @@ const Contratados = () => {
       
       // Toggle the integracao status
       const newStatus = !contratado.integracao;
-      const newDate = newStatus ? new Date().toISOString() : null;
+      const newDate = newStatus ? new Date().toISOString().split('T')[0] : null;
       
-      // Update in the database
-      const { error } = await supabase
-        .from('motorista')
-        .update({ 
-          integracao: newStatus,
-          integracao_data: newDate
-        })
-        .eq('motorista_id', motorista_id);
-        
-      if (error) throw error;
+      // Check if record exists in motorista_eventos_cliente
+      const { data: existingRecord } = await supabase
+        .from('motorista_eventos_cliente')
+        .select('id')
+        .eq('motorista_id', motorista_id)
+        .single();
+
+      if (existingRecord) {
+        // Update existing record
+        const { error } = await supabase
+          .from('motorista_eventos_cliente')
+          .update({ 
+            integracao: newStatus,
+            integracao_data: newDate
+          })
+          .eq('motorista_id', motorista_id);
+          
+        if (error) throw error;
+      } else {
+        // Create new record
+        const { error } = await supabase
+          .from('motorista_eventos_cliente')
+          .insert({ 
+            motorista_id,
+            integracao: newStatus,
+            integracao_data: newDate,
+            treinamento: false,
+            treinamento_data: null
+          });
+          
+        if (error) throw error;
+      }
       
       // Update local state
       setContratados(prev => 
@@ -154,18 +185,40 @@ const Contratados = () => {
       
       // Toggle the treinamento status
       const newStatus = !contratado.treinamento;
-      const newDate = newStatus ? new Date().toISOString() : null;
+      const newDate = newStatus ? new Date().toISOString().split('T')[0] : null;
       
-      // Update in the database
-      const { error } = await supabase
-        .from('motorista')
-        .update({ 
-          treinamento: newStatus,
-          treinamento_data: newDate
-        })
-        .eq('motorista_id', motorista_id);
-        
-      if (error) throw error;
+      // Check if record exists in motorista_eventos_cliente
+      const { data: existingRecord } = await supabase
+        .from('motorista_eventos_cliente')
+        .select('id')
+        .eq('motorista_id', motorista_id)
+        .single();
+
+      if (existingRecord) {
+        // Update existing record
+        const { error } = await supabase
+          .from('motorista_eventos_cliente')
+          .update({ 
+            treinamento: newStatus,
+            treinamento_data: newDate
+          })
+          .eq('motorista_id', motorista_id);
+          
+        if (error) throw error;
+      } else {
+        // Create new record
+        const { error } = await supabase
+          .from('motorista_eventos_cliente')
+          .insert({ 
+            motorista_id,
+            integracao: false,
+            integracao_data: null,
+            treinamento: newStatus,
+            treinamento_data: newDate
+          });
+          
+        if (error) throw error;
+      }
       
       // Update local state
       setContratados(prev => 
