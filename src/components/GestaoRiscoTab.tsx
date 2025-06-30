@@ -41,6 +41,7 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
   const [newStatusModalOpen, setNewStatusModalOpen] = useState(false);
   const [newStatusNome, setNewStatusNome] = useState('');
   const [creatingStatus, setCreatingStatus] = useState(false);
+  const [grData, setGrData] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     empresa_id: '',
@@ -76,16 +77,27 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
       
       // If we have existing data, set it in the form
       if (gr_motorista_id) {
-        const empresaId = empresas.find(e => e.nome === empresa_motorista)?.id;
-        const statusId = statuses.find(s => s.status === status_motorista)?.id;
+        // Fetch the complete GR data
+        const { data: grMotoristaData, error: grError } = await supabase
+          .from('gr_motorista')
+          .select(`
+            *,
+            empresa:empresa_id(id, nome),
+            status:status_id(id, status)
+          `)
+          .eq('id', gr_motorista_id)
+          .single();
+          
+        if (grError) throw grError;
         
-        if (empresaId && statusId) {
-          setFormData({
-            empresa_id: empresaId.toString(),
-            status_id: statusId.toString(),
-            motivo: gr_motorista_motivo || ''
-          });
-        }
+        setGrData(grMotoristaData);
+        
+        // Set form data for editing
+        setFormData({
+          empresa_id: grMotoristaData.empresa_id.toString(),
+          status_id: grMotoristaData.status_id.toString(),
+          motivo: grMotoristaData.motivo || ''
+        });
       }
     } catch (error) {
       console.error('Error fetching data:', error);
