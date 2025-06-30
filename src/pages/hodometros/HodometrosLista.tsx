@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, Camera, X, Download, FileText, AlertCircle } from 'lucide-react';
+import { Search, Eye, Camera, X, Download, FileText, AlertCircle, BarChart2 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -9,6 +9,8 @@ import { formatCPF } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as XLSX from 'xlsx';
+import MileageChartModal from '../../components/hodometros/MileageChartModal';
+import DriverMileageChart from '../../components/hodometros/DriverMileageChart';
 
 interface HodometroReading {
   id_hodometro: number;
@@ -35,17 +37,32 @@ interface HodometroReading {
   };
 }
 
-const HodometrosRelatorio = () => {
+interface DailyData {
+  date: string;
+  km: number;
+  formattedDate: string;
+}
+
+interface DriverData {
+  motorista_id: number;
+  nome: string;
+  totalKm: number;
+  dailyData: DailyData[];
+}
+
+const HodometrosLista = () => {
   const { query } = useCompanyData();
   const { companyId } = useAuth();
-  const [hodometros, setHodometros] = useState<HodometroReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('1day');
+  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
+  const [driverData, setDriverData] = useState<DriverData[]>([]);
+  const [selectedDriver, setSelectedDriver] = useState<DriverData | null>(null);
+  const [showChartModal, setShowChartModal] = useState(false);
 
-  const fetchHodometros = useCallback(async () => {
+  const fetchDriverData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -83,23 +100,67 @@ const HodometrosRelatorio = () => {
         .eq('company_id', companyId)
         .gte('data', dateRange.startDate)
         .lte('data', dateRange.endDate)
-        .order('data', { ascending: false }) // Order by date descending (newest first)
-        .order('hora', { ascending: false }); // Then by time descending
+        .order('data', { ascending: true }); // Order by date ascending for time series
 
       if (error) throw error;
 
-      setHodometros(data || []);
+      // Process data to get mileage by driver and date
+      const driverMap = new Map<number, {
+        nome: string;
+        totalKm: number;
+        dailyData: Map<string, number>;
+      }>();
+
+      (data || []).forEach(hodometro => {
+        if (!hodometro.motorista_id || !hodometro.motorista || !hodometro.km_rodado) return;
+
+        const driverId = hodometro.motorista.motorista_id;
+        const driverName = hodometro.motorista.nome;
+        const date = hodometro.data;
+        const km = hodometro.km_rodado;
+
+        // Get or create driver data
+        const driverData = driverMap.get(driverId) || {
+          nome: driverName,
+          totalKm: 0,
+          dailyData: new Map<string, number>()
+        };
+
+        // Add km to total
+        driverData.totalKm += km;
+
+        // Add km to daily data
+        const dailyKm = driverData.dailyData.get(date) || 0;
+        driverData.dailyData.set(date, dailyKm + km);
+
+        // Update driver data
+        driverMap.set(driverId, driverData);
+      });
+
+      // Convert to array and sort by total km (descending)
+      const driversArray: DriverData[] = Array.from(driverMap.entries()).map(([motorista_id, data]) => ({
+        motorista_id,
+        nome: data.nome,
+        totalKm: data.totalKm,
+        dailyData: Array.from(data.dailyData.entries()).map(([date, km]) => ({
+          date,
+          km,
+          formattedDate: formatDateBR(date)
+        })).sort((a, b) => a.date.localeCompare(b.date)) // Sort by date ascending
+      })).sort((a, b) => b.totalKm - a.totalKm);
+
+      setDriverData(driversArray);
     } catch (error) {
-      console.error('Error fetching hodometros:', error);
-      toast.error('Erro ao carregar leituras de hodômetro');
+      console.error('Error fetching driver data:', error);
+      toast.error('Erro ao carregar dados de quilometragem');
     } finally {
       setLoading(false);
     }
   }, [dateRange, companyId]);
 
   useEffect(() => {
-    fetchHodometros();
-  }, [fetchHodometros]);
+    fetchDriverData();
+  }, [fetchDriverData]);
 
   const handleShowPhoto = (photo: string | null) => {
     if (photo) {
@@ -108,6 +169,11 @@ const HodometrosRelatorio = () => {
     } else {
       toast.error('Nenhuma foto disponível');
     }
+  };
+
+  const handleViewChart = (driver: DriverData) => {
+    setSelectedDriver(driver);
+    setShowChartModal(true);
   };
 
   // Format date from YYYY-MM-DD to DD/MM/YYYY
@@ -122,50 +188,32 @@ const HodometrosRelatorio = () => {
   // Format number with dot as thousands separator
   const formatNumber = (num: number | null | undefined): string => {
     if (num === null || num === undefined) return '-';
-    
-    // Convert to string with dots as thousands separators
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return num.toLocaleString('pt-BR');
   };
 
   const exportToExcel = () => {
     try {
-      const exportData = filteredHodometros.map(h => ({
-        'Data': formatDateBR(h.data),
-        'Hora': h.hora,
-        'Motorista': h.motorista?.nome || '',
-        'CPF': h.motorista?.cpf ? formatCPF(h.motorista.cpf) : '',
-        'Placa': h.veiculo?.placa.toUpperCase() || '',
-        'Veículo': `${h.veiculo?.marca || ''} ${h.veiculo?.tipo || ''}`,
-        'Hodômetro Informado': h.hod_informado !== null ? formatNumber(h.hod_informado) : '',
-        'Hodômetro Lido': h.bateria !== null ? `Bateria: ${h.bateria}` : formatNumber(h.hod_lido),
-        'Trip Informada': h.trip_informada || '',
-        'Trip Lida': h.trip_lida !== null ? formatNumber(h.trip_lida) : '',
-        'Leitura Divergente': h.comparacao_leitura === false ? 'Sim' : 'Não',
-        'Trip Divergente': hasTripDiscrepancy(h) ? 'Sim' : 'Não'
+      const exportData = driverData.map(driver => ({
+        'Motorista': driver.nome,
+        'Total KM': driver.totalKm.toLocaleString('pt-BR'),
+        'Média Diária': (driver.totalKm / Math.max(1, driver.dailyData.length)).toLocaleString('pt-BR', { maximumFractionDigits: 1 }),
+        'Dias com Leitura': driver.dailyData.length
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Hodometros');
+      XLSX.utils.book_append_sheet(wb, ws, 'Quilometragem');
       
       // Auto-size columns
       const colWidths = [
-        { wch: 12 }, // Data
-        { wch: 8 },  // Hora
-        { wch: 25 }, // Motorista
-        { wch: 15 }, // CPF
-        { wch: 10 }, // Placa
-        { wch: 20 }, // Veículo
-        { wch: 18 }, // Hodômetro Informado
-        { wch: 15 }, // Hodômetro Lido
-        { wch: 15 }, // Trip Informada
-        { wch: 12 },  // Trip Lida
-        { wch: 15 },  // Leitura Divergente
-        { wch: 15 }   // Trip Divergente
+        { wch: 30 }, // Motorista
+        { wch: 15 }, // Total KM
+        { wch: 15 }, // Média Diária
+        { wch: 15 }  // Dias com Leitura
       ];
       ws['!cols'] = colWidths;
       
-      XLSX.writeFile(wb, `relatorio_hodometros_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(wb, `relatorio_quilometragem_${new Date().toISOString().split('T')[0]}.xlsx`);
       toast.success('Relatório exportado com sucesso');
     } catch (error) {
       console.error('Error exporting to Excel:', error);
@@ -173,57 +221,16 @@ const HodometrosRelatorio = () => {
     }
   };
 
-  // Check if there's a discrepancy between reported and read values
-  const hasDiscrepancy = (hodometro: HodometroReading): boolean => {
-    // If comparacao_leitura is explicitly false, there's a discrepancy
-    if (hodometro.comparacao_leitura === false) return true;
-    
-    // For electric vehicles (with battery), we can't compare hodometer values
-    if (hodometro.bateria !== null && hodometro.bateria !== undefined) return false;
-    
-    // For regular vehicles, check if values are different
-    if (hodometro.hod_informado !== null && hodometro.hod_lido !== null) {
-      // Allow a small tolerance (e.g., 1% difference)
-      const tolerance = hodometro.hod_informado * 0.01;
-      return Math.abs(hodometro.hod_informado - hodometro.hod_lido) > tolerance;
-    }
-    
-    return false;
-  };
-
-  // Check if there's a discrepancy between trip values
-  const hasTripDiscrepancy = (hodometro: HodometroReading): boolean => {
-    // If trip_informada is a number string and trip_lida exists, compare them
-    if (hodometro.trip_informada && hodometro.trip_lida !== null) {
-      const tripInformada = parseFloat(hodometro.trip_informada.replace(/[^\d.,]/g, '').replace(',', '.'));
-      
-      // If we can parse trip_informada as a number, compare with trip_lida
-      if (!isNaN(tripInformada)) {
-        // Allow a small tolerance (e.g., 5% difference)
-        const tolerance = tripInformada * 0.05;
-        return Math.abs(tripInformada - hodometro.trip_lida) > tolerance;
-      }
-    }
-    
-    return false;
-  };
-
-  const filteredHodometros = hodometros.filter(hodometro => {
+  const filteredDriverData = driverData.filter(driver => {
     const searchString = searchTerm.toLowerCase();
     return (
       !searchTerm ||
-      (hodometro.motorista?.nome && hodometro.motorista.nome.toLowerCase().includes(searchString)) ||
-      (hodometro.motorista?.cpf && hodometro.motorista.cpf.includes(searchString)) ||
-      (hodometro.veiculo?.placa && hodometro.veiculo.placa.toLowerCase().includes(searchString)) ||
-      (hodometro.veiculo?.marca && hodometro.veiculo.marca.toLowerCase().includes(searchString)) ||
-      (hodometro.veiculo?.tipo && hodometro.veiculo.tipo.toLowerCase().includes(searchString))
+      driver.nome.toLowerCase().includes(searchString)
     );
   });
 
   if (loading) {
-    return (
-      <LoadingSpinner />
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -235,7 +242,7 @@ const HodometrosRelatorio = () => {
           <div className="relative flex-grow w-full md:w-auto">
             <input
               type="text"
-              placeholder="Buscar por motorista, CPF ou placa..."
+              placeholder="Buscar por motorista..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-[#1B2537] border border-gray-200 
@@ -262,7 +269,7 @@ const HodometrosRelatorio = () => {
               className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
                        transition-colors flex items-center justify-center"
-              disabled={filteredHodometros.length === 0}
+              disabled={filteredDriverData.length === 0}
               aria-label="Exportar Excel"
             >
               <Download className="w-5 h-5" />
@@ -274,126 +281,64 @@ const HodometrosRelatorio = () => {
         </div>
       </div>
 
-      {/* Readings Table */}
+      {/* Driver Mileage Table */}
       <div className="bg-white dark:bg-[#1B2537] rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead>
               <tr className="bg-gray-50 dark:bg-[#1B2537]">
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total KM</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Média Diária</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dias com Leitura</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gráfico</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-[#1B2537] divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredHodometros.map((hodometro) => (
-                <tr key={hodometro.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              {filteredDriverData.map((driver) => (
+                <tr key={driver.motorista_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
-                        {hodometro.motorista?.nome?.charAt(0) || '?'}
+                        {driver.nome.charAt(0)}
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {hodometro.motorista?.nome || 'Não informado'}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {hodometro.motorista?.cpf ? formatCPF(hodometro.motorista.cpf) : ''}
+                          {driver.nome}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase">
-                      {hodometro.veiculo?.placa || 'Não informada'}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {hodometro.veiculo?.marca} {hodometro.veiculo?.tipo}
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                      {formatNumber(driver.totalKm)} km
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {formatDateBR(hodometro.data)}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {hodometro.hora}
+                      {formatNumber(driver.totalKm / Math.max(1, driver.dailyData.length))} km
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      {hodometro.bateria !== null && hodometro.bateria !== undefined ? (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          Bateria: {hodometro.bateria}
-                        </div>
-                      ) : (
-                        <>
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            Lido: {hodometro.hod_lido !== null ? formatNumber(hodometro.hod_lido) : '-'}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Informado: {hodometro.hod_informado !== null ? formatNumber(hodometro.hod_informado) : '-'}
-                          </div>
-                          
-                          {/* Discrepancy tag */}
-                          {hasDiscrepancy(hodometro) && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 mt-1">
-                              <AlertCircle className="w-3 h-3 mr-1" />
-                              Divergente
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      {hodometro.trip_lida !== null ? (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          Lida: {formatNumber(hodometro.trip_lida)}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-900 dark:text-white">-</div>
-                      )}
-                      
-                      {hodometro.trip_informada && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          Informada: {hodometro.trip_informada}
-                        </div>
-                      )}
-                      
-                      {/* Trip discrepancy tag */}
-                      {hasTripDiscrepancy(hodometro) && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 mt-1">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Divergente
-                        </span>
-                      )}
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="text-sm text-gray-900 dark:text-white">
+                      {driver.dailyData.length}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    {hodometro.foto_hodometro ? (
-                      <button
-                        onClick={() => handleShowPhoto(hodometro.foto_hodometro)}
-                        className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                        title="Ver foto do hodômetro"
-                      >
-                        <Camera size={18} />
-                      </button>
-                    ) : (
-                      <span className="text-gray-400 dark:text-gray-600">
-                        <Camera size={18} className="inline-block opacity-50" />
-                      </span>
-                    )}
+                    <button
+                      onClick={() => handleViewChart(driver)}
+                      className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                      title="Ver gráfico de quilometragem"
+                    >
+                      <BarChart2 size={18} />
+                    </button>
                   </td>
                 </tr>
               ))}
-              {filteredHodometros.length === 0 && (
+              {filteredDriverData.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    Nenhuma leitura encontrada para o período selecionado
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                    Nenhum dado de quilometragem encontrado para o período selecionado
                   </td>
                 </tr>
               )}
@@ -401,6 +346,16 @@ const HodometrosRelatorio = () => {
           </table>
         </div>
       </div>
+
+      {/* Chart Modal */}
+      {selectedDriver && (
+        <MileageChartModal
+          isOpen={showChartModal}
+          onClose={() => setShowChartModal(false)}
+          data={selectedDriver.dailyData}
+          driverName={selectedDriver.nome}
+        />
+      )}
 
       {/* Photo Modal */}
       {showPhotoModal && selectedPhoto && (
@@ -452,4 +407,4 @@ const HodometrosRelatorio = () => {
   );
 };
 
-export default HodometrosRelatorio;
+export default HodometrosLista;
