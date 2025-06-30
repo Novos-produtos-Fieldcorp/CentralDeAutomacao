@@ -80,12 +80,13 @@ const HodometrosLista = () => {
       }>();
 
       (data || []).forEach(hodometro => {
-        if (!hodometro.motorista_id || !hodometro.motorista || !hodometro.km_rodado) return;
+        // Removed the km_rodado check to include all records
+        if (!hodometro.motorista_id || !hodometro.motorista) return;
 
         const driverId = hodometro.motorista.motorista_id;
         const driverName = hodometro.motorista.nome;
         const date = hodometro.data;
-        const km = hodometro.km_rodado;
+        const km = hodometro.km_rodado || 0; // Use 0 if km_rodado is null or undefined
 
         // Get or create driver data
         const driverData = driverMap.get(driverId) || {
