@@ -36,7 +36,6 @@ const Contratados = () => {
   const [clientes, setClientes] = useState<{ cliente_id: number; nome: string }[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [updating, setUpdating] = useState<{id: number, field: 'integracao' | 'treinamento'} | null>(null);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   useEffect(() => {
     fetchContratados();
@@ -61,12 +60,10 @@ const Contratados = () => {
             cliente_id,
             nome
           ),
-          motorista_eventos_cliente (
-            integracao,
-            integracao_data,
-            treinamento,
-            treinamento_data
-          )
+          integracao,
+          integracao_data,
+          treinamento,
+          treinamento_data
         `)
         .eq('st_cadastro', 'contratado')
         .eq('company_id', companyId)
@@ -74,18 +71,11 @@ const Contratados = () => {
 
       if (error) throw error;
 
-      // Transform the data to include cliente_nome and eventos data
-      const transformedData = (data || []).map(item => {
-        const eventos = item.motorista_eventos_cliente?.[0] || {};
-        return {
-          ...item,
-          cliente_nome: item.cliente?.nome || 'Sem cliente',
-          integracao: eventos.integracao || false,
-          integracao_data: eventos.integracao_data || null,
-          treinamento: eventos.treinamento || false,
-          treinamento_data: eventos.treinamento_data || null
-        };
-      });
+      // Transform the data to include cliente_nome
+      const transformedData = (data || []).map(item => ({
+        ...item,
+        cliente_nome: item.cliente?.nome || 'Sem cliente'
+      }));
 
       setContratados(transformedData);
     } catch (error) {
@@ -123,40 +113,18 @@ const Contratados = () => {
       
       // Toggle the integracao status
       const newStatus = !contratado.integracao;
-      const newDate = newStatus ? new Date().toISOString().split('T')[0] : null;
+      const newDate = newStatus ? new Date().toISOString() : null;
       
-      // Check if record exists in motorista_eventos_cliente
-      const { data: existingRecord } = await supabase
-        .from('motorista_eventos_cliente')
-        .select('id')
-        .eq('motorista_id', motorista_id)
-        .maybeSingle();
-
-      if (existingRecord) {
-        // Update existing record
-        const { error } = await supabase
-          .from('motorista_eventos_cliente')
-          .update({ 
-            integracao: newStatus,
-            integracao_data: newDate
-          })
-          .eq('motorista_id', motorista_id);
-          
-        if (error) throw error;
-      } else {
-        // Create new record
-        const { error } = await supabase
-          .from('motorista_eventos_cliente')
-          .insert({ 
-            motorista_id,
-            integracao: newStatus,
-            integracao_data: newDate,
-            treinamento: false,
-            treinamento_data: null
-          });
-          
-        if (error) throw error;
-      }
+      // Update in the database
+      const { error } = await supabase
+        .from('motorista')
+        .update({ 
+          integracao: newStatus,
+          integracao_data: newDate
+        })
+        .eq('motorista_id', motorista_id);
+        
+      if (error) throw error;
       
       // Update local state
       setContratados(prev => 
@@ -186,40 +154,18 @@ const Contratados = () => {
       
       // Toggle the treinamento status
       const newStatus = !contratado.treinamento;
-      const newDate = newStatus ? new Date().toISOString().split('T')[0] : null;
+      const newDate = newStatus ? new Date().toISOString() : null;
       
-      // Check if record exists in motorista_eventos_cliente
-      const { data: existingRecord } = await supabase
-        .from('motorista_eventos_cliente')
-        .select('id')
-        .eq('motorista_id', motorista_id)
-        .maybeSingle();
-
-      if (existingRecord) {
-        // Update existing record
-        const { error } = await supabase
-          .from('motorista_eventos_cliente')
-          .update({ 
-            treinamento: newStatus,
-            treinamento_data: newDate
-          })
-          .eq('motorista_id', motorista_id);
-          
-        if (error) throw error;
-      } else {
-        // Create new record
-        const { error } = await supabase
-          .from('motorista_eventos_cliente')
-          .insert({ 
-            motorista_id,
-            integracao: false,
-            integracao_data: null,
-            treinamento: newStatus,
-            treinamento_data: newDate
-          });
-          
-        if (error) throw error;
-      }
+      // Update in the database
+      const { error } = await supabase
+        .from('motorista')
+        .update({ 
+          treinamento: newStatus,
+          treinamento_data: newDate
+        })
+        .eq('motorista_id', motorista_id);
+        
+      if (error) throw error;
       
       // Update local state
       setContratados(prev => 
@@ -318,47 +264,44 @@ const Contratados = () => {
         <div className="flex flex-wrap gap-2">
           <div className="relative">
             <button
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
               className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               <Filter className="w-4 h-4" />
               Filtros
             </button>
-            {isFilterOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 p-2 space-y-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Função
-                  </label>
-                  <select
-                    value={funcaoFilter}
-                    onChange={(e) => setFuncaoFilter(e.target.value as 'todos' | 'Motorista' | 'Agregado')}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="todos">Todos</option>
-                    <option value="Motorista">Motoristas</option>
-                    <option value="Agregado">Agregados</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Cliente
-                  </label>
-                  <select
-                    value={clienteFilter || ''}
-                    onChange={(e) => setClienteFilter(e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="">Todos</option>
-                    {clientes.map(cliente => (
-                      <option key={cliente.cliente_id} value={cliente.cliente_id}>
-                        {cliente.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 p-2 space-y-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Função
+                </label>
+                <select
+                  value={funcaoFilter}
+                  onChange={(e) => setFuncaoFilter(e.target.value as 'todos' | 'Motorista' | 'Agregado')}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="todos">Todos</option>
+                  <option value="Motorista">Motoristas</option>
+                  <option value="Agregado">Agregados</option>
+                </select>
               </div>
-            )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Cliente
+                </label>
+                <select
+                  value={clienteFilter || ''}
+                  onChange={(e) => setClienteFilter(e.target.value ? parseInt(e.target.value) : null)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">Todos</option>
+                  {clientes.map(cliente => (
+                    <option key={cliente.cliente_id} value={cliente.cliente_id}>
+                      {cliente.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
           <button
