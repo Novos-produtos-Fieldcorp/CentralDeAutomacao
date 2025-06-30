@@ -9,6 +9,7 @@ interface GestaoRiscoTabProps {
   gr_motorista_motivo?: string | null;
   empresa_motorista?: string | null;
   status_motorista?: string | null;
+  onUpdateSuccess?: () => void;
 }
 
 interface Empresa {
@@ -26,7 +27,8 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
   gr_motorista_id,
   gr_motorista_motivo,
   empresa_motorista,
-  status_motorista
+  status_motorista,
+  onUpdateSuccess
 }) => {
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
@@ -210,8 +212,13 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
       setIsAddModalOpen(false);
       setIsEditModalOpen(false);
       
-      // Refresh the page to show updated data
-      window.location.reload();
+      // Call the onUpdateSuccess callback if provided
+      if (onUpdateSuccess) {
+        onUpdateSuccess();
+      } else {
+        // Refresh the page to show updated data if no callback provided
+        window.location.reload();
+      }
     } catch (error) {
       console.error('Error submitting form:', error);
       toast.error('Erro ao salvar dados');
@@ -236,8 +243,13 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
       toast.success('Gestão de risco removida com sucesso');
       setIsDeleteModalOpen(false);
       
-      // Refresh the page to show updated data
-      window.location.reload();
+      // Call the onUpdateSuccess callback if provided
+      if (onUpdateSuccess) {
+        onUpdateSuccess();
+      } else {
+        // Refresh the page to show updated data if no callback provided
+        window.location.reload();
+      }
     } catch (error) {
       console.error('Error deleting record:', error);
       toast.error('Erro ao remover gestão de risco');
