@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, Routes, Route, Navigate } from 'react-router-dom';
-import { Users, TruckIcon, LayoutDashboard, Kanban, CheckCircle2, Lock, ChevronRight } from 'lucide-react';
+import { Users, TruckIcon, LayoutDashboard, Kanban, CheckCircle2, Lock, ChevronRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useState, useEffect, useRef } from 'react';
@@ -13,6 +13,7 @@ import ContratacaoKanban from './contratacao/ContratacaoKanban';
 import Contratados from './contratacao/Contratados';
 import MotoristasInfiniteList from './motoristas/MotoristasInfiniteList';
 import LoadingSpinner from '../components/LoadingSpinner';
+import GestaoRisco from './contratacao/GestaoRisco';
 
 const Motoristas = () => {
   const location = useLocation();
@@ -73,6 +74,7 @@ const Motoristas = () => {
     { path: '/motoristas/agregados', icon: TruckIcon, label: 'Agregados' },
     { path: '/motoristas/contratados', icon: CheckCircle2, label: 'Contratados' },
     { path: '/motoristas/kanban', icon: Kanban, label: 'Kanban' },
+    { path: '/motoristas/gestao-risco', icon: AlertCircle, label: 'Gestão de Risco' },
   ];
 
   const isActive = (path: string) => {
@@ -131,6 +133,7 @@ const Motoristas = () => {
             <Route path="contratados" element={<Contratados />} />
             <Route path="kanban" element={<ContratacaoKanban />} />
             <Route path="dashboard" element={<ContratacaoDashboard />} />
+            <Route path="gestao-risco" element={<GestaoRisco />} />
           </Routes>
         </div></>) : (
           <div className="p-8 text-center">
