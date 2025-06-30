@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
   X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
-  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, UserPlus, Trash2 
+  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, UserPlus, Trash2, ShieldAlert 
 } from 'lucide-react';
 import type { 
   DocumentoMotorista, 
@@ -19,6 +19,7 @@ import EditMotoristaModal from './EditMotoristaModal';
 import AddAjudanteModal from './AddAjudanteModal';
 import EditAjudanteModal from './EditAjudanteModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
+import GestaoRiscoTab from './GestaoRiscoTab';
 
 interface AgregadoDetailViewProps {
   isOpen: boolean;
@@ -70,7 +71,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
   const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
   const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
   const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'ajudantes'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'ajudantes' | 'gestao-risco'>('details');
 
   if (!isOpen || !agregado) return null;
 
@@ -148,34 +149,47 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
               </div>
             </div>
             
+            {/* Tabs */}
+            <div className="border-b border-gray-200 dark:border-gray-700">
+              <nav className="-mb-px flex space-x-8 px-6">
+                <button
+                  onClick={() => setActiveTab('details')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'details'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  Detalhes
+                </button>
+                <button
+                  onClick={() => setActiveTab('ajudantes')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'ajudantes'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  Ajudantes
+                </button>
+                <button
+                  onClick={() => setActiveTab('gestao-risco')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'gestao-risco'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1">
+                    <ShieldAlert className="w-4 h-4" />
+                    Gestão de Risco
+                  </div>
+                </button>
+              </nav>
+            </div>
+
             {/* Content */}
             <div className="p-6">
-              {/* Tabs */}
-              <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-                <nav className="-mb-px flex space-x-8">
-                  <button
-                    onClick={() => setActiveTab('details')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'details'
-                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Detalhes
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('ajudantes')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'ajudantes'
-                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Ajudantes
-                  </button>
-                </nav>
-              </div>
-
               {activeTab === 'details' ? (
                 <div className="space-y-6">
                   {/* Personal Information */}
@@ -193,7 +207,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                       </button>
                     </div>
                     <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
-                      <dl className="sm:divide-y sm:divide-gray-200 dark:divide-gray-700">
+                      <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                             Nome Completo
@@ -215,7 +229,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                             Data de Nascimento
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {agregado.dt_nascimento ? formatDate(agregado.dt_nascimento) : 'Não informado'}
+                            {agregado.dt_nascimento ? formatDate(agregado.dt_nascimento) : 'Não informada'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -247,7 +261,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                         </h3>
                       </div>
                       <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
-                        <dl className="sm:divide-y sm:divide-gray-200 dark:divide-gray-700">
+                        <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
                           <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               Placa
@@ -277,7 +291,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                     </div>
                   )}
                 </div>
-              ) : (
+              ) : activeTab === 'ajudantes' ? (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -353,6 +367,15 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                     </div>
                   )}
                 </div>
+              ) : (
+                <GestaoRiscoTab 
+                  motorista_id={agregado.motorista_id}
+                  gr_motorista_id={agregado.gr_motorista_id}
+                  gr_motorista_motivo={agregado.gr_motorista_motivo}
+                  empresa_motorista={agregado.empresa_motorista}
+                  status_motorista={agregado.status_motorista}
+                  onUpdateSuccess={onSuccess}
+                />
               )}
             </div>
           </div>
@@ -365,7 +388,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           motorista={agregado}
-          onSuccess={() => {
+          onUpdate={() => {
             setIsEditModalOpen(false);
             onSuccess?.();
           }}
@@ -375,7 +398,8 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
       <AddAjudanteModal
         isOpen={isAddAjudanteModalOpen}
         onClose={() => setIsAddAjudanteModalOpen(false)}
-        motoristaId={agregado.motorista_id}
+        motorista_id={agregado.motorista_id}
+        veiculo_id={veiculo?.veiculo_id}
         onSuccess={() => {
           setIsAddAjudanteModalOpen(false);
           onSuccess?.();
