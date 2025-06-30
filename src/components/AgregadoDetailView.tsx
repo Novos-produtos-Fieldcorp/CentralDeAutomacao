@@ -387,7 +387,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           motorista={agregado}
-          onSuccess={() => {
+          onUpdate={() => {
             setIsEditModalOpen(false);
             onSuccess?.();
           }}
@@ -398,6 +398,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
         isOpen={isAddAjudanteModalOpen}
         onClose={() => setIsAddAjudanteModalOpen(false)}
         motorista_id={agregado.motorista_id}
+        veiculo_id={veiculo?.veiculo_id}
         onSuccess={() => {
           setIsAddAjudanteModalOpen(false);
           onSuccess?.();
