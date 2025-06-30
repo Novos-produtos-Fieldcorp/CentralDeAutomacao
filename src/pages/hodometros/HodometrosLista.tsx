@@ -45,6 +45,13 @@ const HodometrosLista = () => {
         return;
       }
 
+      // Log query parameters for debugging
+      console.log('Fetching hodometro data with params:', {
+        companyId,
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      });
+
       // Get all readings in the period
       const { data, error } = await supabase.from('hodometro')
         .select(`
@@ -69,7 +76,22 @@ const HodometrosLista = () => {
         .lte('data', dateRange.endDate)
         .order('data', { ascending: true }); // Order by date ascending for time series
 
-      if (error) throw error;
+      // Log raw response for debugging
+      console.log('Supabase response:', { data: data?.length || 0, error });
+      
+      if (error) {
+        console.error('Supabase query error details:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.log('No data returned from Supabase query');
+        setDriverData([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log('First 5 records from response:', data.slice(0, 5));
 
       // Process data to get mileage by driver and date
       const driverMap = new Map<number, {
@@ -79,9 +101,24 @@ const HodometrosLista = () => {
         daysWithReadings: Set<string>;
       }>();
 
-      (data || []).forEach(hodometro => {
-        // Removed the km_rodado check to include all records
-        if (!hodometro.motorista_id || !hodometro.motorista) return;
+      console.log('Processing hodometro records...');
+      
+      (data || []).forEach((hodometro, index) => {
+        // Log every 50th record for debugging
+        if (index % 50 === 0) {
+          console.log(`Processing record ${index}:`, {
+            id: hodometro.id_hodometro,
+            data: hodometro.data,
+            motorista_id: hodometro.motorista?.motorista_id,
+            km_rodado: hodometro.km_rodado
+          });
+        }
+
+        // Skip records without motorista
+        if (!hodometro.motorista_id || !hodometro.motorista) {
+          console.log(`Skipping record ${hodometro.id_hodometro} - missing motorista`);
+          return;
+        }
 
         const driverId = hodometro.motorista.motorista_id;
         const driverName = hodometro.motorista.nome;
@@ -110,6 +147,11 @@ const HodometrosLista = () => {
         driverMap.set(driverId, driverData);
       });
 
+      console.log('Driver map after processing:', {
+        driverCount: driverMap.size,
+        driverIds: Array.from(driverMap.keys())
+      });
+
       // Convert to array and sort by total km (descending)
       const driversArray: DriverData[] = Array.from(driverMap.entries()).map(([motorista_id, data]) => {
         const daysWithReadings = data.daysWithReadings.size;
@@ -128,6 +170,16 @@ const HodometrosLista = () => {
           })).sort((a, b) => a.date.localeCompare(b.date)) // Sort by date ascending
         };
       }).sort((a, b) => b.totalKm - a.totalKm);
+
+      console.log('Final processed driver data:', {
+        count: driversArray.length,
+        totalKm: driversArray.reduce((sum, driver) => sum + driver.totalKm, 0),
+        firstDriver: driversArray.length > 0 ? {
+          nome: driversArray[0].nome,
+          totalKm: driversArray[0].totalKm,
+          daysWithReadings: driversArray[0].daysWithReadings
+        } : null
+      });
 
       setDriverData(driversArray);
     } catch (error) {
