@@ -59,6 +59,7 @@ const HodometrosLista = () => {
           data,
           hora,
           km_rodado,
+          motorista_id,
           motorista:motorista_id (
             motorista_id,
             nome,
@@ -109,19 +110,27 @@ const HodometrosLista = () => {
           console.log(`Processing record ${index}:`, {
             id: hodometro.id_hodometro,
             data: hodometro.data,
-            motorista_id: hodometro.motorista?.motorista_id,
+            motorista_id: hodometro.motorista_id,
+            motorista: hodometro.motorista,
             km_rodado: hodometro.km_rodado
           });
         }
 
-        // Skip records without motorista
-        if (!hodometro.motorista_id || !hodometro.motorista) {
-          console.log(`Skipping record ${hodometro.id_hodometro} - missing motorista`);
+        // Skip records without motorista_id
+        if (!hodometro.motorista_id) {
+          console.log(`Skipping record ${hodometro.id_hodometro} - missing motorista_id`);
           return;
         }
 
-        const driverId = hodometro.motorista.motorista_id;
-        const driverName = hodometro.motorista.nome;
+        // Skip records without motorista relation data
+        if (!hodometro.motorista) {
+          console.log(`Record ${hodometro.id_hodometro} has motorista_id ${hodometro.motorista_id} but no motorista relation data`);
+          // Continue processing using motorista_id instead of skipping
+        }
+
+        const driverId = hodometro.motorista_id;
+        // Use motorista.nome if available, otherwise use a placeholder
+        const driverName = hodometro.motorista?.nome || `Motorista ID ${driverId}`;
         const date = hodometro.data;
         const km = hodometro.km_rodado || 0; // Use 0 if km_rodado is null or undefined
 
