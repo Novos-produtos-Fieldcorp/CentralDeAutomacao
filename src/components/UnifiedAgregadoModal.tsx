@@ -145,7 +145,7 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
   if (!isOpen || !motorista) return null;
 
   // Ensure we have the motorista data
-  const nome = motorista.nome || '';
+  const nome = motorista.nome || 'Nome não informado';
   const cpf = motorista.cpf || '';
 
   const openDocumentInNewTab = (url: string | null) => {
@@ -202,7 +202,7 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
                   </div>
                   <div className="flex flex-col">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                      {nome}
+                      {nome || 'Nome não informado'}
                     </h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Agregado • {formatCPF(cpf)}
@@ -301,7 +301,7 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
                             Nome Completo
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {nome}
+                            {nome || 'Nome não informado'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -622,7 +622,7 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
                                 </div>
                                 <div className="ml-4">
                                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {ajudante.nome}
+                                    {ajudante.nome || 'Nome não informado'}
                                   </p>
                                   <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'CPF não informado'}
@@ -743,7 +743,7 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
           }}
           onConfirm={handleDeleteConfirm}
           title="Excluir Ajudante"
-          message={`Tem certeza que deseja excluir o ajudante "${selectedAjudante.nome}"? Esta ação não pode ser desfeita.`}
+          message={`Tem certeza que deseja excluir o ajudante "${selectedAjudante.nome || 'Nome não informado'}"? Esta ação não pode ser desfeita.`}
         />
       )}
 
