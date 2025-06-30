@@ -58,8 +58,17 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
 
   useEffect(() => {
     // Check if we have GR data based on props or fetched data
-    setHasGrData(!!gr_motorista_id || !!grData);
-  }, [gr_motorista_id, grData]);
+    const hasData = !!gr_motorista_id || !!empresa_motorista || !!status_motorista || !!grData;
+    setHasGrData(hasData);
+    
+    console.log("GR Data check:", { 
+      gr_motorista_id, 
+      empresa_motorista, 
+      status_motorista, 
+      grData,
+      hasData 
+    });
+  }, [gr_motorista_id, empresa_motorista, status_motorista, grData]);
 
   const fetchData = async () => {
     try {
@@ -99,13 +108,20 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
         if (grError) throw grError;
         
         setGrData(grMotoristaData);
-        setHasGrData(true);
         
         // Set form data for editing
         setFormData({
           empresa_id: grMotoristaData.empresa_id.toString(),
           status_id: grMotoristaData.status_id.toString(),
           motivo: grMotoristaData.motivo || ''
+        });
+      } else if (empresa_motorista && status_motorista) {
+        // If we have empresa and status from props but no gr_motorista_id,
+        // we still have data but it might be coming from a view
+        setGrData({
+          empresa: { nome: empresa_motorista },
+          status: { status: status_motorista },
+          motivo: gr_motorista_motivo
         });
       }
     } catch (error) {
@@ -278,16 +294,36 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
       {hasGrData ? (
         <div>
           <div className="text-red-600 dark:text-red-400">
-            <div className="mb-2">Empresa: {empresa_motorista}</div>
-            <div className="mb-2">Status: {status_motorista} {status_motorista === 'Reprovado' && gr_motorista_motivo && <span className="ml-4">if reprovado: <span className="text-red-600 dark:text-red-400 font-medium">MOTIVO</span></span>}</div>
+            <div className="mb-2">Empresa: {empresa_motorista || grData?.empresa?.nome}</div>
+            <div className="mb-2">
+              Status: {status_motorista || grData?.status?.status} 
+              {(status_motorista === 'Reprovado' || grData?.status?.status === 'Reprovado') && 
+                (gr_motorista_motivo || grData?.motivo) && (
+                <span className="ml-4">
+                  if reprovado: <span className="text-red-600 dark:text-red-400 font-medium">MOTIVO</span>
+                </span>
+              )}
+            </div>
+            {(gr_motorista_motivo || grData?.motivo) && (
+              <div className="mb-2">Motivo: {gr_motorista_motivo || grData?.motivo}</div>
+            )}
           </div>
           <hr className="border-t border-red-600 dark:border-red-400 my-4" />
-          <button
-            onClick={() => setIsEditModalOpen(true)}
-            className="inline-flex items-center justify-center px-4 py-2 border border-red-600 dark:border-red-400 text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/10 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
-          >
-            + empresa
-          </button>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="inline-flex items-center justify-center px-4 py-2 border border-red-600 dark:border-red-400 text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/10 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+            >
+              + empresa
+            </button>
+            <button
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Excluir
+            </button>
+          </div>
         </div>
       ) : (
         <div className="text-center py-12 bg-black rounded-lg">
