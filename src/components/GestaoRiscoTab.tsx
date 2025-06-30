@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, AlertTriangle, Check, X, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, AlertTriangle, Check, X, Loader2, ShieldAlert } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -333,7 +333,7 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
         </div>
       ) : (
         <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-          <AlertTriangle className="mx-auto h-12 w-12 text-gray-400" />
+          <ShieldAlert className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
             Sem informações de gestão de risco
           </h3>
