@@ -145,6 +145,18 @@ const HodometrosLista = () => {
 
       console.log('Processing hodometro records...');
       
+      // First, create a unique set of vehicle IDs to avoid duplicates
+      const uniqueVehicleIds = new Set<number>();
+      
+      (data || []).forEach((hodometro) => {
+        if (hodometro.veiculo_id && hodometro.veiculo) {
+          uniqueVehicleIds.add(hodometro.veiculo_id);
+        }
+      });
+      
+      console.log(`Found ${uniqueVehicleIds.size} unique vehicles`);
+      
+      // Process each hodometro record
       (data || []).forEach((hodometro, index) => {
         // Skip records without veiculo_id
         if (!hodometro.veiculo_id) {
