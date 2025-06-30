@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare } from 'lucide-react';
+import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, Shield } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
@@ -90,6 +90,7 @@ const Navbar = () => {
     { path: '/hodometros', icon: Gauge, label: 'Hodômetros', needsAccess: true, enabled: moduleAccess.hodometros },
     { path: '/clientes', icon: Store, label: 'Clientes', needsAccess: false, enabled: moduleAccess.clientes },
     { path: '/resumos-grupo', icon: MessagesSquare, label: 'Resumos em Grupo', needsAccess: true, enabled: moduleAccess.resumos },
+    { path: '/gestao-risco', icon: Shield, label: 'Gestão de Risco', needsAccess: false, enabled: true },
   ];
 
   // Function to get company initials or abbreviation based on length
