@@ -12,6 +12,7 @@ import type {
   PessoaJuridicaDonoVeiculo
 } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
+import { supabase } from '../lib/supabase';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
