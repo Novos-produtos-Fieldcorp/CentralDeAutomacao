@@ -130,7 +130,7 @@ const Contratados = () => {
         .from('motorista_eventos_cliente')
         .select('id')
         .eq('motorista_id', motorista_id)
-        .single();
+        .maybeSingle();
 
       if (existingRecord) {
         // Update existing record
@@ -193,7 +193,7 @@ const Contratados = () => {
         .from('motorista_eventos_cliente')
         .select('id')
         .eq('motorista_id', motorista_id)
-        .single();
+        .maybeSingle();
 
       if (existingRecord) {
         // Update existing record
