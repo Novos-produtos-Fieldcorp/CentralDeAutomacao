@@ -327,8 +327,7 @@ const HodometrosLista = () => {
         'Veículo': `${vehicle.marca} ${vehicle.tipo}`.trim(),
         'Total KM': vehicle.totalKm.toLocaleString('pt-BR'),
         'Média Diária': vehicle.avgKmPerDay.toLocaleString('pt-BR', { maximumFractionDigits: 1 }),
-        'Dias com Leitura': vehicle.daysWithReadings,
-        'Motoristas': vehicle.motoristas.map(m => m.nome).join(', ')
+        'Dias com Leitura': vehicle.daysWithReadings
       }));
 
       // Create a workbook with multiple sheets
@@ -344,8 +343,7 @@ const HodometrosLista = () => {
         { wch: 25 }, // Veículo
         { wch: 15 }, // Total KM
         { wch: 15 }, // Média Diária
-        { wch: 15 }, // Dias com Leitura
-        { wch: 40 }  // Motoristas
+        { wch: 15 } // Dias com Leitura
       ];
       mainWs['!cols'] = mainColWidths;
       
@@ -522,7 +520,6 @@ const HodometrosLista = () => {
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total KM</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Média Diária</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dias com Leitura</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motoristas</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
@@ -569,26 +566,6 @@ const HodometrosLista = () => {
                         {vehicle.daysWithReadings}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 dark:text-white max-w-xs overflow-hidden">
-                        {vehicle.motoristas.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {vehicle.motoristas.slice(0, 3).map((motorista, index) => (
-                              <span key={motorista.motorista_id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                {motorista.nome} ({formatNumber(motorista.km)} km)
-                              </span>
-                            ))}
-                            {vehicle.motoristas.length > 3 && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                +{vehicle.motoristas.length - 3} motoristas
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-500 dark:text-gray-400">Nenhum motorista</span>
-                        )}
-                      </div>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center space-x-2">
                         <button
@@ -609,7 +586,7 @@ const HodometrosLista = () => {
                   {/* Expanded vehicle details */}
                   {vehicle.expanded && (
                     <tr className="bg-gray-50 dark:bg-gray-800/30">
-                      <td colSpan={6} className="px-6 py-4">
+                      <td colSpan={5} className="px-6 py-4">
                         <div className="space-y-4">
                           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Leituras de Hodômetro para {vehicle.placa} - {vehicle.marca} {vehicle.tipo}
@@ -709,7 +686,7 @@ const HodometrosLista = () => {
               ))}
               {filteredVehicleData.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     Nenhum dado de quilometragem encontrado para o período selecionado
                   </td>
                 </tr>
