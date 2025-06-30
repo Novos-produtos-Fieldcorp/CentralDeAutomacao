@@ -374,6 +374,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                   gr_motorista_motivo={agregado.gr_motorista_motivo}
                   empresa_motorista={agregado.empresa_motorista}
                   status_motorista={agregado.status_motorista}
+                  onUpdateSuccess={onSuccess}
                 />
               )}
             </div>
