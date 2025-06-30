@@ -44,6 +44,7 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
   const [newStatusNome, setNewStatusNome] = useState('');
   const [creatingStatus, setCreatingStatus] = useState(false);
   const [grData, setGrData] = useState<any>(null);
+  const [hasGrData, setHasGrData] = useState(false);
 
   const [formData, setFormData] = useState({
     empresa_id: '',
@@ -54,6 +55,11 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    // Check if we have GR data based on props or fetched data
+    setHasGrData(!!gr_motorista_id || !!grData);
+  }, [gr_motorista_id, grData]);
 
   const fetchData = async () => {
     try {
@@ -93,6 +99,7 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
         if (grError) throw grError;
         
         setGrData(grMotoristaData);
+        setHasGrData(true);
         
         // Set form data for editing
         setFormData({
@@ -268,7 +275,7 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
 
   return (
     <div className="space-y-6">
-      {gr_motorista_id ? (
+      {hasGrData ? (
         <div>
           <div className="text-red-600 dark:text-red-400">
             <div className="mb-2">Empresa: {empresa_motorista}</div>
