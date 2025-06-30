@@ -520,6 +520,7 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                   gr_motorista_motivo={motorista.gr_motorista_motivo}
                   empresa_motorista={motorista.empresa_motorista}
                   status_motorista={motorista.status_motorista}
+                  onUpdateSuccess={onSuccess}
                 />
               )}
             </div>
