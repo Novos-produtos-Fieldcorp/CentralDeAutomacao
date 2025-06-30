@@ -269,75 +269,26 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
   return (
     <div className="space-y-6">
       {gr_motorista_id ? (
-        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-          <div className="px-4 py-5 sm:px-6 flex justify-between">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-              Informações de Gestão de Risco
-            </h3>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <Edit2 className="w-4 h-4 mr-1" />
-                Editar
-              </button>
-              <button
-                onClick={() => setIsDeleteModalOpen(true)}
-                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                <Trash2 className="w-4 h-4 mr-1" />
-                Excluir
-              </button>
-            </div>
+        <div>
+          <div className="text-red-600 dark:text-red-400">
+            <div className="mb-2">Empresa: {empresa_motorista}</div>
+            <div className="mb-2">Status: {status_motorista} {status_motorista === 'Reprovado' && gr_motorista_motivo && <span className="ml-4">if reprovado: <span className="text-red-600 dark:text-red-400 font-medium">MOTIVO</span></span>}</div>
           </div>
-          <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
-            <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Empresa
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                  {empresa_motorista || 'Não informada'}
-                </dd>
-              </div>
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Status
-                </dt>
-                <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    status_motorista === 'Aprovado' 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
-                      : status_motorista === 'Reprovado'
-                        ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200'
-                  }`}>
-                    {status_motorista === 'Aprovado' && <Check className="w-3 h-3 mr-1" />}
-                    {status_motorista === 'Reprovado' && <X className="w-3 h-3 mr-1" />}
-                    {status_motorista === 'Pendente' && <AlertTriangle className="w-3 h-3 mr-1" />}
-                    {status_motorista || 'Não informado'}
-                  </span>
-                </dd>
-              </div>
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Motivo
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                  {gr_motorista_motivo || 'Não informado'}
-                </dd>
-              </div>
-            </dl>
-          </div>
+          <hr className="border-t border-red-600 dark:border-red-400 my-4" />
+          <button
+            onClick={() => setIsEditModalOpen(true)}
+            className="inline-flex items-center justify-center px-4 py-2 border border-red-600 dark:border-red-400 text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/10 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+          >
+            + empresa
+          </button>
         </div>
       ) : (
-        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="text-center py-12 bg-black rounded-lg">
           <ShieldAlert className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+          <h3 className="mt-2 text-sm font-medium text-white">
             Sem informações de gestão de risco
           </h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-sm text-gray-400">
             Adicione informações de gestão de risco para este motorista.
           </p>
           <div className="mt-6">
