@@ -313,6 +313,7 @@ const HodometrosDashboard = () => {
             kmRodadoNoDia = 0;
           }
         } else if (data.vehicleType === 'ciclomotor' && data.firstReadingTrip !== null && data.lastReadingTrip !== null) {
+          // For ciclomotors, calculate km_rodado as the difference between last and first trip readings
           kmRodadoNoDia = data.lastReadingTrip - data.firstReadingTrip;
           if (kmRodadoNoDia < 0) {
             console.warn(`Negative km_rodado for ciclomotor on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
