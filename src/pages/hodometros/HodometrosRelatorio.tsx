@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Camera, X, Download, AlertCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
