@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User } from 'lucide-react';
+import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -165,6 +165,12 @@ const HodometrosRelatorio = () => {
     } else {
       toast.error('Nenhuma foto disponível');
     }
+  };
+
+  const handleEditReading = (reading: HodometroReading, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Implement edit functionality here
+    toast.info(`Editar leitura ID: ${reading.id_hodometro}`);
   };
 
   const exportToExcel = () => {
@@ -355,6 +361,7 @@ const HodometrosRelatorio = () => {
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Editar</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-[#1B2537] divide-y divide-gray-200 dark:divide-gray-700">
@@ -446,12 +453,21 @@ const HodometrosRelatorio = () => {
                         </span>
                       )}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <button
+                        onClick={(e) => handleEditReading(reading, e)}
+                        className="inline-flex items-center justify-center p-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-full hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+                        title="Editar leitura"
+                      >
+                        <Edit size={16} />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
               {filteredReadings.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     Nenhuma leitura encontrada para o período selecionado
                   </td>
                 </tr>
