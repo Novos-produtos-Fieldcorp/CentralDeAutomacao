@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Clock, MessageSquare, Check, X, Loader2, AlertTriangle, Send, MessagesSquare, Users, Truck, Building, Briefcase, ShoppingBag, Package, Map, Calendar } from 'lucide-react';
+import { Plus, Trash2, Edit2, Clock, MessageSquare, Check, X, Loader2, AlertTriangle, Send } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -47,20 +47,6 @@ const colorOptions = [
   { value: 'orange', label: 'Laranja', class: 'bg-orange-500' },
   { value: 'teal', label: 'Turquesa', class: 'bg-teal-500' }
 ];
-
-// Icon mapping object
-const iconMap = {
-  MessagesSquare,
-  Users,
-  Truck,
-  Building,
-  Briefcase,
-  ShoppingBag,
-  Package,
-  Map,
-  Calendar,
-  MessageSquare // fallback icon
-};
 
 const ResumosGrupo = () => {
   const { companyId } = useCompanyData();
@@ -342,8 +328,8 @@ const ResumosGrupo = () => {
   };
 
   const getIconComponent = (iconName: string) => {
-    const IconComponent = iconMap[iconName as keyof typeof iconMap] || MessageSquare;
-    return <IconComponent className="w-5 h-5" />;
+    const LucideIcon = require('lucide-react')[iconName];
+    return LucideIcon ? <LucideIcon className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />;
   };
 
   const getColorClass = (colorName: string) => {
