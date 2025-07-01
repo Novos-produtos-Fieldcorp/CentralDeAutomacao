@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit } from 'lucide-react';
+import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -50,6 +50,22 @@ const HodometrosRelatorio = () => {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
+  
+  // Edit modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedReading, setSelectedReading] = useState<HodometroReading | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    data: '',
+    hora: '',
+    hod_informado: '',
+    hod_lido: '',
+    trip_lida: '',
+    trip_informada: '',
+    km_rodado: '',
+    bateria: '',
+    comparacao_leitura: false
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchReadings = useCallback(async () => {
     try {
@@ -169,8 +185,88 @@ const HodometrosRelatorio = () => {
 
   const handleEditReading = (reading: HodometroReading, e: React.MouseEvent) => {
     e.stopPropagation();
-    // Implement edit functionality here
     toast(`Editar leitura ID: ${reading.id_hodometro}`);
+    
+    // Set the selected reading and initialize form data
+    setSelectedReading(reading);
+    setEditFormData({
+      data: reading.data,
+      hora: reading.hora,
+      hod_informado: reading.hod_informado?.toString() || '',
+      hod_lido: reading.hod_lido?.toString() || '',
+      trip_lida: reading.trip_lida?.toString() || '',
+      trip_informada: reading.trip_informada || '',
+      km_rodado: reading.km_rodado?.toString() || '',
+      bateria: reading.bateria?.toString() || '',
+      comparacao_leitura: reading.comparacao_leitura || false
+    });
+    
+    // Open the edit modal
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedReading) return;
+    
+    try {
+      setSubmitting(true);
+      
+      // Prepare the data for update
+      const updateData: any = {
+        data: editFormData.data,
+        hora: editFormData.hora,
+        comparacao_leitura: editFormData.comparacao_leitura,
+        km_rodado: editFormData.km_rodado ? parseFloat(editFormData.km_rodado) : null
+      };
+      
+      // Add vehicle-specific fields based on type
+      if (editFormData.bateria) {
+        // Electric vehicle
+        updateData.bateria = parseInt(editFormData.bateria);
+        updateData.trip_lida = editFormData.trip_lida ? parseFloat(editFormData.trip_lida) : null;
+        updateData.trip_informada = editFormData.trip_informada || null;
+      } else {
+        // Regular vehicle
+        updateData.hod_informado = editFormData.hod_informado ? parseFloat(editFormData.hod_informado) : null;
+        updateData.hod_lido = editFormData.hod_lido ? parseFloat(editFormData.hod_lido) : null;
+      }
+      
+      // Update the record in the database
+      const { error } = await supabase
+        .from('hodometro')
+        .update(updateData)
+        .eq('id_hodometro', selectedReading.id_hodometro);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setReadings(prevReadings => 
+        prevReadings.map(reading => 
+          reading.id_hodometro === selectedReading.id_hodometro
+            ? { 
+                ...reading, 
+                ...updateData,
+                // Ensure proper types for numeric fields
+                hod_informado: updateData.hod_informado !== undefined ? updateData.hod_informado : reading.hod_informado,
+                hod_lido: updateData.hod_lido !== undefined ? updateData.hod_lido : reading.hod_lido,
+                trip_lida: updateData.trip_lida !== undefined ? updateData.trip_lida : reading.trip_lida,
+                km_rodado: updateData.km_rodado !== undefined ? updateData.km_rodado : reading.km_rodado,
+                bateria: updateData.bateria !== undefined ? updateData.bateria : reading.bateria
+              }
+            : reading
+        )
+      );
+      
+      toast.success('Leitura atualizada com sucesso');
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error('Error updating reading:', error);
+      toast.error('Erro ao atualizar leitura');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const exportToExcel = () => {
@@ -520,6 +616,205 @@ const HodometrosRelatorio = () => {
                 Baixar Imagem
               </a>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {isEditModalOpen && selectedReading && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setIsEditModalOpen(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-md border border-gray-200 dark:border-gray-700"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                Editar Leitura de Hodômetro
+              </h3>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Basic Information */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Data
+                  </label>
+                  <input
+                    type="date"
+                    value={editFormData.data}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, data: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Hora
+                  </label>
+                  <input
+                    type="time"
+                    value={editFormData.hora}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, hora: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                
+                {/* Vehicle Information */}
+                <div className="md:col-span-2 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Truck className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Veículo: {selectedReading.veiculo?.placa} - {selectedReading.veiculo?.marca} {selectedReading.veiculo?.tipo}
+                    </h4>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 mb-3">
+                    <User className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Motorista: {selectedReading.motorista?.nome}
+                    </h4>
+                  </div>
+                </div>
+                
+                {/* Hodometer Fields - Show based on vehicle type */}
+                {selectedReading.bateria !== null && selectedReading.bateria !== undefined ? (
+                  <>
+                    {/* Electric Vehicle Fields */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Bateria (%)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={editFormData.bateria}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, bateria: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Trip Lida
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={editFormData.trip_lida}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, trip_lida: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Trip Informada
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.trip_informada}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, trip_informada: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Regular Vehicle Fields */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Hodômetro Informado
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={editFormData.hod_informado}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, hod_informado: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Hodômetro Lido
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={editFormData.hod_lido}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, hod_lido: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      />
+                    </div>
+                  </>
+                )}
+                
+                {/* Common Fields */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    KM Rodado
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={editFormData.km_rodado}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, km_rodado: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={editFormData.comparacao_leitura}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, comparacao_leitura: e.target.checked }))}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>Leitura OK</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                  disabled={submitting}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Salvar
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
