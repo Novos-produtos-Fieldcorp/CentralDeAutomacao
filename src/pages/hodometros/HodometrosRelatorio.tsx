@@ -62,8 +62,7 @@ const HodometrosRelatorio = () => {
     trip_lida: '',
     trip_informada: '',
     km_rodado: '',
-    bateria: '',
-    comparacao_leitura: false
+    bateria: ''
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -196,8 +195,7 @@ const HodometrosRelatorio = () => {
       trip_lida: reading.trip_lida?.toString() || '',
       trip_informada: reading.trip_informada || '',
       km_rodado: reading.km_rodado?.toString() || '',
-      bateria: reading.bateria?.toString() || '',
-      comparacao_leitura: reading.comparacao_leitura || false
+      bateria: reading.bateria?.toString() || ''
     });
     
     // Open the edit modal
@@ -216,7 +214,6 @@ const HodometrosRelatorio = () => {
       const updateData: any = {
         data: editFormData.data,
         hora: editFormData.hora,
-        comparacao_leitura: editFormData.comparacao_leitura,
         km_rodado: editFormData.km_rodado ? parseFloat(editFormData.km_rodado) : null
       };
       
@@ -771,18 +768,6 @@ const HodometrosRelatorio = () => {
                     onChange={(e) => setEditFormData(prev => ({ ...prev, km_rodado: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
-                </div>
-                
-                <div>
-                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={editFormData.comparacao_leitura}
-                      onChange={(e) => setEditFormData(prev => ({ ...prev, comparacao_leitura: e.target.checked }))}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span>Leitura OK</span>
-                  </label>
                 </div>
               </div>
               
