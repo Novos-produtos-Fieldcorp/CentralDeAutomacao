@@ -185,7 +185,6 @@ const HodometrosRelatorio = () => {
 
   const handleEditReading = (reading: HodometroReading, e: React.MouseEvent) => {
     e.stopPropagation();
-    toast(`Editar leitura ID: ${reading.id_hodometro}`);
     
     // Set the selected reading and initialize form data
     setSelectedReading(reading);
