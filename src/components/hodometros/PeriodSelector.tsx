@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Calendar, ChevronDown } from 'lucide-react';
+
+export type PeriodType = '30days' | '15days' | '1day' | 'custom' | 'all';
 
 export interface DateRange {
   startDate: string;
@@ -7,18 +9,18 @@ export interface DateRange {
 }
 
 export interface PeriodSelectorProps {
-  periodType: '30days' | '15days' | '1day' | 'custom' | 'all';
+  periodType: PeriodType;
   dateRange: DateRange;
-  onPeriodChange: (type: '30days' | '15days' | '1day' | 'custom' | 'all') => void;
+  onPeriodChange: (type: PeriodType) => void;
   onDateRangeChange: (range: DateRange) => void;
 }
 
-const PeriodSelector: React.FC<PeriodSelectorProps> = ({
+const PeriodSelector = ({
   periodType,
   dateRange,
   onPeriodChange,
   onDateRangeChange
-}) => {
+}: PeriodSelectorProps) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const getPeriodLabel = () => {
@@ -41,11 +43,6 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         <div className="flex items-center gap-2">
           <Calendar className="w-5 h-5 text-gray-400" />
           <span>{getPeriodLabel()}</span>
-          {periodType === 'custom' && (
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              ({dateRange.startDate.split('-').reverse().join('/')} - {dateRange.endDate.split('-').reverse().join('/')})
-            </span>
-          )}
         </div>
         <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
       </button>
