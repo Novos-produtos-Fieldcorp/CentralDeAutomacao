@@ -417,16 +417,18 @@ const HodometrosRelatorio = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       {reading.trip_lida !== null ? (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {formatNumber(reading.trip_lida)}
-                        </div>
+                        <>
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            Lida: {formatNumber(reading.trip_lida)}
+                          </div>
+                          {reading.trip_informada && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              Informada: {reading.trip_informada}
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                      )}
-                      {reading.trip_informada && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {reading.trip_informada}
-                        </div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
