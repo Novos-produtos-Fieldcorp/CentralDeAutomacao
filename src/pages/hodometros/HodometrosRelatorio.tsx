@@ -170,7 +170,7 @@ const HodometrosRelatorio = () => {
   const handleEditReading = (reading: HodometroReading, e: React.MouseEvent) => {
     e.stopPropagation();
     // Implement edit functionality here
-    toast.info(`Editar leitura ID: ${reading.id_hodometro}`);
+    toast(`Editar leitura ID: ${reading.id_hodometro}`);
   };
 
   const exportToExcel = () => {
