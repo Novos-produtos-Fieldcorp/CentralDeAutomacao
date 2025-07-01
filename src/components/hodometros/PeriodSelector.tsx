@@ -1,26 +1,24 @@
-import { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Calendar, ChevronDown } from 'lucide-react';
 
-type PeriodType = '30days' | '15days' | '1day' | 'custom' | 'all';
-
-interface DateRange {
+export interface DateRange {
   startDate: string;
   endDate: string;
 }
 
 export interface PeriodSelectorProps {
-  periodType: PeriodType;
+  periodType: '30days' | '15days' | '1day' | 'custom' | 'all';
   dateRange: DateRange;
-  onPeriodChange: (type: PeriodType) => void;
+  onPeriodChange: (type: '30days' | '15days' | '1day' | 'custom' | 'all') => void;
   onDateRangeChange: (range: DateRange) => void;
 }
 
-const PeriodSelector = ({
+const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   periodType,
   dateRange,
   onPeriodChange,
   onDateRangeChange
-}: PeriodSelectorProps) => {
+}) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const getPeriodLabel = () => {
@@ -125,7 +123,7 @@ const PeriodSelector = ({
       )}
 
       {periodType === 'custom' && (
-        <div className="mt-2 flex flex-col md:flex-row items-center gap-2 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">
+        <div className="mt-2 flex items-center gap-2 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">
           <div className="flex items-center gap-2 w-full">
             <input
               type="date"
@@ -135,7 +133,7 @@ const PeriodSelector = ({
                        focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
                        bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 w-full"
             />
-            <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">até</span>
+            <span className="text-gray-500 dark:text-gray-400">até</span>
             <input
               type="date"
               value={dateRange.endDate}
