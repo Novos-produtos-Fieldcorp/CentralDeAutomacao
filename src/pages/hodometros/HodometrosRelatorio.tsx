@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, Camera, X, Download, AlertCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -8,7 +8,6 @@ import { useDateRange } from '../../hooks/useDateRange';
 import { formatCPF } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import MileageChartModal from '../../components/hodometros/MileageChartModal';
 import * as XLSX from 'xlsx';
 
 interface DailyData {
