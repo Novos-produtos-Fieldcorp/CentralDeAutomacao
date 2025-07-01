@@ -180,7 +180,6 @@ const HodometrosRelatorio = () => {
         'Hodômetro Informado': reading.hod_informado !== null ? formatNumber(reading.hod_informado) : '-',
         'Hodômetro Lido': reading.hod_lido !== null ? formatNumber(reading.hod_lido) : '-',
         'Bateria': reading.bateria !== null ? `${reading.bateria}%` : '-',
-        'KM Rodado': reading.km_rodado !== null ? formatNumber(reading.km_rodado) : '-',
         'Trip Lida': reading.trip_lida !== null ? formatNumber(reading.trip_lida) : '-',
         'Trip Informada': reading.trip_informada || '-',
         'Tem Foto': reading.foto_hodometro ? 'Sim' : 'Não',
@@ -202,7 +201,6 @@ const HodometrosRelatorio = () => {
         { wch: 18 }, // Hodômetro Informado
         { wch: 15 }, // Hodômetro Lido
         { wch: 10 }, // Bateria
-        { wch: 12 }, // KM Rodado
         { wch: 12 }, // Trip Lida
         { wch: 15 }, // Trip Informada
         { wch: 10 }, // Tem Foto
@@ -356,7 +354,6 @@ const HodometrosRelatorio = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Rodado</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
               </tr>
             </thead>
@@ -432,11 +429,6 @@ const HodometrosRelatorio = () => {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                        {formatNumber(reading.km_rodado)} km
-                      </div>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       {reading.foto_hodometro ? (
                         <button
@@ -457,7 +449,7 @@ const HodometrosRelatorio = () => {
               })}
               {filteredReadings.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     Nenhuma leitura encontrada para o período selecionado
                   </td>
                 </tr>
