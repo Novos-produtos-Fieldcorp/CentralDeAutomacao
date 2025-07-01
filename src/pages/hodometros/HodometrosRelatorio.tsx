@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
@@ -168,150 +168,85 @@ const HodometrosRelatorio = () => {
       
       console.log(`Found ${uniqueVehicleIds.size} unique vehicles`);
       
-      // Create a map to store daily vehicle readings
-      const dailyVehicleReadingsMap = new Map<string, {
-        firstReadingKm: number | null;
-        lastReadingKm: number | null;
-        firstReadingTrip: number | null;
-        lastReadingTrip: number | null;
-        vehicleType: 'automovel' | 'ciclomotor';
-        motorista_id: number | null;
-        motorista_nome: string | null;
-        veiculo_id: number | null;
-        veiculo_placa: string | null;
-        readings: HodometroReading[];
-      }>();
-      
-      // First pass: collect all readings by day and vehicle
-      (data || []).forEach((hodometro) => {
+      // Process each hodometro record
+      (data || []).forEach((hodometro, index) => {
         // Skip records without veiculo_id
-        if (!hodometro.veiculo_id || !hodometro.veiculo || !hodometro.motorista) {
+        if (!hodometro.veiculo_id) {
+          console.log(`Skipping record ${hodometro.id_hodometro} - missing veiculo_id`);
           return;
         }
-        
+
+        // Skip records without veiculo relation data
+        if (!hodometro.veiculo) {
+          console.log(`Record ${hodometro.id_hodometro} has veiculo_id ${hodometro.veiculo_id} but no veiculo relation data`);
+          return;
+        }
+
+        // Skip records without motorista relation data
+        if (!hodometro.motorista) {
+          console.log(`Skipping record ${hodometro.id_hodometro} - missing motorista`);
+          return;
+        }
+
         const vehicleId = hodometro.veiculo_id;
+        const vehiclePlate = hodometro.veiculo.placa.toUpperCase();
+        const vehicleMake = hodometro.veiculo.marca || '';
+        const vehicleModel = hodometro.veiculo.tipo || '';
         const date = hodometro.data;
-        const uniqueKey = `${date}_${vehicleId}`;
-        
-        // Determine vehicle type based on whether it has battery readings
-        const vehicleType = hodometro.bateria !== null && hodometro.bateria !== undefined 
-          ? 'ciclomotor' 
-          : 'automovel';
-        
-        // Get current reading based on vehicle type
-        let currentReading: number | null = null;
-        let isOdometerReading = false;
-        
-        if (vehicleType === 'automovel' && hodometro.hod_lido !== null) {
-          currentReading = hodometro.hod_lido;
-          isOdometerReading = true;
-        } else if (vehicleType === 'ciclomotor' && hodometro.trip_lida !== null) {
-          currentReading = hodometro.trip_lida;
-        }
-        
-        // Skip if no valid reading
-        if (currentReading === null) {
-          return;
-        }
-        
-        // Get or create daily vehicle entry
-        const dailyVehicleEntry = dailyVehicleReadingsMap.get(uniqueKey) || {
-          firstReadingKm: null,
-          lastReadingKm: null,
-          firstReadingTrip: null,
-          lastReadingTrip: null,
-          vehicleType,
-          motorista_id: hodometro.motorista_id,
-          motorista_nome: hodometro.motorista?.nome || 'Desconhecido',
-          veiculo_id: hodometro.veiculo_id,
-          veiculo_placa: hodometro.veiculo?.placa || null,
-          readings: []
-        };
-        
-        // Add reading to the collection
-        dailyVehicleEntry.readings.push(hodometro);
-        
-        // Update first and last readings
-        if (isOdometerReading) {
-          if (dailyVehicleEntry.firstReadingKm === null || currentReading < dailyVehicleEntry.firstReadingKm) {
-            dailyVehicleEntry.firstReadingKm = currentReading;
-          }
-          if (dailyVehicleEntry.lastReadingKm === null || currentReading > dailyVehicleEntry.lastReadingKm) {
-            dailyVehicleEntry.lastReadingKm = currentReading;
-          }
-        } else {
-          if (dailyVehicleEntry.firstReadingTrip === null || currentReading < dailyVehicleEntry.firstReadingTrip) {
-            dailyVehicleEntry.firstReadingTrip = currentReading;
-          }
-          if (dailyVehicleEntry.lastReadingTrip === null || currentReading > dailyVehicleEntry.lastReadingTrip) {
-            dailyVehicleEntry.lastReadingTrip = currentReading;
-          }
-        }
-        
-        dailyVehicleReadingsMap.set(uniqueKey, dailyVehicleEntry);
-      });
-      
-      // Second pass: calculate daily kilometers and build vehicle data
-      for (const [key, dailyData] of dailyVehicleReadingsMap.entries()) {
-        const [date, vehicleIdStr] = key.split('_');
-        const vehicleId = parseInt(vehicleIdStr);
-        
-        // Calculate kilometers for the day
-        let kmRodadoNoDia = 0;
-        
-        if (dailyData.vehicleType === 'automovel' && dailyData.firstReadingKm !== null && dailyData.lastReadingKm !== null) {
-          kmRodadoNoDia = dailyData.lastReadingKm - dailyData.firstReadingKm;
-          // Handle cases where final reading is less than initial (odometer reset or error)
-          if (kmRodadoNoDia < 0) {
-            console.warn(`Negative km_rodado for automovel on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
-            kmRodadoNoDia = 0;
-          }
-        } else if (dailyData.vehicleType === 'ciclomotor' && dailyData.firstReadingTrip !== null && dailyData.lastReadingTrip !== null) {
-          // For ciclomotors, calculate km_rodado as the difference between last and first trip readings
-          kmRodadoNoDia = dailyData.lastReadingTrip - dailyData.firstReadingTrip;
-          if (kmRodadoNoDia < 0) {
-            console.warn(`Negative km_rodado for ciclomotor on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
-            kmRodadoNoDia = 0;
-          }
-        }
-        
+        const km = hodometro.km_rodado || 0; // Use 0 if km_rodado is null or undefined
+
+        // Get motorista info
+        const motorista_id = hodometro.motorista_id;
+        const motorista_nome = hodometro.motorista?.nome || `Motorista ID ${motorista_id}`;
+
         // Get or create vehicle data
         const vehicleData = vehicleMap.get(vehicleId) || {
-          placa: dailyData.veiculo_placa || '',
-          marca: dailyData.readings[0]?.veiculo?.marca || '',
-          tipo: dailyData.readings[0]?.veiculo?.tipo || '',
+          placa: vehiclePlate,
+          marca: vehicleMake,
+          tipo: vehicleModel,
           totalKm: 0,
           dailyData: new Map<string, number>(),
           daysWithReadings: new Set<string>(),
           motoristas: new Map<number, { nome: string; km: number }>(),
           readings: []
         };
-        
+
         // Add km to total
-        vehicleData.totalKm += kmRodadoNoDia;
-        
+        vehicleData.totalKm += km;
+
         // Add km to daily data
-        vehicleData.dailyData.set(date, kmRodadoNoDia);
-        
+        const dailyKm = vehicleData.dailyData.get(date) || 0;
+        vehicleData.dailyData.set(date, dailyKm + km);
+
         // Add date to days with readings
         vehicleData.daysWithReadings.add(date);
-        
+
         // Add km to motorista
-        if (dailyData.motorista_id && dailyData.motorista_nome) {
-          const motoristaData = vehicleData.motoristas.get(dailyData.motorista_id) || { 
-            nome: dailyData.motorista_nome, 
-            km: 0 
-          };
-          motoristaData.km += kmRodadoNoDia;
-          vehicleData.motoristas.set(dailyData.motorista_id, motoristaData);
+        if (motorista_id) {
+          const motoristaData = vehicleData.motoristas.get(motorista_id) || { nome: motorista_nome, km: 0 };
+          motoristaData.km += km;
+          vehicleData.motoristas.set(motorista_id, motoristaData);
         }
-        
-        // Add readings to vehicle data
-        vehicleData.readings.push(...dailyData.readings);
-        
+
+        // Add reading to readings array
+        vehicleData.readings.push({
+          id_hodometro: hodometro.id_hodometro,
+          data: hodometro.data,
+          hora: hodometro.hora,
+          hod_informado: hodometro.hod_informado,
+          hod_lido: hodometro.hod_lido,
+          km_rodado: hodometro.km_rodado,
+          bateria: hodometro.bateria,
+          foto_hodometro: hodometro.foto_hodometro,
+          trip_lida: hodometro.trip_lida,
+          trip_informada: hodometro.trip_informada,
+          comparacao_leitura: hodometro.comparacao_leitura,
+          motorista: hodometro.motorista
+        });
+
         // Update vehicle data
         vehicleMap.set(vehicleId, vehicleData);
-      }
+      });
 
       console.log('Vehicle map after processing:', {
         vehicleCount: vehicleMap.size,
