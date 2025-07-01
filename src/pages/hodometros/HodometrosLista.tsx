@@ -557,7 +557,7 @@ const HodometrosLista = () => {
     <div className="space-y-6">
       {/* Filters Section */}
       <div className="bg-white dark:bg-[#1B2537] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col md:flex-row items-center gap-4">
+        <div className="flex flex-col md:flex-row items-start gap-4">
           {/* Search */}
           <div className="relative flex-grow w-full md:w-auto">
             <input
@@ -573,7 +573,7 @@ const HodometrosLista = () => {
           </div>
 
           {/* Period Selector */}
-          <div className="w-full md:w-48">
+          <div className="w-full md:w-auto md:min-w-48">
             <PeriodSelector
               periodType={periodType}
               dateRange={dateRange}
