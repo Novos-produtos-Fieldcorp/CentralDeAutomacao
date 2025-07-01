@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Camera, X, Download, AlertCircle } from 'lucide-react';
+import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -8,6 +8,7 @@ import { useDateRange } from '../../hooks/useDateRange';
 import { formatCPF } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import MileageChartModal from '../../components/hodometros/MileageChartModal';
 import * as XLSX from 'xlsx';
 
 interface DailyData {
@@ -566,7 +567,7 @@ const HodometrosRelatorio = () => {
     <div className="space-y-6">
       {/* Filters Section */}
       <div className="bg-white dark:bg-[#1B2537] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col md:flex-row items-center gap-4">
+        <div className="flex flex-col md:flex-row items-start gap-4">
           {/* Search */}
           <div className="relative flex-grow w-full md:w-auto">
             <input
@@ -582,7 +583,7 @@ const HodometrosRelatorio = () => {
           </div>
 
           {/* Period Selector */}
-          <div className="w-full md:w-48">
+          <div className="w-full md:w-auto md:min-w-48">
             <PeriodSelector
               periodType={periodType}
               dateRange={dateRange}
