@@ -277,7 +277,7 @@ const HodometrosRelatorio = () => {
         'Marca/Modelo': `${reading.veiculo?.marca || ''} ${reading.veiculo?.tipo || ''}`.trim() || 'Não informado',
         'Hodômetro Informado': reading.hod_informado !== null ? formatNumber(reading.hod_informado) : '-',
         'Hodômetro Lido': reading.hod_lido !== null ? formatNumber(reading.hod_lido) : '-',
-        'Bateria': reading.bateria !== null ? `${reading.bateria}%` : '-',
+        'Bateria': reading.bateria !== null ? `${reading.bateria}` : '-',
         'Trip Lida': reading.trip_lida !== null ? formatNumber(reading.trip_lida) : '-',
         'Trip Informada': reading.trip_informada || '-',
         'Tem Foto': reading.foto_hodometro ? 'Sim' : 'Não',
@@ -501,7 +501,7 @@ const HodometrosRelatorio = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       {isElectric ? (
                         <div className="text-sm text-gray-900 dark:text-white">
-                          Bateria: {reading.bateria}%
+                          Bateria: {reading.bateria}
                         </div>
                       ) : (
                         <>
