@@ -1,1 +1,0 @@
-// This hook has been removed as part of removing infinite scroll functionality

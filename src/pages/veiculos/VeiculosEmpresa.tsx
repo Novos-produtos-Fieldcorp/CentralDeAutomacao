@@ -50,6 +50,7 @@ const VeiculosEmpresa = () => {
   const [pageSize, setPageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -192,6 +193,38 @@ const VeiculosEmpresa = () => {
     }
   };
 
+  const handleToggleStatus = async (veiculo: VeiculoWithMotorista, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!veiculo.veiculo_id) return;
+    
+    try {
+      setUpdatingStatus(veiculo.veiculo_id);
+      
+      const { error } = await supabase
+        .from('veiculo')
+        .update({ status_veiculo: !veiculo.status_veiculo })
+        .eq('veiculo_id', veiculo.veiculo_id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setVeiculos(prev => 
+        prev.map(v => 
+          v.veiculo_id === veiculo.veiculo_id 
+            ? { ...v, status_veiculo: !veiculo.status_veiculo } 
+            : v
+        )
+      );
+      
+      toast.success(`Veículo ${!veiculo.status_veiculo ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error toggling vehicle status:', error);
+      toast.error('Erro ao atualizar status do veículo');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   const handleSelectItem = (id: number) => {
     const newSelectedItems = new Set(selectedItems);
     if (selectedItems.has(id)) {
@@ -304,6 +337,7 @@ const VeiculosEmpresa = () => {
             <span className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 rounded-full text-sm">
               {selectedItems.size} selecionado{selectedItems.size !== 1 ? 's' : ''}
             </span>
+          
           )}
         </div>
         <div className="flex gap-2">
@@ -381,6 +415,7 @@ const VeiculosEmpresa = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Características</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Rastreador</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
                   </tr>
                 </thead>
@@ -452,6 +487,25 @@ const VeiculosEmpresa = () => {
                             {veiculo.marca_rastreador}
                           </div>
                         )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={(e) => handleToggleStatus(veiculo, e)}
+                          disabled={updatingStatus === veiculo.veiculo_id}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                            veiculo.status_veiculo 
+                              ? 'bg-green-500 dark:bg-green-600' 
+                              : 'bg-red-500 dark:bg-red-600'
+                          } ${updatingStatus === veiculo.veiculo_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          role="switch"
+                          aria-checked={veiculo.status_veiculo}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              veiculo.status_veiculo ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-3">
