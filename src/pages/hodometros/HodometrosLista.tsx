@@ -7,8 +7,8 @@ import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import { useDateRange } from '../../hooks/useDateRange';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import * as XLSX from 'xlsx';
 import MileageChartModal from '../../components/hodometros/MileageChartModal';
+import * as XLSX from 'xlsx';
 import { formatCPF } from '../../utils/format';
 
 interface DailyData {
@@ -394,7 +394,7 @@ const HodometrosLista = () => {
 
   // Format number with dot as thousands separator
   const formatNumber = (num: number | null | undefined): string => {
-    if (num === null || num === undefined) return '-';
+    if (num === null || num === undefined || isNaN(num)) return '0';
     return num.toLocaleString('pt-BR');
   };
 

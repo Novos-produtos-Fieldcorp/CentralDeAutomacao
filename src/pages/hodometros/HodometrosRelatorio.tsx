@@ -168,7 +168,7 @@ const HodometrosRelatorio = () => {
 
   // Format number with dot as thousands separator
   const formatNumber = (num: number | null | undefined): string => {
-    if (num === null || num === undefined) return '-';
+    if (num === null || num === undefined || isNaN(num)) return '0';
     return num.toLocaleString('pt-BR');
   };
 
