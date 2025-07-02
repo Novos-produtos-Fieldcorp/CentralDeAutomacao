@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Edit2, Trash2, Search, Plus, Eye, FileText, FilePen, AlertCircle } from 'lucide-react';
+import { Edit2, Search, Plus, FilePen, AlertCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Veiculo, Motorista } from '../../types/database';
 import AddVeiculoModal from '../../components/veiculos/AddVeiculoModal';
@@ -50,6 +50,7 @@ const VeiculosEmpresa = () => {
   const [pageSize, setPageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -244,6 +245,38 @@ const VeiculosEmpresa = () => {
     setIsCombinedModalOpen(true);
   };
 
+  const handleToggleStatus = async (veiculo: VeiculoWithMotorista, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!veiculo.veiculo_id) return;
+    
+    try {
+      setUpdatingStatus(veiculo.veiculo_id);
+      
+      const { error } = await supabase
+        .from('veiculo')
+        .update({ status_veiculo: !veiculo.status_veiculo })
+        .eq('veiculo_id', veiculo.veiculo_id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setVeiculos(prev => 
+        prev.map(v => 
+          v.veiculo_id === veiculo.veiculo_id 
+            ? { ...v, status_veiculo: !veiculo.status_veiculo } 
+            : v
+        )
+      );
+      
+      toast.success(`Veículo ${!veiculo.status_veiculo ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error toggling vehicle status:', error);
+      toast.error('Erro ao atualizar status do veículo');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   const handleContextMenu = (e: React.MouseEvent, veiculo: VeiculoWithMotorista) => {
     e.preventDefault();
     setContextMenu({
@@ -314,7 +347,11 @@ const VeiculosEmpresa = () => {
                       focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
                       transition-colors flex items-center gap-2"
             >
-              <Trash2 className="w-5 h-5" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
               Excluir Selecionados
             </button>
           )}
@@ -381,6 +418,7 @@ const VeiculosEmpresa = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Características</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Rastreador</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
                   </tr>
                 </thead>
@@ -453,6 +491,25 @@ const VeiculosEmpresa = () => {
                           </div>
                         )}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={(e) => handleToggleStatus(veiculo, e)}
+                          disabled={updatingStatus === veiculo.veiculo_id}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                            veiculo.status_veiculo 
+                              ? 'bg-green-500 dark:bg-green-600' 
+                              : 'bg-red-500 dark:bg-red-600'
+                          } ${updatingStatus === veiculo.veiculo_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          role="switch"
+                          aria-checked={veiculo.status_veiculo}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              veiculo.status_veiculo ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-3">
                           <button
@@ -461,13 +518,6 @@ const VeiculosEmpresa = () => {
                             title="Visualizar e Editar Veículo"
                           >
                             <FilePen size={18} />
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(veiculo)}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                            title="Excluir Veículo - Remove permanentemente o veículo do sistema"
-                          >
-                            <Trash2 size={18} />
                           </button>
                         </div>
                       </td>
@@ -579,12 +629,6 @@ const VeiculosEmpresa = () => {
               label: 'Visualizar e Editar',
               onClick: () => handleViewVehicle(contextMenu.veiculo!),
               color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
-            },
-            {
-              icon: <Trash2 size={16} />,
-              label: 'Excluir Veículo',
-              onClick: () => handleDelete(contextMenu.veiculo!),
-              color: 'text-red-600 dark:text-red-400'
             }
           ]}
         />

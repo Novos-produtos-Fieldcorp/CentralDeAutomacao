@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, AlertCircle, Loader2, ChevronDown, ChevronUp, Plus, MapPin, FilePen, Trash2, CheckCircle2 } from 'lucide-react';
+import { X, AlertCircle, Loader2, ChevronDown, ChevronUp, Plus, MapPin, FilePen, CheckCircle2 } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import type { Cliente } from '../types/database';
 import toast from 'react-hot-toast';
@@ -16,21 +16,26 @@ import EditClienteModal from '../components/EditClienteModal';
 interface ClienteWithAddress extends Cliente {
     isExpanded?: boolean;
     endereco?: {
+        id_end_cliente?: number;
+        nr_end?: number;
+        ds_complemento_end?: string;
         logradouro?: {
+            id_logradouro?: number;
             logradouro?: string;
             nr_cep?: string;
             bairro?: {
+                id_bairro?: number;
                 bairro?: string;
                 cidade?: {
+                    id_cidade?: number;
                     cidade?: string;
                     estado?: {
+                        id_estado?: number;
                         sigla_estado?: string;
                     };
                 };
             };
         };
-        nr_end?: number;
-        ds_complemento_end?: string;
     } | null;
 }
 
@@ -156,25 +161,107 @@ const Clientes = () => {
     const fetchClientes = async () => {
         try {
             setLoading(true);
+            
+            // Fetch clients with their addresses in a single query
             const { data, error } = await supabase
                 .from('cliente')
-                .select('*')
+                .select(`
+                    *,
+                    end_cliente (
+                        id_end_cliente,
+                        nr_end,
+                        ds_complemento_end,
+                        logradouro (
+                            id_logradouro,
+                            logradouro,
+                            nr_cep,
+                            bairro (
+                                id_bairro,
+                                bairro,
+                                cidade (
+                                    id_cidade,
+                                    cidade,
+                                    estado (
+                                        id_estado,
+                                        sigla_estado
+                                    )
+                                )
+                            )
+                        )
+                    )
+                `)
                 .eq('company_id', companyId)
                 .order('nome');
 
             if (error) throw error;
 
-            // Ensure we have unique clients by cliente_id
-            const uniqueClients = data.reduce((acc: any[], current: any) => {
-                const x = acc.find(item => item.cliente_id === current.cliente_id);
-                if (!x) {
-                    return acc.concat([current]);
-                } else {
-                    return acc;
+            // Process the data to handle nested objects and arrays
+            const processedClientes = data.map(cliente => {
+                // Get the first address if it exists
+                const endCliente = Array.isArray(cliente.end_cliente) 
+                    ? cliente.end_cliente[0] 
+                    : cliente.end_cliente;
+                
+                let endereco = null;
+                
+                if (endCliente) {
+                    // Process logradouro
+                    let logradouro = endCliente.logradouro;
+                    if (Array.isArray(logradouro)) {
+                        logradouro = logradouro[0];
+                    }
+                    
+                    // Process bairro
+                    let bairro = logradouro?.bairro;
+                    if (Array.isArray(bairro)) {
+                        bairro = bairro[0];
+                    }
+                    
+                    // Process cidade
+                    let cidade = bairro?.cidade;
+                    if (Array.isArray(cidade)) {
+                        cidade = cidade[0];
+                    }
+                    
+                    // Process estado
+                    let estado = cidade?.estado;
+                    if (Array.isArray(estado)) {
+                        estado = estado[0];
+                    }
+                    
+                    // Reconstruct the address object with properly processed nested objects
+                    endereco = {
+                        id_end_cliente: endCliente.id_end_cliente,
+                        nr_end: endCliente.nr_end,
+                        ds_complemento_end: endCliente.ds_complemento_end,
+                        logradouro: logradouro ? {
+                            id_logradouro: logradouro.id_logradouro,
+                            logradouro: logradouro.logradouro,
+                            nr_cep: logradouro.nr_cep,
+                            bairro: bairro ? {
+                                id_bairro: bairro.id_bairro,
+                                bairro: bairro.bairro,
+                                cidade: cidade ? {
+                                    id_cidade: cidade.id_cidade,
+                                    cidade: cidade.cidade,
+                                    estado: estado ? {
+                                        id_estado: estado.id_estado,
+                                        sigla_estado: estado.sigla_estado
+                                    } : undefined
+                                } : undefined
+                            } : undefined
+                        } : undefined
+                    };
                 }
-            }, []);
+                
+                return {
+                    ...cliente,
+                    end_cliente: undefined, // Remove the original end_cliente to avoid duplication
+                    endereco
+                };
+            });
 
-            setClientes(uniqueClients);
+            setClientes(processedClientes);
         } catch (error) {
             console.error('Error fetching clientes:', error);
             toast.error('Erro ao carregar clientes');
@@ -183,14 +270,20 @@ const Clientes = () => {
         }
     };
 
+    const formatCEP = (cep: string | undefined | null) => {
+        if (!cep) return '';
+        const cleanedCEP = cep.replace(/\D/g, '');
+        
+        if (cleanedCEP.length !== 8) {
+            return cep;
+        }
+        
+        return cleanedCEP.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+    };
+
     const handleEdit = (cliente: Cliente) => {
         setSelectedCliente(cliente);
         setIsEditModalOpen(true);
-    };
-
-    const handleDelete = (cliente: Cliente) => {
-        setSelectedCliente(cliente);
-        setIsDeleteModalOpen(true);
     };
     
     const toggleExpand = (clienteId: number) => {
@@ -391,17 +484,6 @@ const Clientes = () => {
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Clientes</h1>
                 <div className="flex gap-2">
-                    {selectedItems.size > 0 && (
-                        <button
-                            onClick={() => setIsBulkDeleteModalOpen(true)}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 
-                                    focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
-                                    transition-colors flex items-center gap-2"
-                        >
-                            <X size={16} />
-                            Excluir Selecionados
-                        </button>
-                    )}
                     <button
                         onClick={() => setIsAddModalOpen(true)}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
@@ -576,19 +658,6 @@ const Clientes = () => {
                                                         >
                                                             <FilePen size={18} className="text-blue-600 dark:text-blue-400" />
                                                         </button>
-                                                        <button
-                                                            onClick={() => handleDelete(cliente)}
-                                                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                                                            title="Excluir"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                <path d="M3 6h18"></path>
-                                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                                                <line x1="10" x2="10" y1="11" y2="17"></line>
-                                                                <line x1="14" x2="14" y1="11" y2="17"></line>
-                                                            </svg>
-                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -603,18 +672,22 @@ const Clientes = () => {
                                                                 <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                                                                     Endereço
                                                                 </h4>
-                                                                {cliente.endereco ? (
+                                                                {cliente.endereco && cliente.endereco.logradouro ? (
                                                                     <div className="space-y-1">
                                                                         <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                                            {cliente.endereco.logradouro?.logradouro}, {cliente.endereco.nr_end || 'S/N'}
+                                                                            {cliente.endereco.logradouro.logradouro}, {cliente.endereco.nr_end || 'S/N'}
                                                                             {cliente.endereco.ds_complemento_end && ` - ${cliente.endereco.ds_complemento_end}`}
                                                                         </p>
-                                                                        <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                                            {cliente.endereco.logradouro?.bairro?.bairro} - {cliente.endereco.logradouro?.nr_cep}
-                                                                        </p>
-                                                                        <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                                            {cliente.endereco.logradouro?.bairro?.cidade?.cidade}/{cliente.endereco.logradouro?.bairro?.cidade?.estado?.sigla_estado}
-                                                                        </p>
+                                                                        {cliente.endereco.logradouro.bairro && (
+                                                                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                                                {cliente.endereco.logradouro.bairro.bairro} - {formatCEP(cliente.endereco.logradouro.nr_cep)}
+                                                                            </p>
+                                                                        )}
+                                                                        {cliente.endereco.logradouro.bairro?.cidade && (
+                                                                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                                                {cliente.endereco.logradouro.bairro.cidade.cidade}/{cliente.endereco.logradouro.bairro.cidade.estado?.sigla_estado}
+                                                                            </p>
+                                                                        )}
                                                                     </div>
                                                                 ) : (
                                                                     <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -662,12 +735,6 @@ const Clientes = () => {
                             label: 'Editar Cliente',
                             onClick: () => handleEdit(contextMenu.cliente!),
                             color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
-                        },
-                        {
-                            icon: <Trash2 size={16} />,
-                            label: 'Excluir Cliente',
-                            onClick: () => handleDelete(contextMenu.cliente!),
-                            color: 'text-red-600 dark:text-red-400'
                         },
                         {
                             icon: contextMenu.cliente!.st_cliente ? <X size={16} /> : <CheckCircle2 size={16} />,
