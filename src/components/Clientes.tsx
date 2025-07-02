@@ -214,9 +214,33 @@ const Clientes = () => {
                             console.error('Error fetching address:', enderecoError);
                         }
 
+                        // Process the address data to handle arrays
+                        let processedEndereco = null;
+                        if (enderecoData) {
+                            processedEndereco = {
+                                ...enderecoData,
+                                logradouro: processNestedObject(enderecoData.logradouro)
+                            };
+
+                            // Process nested objects
+                            if (processedEndereco.logradouro) {
+                                if (processedEndereco.logradouro.bairro) {
+                                    processedEndereco.logradouro.bairro = processNestedObject(processedEndereco.logradouro.bairro);
+                                    
+                                    if (processedEndereco.logradouro.bairro.cidade) {
+                                        processedEndereco.logradouro.bairro.cidade = processNestedObject(processedEndereco.logradouro.bairro.cidade);
+                                        
+                                        if (processedEndereco.logradouro.bairro.cidade.estado) {
+                                            processedEndereco.logradouro.bairro.cidade.estado = processNestedObject(processedEndereco.logradouro.bairro.cidade.estado);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         return {
                             ...cliente,
-                            endereco: enderecoData || null
+                            endereco: processedEndereco
                         };
                     } catch (err) {
                         console.error('Error processing client address:', err);
@@ -235,6 +259,15 @@ const Clientes = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Helper function to process nested objects that might be arrays
+    const processNestedObject = (obj: any) => {
+        if (!obj) return null;
+        if (Array.isArray(obj)) {
+            return obj.length > 0 ? obj[0] : null;
+        }
+        return obj;
     };
 
     const handleEdit = (cliente: Cliente) => {
