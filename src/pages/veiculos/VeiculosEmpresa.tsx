@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Edit2, Trash2, Search, Plus, Eye, FileText, FilePen, AlertCircle } from 'lucide-react';
+import { Edit2, Search, Plus, FilePen, AlertCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Veiculo, Motorista } from '../../types/database';
 import AddVeiculoModal from '../../components/veiculos/AddVeiculoModal';
@@ -193,38 +193,6 @@ const VeiculosEmpresa = () => {
     }
   };
 
-  const handleToggleStatus = async (veiculo: VeiculoWithMotorista, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!veiculo.veiculo_id) return;
-    
-    try {
-      setUpdatingStatus(veiculo.veiculo_id);
-      
-      const { error } = await supabase
-        .from('veiculo')
-        .update({ status_veiculo: !veiculo.status_veiculo })
-        .eq('veiculo_id', veiculo.veiculo_id);
-        
-      if (error) throw error;
-      
-      // Update local state
-      setVeiculos(prev => 
-        prev.map(v => 
-          v.veiculo_id === veiculo.veiculo_id 
-            ? { ...v, status_veiculo: !veiculo.status_veiculo } 
-            : v
-        )
-      );
-      
-      toast.success(`Veículo ${!veiculo.status_veiculo ? 'ativado' : 'desativado'} com sucesso`);
-    } catch (error) {
-      console.error('Error toggling vehicle status:', error);
-      toast.error('Erro ao atualizar status do veículo');
-    } finally {
-      setUpdatingStatus(null);
-    }
-  };
-
   const handleSelectItem = (id: number) => {
     const newSelectedItems = new Set(selectedItems);
     if (selectedItems.has(id)) {
@@ -275,6 +243,38 @@ const VeiculosEmpresa = () => {
   const handleViewVehicle = (veiculo: VeiculoWithMotorista) => {
     setSelectedVeiculo(veiculo);
     setIsCombinedModalOpen(true);
+  };
+
+  const handleToggleStatus = async (veiculo: VeiculoWithMotorista, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!veiculo.veiculo_id) return;
+    
+    try {
+      setUpdatingStatus(veiculo.veiculo_id);
+      
+      const { error } = await supabase
+        .from('veiculo')
+        .update({ status_veiculo: !veiculo.status_veiculo })
+        .eq('veiculo_id', veiculo.veiculo_id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setVeiculos(prev => 
+        prev.map(v => 
+          v.veiculo_id === veiculo.veiculo_id 
+            ? { ...v, status_veiculo: !veiculo.status_veiculo } 
+            : v
+        )
+      );
+      
+      toast.success(`Veículo ${!veiculo.status_veiculo ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error toggling vehicle status:', error);
+      toast.error('Erro ao atualizar status do veículo');
+    } finally {
+      setUpdatingStatus(null);
+    }
   };
 
   const handleContextMenu = (e: React.MouseEvent, veiculo: VeiculoWithMotorista) => {
@@ -337,7 +337,6 @@ const VeiculosEmpresa = () => {
             <span className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 rounded-full text-sm">
               {selectedItems.size} selecionado{selectedItems.size !== 1 ? 's' : ''}
             </span>
-          
           )}
         </div>
         <div className="flex gap-2">
@@ -348,7 +347,11 @@ const VeiculosEmpresa = () => {
                       focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
                       transition-colors flex items-center gap-2"
             >
-              <Trash2 className="w-5 h-5" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
               Excluir Selecionados
             </button>
           )}
@@ -516,13 +519,6 @@ const VeiculosEmpresa = () => {
                           >
                             <FilePen size={18} />
                           </button>
-                          <button 
-                            onClick={() => handleDelete(veiculo)}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                            title="Excluir Veículo - Remove permanentemente o veículo do sistema"
-                          >
-                            <Trash2 size={18} />
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -633,12 +629,6 @@ const VeiculosEmpresa = () => {
               label: 'Visualizar e Editar',
               onClick: () => handleViewVehicle(contextMenu.veiculo!),
               color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
-            },
-            {
-              icon: <Trash2 size={16} />,
-              label: 'Excluir Veículo',
-              onClick: () => handleDelete(contextMenu.veiculo!),
-              color: 'text-red-600 dark:text-red-400'
             }
           ]}
         />
