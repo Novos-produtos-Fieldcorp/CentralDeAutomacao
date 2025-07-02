@@ -115,7 +115,6 @@ const VeiculosAgregados = () => {
 
   const fetchVeiculos = async () => {
     try {
-      
       setError(null);
       
       const from = (currentPage - 1) * pageSize;
@@ -132,16 +131,20 @@ const VeiculosAgregados = () => {
       if (phoneSearch) {
         motoristasQuery = motoristasQuery.ilike('telefone', `%${phoneSearch}%`);
       }
+      
       const { data: motoristasData, error: motoristasError } = await motoristasQuery;
+      
       if (motoristasError) {
         throw new Error(`Erro ao buscar motoristas: ${motoristasError.message}`);
       }
+      
       if (!motoristasData || motoristasData.length === 0) {
         setVeiculos([]);
         setTotalCount(0);
         setTotalPages(1);
         return;
       }
+      
       const motoristaIds = motoristasData.map(m => m.motorista_id);
 
       // Contar veículos apenas com os IDs filtrados
@@ -150,6 +153,7 @@ const VeiculosAgregados = () => {
         .select('veiculo_id', { count: 'exact', head: true })
         .eq('status_veiculo', true)
         .in('motorista_id', motoristaIds);
+        
       if (searchTerm) {
         vehicleCountQuery = vehicleCountQuery.or(
           `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%`
@@ -180,17 +184,11 @@ const VeiculosAgregados = () => {
           ),
           documento_veiculo (*)
         `)
-        .eq('status_veiculo', true)
         .in('motorista_id', motoristaIds);
       
       if (searchTerm) {
         dataQuery = dataQuery.or(
           `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%`
-        );
-      }
-      if (phoneSearch) {
-        dataQuery = dataQuery.or(
-          `motorista.telefone.ilike.%${phoneSearch}%`
         );
       }
       
@@ -224,8 +222,6 @@ const VeiculosAgregados = () => {
       setError(errorMessage);
       toast.error(errorMessage);
       setVeiculos([]);
-    } finally {
-      
     }
   };
 
