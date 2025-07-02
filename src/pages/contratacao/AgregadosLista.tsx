@@ -158,9 +158,6 @@ const AgregadosLista = () => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
-  const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
-  const statusDropdownRef = useRef<HTMLDivElement>(null);
-  const ativoDropdownRef = useRef<HTMLDivElement>(null);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -616,7 +613,7 @@ const AgregadosLista = () => {
       
       // Atualiza no banco de dados
       const { error } = await supabase
-        .from('motoristas')
+        .from('motorista')
         .update({ st_cadastro: newStatus })
         .eq('motorista_id', agregado.motorista_id);
       

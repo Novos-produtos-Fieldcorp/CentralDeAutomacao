@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
-  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert
+  X, Truck, User, MapPin, FileText, Camera, 
+  ExternalLink, Edit2, Users, ShieldAlert
 } from 'lucide-react';
 import type { 
   DocumentoMotorista, 
   Veiculo, 
-  DocumentoVeiculo, 
-  Motorista,
-  PessoaFisicaDonoVeiculo,
-  PessoaJuridicaDonoVeiculo
-} from '../types/database';
+  Motorista} from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import { supabase } from '../lib/supabase';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
@@ -72,6 +68,47 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
 
       if (veiculoError) throw veiculoError;
       setVeiculo(veiculoData);
+      
+      // Fetch gestão de risco
+      try {
+        const { data: grData, error: grError } = await supabase
+          .from('gr_motorista')
+          .select(`
+            *,
+            empresa:empresa_id(id, nome),
+            status:status_id(id, status)
+          `)
+          .eq('motorista_id', motorista.motorista_id)
+          .order('id', { ascending: false }) // Ordena pelo ID em ordem decrescente
+          .limit(1) // Limita a 1 resultado
+          .maybeSingle();
+          
+        if (grError) {
+          console.error('Erro ao buscar dados de gestão de risco:', grError);
+          throw grError;
+        }
+        
+        console.log('Dados de gestão de risco encontrados:', grData);
+        
+        // Atualiza o objeto motorista com os dados de gestão de risco
+        if (grData) {
+          motorista.gr_motorista_id = grData.id;
+          motorista.gr_motorista_motivo = grData.motivo || null;
+          motorista.empresa_motorista = grData.empresa?.nome || null;
+          motorista.status_motorista = grData.status?.status || null;
+          
+          console.log('Dados de gestão de risco atualizados no motorista:', {
+            gr_motorista_id: motorista.gr_motorista_id,
+            motivo: motorista.gr_motorista_motivo,
+            empresa: motorista.empresa_motorista,
+            status: motorista.status_motorista
+          });
+        } else {
+          console.log('Nenhum dado de gestão de risco encontrado para o motorista:', motorista.motorista_id);
+        }
+      } catch (error) {
+        console.error('Erro ao processar dados de gestão de risco:', error);
+      }
 
       // Fetch documento
       const { data: documentoData, error: documentoError } = await supabase
