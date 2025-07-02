@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
-  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert
+  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare 
 } from 'lucide-react';
 import type { 
   DocumentoMotorista, 
@@ -20,6 +20,7 @@ import AddAjudanteModal from './AddAjudanteModal';
 import EditAjudanteModal from './EditAjudanteModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import GestaoRiscoTab from './GestaoRiscoTab';
+import ComentariosTab from './ComentariosTab';
 
 interface UnifiedMotoristaModalProps {
   isOpen: boolean;
@@ -34,7 +35,7 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
   motorista,
   onSuccess
 }) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
@@ -175,12 +176,25 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                     Gestão de Risco
                   </div>
                 </button>
+                <button
+                  onClick={() => setActiveTab('comentarios')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'comentarios'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1">
+                    <MessageSquare className="w-4 h-4" />
+                    Comentários
+                  </div>
+                </button>
               </nav>
             </div>
             
             {/* Content */}
             <div className="p-6">
-              {activeTab === 'details' && (
+              {activeTab === 'details' ? (
                 <div className="space-y-6">
                   {/* Personal Information */}
                   <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
@@ -299,9 +313,7 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                     </div>
                   </div>
                 </div>
-              )}
-
-              {activeTab === 'documents' && (
+              ) : activeTab === 'documents' ? (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -433,9 +445,7 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                     </div>
                   )}
                 </div>
-              )}
-
-              {activeTab === 'ajudantes' && (
+              ) : activeTab === 'ajudantes' ? (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -511,15 +521,18 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                     </div>
                   )}
                 </div>
-              )}
-
-              {activeTab === 'gestao-risco' && (
+              ) : activeTab === 'gestao-risco' ? (
                 <GestaoRiscoTab 
                   motorista_id={motorista.motorista_id}
                   gr_motorista_id={motorista.gr_motorista_id}
                   gr_motorista_motivo={motorista.gr_motorista_motivo}
                   empresa_motorista={motorista.empresa_motorista}
                   status_motorista={motorista.status_motorista}
+                  onUpdateSuccess={onSuccess}
+                />
+              ) : (
+                <ComentariosTab 
+                  motorista_id={motorista.motorista_id}
                   onUpdateSuccess={onSuccess}
                 />
               )}
