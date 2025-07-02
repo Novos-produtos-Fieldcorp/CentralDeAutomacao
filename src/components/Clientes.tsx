@@ -396,6 +396,17 @@ const Clientes = () => {
         return cleanedTelefone.replace(/^(\d{2})(\d{4,5})(\d{4})$/, '($1) $2-$3');
     };
 
+    const formatCEP = (cep: string | undefined | null) => {
+        if (!cep) return '';
+        const cleanedCEP = cep.replace(/\D/g, '');
+        
+        if (cleanedCEP.length !== 8) {
+            return cep;
+        }
+        
+        return cleanedCEP.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+    };
+
     const filteredClientes = clientes
         .filter(cliente => {
             const searchString = searchTerm.toLowerCase();
@@ -657,18 +668,22 @@ const Clientes = () => {
                                                                 <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                                                                     Endereço
                                                                 </h4>
-                                                                {cliente.endereco ? (
+                                                                {cliente.endereco && cliente.endereco.logradouro ? (
                                                                     <div className="space-y-1">
                                                                         <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                                            {cliente.endereco.logradouro?.logradouro}, {cliente.endereco.nr_end || 'S/N'}
+                                                                            {cliente.endereco.logradouro.logradouro}, {cliente.endereco.nr_end || 'S/N'}
                                                                             {cliente.endereco.ds_complemento_end && ` - ${cliente.endereco.ds_complemento_end}`}
                                                                         </p>
-                                                                        <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                                            {cliente.endereco.logradouro?.bairro?.bairro} - {cliente.endereco.logradouro?.nr_cep}
-                                                                        </p>
-                                                                        <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                                            {cliente.endereco.logradouro?.bairro?.cidade?.cidade}/{cliente.endereco.logradouro?.bairro?.cidade?.estado?.sigla_estado}
-                                                                        </p>
+                                                                        {cliente.endereco.logradouro.bairro && (
+                                                                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                                                {cliente.endereco.logradouro.bairro.bairro} - {formatCEP(cliente.endereco.logradouro.nr_cep)}
+                                                                            </p>
+                                                                        )}
+                                                                        {cliente.endereco.logradouro.bairro?.cidade && (
+                                                                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                                                {cliente.endereco.logradouro.bairro.cidade.cidade}/{cliente.endereco.logradouro.bairro.cidade.estado?.sigla_estado}
+                                                                            </p>
+                                                                        )}
                                                                     </div>
                                                                 ) : (
                                                                     <p className="text-sm text-gray-500 dark:text-gray-400">
