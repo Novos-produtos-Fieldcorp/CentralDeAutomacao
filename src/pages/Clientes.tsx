@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, AlertCircle, Loader2, ChevronDown, ChevronUp, Plus, MapPin, FilePen, Trash2, CheckCircle2 } from 'lucide-react';
+import { X, AlertCircle, Loader2, ChevronDown, ChevronUp, Plus, MapPin, FilePen, CheckCircle2 } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import type { Cliente } from '../types/database';
 import toast from 'react-hot-toast';
@@ -270,14 +270,20 @@ const Clientes = () => {
         }
     };
 
+    const formatCEP = (cep: string | undefined | null) => {
+        if (!cep) return '';
+        const cleanedCEP = cep.replace(/\D/g, '');
+        
+        if (cleanedCEP.length !== 8) {
+            return cep;
+        }
+        
+        return cleanedCEP.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+    };
+
     const handleEdit = (cliente: Cliente) => {
         setSelectedCliente(cliente);
         setIsEditModalOpen(true);
-    };
-
-    const handleDelete = (cliente: Cliente) => {
-        setSelectedCliente(cliente);
-        setIsDeleteModalOpen(true);
     };
     
     const toggleExpand = (clienteId: number) => {
@@ -429,17 +435,6 @@ const Clientes = () => {
         return cleanedTelefone.replace(/^(\d{2})(\d{4,5})(\d{4})$/, '($1) $2-$3');
     };
 
-    const formatCEP = (cep: string | undefined | null) => {
-        if (!cep) return '';
-        const cleanedCEP = cep.replace(/\D/g, '');
-        
-        if (cleanedCEP.length !== 8) {
-            return cep;
-        }
-        
-        return cleanedCEP.replace(/^(\d{5})(\d{3})$/, '$1-$2');
-    };
-
     const filteredClientes = clientes
         .filter(cliente => {
             const searchString = searchTerm.toLowerCase();
@@ -489,17 +484,6 @@ const Clientes = () => {
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Clientes</h1>
                 <div className="flex gap-2">
-                    {selectedItems.size > 0 && (
-                        <button
-                            onClick={() => setIsBulkDeleteModalOpen(true)}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 
-                                    focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
-                                    transition-colors flex items-center gap-2"
-                        >
-                            <X size={16} />
-                            Excluir Selecionados
-                        </button>
-                    )}
                     <button
                         onClick={() => setIsAddModalOpen(true)}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
@@ -674,19 +658,6 @@ const Clientes = () => {
                                                         >
                                                             <FilePen size={18} className="text-blue-600 dark:text-blue-400" />
                                                         </button>
-                                                        <button
-                                                            onClick={() => handleDelete(cliente)}
-                                                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                                                            title="Excluir"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                <path d="M3 6h18"></path>
-                                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                                                <line x1="10" x2="10" y1="11" y2="17"></line>
-                                                                <line x1="14" x2="14" y1="11" y2="17"></line>
-                                                            </svg>
-                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -764,12 +735,6 @@ const Clientes = () => {
                             label: 'Editar Cliente',
                             onClick: () => handleEdit(contextMenu.cliente!),
                             color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
-                        },
-                        {
-                            icon: <Trash2 size={16} />,
-                            label: 'Excluir Cliente',
-                            onClick: () => handleDelete(contextMenu.cliente!),
-                            color: 'text-red-600 dark:text-red-400'
                         },
                         {
                             icon: contextMenu.cliente!.st_cliente ? <X size={16} /> : <CheckCircle2 size={16} />,
