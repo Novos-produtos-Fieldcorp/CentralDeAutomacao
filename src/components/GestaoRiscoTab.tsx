@@ -3,6 +3,24 @@ import { Plus, Edit2, Trash2, AlertTriangle, Check, X, Loader2, ShieldAlert } fr
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
+interface GestaoRisco {
+  id: number;
+  motorista_id: number;
+  empresa_id: number;
+  status_id: number;
+  motivo: string | null;
+  empresa?: {
+    id: number;
+    nome: string;
+  };
+  status?: {
+    id: number;
+    status: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
 interface GestaoRiscoTabProps {
   motorista_id: number;
   gr_motorista_id?: number | null;
@@ -24,10 +42,6 @@ interface Status {
 
 const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
   motorista_id,
-  gr_motorista_id,
-  gr_motorista_motivo,
-  empresa_motorista,
-  status_motorista,
   onUpdateSuccess
 }) => {
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
@@ -43,44 +57,53 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
   const [newStatusModalOpen, setNewStatusModalOpen] = useState(false);
   const [newStatusNome, setNewStatusNome] = useState('');
   const [creatingStatus, setCreatingStatus] = useState(false);
-  const [grData, setGrData] = useState<any>(null);
-  const [hasGrData, setHasGrData] = useState(false);
+  const [gestoesRisco, setGestoesRisco] = useState<GestaoRisco[]>([]);
+  const [currentGestao, setCurrentGestao] = useState<GestaoRisco | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    empresa_id: string;
+    status_id: string;
+    motivo: string;
+  }>({
     empresa_id: '',
     status_id: '',
     motivo: ''
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    // Check if we have GR data based on props or fetched data
-    const hasData = !!gr_motorista_id || !!empresa_motorista || !!status_motorista || !!grData;
-    setHasGrData(hasData);
-    
-    console.log("GR Data check:", { 
-      gr_motorista_id, 
-      empresa_motorista, 
-      status_motorista, 
-      grData,
-      hasData 
+  const openAddModal = () => {
+    setCurrentGestao(null);
+    setFormData({
+      empresa_id: '',
+      status_id: '',
+      motivo: ''
     });
-    
-    // Log para depuração
-    if (gr_motorista_id) {
-      console.log('GR Motorista ID:', gr_motorista_id);
-      console.log('GR Motorista Motivo:', gr_motorista_motivo);
-      console.log('Empresa Motorista:', empresa_motorista);
-      console.log('Status Motorista:', status_motorista);
-    } else {
-      console.log('Nenhum ID de gestão de risco encontrado para este motorista');
-    }
-  }, [gr_motorista_id, empresa_motorista, status_motorista, grData, gr_motorista_motivo]);
+    setIsAddModalOpen(true);
+  };
 
-  const fetchData = async () => {
+  const openEditModal = (gestao: GestaoRisco) => {
+    setCurrentGestao(gestao);
+    setFormData({
+      empresa_id: gestao.empresa_id.toString(),
+      status_id: gestao.status_id.toString(),
+      motivo: gestao.motivo || ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const openDeleteModal = (gestao: GestaoRisco) => {
+    setCurrentGestao(gestao);
+    setIsDeleteModalOpen(true);
+  };
+
+  useEffect(() => {
+    fetchGestoesRisco();
+  }, [motorista_id]);
+
+  useEffect(() => {
+    fetchGestoesRisco();
+  }, [motorista_id]);
+
+  const fetchGestoesRisco = async () => {
     try {
       setLoading(true);
       
@@ -102,38 +125,21 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
       if (statusesError) throw statusesError;
       setStatuses(statusesData || []);
       
-      // If we have existing data, set it in the form
-      if (gr_motorista_id) {
-        // Fetch the complete GR data
-        const { data: grMotoristaData, error: grError } = await supabase
-          .from('gr_motorista')
-          .select(`
-            *,
-            empresa:empresa_id(id, nome),
-            status:status_id(id, status)
-          `)
-          .eq('id', gr_motorista_id)
-          .single();
-          
-        if (grError) throw grError;
+      // Fetch gestões de risco do motorista
+      const { data: gestoesData, error: gestoesError } = await supabase
+        .from('gr_motorista')
+        .select(`
+          *,
+          empresa:empresa_id(id, nome),
+          status:status_id(id, status)
+        `)
+        .eq('motorista_id', motorista_id)
+        .order('created_at', { ascending: false });
         
-        setGrData(grMotoristaData);
-        
-        // Set form data for editing
-        setFormData({
-          empresa_id: grMotoristaData.empresa_id.toString(),
-          status_id: grMotoristaData.status_id.toString(),
-          motivo: grMotoristaData.motivo || ''
-        });
-      } else if (empresa_motorista && status_motorista) {
-        // If we have empresa and status from props but no gr_motorista_id,
-        // we still have data but it might be coming from a view
-        setGrData({
-          empresa: { nome: empresa_motorista },
-          status: { status: status_motorista },
-          motivo: gr_motorista_motivo
-        });
-      }
+      if (gestoesError) throw gestoesError;
+      
+      setGestoesRisco(gestoesData || []);
+      
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Erro ao carregar dados');
@@ -211,7 +217,7 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
     try {
       setSubmitting(true);
       
-      if (gr_motorista_id) {
+      if (currentGestao?.id) {
         // Update existing record
         const { error } = await supabase
           .from('gr_motorista')
@@ -221,7 +227,7 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
             motivo: formData.motivo || null,
             updated_at: new Date().toISOString()
           })
-          .eq('id', gr_motorista_id);
+          .eq('id', currentGestao.id);
         
         if (error) throw error;
         
@@ -242,15 +248,14 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
         toast.success('Gestão de risco adicionada com sucesso');
       }
       
+      // Close modals and refresh data
       setIsAddModalOpen(false);
       setIsEditModalOpen(false);
+      fetchGestoesRisco();
       
       // Call the onUpdateSuccess callback if provided
       if (onUpdateSuccess) {
         onUpdateSuccess();
-      } else {
-        // Refresh the page to show updated data if no callback provided
-        window.location.reload();
       }
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -261,7 +266,7 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
   };
 
   const handleDelete = async () => {
-    if (!gr_motorista_id) return;
+    if (!currentGestao?.id) return;
     
     try {
       setSubmitting(true);
@@ -269,19 +274,19 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
       const { error } = await supabase
         .from('gr_motorista')
         .delete()
-        .eq('id', gr_motorista_id);
+        .eq('id', currentGestao.id);
       
       if (error) throw error;
       
       toast.success('Gestão de risco removida com sucesso');
       setIsDeleteModalOpen(false);
       
+      // Refresh the list
+      fetchGestoesRisco();
+      
       // Call the onUpdateSuccess callback if provided
       if (onUpdateSuccess) {
         onUpdateSuccess();
-      } else {
-        // Refresh the page to show updated data if no callback provided
-        window.location.reload();
       }
     } catch (error) {
       console.error('Error deleting record:', error);
@@ -301,76 +306,87 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
 
   return (
     <div className="space-y-6">
-      {hasGrData ? (
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+          Gestões de Risco
+        </h3>
+        <button
+          onClick={openAddModal}
+          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <Plus className="-ml-1 mr-2 h-5 w-5" />
+          Adicionar Gestão de Risco
+        </button>
+      </div>
+
+      {gestoesRisco.length > 0 ? (
         <div className="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
-              Gestão de Risco
-            </h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-              Informações de gestão de risco do motorista
-            </p>
-          </div>
-          <div className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Empresa</dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                  {empresa_motorista || grData?.empresa?.nome || 'Não informado'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</dt>
-                <dd className={`mt-1 text-sm font-medium ${
-                  (status_motorista === 'Reprovado' || grData?.status?.status === 'Reprovado') 
-                    ? 'text-red-600 dark:text-red-400' 
-                    : 'text-green-600 dark:text-green-400'
-                }`}>
-                  {status_motorista || grData?.status?.status || 'Não informado'}
-                </dd>
-              </div>
-              {(gr_motorista_motivo || grData?.motivo) && (
-                <div className="sm:col-span-2">
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Motivo</dt>
-                  <dd className="mt-1 text-sm text-gray-900 dark:text-gray-200">
-                    {gr_motorista_motivo || grData?.motivo}
-                  </dd>
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+            {gestoesRisco.map((gestao) => (
+              <li key={gestao.id} className="px-4 py-4 sm:px-6">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Empresa</dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-white">
+                        {gestao.empresa?.nome || 'Não informado'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</dt>
+                      <dd className={`mt-1 text-sm font-medium ${
+                        gestao.status?.status === 'Reprovado' 
+                          ? 'text-red-600 dark:text-red-400' 
+                          : 'text-green-600 dark:text-green-400'
+                      }`}>
+                        {gestao.status?.status || 'Não informado'}
+                      </dd>
+                    </div>
+                    {gestao.motivo && (
+                      <div className="sm:col-span-2">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Motivo</dt>
+                        <dd className="mt-1 text-sm text-gray-900 dark:text-gray-200">
+                          {gestao.motivo}
+                        </dd>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 flex justify-end space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(gestao)}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      <Edit2 className="-ml-1 mr-2 h-4 w-4" />
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openDeleteModal(gestao)}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      <Trash2 className="-ml-1 mr-2 h-4 w-4" />
+                      Excluir
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
-            <div className="mt-6 flex space-x-3">
-              <button
-                type="button"
-                onClick={() => setIsEditModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <Edit2 className="-ml-1 mr-2 h-4 w-4" />
-                Editar
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsDeleteModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                <Trash2 className="-ml-1 mr-2 h-4 w-4" />
-                Excluir
-              </button>
-            </div>
-          </div>
+              </li>
+            ))}
+          </ul>
         </div>
       ) : (
         <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
           <ShieldAlert className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-            Sem informações de gestão de risco
+            Sem gestões de risco
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Adicione informações de gestão de risco para este motorista.
+            Adicione gestões de risco para este motorista.
           </p>
           <div className="mt-6">
             <button
               type="button"
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={openAddModal}
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <Plus className="-ml-1 mr-2 h-5 w-5" />

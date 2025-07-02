@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  X, Truck, User, MapPin, FileText, Camera, 
-  ExternalLink, Edit2, Users, ShieldAlert
+  X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
+  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare 
 } from 'lucide-react';
 import type { 
   DocumentoMotorista, 
   Veiculo, 
-  Motorista} from '../types/database';
+  DocumentoVeiculo, 
+  Motorista,
+  PessoaFisicaDonoVeiculo,
+  PessoaJuridicaDonoVeiculo
+} from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
-import { supabase } from '../lib/supabase';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
 import AddAjudanteModal from './AddAjudanteModal';
 import EditAjudanteModal from './EditAjudanteModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import GestaoRiscoTab from './GestaoRiscoTab';
+import ComentariosTab from './ComentariosTab';
 
 interface UnifiedAgregadoModalProps {
   isOpen: boolean;
@@ -25,13 +30,8 @@ interface UnifiedAgregadoModalProps {
   onSuccess?: () => void;
 }
 
-const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
-  isOpen,
-  onClose,
-  motorista,
-  onSuccess
-}) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco'>('details');
+const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: UnifiedAgregadoModalProps) => {
+  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
@@ -44,6 +44,10 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
   const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
   const [endereco, setEndereco] = useState<any>(null);
   const [ajudantes, setAjudantes] = useState<any[]>([]);
+  const [documentCount, setDocumentCount] = useState(0);
+  const [ajudantesCount, setAjudantesCount] = useState(0);
+  const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
+  const [hasComentario, setHasComentario] = useState(false);
 
   useEffect(() => {
     if (isOpen && motorista) {
@@ -173,6 +177,33 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
 
       if (ajudantesError) throw ajudantesError;
       setAjudantes(ajudantesData || []);
+      setAjudantesCount(ajudantesData?.length || 0);
+
+      // Count documents
+      let docCount = 0;
+      if (documentoData?.foto_cnh) docCount++;
+      if (documentoData?.foto_comprovante_residencia) docCount++;
+      if (veiculoData?.documento_veiculo?.[0]?.foto_crv) docCount++;
+      setDocumentCount(docCount);
+
+      // Count gestao de risco
+      const { count: grCount, error: grCountError } = await supabase
+        .from('gr_motorista')
+        .select('id', { count: 'exact', head: true })
+        .eq('motorista_id', motorista.motorista_id);
+
+      if (grCountError) throw grCountError;
+      setGestaoRiscoCount(grCount || 0);
+
+      // Check if has comentario
+      const { data: comentarioData, error: comentarioError } = await supabase
+        .from('motorista')
+        .select('comentario')
+        .eq('motorista_id', motorista.motorista_id)
+        .single();
+
+      if (comentarioError) throw comentarioError;
+      setHasComentario(!!comentarioData?.comentario);
     } catch (error) {
       console.error('Error fetching agregado details:', error);
       toast.error('Erro ao carregar detalhes do agregado');
@@ -267,7 +298,7 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
                   }`}
                 >
                   <div className="flex items-center gap-1">
-                    <Truck className="w-4 h-4" />
+                    <User className="w-4 h-4" />
                     Detalhes
                   </div>
                 </button>
@@ -282,6 +313,11 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
                   <div className="flex items-center gap-1">
                     <FileText className="w-4 h-4" />
                     Documentos
+                    {documentCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        {documentCount}
+                      </span>
+                    )}
                   </div>
                 </button>
                 <button
@@ -295,6 +331,11 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
                     Ajudantes
+                    {ajudantesCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        {ajudantesCount}
+                      </span>
+                    )}
                   </div>
                 </button>
                 <button
@@ -308,14 +349,37 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
                   <div className="flex items-center gap-1">
                     <ShieldAlert className="w-4 h-4" />
                     Gestão de Risco
+                    {gestaoRiscoCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        {gestaoRiscoCount}
+                      </span>
+                    )}
+                  </div>
+                </button>
+                <button
+                  onClick={() => setActiveTab('comentarios')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'comentarios'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1">
+                    <MessageSquare className="w-4 h-4" />
+                    Comentários
+                    {hasComentario && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        1
+                      </span>
+                    )}
                   </div>
                 </button>
               </nav>
             </div>
-            
+
             {/* Content */}
             <div className="p-6">
-              {activeTab === 'details' && (
+              {activeTab === 'details' ? (
                 <div className="space-y-6">
                   {/* Personal Information */}
                   <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
@@ -400,7 +464,7 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
                               Marca/Modelo
                             </dt>
                             <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {veiculo.marca} {veiculo.tipo}
+                              {veiculo.marca} {veiculo.tipologia}
                             </dd>
                           </div>
                           <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -415,69 +479,8 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
                       </div>
                     </div>
                   )}
-
-                  {/* Address Information */}
-                  {endereco && (
-                    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                      <div className="px-4 py-5 sm:px-6">
-                        <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                          <MapPin className="w-5 h-5 text-gray-400" />
-                          Endereço
-                        </h3>
-                      </div>
-                      <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
-                        <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
-                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              Logradouro
-                            </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {endereco.logradouro?.logradouro ? `${endereco.logradouro.logradouro}, ${endereco.nr_end || 'S/N'}` : 'Não informado'}
-                            </dd>
-                          </div>
-                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              Complemento
-                            </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {endereco.ds_complemento_end || 'Não informado'}
-                            </dd>
-                          </div>
-                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              Bairro
-                            </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {endereco.logradouro?.bairro?.bairro || 'Não informado'}
-                            </dd>
-                          </div>
-                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              Cidade/Estado
-                            </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {endereco.logradouro?.bairro?.cidade?.cidade && endereco.logradouro?.bairro?.cidade?.estado?.sigla_estado ? 
-                                `${endereco.logradouro.bairro.cidade.cidade}/${endereco.logradouro.bairro.cidade.estado.sigla_estado}` : 
-                                'Não informado'
-                              }
-                            </dd>
-                          </div>
-                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              CEP
-                            </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {endereco.logradouro?.nr_cep ? formatCEP(endereco.logradouro.nr_cep) : 'Não informado'}
-                            </dd>
-                          </div>
-                        </dl>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              )}
-
-              {activeTab === 'documents' && (
+              ) : activeTab === 'documents' ? (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -630,9 +633,7 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
                     </div>
                   )}
                 </div>
-              )}
-
-              {activeTab === 'ajudantes' && (
+              ) : activeTab === 'ajudantes' ? (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -708,15 +709,21 @@ const UnifiedAgregadoModal: React.FC<UnifiedAgregadoModalProps> = ({
                     </div>
                   )}
                 </div>
-              )}
-
-              {activeTab === 'gestao-risco' && (
+              ) : activeTab === 'gestao-risco' ? (
                 <GestaoRiscoTab 
                   motorista_id={motorista.motorista_id}
                   gr_motorista_id={motorista.gr_motorista_id}
                   gr_motorista_motivo={motorista.gr_motorista_motivo}
                   empresa_motorista={motorista.empresa_motorista}
                   status_motorista={motorista.status_motorista}
+                  onUpdateSuccess={() => {
+                    fetchAgregadoDetails();
+                    onSuccess?.();
+                  }}
+                />
+              ) : (
+                <ComentariosTab 
+                  motorista_id={motorista.motorista_id}
                   onUpdateSuccess={() => {
                     fetchAgregadoDetails();
                     onSuccess?.();
