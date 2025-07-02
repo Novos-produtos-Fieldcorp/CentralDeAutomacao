@@ -121,12 +121,14 @@ const VeiculosAgregados = () => {
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
       
-      // Buscar motoristas filtrando por telefone, se necessário
+      // Buscar motoristas contratados filtrando por telefone, se necessário
       let motoristasQuery = supabase
         .from('motorista')
         .select('motorista_id')
         .eq('company_id', companyId)
-        .eq('st_cadastro', 'contratado');
+        .eq('st_cadastro', 'contratado')
+        .eq('funcao', 'Agregado');
+        
       if (phoneSearch) {
         motoristasQuery = motoristasQuery.ilike('telefone', `%${phoneSearch}%`);
       }
