@@ -23,6 +23,10 @@ interface GestaoRisco {
 
 interface GestaoRiscoTabProps {
   motorista_id: number;
+  gr_motorista_id?: number | null;
+  gr_motorista_motivo?: string | null;
+  empresa_motorista?: string | null;
+  status_motorista?: string | null;
   onUpdateSuccess?: () => void;
 }
 
@@ -302,20 +306,25 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+          Gestões de Risco
+        </h3>
+        <button
+          onClick={openAddModal}
+          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <Plus className="-ml-1 mr-2 h-5 w-5" />
+          Adicionar Gestão de Risco
+        </button>
+      </div>
+
       {gestoesRisco.length > 0 ? (
         <div className="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
-              Gestões de Risco
-            </h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-              Lista de gestões de risco do motorista
-            </p>
-          </div>
-          <div className="px-4 py-5 sm:p-6">
-            <div className="space-y-4">
-              {gestoesRisco.map((gestao) => (
-                <div key={gestao.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+            {gestoesRisco.map((gestao) => (
+              <li key={gestao.id} className="px-4 py-4 sm:px-6">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Empresa</dt>
@@ -354,16 +363,16 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
                     <button
                       type="button"
                       onClick={() => openDeleteModal(gestao)}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                     >
                       <Trash2 className="-ml-1 mr-2 h-4 w-4" />
                       Excluir
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
+              </li>
+            ))}
+          </ul>
         </div>
       ) : (
         <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
