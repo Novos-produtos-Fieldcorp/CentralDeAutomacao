@@ -29,12 +29,12 @@ interface UnifiedMotoristaModalProps {
   onSuccess?: () => void;
 }
 
-const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
-  isOpen,
-  onClose,
-  motorista,
-  onSuccess
-}) => {
+const UnifiedMotoristaModal = ({ 
+  isOpen, 
+  onClose, 
+  motorista, 
+  onSuccess 
+}: UnifiedMotoristaModalProps) => {
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
@@ -44,6 +44,94 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
   const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
   const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
   const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
+  const [documentCount, setDocumentCount] = useState(0);
+  const [ajudantesCount, setAjudantesCount] = useState(0);
+  const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
+  const [hasComentario, setHasComentario] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && motorista) {
+      fetchDocumentCount();
+      fetchAjudantesCount();
+      fetchGestaoRiscoCount();
+      checkComentario();
+    }
+  }, [isOpen, motorista]);
+
+  const fetchDocumentCount = async () => {
+    if (!motorista) return;
+    
+    try {
+      // Count documents from documento_motorista
+      const { data: documentoData, error: documentoError } = await supabase
+        .from('documento_motorista')
+        .select('foto_cnh, foto_comprovante_residencia')
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+        
+      if (documentoError) throw documentoError;
+      
+      let count = 0;
+      if (documentoData?.foto_cnh) count++;
+      if (documentoData?.foto_comprovante_residencia) count++;
+      
+      setDocumentCount(count);
+    } catch (error) {
+      console.error('Error fetching document count:', error);
+    }
+  };
+
+  const fetchAjudantesCount = async () => {
+    if (!motorista) return;
+    
+    try {
+      const { count, error } = await supabase
+        .from('documento_ajudante')
+        .select('id_ajudante', { count: 'exact', head: true })
+        .eq('motorista_id', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      setAjudantesCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching ajudantes count:', error);
+    }
+  };
+
+  const fetchGestaoRiscoCount = async () => {
+    if (!motorista) return;
+    
+    try {
+      const { count, error } = await supabase
+        .from('gr_motorista')
+        .select('id', { count: 'exact', head: true })
+        .eq('motorista_id', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      setGestaoRiscoCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching gestao risco count:', error);
+    }
+  };
+
+  const checkComentario = async () => {
+    if (!motorista) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('motorista')
+        .select('comentario')
+        .eq('motorista_id', motorista.motorista_id)
+        .single();
+        
+      if (error) throw error;
+      
+      setHasComentario(!!data?.comentario);
+    } catch (error) {
+      console.error('Error checking comentario:', error);
+    }
+  };
 
   if (!isOpen || !motorista) return null;
 
@@ -148,6 +236,11 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                   <div className="flex items-center gap-1">
                     <FileText className="w-4 h-4" />
                     Documentos
+                    {documentCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        {documentCount}
+                      </span>
+                    )}
                   </div>
                 </button>
                 <button
@@ -161,6 +254,11 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
                     Ajudantes
+                    {ajudantesCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        {ajudantesCount}
+                      </span>
+                    )}
                   </div>
                 </button>
                 <button
@@ -174,6 +272,11 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                   <div className="flex items-center gap-1">
                     <ShieldAlert className="w-4 h-4" />
                     Gestão de Risco
+                    {gestaoRiscoCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        {gestaoRiscoCount}
+                      </span>
+                    )}
                   </div>
                 </button>
                 <button
@@ -187,6 +290,11 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                   <div className="flex items-center gap-1">
                     <MessageSquare className="w-4 h-4" />
                     Comentários
+                    {hasComentario && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        1
+                      </span>
+                    )}
                   </div>
                 </button>
               </nav>
@@ -362,6 +470,7 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                       motorista_id={motorista.motorista_id}
                       onSuccess={() => {
                         setIsEditingDocuments(false);
+                        fetchDocumentCount();
                         onSuccess?.();
                       }}
                     />
@@ -376,6 +485,7 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                           motorista_id={motorista.motorista_id}
                           onUploadComplete={() => {
                             toast.success('Documento enviado com sucesso');
+                            fetchDocumentCount();
                             onSuccess?.();
                           }}
                           label="CNH"
@@ -385,6 +495,7 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                           motorista_id={motorista.motorista_id}
                           onUploadComplete={() => {
                             toast.success('Documento enviado com sucesso');
+                            fetchDocumentCount();
                             onSuccess?.();
                           }}
                           label="Comprovante de Residência"
@@ -528,12 +639,18 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
                   gr_motorista_motivo={motorista.gr_motorista_motivo}
                   empresa_motorista={motorista.empresa_motorista}
                   status_motorista={motorista.status_motorista}
-                  onUpdateSuccess={onSuccess}
+                  onUpdateSuccess={() => {
+                    fetchGestaoRiscoCount();
+                    onSuccess?.();
+                  }}
                 />
               ) : (
                 <ComentariosTab 
                   motorista_id={motorista.motorista_id}
-                  onUpdateSuccess={onSuccess}
+                  onUpdateSuccess={() => {
+                    checkComentario();
+                    onSuccess?.();
+                  }}
                 />
               )}
             </div>
@@ -560,6 +677,7 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
         motorista_id={motorista.motorista_id}
         onSuccess={() => {
           setIsAddAjudanteModalOpen(false);
+          fetchAjudantesCount();
           onSuccess?.();
         }}
       />
@@ -575,6 +693,7 @@ const UnifiedMotoristaModal: React.FC<UnifiedMotoristaModalProps> = ({
           onSuccess={() => {
             setIsEditAjudanteModalOpen(false);
             setSelectedAjudante(null);
+            fetchAjudantesCount();
             onSuccess?.();
           }}
         />

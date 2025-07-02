@@ -44,6 +44,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
   const [endereco, setEndereco] = useState<any>(null);
   const [ajudantes, setAjudantes] = useState<any[]>([]);
+  const [documentCount, setDocumentCount] = useState(0);
+  const [ajudantesCount, setAjudantesCount] = useState(0);
+  const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
+  const [hasComentario, setHasComentario] = useState(false);
 
   useEffect(() => {
     if (isOpen && motorista) {
@@ -173,6 +177,33 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
 
       if (ajudantesError) throw ajudantesError;
       setAjudantes(ajudantesData || []);
+      setAjudantesCount(ajudantesData?.length || 0);
+
+      // Count documents
+      let docCount = 0;
+      if (documentoData?.foto_cnh) docCount++;
+      if (documentoData?.foto_comprovante_residencia) docCount++;
+      if (veiculoData?.documento_veiculo?.[0]?.foto_crv) docCount++;
+      setDocumentCount(docCount);
+
+      // Count gestao de risco
+      const { count: grCount, error: grCountError } = await supabase
+        .from('gr_motorista')
+        .select('id', { count: 'exact', head: true })
+        .eq('motorista_id', motorista.motorista_id);
+
+      if (grCountError) throw grCountError;
+      setGestaoRiscoCount(grCount || 0);
+
+      // Check if has comentario
+      const { data: comentarioData, error: comentarioError } = await supabase
+        .from('motorista')
+        .select('comentario')
+        .eq('motorista_id', motorista.motorista_id)
+        .single();
+
+      if (comentarioError) throw comentarioError;
+      setHasComentario(!!comentarioData?.comentario);
     } catch (error) {
       console.error('Error fetching agregado details:', error);
       toast.error('Erro ao carregar detalhes do agregado');
@@ -282,6 +313,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   <div className="flex items-center gap-1">
                     <FileText className="w-4 h-4" />
                     Documentos
+                    {documentCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        {documentCount}
+                      </span>
+                    )}
                   </div>
                 </button>
                 <button
@@ -295,6 +331,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
                     Ajudantes
+                    {ajudantesCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        {ajudantesCount}
+                      </span>
+                    )}
                   </div>
                 </button>
                 <button
@@ -308,6 +349,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   <div className="flex items-center gap-1">
                     <ShieldAlert className="w-4 h-4" />
                     Gestão de Risco
+                    {gestaoRiscoCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        {gestaoRiscoCount}
+                      </span>
+                    )}
                   </div>
                 </button>
                 <button
@@ -321,6 +367,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   <div className="flex items-center gap-1">
                     <MessageSquare className="w-4 h-4" />
                     Comentários
+                    {hasComentario && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        1
+                      </span>
+                    )}
                   </div>
                 </button>
               </nav>
