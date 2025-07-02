@@ -262,35 +262,110 @@ const EditClienteModal: React.FC<EditClienteModalProps> = ({ isOpen, onClose, cl
             if (clienteError) throw clienteError;
 
             // If there's address data, update it
-            if (enderecoData.cep) {
-                // First, check if we need to create or update the logradouro
+            if (enderecoData.cep && enderecoData.estado && enderecoData.cidade && enderecoData.bairro && enderecoData.logradouro) {
                 let logradouroId = endereco?.logradouro?.id_logradouro;
                 
                 if (!logradouroId) {
-                    // Create new logradouro
-                    const { data: newLogradouro, error: logradouroError } = await supabase
-                        .from('logradouro')
-                        .insert({
-                            logradouro: enderecoData.logradouro,
-                            nr_cep: enderecoData.cep,
-                            bairro: {
-                                bairro: enderecoData.bairro,
-                                cidade: {
-                                    cidade: enderecoData.cidade,
-                                    estado: {
-                                        id_estado: parseInt(enderecoData.estado)
-                                    }
-                                }
-                            }
-                        })
-                        .select('id_logradouro')
-                        .single();
+                    // Create the address hierarchy: estado -> cidade -> bairro -> logradouro
+                    
+                    // 1. Get or create estado (should already exist)
+                    const estadoId = parseInt(enderecoData.estado);
+                    
+                    // 2. Get or create cidade
+                    let { data: cidadeData, error: cidadeError } = await supabase
+                        .from('cidade')
+                        .select('id_cidade')
+                        .eq('cidade', enderecoData.cidade)
+                        .eq('id_estado', estadoId)
+                        .maybeSingle();
 
-                    if (logradouroError) throw logradouroError;
-                    logradouroId = newLogradouro.id_logradouro;
+                    if (cidadeError && cidadeError.code !== 'PGRST116') throw cidadeError;
+
+                    let cidadeId: number;
+                    if (!cidadeData) {
+                        const { data: newCidade, error: newCidadeError } = await supabase
+                            .from('cidade')
+                            .insert({
+                                cidade: enderecoData.cidade,
+                                id_estado: estadoId
+                            })
+                            .select('id_cidade')
+                            .single();
+
+                        if (newCidadeError) throw newCidadeError;
+                        cidadeId = newCidade.id_cidade;
+                    } else {
+                        cidadeId = cidadeData.id_cidade;
+                    }
+
+                    // 3. Get or create bairro
+                    let { data: bairroData, error: bairroError } = await supabase
+                        .from('bairro')
+                        .select('id_bairro')
+                        .eq('bairro', enderecoData.bairro)
+                        .eq('id_cidade', cidadeId)
+                        .maybeSingle();
+
+                    if (bairroError && bairroError.code !== 'PGRST116') throw bairroError;
+
+                    let bairroId: number;
+                    if (!bairroData) {
+                        const { data: newBairro, error: newBairroError } = await supabase
+                            .from('bairro')
+                            .insert({
+                                bairro: enderecoData.bairro,
+                                id_cidade: cidadeId
+                            })
+                            .select('id_bairro')
+                            .single();
+
+                        if (newBairroError) throw newBairroError;
+                        bairroId = newBairro.id_bairro;
+                    } else {
+                        bairroId = bairroData.id_bairro;
+                    }
+
+                    // 4. Get or create logradouro
+                    let { data: logradouroData, error: logradouroError } = await supabase
+                        .from('logradouro')
+                        .select('id_logradouro')
+                        .eq('logradouro', enderecoData.logradouro)
+                        .eq('nr_cep', enderecoData.cep)
+                        .eq('id_bairro', bairroId)
+                        .maybeSingle();
+
+                    if (logradouroError && logradouroError.code !== 'PGRST116') throw logradouroError;
+
+                    if (!logradouroData) {
+                        const { data: newLogradouro, error: newLogradouroError } = await supabase
+                            .from('logradouro')
+                            .insert({
+                                logradouro: enderecoData.logradouro,
+                                nr_cep: enderecoData.cep,
+                                id_bairro: bairroId
+                            })
+                            .select('id_logradouro')
+                            .single();
+
+                        if (newLogradouroError) throw newLogradouroError;
+                        logradouroId = newLogradouro.id_logradouro;
+                    } else {
+                        logradouroId = logradouroData.id_logradouro;
+                    }
+                } else {
+                    // Update existing logradouro if needed
+                    const { error: updateLogradouroError } = await supabase
+                        .from('logradouro')
+                        .update({
+                            logradouro: enderecoData.logradouro,
+                            nr_cep: enderecoData.cep
+                        })
+                        .eq('id_logradouro', logradouroId);
+
+                    if (updateLogradouroError) throw updateLogradouroError;
                 }
 
-                // Then update or create the end_cliente record
+                // Finally, update or create the end_cliente record
                 if (endereco?.id_end_cliente) {
                     const { error: enderecoError } = await supabase
                         .from('end_cliente')
