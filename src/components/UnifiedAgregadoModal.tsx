@@ -15,6 +15,7 @@ import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
 import AddAjudanteModal from './AddAjudanteModal';
 import EditAjudanteModal from './EditAjudanteModal';
@@ -22,48 +23,15 @@ import DeleteConfirmationModal from './DeleteConfirmationModal';
 import GestaoRiscoTab from './GestaoRiscoTab';
 import ComentariosTab from './ComentariosTab';
 
-interface AgregadoDetailViewProps {
+interface UnifiedAgregadoModalProps {
   isOpen: boolean;
   onClose: () => void;
-  agregado?: Motorista | null;
+  motorista: Motorista | null;
   onSuccess?: () => void;
-  documento: DocumentoMotorista | null;
-  veiculo: (Veiculo & {
-    documento_veiculo: (DocumentoVeiculo & {
-      pessoa_fisica_dono_veiculo?: PessoaFisicaDonoVeiculo;
-      pessoa_juridica_dono_veiculo?: PessoaJuridicaDonoVeiculo;
-    })[];
-  }) | null;
-  endereco?: {
-    logradouro?: {
-      logradouro?: string;
-      nr_cep?: string;
-      bairro?: {
-        bairro?: string;
-        cidade?: {
-          cidade?: string;
-          estado?: {
-            sigla_estado?: string;
-          };
-        };
-      };
-    };
-    nr_end?: number;
-    ds_complemento_end?: string;
-  } | null;
-  ajudantes?: any[];
 }
 
-const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
-  isOpen,
-  onClose,
-  agregado,
-  documento,
-  veiculo,
-  endereco,
-  ajudantes = [],
-  onSuccess
-}) => {
+const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: UnifiedAgregadoModalProps) => {
+  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
@@ -72,13 +40,150 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
   const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
   const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
   const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
+  const [veiculo, setVeiculo] = useState<Veiculo | null>(null);
+  const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
+  const [endereco, setEndereco] = useState<any>(null);
+  const [ajudantes, setAjudantes] = useState<any[]>([]);
 
-  if (!isOpen || !agregado) return null;
+  useEffect(() => {
+    if (isOpen && motorista) {
+      fetchAgregadoDetails();
+    }
+  }, [isOpen, motorista]);
 
-  // Ensure we have the agregado data
-  const nome = agregado.nome || '';
-  const cpf = agregado.cpf || '';
+  const fetchAgregadoDetails = async () => {
+    if (!motorista) return;
+
+    try {
+      // Fetch veiculo
+      const { data: veiculoData, error: veiculoError } = await supabase
+        .from('veiculo')
+        .select(`
+          *,
+          documento_veiculo (*)
+        `)
+        .eq('motorista_id', motorista.motorista_id)
+        .eq('status_veiculo', true)
+        .maybeSingle();
+
+      if (veiculoError) throw veiculoError;
+      setVeiculo(veiculoData);
+      
+      // Fetch gestão de risco
+      try {
+        const { data: grData, error: grError } = await supabase
+          .from('gr_motorista')
+          .select(`
+            *,
+            empresa:empresa_id(id, nome),
+            status:status_id(id, status)
+          `)
+          .eq('motorista_id', motorista.motorista_id)
+          .order('id', { ascending: false }) // Ordena pelo ID em ordem decrescente
+          .limit(1) // Limita a 1 resultado
+          .maybeSingle();
+          
+        if (grError) {
+          console.error('Erro ao buscar dados de gestão de risco:', grError);
+          throw grError;
+        }
+        
+        console.log('Dados de gestão de risco encontrados:', grData);
+        
+        // Atualiza o objeto motorista com os dados de gestão de risco
+        if (grData) {
+          motorista.gr_motorista_id = grData.id;
+          motorista.gr_motorista_motivo = grData.motivo || null;
+          motorista.empresa_motorista = grData.empresa?.nome || null;
+          motorista.status_motorista = grData.status?.status || null;
+          
+          console.log('Dados de gestão de risco atualizados no motorista:', {
+            gr_motorista_id: motorista.gr_motorista_id,
+            motivo: motorista.gr_motorista_motivo,
+            empresa: motorista.empresa_motorista,
+            status: motorista.status_motorista
+          });
+        } else {
+          console.log('Nenhum dado de gestão de risco encontrado para o motorista:', motorista.motorista_id);
+        }
+      } catch (error) {
+        console.error('Erro ao processar dados de gestão de risco:', error);
+      }
+
+      // Fetch documento
+      const { data: documentoData, error: documentoError } = await supabase
+        .from('documento_motorista')
+        .select('*')
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      if (documentoError) throw documentoError;
+      setDocumento(documentoData);
+
+      // Fetch endereco
+      const { data: enderecoData, error: enderecoError } = await supabase
+        .from('end_motorista')
+        .select(`
+          *,
+          logradouro (
+            logradouro,
+            nr_cep,
+            bairro (
+              bairro,
+              cidade (
+                cidade,
+                estado (
+                  sigla_estado
+                )
+              )
+            )
+          )
+        `)
+        .eq('id_motorista', motorista.motorista_id)
+        .maybeSingle();
+
+      if (enderecoError) throw enderecoError;
+      setEndereco(enderecoData);
+
+      // Fetch ajudantes
+      const { data: ajudantesData, error: ajudantesError } = await supabase
+        .from('documento_ajudante')
+        .select(`
+          *,
+          cnh_ajudante (*),
+          rg_ajudante (*),
+          end_ajudante (
+            *,
+            logradouro (
+              logradouro,
+              nr_cep,
+              bairro (
+                bairro,
+                cidade (
+                  cidade,
+                  estado (
+                    sigla_estado
+                  )
+                )
+              )
+            )
+          )
+        `)
+        .eq('motorista_id', motorista.motorista_id);
+
+      if (ajudantesError) throw ajudantesError;
+      setAjudantes(ajudantesData || []);
+    } catch (error) {
+      console.error('Error fetching agregado details:', error);
+      toast.error('Erro ao carregar detalhes do agregado');
+    }
+  };
+
+  if (!isOpen || !motorista) return null;
+
+  // Ensure we have the motorista data
+  const nome = motorista.nome || '';
+  const cpf = motorista.cpf || '';
 
   const openDocumentInNewTab = (url: string | null) => {
     if (url) {
@@ -158,27 +263,43 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'details'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                   }`}
                 >
                   Detalhes
+                </button>
+                <button
+                  onClick={() => setActiveTab('documents')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'documents'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1">
+                    <FileText className="w-4 h-4" />
+                    Documentos
+                  </div>
                 </button>
                 <button
                   onClick={() => setActiveTab('ajudantes')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'ajudantes'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                   }`}
                 >
-                  Ajudantes
+                  <div className="flex items-center gap-1">
+                    <Users className="w-4 h-4" />
+                    Ajudantes
+                  </div>
                 </button>
                 <button
                   onClick={() => setActiveTab('gestao-risco')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'gestao-risco'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center gap-1">
@@ -191,7 +312,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'comentarios'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center gap-1">
@@ -243,7 +364,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                             Data de Nascimento
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {agregado.dt_nascimento ? formatDate(agregado.dt_nascimento) : 'Não informada'}
+                            {motorista.dt_nascimento ? formatDate(motorista.dt_nascimento) : 'Não informada'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -251,7 +372,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                             Telefone
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {agregado.telefone ? formatPhone(agregado.telefone.toString()) : 'Não informado'}
+                            {motorista.telefone ? formatPhone(motorista.telefone.toString()) : 'Não informado'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -259,7 +380,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                             E-mail
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {agregado.email || 'Não informado'}
+                            {motorista.email || 'Não informado'}
                           </dd>
                         </div>
                       </dl>
@@ -300,6 +421,159 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                               {veiculo.ano}
                             </dd>
                           </div>
+                        </dl>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : activeTab === 'documents' ? (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      Documentos
+                    </h3>
+                    <div className="flex space-x-2">
+                      {isEditingDocuments ? (
+                        <button
+                          onClick={() => setIsEditingDocuments(false)}
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                        >
+                          Cancelar
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setIsEditingDocuments(true)}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          <Edit2 className="w-4 h-4 mr-1" />
+                          Editar Documentos
+                        </button>
+                      )}
+                      {isUploadingDocuments ? (
+                        <button
+                          onClick={() => setIsUploadingDocuments(false)}
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                        >
+                          Cancelar
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setIsUploadingDocuments(true)}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        >
+                          <Camera className="w-4 h-4 mr-1" />
+                          Enviar Documentos
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {isEditingDocuments ? (
+                    <DocumentoMotoristaForm
+                      isOpen={true}
+                      onClose={() => setIsEditingDocuments(false)}
+                      motorista_id={motorista.motorista_id}
+                      onSuccess={() => {
+                        setIsEditingDocuments(false);
+                        fetchAgregadoDetails();
+                        onSuccess?.();
+                      }}
+                    />
+                  ) : isUploadingDocuments ? (
+                    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg p-6">
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                        Enviar Documentos
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <DocumentUploader
+                          documentType="cnh"
+                          motorista_id={motorista.motorista_id}
+                          onUploadComplete={() => {
+                            toast.success('Documento enviado com sucesso');
+                            fetchAgregadoDetails();
+                            onSuccess?.();
+                          }}
+                          label="CNH"
+                        />
+                        <DocumentUploader
+                          documentType="comprovante_residencia"
+                          motorista_id={motorista.motorista_id}
+                          onUploadComplete={() => {
+                            toast.success('Documento enviado com sucesso');
+                            fetchAgregadoDetails();
+                            onSuccess?.();
+                          }}
+                          label="Comprovante de Residência"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                      <div className="px-4 py-5 sm:px-6">
+                        <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                          Documentos do Agregado
+                        </h3>
+                      </div>
+                      <div className="border-t border-gray-200 dark:border-gray-700">
+                        <dl>
+                          <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              CNH
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {documento?.foto_cnh ? (
+                                <div className="flex items-center">
+                                  <button
+                                    onClick={() => openDocumentInNewTab(documento.foto_cnh)}
+                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                  >
+                                    <FileText className="w-5 h-5 mr-2" />
+                                    {isPdf(documento.foto_cnh) ? 'Ver PDF' : 'Ver Imagem'}
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
+                              )}
+                            </dd>
+                          </div>
+                          <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Comprovante de Residência
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {documento?.foto_comprovante_residencia ? (
+                                <div className="flex items-center">
+                                  <button
+                                    onClick={() => openDocumentInNewTab(documento.foto_comprovante_residencia)}
+                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                  >
+                                    <FileText className="w-5 h-5 mr-2" />
+                                    {isPdf(documento.foto_comprovante_residencia) ? 'Ver PDF' : 'Ver Imagem'}
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
+                              )}
+                            </dd>
+                          </div>
+                          {veiculo?.documento_veiculo?.[0]?.foto_crv && (
+                            <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                CRV do Veículo
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                <div className="flex items-center">
+                                  <button
+                                    onClick={() => openDocumentInNewTab(veiculo.documento_veiculo[0].foto_crv)}
+                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                  >
+                                    <FileText className="w-5 h-5 mr-2" />
+                                    {isPdf(veiculo.documento_veiculo[0].foto_crv) ? 'Ver PDF' : 'Ver Imagem'}
+                                  </button>
+                                </div>
+                              </dd>
+                            </div>
+                          )}
                         </dl>
                       </div>
                     </div>
@@ -383,17 +657,23 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
                 </div>
               ) : activeTab === 'gestao-risco' ? (
                 <GestaoRiscoTab 
-                  motorista_id={agregado.motorista_id}
-                  gr_motorista_id={agregado.gr_motorista_id}
-                  gr_motorista_motivo={agregado.gr_motorista_motivo}
-                  empresa_motorista={agregado.empresa_motorista}
-                  status_motorista={agregado.status_motorista}
-                  onUpdateSuccess={onSuccess}
+                  motorista_id={motorista.motorista_id}
+                  gr_motorista_id={motorista.gr_motorista_id}
+                  gr_motorista_motivo={motorista.gr_motorista_motivo}
+                  empresa_motorista={motorista.empresa_motorista}
+                  status_motorista={motorista.status_motorista}
+                  onUpdateSuccess={() => {
+                    fetchAgregadoDetails();
+                    onSuccess?.();
+                  }}
                 />
               ) : (
                 <ComentariosTab 
-                  motorista_id={agregado.motorista_id}
-                  onUpdateSuccess={onSuccess}
+                  motorista_id={motorista.motorista_id}
+                  onUpdateSuccess={() => {
+                    fetchAgregadoDetails();
+                    onSuccess?.();
+                  }}
                 />
               )}
             </div>
@@ -406,9 +686,10 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
         <EditMotoristaModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          motorista={agregado}
+          motorista={motorista}
           onUpdate={() => {
             setIsEditModalOpen(false);
+            fetchAgregadoDetails();
             onSuccess?.();
           }}
         />
@@ -417,10 +698,11 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
       <AddAjudanteModal
         isOpen={isAddAjudanteModalOpen}
         onClose={() => setIsAddAjudanteModalOpen(false)}
-        motorista_id={agregado.motorista_id}
+        motorista_id={motorista.motorista_id}
         veiculo_id={veiculo?.veiculo_id}
         onSuccess={() => {
           setIsAddAjudanteModalOpen(false);
+          fetchAgregadoDetails();
           onSuccess?.();
         }}
       />
@@ -436,6 +718,7 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
           onSuccess={() => {
             setIsEditAjudanteModalOpen(false);
             setSelectedAjudante(null);
+            fetchAgregadoDetails();
             onSuccess?.();
           }}
         />
@@ -453,8 +736,57 @@ const AgregadoDetailView: React.FC<AgregadoDetailViewProps> = ({
           message={`Tem certeza que deseja excluir o ajudante "${selectedAjudante.nome}"? Esta ação não pode ser desfeita.`}
         />
       )}
+
+      {/* Full-screen document viewer */}
+      {activeDocument && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+          onClick={() => setActiveDocument(null)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                Visualização do Documento
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openDocumentInNewTab(activeDocument)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Abrir em nova aba"
+                >
+                  <ExternalLink size={20} />
+                </button>
+                <button
+                  onClick={() => setActiveDocument(null)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="relative h-[calc(90vh-80px)]">
+              {isPdf(activeDocument) ? (
+                <iframe 
+                  src={`${activeDocument}#toolbar=1`} 
+                  className="w-full h-full" 
+                  title="PDF Viewer"
+                />
+              ) : (
+                <img
+                  src={activeDocument}
+                  alt="Documento"
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default AgregadoDetailView;
+export default UnifiedAgregadoModal;
