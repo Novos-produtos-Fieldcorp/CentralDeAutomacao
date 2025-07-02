@@ -1566,7 +1566,7 @@ const MotoristasLista = () => {
                               e.stopPropagation();
                               openRoleChangeModal(motorista, 'Agregado')
                             }}
-                            className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Transformar em Agregado"
                           >
                             <ArrowLeftRight size={18} />

@@ -209,6 +209,11 @@ const AgregadosLista = () => {
     isLoading: false,
   });
 
+  const toggleClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
+    e.stopPropagation();
+    setClienteDropdownOpen(prev => prev === motoristaId ? null : motoristaId);
+  };
+
   const [customDateRange, setCustomDateRange] = useState<{
     startDate: string;
     endDate: string;
@@ -1687,7 +1692,7 @@ const AgregadosLista = () => {
                               e.stopPropagation();
                               openRoleChangeModal(agregado, 'Motorista');
                             }}
-                            className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Transformar em Motorista"
                           >
                             <ArrowLeftRight size={18} />

@@ -35,6 +35,9 @@ export interface ViewContratado {
   autorizacao_lgpd?: string;
   company_id?: number;
   data_cadastro?: string;
+  integracao_data?: string | null;
+  treinamento_data?: string | null;
+  treinamento?: boolean;
   cliente_id?: number | null;
   conversation_id?: string;
   ativo?: boolean;
@@ -619,9 +622,95 @@ const Contratados = () => {
     }
   };
 
-  const handleBulkAction = async (actionType: 'status' | 'client') => {
-    setBulkActionType(actionType);
+  const handleBulkAction = (type: 'status' | 'client') => {
+    setBulkActionType(type);
     setIsBulkActionsModalOpen(true);
+  };
+
+  const handleBulkUpdateTreinamento = async (marcar: boolean) => {
+    if (selectedItems.size === 0) {
+      toast.error('Selecione pelo menos um motorista');
+      return;
+    }
+
+    try {
+      const newDate = marcar ? new Date().toISOString().split('T')[0] : null;
+      
+      // Atualiza no banco de dados
+      const { error } = await supabase
+        .from('motorista_eventos_cliente')
+        .upsert(
+          Array.from(selectedItems).map(id => ({
+            motorista_id: id,
+            treinamento: marcar,
+            treinamento_data: newDate
+          })),
+          { onConflict: 'motorista_id' }
+        );
+
+      if (error) throw error;
+
+      // Atualiza o estado local
+      setContratados(prev =>
+        prev.map(motorista =>
+          selectedItems.has(motorista.motorista_id!)
+            ? {
+                ...motorista,
+                treinamento: marcar,
+                treinamento_data: newDate
+              }
+            : motorista
+        )
+      );
+
+      toast.success(`Treinamento ${marcar ? 'marcado' : 'desmarcado'} em massa com sucesso`);
+    } catch (error) {
+      console.error('Erro ao atualizar treinamento em massa:', error);
+      toast.error('Erro ao atualizar treinamento');
+    }
+  };
+
+  const handleBulkUpdateIntegracao = async (marcar: boolean) => {
+    if (selectedItems.size === 0) {
+      toast.error('Selecione pelo menos um motorista');
+      return;
+    }
+
+    try {
+      const newDate = marcar ? new Date().toISOString().split('T')[0] : null;
+      
+      // Atualiza no banco de dados
+      const { error } = await supabase
+        .from('motorista_eventos_cliente')
+        .upsert(
+          Array.from(selectedItems).map(id => ({
+            motorista_id: id,
+            integracao: marcar,
+            integracao_data: newDate
+          })),
+          { onConflict: 'motorista_id' }
+        );
+
+      if (error) throw error;
+
+      // Atualiza o estado local
+      setContratados(prev =>
+        prev.map(motorista =>
+          selectedItems.has(motorista.motorista_id!)
+            ? {
+                ...motorista,
+                integracao: marcar,
+                integracao_data: newDate
+              }
+            : motorista
+        )
+      );
+
+      toast.success(`Integração Interna ${marcar ? 'marcada' : 'desmarcada'} em massa com sucesso`);
+    } catch (error) {
+      console.error('Erro ao atualizar integração em massa:', error);
+      toast.error('Erro ao atualizar integração');
+    }
   };
 
   const handleMassMessage = () => {
@@ -690,6 +779,128 @@ const Contratados = () => {
     } finally {
       setUpdatingStatus(null);
       setStatusDropdownOpen(null);
+    }
+  };
+
+  const handleUpdateIntegracaoInterna = async (motorista: ViewContratado, dataIntegracao: string | null) => {
+    try {
+      // Primeiro, verifica se já existe um registro para este motorista
+      const { data: existingRecord, error: fetchError } = await supabase
+        .from('motorista_eventos_cliente')
+        .select('motorista_id')
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      let error;
+      
+      if (existingRecord) {
+        // Se existir, faz update
+        const { error: updateError } = await supabase
+          .from('motorista_eventos_cliente')
+          .update({
+            integracao: !!dataIntegracao,
+            integracao_data: dataIntegracao
+          })
+          .eq('motorista_id', motorista.motorista_id);
+          
+        error = updateError;
+      } else {
+        // Se não existir, faz insert
+        const { error: insertError } = await supabase
+          .from('motorista_eventos_cliente')
+          .insert([{
+            motorista_id: motorista.motorista_id,
+            integracao: !!dataIntegracao,
+            integracao_data: dataIntegracao,
+            treinamento: false,
+            treinamento_data: null
+          }]);
+          
+        error = insertError;
+      }
+
+      if (error) throw error;
+
+      // Atualiza o estado local
+      setContratados(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { 
+                ...m, 
+                integracao_data: dataIntegracao,
+                integracao: !!dataIntegracao
+              } 
+            : m
+        )
+      );
+
+      toast.success('Status de integração interna atualizado');
+    } catch (error) {
+      console.error('Erro ao atualizar integração interna:', error);
+      toast.error('Erro ao atualizar status de integração');
+    }
+  };
+
+  const handleUpdateTreinamentoCliente = async (motorista: ViewContratado, dataTreinamento: string | null) => {
+    try {
+      // Primeiro, verifica se já existe um registro para este motorista
+      const { data: existingRecord, error: fetchError } = await supabase
+        .from('motorista_eventos_cliente')
+        .select('motorista_id')
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      let error;
+      
+      if (existingRecord) {
+        // Se existir, faz update
+        const { error: updateError } = await supabase
+          .from('motorista_eventos_cliente')
+          .update({
+            treinamento: !!dataTreinamento,
+            treinamento_data: dataTreinamento
+          })
+          .eq('motorista_id', motorista.motorista_id);
+          
+        error = updateError;
+      } else {
+        // Se não existir, faz insert
+        const { error: insertError } = await supabase
+          .from('motorista_eventos_cliente')
+          .insert([{
+            motorista_id: motorista.motorista_id,
+            treinamento: !!dataTreinamento,
+            treinamento_data: dataTreinamento,
+            integracao: false,
+            integracao_data: null
+          }]);
+          
+        error = insertError;
+      }
+
+      if (error) throw error;
+
+      // Atualiza o estado local
+      setContratados(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { 
+                ...m, 
+                treinamento_data: dataTreinamento,
+                treinamento: !!dataTreinamento
+              } 
+            : m
+        )
+      );
+
+      toast.success('Status de treinamento do cliente atualizado');
+    } catch (error) {
+      console.error('Erro ao atualizar treinamento do cliente:', error);
+      toast.error('Erro ao atualizar status de treinamento');
     }
   };
 
@@ -868,15 +1079,45 @@ const Contratados = () => {
         <div className="flex gap-2">
           {selectedItems.size > 0 && (
             <>
-              <button
-                onClick={() => handleBulkAction('status')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                        transition-colors flex items-center gap-2"
-              >
-                <Edit2 className="w-5 h-5" />
-                Atualizar Status
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleBulkAction('status')}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                          transition-colors flex items-center gap-2"
+                >
+                  <Edit2 className="w-5 h-5" />
+                  Atualizar Status
+                </button>
+                
+                <button
+                  onClick={() => handleBulkUpdateIntegracao(true)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 
+                          focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 
+                          transition-colors flex items-center gap-2"
+                  title="Marcar Integração Interna"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check-circle">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <path d="m9 11 3 3L22 4"/>
+                  </svg>
+                  Int. Interna
+                </button>
+                
+                <button
+                  onClick={() => handleBulkUpdateTreinamento(true)}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 
+                          focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 
+                          transition-colors flex items-center gap-2"
+                  title="Marcar Treinamento Cliente"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-graduation-cap">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                    <path d="M6 12v5c3 3 9 1 9-1v-5"/>
+                  </svg>
+                  Treinamento
+                </button>
+              </div>
               <button
                 onClick={() => handleBulkAction('client')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
@@ -1304,6 +1545,8 @@ const Contratados = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Integração Interna</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Treinamento Cliente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
@@ -1561,6 +1804,46 @@ const Contratados = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
                           {getMotoristaCity(motorista) || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <label className="inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={!!motorista.integracao_data}
+                              onChange={(e) => {
+                                const newDate = e.target.checked ? new Date().toISOString().split('T')[0] : null;
+                                handleUpdateIntegracaoInterna(motorista, newDate);
+                              }}
+                              className="form-checkbox h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </label>
+                          {motorista.integracao_data && (
+                            <span className="text-sm text-gray-600">
+                              {new Date(motorista.integracao_data).toLocaleDateString('pt-BR')}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <label className="inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={!!motorista.treinamento_data}
+                              onChange={(e) => {
+                                const newDate = e.target.checked ? new Date().toISOString().split('T')[0] : null;
+                                handleUpdateTreinamentoCliente(motorista, newDate);
+                              }}
+                              className="form-checkbox h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </label>
+                          {motorista.treinamento_data && (
+                            <span className="text-sm text-gray-600">
+                              {new Date(motorista.treinamento_data).toLocaleDateString('pt-BR')}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
