@@ -394,7 +394,7 @@ const HodometrosLista = () => {
 
   // Format number with dot as thousands separator
   const formatNumber = (num: number | null | undefined): string => {
-    if (num === null || num === undefined) return '-';
+    if (num === null || num === undefined || isNaN(num)) return '0';
     return num.toLocaleString('pt-BR');
   };
 
@@ -480,7 +480,7 @@ const HodometrosLista = () => {
           'CPF': formatCPF(reading.motorista.cpf),
           'Hodômetro Informado': reading.hod_informado !== null ? formatNumber(reading.hod_informado) : '-',
           'Hodômetro Lido': reading.hod_lido !== null ? formatNumber(reading.hod_lido) : '-',
-          'Bateria': reading.bateria !== null ? `${reading.bateria}%` : '-',
+          'Bateria': reading.bateria !== null ? `${reading.bateria}` : '-',
           'KM Rodado': reading.km_rodado !== null ? formatNumber(reading.km_rodado) : '-',
           'Trip Lida': reading.trip_lida !== null ? formatNumber(reading.trip_lida) : '-',
           'Trip Informada': reading.trip_informada || '-',
@@ -726,7 +726,7 @@ const HodometrosLista = () => {
                                     <td className="px-4 py-2 whitespace-nowrap text-right">
                                       {reading.bateria !== null ? (
                                         <div className="text-sm text-gray-900 dark:text-white">
-                                          Bateria: {reading.bateria}%
+                                          Bateria: {reading.bateria}
                                         </div>
                                       ) : (
                                         <>

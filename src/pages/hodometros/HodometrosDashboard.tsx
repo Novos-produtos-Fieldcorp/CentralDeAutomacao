@@ -551,7 +551,7 @@ const HodometrosDashboard = () => {
 
   // Format number with dot as thousands separator
   const formatNumber = (num: number | null | undefined): string => {
-    if (num === null || num === undefined) return '-';
+    if (num === null || num === undefined || isNaN(num)) return '0';
     return num.toLocaleString('pt-BR');
   };
 
@@ -883,7 +883,7 @@ const HodometrosDashboard = () => {
                 onClick={() => setVehicleTypeFilter('all')}
                 className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                   vehicleTypeFilter === 'all'
-                    ? 'bg-blue-600 text-black dark:text-white dark:bg-blue-400 dark:text-black dark:text-white'
+                    ? 'bg-blue-600 text-white dark:bg-blue-400 dark:text-black'
                     : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
                 }`}
               >
@@ -893,7 +893,7 @@ const HodometrosDashboard = () => {
                 onClick={() => setVehicleTypeFilter('automovel')}
                 className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                   vehicleTypeFilter === 'automovel'
-                    ? 'bg-blue-600 text-black dark:text-white dark:bg-blue-400 dark:text-black dark:text-white'
+                    ? 'bg-blue-600 text-white dark:bg-blue-400 dark:text-black'
                     : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
                 }`}
               >
@@ -903,7 +903,7 @@ const HodometrosDashboard = () => {
                 onClick={() => setVehicleTypeFilter('ciclomotor')}
                 className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                   vehicleTypeFilter === 'ciclomotor'
-                    ? 'bg-blue-600 text-black dark:text-white dark:bg-blue-400 dark:text-black dark:text-white'
+                    ? 'bg-blue-600 text-white dark:bg-blue-400 dark:text-black'
                     : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
                 }`}
               >
