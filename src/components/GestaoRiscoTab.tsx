@@ -68,7 +68,17 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
       grData,
       hasData 
     });
-  }, [gr_motorista_id, empresa_motorista, status_motorista, grData]);
+    
+    // Log para depuração
+    if (gr_motorista_id) {
+      console.log('GR Motorista ID:', gr_motorista_id);
+      console.log('GR Motorista Motivo:', gr_motorista_motivo);
+      console.log('Empresa Motorista:', empresa_motorista);
+      console.log('Status Motorista:', status_motorista);
+    } else {
+      console.log('Nenhum ID de gestão de risco encontrado para este motorista');
+    }
+  }, [gr_motorista_id, empresa_motorista, status_motorista, grData, gr_motorista_motivo]);
 
   const fetchData = async () => {
     try {
@@ -292,46 +302,69 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
   return (
     <div className="space-y-6">
       {hasGrData ? (
-        <div>
-          <div className="text-red-600 dark:text-red-400">
-            <div className="mb-2">Empresa: {empresa_motorista || grData?.empresa?.nome}</div>
-            <div className="mb-2">
-              Status: {status_motorista || grData?.status?.status} 
-              {(status_motorista === 'Reprovado' || grData?.status?.status === 'Reprovado') && 
-                (gr_motorista_motivo || grData?.motivo) && (
-                <span className="ml-4">
-                  if reprovado: <span className="text-red-600 dark:text-red-400 font-medium">MOTIVO</span>
-                </span>
+        <div className="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
+          <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+              Gestão de Risco
+            </h3>
+            <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+              Informações de gestão de risco do motorista
+            </p>
+          </div>
+          <div className="px-4 py-5 sm:p-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Empresa</dt>
+                <dd className="mt-1 text-sm text-gray-900 dark:text-white">
+                  {empresa_motorista || grData?.empresa?.nome || 'Não informado'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</dt>
+                <dd className={`mt-1 text-sm font-medium ${
+                  (status_motorista === 'Reprovado' || grData?.status?.status === 'Reprovado') 
+                    ? 'text-red-600 dark:text-red-400' 
+                    : 'text-green-600 dark:text-green-400'
+                }`}>
+                  {status_motorista || grData?.status?.status || 'Não informado'}
+                </dd>
+              </div>
+              {(gr_motorista_motivo || grData?.motivo) && (
+                <div className="sm:col-span-2">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Motivo</dt>
+                  <dd className="mt-1 text-sm text-gray-900 dark:text-gray-200">
+                    {gr_motorista_motivo || grData?.motivo}
+                  </dd>
+                </div>
               )}
             </div>
-            {(gr_motorista_motivo || grData?.motivo) && (
-              <div className="mb-2">Motivo: {gr_motorista_motivo || grData?.motivo}</div>
-            )}
-          </div>
-          <hr className="border-t border-red-600 dark:border-red-400 my-4" />
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setIsEditModalOpen(true)}
-              className="inline-flex items-center justify-center px-4 py-2 border border-red-600 dark:border-red-400 text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/10 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
-            >
-              + empresa
-            </button>
-            <button
-              onClick={() => setIsDeleteModalOpen(true)}
-              className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
-            >
-              <Trash2 className="w-4 h-4 mr-1" />
-              Excluir
-            </button>
+            <div className="mt-6 flex space-x-3">
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Edit2 className="-ml-1 mr-2 h-4 w-4" />
+                Editar
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                <Trash2 className="-ml-1 mr-2 h-4 w-4" />
+                Excluir
+              </button>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="text-center py-12 bg-black rounded-lg">
+        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
           <ShieldAlert className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-white">
+          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
             Sem informações de gestão de risco
           </h3>
-          <p className="mt-1 text-sm text-gray-400">
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Adicione informações de gestão de risco para este motorista.
           </p>
           <div className="mt-6">

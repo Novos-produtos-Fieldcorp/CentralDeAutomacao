@@ -158,9 +158,6 @@ const AgregadosLista = () => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
-  const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
-  const statusDropdownRef = useRef<HTMLDivElement>(null);
-  const ativoDropdownRef = useRef<HTMLDivElement>(null);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -208,6 +205,11 @@ const AgregadosLista = () => {
     newRole: null,
     isLoading: false,
   });
+
+  const toggleClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
+    e.stopPropagation();
+    setClienteDropdownOpen(prev => prev === motoristaId ? null : motoristaId);
+  };
 
   const [customDateRange, setCustomDateRange] = useState<{
     startDate: string;
@@ -611,7 +613,7 @@ const AgregadosLista = () => {
       
       // Atualiza no banco de dados
       const { error } = await supabase
-        .from('motoristas')
+        .from('motorista')
         .update({ st_cadastro: newStatus })
         .eq('motorista_id', agregado.motorista_id);
       
@@ -1687,7 +1689,7 @@ const AgregadosLista = () => {
                               e.stopPropagation();
                               openRoleChangeModal(agregado, 'Motorista');
                             }}
-                            className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Transformar em Motorista"
                           >
                             <ArrowLeftRight size={18} />
