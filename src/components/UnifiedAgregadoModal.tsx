@@ -482,7 +482,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               Placa
                             </dt>
                             <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {veiculo.placa}
+                              {veiculo.placa.toUpperCase()}
                             </dd>
                           </div>
                           <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -490,7 +490,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               Marca/Modelo
                             </dt>
                             <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {veiculo.marca} {veiculo.tipologia}
+                              {veiculo.marca} {veiculo.tipo}
                             </dd>
                           </div>
                           <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -498,7 +498,65 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               Ano
                             </dt>
                             <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {veiculo.ano}
+                              {veiculo.ano || 'Não informado'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Tipologia
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {veiculo.tipologia || 'Não informada'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Cor
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {veiculo.cor || 'Não informada'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Combustível
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {veiculo.combustivel || 'Não informado'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Peso
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {veiculo.peso ? `${veiculo.peso} kg` : 'Não informado'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Cubagem
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {veiculo.cubagem ? `${veiculo.cubagem} m³` : 'Não informada'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Rastreador
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {veiculo.possui_rastreador ? (
+                                <div className="flex items-center">
+                                  <CheckCircle2 className="w-5 h-5 text-green-500 mr-2" />
+                                  <span>Sim - {veiculo.marca_rastreador || 'Marca não informada'}</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center">
+                                  <XCircle className="w-5 h-5 text-red-500 mr-2" />
+                                  <span>Não</span>
+                                </div>
+                              )}
                             </dd>
                           </div>
                         </dl>
