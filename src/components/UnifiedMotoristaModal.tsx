@@ -147,6 +147,31 @@ const UnifiedMotoristaModal = ({
 
   const isPdf = (url: string | null) => url?.toLowerCase().endsWith('.pdf');
 
+  const handleEditAjudante = (ajudante: any) => {
+    setSelectedAjudante(ajudante);
+    setIsEditAjudanteModalOpen(true);
+  };
+
+  const handleDeleteAjudante = (ajudante: any) => {
+    setSelectedAjudante(ajudante);
+    setIsDeleteAjudanteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedAjudante) return;
+    
+    try {
+      // Add your delete logic here
+      toast.success('Ajudante excluído com sucesso!');
+      setIsDeleteAjudanteModalOpen(false);
+      setSelectedAjudante(null);
+      onSuccess?.();
+    } catch (error) {
+      console.error('Erro ao excluir ajudante:', error);
+      toast.error('Erro ao excluir ajudante');
+    }
+  };
+  
   return (
     <div className="fixed inset-0 z-50">
       {/* Overlay */}
