@@ -48,6 +48,15 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [ajudantesCount, setAjudantesCount] = useState(0);
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
   const [hasComentario, setHasComentario] = useState(false);
+  const [documentPreview, setDocumentPreview] = useState<{
+    cnh: string | null,
+    comprovante: string | null,
+    crv: string | null
+  }>({
+    cnh: null,
+    comprovante: null,
+    crv: null
+  });
 
   useEffect(() => {
     if (isOpen && motorista) {
@@ -123,6 +132,23 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
 
       if (documentoError) throw documentoError;
       setDocumento(documentoData);
+      
+      // Set document previews
+      if (documentoData) {
+        setDocumentPreview(prev => ({
+          ...prev,
+          cnh: documentoData.foto_cnh,
+          comprovante: documentoData.foto_comprovante_residencia
+        }));
+      }
+      
+      // Set CRV preview if available
+      if (veiculoData?.documento_veiculo?.[0]?.foto_crv) {
+        setDocumentPreview(prev => ({
+          ...prev,
+          crv: veiculoData.documento_veiculo[0].foto_crv
+        }));
+      }
 
       // Fetch endereco
       const { data: enderecoData, error: enderecoError } = await supabase
@@ -542,7 +568,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                         <DocumentUploader
                           documentType="cnh"
                           motorista_id={motorista.motorista_id}
-                          onUploadComplete={() => {
+                          currentUrl={documentPreview.cnh}
+                          onUploadComplete={(url) => {
+                            setDocumentPreview(prev => ({ ...prev, cnh: url }));
                             toast.success('Documento enviado com sucesso');
                             fetchAgregadoDetails();
                             onSuccess?.();
@@ -552,7 +580,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                         <DocumentUploader
                           documentType="comprovante_residencia"
                           motorista_id={motorista.motorista_id}
-                          onUploadComplete={() => {
+                          currentUrl={documentPreview.comprovante}
+                          onUploadComplete={(url) => {
+                            setDocumentPreview(prev => ({ ...prev, comprovante: url }));
                             toast.success('Documento enviado com sucesso');
                             fetchAgregadoDetails();
                             onSuccess?.();
@@ -588,8 +618,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             <DocumentUploader
                               documentType="cnh" // Reusing the same component but for CRV
                               motorista_id={motorista.motorista_id}
+                              currentUrl={documentPreview.crv}
                               onUploadComplete={async (url) => {
                                 try {
+                                  setDocumentPreview(prev => ({ ...prev, crv: url }));
+                                  
                                   // Check if document record exists
                                   const { data: existingDoc } = await supabase
                                     .from('documento_veiculo')
@@ -650,6 +683,18 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(documento.foto_cnh) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
+                                  
+                                  {/* Preview thumbnail */}
+                                  {!isPdf(documento.foto_cnh) && (
+                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={documento.foto_cnh} 
+                                        alt="CNH Preview" 
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() => setActiveDocument(documento.foto_cnh)}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
@@ -670,6 +715,18 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(documento.foto_comprovante_residencia) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
+                                  
+                                  {/* Preview thumbnail */}
+                                  {!isPdf(documento.foto_comprovante_residencia) && (
+                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={documento.foto_comprovante_residencia} 
+                                        alt="Comprovante Preview" 
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
@@ -690,6 +747,18 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(veiculo.documento_veiculo[0].foto_crv) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
+                                  
+                                  {/* Preview thumbnail */}
+                                  {!isPdf(veiculo.documento_veiculo[0].foto_crv) && (
+                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={veiculo.documento_veiculo[0].foto_crv} 
+                                        alt="CRV Preview" 
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() => setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               </dd>
                             </div>
