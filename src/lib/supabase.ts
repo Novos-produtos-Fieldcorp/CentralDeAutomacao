@@ -108,7 +108,7 @@ const applyRetryLogic = (queryBuilder: any, table: string) => {
         
         // If it's a network error with no retries left, throw a user-friendly error
         if (error instanceof TypeError && error.message === 'Failed to fetch') {
-          throw new Error(`Erro de conexão com o banco de dados. Verifique se o Supabase está configurado corretamente e se as configurações de CORS estão atualizadas. Para resolver: 1) Vá para o painel do Supabase > Configurações do Projeto > API > CORS 2) Adicione '*.webcontainer-api.io' às URLs permitidas.`);
+          throw new Error(`A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.`);
         }
         
         // If it's a connection refused error, throw a user-friendly error
@@ -118,7 +118,7 @@ const applyRetryLogic = (queryBuilder: any, table: string) => {
             error.message.includes('network error') ||
             error.message.includes('supabase.co')
         )) {
-          throw new Error('Erro de conexão com o banco de dados. Verifique se o Supabase está configurado corretamente e se as configurações de CORS estão atualizadas.');
+          throw new Error('A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.');
         }
         
         throw error;
@@ -288,7 +288,7 @@ export const createFilteredQuery = (table: string, companyId: number) => {
         
         // If it's a network error with no retries left, throw a user-friendly error
         if (error instanceof TypeError && error.message === 'Failed to fetch') {
-          throw new Error(`Erro de conexão com o banco de dados. Verifique se o Supabase está configurado corretamente e se as configurações de CORS estão atualizadas. Para resolver: 1) Vá para o painel do Supabase > Configurações do Projeto > API > CORS 2) Adicione '*.webcontainer-api.io' às URLs permitidas.`);
+          throw new Error(`A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.`);
         }
         
         // If it's a connection refused error, throw a user-friendly error
@@ -298,7 +298,7 @@ export const createFilteredQuery = (table: string, companyId: number) => {
             error.message.includes('network error') ||
             error.message.includes('supabase.co')
         )) {
-          throw new Error('Erro de conexão com o banco de dados. Verifique se o Supabase está configurado corretamente e se as configurações de CORS estão atualizadas.');
+          throw new Error('A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.');
         }
         
         throw error;
