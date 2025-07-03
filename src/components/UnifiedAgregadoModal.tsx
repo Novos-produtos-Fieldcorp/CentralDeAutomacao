@@ -560,6 +560,72 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                           label="Comprovante de Residência"
                         />
                       </div>
+                      
+                      {/* CRV Document Upload Section */}
+                      {veiculo && (
+                        <div className="mt-6">
+                          <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                            Documentos do Veículo
+                          </h4>
+                          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                            <div className="grid grid-cols-3 gap-4">
+                              <div>
+                                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</span>
+                                <p className="text-base font-semibold text-gray-900 dark:text-white uppercase">{veiculo.placa}</p>
+                              </div>
+                              <div>
+                                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca</span>
+                                <p className="text-base font-semibold text-gray-900 dark:text-white">{veiculo.marca}</p>
+                              </div>
+                              <div>
+                                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Modelo</span>
+                                <p className="text-base font-semibold text-gray-900 dark:text-white">{veiculo.tipo}</p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4">
+                            <DocumentUploader
+                              documentType="cnh" // Reusing the same component but for CRV
+                              motorista_id={motorista.motorista_id}
+                              onUploadComplete={async (url) => {
+                                try {
+                                  // Check if document record exists
+                                  const { data: existingDoc } = await supabase
+                                    .from('documento_veiculo')
+                                    .select('*')
+                                    .eq('veiculo_id', veiculo.veiculo_id)
+                                    .single();
+                                    
+                                  if (existingDoc) {
+                                    // Update existing record
+                                    await supabase
+                                      .from('documento_veiculo')
+                                      .update({ foto_crv: url })
+                                      .eq('id_documento_veiculo', existingDoc.id_documento_veiculo);
+                                  } else {
+                                    // Create new record
+                                    await supabase
+                                      .from('documento_veiculo')
+                                      .insert({
+                                        veiculo_id: veiculo.veiculo_id,
+                                        foto_crv: url
+                                      });
+                                  }
+                                  
+                                  toast.success('CRV enviado com sucesso');
+                                  fetchAgregadoDetails();
+                                  onSuccess?.();
+                                } catch (error) {
+                                  console.error('Erro ao salvar CRV:', error);
+                                  toast.error('Erro ao salvar CRV');
+                                }
+                              }}
+                              label="CRV Digital"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
