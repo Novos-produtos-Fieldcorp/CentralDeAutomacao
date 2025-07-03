@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
-  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare 
-} from 'lucide-react';
+import { X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
+  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare } from 'lucide-react';
 import type { 
   DocumentoMotorista, 
   Veiculo, 
@@ -547,9 +545,12 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       Documentos
                     </h3>
                     <div className="flex space-x-2">
-                      {isEditingDocuments ? (
+                      {isEditingDocuments || isUploadingDocuments ? (
                         <button
-                          onClick={() => setIsEditingDocuments(false)}
+                          onClick={() => {
+                            setIsEditingDocuments(false);
+                            setIsUploadingDocuments(false);
+                          }}
                           className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
                         >
                           Cancelar
@@ -560,23 +561,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                           className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           <Edit2 className="w-4 h-4 mr-1" />
-                          Editar Documentos
-                        </button>
-                      )}
-                      {isUploadingDocuments ? (
-                        <button
-                          onClick={() => setIsUploadingDocuments(false)}
-                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                        >
-                          Cancelar
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setIsUploadingDocuments(true)}
-                          className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                        >
-                          <Camera className="w-4 h-4 mr-1" />
-                          Enviar Documentos
+                          Editar e Enviar Documentos
                         </button>
                       )}
                     </div>
