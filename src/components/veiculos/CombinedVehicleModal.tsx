@@ -248,7 +248,7 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
-          <div className="relative bg-white dark:bg-gray-800 rounded-2xl max-w-5xl w-full shadow-xl">
+          <div className="relative bg-white dark:bg-gray-800 rounded-2xl max-w-5xl w-full shadow-xl max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="border-b border-gray-200 dark:border-gray-700">
               <div className="p-6 flex justify-between items-center">
