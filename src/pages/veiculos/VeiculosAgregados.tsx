@@ -12,7 +12,7 @@ import { formatCPF } from '../../utils/format';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
-import { supabase } from '../../lib/supabase';
+import { supabase, testSupabaseConnection } from '../../lib/supabase';
 import { useDebounce } from '../../hooks/useDebounce';
 import CombinedVehicleModal from '../../components/veiculos/CombinedVehicleModal';
 
@@ -81,6 +81,14 @@ const VeiculosAgregados = () => {
     const init = async () => {
       try {
         setInitialLoading(true);
+        setError(null);
+        
+        // Test connection first
+        const isConnected = await testSupabaseConnection();
+        if (!isConnected) {
+          throw new Error('Não foi possível conectar ao banco de dados. Verifique se o Supabase está configurado corretamente e se as configurações de CORS incluem *.webcontainer-api.io');
+        }
+        
         await fetchVeiculos();
         await fetchMotoristas();
       } catch (err) {
@@ -395,7 +403,32 @@ const VeiculosAgregados = () => {
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-500 dark:text-red-400">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 max-w-2xl mx-auto">
+          <div className="flex items-center justify-center mb-4">
+            <div className="flex-shrink-0">
+              <svg className="h-8 w-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-lg font-medium text-red-800 dark:text-red-200">
+                Erro de Conexão
+              </h3>
+            </div>
+          </div>
+          <div className="text-red-700 dark:text-red-300 text-sm">
+            <p className="mb-4">{error}</p>
+            <div className="bg-red-100 dark:bg-red-900/40 border border-red-200 dark:border-red-700 rounded-md p-4">
+              <h4 className="font-medium mb-2">Para resolver este problema:</h4>
+              <ol className="list-decimal list-inside space-y-1 text-xs">
+                <li>Verifique se você clicou no botão "Connect to Supabase" no canto superior direito</li>
+                <li>Vá para o painel do Supabase → Configurações do Projeto → API</li>
+                <li>Na seção CORS, adicione <code className="bg-red-200 dark:bg-red-800 px-1 rounded">*.webcontainer-api.io</code> às URLs permitidas</li>
+                <li>Verifique se as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY estão configuradas</li>
+              </ol>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
