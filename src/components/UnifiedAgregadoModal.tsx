@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
-  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare 
-} from 'lucide-react';
+import { X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
+  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare } from 'lucide-react';
 import type { 
   DocumentoMotorista, 
   Veiculo, 
@@ -213,7 +211,8 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   if (!isOpen || !motorista) return null;
 
   // Ensure we have the motorista data
-  const nome = motorista.nome || '';
+  // Use nome_motorista if available (from the view), otherwise fall back to nome
+  const nome = motorista.nome_motorista || motorista.nome || '';
   const cpf = motorista.cpf || '';
 
   const openDocumentInNewTab = (url: string | null) => {
@@ -279,9 +278,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
+                           rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X size={24} />
                 </button>
               </div>
             </div>
@@ -456,7 +456,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               Placa
                             </dt>
                             <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {veiculo.placa}
+                              {veiculo.placa.toUpperCase()}
                             </dd>
                           </div>
                           <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -464,7 +464,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               Marca/Modelo
                             </dt>
                             <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {veiculo.marca} {veiculo.tipologia}
+                              {veiculo.marca} {veiculo.tipo}
                             </dd>
                           </div>
                           <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -472,7 +472,66 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               Ano
                             </dt>
                             <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {veiculo.ano}
+                              {veiculo.ano || 'Não informado'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Tipologia
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {veiculo.tipologia || 'Não informada'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Cor
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {veiculo.cor || 'Não informada'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Combustível
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {veiculo.combustivel || 'Não informado'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Peso
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {veiculo.peso ? `${veiculo.peso} kg` : 'Não informado'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Cubagem
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              {veiculo.cubagem ? `${veiculo.cubagem} m³` : 'Não informada'}
+                            </dd>
+                          </div>
+                          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Rastreador
+                            </dt>
+                            <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2">
+                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                veiculo.possui_rastreador
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                              }`}>
+                                {veiculo.possui_rastreador ? 'Sim' : 'Não'}
+                              </span>
+                              {veiculo.possui_rastreador && veiculo.marca_rastreador && (
+                                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                  Marca: {veiculo.marca_rastreador}
+                                </p>
+                              )}
                             </dd>
                           </div>
                         </dl>
@@ -487,9 +546,12 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       Documentos
                     </h3>
                     <div className="flex space-x-2">
-                      {isEditingDocuments ? (
+                      {isEditingDocuments || isUploadingDocuments ? (
                         <button
-                          onClick={() => setIsEditingDocuments(false)}
+                          onClick={() => {
+                            setIsEditingDocuments(false);
+                            setIsUploadingDocuments(false);
+                          }}
                           className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
                         >
                           Cancelar
@@ -500,23 +562,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                           className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           <Edit2 className="w-4 h-4 mr-1" />
-                          Editar Documentos
-                        </button>
-                      )}
-                      {isUploadingDocuments ? (
-                        <button
-                          onClick={() => setIsUploadingDocuments(false)}
-                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                        >
-                          Cancelar
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setIsUploadingDocuments(true)}
-                          className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                        >
-                          <Camera className="w-4 h-4 mr-1" />
-                          Enviar Documentos
+                          Editar e Enviar Documentos
                         </button>
                       )}
                     </div>
@@ -574,7 +620,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               CNH
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                               {documento?.foto_cnh ? (
                                 <div className="flex items-center">
                                   <button
@@ -584,6 +630,16 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(documento.foto_cnh) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
+                                  {!isPdf(documento.foto_cnh) && (
+                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={documento.foto_cnh} 
+                                        alt="CNH Preview" 
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() => setActiveDocument(documento.foto_cnh)}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
@@ -594,7 +650,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               Comprovante de Residência
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                               {documento?.foto_comprovante_residencia ? (
                                 <div className="flex items-center">
                                   <button
@@ -604,6 +660,16 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(documento.foto_comprovante_residencia) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
+                                  {!isPdf(documento.foto_comprovante_residencia) && (
+                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={documento.foto_comprovante_residencia} 
+                                        alt="Comprovante Preview" 
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
@@ -615,7 +681,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                 CRV do Veículo
                               </dt>
-                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                                 <div className="flex items-center">
                                   <button
                                     onClick={() => openDocumentInNewTab(veiculo.documento_veiculo[0].foto_crv)}
@@ -624,6 +690,16 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(veiculo.documento_veiculo[0].foto_crv) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
+                                  {!isPdf(veiculo.documento_veiculo[0].foto_crv) && (
+                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={veiculo.documento_veiculo[0].foto_crv} 
+                                        alt="CRV Preview" 
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() => setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               </dd>
                             </div>

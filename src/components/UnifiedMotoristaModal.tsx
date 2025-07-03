@@ -12,10 +12,10 @@ import type {
   PessoaJuridicaDonoVeiculo
 } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
-import { supabase } from '../lib/supabase';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
 import AddAjudanteModal from './AddAjudanteModal';
 import EditAjudanteModal from './EditAjudanteModal';
@@ -38,7 +38,6 @@ const UnifiedMotoristaModal = ({
 }: UnifiedMotoristaModalProps) => {
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
-  const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
@@ -300,7 +299,7 @@ const UnifiedMotoristaModal = ({
                 </button>
               </nav>
             </div>
-            
+
             {/* Content */}
             <div className="p-6">
               {activeTab === 'details' ? (
@@ -342,7 +341,7 @@ const UnifiedMotoristaModal = ({
                             Data de Nascimento
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.dt_nascimento ? formatDate(motorista.dt_nascimento) : 'Não informado'}
+                            {motorista.dt_nascimento ? formatDate(motorista.dt_nascimento) : 'Não informada'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -442,23 +441,7 @@ const UnifiedMotoristaModal = ({
                           className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           <Edit2 className="w-4 h-4 mr-1" />
-                          Editar Documentos
-                        </button>
-                      )}
-                      {isUploadingDocuments ? (
-                        <button
-                          onClick={() => setIsUploadingDocuments(false)}
-                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                        >
-                          Cancelar
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setIsUploadingDocuments(true)}
-                          className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                        >
-                          <Camera className="w-4 h-4 mr-1" />
-                          Enviar Documentos
+                          Editar e Enviar Documentos
                         </button>
                       )}
                     </div>
@@ -475,34 +458,6 @@ const UnifiedMotoristaModal = ({
                         onSuccess?.();
                       }}
                     />
-                  ) : isUploadingDocuments ? (
-                    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg p-6">
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                        Enviar Documentos
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <DocumentUploader
-                          documentType="cnh"
-                          motorista_id={motorista.motorista_id}
-                          onUploadComplete={() => {
-                            toast.success('Documento enviado com sucesso');
-                            fetchDocumentCount();
-                            onSuccess?.();
-                          }}
-                          label="CNH"
-                        />
-                        <DocumentUploader
-                          documentType="comprovante_residencia"
-                          motorista_id={motorista.motorista_id}
-                          onUploadComplete={() => {
-                            toast.success('Documento enviado com sucesso');
-                            fetchDocumentCount();
-                            onSuccess?.();
-                          }}
-                          label="Comprovante de Residência"
-                        />
-                      </div>
-                    </div>
                   ) : (
                     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
                       <div className="px-4 py-5 sm:px-6">
@@ -516,7 +471,7 @@ const UnifiedMotoristaModal = ({
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               CNH
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                               {motorista.documento_motorista?.[0]?.foto_cnh ? (
                                 <div className="flex items-center">
                                   <button
@@ -526,6 +481,16 @@ const UnifiedMotoristaModal = ({
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(motorista.documento_motorista?.[0]?.foto_cnh || null) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
+                                  {!isPdf(motorista.documento_motorista?.[0]?.foto_cnh || null) && (
+                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={motorista.documento_motorista?.[0]?.foto_cnh || ''} 
+                                        alt="CNH Preview" 
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() => setActiveDocument(motorista.documento_motorista?.[0]?.foto_cnh || null)}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
@@ -536,7 +501,7 @@ const UnifiedMotoristaModal = ({
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               Comprovante de Residência
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                               {motorista.documento_motorista?.[0]?.foto_comprovante_residencia ? (
                                 <div className="flex items-center">
                                   <button
@@ -546,6 +511,16 @@ const UnifiedMotoristaModal = ({
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
+                                  {!isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null) && (
+                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={motorista.documento_motorista?.[0]?.foto_comprovante_residencia || ''} 
+                                        alt="Comprovante Preview" 
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() => setActiveDocument(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null)}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
