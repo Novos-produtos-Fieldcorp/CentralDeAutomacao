@@ -38,7 +38,6 @@ const VeiculosAgregados = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [phoneSearch, setPhoneSearch] = useState('');
   const [sortConfig] = useState<{
     key: keyof VeiculoWithMotorista;
     direction: 'asc' | 'desc';
@@ -46,8 +45,6 @@ const VeiculosAgregados = () => {
 
   // Aumentado o delay do debounce de 500ms para 1000ms para alinhar com outros componentes
   const debouncedSearchTerm = useDebounce(searchTerm, 1000);
-  const debouncedPhoneSearch = useDebounce(phoneSearch, 1000);
-
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -91,14 +88,14 @@ const VeiculosAgregados = () => {
         setInitialLoading(false);
       }
     };
-    if (currentPage === 1 && pageSize === 100 && debouncedSearchTerm === '' && debouncedPhoneSearch === '') {
+    if (currentPage === 1 && pageSize === 100 && debouncedSearchTerm === '') {
       // Só mostra o loading inicial na primeira montagem
       init();
     } else {
       fetchVeiculos();
       fetchMotoristas();
     }
-  }, [currentPage, pageSize, debouncedSearchTerm, debouncedPhoneSearch]);
+  }, [currentPage, pageSize, debouncedSearchTerm]);
 
   useEffect(() => {
     const handleClick = () => {
@@ -120,7 +117,7 @@ const VeiculosAgregados = () => {
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
       
-      // Buscar motoristas contratados filtrando por telefone, se necessário
+      // Buscar motoristas contratados
       let motoristasQuery = supabase
         .from('motorista')
         .select('motorista_id')
@@ -128,10 +125,6 @@ const VeiculosAgregados = () => {
         .eq('st_cadastro', 'contratado')
         .eq('funcao', 'Agregado');
         
-      if (phoneSearch) {
-        motoristasQuery = motoristasQuery.ilike('telefone', `%${phoneSearch}%`);
-      }
-      
       const { data: motoristasData, error: motoristasError } = await motoristasQuery;
       
       if (motoristasError) {
@@ -442,20 +435,6 @@ const VeiculosAgregados = () => {
                 autoComplete="off"
               />
               <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            </div>
-          </div>
-
-          <div className="relative w-full md:w-auto flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Buscar por telefone..."
-                value={phoneSearch}
-                onChange={(e) => setPhoneSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                autoComplete="off"
-              />
-              <Phone className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             </div>
           </div>
 
