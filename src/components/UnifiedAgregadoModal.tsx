@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
-  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare 
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
+  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare } from 'lucide-react';
 import type { 
   DocumentoMotorista, 
   Veiculo, 
@@ -48,15 +46,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [ajudantesCount, setAjudantesCount] = useState(0);
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
   const [hasComentario, setHasComentario] = useState(false);
-  const [documentPreview, setDocumentPreview] = useState<{
-    cnh: string | null,
-    comprovante: string | null,
-    crv: string | null
-  }>({
-    cnh: null,
-    comprovante: null,
-    crv: null
-  });
 
   useEffect(() => {
     if (isOpen && motorista) {
@@ -132,23 +121,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
 
       if (documentoError) throw documentoError;
       setDocumento(documentoData);
-      
-      // Set document previews
-      if (documentoData) {
-        setDocumentPreview(prev => ({
-          ...prev,
-          cnh: documentoData.foto_cnh,
-          comprovante: documentoData.foto_comprovante_residencia
-        }));
-      }
-      
-      // Set CRV preview if available
-      if (veiculoData?.documento_veiculo?.[0]?.foto_crv) {
-        setDocumentPreview(prev => ({
-          ...prev,
-          crv: veiculoData.documento_veiculo[0].foto_crv
-        }));
-      }
 
       // Fetch endereco
       const { data: enderecoData, error: enderecoError } = await supabase
@@ -545,17 +517,18 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               Rastreador
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                              {veiculo.possui_rastreador ? (
-                                <div className="flex items-center">
-                                  <CheckCircle2 className="w-5 h-5 text-green-500 mr-2" />
-                                  <span>Sim - {veiculo.marca_rastreador || 'Marca não informada'}</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center">
-                                  <XCircle className="w-5 h-5 text-red-500 mr-2" />
-                                  <span>Não</span>
-                                </div>
+                            <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                veiculo.possui_rastreador 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                              }`}>
+                                {veiculo.possui_rastreador ? 'Sim' : 'Não'}
+                              </span>
+                              {veiculo.possui_rastreador && veiculo.marca_rastreador && (
+                                <span className="ml-2 text-gray-500 dark:text-gray-400">
+                                  Marca: {veiculo.marca_rastreador}
+                                </span>
                               )}
                             </dd>
                           </div>
@@ -626,9 +599,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                         <DocumentUploader
                           documentType="cnh"
                           motorista_id={motorista.motorista_id}
-                          currentUrl={documentPreview.cnh}
-                          onUploadComplete={(url) => {
-                            setDocumentPreview(prev => ({ ...prev, cnh: url }));
+                          onUploadComplete={() => {
                             toast.success('Documento enviado com sucesso');
                             fetchAgregadoDetails();
                             onSuccess?.();
@@ -638,9 +609,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                         <DocumentUploader
                           documentType="comprovante_residencia"
                           motorista_id={motorista.motorista_id}
-                          currentUrl={documentPreview.comprovante}
-                          onUploadComplete={(url) => {
-                            setDocumentPreview(prev => ({ ...prev, comprovante: url }));
+                          onUploadComplete={() => {
                             toast.success('Documento enviado com sucesso');
                             fetchAgregadoDetails();
                             onSuccess?.();
@@ -649,12 +618,13 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                         />
                       </div>
                       
-                      {/* CRV Document Upload Section */}
+                      {/* Vehicle Document Section */}
                       {veiculo && (
                         <div className="mt-6">
                           <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
                             Documentos do Veículo
                           </h4>
+                          
                           <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
                             <div className="grid grid-cols-3 gap-4">
                               <div>
@@ -672,49 +642,53 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             </div>
                           </div>
                           
-                          <div className="mt-4">
-                            <DocumentUploader
-                              documentType="cnh" // Reusing the same component but for CRV
-                              motorista_id={motorista.motorista_id}
-                              currentUrl={documentPreview.crv}
-                              onUploadComplete={async (url) => {
-                                try {
-                                  setDocumentPreview(prev => ({ ...prev, crv: url }));
-                                  
-                                  // Check if document record exists
-                                  const { data: existingDoc } = await supabase
-                                    .from('documento_veiculo')
-                                    .select('*')
-                                    .eq('veiculo_id', veiculo.veiculo_id)
-                                    .single();
+                          <DocumentUploader
+                            documentType="cnh" // Reusing the same component but for CRV
+                            motorista_id={motorista.motorista_id}
+                            onUploadComplete={(url) => {
+                              // Handle CRV upload
+                              if (url && veiculo.veiculo_id) {
+                                // Check if document record exists
+                                supabase
+                                  .from('documento_veiculo')
+                                  .select('id_documento_veiculo')
+                                  .eq('veiculo_id', veiculo.veiculo_id)
+                                  .maybeSingle()
+                                  .then(({ data, error }) => {
+                                    if (error && error.code !== 'PGRST116') {
+                                      throw error;
+                                    }
                                     
-                                  if (existingDoc) {
-                                    // Update existing record
-                                    await supabase
-                                      .from('documento_veiculo')
-                                      .update({ foto_crv: url })
-                                      .eq('id_documento_veiculo', existingDoc.id_documento_veiculo);
-                                  } else {
-                                    // Create new record
-                                    await supabase
-                                      .from('documento_veiculo')
-                                      .insert({
-                                        veiculo_id: veiculo.veiculo_id,
-                                        foto_crv: url
-                                      });
-                                  }
-                                  
-                                  toast.success('CRV enviado com sucesso');
-                                  fetchAgregadoDetails();
-                                  onSuccess?.();
-                                } catch (error) {
-                                  console.error('Erro ao salvar CRV:', error);
-                                  toast.error('Erro ao salvar CRV');
-                                }
-                              }}
-                              label="CRV Digital"
-                            />
-                          </div>
+                                    if (data) {
+                                      // Update existing record
+                                      return supabase
+                                        .from('documento_veiculo')
+                                        .update({ foto_crv: url })
+                                        .eq('id_documento_veiculo', data.id_documento_veiculo);
+                                    } else {
+                                      // Create new record
+                                      return supabase
+                                        .from('documento_veiculo')
+                                        .insert({
+                                          veiculo_id: veiculo.veiculo_id,
+                                          foto_crv: url
+                                        });
+                                    }
+                                  })
+                                  .then(({ error }) => {
+                                    if (error) throw error;
+                                    toast.success('Documento do veículo enviado com sucesso');
+                                    fetchAgregadoDetails();
+                                    onSuccess?.();
+                                  })
+                                  .catch((error) => {
+                                    console.error('Error saving vehicle document:', error);
+                                    toast.error('Erro ao salvar documento do veículo');
+                                  });
+                              }
+                            }}
+                            label="CRV Digital"
+                          />
                         </div>
                       )}
                     </div>
@@ -731,7 +705,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               CNH
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                               {documento?.foto_cnh ? (
                                 <div className="flex items-center">
                                   <button
@@ -741,8 +715,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(documento.foto_cnh) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
-                                  
-                                  {/* Preview thumbnail */}
                                   {!isPdf(documento.foto_cnh) && (
                                     <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
                                       <img 
@@ -763,7 +735,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               Comprovante de Residência
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                               {documento?.foto_comprovante_residencia ? (
                                 <div className="flex items-center">
                                   <button
@@ -773,8 +745,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(documento.foto_comprovante_residencia) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
-                                  
-                                  {/* Preview thumbnail */}
                                   {!isPdf(documento.foto_comprovante_residencia) && (
                                     <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
                                       <img 
@@ -796,7 +766,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                 CRV do Veículo
                               </dt>
-                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                                 <div className="flex items-center">
                                   <button
                                     onClick={() => openDocumentInNewTab(veiculo.documento_veiculo[0].foto_crv)}
@@ -805,8 +775,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(veiculo.documento_veiculo[0].foto_crv) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
-                                  
-                                  {/* Preview thumbnail */}
                                   {!isPdf(veiculo.documento_veiculo[0].foto_crv) && (
                                     <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
                                       <img 
