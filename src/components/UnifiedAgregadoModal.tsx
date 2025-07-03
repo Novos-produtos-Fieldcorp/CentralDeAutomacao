@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
-  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
+  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare 
+} from 'lucide-react';
 import type { 
   DocumentoMotorista, 
   Veiculo, 
@@ -211,7 +213,8 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   if (!isOpen || !motorista) return null;
 
   // Ensure we have the motorista data
-  const nome = motorista.nome || '';
+  // Use nome_motorista if available (from the view), otherwise fall back to nome
+  const nome = motorista.nome_motorista || motorista.nome || '';
   const cpf = motorista.cpf || '';
 
   const openDocumentInNewTab = (url: string | null) => {
@@ -518,17 +521,17 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               Rastreador
                             </dt>
                             <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                veiculo.possui_rastreador 
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
+                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                veiculo.possui_rastreador
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
                                   : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
                               }`}>
                                 {veiculo.possui_rastreador ? 'Sim' : 'Não'}
                               </span>
                               {veiculo.possui_rastreador && veiculo.marca_rastreador && (
-                                <span className="ml-2 text-gray-500 dark:text-gray-400">
+                                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                   Marca: {veiculo.marca_rastreador}
-                                </span>
+                                </p>
                               )}
                             </dd>
                           </div>
@@ -617,80 +620,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                           label="Comprovante de Residência"
                         />
                       </div>
-                      
-                      {/* Vehicle Document Section */}
-                      {veiculo && (
-                        <div className="mt-6">
-                          <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                            Documentos do Veículo
-                          </h4>
-                          
-                          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
-                            <div className="grid grid-cols-3 gap-4">
-                              <div>
-                                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</span>
-                                <p className="text-base font-semibold text-gray-900 dark:text-white uppercase">{veiculo.placa}</p>
-                              </div>
-                              <div>
-                                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Marca</span>
-                                <p className="text-base font-semibold text-gray-900 dark:text-white">{veiculo.marca}</p>
-                              </div>
-                              <div>
-                                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Modelo</span>
-                                <p className="text-base font-semibold text-gray-900 dark:text-white">{veiculo.tipo}</p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <DocumentUploader
-                            documentType="cnh" // Reusing the same component but for CRV
-                            motorista_id={motorista.motorista_id}
-                            onUploadComplete={(url) => {
-                              // Handle CRV upload
-                              if (url && veiculo.veiculo_id) {
-                                // Check if document record exists
-                                supabase
-                                  .from('documento_veiculo')
-                                  .select('id_documento_veiculo')
-                                  .eq('veiculo_id', veiculo.veiculo_id)
-                                  .maybeSingle()
-                                  .then(({ data, error }) => {
-                                    if (error && error.code !== 'PGRST116') {
-                                      throw error;
-                                    }
-                                    
-                                    if (data) {
-                                      // Update existing record
-                                      return supabase
-                                        .from('documento_veiculo')
-                                        .update({ foto_crv: url })
-                                        .eq('id_documento_veiculo', data.id_documento_veiculo);
-                                    } else {
-                                      // Create new record
-                                      return supabase
-                                        .from('documento_veiculo')
-                                        .insert({
-                                          veiculo_id: veiculo.veiculo_id,
-                                          foto_crv: url
-                                        });
-                                    }
-                                  })
-                                  .then(({ error }) => {
-                                    if (error) throw error;
-                                    toast.success('Documento do veículo enviado com sucesso');
-                                    fetchAgregadoDetails();
-                                    onSuccess?.();
-                                  })
-                                  .catch((error) => {
-                                    console.error('Error saving vehicle document:', error);
-                                    toast.error('Erro ao salvar documento do veículo');
-                                  });
-                              }
-                            }}
-                            label="CRV Digital"
-                          />
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
