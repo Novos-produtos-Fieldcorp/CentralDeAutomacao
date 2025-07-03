@@ -1,9 +1,19 @@
 /// <reference types="cypress" />
 
 describe('Contratações - Dashboard', () => {
-  it('deve autenticar e acessar a página Dashboard', () => {
+  beforeEach(() => {
     cy.loginWiseApp();
     cy.visit('/?account_id=1#/motoristas/dashboard');
-    cy.contains('Contratações', { timeout: 1000 }).should('exist');
+  });
+
+  it('deve exibir cards de estatísticas', () => {
+    const cards = ['Motoristas', 'Agregados', 'Documentação', 'Qualificados', 'Contratos Ativos', 'Rejeitados'];
+    cards.forEach(card => {
+      cy.contains(card).should('exist');
+    });
+  });
+
+  it('deve exibir clientes contratados (se houver)', () => {
+    cy.contains('Clientes Contratados').should('exist');
   });
 }); 
