@@ -12,10 +12,10 @@ import type {
   PessoaJuridicaDonoVeiculo
 } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
-import { supabase } from '../lib/supabase';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
 import AddAjudanteModal from './AddAjudanteModal';
 import EditAjudanteModal from './EditAjudanteModal';
@@ -147,31 +147,6 @@ const UnifiedMotoristaModal = ({
 
   const isPdf = (url: string | null) => url?.toLowerCase().endsWith('.pdf');
 
-  const handleEditAjudante = (ajudante: any) => {
-    setSelectedAjudante(ajudante);
-    setIsEditAjudanteModalOpen(true);
-  };
-
-  const handleDeleteAjudante = (ajudante: any) => {
-    setSelectedAjudante(ajudante);
-    setIsDeleteAjudanteModalOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!selectedAjudante) return;
-    
-    try {
-      // Add your delete logic here
-      toast.success('Ajudante excluído com sucesso!');
-      setIsDeleteAjudanteModalOpen(false);
-      setSelectedAjudante(null);
-      onSuccess?.();
-    } catch (error) {
-      console.error('Erro ao excluir ajudante:', error);
-      toast.error('Erro ao excluir ajudante');
-    }
-  };
-  
   return (
     <div className="fixed inset-0 z-50">
       {/* Overlay */}
@@ -299,7 +274,7 @@ const UnifiedMotoristaModal = ({
                 </button>
               </nav>
             </div>
-            
+
             {/* Content */}
             <div className="p-6">
               {activeTab === 'details' ? (
@@ -471,7 +446,7 @@ const UnifiedMotoristaModal = ({
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               CNH
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                               {motorista.documento_motorista?.[0]?.foto_cnh ? (
                                 <div className="flex items-center">
                                   <button
@@ -481,6 +456,16 @@ const UnifiedMotoristaModal = ({
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(motorista.documento_motorista?.[0]?.foto_cnh || null) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
+                                  {!isPdf(motorista.documento_motorista?.[0]?.foto_cnh || null) && (
+                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={motorista.documento_motorista?.[0]?.foto_cnh || ''} 
+                                        alt="CNH Preview" 
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() => setActiveDocument(motorista.documento_motorista?.[0]?.foto_cnh || null)}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
@@ -491,7 +476,7 @@ const UnifiedMotoristaModal = ({
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               Comprovante de Residência
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                               {motorista.documento_motorista?.[0]?.foto_comprovante_residencia ? (
                                 <div className="flex items-center">
                                   <button
@@ -501,6 +486,16 @@ const UnifiedMotoristaModal = ({
                                     <FileText className="w-5 h-5 mr-2" />
                                     {isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
+                                  {!isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null) && (
+                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={motorista.documento_motorista?.[0]?.foto_comprovante_residencia || ''} 
+                                        alt="Comprovante Preview" 
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() => setActiveDocument(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null)}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
