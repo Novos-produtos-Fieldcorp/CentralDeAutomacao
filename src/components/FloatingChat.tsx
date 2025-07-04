@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {Send, Loader2, AlertCircle, WifiOff, X, Mic, Paperclip, Minus, Square, MessageSquare, File } from 'lucide-react';
+import {Send, Loader2, AlertCircle, WifiOff, X, Mic, Paperclip, Minus, Square, MessageSquare, File, ArrowLeft } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
@@ -1497,7 +1497,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end">
       {!minimized && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-[800px] h-[600px] flex mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-[800px] h-[600px] flex mb-4 relative">
           {/* History Sidebar */}
           <div className="w-64 border-r dark:border-gray-700 flex flex-col">
             <div className="p-4 border-b dark:border-gray-700">
@@ -1631,9 +1631,18 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             {showInboxSelector && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                    Selecione um Inbox para iniciar a conversa
-                  </h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      Selecione um Inbox para iniciar a conversa
+                    </h3>
+                    <button
+                      onClick={() => setShowInboxSelector(false)}
+                      className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                      aria-label="Fechar"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
                   <div className="space-y-3">
                     {availableInboxes.map((inbox) => (
                       <button
@@ -1797,4 +1806,4 @@ export const initChat = (phoneNumber: string, contactName?: string) => {
   } else {
     console.error('Chat function not available');
   }
-}; 
+};
