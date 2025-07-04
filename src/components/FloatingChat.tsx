@@ -1633,7 +1633,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      Selecione um Inbox para iniciar a conversa
+                      Selecione uma Caixa de Entrada
                     </h3>
                     <button
                       onClick={() => setShowInboxSelector(false)}
