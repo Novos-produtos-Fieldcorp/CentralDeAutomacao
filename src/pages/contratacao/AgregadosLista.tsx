@@ -798,7 +798,10 @@ const AgregadosLista = () => {
     }
   };
 
-
+  const handleBulkAction = (actionType: 'status' | 'client') => {
+    setBulkActionType(actionType);
+    setIsBulkActionsModalOpen(true);
+  };
 
   const {
     currentPage,
@@ -1087,7 +1090,7 @@ const AgregadosLista = () => {
                     </button>
                   </div>
                 </div>
-                <div className="max-h-48 overflow-y-auto">
+                <div className="max-h-48 overflow-y-auto py-1">
                   {/* No Client Option */}
                   <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                     <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
@@ -1181,7 +1184,7 @@ const AgregadosLista = () => {
                     </button>
                   </div>
                 </div>
-                <div className="max-h-48 overflow-y-auto">
+                <div className="max-h-48 overflow-y-auto py-1">
                   {cidades.map((cidade, index) => (
                     <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                       <label className="flex items-center space-x-2 cursor-pointer">
@@ -1240,7 +1243,7 @@ const AgregadosLista = () => {
                     </button>
                   </div>
                 </div>
-                <div className="max-h-48 overflow-y-auto">
+                <div className="max-h-48 overflow-y-auto py-1">
                   <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input
