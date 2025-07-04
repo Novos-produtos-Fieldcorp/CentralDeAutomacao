@@ -412,11 +412,13 @@ const UnifiedMotoristaModal = ({
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                             CEP
-                          </dt>
-                          <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.nr_cep ? formatCEP(motorista.nr_cep) : 'Não informado'}
-                          </dd>
-                        </div>
+                       <optgroup label="Status">
+                         {statusOptions.map(option => (
+                           <option key={option.value} value={option.value}>
+                             {option.label}
+                           </option>
+                         ))}
+                       </optgroup>
                       </dl>
                     </div>
                   </div>
