@@ -132,16 +132,22 @@ const ContratacaoDashboard = () => {
         clientesContratados['Sem Cliente'] = { total: 0, motoristas: 0, agregados: 0, cliente_id: 0 };
 
         // Calculate contractors by client using total data
+        const clientesIdsDaCompany = new Set((clientesData || []).map(c => c.cliente_id));
         [...totalMotoristasData, ...totalAgregadosData]
           .filter(m => m.st_cadastro === 'contratado')
           .forEach(curr => {
             const clientName = curr.cliente?.nome || 'Sem Cliente';
             const clientId = curr.cliente_id || 0;
-            
+
+            // Só processa se for cliente da company OU "Sem Cliente"
+            if (clientName !== 'Sem Cliente' && !clientesIdsDaCompany.has(clientId)) {
+              return;
+            }
+
             if (!clientesContratados[clientName]) {
-              clientesContratados[clientName] = { 
-                total: 0, 
-                motoristas: 0, 
+              clientesContratados[clientName] = {
+                total: 0,
+                motoristas: 0,
                 agregados: 0,
                 cliente_id: clientId
               };

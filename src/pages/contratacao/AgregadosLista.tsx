@@ -191,7 +191,11 @@ const AgregadosLista = () => {
     agregado: null,
   });
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
+const statusButtonRefs = useRef<{ [key: number]: HTMLButtonElement | null }>({});
+const [statusDropdownCoords, setStatusDropdownCoords] = useState<{ [key: number]: { left: number; top: number } }>({});
   const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
+const clienteButtonRefs = useRef<{ [key: number]: HTMLButtonElement | null }>({});
+const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: number]: { left: number; top: number } }>({});
   const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [roleChangeModal, setRoleChangeModal] = useState<{
@@ -208,7 +212,22 @@ const AgregadosLista = () => {
 
   const toggleClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
     e.stopPropagation();
-    setClienteDropdownOpen(prev => prev === motoristaId ? null : motoristaId);
+    if (clienteDropdownOpen === motoristaId) {
+      setClienteDropdownOpen(null);
+    } else {
+      const btn = clienteButtonRefs.current[motoristaId];
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        setClienteDropdownCoords(prev => ({
+          ...prev,
+          [motoristaId]: {
+            left: rect.left,
+            top: rect.bottom + 4
+          }
+        }));
+      }
+      setClienteDropdownOpen(motoristaId);
+    }
   };
 
   const [customDateRange, setCustomDateRange] = useState<{
@@ -461,7 +480,23 @@ const AgregadosLista = () => {
   // Função para alternar o dropdown de status
   const toggleStatusDropdown = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
-    setStatusDropdownOpen(prev => prev === id ? null : id);
+    if (statusDropdownOpen === id) {
+      setStatusDropdownOpen(null);
+    } else {
+      // calcula a posição do botão
+      const btn = statusButtonRefs.current[id];
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        setStatusDropdownCoords(prev => ({
+          ...prev,
+          [id]: {
+            left: rect.left,
+            top: rect.bottom + 4 // um pequeno offset para não colar
+          }
+        }));
+      }
+      setStatusDropdownOpen(id);
+    }
   };
 
   const confirmDelete = async () => {
@@ -930,7 +965,7 @@ const AgregadosLista = () => {
             </div>
             
             {showStatusDropdown && (
-              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-y-auto">
                 <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
                   <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
                     <span>Selecionar status</span>
@@ -1072,8 +1107,15 @@ const AgregadosLista = () => {
             
             {showClienteDropdown && !clientesLoading && (
               <div 
-                className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto"
+                className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-32 overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
+                style={clienteDropdownCoords[agregado.motorista_id || 0] ? {
+                  position: 'fixed',
+                  left: clienteDropdownCoords[agregado.motorista_id || 0].left,
+                  top: clienteDropdownCoords[agregado.motorista_id || 0].top,
+                  minWidth: 192,
+                  zIndex: 50
+                } : {}}
               >
                 <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
                   <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -1463,6 +1505,7 @@ const AgregadosLista = () => {
                         <div className="relative">
                           <div className="flex items-center">
                             <button
+                              ref={el => statusButtonRefs.current[agregado.motorista_id || 0] = el}
                               onClick={(e) => toggleStatusDropdown(e, agregado.motorista_id || 0)}
                               className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                 !agregado.st_cadastro ? 'bg-gray-100 dark:bg-gray-700' :
@@ -1491,9 +1534,19 @@ const AgregadosLista = () => {
                           </div>
                           
                           {statusDropdownOpen === agregado.motorista_id && (
-                            <div 
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
-                              onClick={(e) => e.stopPropagation()}
+                            <div
+                              style={statusDropdownCoords[agregado.motorista_id || 0] ? {
+                                 position: 'fixed',
+                                 left: statusDropdownCoords[agregado.motorista_id || 0].left,
+                                 top: statusDropdownCoords[agregado.motorista_id || 0].top,
+                                 minWidth: 180,
+                                 zIndex: 50
+                               } : {}}
+                              className="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
+                              onClick={e => e.stopPropagation()}
+                              onMouseLeave={() => setStatusDropdownOpen(null)}
+                              tabIndex={0}
+                              onBlur={() => setStatusDropdownOpen(null)}
                             >
                               <div className="py-1">
                                 <button
@@ -1592,6 +1645,7 @@ const AgregadosLista = () => {
                         <div className="relative">
                           <div className="flex items-center">
                             <button
+                              ref={el => clienteButtonRefs.current[agregado.motorista_id || 0] = el}
                               onClick={(e) => toggleClienteDropdown(e, agregado.motorista_id || 0)}
                               className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                 agregado.cliente_id 
@@ -1610,8 +1664,18 @@ const AgregadosLista = () => {
                           
                           {clienteDropdownOpen === agregado.motorista_id && (
                             <div 
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
+                              style={clienteDropdownCoords[agregado.motorista_id || 0] ? {
+                                position: 'fixed',
+                                left: clienteDropdownCoords[agregado.motorista_id || 0].left,
+                                top: clienteDropdownCoords[agregado.motorista_id || 0].top,
+                                minWidth: 192,
+                                zIndex: 50
+                              } : {}}
+                              onMouseLeave={() => setClienteDropdownOpen(null)}
+                              tabIndex={0}
+                              onBlur={() => setClienteDropdownOpen(null)}
                             >
                               <div className="py-1">
                                 <button
