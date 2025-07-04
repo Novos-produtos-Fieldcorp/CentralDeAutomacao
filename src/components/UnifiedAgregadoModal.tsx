@@ -267,11 +267,13 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
                     <Truck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <div className="flex flex-col">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                      {nome}
-                    </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                       <optgroup label="Status">
+                         {statusOptions.map(option => (
+                           <option key={option.value} value={option.value}>
+                             {option.label}
+                           </option>
+                         ))}
+                       </optgroup>
                       Agregado • {formatCPF(cpf)}
                     </p>
                   </div>
