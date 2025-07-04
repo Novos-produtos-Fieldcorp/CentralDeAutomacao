@@ -135,25 +135,22 @@ const ContratacaoDashboard = () => {
         [...totalMotoristasData, ...totalAgregadosData]
           .filter(m => m.st_cadastro === 'contratado')
           .forEach(curr => {
-            // Only process if the motorista belongs to the current company
-            if (curr.company_id === companyId) {
-              const clientName = curr.cliente?.nome || 'Sem Cliente';
-              const clientId = curr.cliente_id || 0;
+            const clientName = curr.cliente?.nome || 'Sem Cliente';
+            const clientId = curr.cliente_id || 0;
             
-              if (!clientesContratados[clientName]) {
-                clientesContratados[clientName] = { 
-                  total: 0, 
-                  motoristas: 0, 
-                  agregados: 0,
-                  cliente_id: clientId
-                };
-              }
-              clientesContratados[clientName].total++;
-              if (curr.funcao === 'Motorista') {
-                clientesContratados[clientName].motoristas++;
-              } else if (curr.funcao === 'Agregado') {
-                clientesContratados[clientName].agregados++;
-              }
+            if (!clientesContratados[clientName]) {
+              clientesContratados[clientName] = { 
+                total: 0, 
+                motoristas: 0, 
+                agregados: 0,
+                cliente_id: clientId
+              };
+            }
+            clientesContratados[clientName].total++;
+            if (curr.funcao === 'Motorista') {
+              clientesContratados[clientName].motoristas++;
+            } else if (curr.funcao === 'Agregado') {
+              clientesContratados[clientName].agregados++;
             }
           });
 
@@ -177,7 +174,7 @@ const ContratacaoDashboard = () => {
             motoristas: data.motoristas,
             agregados: data.agregados,
             cliente_id: data.cliente_id,
-            percentual: totalContratados > 0 ? Math.round((data.total / totalContratados) * 100 * 10) / 10 : 0
+            percentual: totalContratados > 0 ? (data.total / totalContratados) * 100 : 0
           }))
           .sort((a, b) => b.total - a.total);
 
