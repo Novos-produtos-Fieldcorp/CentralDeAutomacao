@@ -1186,7 +1186,7 @@ const Contratados = () => {
               onClick={() => setShowStatusDropdown(!showStatusDropdown)}
               className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
             >
-              <span>{getFilterButtonText('status')}</span>
+              <span className="truncate w-full block">{getFilterButtonText('status')}</span>
               <div className="flex items-center">
                 {statusFilter.length > 0 && (
                   <button
@@ -1204,7 +1204,7 @@ const Contratados = () => {
             </button>
             <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             {showStatusDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
                 <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
                   <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os status</span>
                   <button 
@@ -1268,7 +1268,7 @@ const Contratados = () => {
               onClick={() => setShowClienteDropdown(!showClienteDropdown)}
               className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
             >
-              <span>{getFilterButtonText('cliente')}</span>
+              <span className="truncate w-full block">{getFilterButtonText('cliente')}</span>
               <div className="flex items-center">
                 {clienteFilter.length > 0 && (
                   <button
@@ -1291,7 +1291,7 @@ const Contratados = () => {
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
             {showClienteDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
                 <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
                   <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os clientes</span>
                   <button 
@@ -1343,7 +1343,7 @@ const Contratados = () => {
               onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
               className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
             >
-              <span>{getFilterButtonText('cidade')}</span>
+              <span className="truncate w-full block">{getFilterButtonText('cidade')}</span>
               <div className="flex items-center">
                 {cidadeFilter.length > 0 && (
                   <button
@@ -1361,7 +1361,7 @@ const Contratados = () => {
             </button>
             <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             {showCidadeDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
                 <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
                   <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as cidades</span>
                   <button 
@@ -1400,7 +1400,7 @@ const Contratados = () => {
               onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
               className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
             >
-              <span>{getFilterButtonText('tipoVeiculo')}</span>
+              <span className="truncate w-full block">{getFilterButtonText('tipoVeiculo')}</span>
               <div className="flex items-center">
                 {tipoVeiculoFilter.length > 0 && (
                   <button
@@ -1418,7 +1418,7 @@ const Contratados = () => {
             </button>
             <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             {showTipoVeiculoDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
                 <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
                   <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os tipos de veículo</span>
                   <button 
@@ -1644,8 +1644,11 @@ const Contratados = () => {
                           
                           {statusDropdownOpen === motorista.motorista_id && (
                             <div 
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
+                              onMouseLeave={() => setStatusDropdownOpen(null)}
+                              tabIndex={0}
+                              onBlur={() => setStatusDropdownOpen(null)}
                             >
                               <div className="py-1">
                                 <button
@@ -1762,8 +1765,11 @@ const Contratados = () => {
                           
                           {clienteDropdownOpen === motorista.motorista_id && (
                             <div 
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
+                              onMouseLeave={() => setClienteDropdownOpen(null)}
+                              tabIndex={0}
+                              onBlur={() => setClienteDropdownOpen(null)}
                             >
                               <div className="py-1">
                                 <button

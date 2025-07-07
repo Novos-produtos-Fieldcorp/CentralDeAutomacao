@@ -1109,13 +1109,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
               <div 
                 className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-32 overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
-                style={clienteDropdownCoords[agregado.motorista_id || 0] ? {
-                  position: 'fixed',
-                  left: clienteDropdownCoords[agregado.motorista_id || 0].left,
-                  top: clienteDropdownCoords[agregado.motorista_id || 0].top,
-                  minWidth: 192,
-                  zIndex: 50
-                } : {}}
+                
               >
                 <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
                   <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -1258,9 +1252,9 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                 className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
               >
-                <div className="flex-1 truncate text-left">
-                  {tipoVeiculoFilter.length === 0 ? 'Todos os tipos' : `${tipoVeiculoFilter.length} selecionado(s)`}
-                </div>
+                <span className="truncate w-full block text-left">
+  {tipoVeiculoFilter.length === 0 ? 'Todos os tipos' : `${tipoVeiculoFilter.length} selecionado(s)`}
+</span>
               </button>
               <Truck className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -1891,7 +1885,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
           cpf: selectedAgregado.cpf || '',
           dt_nascimento: selectedAgregado.dt_nascimento || '',
           genero: selectedAgregado.genero || '',
-          telefone: selectedAgregado.telefone ? Number(selectedAgregado.telefone) : null,
+          telefone: selectedAgregado.telefone !== null && selectedAgregado.telefone !== undefined && selectedAgregado.telefone !== '' ? Number(selectedAgregado.telefone) : null,
           email: selectedAgregado.email || null,
           funcao: selectedAgregado.funcao || '',
           nome: selectedAgregado.nome || selectedAgregado.nome_motorista || '',
@@ -2010,7 +2004,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
             cpf: selectedAgregado.cpf,
             dt_nascimento: selectedAgregado.dt_nascimento,
             genero: selectedAgregado.genero,
-            telefone: selectedAgregado.telefone ? Number(selectedAgregado.telefone) : null,
+            telefone: selectedAgregado.telefone !== null && selectedAgregado.telefone !== undefined && selectedAgregado.telefone !== '' ? Number(selectedAgregado.telefone) : null,
             email: selectedAgregado.email,
             funcao: selectedAgregado.funcao,
             nome: selectedAgregado.nome || selectedAgregado.nome_motorista || '',
