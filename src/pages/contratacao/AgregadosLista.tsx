@@ -585,16 +585,16 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
       newSelectedItems.add(id);
     }
     setSelectedItems(newSelectedItems);
-    
-    // Update selectAll state
-    setSelectAll(newSelectedItems.size === filteredAgregados.length);
+    // Atualiza o selectAll apenas se todos os exibidos estiverem selecionados
+    const allFilteredIds = filteredAgregados.map(a => a.motorista_id).filter((id): id is number => !!id);
+    setSelectAll(allFilteredIds.every(fid => newSelectedItems.has(fid)) && allFilteredIds.length > 0);
   };
 
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      const allIds = new Set(agregados.map(a => a.motorista_id).filter((id): id is number => !!id));
+      const allIds = new Set(filteredAgregados.map(a => a.motorista_id).filter((id): id is number => !!id));
       setSelectedItems(allIds);
     }
     setSelectAll(!selectAll);
@@ -984,12 +984,17 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                 <div className="max-h-48 overflow-y-auto">
                   {statusOptions.map((status) => (
                     <div key={status.value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <label className="flex items-center space-x-2 cursor-pointer">
+                      <label 
+                        className="flex items-center space-x-2 cursor-pointer" 
+                        onMouseDown={e => e.stopPropagation()} 
+                        onClick={e => e.stopPropagation()}
+                      >
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                           checked={statusFilter.includes(status.value)}
                           onChange={() => toggleStatus(status.value)}
+                          onClick={e => e.stopPropagation()}
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-200">{status.label}</span>
                       </label>
@@ -1010,7 +1015,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                 {!ativoFilter ? 'Todos (Ativos/Inativos)' : ativoFilter === 'active' ? 'Somente Ativos' : 'Somente Inativos'}
               </span>
               <div className="absolute inset-y-0 right-2 flex items-center">
-                <ChevronDown className="h-4 w-4 text-gray-400 transition-transform" />
+                <ChevronDown className="h-4 w-4 text-gray-400" />
               </div>
               <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </button>
@@ -1253,8 +1258,8 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                 onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
               >
                 <span className="truncate w-full block text-left">
-  {tipoVeiculoFilter.length === 0 ? 'Todos os tipos' : `${tipoVeiculoFilter.length} selecionado(s)`}
-</span>
+                  {tipoVeiculoFilter.length === 0 ? 'Todos os tipos' : `${tipoVeiculoFilter.length} selecionado(s)`}
+                </span>
               </button>
               <Truck className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -1449,8 +1454,8 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
-                          checked={selectedItems.has(agregado.motorista_id || 0)}
-                          onChange={() => handleSelectItem(agregado.motorista_id || 0)}
+                          checked={selectedItems.has(agregado.motorista_id)}
+                          onChange={() => handleSelectItem(agregado.motorista_id)}
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                       </td>
