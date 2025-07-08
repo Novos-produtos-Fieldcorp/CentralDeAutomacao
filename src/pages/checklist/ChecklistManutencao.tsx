@@ -240,7 +240,12 @@ const ChecklistManutencao = () => {
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-BR');
+    // Split the date string (YYYY-MM-DD) and rearrange to DD/MM/YYYY
+    const parts = date.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return date; // Return original if format is unexpected
   };
 
   const getStatusColor = (status_id: number) => {
@@ -353,7 +358,7 @@ const ChecklistManutencao = () => {
                           </span>
                           <span className="text-sm text-gray-500 dark:text-gray-400">
                             {alert.componentes.length} {alert.componentes.length === 1 ? 'problema' : 'problemas'}
-                          </span>
+                          {formatDate(reading.data)}
                         </div>
                       </div>
                     </div>
