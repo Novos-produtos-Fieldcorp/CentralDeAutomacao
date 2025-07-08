@@ -763,7 +763,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
                                       <span className="block font-semibold text-gray-900 dark:text-white">
                                         {motorista.nome_mae || 'Não informado'}
-                                      </span>
+                                      {motorista.dm_nome_mae || motorista.nome_mae || 'Não informado'}
                                     </div>
                                   </div>
                                 </div>

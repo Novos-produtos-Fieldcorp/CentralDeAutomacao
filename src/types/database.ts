@@ -40,6 +40,16 @@ export interface Motorista {
   gr_motorista_motivo?: string | null;
   empresa_motorista?: string | null;
   status_motorista?: string | null;
+  // Fields from documento_motorista
+  id_documento_motorista?: number | null;
+  dm_foto_cnh?: string | null;
+  foto_comprovante_residencia?: string | null;
+  nr_registro_cnh?: number | null;
+  categoria_cnh?: string | null;
+  validade_cnh?: string | null;
+  uf_cnh?: string | null;
+  dm_nome_pai?: string | null;
+  dm_nome_mae?: string | null;
   // Fields from vw_motoristas_completo view
   nr_end?: number | null;
   ds_complemento_end?: string | null;
