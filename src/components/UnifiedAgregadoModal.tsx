@@ -760,6 +760,51 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                           </div>
                           <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              Informações da CNH
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Número da CNH:</span>
+                                  <p className="text-base text-gray-900 dark:text-white">
+                                    {motorista.nr_registro !== null && motorista.nr_registro !== undefined ? motorista.nr_registro : 'Não informado'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Categoria:</span>
+                                  <p className="text-base text-gray-900 dark:text-white">
+                                    {motorista.categoria !== null && motorista.categoria !== undefined ? motorista.categoria : 'Não informada'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome do Pai:</span>
+                                  <p className="text-base text-gray-900 dark:text-white">
+                                    {motorista.nome_pai !== null && motorista.nome_pai !== undefined ? motorista.nome_pai : 'Não informado'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome da Mãe:</span>
+                                  <p className="text-base text-gray-900 dark:text-white">
+                                    {motorista.nome_mae !== null && motorista.nome_mae !== undefined ? motorista.nome_mae : 'Não informado'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Validade:</span>
+                                  <p className="text-base text-gray-900 dark:text-white">
+                                    {documentoMotorista?.validade_cnh ? formatDate(documentoMotorista.validade_cnh) : 'Não informada'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">UF:</span>
+                                  <p className="text-base text-gray-900 dark:text-white">
+                                    {documentoMotorista?.uf_cnh || 'Não informada'}
+                                  </p>
+                                </div>
+                              </div>
+                            </dd>
+                          </div>
+                          <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               Comprovante de Residência
                             </dt>
                             <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
