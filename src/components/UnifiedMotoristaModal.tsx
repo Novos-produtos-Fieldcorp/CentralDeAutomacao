@@ -1,21 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
-  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare 
+  X, User, Edit2, Users, ShieldAlert, MessageSquare, FileText, MapPin, ExternalLink
 } from 'lucide-react';
-import type { 
-  DocumentoMotorista, 
-  Veiculo, 
-  DocumentoVeiculo, 
-  Motorista,
-  PessoaFisicaDonoVeiculo,
-  PessoaJuridicaDonoVeiculo
-} from '../types/database';
-import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
-import DocumentoMotoristaForm from './DocumentoMotoristaForm';
-import DocumentUploader from './DocumentUploader';
-import toast from 'react-hot-toast';
+import { Motorista, DocumentoMotorista, DocumentoAjudante } from '../types/database';
 import { supabase } from '../lib/supabase';
+import { formatCPF, formatDate, formatPhone, formatCEP } from '../utils/format';
+import toast from 'react-hot-toast';
+import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import EditMotoristaModal from './EditMotoristaModal';
 import AddAjudanteModal from './AddAjudanteModal';
 import EditAjudanteModal from './EditAjudanteModal';
@@ -36,27 +27,28 @@ const UnifiedMotoristaModal = ({
   motorista, 
   onSuccess 
 }: UnifiedMotoristaModalProps) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
-  const [isEditingDocuments, setIsEditingDocuments] = useState(false);
-  const [activeDocument, setActiveDocument] = useState<string | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [endereco, setEndereco] = useState<any>(null);
-  const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
-  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
-  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
-  const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
-  const [selectedAjudante, setSelectedAjudante] = useState<DocumentoAjudante | null>(null);
-  const [documentCount, setDocumentCount] = useState(0);
-  const [ajudantesCount, setAjudantesCount] = useState(0);
-  const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
-  const [hasComentario, setHasComentario] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details'); // Used in the UI
+  const [isEditingDocuments, setIsEditingDocuments] = useState(false); // Used in the UI
+  const [activeDocument, setActiveDocument] = useState<string | null>(null); // Used in the UI
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Used in the UI
+  const [endereco, setEndereco] = useState<any>(null); // Used in the UI
+  const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false); // Used in the UI
+  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false); // Used in the UI
+  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null); // Used in the UI
+  const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false); // Used in the UI
+  const [selectedAjudante, setSelectedAjudante] = useState<DocumentoAjudante | null>(null); // Used in the UI
+  const [documentCount, setDocumentCount] = useState(0); // Used in the UI
+  const [ajudantesCount, setAjudantesCount] = useState(0); // Used in the UI
+  const [ajudantes, setAjudantes] = useState<DocumentoAjudante[]>([]);
+  const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0); // Used in the UI
+  const [hasComentario, setHasComentario] = useState(false); // Used in the UI
 
   useEffect(() => {
     if (isOpen && motorista) {
       fetchEndereco();
       fetchDocumentCount();
       fetchDocumentoMotorista();
-      fetchAjudantesCount();
+      fetchAjudantes();
       fetchGestaoRiscoCount();
       checkComentario();
     }
@@ -129,7 +121,11 @@ const UnifiedMotoristaModal = ({
           foto_comprovante_residencia,
           motorista_id,
           uf_cnh,
-          validade_cnh
+          validade_cnh,
+          nr_registro_cnh,
+          categoria_cnh,
+          nome_mae,
+          nome_pai
         `)
         .eq('motorista_id', motorista.motorista_id)
         .maybeSingle();
@@ -170,22 +166,26 @@ const UnifiedMotoristaModal = ({
     }
   };
 
-  const fetchAjudantesCount = async () => {
+  const fetchAjudantes = async () => {
     if (!motorista) return;
     
     try {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from('documento_ajudante')
-        .select('id_ajudante', { count: 'exact', head: true })
-        .eq('motorista_id', motorista.motorista_id);
+        .select('*')
+        .eq('motorista_id', motorista.motorista_id)
+        .order('nome', { ascending: true });
         
       if (error) throw error;
       
-      setAjudantesCount(count || 0);
+      setAjudantes(data || []);
+      setAjudantesCount(data?.length || 0);
     } catch (error) {
-      console.error('Error fetching ajudantes count:', error);
+      console.error('Error fetching ajudantes:', error);
     }
   };
+
+
 
   const fetchGestaoRiscoCount = async () => {
     if (!motorista) return;
@@ -241,26 +241,21 @@ const UnifiedMotoristaModal = ({
     setIsEditAjudanteModalOpen(true);
   };
 
-  const handleDeleteAjudante = (ajudante: any) => {
+  const handleDeleteAjudante = async (ajudante: DocumentoAjudante) => {
     setSelectedAjudante(ajudante);
     setIsDeleteAjudanteModalOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!selectedAjudante) return;
-    
-    try {
-      // Add your delete logic here
-      toast.success('Ajudante excluído com sucesso!');
-      setIsDeleteAjudanteModalOpen(false);
-      setSelectedAjudante(null);
-      onSuccess?.();
-    } catch (error) {
-      console.error('Erro ao excluir ajudante:', error);
-      toast.error('Erro ao excluir ajudante');
-    }
+  const handleAjudanteAdded = () => {
+    fetchAjudantes();
+    onSuccess?.();
   };
-  
+
+  const handleAjudanteUpdated = () => {
+    fetchAjudantes();
+    onSuccess?.();
+  };
+
   return (
     <div className="fixed inset-0 z-50">
       {/* Overlay */}
@@ -343,10 +338,12 @@ const UnifiedMotoristaModal = ({
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
                     Ajudantes
-                    {ajudantesCount > 0 && (
+                    {ajudantes.length > 0 ? (
                       <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
                         {ajudantesCount}
                       </span>
+                    ) : (
+                      <></>
                     )}
                   </div>
                 </button>
@@ -540,12 +537,12 @@ const UnifiedMotoristaModal = ({
 
                   {isEditingDocuments ? (
                     <DocumentoMotoristaForm
-                      isOpen={true}
+                      isOpen={isEditingDocuments}
                       onClose={() => setIsEditingDocuments(false)}
                       motorista_id={motorista.motorista_id}
                       onSuccess={() => {
                         setIsEditingDocuments(false);
-                        fetchDocumentCount();
+                        fetchDocumentoMotorista();
                         onSuccess?.();
                       }}
                     />
@@ -593,37 +590,37 @@ const UnifiedMotoristaModal = ({
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Número da CNH</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.nr_registro_cnh || motorista.nr_registro || 'Não informado'}
+                                      {documentoMotorista?.nr_registro_cnh || motorista.nr_registro_cnh || motorista.nr_registro || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Categoria</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.categoria_cnh || motorista.categoria || 'Não informado'}
+                                      {documentoMotorista?.categoria_cnh || motorista.categoria_cnh || motorista.categoria || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Validade</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documentoMotorista?.validade_cnh ? formatDate(documentoMotorista.validade_cnh) : 'Não informado'}
+                                      {documentoMotorista?.validade_cnh ? formatDate(documentoMotorista.validade_cnh) : motorista.validade_cnh ? formatDate(motorista.validade_cnh) : 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">UF</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documentoMotorista?.uf_cnh || 'Não informado'}
+                                      {documentoMotorista?.uf_cnh || motorista.uf_cnh || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.dm_nome_pai || motorista.nome_pai || 'Não informado'}
+                                      {documentoMotorista?.nome_pai || motorista.dm_nome_pai || motorista.nome_pai || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.dm_nome_mae || motorista.nome_mae || 'Não informado'}
+                                      {documentoMotorista?.nome_mae || motorista.dm_nome_mae || motorista.nome_mae || 'Não informado'}
                                     </span>
                                   </div>
                                 </div>
@@ -680,19 +677,19 @@ const UnifiedMotoristaModal = ({
                     </button>
                   </div>
                   
-                  {motorista.documento_ajudante && motorista.documento_ajudante.length > 0 ? (
+                  {ajudantes.length > 0 ? (
                     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
                       <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {Array.isArray(motorista.documento_ajudante) && motorista.documento_ajudante.map((ajudante) => (
+                        {ajudantes.map((ajudante) => (
                           <li key={ajudante.id_ajudante} className="px-4 py-4 sm:px-6">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                  <User className="h-6 w-6 text-gray-500 dark:text-gray-400" />
                                 </div>
                                 <div className="ml-4">
                                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {ajudante.nome}
+                                    {ajudante.nome || 'Ajudante sem nome'}
                                   </p>
                                   <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'CPF não informado'}
@@ -732,7 +729,7 @@ const UnifiedMotoristaModal = ({
                       <div className="mt-6">
                         <button
                           onClick={() => setIsAddAjudanteModalOpen(true)}
-                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           <Edit2 className="-ml-1 mr-2 h-5 w-5" />
                           Adicionar Ajudante
@@ -784,11 +781,7 @@ const UnifiedMotoristaModal = ({
         isOpen={isAddAjudanteModalOpen}
         onClose={() => setIsAddAjudanteModalOpen(false)}
         motorista_id={motorista.motorista_id}
-        onSuccess={() => {
-          setIsAddAjudanteModalOpen(false);
-          fetchAjudantesCount();
-          onSuccess?.();
-        }}
+        onSuccess={handleAjudanteAdded}
       />
 
       {isEditAjudanteModalOpen && selectedAjudante && (
@@ -799,12 +792,7 @@ const UnifiedMotoristaModal = ({
             setSelectedAjudante(null);
           }}
           ajudante={selectedAjudante}
-          onSuccess={() => {
-            setIsEditAjudanteModalOpen(false);
-            setSelectedAjudante(null);
-            fetchAjudantesCount();
-            onSuccess?.();
-          }}
+          onSuccess={handleAjudanteUpdated}
         />
       )}
 
@@ -815,9 +803,29 @@ const UnifiedMotoristaModal = ({
             setIsDeleteAjudanteModalOpen(false);
             setSelectedAjudante(null);
           }}
-          onConfirm={handleDeleteConfirm}
+          onConfirm={async () => {
+            if (!selectedAjudante) return;
+            
+            try {
+              const { error } = await supabase
+                .from('documento_ajudante')
+                .delete()
+                .eq('id_ajudante', selectedAjudante.id_ajudante);
+                
+              if (error) throw error;
+              
+              toast.success('Ajudante excluído com sucesso!');
+              setIsDeleteAjudanteModalOpen(false);
+              setSelectedAjudante(null);
+              fetchAjudantes();
+              onSuccess?.();
+            } catch (error) {
+              console.error('Error deleting ajudante:', error);
+              toast.error('Erro ao excluir ajudante.');
+            }
+          }}
           title="Excluir Ajudante"
-          message={`Tem certeza que deseja excluir o ajudante "${selectedAjudante.nome}"? Esta ação não pode ser desfeita.`}
+          message={`Tem certeza que deseja excluir o ajudante ${selectedAjudante?.nome}?`}
         />
       )}
 

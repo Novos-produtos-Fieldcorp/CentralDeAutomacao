@@ -83,6 +83,10 @@ export interface DocumentoMotorista {
   motorista_id: number;
   uf_cnh?: string | null;
   validade_cnh?: string | null;
+  nr_registro_cnh?: string | null;
+  categoria_cnh?: string | null;
+  nome_mae?: string | null;
+  nome_pai?: string | null;
 }
 
 export interface DocumentoVeiculo {

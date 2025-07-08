@@ -201,10 +201,8 @@ const MotoristasLista = () => {
     motorista: null,
   });
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
-  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
   const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
-  const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [customDateRange, setCustomDateRange] = useState<{
     startDate: string;
@@ -219,6 +217,107 @@ const MotoristasLista = () => {
   const [endereco] = useState<any | null>(null);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
+  const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
+
+  const handleUpdateStatus = async (e: React.MouseEvent, motorista: ViewMotorista, newStatus: string) => {
+    e.stopPropagation();
+    setUpdatingStatus(motorista.motorista_id);
+    try {
+      const { error } = await supabase
+        .from('motorista')
+        .update({ st_cadastro: newStatus })
+        .eq('motorista_id', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setMotoristas(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { ...m, st_cadastro: newStatus } 
+            : m
+        )
+      );
+      
+      toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Erro ao atualizar status');
+    } finally {
+      setUpdatingStatus(null);
+      setStatusDropdownOpen(null);
+    }
+  };
+
+  const handleUpdateCliente = async (e: React.MouseEvent, motorista: ViewMotorista, clienteId: number | null) => {
+    e.stopPropagation();
+    setUpdatingCliente(motorista.motorista_id);
+    try {
+      // Update the cliente_id in the database
+      const { error } = await supabase
+        .from('motorista')
+        .update({ cliente_id: clienteId })
+        .eq('motorista_id', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setMotoristas(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { 
+                ...m, 
+                cliente_id: clienteId,
+                cliente: clienteId 
+                  ? clientes.find(c => c.cliente_id === clienteId) 
+                  : null
+              } 
+            : m
+        )
+      );
+      
+      toast.success(clienteId ? 'Cliente atualizado com sucesso' : 'Cliente removido com sucesso');
+    } catch (error) {
+      console.error('Error updating cliente:', error);
+      toast.error('Erro ao atualizar cliente');
+    } finally {
+      setUpdatingCliente(null);
+      setClienteDropdownOpen(null);
+    }
+  };
+
+  const handleToggleStatus = async (e: React.MouseEvent, motorista: ViewMotorista) => {
+    e.stopPropagation();
+    setUpdatingStatus(motorista.motorista_id);
+    try {
+      // Toggle the ativo status
+      const newAtivo = !motorista.ativo;
+      
+      const { error } = await supabase
+        .from('motorista')
+        .update({ ativo: newAtivo })
+        .eq('motorista_id', motorista.motorista_id);
+
+      if (error) throw error;
+
+      // Update the local state
+      setMotoristas(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { ...m, ativo: newAtivo } 
+            : m
+        )
+      );
+
+      toast.success(`Motorista ${newAtivo ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      toast.error('Erro ao alternar status do motorista');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
 
   // Role change modal state
   const [roleChangeModal, setRoleChangeModal] = useState<{
@@ -613,150 +712,6 @@ const MotoristasLista = () => {
       y: e.clientY,
       motorista
     });
-  };
-
-  const handleRowStatusDropdown = (e: React.MouseEvent, motoristaId: number) => {
-    e.stopPropagation();
-    if (statusDropdownOpen === motoristaId) {
-      setStatusDropdownOpen(null);
-    } else {
-      const btn = statusButtonRefs.current[motoristaId];
-      if (btn) {
-        const rect = btn.getBoundingClientRect();
-        setStatusDropdownCoords((prev: Record<number, { left: number; top: number }>) => ({
-          ...prev,
-          [motoristaId]: {
-            left: rect.left,
-            top: rect.bottom + 4
-          }
-        }));
-      }
-      setStatusDropdownOpen(motoristaId);
-    }
-    setClienteDropdownOpen(null);
-  };
-
-  const handleRowClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
-    e.stopPropagation();
-    if (clienteDropdownOpen === motoristaId) {
-      setClienteDropdownOpen(null);
-    } else {
-      const btn = clienteButtonRefs.current[motoristaId];
-      if (btn) {
-        const rect = btn.getBoundingClientRect();
-        setClienteDropdownCoords((prev: Record<number, { left: number; top: number }>) => ({
-          ...prev,
-          [motoristaId]: {
-            left: rect.left,
-            top: rect.bottom + 4
-          }
-        }));
-      }
-      setClienteDropdownOpen(motoristaId);
-    }
-    setStatusDropdownOpen(null);
-  };
-
-  const handleUpdateCliente = async (e: React.MouseEvent, motorista: ViewMotorista, clienteId: number | null) => {
-    e.stopPropagation();
-    try {
-      setUpdatingCliente(motorista.motorista_id || 0);
-      
-      // Update the cliente_id in the database
-      const { error } = await supabase
-        .from('motorista')
-        .update({ cliente_id: clienteId })
-        .eq('motorista_id', motorista.motorista_id);
-        
-      if (error) throw error;
-      
-      // Update the local state
-      setMotoristas(prev => 
-        prev.map(m => 
-          m.motorista_id === motorista.motorista_id 
-            ? { 
-                ...m, 
-                cliente_id: clienteId,
-                cliente: clienteId 
-                  ? clientes.find(c => c.cliente_id === clienteId) 
-                  : null
-              } 
-            : m
-        )
-      );
-      
-      toast.success(clienteId ? 'Cliente atualizado com sucesso' : 'Cliente removido com sucesso');
-    } catch (error) {
-      console.error('Error updating cliente:', error);
-      toast.error('Erro ao atualizar cliente');
-    } finally {
-      setUpdatingCliente(null);
-      setClienteDropdownOpen(null);
-    }
-  };
-
-  const handleUpdateStatus = async (e: React.MouseEvent, motorista: ViewMotorista, newStatus: string) => {
-    e.stopPropagation();
-    try {
-      setUpdatingStatus(motorista.motorista_id || 0);
-      
-      const { error } = await supabase
-        .from('motorista')
-        .update({ st_cadastro: newStatus })
-        .eq('motorista_id', motorista.motorista_id);
-        
-      if (error) throw error;
-      
-      // Update the local state
-      setMotoristas(prev => 
-        prev.map(m => 
-          m.motorista_id === motorista.motorista_id 
-            ? { ...m, st_cadastro: newStatus } 
-            : m
-        )
-      );
-      
-      toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Erro ao atualizar status');
-    } finally {
-      setUpdatingStatus(null);
-      setStatusDropdownOpen(null);
-    }
-  };
-
-  const handleToggleStatus = async (e: React.MouseEvent, motorista: ViewMotorista) => {
-    e.stopPropagation();
-    try {
-      setUpdatingStatus(motorista.motorista_id || 0);
-      
-      // Update the ativo status in the database (toggle it)
-      const newAtivo = !motorista.ativo;
-      
-      const { error } = await supabase
-        .from('motorista')
-        .update({ ativo: newAtivo })
-        .eq('motorista_id', motorista.motorista_id);
-
-      if (error) throw error;
-
-      // Update the local state
-      setMotoristas(prev => 
-        prev.map(m => 
-          m.motorista_id === motorista.motorista_id 
-            ? { ...m, ativo: newAtivo } 
-            : m
-        )
-      );
-
-      toast.success(`Motorista ${newAtivo ? 'ativado' : 'desativado'} com sucesso`);
-    } catch (error) {
-      console.error('Error updating ativo status:', error);
-      toast.error('Erro ao atualizar status do motorista');
-    } finally {
-      setUpdatingStatus(null);
-    }
   };
 
   const filteredMotoristas = (motoristas || []).filter(motorista => {
@@ -1320,9 +1275,9 @@ const MotoristasLista = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedData.map((motorista) => (
+                  {paginatedData.map((motorista, index) => (
                     <tr 
-                      key={motorista.motorista_id || Math.random()} 
+                      key={`${motorista.motorista_id || 'no-id'}-${index}`} 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                         selectedItems.has(motorista.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}

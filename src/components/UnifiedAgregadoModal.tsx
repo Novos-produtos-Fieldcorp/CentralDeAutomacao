@@ -115,7 +115,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
           foto_comprovante_residencia,
           motorista_id,
           uf_cnh,
-          validade_cnh
+          validade_cnh,
+          nr_registro_cnh,
+          categoria_cnh,
+          nome_mae,
+          nome_pai
         `)
         .eq('motorista_id', motorista.motorista_id)
         .maybeSingle();
@@ -584,37 +588,37 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Número da CNH</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.nr_registro_cnh || motorista.nr_registro || 'Não informado'}
+                                      {documentoMotorista?.nr_registro_cnh || motorista.nr_registro_cnh || motorista.nr_registro || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Categoria</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.categoria_cnh || motorista.categoria || 'Não informado'}
+                                      {documentoMotorista?.categoria_cnh || motorista.categoria_cnh || motorista.categoria || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Validade</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documentoMotorista?.validade_cnh ? formatDate(documentoMotorista.validade_cnh) : 'Não informado'}
+                                      {documentoMotorista?.validade_cnh ? formatDate(documentoMotorista.validade_cnh) : motorista.validade_cnh ? formatDate(motorista.validade_cnh) : 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">UF</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documentoMotorista?.uf_cnh || 'Não informado'}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
-                                    <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.dm_nome_pai || motorista.nome_pai || 'Não informado'}
+                                      {documentoMotorista?.uf_cnh || motorista.uf_cnh || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.dm_nome_mae || motorista.nome_mae || 'Não informado'}
+                                      {documentoMotorista?.nome_mae || motorista.nome_mae || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.nome_pai || motorista.nome_pai || 'Não informado'}
                                     </span>
                                   </div>
                                 </div>
