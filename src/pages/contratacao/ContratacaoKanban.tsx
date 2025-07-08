@@ -835,7 +835,7 @@ const ContratacaoKanban = () => {
                                         : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200'
                                     }`}>
                                       {motorista.funcao}
-                                    </span>
+                                    {motorista.nome || 'Não informado'}
                                   </div>
                                 </div>
                               </div>

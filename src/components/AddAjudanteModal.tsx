@@ -8,6 +8,7 @@ interface AddAjudanteModalProps {
   isOpen: boolean;
   onClose: () => void;
   motorista_id: number;
+  veiculo_id?: number;
   onSuccess: () => void;
 }
 
@@ -21,7 +22,7 @@ interface ViaCepResponse {
   erro?: boolean;
 }
 
-const AddAjudanteModal = ({ isOpen, onClose, motorista_id, onSuccess }: AddAjudanteModalProps) => {
+const AddAjudanteModal = ({ isOpen, onClose, motorista_id, veiculo_id, onSuccess }: AddAjudanteModalProps) => {
   const [submitting, setSubmitting] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
@@ -195,6 +196,7 @@ const AddAjudanteModal = ({ isOpen, onClose, motorista_id, onSuccess }: AddAjuda
           telefone: formData.telefone || null,
           genero: formData.genero || null,
           motorista_id: motorista_id,
+          veiculo_id: veiculo_id || null,
           comprovante_residencia: formData.comprovante_residencia || null
         })
         .select()
