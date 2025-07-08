@@ -48,6 +48,7 @@ const UnifiedMotoristaModal = ({
   const [ajudantesCount, setAjudantesCount] = useState(0);
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
   const [hasComentario, setHasComentario] = useState(false);
+  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
 
   useEffect(() => {
     if (isOpen && motorista) {
@@ -55,8 +56,48 @@ const UnifiedMotoristaModal = ({
       fetchAjudantesCount();
       fetchGestaoRiscoCount();
       checkComentario();
+      fetchDocumentoMotorista();
     }
   }, [isOpen, motorista]);
+
+  const fetchDocumentoMotorista = async () => {
+    if (!motorista) return;
+    
+    try {
+      console.log('Fetching document data for motorista:', motorista.motorista_id);
+      const { data, error } = await supabase
+        .from('documento_motorista')
+        .select(`
+          id_documento_motorista,
+          foto_cnh,
+          nr_rg,
+          orgao_expedidor,
+          data_expedicao,
+          foto_rg,
+          nome_pai,
+          nome_mae,
+          nr_registro_cnh,
+          categoria_cnh,
+          validade_cnh,
+          uf_cnh,
+          foto_comprovante_residencia,
+          motorista_id
+        `)
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      console.log('Document data fetched:', data);
+      setDocumentoMotorista(data);
+      
+      if (!data) {
+        console.warn('No document data found for motorista:', motorista.motorista_id);
+      }
+    } catch (error) {
+      console.error('Error fetching driver document:', error);
+    }
+  };
 
   const fetchDocumentCount = async () => {
     if (!motorista) return;
@@ -501,38 +542,38 @@ const UnifiedMotoristaModal = ({
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Número da CNH</span>
-                                    <span className="block font-semibold">
-                                      {motorista.documento_motorista?.[0]?.nr_registro_cnh || 'Não informado'}
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.nr_registro_cnh || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Categoria</span>
-                                    <span className="block font-semibold">
-                                      {motorista.documento_motorista?.[0]?.categoria_cnh || 'Não informado'}
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.categoria_cnh || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Validade</span>
-                                    <span className="block font-semibold">
-                                      {motorista.documento_motorista?.[0]?.validade_cnh ? formatDate(motorista.documento_motorista[0].validade_cnh) : 'Não informado'}
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.validade_cnh ? formatDate(documentoMotorista.validade_cnh) : 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">UF</span>
-                                    <span className="block font-semibold">
-                                      {motorista.documento_motorista?.[0]?.uf_cnh || 'Não informado'}
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.uf_cnh || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
-                                    <span className="block font-semibold">
-                                      {motorista.documento_motorista?.[0]?.nome_pai || 'Não informado'}
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.nome_pai || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
-                                    <span className="block font-semibold">
-                                      {motorista.documento_motorista?.[0]?.nome_mae || 'Não informado'}
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.nome_mae || 'Não informado'}
                                     </span>
                                   </div>
                                 </div>
@@ -547,19 +588,19 @@ const UnifiedMotoristaModal = ({
                               {motorista.documento_motorista?.[0]?.foto_comprovante_residencia ? (
                                 <div className="flex items-center">
                                   <button
-                                    onClick={() => openDocumentInNewTab(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null)}
+                                    onClick={() => openDocumentInNewTab(documentoMotorista?.foto_comprovante_residencia || null)}
                                     className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
                                   >
                                     <FileText className="w-5 h-5 mr-2" />
-                                    {isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null) ? 'Ver PDF' : 'Ver Imagem'}
+                                    {isPdf(documentoMotorista?.foto_comprovante_residencia || null) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
-                                  {!isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null) && (
+                                  {!isPdf(documentoMotorista?.foto_comprovante_residencia || null) && documentoMotorista?.foto_comprovante_residencia && (
                                     <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
                                       <img 
-                                        src={motorista.documento_motorista?.[0]?.foto_comprovante_residencia || ''} 
+                                        src={documentoMotorista.foto_comprovante_residencia}
                                         alt="Comprovante Preview" 
                                         className="w-full h-full object-cover cursor-pointer"
-                                        onClick={() => setActiveDocument(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null)}
+                                        onClick={() => setActiveDocument(documentoMotorista.foto_comprovante_residencia)}
                                       />
                                     </div>
                                   )}
