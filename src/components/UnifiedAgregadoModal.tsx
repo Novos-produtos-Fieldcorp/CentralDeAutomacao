@@ -33,11 +33,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
+  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
   const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
   const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
-  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
   const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
   const [veiculo, setVeiculo] = useState<Veiculo | null>(null);
   const [endereco, setEndereco] = useState<any>(null);
@@ -151,18 +151,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
         .select(`
           id_documento_motorista,
           foto_cnh,
-          nr_rg,
-          orgao_expedidor,
-          data_expedicao,
-          foto_rg,
-          nome_pai,
-          nome_mae,
-          nr_registro_cnh,
-          categoria_cnh,
-          validade_cnh,
-          uf_cnh,
           foto_comprovante_residencia,
-          motorista_id
+          motorista_id,
+          uf_cnh,
+          validade_cnh
         `)
         .eq('motorista_id', motorista.motorista_id)
         .maybeSingle();
@@ -176,29 +168,51 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       }
 
       // Fetch endereco
-      const { data: enderecoArr, error: enderecoError } = await supabase
-        .from('end_motorista')
-        .select(`
-          *,
-          logradouro (
-            logradouro,
-            nr_cep,
-            bairro (
-              bairro,
-              cidade (
-                cidade,
-                estado (
-                  sigla_estado
+      // Use the address data from the view instead of fetching separately
+      if (motorista.logradouro || motorista.nome_cidade || motorista.sigla_estado) {
+        setEndereco({
+          logradouro: {
+            logradouro: motorista.logradouro,
+            nr_cep: motorista.nr_cep,
+            bairro: {
+              bairro: motorista.nome_bairro,
+              cidade: {
+                cidade: motorista.nome_cidade,
+                estado: {
+                  sigla_estado: motorista.sigla_estado
+                }
+              }
+            }
+          },
+          nr_end: motorista.nr_end,
+          ds_complemento_end: motorista.ds_complemento_end
+        });
+      } else {
+        // Fallback to fetching from end_motorista if view data is not available
+        const { data: enderecoArr, error: enderecoError } = await supabase
+          .from('end_motorista')
+          .select(`
+            *,
+            logradouro (
+              logradouro,
+              nr_cep,
+              bairro (
+                bairro,
+                cidade (
+                  cidade,
+                  estado (
+                    sigla_estado
+                  )
                 )
               )
             )
-          )
-        `)
-        .eq('id_motorista', motorista.motorista_id)
-        .limit(1);
+          `)
+          .eq('id_motorista', motorista.motorista_id)
+          .limit(1);
 
-      if (enderecoError) throw enderecoError;
-      setEndereco(enderecoArr && enderecoArr.length > 0 ? enderecoArr[0] : null);
+        if (enderecoError) throw enderecoError;
+        setEndereco(enderecoArr && enderecoArr.length > 0 ? enderecoArr[0] : null);
+      }
 
       // Fetch ajudantes
       const { data: ajudantesData, error: ajudantesError } = await supabase

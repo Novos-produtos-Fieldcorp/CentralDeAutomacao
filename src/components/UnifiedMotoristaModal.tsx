@@ -40,6 +40,7 @@ const UnifiedMotoristaModal = ({
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [endereco, setEndereco] = useState<any>(null);
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
   const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
   const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
@@ -52,6 +53,7 @@ const UnifiedMotoristaModal = ({
 
   useEffect(() => {
     if (isOpen && motorista) {
+      fetchEndereco();
       fetchDocumentCount();
       fetchDocumentoMotorista();
       fetchAjudantesCount();
@@ -59,6 +61,60 @@ const UnifiedMotoristaModal = ({
       checkComentario();
     }
   }, [isOpen, motorista]);
+
+  const fetchEndereco = async () => {
+    if (!motorista) return;
+    
+    try {
+      // Use the address data from the view if available
+      if (motorista.logradouro || motorista.nome_cidade || motorista.sigla_estado) {
+        setEndereco({
+          logradouro: {
+            logradouro: motorista.logradouro,
+            nr_cep: motorista.nr_cep,
+            bairro: {
+              bairro: motorista.nome_bairro,
+              cidade: {
+                cidade: motorista.nome_cidade,
+                estado: {
+                  sigla_estado: motorista.sigla_estado
+                }
+              }
+            }
+          },
+          nr_end: motorista.nr_end,
+          ds_complemento_end: motorista.ds_complemento_end
+        });
+      } else {
+        // Fallback to fetching from end_motorista if view data is not available
+        const { data: enderecoArr, error: enderecoError } = await supabase
+          .from('end_motorista')
+          .select(`
+            *,
+            logradouro (
+              logradouro,
+              nr_cep,
+              bairro (
+                bairro,
+                cidade (
+                  cidade,
+                  estado (
+                    sigla_estado
+                  )
+                )
+              )
+            )
+          `)
+          .eq('id_motorista', motorista.motorista_id)
+          .limit(1);
+
+        if (enderecoError) throw enderecoError;
+        setEndereco(enderecoArr && enderecoArr.length > 0 ? enderecoArr[0] : null);
+      }
+    } catch (error) {
+      console.error('Error fetching address:', error);
+    }
+  };
 
   const fetchDocumentoMotorista = async () => {
     if (!motorista) return;
@@ -412,7 +468,9 @@ const UnifiedMotoristaModal = ({
                             Logradouro
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.logradouro ? `${motorista.logradouro}, ${motorista.nr_end || 'S/N'}` : 'Não informado'}
+                            {endereco?.logradouro?.logradouro ? 
+                              `${endereco.logradouro.logradouro}, ${endereco.nr_end || 'S/N'}${endereco.ds_complemento_end ? ` - ${endereco.ds_complemento_end}` : ''}` 
+                              : 'Não informado'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -420,7 +478,7 @@ const UnifiedMotoristaModal = ({
                             Complemento
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.ds_complemento_end || 'Não informado'}
+                            {endereco?.ds_complemento_end || 'Não informado'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -428,7 +486,7 @@ const UnifiedMotoristaModal = ({
                             Bairro
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.nome_bairro || 'Não informado'}
+                            {endereco?.logradouro?.bairro?.bairro || 'Não informado'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -436,8 +494,8 @@ const UnifiedMotoristaModal = ({
                             Cidade/Estado
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.nome_cidade && motorista.sigla_estado ? 
-                              `${motorista.nome_cidade}/${motorista.sigla_estado}` : 
+                            {endereco?.logradouro?.bairro?.cidade?.cidade && endereco?.logradouro?.bairro?.cidade?.estado?.sigla_estado ? 
+                              `${endereco.logradouro.bairro.cidade.cidade}/${endereco.logradouro.bairro.cidade.estado.sigla_estado}` : 
                               'Não informado'
                             }
                           </dd>
@@ -447,7 +505,7 @@ const UnifiedMotoristaModal = ({
                             CEP
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.nr_cep ? formatCEP(motorista.nr_cep) : 'Não informado'}
+                            {endereco?.logradouro?.nr_cep ? formatCEP(endereco.logradouro.nr_cep) : 'Não informado'}
                           </dd>
                         </div>
                       </dl>
