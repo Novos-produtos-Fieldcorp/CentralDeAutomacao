@@ -358,7 +358,7 @@ const ChecklistManutencao = () => {
                           </span>
                           <span className="text-sm text-gray-500 dark:text-gray-400">
                             {alert.componentes.length} {alert.componentes.length === 1 ? 'problema' : 'problemas'}
-                          {formatDate(reading.data)}
+                          </span>
                         </div>
                       </div>
                     </div>
