@@ -304,7 +304,8 @@ const Contratados = () => {
       let query = supabase
         .from('vw_contratados_completo')
         .select('*')
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .is('deleted_at', null);  // Apenas registros não excluídos
 
       // Apply date filter
       if (dateFilter !== 'all') {
@@ -475,16 +476,20 @@ const Contratados = () => {
 
     try {
       const { error } = await query('motorista')
-        .delete()
+        .update({ 
+          deleted_at: new Date().toISOString(),
+          ativo: false
+        })
         .eq('motorista_id', selectedMotorista.motorista_id);
 
       if (error) throw error;
 
+      // Atualizar a lista local removendo o motorista
       setContratados(contratados.filter(m => m.motorista_id !== selectedMotorista.motorista_id));
-      toast.success('Motorista excluído com sucesso');
+      toast.success('Motorista marcado como excluído com sucesso');
       setIsDeleteModalOpen(false);
     } catch (error) {
-      console.error('Error deleting motorista:', error);
+      console.error('Error soft deleting motorista:', error);
       toast.error('Erro ao excluir motorista');
     }
   };
@@ -599,25 +604,26 @@ const Contratados = () => {
 
   const handleBulkDelete = async () => {
     try {
-      // Delete all selected items
-      for (const id of selectedItems) {
-        const { error } = await query('motorista')
-          .delete()
-          .eq('motorista_id', id);
+      // Atualizar todos os itens selecionados de uma vez
+      const { error } = await query('motorista')
+        .update({ 
+          deleted_at: new Date().toISOString(),
+          ativo: false
+        })
+        .in('motorista_id', Array.from(selectedItems));
 
-        if (error) throw error;
-      }
+      if (error) throw error;
 
-      // Update the list
+      // Atualizar a lista local
       setContratados(contratados.filter(m => !selectedItems.has(m.motorista_id || 0)));
-      toast.success(`${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
+      toast.success(`${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''} marcado${selectedItems.size !== 1 ? 's' : ''} como excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
       
-      // Reset selection
+      // Resetar seleção
       setSelectedItems(new Set());
       setSelectAll(false);
       setIsBulkDeleteModalOpen(false);
     } catch (error) {
-      console.error('Error deleting motoristas:', error);
+      console.error('Error soft deleting motoristas:', error);
       toast.error('Erro ao excluir motoristas');
     }
   };
@@ -1976,7 +1982,7 @@ const Contratados = () => {
       <UnifiedMotoristaModal
         isOpen={isUnifiedModalOpen}
         onClose={() => setIsUnifiedModalOpen(false)}
-        motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : undefined}
+        motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : null}
         onSuccess={fetchContratados}
       />
 

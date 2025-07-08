@@ -1,21 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
-  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare 
+  X, User, Edit2, Users, ShieldAlert, MessageSquare, FileText, MapPin, ExternalLink
 } from 'lucide-react';
-import type { 
-  DocumentoMotorista, 
-  Veiculo, 
-  DocumentoVeiculo, 
-  Motorista,
-  PessoaFisicaDonoVeiculo,
-  PessoaJuridicaDonoVeiculo
-} from '../types/database';
-import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
-import DocumentoMotoristaForm from './DocumentoMotoristaForm';
-import DocumentUploader from './DocumentUploader';
-import toast from 'react-hot-toast';
+import { Motorista, DocumentoMotorista, DocumentoAjudante } from '../types/database';
 import { supabase } from '../lib/supabase';
+import { formatCPF, formatDate, formatPhone, formatCEP } from '../utils/format';
+import toast from 'react-hot-toast';
+import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import EditMotoristaModal from './EditMotoristaModal';
 import AddAjudanteModal from './AddAjudanteModal';
 import EditAjudanteModal from './EditAjudanteModal';
@@ -36,27 +27,121 @@ const UnifiedMotoristaModal = ({
   motorista, 
   onSuccess 
 }: UnifiedMotoristaModalProps) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
-  const [isEditingDocuments, setIsEditingDocuments] = useState(false);
-  const [activeDocument, setActiveDocument] = useState<string | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
-  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
-  const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
-  const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
-  const [documentCount, setDocumentCount] = useState(0);
-  const [ajudantesCount, setAjudantesCount] = useState(0);
-  const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
-  const [hasComentario, setHasComentario] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details'); // Used in the UI
+  const [isEditingDocuments, setIsEditingDocuments] = useState(false); // Used in the UI
+  const [activeDocument, setActiveDocument] = useState<string | null>(null); // Used in the UI
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Used in the UI
+  const [endereco, setEndereco] = useState<any>(null); // Used in the UI
+  const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false); // Used in the UI
+  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false); // Used in the UI
+  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null); // Used in the UI
+  const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false); // Used in the UI
+  const [selectedAjudante, setSelectedAjudante] = useState<DocumentoAjudante | null>(null); // Used in the UI
+  const [documentCount, setDocumentCount] = useState(0); // Used in the UI
+  const [ajudantesCount, setAjudantesCount] = useState(0); // Used in the UI
+  const [ajudantes, setAjudantes] = useState<DocumentoAjudante[]>([]);
+  const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0); // Used in the UI
+  const [hasComentario, setHasComentario] = useState(false); // Used in the UI
 
   useEffect(() => {
     if (isOpen && motorista) {
+      fetchEndereco();
       fetchDocumentCount();
-      fetchAjudantesCount();
+      fetchDocumentoMotorista();
+      fetchAjudantes();
       fetchGestaoRiscoCount();
       checkComentario();
     }
   }, [isOpen, motorista]);
+
+  const fetchEndereco = async () => {
+    if (!motorista) return;
+    
+    try {
+      // Use the address data from the view if available
+      if (motorista.logradouro || motorista.nome_cidade || motorista.sigla_estado) {
+        setEndereco({
+          logradouro: {
+            logradouro: motorista.logradouro,
+            nr_cep: motorista.nr_cep,
+            bairro: {
+              bairro: motorista.nome_bairro,
+              cidade: {
+                cidade: motorista.nome_cidade,
+                estado: {
+                  sigla_estado: motorista.sigla_estado
+                }
+              }
+            }
+          },
+          nr_end: motorista.nr_end,
+          ds_complemento_end: motorista.ds_complemento_end
+        });
+      } else {
+        // Fallback to fetching from end_motorista if view data is not available
+        const { data: enderecoArr, error: enderecoError } = await supabase
+          .from('end_motorista')
+          .select(`
+            *,
+            logradouro (
+              logradouro,
+              nr_cep,
+              bairro (
+                bairro,
+                cidade (
+                  cidade,
+                  estado (
+                    sigla_estado
+                  )
+                )
+              )
+            )
+          `)
+          .eq('id_motorista', motorista.motorista_id)
+          .limit(1);
+
+        if (enderecoError) throw enderecoError;
+        setEndereco(enderecoArr && enderecoArr.length > 0 ? enderecoArr[0] : null);
+      }
+    } catch (error) {
+      console.error('Error fetching address:', error);
+    }
+  };
+
+  const fetchDocumentoMotorista = async () => {
+    if (!motorista) return;
+    
+    try {
+      console.log('Fetching document data for motorista:', motorista.motorista_id);
+      const { data, error } = await supabase
+        .from('documento_motorista')
+        .select(`
+          id_documento_motorista,
+          foto_cnh,
+          foto_comprovante_residencia,
+          motorista_id,
+          uf_cnh,
+          validade_cnh,
+          nr_registro_cnh,
+          categoria_cnh,
+          nome_mae,
+          nome_pai
+        `)
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      console.log('Document data fetched:', data);
+      setDocumentoMotorista(data);
+      
+      if (!data) {
+        console.warn('No document data found for motorista:', motorista.motorista_id);
+      }
+    } catch (error) {
+      console.error('Error fetching driver document:', error);
+    }
+  };
 
   const fetchDocumentCount = async () => {
     if (!motorista) return;
@@ -81,22 +166,26 @@ const UnifiedMotoristaModal = ({
     }
   };
 
-  const fetchAjudantesCount = async () => {
+  const fetchAjudantes = async () => {
     if (!motorista) return;
     
     try {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from('documento_ajudante')
-        .select('id_ajudante', { count: 'exact', head: true })
-        .eq('motorista_id', motorista.motorista_id);
+        .select('*')
+        .eq('motorista_id', motorista.motorista_id)
+        .order('nome', { ascending: true });
         
       if (error) throw error;
       
-      setAjudantesCount(count || 0);
+      setAjudantes(data || []);
+      setAjudantesCount(data?.length || 0);
     } catch (error) {
-      console.error('Error fetching ajudantes count:', error);
+      console.error('Error fetching ajudantes:', error);
     }
   };
+
+
 
   const fetchGestaoRiscoCount = async () => {
     if (!motorista) return;
@@ -152,26 +241,21 @@ const UnifiedMotoristaModal = ({
     setIsEditAjudanteModalOpen(true);
   };
 
-  const handleDeleteAjudante = (ajudante: any) => {
+  const handleDeleteAjudante = async (ajudante: DocumentoAjudante) => {
     setSelectedAjudante(ajudante);
     setIsDeleteAjudanteModalOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!selectedAjudante) return;
-    
-    try {
-      // Add your delete logic here
-      toast.success('Ajudante excluído com sucesso!');
-      setIsDeleteAjudanteModalOpen(false);
-      setSelectedAjudante(null);
-      onSuccess?.();
-    } catch (error) {
-      console.error('Erro ao excluir ajudante:', error);
-      toast.error('Erro ao excluir ajudante');
-    }
+  const handleAjudanteAdded = () => {
+    fetchAjudantes();
+    onSuccess?.();
   };
-  
+
+  const handleAjudanteUpdated = () => {
+    fetchAjudantes();
+    onSuccess?.();
+  };
+
   return (
     <div className="fixed inset-0 z-50">
       {/* Overlay */}
@@ -254,10 +338,12 @@ const UnifiedMotoristaModal = ({
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
                     Ajudantes
-                    {ajudantesCount > 0 && (
+                    {ajudantes.length > 0 ? (
                       <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
                         {ajudantesCount}
                       </span>
+                    ) : (
+                      <></>
                     )}
                   </div>
                 </button>
@@ -379,7 +465,9 @@ const UnifiedMotoristaModal = ({
                             Logradouro
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.logradouro ? `${motorista.logradouro}, ${motorista.nr_end || 'S/N'}` : 'Não informado'}
+                            {endereco?.logradouro?.logradouro ? 
+                              `${endereco.logradouro.logradouro}, ${endereco.nr_end || 'S/N'}${endereco.ds_complemento_end ? ` - ${endereco.ds_complemento_end}` : ''}` 
+                              : 'Não informado'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -387,7 +475,7 @@ const UnifiedMotoristaModal = ({
                             Complemento
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.ds_complemento_end || 'Não informado'}
+                            {endereco?.ds_complemento_end || 'Não informado'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -395,7 +483,7 @@ const UnifiedMotoristaModal = ({
                             Bairro
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.nome_bairro || 'Não informado'}
+                            {endereco?.logradouro?.bairro?.bairro || 'Não informado'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -403,8 +491,8 @@ const UnifiedMotoristaModal = ({
                             Cidade/Estado
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.nome_cidade && motorista.sigla_estado ? 
-                              `${motorista.nome_cidade}/${motorista.sigla_estado}` : 
+                            {endereco?.logradouro?.bairro?.cidade?.cidade && endereco?.logradouro?.bairro?.cidade?.estado?.sigla_estado ? 
+                              `${endereco.logradouro.bairro.cidade.cidade}/${endereco.logradouro.bairro.cidade.estado.sigla_estado}` : 
                               'Não informado'
                             }
                           </dd>
@@ -414,7 +502,7 @@ const UnifiedMotoristaModal = ({
                             CEP
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.nr_cep ? formatCEP(motorista.nr_cep) : 'Não informado'}
+                            {endereco?.logradouro?.nr_cep ? formatCEP(endereco.logradouro.nr_cep) : 'Não informado'}
                           </dd>
                         </div>
                       </dl>
@@ -449,12 +537,12 @@ const UnifiedMotoristaModal = ({
 
                   {isEditingDocuments ? (
                     <DocumentoMotoristaForm
-                      isOpen={true}
+                      isOpen={isEditingDocuments}
                       onClose={() => setIsEditingDocuments(false)}
                       motorista_id={motorista.motorista_id}
                       onSuccess={() => {
                         setIsEditingDocuments(false);
-                        fetchDocumentCount();
+                        fetchDocumentoMotorista();
                         onSuccess?.();
                       }}
                     />
@@ -471,30 +559,72 @@ const UnifiedMotoristaModal = ({
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               CNH
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
-                              {motorista.documento_motorista?.[0]?.foto_cnh ? (
-                                <div className="flex items-center">
-                                  <button
-                                    onClick={() => openDocumentInNewTab(motorista.documento_motorista?.[0]?.foto_cnh || null)}
-                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
-                                  >
-                                    <FileText className="w-5 h-5 mr-2" />
-                                    {isPdf(motorista.documento_motorista?.[0]?.foto_cnh || null) ? 'Ver PDF' : 'Ver Imagem'}
-                                  </button>
-                                  {!isPdf(motorista.documento_motorista?.[0]?.foto_cnh || null) && (
-                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
-                                      <img 
-                                        src={motorista.documento_motorista?.[0]?.foto_cnh || ''} 
-                                        alt="CNH Preview" 
-                                        className="w-full h-full object-cover cursor-pointer"
-                                        onClick={() => setActiveDocument(motorista.documento_motorista?.[0]?.foto_cnh || null)}
-                                      />
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-4">
+                                  {motorista.foto_cnh || documentoMotorista?.foto_cnh ? (
+                                    <div className="flex items-center">
+                                      <button
+                                        onClick={() => openDocumentInNewTab(motorista.foto_cnh || documentoMotorista?.foto_cnh || null)}
+                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                      >
+                                        <FileText className="w-5 h-5 mr-2" />
+                                        {isPdf(motorista.foto_cnh || documentoMotorista?.foto_cnh || null) ? 'Ver PDF' : 'Ver Imagem'}
+                                      </button>
+                                      {!isPdf(motorista.foto_cnh || documentoMotorista?.foto_cnh || null) && (motorista.foto_cnh || documentoMotorista?.foto_cnh) && (
+                                        <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                          <img 
+                                            src={motorista.foto_cnh || documentoMotorista?.foto_cnh || ''} 
+                                            alt="CNH Preview" 
+                                            className="w-full h-full object-cover cursor-pointer"
+                                            onClick={() => setActiveDocument(motorista.foto_cnh || documentoMotorista?.foto_cnh || null)}
+                                          />
+                                        </div>
+                                      )}
                                     </div>
+                                  ) : (
+                                    <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
                                   )}
                                 </div>
-                              ) : (
-                                <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
-                              )}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Número da CNH</span>
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.nr_registro_cnh || motorista.nr_registro_cnh || motorista.nr_registro || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Categoria</span>
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.categoria_cnh || motorista.categoria_cnh || motorista.categoria || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Validade</span>
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.validade_cnh ? formatDate(documentoMotorista.validade_cnh) : motorista.validade_cnh ? formatDate(motorista.validade_cnh) : 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">UF</span>
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.uf_cnh || motorista.uf_cnh || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.nome_pai || motorista.dm_nome_pai || motorista.nome_pai || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
+                                    <span className="block font-semibold text-gray-900 dark:text-white">
+                                      {documentoMotorista?.nome_mae || motorista.dm_nome_mae || motorista.nome_mae || 'Não informado'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
                             </dd>
                           </div>
                           <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -502,22 +632,22 @@ const UnifiedMotoristaModal = ({
                               Comprovante de Residência
                             </dt>
                             <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
-                              {motorista.documento_motorista?.[0]?.foto_comprovante_residencia ? (
+                              {documentoMotorista?.foto_comprovante_residencia ? (
                                 <div className="flex items-center">
                                   <button
-                                    onClick={() => openDocumentInNewTab(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null)}
+                                    onClick={() => openDocumentInNewTab(documentoMotorista?.foto_comprovante_residencia || null)}
                                     className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
                                   >
                                     <FileText className="w-5 h-5 mr-2" />
-                                    {isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null) ? 'Ver PDF' : 'Ver Imagem'}
+                                    {isPdf(documentoMotorista?.foto_comprovante_residencia || null) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
-                                  {!isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null) && (
+                                  {!isPdf(documentoMotorista?.foto_comprovante_residencia || null) && documentoMotorista?.foto_comprovante_residencia && (
                                     <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
                                       <img 
-                                        src={motorista.documento_motorista?.[0]?.foto_comprovante_residencia || ''} 
+                                        src={documentoMotorista.foto_comprovante_residencia}
                                         alt="Comprovante Preview" 
                                         className="w-full h-full object-cover cursor-pointer"
-                                        onClick={() => setActiveDocument(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null)}
+                                        onClick={() => setActiveDocument(documentoMotorista.foto_comprovante_residencia)}
                                       />
                                     </div>
                                   )}
@@ -547,19 +677,19 @@ const UnifiedMotoristaModal = ({
                     </button>
                   </div>
                   
-                  {motorista.documento_ajudante && motorista.documento_ajudante.length > 0 ? (
+                  {ajudantes.length > 0 ? (
                     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
                       <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {motorista.documento_ajudante.map((ajudante) => (
+                        {ajudantes.map((ajudante) => (
                           <li key={ajudante.id_ajudante} className="px-4 py-4 sm:px-6">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                  <User className="h-6 w-6 text-gray-500 dark:text-gray-400" />
                                 </div>
                                 <div className="ml-4">
                                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {ajudante.nome}
+                                    {ajudante.nome || 'Ajudante sem nome'}
                                   </p>
                                   <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'CPF não informado'}
@@ -599,7 +729,7 @@ const UnifiedMotoristaModal = ({
                       <div className="mt-6">
                         <button
                           onClick={() => setIsAddAjudanteModalOpen(true)}
-                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           <Edit2 className="-ml-1 mr-2 h-5 w-5" />
                           Adicionar Ajudante
@@ -651,11 +781,7 @@ const UnifiedMotoristaModal = ({
         isOpen={isAddAjudanteModalOpen}
         onClose={() => setIsAddAjudanteModalOpen(false)}
         motorista_id={motorista.motorista_id}
-        onSuccess={() => {
-          setIsAddAjudanteModalOpen(false);
-          fetchAjudantesCount();
-          onSuccess?.();
-        }}
+        onSuccess={handleAjudanteAdded}
       />
 
       {isEditAjudanteModalOpen && selectedAjudante && (
@@ -666,12 +792,7 @@ const UnifiedMotoristaModal = ({
             setSelectedAjudante(null);
           }}
           ajudante={selectedAjudante}
-          onSuccess={() => {
-            setIsEditAjudanteModalOpen(false);
-            setSelectedAjudante(null);
-            fetchAjudantesCount();
-            onSuccess?.();
-          }}
+          onSuccess={handleAjudanteUpdated}
         />
       )}
 
@@ -682,9 +803,29 @@ const UnifiedMotoristaModal = ({
             setIsDeleteAjudanteModalOpen(false);
             setSelectedAjudante(null);
           }}
-          onConfirm={handleDeleteConfirm}
+          onConfirm={async () => {
+            if (!selectedAjudante) return;
+            
+            try {
+              const { error } = await supabase
+                .from('documento_ajudante')
+                .delete()
+                .eq('id_ajudante', selectedAjudante.id_ajudante);
+                
+              if (error) throw error;
+              
+              toast.success('Ajudante excluído com sucesso!');
+              setIsDeleteAjudanteModalOpen(false);
+              setSelectedAjudante(null);
+              fetchAjudantes();
+              onSuccess?.();
+            } catch (error) {
+              console.error('Error deleting ajudante:', error);
+              toast.error('Erro ao excluir ajudante.');
+            }
+          }}
           title="Excluir Ajudante"
-          message={`Tem certeza que deseja excluir o ajudante "${selectedAjudante.nome}"? Esta ação não pode ser desfeita.`}
+          message={`Tem certeza que deseja excluir o ajudante ${selectedAjudante?.nome}?`}
         />
       )}
 

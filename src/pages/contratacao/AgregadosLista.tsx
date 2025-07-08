@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, Truck, Loader2, MapPin, FilePen, User, ArrowLeftRight, AlertTriangle } from 'lucide-react';
-import type { MotoristaWithAddress, EnderecoMotorista } from '../../types/database';
+import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, ArrowLeftRight, AlertTriangle, XCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
+import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database'; // Adicionando tipos necessários
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
 import DocumentViewer from '../../components/DocumentViewer';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
 import EditMotoristaModal from '../../components/EditMotoristaModal';
-import AddAgregadoModal from '../../components/AddAgregadoModal';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import BulkActionsModal from '../../components/BulkActionsModal';
 import BulkDeleteConfirmationModal from '../../components/BulkDeleteConfirmationModal';
@@ -19,217 +18,317 @@ import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
-import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
+import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 
-export interface ViewAgregado {
-  // Identificação básica
-  motorista_id: number;
-  nome: string;
-  nome_motorista?: string; // Alias para compatibilidade
-  cpf: string;
-  
-  // Dados pessoais
-  dt_nascimento: string;
-  genero: string;
-  telefone: string | number | null;
-  email: string | null;
-  funcao: string;
-  origem_usuario: string;
-  st_cadastro: string;
-  autorizacao_lgpd: string;
-  
-  // Dados da empresa
-  company_id: number;
-  data_cadastro: string;
-  cliente_id: number | null;
-  ativo: boolean;
-  
-  // Dados do cliente
-  cliente?: {
-    id: number;
-    nome: string;
-    // Adicione outras propriedades do cliente conforme necessário
-  };
-  
-  // Endereço (estrutura aninhada)
-  endereco?: {
-    id_end_motorista?: number | null;
-    nr_end?: number | null;
-    ds_complemento_end?: string | null;
-    st_end?: boolean | null;
-    logradouro?: string | null;
-    nr_cep?: string | null;
-    bairro?: string | null;
-    nome_bairro?: string | null;
-    cidade?: string | null;
-    nome_cidade?: string | null;
-    estado?: string | null;
-    nome_estado?: string | null;
-    sigla_estado?: string | null;
-  };
-  
-  // Campos de endereço alternativos (para compatibilidade)
-  id_end_motorista?: number | null;
+// Interface para a view de contratados
+export interface ViewContratado {
+  motorista_id?: number;
+  nome_motorista?: string;
+  cpf?: string;
+  dt_nascimento?: string;
+  genero?: string;
+  telefone?: string | number | null;
+  email?: string | null;
+  funcao?: string;
+  origem_usuario?: string;
+  st_cadastro?: string | null;
+  autorizacao_lgpd?: string;
+  company_id?: number;
+  data_cadastro?: string;
+  integracao_data?: string | null;
+  treinamento_data?: string | null;
+  treinamento?: boolean;
+  cliente_id?: number | null;
+  conversation_id?: string;
+  ativo?: boolean;
   nr_end?: number | null;
   ds_complemento_end?: string | null;
   st_end?: boolean | null;
+  id_end_motorista?: number | null;
   logradouro?: string | null;
   nr_cep?: string | null;
   nome_bairro?: string | null;
   nome_cidade?: string | null;
   nome_estado?: string | null;
   sigla_estado?: string | null;
-  
-  // Veículo
-  veiculo?: Array<{
-    veiculo_id: number;
-    placa: string | null;
-    tipologia?: string | null;
-    marca_veiculo?: string | null;
-    ano?: string | null;
-    combustivel?: string | null;
-    peso?: string | null;
-    cubagem?: string | null;
-    possui_rastreador?: boolean | null;
-    marca_rastreador?: string | null;
-    cor?: string | null;
-    tipo?: string | null;
-  }>;
-  
-  // Propriedade tipologia no nível raiz para compatibilidade
-  tipologia?: string | null;
-  
-  // Documentos
-  documento_motorista?: Array<{
-    id: number;
-    // Adicione propriedades dos documentos conforme necessário
-  }>;
-  
-  // Propriedades de relacionamento
   veiculo_id?: number | null;
   placa?: string | null;
-  conversation_id?: string;
-  
-  // Outras propriedades
-  nome_ajudante?: string | null;
+  status_veiculo?: boolean | null;
+  marca?: string | null;
+  tipologia?: string | null;
+  ano?: string | null;
+  combustivel?: string | null;
+  peso?: string | null;
+  cubagem?: string | null;
+  possui_rastreador?: boolean | null;
+  marca_rastreador?: string | null;
+  cor?: string | null;
+  tipo?: string | null;
+  veiculo?: Array<{
+    placa: string;
+    tipologia: string;
+    marca?: string;
+    tipo?: string;
+  }>;
 }
 
-const AgregadosLista = () => {
+const Contratados = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const [agregados, setAgregados] = useState<ViewAgregado[]>([]);
+  const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
-  const [clientesLoading, setClientesLoading] = useState(true);
-  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
-  
-  // Função para alternar status selecionado
-  const toggleStatus = (status: string) => {
-    setStatusFilter((prev: string[]) => 
-      prev.includes(status) 
-        ? prev.filter(s => s !== status)
-        : [...prev, status]
-    );
-  };
-  
-  // Função para limpar todos os status
-  const clearStatusFilter = () => {
-    setStatusFilter([]);
-  };
-
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
+  const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
+  const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isBulkActionsModalOpen, setIsBulkActionsModalOpen] = useState(false);
-  const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
-  const [selectedAgregado, setSelectedAgregado] = useState<ViewAgregado | null>(null);
+  const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
+  const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
+  const [documento] = useState<DocumentoMotorista | null>(null);
+  const [endereco, setEndereco] = useState<{
+    logradouro?: {
+      logradouro?: string;
+      nr_cep?: string;
+      bairro?: {
+        bairro?: string;
+        cidade?: {
+          cidade?: string;
+          estado?: {
+            sigla_estado?: string;
+          };
+        };
+      };
+    };
+    nr_end?: number;
+    ds_complemento_end?: string;
+  } | null>(null);
+  
+  // Atualiza o endereco quando o selectedMotorista mudar
+  useEffect(() => {
+    if (selectedMotorista) {
+      setEndereco({
+        logradouro: {
+          logradouro: selectedMotorista.logradouro || undefined,
+          nr_cep: selectedMotorista.nr_cep || undefined,
+          bairro: {
+            bairro: selectedMotorista.nome_bairro || undefined,
+            cidade: {
+              cidade: selectedMotorista.nome_cidade || undefined,
+              estado: {
+                sigla_estado: selectedMotorista.sigla_estado || undefined
+              }
+            }
+          }
+        },
+        nr_end: selectedMotorista.nr_end || undefined,
+        ds_complemento_end: selectedMotorista.ds_complemento_end || undefined
+      });
+    } else {
+      setEndereco(null);
+    }
+  }, [selectedMotorista]);
+  
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteFilter, setClienteFilter] = useState<string[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
-  const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
-  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
-  const clienteDropdownRef = useRef<HTMLDivElement>(null);
-  const cidadeDropdownRef = useRef<HTMLDivElement>(null);
-  const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
-  const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
-  const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
   const [cidades, setCidades] = useState<string[]>([]);
-  
-  // Opções de status para o filtro
-  const statusOptions = [
-    { value: 'cadastrado', label: 'Cadastrado' },
-    { value: 'qualificado', label: 'Qualificado' },
-    { value: 'documentacao', label: 'Documentação' },
-    { value: 'gestao_risco', label: 'Gestão de Risco' },
-    { value: 'contrato_enviado', label: 'Contrato Enviado' },
-    { value: 'contratado', label: 'Contratado' },
-    { value: 'repescagem', label: 'Repescagem' },
-    { value: 'rejeitado', label: 'Rejeitado' }
-  ];
-
-  const [isDetailViewOpen, setIsDetailViewOpen] = useState(false);
+  const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
+  const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  
+
+
+  // Efeito para fechar dropdowns ao clicar fora deles
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showStatusDropdown && !(event.target as HTMLElement).closest('#status-dropdown')) {
+        setShowStatusDropdown(false);
+      }
+      if (showClienteDropdown && !(event.target as HTMLElement).closest('#cliente-dropdown')) {
+        setShowClienteDropdown(false);
+      }
+      if (showCidadeDropdown && !(event.target as HTMLElement).closest('#cidade-dropdown')) {
+        setShowCidadeDropdown(false);
+      }
+      if (showTipoVeiculoDropdown && !(event.target as HTMLElement).closest('#tipo-veiculo-dropdown')) {
+        setShowTipoVeiculoDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown]);
+  
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
     y: number;
-    agregado: ViewAgregado | null;
+    motorista: ViewContratado | null;
   }>({
     visible: false,
     x: 0,
     y: 0,
-    agregado: null,
+    motorista: null,
   });
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
-const statusButtonRefs = useRef<{ [key: number]: HTMLButtonElement | null }>({});
-const [statusDropdownCoords, setStatusDropdownCoords] = useState<{ [key: number]: { left: number; top: number } }>({});
-  const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
-const clienteButtonRefs = useRef<{ [key: number]: HTMLButtonElement | null }>({});
-const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: number]: { left: number; top: number } }>({});
-  const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
-  const [dateFilter, setDateFilter] = useState<string>('all');
+  
+  const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
+
+  // Role change modal state
   const [roleChangeModal, setRoleChangeModal] = useState<{
     isOpen: boolean;
-    agregado: ViewAgregado | null;
+    motorista: ViewContratado | null;
     newRole: 'Motorista' | 'Agregado' | null;
     isLoading: boolean;
   }>({
     isOpen: false,
-    agregado: null,
+    motorista: null,
     newRole: null,
     isLoading: false,
   });
 
-  const toggleClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
-    e.stopPropagation();
-    if (clienteDropdownOpen === motoristaId) {
-      setClienteDropdownOpen(null);
-    } else {
-      const btn = clienteButtonRefs.current[motoristaId];
-      if (btn) {
-        const rect = btn.getBoundingClientRect();
-        setClienteDropdownCoords(prev => ({
-          ...prev,
-          [motoristaId]: {
-            left: rect.left,
-            top: rect.bottom + 4
-          }
-        }));
+  const handleRoleChangeConfirm = async () => {
+    if (!roleChangeModal.motorista || !roleChangeModal.newRole) return;
+    
+    try {
+      setRoleChangeModal(prev => ({ ...prev, isLoading: true }));
+      
+      const { error } = await supabase
+        .from('motorista')
+        .update({ funcao: roleChangeModal.newRole })
+        .eq('motorista_id', roleChangeModal.motorista.motorista_id);
+
+      if (error) throw error;
+
+      // Update local state
+      setContratados(prev => 
+        prev.map(m => 
+          m.motorista_id === roleChangeModal.motorista?.motorista_id 
+            ? { ...m, funcao: roleChangeModal.newRole as 'Motorista' | 'Agregado' } 
+            : m
+        )
+      );
+
+      toast.success(
+        `Função alterada com sucesso para ${roleChangeModal.newRole === 'Motorista' ? 'Motorista' : 'Agregado'}!`,
+        { duration: 3000 }
+      );
+      
+      // If in filtered view, refresh the list
+      if (searchTerm) {
+        fetchContratados();
       }
-      setClienteDropdownOpen(motoristaId);
+      
+      // Close the modal
+      setRoleChangeModal({ isOpen: false, motorista: null, newRole: null, isLoading: false });
+    } catch (error) {
+      console.error('Error changing role:', error);
+      toast.error(
+        <div className="flex items-center space-x-2">
+          <XCircle className="w-5 h-5 text-red-500" />
+          <span>Erro ao alterar função</span>
+        </div>,
+        { duration: 3000 }
+      );
+      setRoleChangeModal(prev => ({ ...prev, isLoading: false }));
     }
   };
 
+  const openRoleChangeModal = (motorista: ViewContratado, newRole: 'Motorista' | 'Agregado') => {
+    setRoleChangeModal({
+      isOpen: true,
+      motorista,
+      newRole,
+      isLoading: false
+    });
+  };
+
+  const convertToMotorista = (contratado: ViewContratado | null): MotoristaWithAddress | null => {
+    if (!contratado) return null;
+    
+    const motoristaBase: Motorista = {
+      motorista_id: contratado.motorista_id || 0,
+      cpf: contratado.cpf || '',
+      dt_nascimento: contratado.dt_nascimento || '',
+      genero: contratado.genero || '',
+      telefone: contratado.telefone ? Number(contratado.telefone) : null,
+      email: contratado.email || null,
+      funcao: contratado.funcao || '',
+      nome: contratado.nome_motorista || 'Nome não informado',
+      origem_usuario: contratado.origem_usuario || '',
+      st_cadastro: contratado.st_cadastro || 'cadastrado',
+      autorizacao_lgpd: contratado.autorizacao_lgpd || '',
+      company_id: contratado.company_id || 0,
+      data_cadastro: contratado.data_cadastro || new Date().toISOString(),
+      cliente_id: contratado.cliente_id || 0,
+      ativo: contratado.ativo || false,
+      conversation_id: contratado.conversation_id,
+      cidade: contratado.nome_cidade || undefined, // Garantindo que seja string | undefined
+      documento_motorista: [],
+      documento_ajudante: []
+    };
+    
+    // Criando o objeto de endereço se houver informações disponíveis
+    const endereco: EnderecoMotorista | undefined = 
+      (contratado.logradouro || contratado.nr_cep || contratado.nome_bairro || contratado.nome_cidade || contratado.sigla_estado)
+        ? {
+            id_end_motorista: contratado.id_end_motorista || 0,
+            nr_end: contratado.nr_end || null,
+            ds_complemento_end: contratado.ds_complemento_end || null,
+            st_end: contratado.st_end || null,
+            logradouro: contratado.logradouro || null,
+            nr_cep: contratado.nr_cep || null,
+            bairro: contratado.nome_bairro || null,
+            cidade: contratado.nome_cidade || null,
+            estado: contratado.nome_estado || null,
+            sigla_estado: contratado.sigla_estado || null
+          }
+        : undefined;
+    
+    // Criando o objeto de veículo se houver informações disponíveis
+    const veiculo: Veiculo | undefined = contratado.veiculo_id || contratado.placa || contratado.tipologia
+      ? {
+          veiculo_id: contratado.veiculo_id || 0,
+          placa: contratado.placa || '',
+          status_veiculo: contratado.status_veiculo || false,
+          marca: contratado.marca || '',
+          tipologia: contratado.tipologia || '',
+          ano: contratado.ano || '',
+          combustivel: contratado.combustivel || '',
+          peso: contratado.peso || '',
+          cubagem: contratado.cubagem || '',
+          possui_rastreador: contratado.possui_rastreador || false,
+          marca_rastreador: contratado.marca_rastreador || '',
+          motorista_id: contratado.motorista_id || 0,
+          cor: contratado.cor || '',
+          tipo: contratado.tipo || ''
+        }
+      : undefined;
+    
+    // Retornando o objeto MotoristaWithAddress
+    return {
+      ...motoristaBase,
+      ...(endereco && { endereco }),
+      ...(veiculo && { veiculo })
+    };
+  };
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
+  const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
+  const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
+  const [dateFilter, setDateFilter] = useState<string>('all');
   const [customDateRange, setCustomDateRange] = useState<{
     startDate: string;
     endDate: string;
@@ -239,24 +338,8 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
   });
 
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchData = async () => {
-      try {
-        await fetchAgregados();
-        if (isMounted) {
-          await fetchClientes();
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
+    fetchContratados();
+    fetchClientes();
   }, [dateFilter, customDateRange]);
 
   useEffect(() => {
@@ -283,50 +366,14 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
     };
   }, [contextMenu.visible, statusDropdownOpen, clienteDropdownOpen]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      
-      // Check if click is outside client dropdown
-      if (clienteDropdownRef.current && !clienteDropdownRef.current.contains(target)) {
-        setShowClienteDropdown(false);
-      }
-      
-      // Check if click is outside city dropdown
-      if (cidadeDropdownRef.current && !cidadeDropdownRef.current.contains(target)) {
-        setShowCidadeDropdown(false);
-      }
-      
-      // Check if click is outside ativo dropdown
-      if (showAtivoDropdown && !event.composedPath().some((el: any) => el.id === 'ativo-dropdown')) {
-        setShowAtivoDropdown(false);
-      }
-      
-      // Close tipo veiculo dropdown if open
-      if (showTipoVeiculoDropdown && !event.composedPath().some((el: any) => el.id === 'tipo-veiculo-dropdown')) {
-        setShowTipoVeiculoDropdown(false);
-      }
-      
-      // Close status dropdown if open
-      if (showStatusDropdown && !event.composedPath().some((el: any) => el.id === 'status-dropdown')) {
-        setShowStatusDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showAtivoDropdown, showTipoVeiculoDropdown, showStatusDropdown]);
-
-  const fetchAgregados = async () => {
+  const fetchContratados = async () => {
     try {
       setLoading(true);
+      // Buscando apenas os motoristas com função 'Agregado' da view vw_agregados_completo
       let query = supabase
-      .from('vw_agregados_completo')
-      .select('*')
-      .eq('company_id', companyId)
-      .eq('funcao', 'Agregado'); // Filtra apenas os registros onde a função é 'Agregado' (com A maiúsculo)
+        .from('vw_agregados_completo')
+        .select('*')
+        .eq('company_id', companyId);
 
       // Apply date filter
       if (dateFilter !== 'all') {
@@ -364,36 +411,72 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
 
       if (error) throw error;
 
-      console.log('Dados retornados da consulta de agregados:', data);
-      console.log('Total de registros:', data?.length);
-      
-      if (data && data.length > 0) {
-        console.log('Primeiro registro:', data[0]);
-        console.log('Campos disponíveis no primeiro registro:', Object.keys(data[0]));
-      }
+      // Log the data to check the ativo field
+      console.log('Fetched contratados:', data);
 
-      // Extract unique cities from agregados
+      // Extract unique cities from contratados
       const uniqueCities = new Set<string>();
       const uniqueVehicleTypes = new Set<string>();
       
-      data?.forEach(agregado => {
-        if (agregado.nome_cidade) {
-          uniqueCities.add(agregado.nome_cidade);
+      // Primeiro, vamos buscar os status ativos dos motoristas
+      const motoristaIds = data?.map(m => m.motorista_id) || [];
+      let ativosStatus: Record<number, boolean> = {};
+      
+      if (motoristaIds.length > 0) {
+        const { data: motoristas, error: motoristasError } = await supabase
+          .from('motorista')
+          .select('motorista_id, ativo')
+          .in('motorista_id', motoristaIds);
+          
+        if (motoristasError) {
+          console.error('Erro ao buscar status dos motoristas:', motoristasError);
+        } else {
+          // Criar um mapa de motorista_id para status ativo
+          motoristas?.forEach(m => {
+            ativosStatus[m.motorista_id] = m.ativo === true;
+          });
+        }
+      }
+      
+      // Processar os dados com os status ativos
+      const processedData = data?.map(motorista => {
+        const ativo = ativosStatus[motorista.motorista_id] === true;
+        
+        // Log para depuração
+        console.log('Processando motorista ID:', motorista.motorista_id, 
+                   'ativo:', ativo, 
+                   'tipo:', typeof ativo);
+        
+        return {
+          ...motorista,
+          ativo: ativo
+        };
+      }) || [];
+      
+      console.log('Dados processados:', JSON.parse(JSON.stringify(processedData)));
+      
+      processedData.forEach(motorista => {
+        if (motorista.nome_cidade) {
+          uniqueCities.add(motorista.nome_cidade);
         }
         
         // Extract vehicle types
-        if (agregado.tipologia) {
-          uniqueVehicleTypes.add(agregado.tipologia);
+        if (motorista.veiculo && motorista.veiculo.length > 0) {
+          motorista.veiculo.forEach((veiculo: { tipologia?: string }) => {
+            if (veiculo.tipologia) {
+              uniqueVehicleTypes.add(veiculo.tipologia);
+            }
+          });
         }
       });
       
       setCidades(Array.from(uniqueCities).sort());
       setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
 
-      setAgregados(data || []);
+      setContratados(processedData);
     } catch (error) {
-      console.error('Error fetching agregados:', error);
-      toast.error('Erro ao carregar agregados');
+      console.error('Error fetching contratados:', error);
+      toast.error('Erro ao carregar contratados');
     } finally {
       setLoading(false);
     }
@@ -412,170 +495,68 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
 
   const fetchClientes = async () => {
     try {
-      console.log('Iniciando carregamento de clientes...');
-      setClientesLoading(true);
-      
-      console.log('Company ID:', companyId);
-      const { data, error, status } = await supabase
+      const { data, error } = await supabase
         .from('cliente')
         .select('*')
         .eq('company_id', companyId)
-        .eq('st_cliente', true)  // Filtra apenas clientes ativos
+        .eq('st_cliente', true)
         .order('nome');
 
-      console.log('Resposta da API - Status:', status);
-      console.log('Dados retornados:', data);
-      
-      if (error) {
-        console.error('Erro na consulta:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      if (!data || data.length === 0) {
-        console.warn('Nenhum cliente ativo encontrado para a empresa');
-        setClientes([]);
-      } else {
-        const clientesMapeados = data.map((cliente, index) => ({
-          ...cliente,
-          id: cliente.id || cliente.cliente_id,
-          nome: cliente.nome || 'Cliente sem nome',
-          cor: defaultClientColors[index % defaultClientColors.length]
-        }));
-        
-        console.log(`Encontrados ${clientesMapeados.length} clientes ativos`);
-        setClientes(clientesMapeados);
-      }
-    } catch (err) {
-      const error = err as Error;
-      console.error('Erro detalhado ao carregar clientes:', error);
-      toast.error('Erro ao carregar a lista de clientes');
-    } finally {
-      setClientesLoading(false);
+      // Adiciona uma cor a cada cliente
+      const clientesComCor = (data || []).map((cliente, index) => ({
+        ...cliente,
+        cor: defaultClientColors[index % defaultClientColors.length] || 'bg-gray-100 dark:bg-gray-700',
+      }));
+
+      setClientes(clientesComCor);
+    } catch (error) {
+      console.error('Error fetching clientes:', error);
+      toast.error('Erro ao carregar clientes');
     }
   };
 
-  // Função para manipular o menu de contexto
-  const handleContextMenu = (e: React.MouseEvent, agregado: ViewAgregado) => {
-    e.preventDefault();
-    setSelectedAgregado(agregado);
-    // Implementar lógica de menu de contexto se necessário
+  const handleViewDocument = async (motorista: ViewContratado) => {
+    try {
+      setSelectedMotorista(motorista);
+      setIsUnifiedModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching document details:', error);
+      toast.error('Erro ao carregar detalhes do documento');
+    }
   };
 
-  const handleViewDetail = (agregado: ViewAgregado) => {
-    setSelectedAgregado(agregado);
-    setIsDetailViewOpen(true);
-  };
-
-  const handleUploadDocument = (agregado: ViewAgregado) => {
-    setSelectedAgregado(agregado);
+  const handleUploadDocument = (motorista: ViewContratado) => {
+    setSelectedMotorista(motorista);
     setIsDocumentUploadOpen(true);
   };
 
-  const handleEdit = (agregado: ViewAgregado | null) => {
-    if (!agregado) return;
-    setSelectedAgregado(agregado);
+  const handleEdit = (motorista: ViewContratado) => {
+    setSelectedMotorista(motorista);
     setIsEditModalOpen(true);
   };
 
-  // Função para alternar o dropdown de status
-  const toggleStatusDropdown = (e: React.MouseEvent, id: number) => {
-    e.stopPropagation();
-    if (statusDropdownOpen === id) {
-      setStatusDropdownOpen(null);
-    } else {
-      // calcula a posição do botão
-      const btn = statusButtonRefs.current[id];
-      if (btn) {
-        const rect = btn.getBoundingClientRect();
-        setStatusDropdownCoords(prev => ({
-          ...prev,
-          [id]: {
-            left: rect.left,
-            top: rect.bottom + 4 // um pequeno offset para não colar
-          }
-        }));
-      }
-      setStatusDropdownOpen(id);
-    }
-  };
+
 
   const confirmDelete = async () => {
-    if (!selectedAgregado) return;
+    if (!selectedMotorista) return;
 
     try {
       const { error } = await query('motorista')
         .delete()
-        .eq('motorista_id', selectedAgregado.motorista_id);
+        .eq('motorista_id', selectedMotorista.motorista_id);
 
       if (error) throw error;
 
-      setAgregados(agregados.filter(a => a.motorista_id !== selectedAgregado.motorista_id));
-      toast.success('Agregado excluído com sucesso');
+      setContratados(contratados.filter(m => m.motorista_id !== selectedMotorista.motorista_id));
+      toast.success('Motorista excluído com sucesso');
       setIsDeleteModalOpen(false);
     } catch (error) {
-      console.error('Error deleting agregado:', error);
-      toast.error('Erro ao excluir agregado');
+      console.error('Error deleting motorista:', error);
+      toast.error('Erro ao excluir motorista');
     }
   };
-
-  const filteredAgregados = (agregados || []).filter(agregado => {
-    if (!agregado) return false;
-    
-    const searchLower = searchTerm.toLowerCase();
-    // Filtro de status
-    if (statusFilter.length > 0 && !statusFilter.includes(agregado.st_cadastro)) {
-      return false;
-    }
-    
-    // Lógica para filtro de cliente
-    let clienteMatch = true;
-    if (clienteFilter.length > 0) {
-      if (clienteFilter.includes('sem_cliente')) {
-        clienteMatch = agregado.cliente_id === null || agregado.cliente_id === undefined;
-      } else if (agregado.cliente_id) {
-        clienteMatch = clienteFilter.includes(agregado.cliente_id.toString());
-      } else {
-        clienteMatch = false;
-      }
-    }
-    
-    // Lógica para filtro de veículo
-    let veiculoMatch = true;
-    if (tipoVeiculoFilter.length > 0) {
-      if (tipoVeiculoFilter.includes('sem_veiculo')) {
-        veiculoMatch = !agregado.veiculo_id;
-      } else {
-        veiculoMatch = agregado.tipologia ? tipoVeiculoFilter.includes(agregado.tipologia) : false;
-      }
-    }
-    
-    const cidadeMatch = cidadeFilter.length > 0 ? (agregado.nome_cidade ? cidadeFilter.includes(agregado.nome_cidade) : false) : true;
-    const ativoMatch = ativoFilter === '' ? true : 
-      (ativoFilter === 'true' ? agregado.ativo === true : agregado.ativo === false);
-    
-    try {
-      // Verifica se o status do agregado está na lista de status filtrados
-      const statusMatch = statusFilter.length > 0 
-        ? (agregado.st_cadastro ? statusFilter.includes(agregado.st_cadastro) : false)
-        : true;
-        
-      return (
-        statusMatch &&
-        clienteMatch &&
-        veiculoMatch &&
-        cidadeMatch &&
-        ativoMatch &&
-        ((agregado.nome_motorista?.toLowerCase().includes(searchLower)) ||
-         (agregado.cpf?.includes(searchLower)) ||
-         (typeof agregado.email === 'string' && agregado.email.toLowerCase().includes(searchLower)) ||
-         (agregado.telefone?.toString().includes(searchLower)) ||
-         (agregado.placa?.toLowerCase().includes(searchLower)))
-      );
-    } catch (error) {
-      console.error('Erro ao filtrar agregado:', error, agregado);
-      return false;
-    }
-  });
 
   const handleSelectItem = (id: number) => {
     const newSelectedItems = new Set(selectedItems);
@@ -585,116 +566,438 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
       newSelectedItems.add(id);
     }
     setSelectedItems(newSelectedItems);
-    // Atualiza o selectAll apenas se todos os exibidos estiverem selecionados
-    const allFilteredIds = filteredAgregados.map(a => a.motorista_id).filter((id): id is number => !!id);
-    setSelectAll(allFilteredIds.every(fid => newSelectedItems.has(fid)) && allFilteredIds.length > 0);
+    
+    // Update selectAll state
+    setSelectAll(newSelectedItems.size === filteredContratados.length);
+  };
+  
+  // Funções para manipular filtros de múltipla seleção
+  const toggleFilterOption = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo', value: string) => {
+    switch (filterType) {
+      case 'status':
+        setStatusFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(v => v !== value) 
+            : [...prev, value]
+        );
+        break;
+      case 'cliente':
+        setClienteFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(v => v !== value) 
+            : [...prev, value]
+        );
+        break;
+      case 'cidade':
+        setCidadeFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(v => v !== value) 
+            : [...prev, value]
+        );
+        break;
+      case 'tipoVeiculo':
+        setTipoVeiculoFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(v => v !== value) 
+            : [...prev, value]
+        );
+        break;
+    }
+  };
+  
+  const clearFilter = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo') => {
+    switch (filterType) {
+      case 'status':
+        setStatusFilter([]);
+        break;
+      case 'cliente':
+        setClienteFilter([]);
+        break;
+      case 'cidade':
+        setCidadeFilter([]);
+        break;
+      case 'tipoVeiculo':
+        setTipoVeiculoFilter([]);
+        break;
+    }
+  };
+  
+  const getFilterButtonText = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo') => {
+    const filterMap = {
+      status: { 
+        label: 'Status', 
+        filter: statusFilter,
+        allText: 'Todos os status'
+      },
+      cliente: { 
+        label: 'Cliente', 
+        filter: clienteFilter,
+        allText: 'Todos os clientes'
+      },
+      cidade: { 
+        label: 'Cidade', 
+        filter: cidadeFilter,
+        allText: 'Todas as cidades'
+      },
+      tipoVeiculo: { 
+        label: 'Tipo de Veículo', 
+        filter: tipoVeiculoFilter,
+        allText: 'Todos os tipos de veículo'
+      }
+    };
+    
+    const { filter, allText } = filterMap[filterType];
+    
+    if (filter.length === 0) return allText;
+    if (filter.length === 1) {
+      if (filter[0] === 'sem_cliente') return 'Sem cliente';
+      if (filter[0] === 'sem_veiculo') return 'Sem veículo';
+      return `${filter[0]}`;
+    }
+    return `${filter.length} selecionado(s)`;
   };
 
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      const allIds = new Set(filteredAgregados.map(a => a.motorista_id).filter((id): id is number => !!id));
-      setSelectedItems(allIds);
+      setSelectedItems(new Set(filteredContratados.map(m => m.motorista_id || 0)));
     }
     setSelectAll(!selectAll);
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      // Delete all selected items
+      for (const id of selectedItems) {
+        const { error } = await query('motorista')
+          .delete()
+          .eq('motorista_id', id);
+
+        if (error) throw error;
+      }
+
+      // Update the list
+      setContratados(contratados.filter(m => !selectedItems.has(m.motorista_id || 0)));
+      toast.success(`${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
+      
+      // Reset selection
+      setSelectedItems(new Set());
+      setSelectAll(false);
+      setIsBulkDeleteModalOpen(false);
+    } catch (error) {
+      console.error('Error deleting motoristas:', error);
+      toast.error('Erro ao excluir motoristas');
+    }
+  };
+
+  const handleBulkAction = (type: 'status' | 'client') => {
+    setBulkActionType(type);
+    setIsBulkActionsModalOpen(true);
+  };
+
+  const handleBulkUpdateTreinamento = async (marcar: boolean) => {
+    if (selectedItems.size === 0) {
+      toast.error('Selecione pelo menos um motorista');
+      return;
+    }
+
+    try {
+      const newDate = marcar ? new Date().toISOString().split('T')[0] : null;
+      
+      // Atualiza no banco de dados
+      const { error } = await supabase
+        .from('motorista_eventos_cliente')
+        .upsert(
+          Array.from(selectedItems).map(id => ({
+            motorista_id: id,
+            treinamento: marcar,
+            treinamento_data: newDate
+          })),
+          { onConflict: 'motorista_id' }
+        );
+
+      if (error) throw error;
+
+      // Atualiza o estado local
+      setContratados(prev =>
+        prev.map(motorista =>
+          selectedItems.has(motorista.motorista_id!)
+            ? {
+                ...motorista,
+                treinamento: marcar,
+                treinamento_data: newDate
+              }
+            : motorista
+        )
+      );
+
+      toast.success(`Treinamento ${marcar ? 'marcado' : 'desmarcado'} em massa com sucesso`);
+    } catch (error) {
+      console.error('Erro ao atualizar treinamento em massa:', error);
+      toast.error('Erro ao atualizar treinamento');
+    }
+  };
+
+  const handleBulkUpdateIntegracao = async (marcar: boolean) => {
+    if (selectedItems.size === 0) {
+      toast.error('Selecione pelo menos um motorista');
+      return;
+    }
+
+    try {
+      const newDate = marcar ? new Date().toISOString().split('T')[0] : null;
+      
+      // Atualiza no banco de dados
+      const { error } = await supabase
+        .from('motorista_eventos_cliente')
+        .upsert(
+          Array.from(selectedItems).map(id => ({
+            motorista_id: id,
+            integracao: marcar,
+            integracao_data: newDate
+          })),
+          { onConflict: 'motorista_id' }
+        );
+
+      if (error) throw error;
+
+      // Atualiza o estado local
+      setContratados(prev =>
+        prev.map(motorista =>
+          selectedItems.has(motorista.motorista_id!)
+            ? {
+                ...motorista,
+                integracao: marcar,
+                integracao_data: newDate
+              }
+            : motorista
+        )
+      );
+
+      toast.success(`Integração Interna ${marcar ? 'marcada' : 'desmarcada'} em massa com sucesso`);
+    } catch (error) {
+      console.error('Erro ao atualizar integração em massa:', error);
+      toast.error('Erro ao atualizar integração');
+    }
   };
 
   const handleMassMessage = () => {
     setIsMassMessageModalOpen(true);
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedItems.size === 0) {
-      toast.error('Nenhum agregado selecionado para exclusão');
-      return;
-    }
+  const handleContextMenu = (e: React.MouseEvent, motorista: ViewContratado) => {
+    e.preventDefault();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      motorista,
+    });
+  };
 
-    try {
-      const { error } = await supabase
-        .from('motoristas')
-        .delete()
-        .in('motorista_id', Array.from(selectedItems));
-
-      if (error) throw error;
-
-      // Update the local state to remove the deleted items
-      setAgregados(prev => prev.filter(a => !selectedItems.has(a.motorista_id || 0)));
-      
-      // Reset selection
-      setSelectedItems(new Set());
-      setSelectAll(false);
-      
-      toast.success(`${selectedItems.size} agregado(s) excluído(s) com sucesso`);
-    } catch (error) {
-      console.error('Error deleting agregados:', error);
-      toast.error('Erro ao excluir agregados');
-    } finally {
-      setIsBulkDeleteModalOpen(false);
+  const toggleStatusDropdown = (e: React.MouseEvent, motoristaId: number) => {
+    e.stopPropagation();
+    if (statusDropdownOpen === motoristaId) {
+      setStatusDropdownOpen(null);
+    } else {
+      setStatusDropdownOpen(motoristaId);
     }
   };
 
-  const handleUpdateStatus = async (e: React.MouseEvent, agregado: ViewAgregado, newStatus: string) => {
+  const toggleClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
+    e.stopPropagation();
+    if (clienteDropdownOpen === motoristaId) {
+      setClienteDropdownOpen(null);
+    } else {
+      setClienteDropdownOpen(motoristaId);
+    }
+  };
+
+  const handleUpdateStatus = async (e: React.MouseEvent, motorista: ViewContratado, newStatus: string) => {
     e.stopPropagation();
     try {
-      setUpdatingStatus(agregado.motorista_id || 0);
+      setUpdatingStatus(motorista.motorista_id || 0);
       
-      // Atualiza o status do agregado localmente para feedback imediato
-      setAgregados(prev => prev.map(a => 
-        a.motorista_id === agregado.motorista_id 
-          ? { ...a, st_cadastro: newStatus }
-          : a
-      ));
-      
-      // Atualiza no banco de dados
+      // Update the status in the database
       const { error } = await supabase
         .from('motorista')
         .update({ st_cadastro: newStatus })
-        .eq('motorista_id', agregado.motorista_id);
-      
+        .eq('motorista_id', motorista.motorista_id || 0);
+        
       if (error) throw error;
       
-      toast.success(`Status atualizado para ${newStatus} com sucesso!`);
+      // If the new status is not 'contratado', remove from the list
+      if (newStatus !== 'contratado') {
+        setContratados(prev => prev.filter(m => m.motorista_id !== motorista.motorista_id));
+        toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}. Motorista removido da lista.`);
+      } else {
+        // Update the local state
+        setContratados(prev => 
+          prev.map(m => 
+            m.motorista_id === motorista.motorista_id 
+              ? { ...m, st_cadastro: newStatus } 
+              : m
+          )
+        );
+        toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
+      }
     } catch (error) {
-      console.error('Erro ao atualizar status:', error);
+      console.error('Error updating status:', error);
       toast.error('Erro ao atualizar status');
-      
-      // Reverte a alteração em caso de erro
-      setAgregados(prev => prev.map(a => 
-        a.motorista_id === agregado.motorista_id 
-          ? { ...a, st_cadastro: agregado.st_cadastro }
-          : a
-      ));
     } finally {
-      setUpdatingStatus(0);
+      setUpdatingStatus(null);
+      setStatusDropdownOpen(null);
     }
   };
 
-  const handleUpdateCliente = async (e: React.MouseEvent, agregado: ViewAgregado, clienteId: number | null) => {
+  const handleUpdateIntegracaoInterna = async (motorista: ViewContratado, dataIntegracao: string | null) => {
+    try {
+      // Primeiro, verifica se já existe um registro para este motorista
+      const { data: existingRecord, error: fetchError } = await supabase
+        .from('motorista_eventos_cliente')
+        .select('motorista_id')
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      let error;
+      
+      if (existingRecord) {
+        // Se existir, faz update
+        const { error: updateError } = await supabase
+          .from('motorista_eventos_cliente')
+          .update({
+            integracao: !!dataIntegracao,
+            integracao_data: dataIntegracao
+          })
+          .eq('motorista_id', motorista.motorista_id);
+          
+        error = updateError;
+      } else {
+        // Se não existir, faz insert
+        const { error: insertError } = await supabase
+          .from('motorista_eventos_cliente')
+          .insert([{
+            motorista_id: motorista.motorista_id,
+            integracao: !!dataIntegracao,
+            integracao_data: dataIntegracao,
+            treinamento: false,
+            treinamento_data: null
+          }]);
+          
+        error = insertError;
+      }
+
+      if (error) throw error;
+
+      // Atualiza o estado local
+      setContratados(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { 
+                ...m, 
+                integracao_data: dataIntegracao,
+                integracao: !!dataIntegracao
+              } 
+            : m
+        )
+      );
+
+      toast.success('Status de integração interna atualizado');
+    } catch (error) {
+      console.error('Erro ao atualizar integração interna:', error);
+      toast.error('Erro ao atualizar status de integração');
+    }
+  };
+
+  const handleUpdateTreinamentoCliente = async (motorista: ViewContratado, dataTreinamento: string | null) => {
+    try {
+      // Primeiro, verifica se já existe um registro para este motorista
+      const { data: existingRecord, error: fetchError } = await supabase
+        .from('motorista_eventos_cliente')
+        .select('motorista_id')
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      let error;
+      
+      if (existingRecord) {
+        // Se existir, faz update
+        const { error: updateError } = await supabase
+          .from('motorista_eventos_cliente')
+          .update({
+            treinamento: !!dataTreinamento,
+            treinamento_data: dataTreinamento
+          })
+          .eq('motorista_id', motorista.motorista_id);
+          
+        error = updateError;
+      } else {
+        // Se não existir, faz insert
+        const { error: insertError } = await supabase
+          .from('motorista_eventos_cliente')
+          .insert([{
+            motorista_id: motorista.motorista_id,
+            treinamento: !!dataTreinamento,
+            treinamento_data: dataTreinamento,
+            integracao: false,
+            integracao_data: null
+          }]);
+          
+        error = insertError;
+      }
+
+      if (error) throw error;
+
+      // Atualiza o estado local
+      setContratados(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { 
+                ...m, 
+                treinamento_data: dataTreinamento,
+                treinamento: !!dataTreinamento
+              } 
+            : m
+        )
+      );
+
+      toast.success('Status de treinamento do cliente atualizado');
+    } catch (error) {
+      console.error('Erro ao atualizar treinamento do cliente:', error);
+      toast.error('Erro ao atualizar status de treinamento');
+    }
+  };
+
+  const handleUpdateCliente = async (e: React.MouseEvent, motorista: ViewContratado, clienteId: number | null) => {
     e.stopPropagation();
     try {
-      setUpdatingCliente(agregado.motorista_id || 0);
+      setUpdatingCliente(motorista.motorista_id || 0);
       
       // Update the cliente_id in the database
       const { error } = await supabase
         .from('motorista')
         .update({ cliente_id: clienteId })
-        .eq('motorista_id', agregado.motorista_id || 0);
+        .eq('motorista_id', motorista.motorista_id || 0);
         
       if (error) throw error;
       
       // Update the local state
-      setAgregados(prev => 
-        prev.map(a => 
-          a.motorista_id === agregado.motorista_id 
+      setContratados(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
             ? { 
-                ...a, 
+                ...m, 
                 cliente_id: clienteId,
                 cliente: clienteId 
                   ? clientes.find(c => c.cliente_id === clienteId) 
                   : null
               } 
-            : a
+            : m
         )
       );
       
@@ -704,139 +1007,116 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
       toast.error('Erro ao atualizar cliente');
     } finally {
       setUpdatingCliente(null);
+      setClienteDropdownOpen(null);
     }
   };
 
-  // Função para abrir o modal de confirmação de mudança de função
-  const openRoleChangeModal = (agregado: ViewAgregado, newRole: 'Motorista' | 'Agregado') => {
-    setRoleChangeModal({
-      isOpen: true,
-      agregado,
-      newRole,
-      isLoading: false,
-    });
-  };
-
-  // Função para confirmar a mudança de função
-  const handleRoleChangeConfirm = async () => {
-    if (!roleChangeModal.agregado || !roleChangeModal.newRole) return;
-    
-    setRoleChangeModal(prev => ({ ...prev, isLoading: true }));
-    
+  const handleToggleStatus = async (e: React.MouseEvent, motorista: ViewContratado) => {
+    e.stopPropagation();
     try {
-      const updateData = {
-        funcao: roleChangeModal.newRole,
-        ativo: roleChangeModal.newRole === 'Motorista' ? true : roleChangeModal.agregado.ativo
-      };
+      setUpdatingStatus(motorista.motorista_id || 0);
+      
+      // Update the ativo status in the database (toggle it)
+      const newAtivo = !motorista.ativo;
       
       const { error } = await supabase
         .from('motorista')
-        .update(updateData)
-        .eq('motorista_id', roleChangeModal.agregado.motorista_id);
-      
-      if (error) {
-        console.error('Erro na resposta do Supabase:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          stack: new Error().stack
-        });
+        .update({ ativo: newAtivo })
+        .eq('motorista_id', motorista.motorista_id || 0);
         
-        // Verifica se o erro é relacionado a permissões
-        if (error.code === '42501') {
-          throw new Error('Sem permissão para atualizar este registro');
-        }
-        
-        throw new Error(`Erro ao atualizar: ${error.message}`);
-      }
-      
-      // Atualiza o estado local
-      setAgregados(prev => 
-        prev.map(a => 
-          a.motorista_id === roleChangeModal.agregado?.motorista_id 
-            ? { ...a, ...updateData } 
-            : a
-        )
-      );
-      
-      toast.success(`Função alterada com sucesso para ${roleChangeModal.newRole}!`, { duration: 3000 });
-      
-      // Fecha o modal
-      setRoleChangeModal({
-        isOpen: false,
-        agregado: null,
-        newRole: null,
-        isLoading: false,
-      });
-      
-      // Recarrega a lista para garantir que os filtros sejam aplicados corretamente
-      const currentSearchTerm = (document.querySelector('input[type="search"]') as HTMLInputElement)?.value || '';
-      const hasActiveFilters = currentSearchTerm || roleChangeModal.agregado?.st_cadastro || roleChangeModal.agregado?.ativo;
-      
-      if (hasActiveFilters) {
-        console.log('Recarregando lista de agregados devido a filtros ativos');
-        try {
-          await fetchAgregados();
-        } catch (fetchError) {
-          console.error('Erro ao recarregar lista:', fetchError);
-          // Não interrompe o fluxo se apenas o reload falhar
-        }
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      console.error('Erro detalhado ao alterar função do motorista:', {
-        error,
-        message: errorMessage,
-        stack: error instanceof Error ? error.stack : undefined
-      });
-      
-      toast.error(`Erro ao alterar função: ${errorMessage}`, { duration: 5000 });
-      
-      // Mantém o modal aberto em caso de erro, mas remove o estado de carregamento
-      setRoleChangeModal(prev => ({
-        ...prev,
-        isLoading: false
-      }));
-    }
-  };
-
-  const handleToggleStatus = async (e: React.MouseEvent, agregado: ViewAgregado) => {
-    e.stopPropagation();
-    const newStatus = !agregado.ativo;
-
-    try {
-      setUpdatingStatus(agregado.motorista_id || 0);
-      
-      const { error } = await supabase
-        .from('motoristas')
-        .update({ ativo: newStatus })
-        .eq('motorista_id', agregado.motorista_id);
-
       if (error) throw error;
-
-      // Atualiza o estado local
-      setAgregados(prevAgregados =>
-        prevAgregados.map(a =>
-          a.motorista_id === agregado.motorista_id 
-            ? { ...a, ativo: newStatus } 
-            : a
+      
+      // Update the local state
+      setContratados(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { ...m, ativo: newAtivo } 
+            : m
         )
       );
-
-      toast.success(`Agregado ${newStatus ? 'ativado' : 'desativado'} com sucesso!`);
+      
+      toast.success(`Motorista ${newAtivo ? 'ativado' : 'desativado'} com sucesso`);
     } catch (error) {
-      console.error('Erro ao atualizar status do agregado:', error);
-      toast.error('Erro ao atualizar status do agregado');
+      console.error('Error updating ativo status:', error);
+      toast.error('Erro ao atualizar status do motorista');
     } finally {
       setUpdatingStatus(null);
     }
   };
 
-  const handleBulkAction = (actionType: 'status' | 'client') => {
-    setBulkActionType(actionType);
-    setIsBulkActionsModalOpen(true);
+  const getMotoristaCity = (motorista: ViewContratado): string | null => {
+    // Usa o campo nome_cidade que já está disponível no ViewContratado
+    return motorista.nome_cidade || null;
   };
+
+
+  const filteredContratados = contratados.filter((motorista): boolean => {
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Lógica para filtro de status (multiseleção)
+    const statusMatch = statusFilter.length === 0 || 
+      (motorista.st_cadastro && statusFilter.includes(motorista.st_cadastro));
+    
+    // Lógica para filtro de cliente (multiseleção)
+    let clienteMatch = true;
+    if (clienteFilter.length > 0) {
+      if (clienteFilter.includes('sem_cliente')) {
+        // Se 'sem_cliente' está selecionado, inclui registros sem cliente
+        clienteMatch = motorista.cliente_id === null || motorista.cliente_id === undefined;
+      } else {
+        // Verifica se o cliente do motorista está na lista de clientes selecionados
+        clienteMatch = motorista.cliente_id !== null && 
+          motorista.cliente_id !== undefined &&
+          clienteFilter.includes(motorista.cliente_id.toString());
+      }
+      
+      // Se 'sem_cliente' está selecionado junto com outros clientes, combina os resultados
+      if (clienteFilter.includes('sem_cliente') && clienteFilter.length > 1) {
+        clienteMatch = clienteMatch || (motorista.cliente_id === null || motorista.cliente_id === undefined);
+      }
+    }
+    
+    // Lógica para filtro de cidade (multiseleção)
+    const cidadeMatch = cidadeFilter.length === 0 || 
+      (motorista.nome_cidade && cidadeFilter.includes(motorista.nome_cidade));
+    
+    // Lógica para filtro de tipo de veículo (multiseleção)
+    let tipoVeiculoMatch = true;
+    if (tipoVeiculoFilter.length > 0) {
+      if (tipoVeiculoFilter.includes('sem_veiculo')) {
+        tipoVeiculoMatch = !motorista.veiculo || motorista.veiculo.length === 0;
+      } else {
+        tipoVeiculoMatch = !!(motorista.veiculo && motorista.veiculo.some(v => 
+          v.tipologia && tipoVeiculoFilter.includes(v.tipologia)
+        ));
+      }
+      
+      // Se 'sem_veiculo' está selecionado junto com outros tipos, combina os resultados
+      if (tipoVeiculoFilter.includes('sem_veiculo') && tipoVeiculoFilter.length > 1) {
+        tipoVeiculoMatch = tipoVeiculoMatch || (!motorista.veiculo || motorista.veiculo.length === 0);
+      }
+    }
+    
+    const ativoMatch = ativoFilter === '' ? true : 
+                      ativoFilter === 'active' ? motorista.ativo === true : 
+                      ativoFilter === 'inactive' ? motorista.ativo === false : true;
+    
+    const searchMatch = Boolean(
+      (motorista.nome_motorista && motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
+      (motorista.cpf && motorista.cpf.includes(searchLower)) ||
+      (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
+      (motorista.telefone && motorista.telefone.toString().includes(searchLower))
+    );
+    
+    return Boolean(
+      statusMatch &&
+      clienteMatch &&
+      cidadeMatch &&
+      tipoVeiculoMatch &&
+      ativoMatch &&
+      searchMatch
+    );
+  });
 
   const {
     currentPage,
@@ -847,7 +1127,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
     handlePageChange,
     handlePageSizeChange
   } = usePagination({
-    data: filteredAgregados,
+    data: filteredContratados,
     initialPageSize: 10
   });
 
@@ -868,15 +1148,45 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
         <div className="flex gap-2">
           {selectedItems.size > 0 && (
             <>
-              <button
-                onClick={() => handleBulkAction('status')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                        transition-colors flex items-center gap-2"
-              >
-                <Edit2 className="w-5 h-5" />
-                Atualizar Status
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleBulkAction('status')}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                          transition-colors flex items-center gap-2"
+                >
+                  <Edit2 className="w-5 h-5" />
+                  Atualizar Status
+                </button>
+                
+                <button
+                  onClick={() => handleBulkUpdateIntegracao(true)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 
+                          focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 
+                          transition-colors flex items-center gap-2"
+                  title="Marcar Integração Interna"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check-circle">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <path d="m9 11 3 3L22 4"/>
+                  </svg>
+                  Int. Interna
+                </button>
+                
+                <button
+                  onClick={() => handleBulkUpdateTreinamento(true)}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 
+                          focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 
+                          transition-colors flex items-center gap-2"
+                  title="Marcar Treinamento Cliente"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-graduation-cap">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                    <path d="M6 12v5c3 3 9 1 9-1v-5"/>
+                  </svg>
+                  Treinamento
+                </button>
+              </div>
               <button
                 onClick={() => handleBulkAction('client')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
@@ -915,469 +1225,336 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
               </button>
             </>
           )}
-
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder="Buscar por nome, CPF, email, telefone ou placa..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="relative group">
-            <div className="relative w-full">
+            <input
+              type="text"
+              placeholder="Buscar por nome, CPF, email ou telefone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            {searchTerm && (
               <button
-                type="button"
-                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowStatusDropdown(!showStatusDropdown);
-                  setShowClienteDropdown(false);
-                  setShowCidadeDropdown(false);
-                }}
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
-                <div className="flex-1 truncate text-left">
-                  {statusFilter.length === 0 ? 'Todos os status' : `${statusFilter.length} selecionado(s)`}
-                </div>
+                <X size={16} />
               </button>
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
-              </div>
-            </div>
-            
-            {showStatusDropdown && (
-              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-y-auto">
-                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
-                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    <span>Selecionar status</span>
-                    <button 
-                      type="button" 
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearStatusFilter();
-                      }}
-                    >
-                      Limpar
-                    </button>
-                  </div>
-                </div>
-                <div className="max-h-48 overflow-y-auto">
-                  {statusOptions.map((status) => (
-                    <div key={status.value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <label 
-                        className="flex items-center space-x-2 cursor-pointer" 
-                        onMouseDown={e => e.stopPropagation()} 
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                          checked={statusFilter.includes(status.value)}
-                          onChange={() => toggleStatus(status.value)}
-                          onClick={e => e.stopPropagation()}
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{status.label}</span>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
             )}
           </div>
 
-          <div className="relative group">
+          <div className="relative" id="status-dropdown">
             <button
               type="button"
-              className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              onClick={() => setShowAtivoDropdown(!showAtivoDropdown)}
+              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
             >
-              <span className="truncate">
-                {!ativoFilter ? 'Todos (Ativos/Inativos)' : ativoFilter === 'active' ? 'Somente Ativos' : 'Somente Inativos'}
-              </span>
-              <div className="absolute inset-y-0 right-2 flex items-center">
-                <ChevronDown className="h-4 w-4 text-gray-400" />
+              <span className="truncate w-full block">{getFilterButtonText('status')}</span>
+              <div className="flex items-center">
+                {statusFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('status');
+                    }}
+                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
               </div>
-              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </button>
-            
-            {showAtivoDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
-                <div className="py-1">
-                  <div 
-                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                    onClick={() => {
-                      setAtivoFilter('');
-                      setShowAtivoDropdown(false);
+            <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            {showStatusDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os status</span>
+                  <button 
+                    type="button" 
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setStatusFilter([]);
                     }}
                   >
-                    <div className="flex items-center">
-                      <span>Todos (Ativos/Inativos)</span>
-                    </div>
-                  </div>
-                  <div 
-                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'active' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                    onClick={() => {
-                      setAtivoFilter('active');
-                      setShowAtivoDropdown(false);
-                    }}
-                  >
-                    <div className="flex items-center">
-                      <span>Somente Ativos</span>
-                    </div>
-                  </div>
-                  <div 
-                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inactive' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                    onClick={() => {
-                      setAtivoFilter('inactive');
-                      setShowAtivoDropdown(false);
-                    }}
-                  >
-                    <div className="flex items-center">
-                      <span>Somente Inativos</span>
-                    </div>
-                  </div>
+                    Limpar
+                  </button>
                 </div>
+                {[
+                  { value: 'cadastrado', label: 'Cadastrado' },
+                  { value: 'qualificado', label: 'Qualificado' },
+                  { value: 'documentacao', label: 'Documentação' },
+                  { value: 'gestao_risco', label: 'Gestão de Risco' },
+                  { value: 'contrato_enviado', label: 'Contrato Enviado' },
+                  { value: 'contratado', label: 'Contratado' },
+                  { value: 'repescagem', label: 'Repescagem' },
+                  { value: 'rejeitado', label: 'Rejeitado' }
+                ].map(({ value, label }) => (
+                  <div key={value} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`status-${value}`}
+                      checked={statusFilter.includes(value)}
+                      onChange={() => toggleFilterOption('status', value)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`status-${value}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {label}
+                    </label>
+                  </div>
+                ))}
               </div>
             )}
+          </div>
+
+          <div className="relative">
+            <select
+              value={ativoFilter}
+              onChange={(e) => setAtivoFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+            >
+              <option value="">Todos (Ativos/Inativos)</option>
+              <option value="active">Somente Ativos</option>
+              <option value="inactive">Somente Inativos</option>
+            </select>
+            <User className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
         </div>
         
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative group" ref={clienteDropdownRef}>
+          <div className="relative" id="cliente-dropdown">
             <button
               type="button"
-              id="cliente-dropdown-button"
-              className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowClienteDropdown(!showClienteDropdown);
-                setShowCidadeDropdown(false);
-              }}
-              disabled={clientesLoading}
-              aria-expanded={showClienteDropdown}
-              aria-haspopup="listbox"
-              aria-labelledby="cliente-dropdown-button"
+              onClick={() => setShowClienteDropdown(!showClienteDropdown)}
+              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
             >
-              <span className="truncate">
-                {clientesLoading ? 'Carregando...' : 
-                 clienteFilter.length === 0 
-                  ? 'Todos os clientes' 
-                  : clienteFilter.length === 1 && clienteFilter[0] === 'sem_cliente'
-                    ? 'Sem cliente'
-                    : `${clienteFilter.length} cliente(s)`}
-              </span>
-              <div className="absolute inset-y-0 right-2 flex items-center">
-                {clientesLoading ? (
-                  <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
-                ) : (
-                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
+              <span className="truncate w-full block">{getFilterButtonText('cliente')}</span>
+              <div className="flex items-center">
+                {clienteFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('cliente');
+                    }}
+                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
                 )}
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
               </div>
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
             </button>
-            
-            {showClienteDropdown && !clientesLoading && (
-              <div 
-                className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-32 overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-                
-              >
-                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
-                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    <span>Selecionar clientes</span>
-                    <button 
-                      type="button" 
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setClienteFilter([]);
-                      }}
-                    >
-                      Limpar
-                    </button>
-                  </div>
+            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            {showClienteDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os clientes</span>
+                  <button 
+                    type="button" 
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setClienteFilter([]);
+                    }}
+                  >
+                    Limpar
+                  </button>
                 </div>
-                <div className="max-h-48 overflow-y-auto py-1">
-                  {/* No Client Option */}
-                  <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                    <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                        checked={clienteFilter.includes('sem_cliente')}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setClienteFilter([...clienteFilter, 'sem_cliente']);
-                          } else {
-                            setClienteFilter(clienteFilter.filter(id => id !== 'sem_cliente'));
-                          }
-                        }}
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-200">Sem cliente</span>
+                <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                  <input
+                    type="checkbox"
+                    id="cliente-sem_cliente"
+                    checked={clienteFilter.includes('sem_cliente')}
+                    onChange={() => toggleFilterOption('cliente', 'sem_cliente')}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <label htmlFor="cliente-sem_cliente" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    Sem cliente
+                  </label>
+                </div>
+                {clientes.map(cliente => (
+                  <div key={cliente.cliente_id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`cliente-${cliente.cliente_id}`}
+                      checked={clienteFilter.includes(cliente.cliente_id.toString())}
+                      onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`cliente-${cliente.cliente_id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {cliente.nome}
                     </label>
                   </div>
-                  
-                  {/* Clients List */}
-                  {clientes.map((cliente) => {
-                    if (!cliente || cliente.id === undefined || cliente.id === null) {
-                      return null;
-                    }
-                    const clienteId = cliente.id.toString();
-                    return (
-                      <div key={clienteId} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                        <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                            checked={clienteFilter.includes(clienteId)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setClienteFilter([...clienteFilter, clienteId]);
-                              } else {
-                                setClienteFilter(clienteFilter.filter(id => id !== clienteId));
-                              }
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                            }}
-                          />
-                          <span className="text-sm text-gray-700 dark:text-gray-200">
-                            {cliente.nome || 'Cliente sem nome'}
-                          </span>
-                        </label>
-                      </div>
-                    );
-                  })}
-                </div>
+                ))}
               </div>
             )}
           </div>
 
-          <div className="relative group" ref={cidadeDropdownRef}>
-            <div className="relative w-full">
-              <button
-                type="button"
-                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowCidadeDropdown(!showCidadeDropdown);
-                  setShowClienteDropdown(false);
-                }}
-              >
-                <div className="flex-1 truncate text-left">
-                  {cidadeFilter.length === 0 ? 'Todas as cidades' : `${cidadeFilter.length} selecionada(s)`}
-                </div>
-              </button>
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
+          <div className="relative" id="cidade-dropdown">
+            <button
+              type="button"
+              onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
+              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
+            >
+              <span className="truncate w-full block">{getFilterButtonText('cidade')}</span>
+              <div className="flex items-center">
+                {cidadeFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('cidade');
+                    }}
+                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
               </div>
-            </div>
-            
+            </button>
+            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             {showCidadeDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
-                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
-                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    <span>Selecionar cidades</span>
-                    <button 
-                      type="button" 
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCidadeFilter([]);
-                      }}
-                    >
-                      Limpar
-                    </button>
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as cidades</span>
+                  <button 
+                    type="button" 
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCidadeFilter([]);
+                    }}
+                  >
+                    Limpar
+                  </button>
+                </div>
+                {cidades.map((cidade, index) => (
+                  <div key={index} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`cidade-${index}`}
+                      checked={cidadeFilter.includes(cidade)}
+                      onChange={() => toggleFilterOption('cidade', cidade)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`cidade-${index}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {cidade}
+                    </label>
                   </div>
-                </div>
-                <div className="max-h-48 overflow-y-auto py-1">
-                  {cidades.map((cidade, index) => (
-                    <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                          checked={cidadeFilter.includes(cidade)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setCidadeFilter([...cidadeFilter, cidade]);
-                            } else {
-                              setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
-                            }
-                          }}
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{cidade}</span>
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                ))}
               </div>
             )}
           </div>
 
-          <div className="relative group">
-            <div className="relative w-full">
-              <button
-                type="button"
-                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
-              >
-                <span className="truncate w-full block text-left">
-                  {tipoVeiculoFilter.length === 0 ? 'Todos os tipos' : `${tipoVeiculoFilter.length} selecionado(s)`}
-                </span>
-              </button>
-              <Truck className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showTipoVeiculoDropdown ? 'transform rotate-180' : ''}`} />
+          <div className="relative" id="tipo-veiculo-dropdown">
+            <button
+              type="button"
+              onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
+              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
+            >
+              <span className="truncate w-full block">{getFilterButtonText('tipoVeiculo')}</span>
+              <div className="flex items-center">
+                {tipoVeiculoFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('tipoVeiculo');
+                    }}
+                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showTipoVeiculoDropdown ? 'transform rotate-180' : ''}`} />
               </div>
-            </div>
-            
+            </button>
+            <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             {showTipoVeiculoDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
-                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
-                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    <span>Selecionar tipos</span>
-                    <button 
-                      type="button" 
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTipoVeiculoFilter([]);
-                      }}
-                    >
-                      Limpar
-                    </button>
-                  </div>
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os tipos de veículo</span>
+                  <button 
+                    type="button" 
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTipoVeiculoFilter([]);
+                    }}
+                  >
+                    Limpar
+                  </button>
                 </div>
-                <div className="max-h-48 overflow-y-auto py-1">
-                  <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                        checked={tipoVeiculoFilter.includes('sem_veiculo')}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setTipoVeiculoFilter([...tipoVeiculoFilter, 'sem_veiculo']);
-                          } else {
-                            setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== 'sem_veiculo'));
-                          }
-                        }}
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-200">Sem veículo</span>
+                <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                  <input
+                    type="checkbox"
+                    id="tipo-veiculo-sem_veiculo"
+                    checked={tipoVeiculoFilter.includes('sem_veiculo')}
+                    onChange={() => toggleFilterOption('tipoVeiculo', 'sem_veiculo')}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <label htmlFor="tipo-veiculo-sem_veiculo" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    Sem veículo
+                  </label>
+                </div>
+                {tiposVeiculo.map((tipo, index) => (
+                  <div key={index} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`tipo-veiculo-${index}`}
+                      checked={tipoVeiculoFilter.includes(tipo)}
+                      onChange={() => toggleFilterOption('tipoVeiculo', tipo)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`tipo-veiculo-${index}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {tipo}
                     </label>
                   </div>
-                  {tiposVeiculo.map((tipo, index) => (
-                    <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                          checked={tipoVeiculoFilter.includes(tipo)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setTipoVeiculoFilter([...tipoVeiculoFilter, tipo]);
-                            } else {
-                              setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== tipo));
-                            }
-                          }}
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{tipo}</span>
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                ))}
               </div>
             )}
           </div>
         </div>
-        
+
         <div className="mt-4 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
-            <div className="relative">
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-              >
-                <option value="all">Todos os períodos</option>
-                <option value="today">Hoje</option>
-                <option value="2days">Últimos 2 dias</option>
-                <option value="15days">Últimos 15 dias</option>
-                <option value="30days">Último mês</option>
-                <option value="custom">Personalizado</option>
-              </select>
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" 
-                width="16" 
-                height="16" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
-              <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
-                <ChevronDown className="h-4 w-4 text-gray-400" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="relative group self-center">
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                       transition-colors flex items-center justify-center"
-              aria-label="Adicionar novo agregado"
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
             >
-              <Plus className="w-5 h-5" />
-            </button>
-            <div className="invisible group-hover:visible absolute z-10 w-auto px-1.5 py-0.5 text-xs text-white bg-gray-800 rounded shadow -bottom-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-              Novo Agregado
-            </div>
+              <option value="all">Todos os períodos</option>
+              <option value="today">Hoje</option>
+              <option value="2days">Últimos 2 dias</option>
+              <option value="15days">Últimos 15 dias</option>
+              <option value="30days">Último mês</option>
+              <option value="custom">Personalizado</option>
+            </select>
+            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
         </div>
 
@@ -1417,7 +1594,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                 type="checkbox"
                 checked={selectAll}
                 onChange={handleSelectAll}
-                className="rounded border-gray-300 text-blue-600 mr-2"
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
               />
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {selectedItems.size > 0 ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}` : 'Selecionar todos'}
@@ -1437,58 +1614,62 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Integração Interna</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Treinamento Cliente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedData.map((agregado, index) => (
+                  {paginatedData.map((motorista) => (
                     <tr 
-                      key={`agregado-${agregado.motorista_id || 'new'}-${index}`} 
+                      key={motorista.motorista_id || Math.random()} 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-                        selectedItems.has(agregado.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        selectedItems.has(motorista.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
-                      onContextMenu={(e) => handleContextMenu(e, agregado)}
+                      onContextMenu={(e) => handleContextMenu(e, motorista)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
-                          checked={selectedItems.has(agregado.motorista_id)}
-                          onChange={() => handleSelectItem(agregado.motorista_id)}
+                          checked={selectedItems.has(motorista.motorista_id || 0)}
+                          onChange={() => handleSelectItem(motorista.motorista_id || 0)}
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                            <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            {motorista.funcao === 'Motorista' ? (
+                              <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            ) : (
+                              <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            )}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {agregado.nome_motorista || ''}
-                              {agregado.nome_ajudante && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Ajudante: {agregado.nome_ajudante}
-                                </div>
-                              )}
+                              {motorista.nome_motorista || ''}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {motorista.funcao}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {formatCPF(agregado.cpf || '')}
+                          {formatCPF(motorista.cpf || '')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="text-sm text-gray-900 dark:text-white">
-                            {agregado.telefone ? formatPhone(agregado.telefone.toString()) : '-'}
+                            {motorista.telefone ? formatPhone(motorista.telefone.toString()) : '-'}
                           </div>
-                          {agregado.telefone && (
+                          {motorista.telefone && (
                             <button
-                              onClick={() => agregado.telefone && startChat(agregado.telefone.toString(), agregado.nome_motorista || '')}
+                              onClick={() => startChat(motorista.telefone?.toString() || '', motorista.nome_motorista || '')}
                               className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
                               title="Iniciar chat"
                             >
@@ -1497,61 +1678,52 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                           )}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {agregado.email || '-'}
+                          {motorista.email || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
                           <div className="flex items-center">
                             <button
-                              ref={el => statusButtonRefs.current[agregado.motorista_id || 0] = el}
-                              onClick={(e) => toggleStatusDropdown(e, agregado.motorista_id || 0)}
+                              onClick={(e) => toggleStatusDropdown(e, motorista.motorista_id || 0)}
                               className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                !agregado.st_cadastro ? 'bg-gray-100 dark:bg-gray-700' :
-                                agregado.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30' :
-                                agregado.st_cadastro === 'rejeitado' ? 'bg-red-100 dark:bg-red-900/30' :
-                                agregado.st_cadastro === 'documentacao' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
-                                agregado.st_cadastro === 'qualificado' ? 'bg-blue-100 dark:bg-blue-900/30' :
-                                agregado.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 dark:bg-purple-900/30' :
-                                agregado.st_cadastro === 'repescagem' ? 'bg-orange-100 dark:bg-orange-900/30' :
-                                agregado.st_cadastro === 'gestao_risco' ? 'bg-rose-100 dark:bg-rose-900/30' :
+                                motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30' :
+                                motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 dark:bg-red-900/30' :
+                                motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                                motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                                motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 dark:bg-purple-900/30' :
+                                motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 dark:bg-orange-900/30' :
+                                motorista.st_cadastro === 'gestao_risco' ? 'bg-rose-100 dark:bg-rose-900/30' :
                                 'bg-gray-100 dark:bg-gray-700'
                               }`}
-                              title={!agregado.st_cadastro ? 'Indefinido' : 
-                                     agregado.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' : 
-                                     agregado.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
-                                     agregado.st_cadastro.charAt(0).toUpperCase() + agregado.st_cadastro.slice(1)}
+                              title={!motorista.st_cadastro ? 'Indefinido' : 
+                                     motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' :
+                                     motorista.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
+                                     motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
                             >
                               <span className="truncate max-w-[130px] text-left">
-                                {!agregado.st_cadastro ? 'Indefinido' : 
-                                 agregado.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' :
-                                 agregado.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
-                                 agregado.st_cadastro.charAt(0).toUpperCase() + agregado.st_cadastro.slice(1)}
+                                {!motorista.st_cadastro ? 'Indefinido' : 
+                                 motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' :
+                                 motorista.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
+                                 motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
                               </span>
                               <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
                             </button>
                           </div>
                           
-                          {statusDropdownOpen === agregado.motorista_id && (
-                            <div
-                              style={statusDropdownCoords[agregado.motorista_id || 0] ? {
-                                 position: 'fixed',
-                                 left: statusDropdownCoords[agregado.motorista_id || 0].left,
-                                 top: statusDropdownCoords[agregado.motorista_id || 0].top,
-                                 minWidth: 180,
-                                 zIndex: 50
-                               } : {}}
-                              className="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
-                              onClick={e => e.stopPropagation()}
+                          {statusDropdownOpen === motorista.motorista_id && (
+                            <div 
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
+                              onClick={(e) => e.stopPropagation()}
                               onMouseLeave={() => setStatusDropdownOpen(null)}
                               tabIndex={0}
                               onBlur={() => setStatusDropdownOpen(null)}
                             >
                               <div className="py-1">
                                 <button
-                                  onClick={(e) => handleUpdateStatus(e, agregado, 'cadastrado')}
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'cadastrado')}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
-                                    agregado.st_cadastro === 'cadastrado' 
+                                    motorista.st_cadastro === 'cadastrado' 
                                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
                                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
@@ -1559,9 +1731,9 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                                   Cadastrado
                                 </button>
                                 <button
-                                  onClick={(e) => handleUpdateStatus(e, agregado, 'qualificado')}
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'qualificado')}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
-                                    agregado.st_cadastro === 'qualificado' 
+                                    motorista.st_cadastro === 'qualificado' 
                                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
                                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
@@ -1569,9 +1741,9 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                                   Qualificado
                                 </button>
                                 <button
-                                  onClick={(e) => handleUpdateStatus(e, agregado, 'documentacao')}
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'documentacao')}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
-                                    agregado.st_cadastro === 'documentacao' 
+                                    motorista.st_cadastro === 'documentacao' 
                                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
                                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
@@ -1579,9 +1751,9 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                                   Documentação
                                 </button>
                                 <button
-                                  onClick={(e) => handleUpdateStatus(e, agregado, 'gestao_risco')}
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'gestao_risco')}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
-                                    agregado.st_cadastro === 'gestao_risco' 
+                                    motorista.st_cadastro === 'gestao_risco' 
                                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
                                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
@@ -1589,9 +1761,9 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                                   Gestão de Risco
                                 </button>
                                 <button
-                                  onClick={(e) => handleUpdateStatus(e, agregado, 'contrato_enviado')}
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'contrato_enviado')}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
-                                    agregado.st_cadastro === 'contrato_enviado' 
+                                    motorista.st_cadastro === 'contrato_enviado' 
                                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
                                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
@@ -1599,9 +1771,9 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                                   Contrato Enviado
                                 </button>
                                 <button
-                                  onClick={(e) => handleUpdateStatus(e, agregado, 'contratado')}
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'contratado')}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
-                                    agregado.st_cadastro === 'contratado' 
+                                    motorista.st_cadastro === 'contratado' 
                                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
                                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
@@ -1609,9 +1781,9 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                                   Contratado
                                 </button>
                                 <button
-                                  onClick={(e) => handleUpdateStatus(e, agregado, 'repescagem')}
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'repescagem')}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
-                                    agregado.st_cadastro === 'repescagem' 
+                                    motorista.st_cadastro === 'repescagem' 
                                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
                                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
@@ -1619,9 +1791,9 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                                   Repescagem
                                 </button>
                                 <button
-                                  onClick={(e) => handleUpdateStatus(e, agregado, 'rejeitado')}
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'rejeitado')}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
-                                    agregado.st_cadastro === 'rejeitado' 
+                                    motorista.st_cadastro === 'rejeitado' 
                                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
                                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
@@ -1633,7 +1805,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                             </div>
                           )}
                           
-                          {updatingStatus === agregado.motorista_id && (
+                          {updatingStatus === motorista.motorista_id && (
                             <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
                               <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                             </div>
@@ -1644,43 +1816,35 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                         <div className="relative">
                           <div className="flex items-center">
                             <button
-                              ref={el => clienteButtonRefs.current[agregado.motorista_id || 0] = el}
-                              onClick={(e) => toggleClienteDropdown(e, agregado.motorista_id || 0)}
+                              onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id || 0)}
                               className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                agregado.cliente_id 
-                                  ? clientes.find(c => c.cliente_id === agregado.cliente_id)?.cor || 
+                                motorista.cliente_id 
+                                  ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor || 
                                     'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
                                   : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
                               }`}
-                              title={agregado.cliente_id ? clientes.find(c => c.cliente_id === agregado.cliente_id)?.nome : 'Sem cliente'}
+                              title={motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
                             >
                               <span className="truncate max-w-[130px] text-left">
-                                {agregado.cliente_id ? clientes.find(c => c.cliente_id === agregado.cliente_id)?.nome || 'Cliente não encontrado' : 'Sem cliente'}
+                                {motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
                               </span>
                               <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
                             </button>
                           </div>
                           
-                          {clienteDropdownOpen === agregado.motorista_id && (
+                          {clienteDropdownOpen === motorista.motorista_id && (
                             <div 
                               className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
-                              style={clienteDropdownCoords[agregado.motorista_id || 0] ? {
-                                position: 'fixed',
-                                left: clienteDropdownCoords[agregado.motorista_id || 0].left,
-                                top: clienteDropdownCoords[agregado.motorista_id || 0].top,
-                                minWidth: 192,
-                                zIndex: 50
-                              } : {}}
                               onMouseLeave={() => setClienteDropdownOpen(null)}
                               tabIndex={0}
                               onBlur={() => setClienteDropdownOpen(null)}
                             >
                               <div className="py-1">
                                 <button
-                                  onClick={(e) => handleUpdateCliente(e, agregado, null)}
+                                  onClick={(e) => handleUpdateCliente(e, motorista, null)}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
-                                    !agregado.cliente_id
+                                    !motorista.cliente_id
                                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
                                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
@@ -1688,31 +1852,24 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                                   Sem cliente
                                 </button>
                                 
-                                {clientes.map((cliente) => {
-                                  // Skip rendering if cliente or cliente.id is undefined
-                                  if (!cliente || cliente.id === undefined || cliente.id === null) {
-                                    return null;
-                                  }
-                                  const clienteId = cliente.id.toString();
-                                  return (
-                                    <button
-                                      key={clienteId}
-                                      onClick={(e) => handleUpdateCliente(e, agregado, cliente.id)}
-                                      className={`block w-full text-left px-4 py-2 text-sm truncate ${
-                                        agregado.cliente_id === cliente.id
-                                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                      }`}
-                                    >
-                                      {cliente.nome || 'Cliente sem nome'}
-                                    </button>
-                                  );
-                                })}
+                                {clientes.map(cliente => (
+                                  <button
+                                    key={cliente.cliente_id}
+                                    onClick={(e) => handleUpdateCliente(e, motorista, cliente.cliente_id)}
+                                    className={`block w-full text-left px-4 py-2 text-sm truncate ${
+                                      motorista.cliente_id === cliente.cliente_id
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    {cliente.nome}
+                                  </button>
+                                ))}
                               </div>
                             </div>
                           )}
                           
-                          {updatingCliente === agregado.motorista_id && (
+                          {updatingCliente === motorista.motorista_id && (
                             <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
                               <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                             </div>
@@ -1721,30 +1878,72 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {agregado.nome_cidade || 'Não informada'}
+                          {getMotoristaCity(motorista) || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {agregado.placa ? (
-                            <span className="uppercase">{agregado.placa}</span>
-                          ) : (
-                            'Não informado'
+                        <div className="flex items-center gap-2">
+                          <label className="inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={!!motorista.integracao_data}
+                              onChange={(e) => {
+                                const newDate = e.target.checked ? new Date().toISOString().split('T')[0] : null;
+                                handleUpdateIntegracaoInterna(motorista, newDate);
+                              }}
+                              className="form-checkbox h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </label>
+                          {motorista.integracao_data && (
+                            <span className="text-sm text-gray-600">
+                              {new Date(motorista.integracao_data).toLocaleDateString('pt-BR')}
+                            </span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {agregado.tipologia || ''}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <label className="inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={!!motorista.treinamento_data}
+                              onChange={(e) => {
+                                const newDate = e.target.checked ? new Date().toISOString().split('T')[0] : null;
+                                handleUpdateTreinamentoCliente(motorista, newDate);
+                              }}
+                              className="form-checkbox h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </label>
+                          {motorista.treinamento_data && (
+                            <span className="text-sm text-gray-600">
+                              {new Date(motorista.treinamento_data).toLocaleDateString('pt-BR')}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {formatDate(agregado.data_cadastro || '')}
+                          {motorista.veiculo && motorista.veiculo.length > 0 ? (
+                            <div>
+                              <div className="font-medium">{motorista.veiculo[0].placa || ''}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {motorista.veiculo[0].tipologia || ''}
+                              </div>
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {formatDate(motorista.data_cadastro)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-3">
                           <button
-                            onClick={() => handleViewDetail(agregado)}
+                            onClick={() => handleViewDocument(motorista)}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Visualizar"
                           >
@@ -1753,7 +1952,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              openRoleChangeModal(agregado, 'Motorista');
+                              openRoleChangeModal(motorista, 'Motorista')
                             }}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             title="Transformar em Motorista"
@@ -1761,23 +1960,23 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                             <ArrowLeftRight size={18} />
                           </button>
                           <button
-                            onClick={(e) => handleToggleStatus(e, agregado)}
-                            disabled={updatingStatus === agregado.motorista_id}
+                            onClick={(e) => handleToggleStatus(e, motorista)}
+                            disabled={updatingStatus === motorista.motorista_id}
                             className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                              agregado.ativo 
+                              motorista.ativo 
                                 ? 'bg-green-500 dark:bg-green-600' 
                                 : 'bg-gray-200 dark:bg-gray-700'
-                            } ${updatingStatus === agregado.motorista_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            } ${updatingStatus === motorista.motorista_id ? 'opacity-50 cursor-not-allowed' : ''}`}
                             role="switch"
-                            aria-checked={agregado.ativo}
-                            title={agregado.ativo ? "Desativar agregado" : "Ativar agregado"}
+                            aria-checked={motorista.ativo}
+                            title={motorista.ativo ? "Desativar motorista" : "Ativar motorista"}
                           >
                             <span
                               className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                agregado.ativo ? 'translate-x-5' : 'translate-x-0'
+                                motorista.ativo ? 'translate-x-5' : 'translate-x-0'
                               }`}
                             />
-                            {updatingStatus === agregado.motorista_id && (
+                            {updatingStatus === motorista.motorista_id && (
                               <Loader2 
                                 className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
                               />
@@ -1798,10 +1997,10 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
           </div>
         </div>
         
-        {filteredAgregados.length === 0 ? (
+        {filteredContratados.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400">
-              Nenhum agregado encontrado
+              Nenhum contratado encontrado
             </p>
           </div>
         ) : (
@@ -1817,253 +2016,109 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
       </div>
 
       {/* Context Menu */}
-      {contextMenu.visible && contextMenu.agregado && (
+      {contextMenu.visible && contextMenu.motorista && (
         <ContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
           onClose={() => setContextMenu({ ...contextMenu, visible: false })}
           actions={[
             {
-              icon: <Truck size={16} />,
-              label: 'Visualizar Detalhes',
-              onClick: () => handleViewDetail(contextMenu.agregado!),
+              icon: <User size={16} />,
+              label: 'Visualizar Detalhes' as const satisfies string,
+              onClick: () => handleViewDocument(contextMenu.motorista!),
               color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
             },
             {
               icon: <Edit2 size={16} />,
-              label: 'Editar Agregado',
-              onClick: () => handleEdit(contextMenu.agregado!),
+              label: 'Editar Motorista',
+              onClick: () => handleEdit(contextMenu.motorista!),
               color: 'text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300'
             },
             {
               icon: <FileText size={16} />,
               label: 'Gerenciar Documentos',
-              onClick: () => handleUploadDocument(contextMenu.agregado!),
+              onClick: () => handleUploadDocument(contextMenu.motorista!),
               color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
             },
             {
               icon: <MessageCircle size={16} />,
               label: 'Iniciar Chat',
-              onClick: () => startChat(contextMenu.agregado!.telefone?.toString() || '', contextMenu.agregado!.nome || ''),
+              onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome_motorista || ''),
               color: 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300',
-              disabled: !contextMenu.agregado!.telefone
+              disabled: !contextMenu.motorista!.telefone
             }
           ]}
         />
       )}
 
       {/* Modals */}
-      <UnifiedAgregadoModal
-        isOpen={isDetailViewOpen}
-        onClose={() => setIsDetailViewOpen(false)}
-        motorista={selectedAgregado}
-        onSuccess={() => {
-          setIsDetailViewOpen(false);
-          // Add any success callback logic here if needed
-        }}
+      <UnifiedMotoristaModal
+        isOpen={isUnifiedModalOpen}
+        onClose={() => setIsUnifiedModalOpen(false)}
+        motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : undefined}
+        onSuccess={fetchContratados}
       />
 
-      {selectedAgregado && (() => {
-        // Transformar o selectedAgregado em um objeto MotoristaWithAddress
-        // Criar objeto veículo compatível com o tipo Veiculo
-        const veiculo = selectedAgregado.veiculo?.[0] ? {
-          veiculo_id: selectedAgregado.veiculo[0].veiculo_id || 0,
-          placa: selectedAgregado.veiculo[0].placa || '',
-          status_veiculo: true, // Valor padrão
-          marca: selectedAgregado.veiculo[0].marca_veiculo || '',
-          tipologia: selectedAgregado.veiculo[0].tipologia || '',
-          ano: selectedAgregado.veiculo[0].ano || '',
-          combustivel: selectedAgregado.veiculo[0].combustivel || '',
-          peso: selectedAgregado.veiculo[0].peso || '',
-          cubagem: selectedAgregado.veiculo[0].cubagem || '',
-          possui_rastreador: selectedAgregado.veiculo[0].possui_rastreador || false,
-          marca_rastreador: selectedAgregado.veiculo[0].marca_rastreador || '',
-          motorista_id: selectedAgregado.motorista_id || 0,
-          cor: selectedAgregado.veiculo[0].cor || '',
-          tipo: selectedAgregado.veiculo[0].tipo || '',
-          documento_veiculo: []
-        } : undefined;
-
-        // Criar objeto motorista compatível com o tipo MotoristaWithAddress
-        const motoristaWithAddress: MotoristaWithAddress = {
-          motorista_id: selectedAgregado.motorista_id || 0,
-          cpf: selectedAgregado.cpf || '',
-          dt_nascimento: selectedAgregado.dt_nascimento || '',
-          genero: selectedAgregado.genero || '',
-          telefone: selectedAgregado.telefone !== null && selectedAgregado.telefone !== undefined && selectedAgregado.telefone !== '' ? Number(selectedAgregado.telefone) : null,
-          email: selectedAgregado.email || null,
-          funcao: selectedAgregado.funcao || '',
-          nome: selectedAgregado.nome || selectedAgregado.nome_motorista || '',
-          origem_usuario: selectedAgregado.origem_usuario || '',
-          st_cadastro: selectedAgregado.st_cadastro || '',
-          autorizacao_lgpd: selectedAgregado.autorizacao_lgpd || '',
-          company_id: selectedAgregado.company_id || 0,
-          data_cadastro: selectedAgregado.data_cadastro || '',
-          cliente_id: selectedAgregado.cliente_id || 0,
-          ativo: selectedAgregado.ativo || false,
-          endereco: {
-            id_end_motorista: selectedAgregado.id_end_motorista || 0,
-            nr_end: selectedAgregado.nr_end !== null && selectedAgregado.nr_end !== undefined 
-              ? Number(selectedAgregado.nr_end) 
-              : null,
-            ds_complemento_end: selectedAgregado.ds_complemento_end || null,
-            st_end: selectedAgregado.st_end !== null && selectedAgregado.st_end !== undefined 
-              ? selectedAgregado.st_end 
-              : null,
-            logradouro: selectedAgregado.logradouro || selectedAgregado.endereco?.logradouro || null,
-            nr_cep: selectedAgregado.nr_cep || (selectedAgregado.endereco as any)?.cep?.replace(/\D/g, '') || null,
-            bairro: selectedAgregado.nome_bairro || selectedAgregado.endereco?.bairro || null,
-            cidade: selectedAgregado.nome_cidade || selectedAgregado.endereco?.cidade || null,
-            estado: selectedAgregado.nome_estado || selectedAgregado.endereco?.estado || null,
-            sigla_estado: selectedAgregado.sigla_estado || 
-              (selectedAgregado.endereco?.estado ? selectedAgregado.endereco.estado.substring(0, 2).toUpperCase() : null)
-          },
-          veiculo: veiculo,
-          documento_motorista: [] // Inicializa vazio por enquanto, já que não temos os dados completos
-        };
-
-        // Função para formatar o endereço para o DocumentViewer
-        const formatEndereco = (endereco: EnderecoMotorista | null | undefined) => {
-          if (!endereco) return undefined;
-          
-          const result: {
-            logradouro?: {
-              logradouro?: string;
-              nr_cep?: string;
-              bairro?: {
-                bairro?: string;
-                cidade?: {
-                  cidade?: string;
-                  estado?: {
-                    sigla_estado?: string;
-                  };
-                };
-              };
-            };
-            nr_end?: number;
-            ds_complemento_end?: string;
-          } = {};
-          
-          if (endereco.logradouro) {
-            result.logradouro = {
-              logradouro: endereco.logradouro || undefined,
-              nr_cep: endereco.nr_cep?.toString() || undefined,
-              bairro: endereco.bairro ? {
-                bairro: endereco.bairro,
-                cidade: endereco.cidade ? {
-                  cidade: endereco.cidade,
-                  estado: endereco.sigla_estado ? {
-                    sigla_estado: endereco.sigla_estado
-                  } : undefined
-                } : undefined
-              } : undefined
-            };
-          }
-          
-          if (endereco.nr_end) {
-            result.nr_end = endereco.nr_end;
-          }
-          
-          if (endereco.ds_complemento_end) {
-            result.ds_complemento_end = endereco.ds_complemento_end;
-          }
-          
-          return Object.keys(result).length > 0 ? result : undefined;
-        };
-
-        return (
-          <DocumentViewer
-            isOpen={isDocumentViewerOpen}
-            onClose={() => setIsDocumentViewerOpen(false)}
-            documento={null} // Definido como null por enquanto, já que não temos os documentos
-            nome={motoristaWithAddress.nome || ''}
-            cpf={motoristaWithAddress.cpf || undefined}
-            email={motoristaWithAddress.email || undefined}
-            telefone={motoristaWithAddress.telefone?.toString() || undefined}
-            dt_nascimento={motoristaWithAddress.dt_nascimento || undefined}
-            endereco={formatEndereco(motoristaWithAddress.endereco)}
-            veiculo={veiculo || null}
-            isAgregado={true}
-            st_cadastro={motoristaWithAddress.st_cadastro || null}
-          />
-        );
-      })()}
+      <DocumentViewer
+        isOpen={isDocumentViewerOpen}
+        onClose={() => setIsDocumentViewerOpen(false)}
+        documento={documento}
+        nome={selectedMotorista?.nome_motorista || ''}
+        cpf={selectedMotorista?.cpf}
+        email={selectedMotorista?.email || undefined}
+        telefone={selectedMotorista?.telefone?.toString()}
+        dt_nascimento={selectedMotorista?.dt_nascimento}
+        endereco={endereco}
+        st_cadastro={selectedMotorista?.st_cadastro || 'cadastrado'}
+      />
 
       <DocumentUploadModal
         isOpen={isDocumentUploadOpen}
         onClose={() => setIsDocumentUploadOpen(false)}
-        motorista_id={selectedAgregado?.motorista_id || 0}
-        nome={selectedAgregado?.nome || ''}
-        onUploadSuccess={fetchAgregados}
+        motorista_id={selectedMotorista?.motorista_id || 0}
+        nome={selectedMotorista?.nome_motorista || ''}
+        onUploadSuccess={fetchContratados}
       />
 
-      {selectedAgregado && (
-        <EditMotoristaModal
-          isOpen={isEditModalOpen}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setSelectedAgregado(null);
-          }}
-          motorista={{
-            motorista_id: selectedAgregado.motorista_id,
-            cpf: selectedAgregado.cpf,
-            dt_nascimento: selectedAgregado.dt_nascimento,
-            genero: selectedAgregado.genero,
-            telefone: selectedAgregado.telefone !== null && selectedAgregado.telefone !== undefined && selectedAgregado.telefone !== '' ? Number(selectedAgregado.telefone) : null,
-            email: selectedAgregado.email,
-            funcao: selectedAgregado.funcao,
-            nome: selectedAgregado.nome || selectedAgregado.nome_motorista || '',
-            origem_usuario: selectedAgregado.origem_usuario,
-            st_cadastro: selectedAgregado.st_cadastro,
-            autorizacao_lgpd: selectedAgregado.autorizacao_lgpd,
-            company_id: selectedAgregado.company_id,
-            data_cadastro: selectedAgregado.data_cadastro,
-            cliente_id: selectedAgregado.cliente_id || 0,
-            ativo: selectedAgregado.ativo || false,
+      <EditMotoristaModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        motorista={selectedMotorista ? (() => {
+          const motoristaWithAddress: MotoristaWithAddress = {
+            ...selectedMotorista as unknown as Motorista,
+            nome: selectedMotorista.nome_motorista || '',
             endereco: {
-              id_end_motorista: selectedAgregado.id_end_motorista || 0,
-              nr_end: selectedAgregado.nr_end !== null && selectedAgregado.nr_end !== undefined 
-                ? Number(selectedAgregado.nr_end) 
-                : null,
-              ds_complemento_end: selectedAgregado.ds_complemento_end || null,
-              st_end: selectedAgregado.st_end || null,
-              logradouro: selectedAgregado.logradouro || selectedAgregado.endereco?.logradouro || null,
-              nr_cep: selectedAgregado.nr_cep || (selectedAgregado.endereco as any)?.cep?.replace(/\D/g, '') || null,
-              bairro: selectedAgregado.nome_bairro || selectedAgregado.endereco?.bairro || null,
-              cidade: selectedAgregado.nome_cidade || selectedAgregado.endereco?.cidade || null,
-              estado: selectedAgregado.nome_estado || selectedAgregado.endereco?.estado || null,
-              sigla_estado: selectedAgregado.sigla_estado || 
-                (selectedAgregado.endereco?.estado ? selectedAgregado.endereco.estado.substring(0, 2).toUpperCase() : null)
+              id_end_motorista: selectedMotorista.id_end_motorista || 0,
+              nr_end: selectedMotorista.nr_end ?? null,
+              ds_complemento_end: selectedMotorista.ds_complemento_end ?? null,
+              st_end: selectedMotorista.st_end ?? null,
+              logradouro: selectedMotorista.logradouro ?? null,
+              nr_cep: selectedMotorista.nr_cep ?? null,
+              bairro: selectedMotorista.nome_bairro ?? null,
+              cidade: selectedMotorista.nome_cidade ?? null,
+              estado: selectedMotorista.nome_estado ?? null,
+              sigla_estado: selectedMotorista.sigla_estado ?? null
             },
-            veiculo: selectedAgregado.veiculo?.[0] ? {
-              veiculo_id: selectedAgregado.veiculo[0].veiculo_id || 0,
-              placa: selectedAgregado.veiculo[0].placa || '',
-              status_veiculo: true,
-              marca: selectedAgregado.veiculo[0].marca_veiculo || '',
-              tipologia: selectedAgregado.veiculo[0].tipologia || '',
-              ano: selectedAgregado.veiculo[0].ano || '',
-              combustivel: selectedAgregado.veiculo[0].combustivel || '',
-              peso: selectedAgregado.veiculo[0].peso || '',
-              cubagem: selectedAgregado.veiculo[0].cubagem || '',
-              possui_rastreador: selectedAgregado.veiculo[0].possui_rastreador || false,
-              marca_rastreador: selectedAgregado.veiculo[0].marca_rastreador || '',
-              motorista_id: selectedAgregado.motorista_id,
-              cor: selectedAgregado.veiculo[0].cor || '',
-              tipo: selectedAgregado.veiculo[0].tipo || ''
-            } : undefined,
-            documento_motorista: []
-          }}
-          onUpdate={() => {
-            fetchAgregados();
-            setSelectedAgregado(null);
-          }}
-        />
-      )}
-
-      <AddAgregadoModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSuccess={fetchAgregados}
+            veiculo: selectedMotorista.veiculo_id ? {
+              veiculo_id: selectedMotorista.veiculo_id,
+              placa: selectedMotorista.placa || '',
+              status_veiculo: selectedMotorista.status_veiculo || false,
+              marca: selectedMotorista.marca || '',
+              tipologia: selectedMotorista.tipologia || '',
+              ano: selectedMotorista.ano || '',
+              combustivel: selectedMotorista.combustivel || '',
+              peso: selectedMotorista.peso || '',
+              cubagem: selectedMotorista.cubagem || '',
+              possui_rastreador: selectedMotorista.possui_rastreador || false,
+              marca_rastreador: selectedMotorista.marca_rastreador || '',
+              motorista_id: selectedMotorista.motorista_id || 0,
+              cor: selectedMotorista.cor || '',
+              tipo: selectedMotorista.tipo || ''
+            } : undefined
+          };
+          return motoristaWithAddress;
+        })() : null}
+        onUpdate={fetchContratados}
       />
 
       <DeleteConfirmationModal
@@ -2071,13 +2126,12 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
         title="Confirmar Exclusão"
-        message="Tem certeza que deseja excluir este agregado? Esta ação não pode ser desfeita."
-        itemData={selectedAgregado ? [
-          { label: 'Nome', value: selectedAgregado.nome },
-          { label: 'CPF', value: formatCPF(selectedAgregado.cpf || '') },
-          { label: 'Status', value: selectedAgregado.st_cadastro },
-          { label: 'Veículo', value: (selectedAgregado.veiculo?.[0]?.placa || '').toUpperCase() || 'Não informado' }
-        ] : []}
+        message="Tem certeza que deseja excluir este motorista? Esta ação não pode ser desfeita."
+        itemData={selectedMotorista ? [
+          { label: 'Nome', value: selectedMotorista.nome_motorista || 'Não informado' },
+          { label: 'CPF', value: selectedMotorista.cpf ? formatCPF(selectedMotorista.cpf) : 'Não informado' },
+          { label: 'Status', value: selectedMotorista.st_cadastro || 'Não informado' }
+        ].filter(item => item.value !== 'Não informado') : []}
       />
 
       <BulkActionsModal
@@ -2085,7 +2139,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
         onClose={() => setIsBulkActionsModalOpen(false)}
         selectedItems={selectedItems}
         actionType={bulkActionType}
-        onSuccess={fetchAgregados}
+        onSuccess={fetchContratados}
         clientes={clientes}
       />
 
@@ -2094,9 +2148,9 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
         onClose={() => setIsBulkDeleteModalOpen(false)}
         onConfirm={handleBulkDelete}
         title="Confirmar Exclusão em Massa"
-        message="Tem certeza que deseja excluir todos os agregados selecionados? Esta ação não pode ser desfeita."
+        message="Tem certeza que deseja excluir todos os motoristas selecionados? Esta ação não pode ser desfeita."
         itemCount={selectedItems.size}
-        itemType="agregado"
+        itemType="motorista"
       />
 
       <MassMessageModal
@@ -2104,14 +2158,14 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
         onClose={() => setIsMassMessageModalOpen(false)}
         numbers={Array.from(selectedItems)
           .map(id => {
-            const agregado = agregados.find(a => a.motorista_id === id);
-            return agregado?.telefone ? agregado.telefone.toString() : '';
+            const motorista = contratados.find(m => m.motorista_id === id);
+            return motorista?.telefone ? motorista.telefone.toString() : '';
           })
           .filter(Boolean)}
       />
 
-      {/* Modal de confirmação de mudança de função */}
-      {roleChangeModal.isOpen && roleChangeModal.agregado && (
+      {/* Role Change Confirmation Modal */}
+      {roleChangeModal.isOpen && roleChangeModal.motorista && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6">
@@ -2122,11 +2176,11 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
               </div>
               
               <h3 className="text-lg font-medium text-gray-900 dark:text-white text-center mb-2">
-                Confirmar mudança de função
+                Confirmar alteração de função
               </h3>
               
               <p className="text-sm text-gray-600 dark:text-gray-300 text-center mb-6">
-                Tem certeza que deseja transformar <span className="font-semibold">{roleChangeModal.agregado?.nome || roleChangeModal.agregado?.nome_motorista}</span> em um <span className="font-semibold">{roleChangeModal.newRole}</span>?
+                Tem certeza que deseja transformar <span className="font-semibold">{roleChangeModal.motorista.nome_motorista}</span> em um <span className="font-semibold">{roleChangeModal.newRole === 'Motorista' ? 'Motorista' : 'Agregado'}</span>?
               </p>
 
               <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 mb-6">
@@ -2136,9 +2190,9 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                   </div>
                   <div className="ml-3">
                     <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                      {roleChangeModal.newRole === 'Motorista' 
-                        ? 'Ao transformar em Motorista, o registro será ativado automaticamente.' 
-                        : 'Ao transformar em Agregado, o registro poderá ser desativado manualmente.'}
+                      {roleChangeModal.newRole === 'Agregado' 
+                        ? 'Ao transformar em Agregado, o motorista não aparecerá mais na lista de motoristas ativos.'
+                        : 'Ao transformar em Motorista, o registro será ativado automaticamente.'}
                     </p>
                   </div>
                 </div>
@@ -2147,7 +2201,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setRoleChangeModal({ isOpen: false, agregado: null, newRole: null, isLoading: false })}
+                  onClick={() => setRoleChangeModal({ isOpen: false, motorista: null, newRole: null, isLoading: false })}
                   disabled={roleChangeModal.isLoading}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -2167,7 +2221,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                       Processando...
                     </>
                   ) : (
-                    `Confirmar para ${roleChangeModal.agregado?.nome || roleChangeModal.agregado?.nome_motorista || ''}`
+                    `Confirmar ${roleChangeModal.motorista?.nome_motorista ? `para ${roleChangeModal.motorista.nome_motorista}` : ''}`
                   )}
                 </button>
               </div>
@@ -2179,4 +2233,4 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
   );
 };
 
-export default AgregadosLista;
+export default Contratados;

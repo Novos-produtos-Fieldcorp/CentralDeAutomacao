@@ -288,62 +288,141 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
 
   const saveEndereco = async (motorista_id: number) => {
     try {
-      // Verifica se já existe um endereço para o motorista
-      const { data: existingEndereco } = await supabase
-        .from('end_motorista')
-        .select('id_end_motorista')
-        .eq('id_motorista', motorista_id)
-        .eq('st_end', true)
+      // Verifica se temos dados de endereço suficientes
+      if (!enderecoData.logradouro || !enderecoData.cidade || !enderecoData.estado) {
+        console.log('Dados de endereço insuficientes para salvar');
+        return;
+      }
+      
+      // Primeiro, encontrar o estado pelo ID
+      const estadoId = parseInt(enderecoData.estado);
+      
+      // Verificar se a cidade existe
+      let cidadeId: number;
+      const { data: cidadeData, error: cidadeError } = await supabase
+        .from('cidade')
+        .select('id_cidade')
+        .eq('cidade', enderecoData.cidade)
+        .eq('id_estado', estadoId)
         .maybeSingle();
 
-      // Busca o ID do logradouro pelo CEP
-      const { data: logradouro } = await supabase
+      if (cidadeError && cidadeError.code !== 'PGRST116') {
+        throw cidadeError;
+      }
+
+      if (cidadeData) {
+        cidadeId = cidadeData.id_cidade;
+      } else {
+        // Criar cidade se não existir
+        const { data: newCidade, error: newCidadeError } = await supabase
+          .from('cidade')
+          .insert({
+            cidade: enderecoData.cidade,
+            id_estado: estadoId
+          })
+          .select('id_cidade')
+          .single();
+
+        if (newCidadeError) throw newCidadeError;
+        cidadeId = newCidade.id_cidade;
+      }
+
+      // Verificar se o bairro existe
+      let bairroId: number;
+      const { data: bairroData, error: bairroError } = await supabase
+        .from('bairro')
+        .select('id_bairro')
+        .eq('bairro', enderecoData.bairro || 'Centro')
+        .eq('id_cidade', cidadeId)
+        .maybeSingle();
+
+      if (bairroError && bairroError.code !== 'PGRST116') {
+        throw bairroError;
+      }
+      
+      if (bairroData) {
+        bairroId = bairroData.id_bairro;
+      } else {
+        // Criar bairro se não existir
+        const { data: newBairro, error: newBairroError } = await supabase
+          .from('bairro')
+          .insert({
+            bairro: enderecoData.bairro || 'Centro',
+            id_cidade: cidadeId
+          })
+          .select('id_bairro')
+          .single();
+
+        if (newBairroError) throw newBairroError;
+        bairroId = newBairro.id_bairro;
+      }
+
+      // Verificar se o logradouro existe
+      let logradouroId: number;
+      const { data: logradouroData, error: logradouroError } = await supabase
         .from('logradouro')
         .select('id_logradouro')
-        .eq('nr_cep', enderecoData.cep)
+        .eq('logradouro', enderecoData.logradouro)
+        .eq('nr_cep', enderecoData.cep || null)
+        .eq('id_bairro', bairroId)
         .maybeSingle();
 
-      let id_logradouro = logradouro?.id_logradouro;
-
-      // Se não encontrou o logradouro, cria um novo
-      if (!id_logradouro) {
-        const { data: newLogradouro, error: logradouroError } = await supabase
+      if (logradouroError && logradouroError.code !== 'PGRST116') {
+        throw logradouroError;
+      }
+      
+      if (logradouroData) {
+        logradouroId = logradouroData.id_logradouro;
+      } else {
+        // Criar logradouro se não existir
+        const { data: newLogradouro, error: newLogradouroError } = await supabase
           .from('logradouro')
           .insert({
             logradouro: enderecoData.logradouro,
-            nr_cep: enderecoData.cep,
-            id_bairro: null // Será atualizado após criar o bairro
+            nr_cep: enderecoData.cep || null,
+            id_bairro: bairroId
           })
           .select('id_logradouro')
           .single();
 
-        if (logradouroError) throw logradouroError;
-        id_logradouro = newLogradouro.id_logradouro;
+        if (newLogradouroError) throw newLogradouroError;
+        logradouroId = newLogradouro.id_logradouro;
       }
 
+      // Verificar se já existe um endereço para o motorista
+      const { data: existingEndereco, error: enderecoCheckError } = await supabase
+        .from('end_motorista')
+        .select('id_end_motorista')
+        .eq('id_motorista', motorista_id)
+        .maybeSingle();
+        
+      if (enderecoCheckError && enderecoCheckError.code !== 'PGRST116') {
+        throw enderecoCheckError;
+      }
+      
       const enderecoPayload = {
-        id_motorista: motorista_id,
         nr_end: enderecoData.numero ? parseInt(enderecoData.numero) : null,
         ds_complemento_end: enderecoData.complemento || null,
-        id_logradouro,
+        id_motorista: motorista_id,
+        id_logradouro: logradouroId,
         st_end: true
       };
 
       if (existingEndereco) {
-        // Atualiza o endereço existente
-        const { error } = await supabase
+        // Atualizar endereço existente
+        const { error: updateError } = await supabase
           .from('end_motorista')
           .update(enderecoPayload)
           .eq('id_end_motorista', existingEndereco.id_end_motorista);
 
-        if (error) throw error;
+        if (updateError) throw updateError;
       } else {
-        // Cria um novo endereço
-        const { error } = await supabase
+        // Criar novo endereço
+        const { error: insertError } = await supabase
           .from('end_motorista')
           .insert(enderecoPayload);
 
-        if (error) throw error;
+        if (insertError) throw insertError;
       }
     } catch (error) {
       console.error('Erro ao salvar endereço:', error);
