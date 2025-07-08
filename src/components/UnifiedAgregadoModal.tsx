@@ -37,6 +37,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
   const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
   const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
+  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
   const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
   const [veiculo, setVeiculo] = useState<Veiculo | null>(null);
   const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
@@ -50,8 +51,40 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   useEffect(() => {
     if (isOpen && motorista) {
       fetchAgregadoDetails();
+      fetchDocumentoMotorista();
     }
   }, [isOpen, motorista]);
+
+  const fetchDocumentoMotorista = async () => {
+    if (!motorista) return;
+    
+    try {
+      console.log('Fetching document data for agregado:', motorista.motorista_id);
+      const { data, error } = await supabase
+        .from('documento_motorista')
+        .select(`
+          id_documento_motorista,
+          foto_cnh,
+          foto_comprovante_residencia,
+          motorista_id,
+          uf_cnh,
+          validade_cnh
+        `)
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      console.log('Document data fetched:', data);
+      setDocumentoMotorista(data);
+      
+      if (!data) {
+        console.warn('No document data found for agregado:', motorista.motorista_id);
+      }
+    } catch (error) {
+      console.error('Error fetching driver document:', error);
+    }
+  };
 
   const fetchAgregadoDetails = async () => {
     if (!motorista) return;
@@ -686,13 +719,13 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     <div>
                                       <span className="block text-xs text-gray-500 dark:text-gray-400">Número da CNH</span>
                                       <span className="block font-semibold text-gray-900 dark:text-white">
-                                        {documentoMotorista?.nr_registro_cnh || 'Não informado'}
+                                        {motorista.nr_registro || 'Não informado'}
                                       </span>
                                     </div>
                                     <div>
                                       <span className="block text-xs text-gray-500 dark:text-gray-400">Categoria</span>
                                       <span className="block font-semibold text-gray-900 dark:text-white">
-                                        {documentoMotorista?.categoria_cnh || 'Não informado'}
+                                        {motorista.categoria || 'Não informado'}
                                       </span>
                                     </div>
                                     <div>
@@ -710,13 +743,13 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     <div>
                                       <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
                                       <span className="block font-semibold text-gray-900 dark:text-white">
-                                        {documentoMotorista?.nome_pai || 'Não informado'}
+                                        {motorista.nome_pai || 'Não informado'}
                                       </span>
                                     </div>
                                     <div>
                                       <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
                                       <span className="block font-semibold text-gray-900 dark:text-white">
-                                        {documentoMotorista?.nome_mae || 'Não informado'}
+                                        {motorista.nome_mae || 'Não informado'}
                                       </span>
                                     </div>
                                   </div>
