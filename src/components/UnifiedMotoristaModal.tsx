@@ -49,6 +49,7 @@ const UnifiedMotoristaModal = ({
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
   const [hasComentario, setHasComentario] = useState(false);
   const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
+  const [documento, setDocumento] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen && motorista) {
@@ -57,8 +58,45 @@ const UnifiedMotoristaModal = ({
       fetchGestaoRiscoCount();
       checkComentario();
       fetchDocumentoMotorista();
+      fetchDocumento();
     }
   }, [isOpen, motorista]);
+
+  const fetchDocumento = async () => {
+    if (!motorista) return;
+    
+    try {
+      // Get documento_motorista for photos
+      const { data, error } = await supabase
+        .from('documento_motorista')
+        .select(`
+          id_documento_motorista,
+          foto_cnh,
+          foto_comprovante_residencia,
+          uf_cnh,
+          validade_cnh
+        `)
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      // Combine documento_motorista with CNH fields from the view
+      setDocumento({
+        ...data,
+        nr_registro: motorista.nr_registro,
+        categoria: motorista.categoria,
+        nome_pai: motorista.nome_pai,
+        nome_mae: motorista.nome_mae,
+        foto_cnh: data?.foto_cnh || null,
+        foto_comprovante_residencia: data?.foto_comprovante_residencia || null,
+        uf_cnh: data?.uf_cnh || null,
+        validade_cnh: data?.validade_cnh || null
+      });
+    } catch (error) {
+      console.error('Error fetching driver document:', error);
+    }
+  };
 
   const fetchDocumentoMotorista = async () => {
     if (!motorista) return;
@@ -535,37 +573,38 @@ const UnifiedMotoristaModal = ({
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Número da CNH</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.nr_registro || 'Não informado'}
+                                      {motorista.nr_registro || documento?.nr_registro || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Categoria</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.categoria || 'Não informado'}
+                                      {motorista.categoria || documento?.categoria || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Validade</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documentoMotorista?.validade_cnh ? formatDate(documentoMotorista.validade_cnh) : 'Não informado'}
+                                      {(documentoMotorista?.validade_cnh || documento?.validade_cnh) ? 
+                                        formatDate(documentoMotorista?.validade_cnh || documento?.validade_cnh) : 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">UF</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documentoMotorista?.uf_cnh || 'Não informado'}
+                                      {documentoMotorista?.uf_cnh || documento?.uf_cnh || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.nome_pai || 'Não informado'}
+                                      {motorista.nome_pai || documento?.nome_pai || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.nome_mae || 'Não informado'}
+                                      {motorista.nome_mae || documento?.nome_mae || 'Não informado'}
                                     </span>
                                   </div>
                                 </div>
@@ -580,19 +619,21 @@ const UnifiedMotoristaModal = ({
                               {motorista.documento_motorista?.[0]?.foto_comprovante_residencia ? (
                                 <div className="flex items-center">
                                   <button
-                                    onClick={() => openDocumentInNewTab(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null)}
-                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                    onClick={() => openDocumentInNewTab(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || documento?.foto_comprovante_residencia || null)}
+                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-2"
                                   >
                                     <FileText className="w-5 h-5 mr-2" />
-                                    {isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null) ? 'Ver PDF' : 'Ver Imagem'}
+                                    {isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || documento?.foto_comprovante_residencia || null) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
-                                  {!isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null) && motorista.documento_motorista?.[0]?.foto_comprovante_residencia && (
+                                  {!isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || documento?.foto_comprovante_residencia || null) && 
+                                   (motorista.documento_motorista?.[0]?.foto_comprovante_residencia || documento?.foto_comprovante_residencia) && (
+                                   (motorista.documento_motorista?.[0]?.foto_cnh || documento?.foto_cnh) && (
                                     <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
                                       <img 
-                                        src={motorista.documento_motorista[0].foto_comprovante_residencia}
+                                        src={motorista.documento_motorista?.[0]?.foto_comprovante_residencia || documento?.foto_comprovante_residencia || ''}
                                         alt="Comprovante Preview" 
                                         className="w-full h-full object-cover cursor-pointer"
-                                        onClick={() => setActiveDocument(motorista.documento_motorista[0].foto_comprovante_residencia)}
+                                        onClick={() => setActiveDocument(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || documento?.foto_comprovante_residencia || null)}
                                       />
                                     </div>
                                   )}
