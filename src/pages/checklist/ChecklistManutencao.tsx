@@ -47,7 +47,7 @@ const ChecklistManutencao = () => {
   const [loading, setLoading] = useState(true);
   const [expandedAlert, setExpandedAlert] = useState<AlertDetails | null>(null);
   const [statusItems, setStatusItems] = useState<StatusItem[]>([]);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
+  const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('all', true);
 
   // Format date from YYYY-MM-DD to DD/MM/YYYY
   const formatDate = (dateStr: string) => {
@@ -63,10 +63,11 @@ const ChecklistManutencao = () => {
   }, []);
 
   useEffect(() => {
-    if (statusItems.length > 0) {
+    // Only fetch when date range actually changes, not on pending changes
+    if (statusItems.length > 0 && !pendingDateRange) {
       fetchMaintenanceAlerts();
     }
-  }, [dateRange, statusItems]);
+  }, [dateRange, statusItems, pendingDateRange]);
 
   const fetchStatusItems = async () => {
     try {
@@ -290,8 +291,14 @@ const ChecklistManutencao = () => {
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
+          pendingDateRange={pendingDateRange}
           onPeriodChange={updatePeriod}
           onDateRangeChange={setDateRange}
+          onApplyCustomRange={() => {
+            if (applyPendingDateRange()) {
+              fetchMaintenanceAlerts();
+            }
+          }}
         />
       </div>
 

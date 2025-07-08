@@ -37,11 +37,14 @@ const ChecklistDashboard = () => {
     checklistsPorMotorista: []
   });
   const [loading, setLoading] = useState(true);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
+  const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('all', true);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [dateRange]);
+    // Only fetch when date range actually changes, not on pending changes
+    if (!pendingDateRange) {
+      fetchDashboardData();
+    }
+  }, [dateRange, pendingDateRange]);
 
   const fetchDashboardData = async () => {
     try {
@@ -198,8 +201,14 @@ const ChecklistDashboard = () => {
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
+          pendingDateRange={pendingDateRange}
           onPeriodChange={updatePeriod}
           onDateRangeChange={setDateRange}
+          onApplyCustomRange={() => {
+            if (applyPendingDateRange()) {
+              fetchDashboardData();
+            }
+          }}
         />
       </div>
 
