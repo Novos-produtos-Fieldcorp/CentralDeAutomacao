@@ -123,7 +123,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       setDocumento(documentoData);
 
       // Fetch endereco
-      const { data: enderecoData, error: enderecoError } = await supabase
+      const { data: enderecoArr, error: enderecoError } = await supabase
         .from('end_motorista')
         .select(`
           *,
@@ -142,10 +142,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
           )
         `)
         .eq('id_motorista', motorista.motorista_id)
-        .maybeSingle();
+        .limit(1);
 
       if (enderecoError) throw enderecoError;
-      setEndereco(enderecoData);
+      setEndereco(enderecoArr && enderecoArr.length > 0 ? enderecoArr[0] : null);
 
       // Fetch ajudantes
       const { data: ajudantesData, error: ajudantesError } = await supabase
@@ -435,6 +435,27 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
                             {motorista.email || 'Não informado'}
+                          </dd>
+                        </div>
+                        {/* Endereço */}
+                        <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            Endereço
+                          </dt>
+                          <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                            {endereco && endereco.logradouro ? (
+                              <span>
+                                {endereco.logradouro.logradouro || ''}
+                                {endereco.nr_end ? `, ${endereco.nr_end}` : ''}
+                                {endereco.ds_complemento_end ? `, ${endereco.ds_complemento_end}` : ''}<br />
+                                {endereco.logradouro.bairro?.bairro || ''}
+                                {endereco.logradouro.bairro?.cidade ? `, ${endereco.logradouro.bairro.cidade.cidade}` : ''}
+                                {endereco.logradouro.bairro?.cidade?.estado ? ` - ${endereco.logradouro.bairro.cidade.estado.sigla_estado}` : ''}<br />
+                                {endereco.logradouro.nr_cep ? `CEP: ${formatCEP(endereco.logradouro.nr_cep)}` : ''}
+                              </span>
+                            ) : (
+                              <span className="text-gray-500 dark:text-gray-400">Não informado</span>
+                            )}
                           </dd>
                         </div>
                       </dl>

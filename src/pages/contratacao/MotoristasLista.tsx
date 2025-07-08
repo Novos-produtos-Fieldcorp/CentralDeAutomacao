@@ -1395,7 +1395,26 @@ const MotoristasLista = () => {
                               ref={el => {
                                 if (el) statusButtonRefs.current[motorista.motorista_id || 0] = el;
                               }}
-                              onClick={(e) => handleRowStatusDropdown(e, motorista.motorista_id || 0)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (statusDropdownOpen === motorista.motorista_id) {
+                                  setStatusDropdownOpen(null);
+                                } else {
+                                  const btn = statusButtonRefs.current[motorista.motorista_id || 0];
+                                  if (btn) {
+                                    const rect = btn.getBoundingClientRect();
+                                    setStatusDropdownCoords(prev => ({
+                                      ...prev,
+                                      [motorista.motorista_id || 0]: {
+                                        left: rect.left,
+                                        top: rect.bottom + 4
+                                      }
+                                    }));
+                                  }
+                                  setStatusDropdownOpen(motorista.motorista_id);
+                                }
+                                setClienteDropdownOpen(null);
+                              }}
                               className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                 !motorista.st_cadastro ? 'bg-gray-100 dark:bg-gray-700' :
                                 motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30' :
@@ -1421,7 +1440,7 @@ const MotoristasLista = () => {
                               <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
                             </button>
                           </div>
-                          
+
                           {statusDropdownOpen === motorista.motorista_id && (
                             <div
                               style={statusDropdownCoords[motorista.motorista_id || 0] ? {
@@ -1540,7 +1559,26 @@ const MotoristasLista = () => {
                               ref={el => {
                                 if (el) clienteButtonRefs.current[motorista.motorista_id || 0] = el;
                               }}
-                              onClick={(e) => handleRowClienteDropdown(e, motorista.motorista_id || 0)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (clienteDropdownOpen === motorista.motorista_id) {
+                                  setClienteDropdownOpen(null);
+                                } else {
+                                  const btn = clienteButtonRefs.current[motorista.motorista_id || 0];
+                                  if (btn) {
+                                    const rect = btn.getBoundingClientRect();
+                                    setClienteDropdownCoords(prev => ({
+                                      ...prev,
+                                      [motorista.motorista_id || 0]: {
+                                        left: rect.left,
+                                        top: rect.bottom + 4
+                                      }
+                                    }));
+                                  }
+                                  setClienteDropdownOpen(motorista.motorista_id);
+                                }
+                                setStatusDropdownOpen(null);
+                              }}
                               className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                 motorista.cliente_id 
                                   ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor || 
@@ -1555,7 +1593,7 @@ const MotoristasLista = () => {
                               <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
                             </button>
                           </div>
-                          
+
                           {clienteDropdownOpen === motorista.motorista_id && (
                             <div
                               style={clienteDropdownCoords[motorista.motorista_id || 0] ? {

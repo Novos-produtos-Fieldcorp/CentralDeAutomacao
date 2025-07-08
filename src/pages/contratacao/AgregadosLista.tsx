@@ -550,8 +550,14 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
     }
     
     const cidadeMatch = cidadeFilter.length > 0 ? (agregado.nome_cidade ? cidadeFilter.includes(agregado.nome_cidade) : false) : true;
-    const ativoMatch = ativoFilter === '' ? true : 
-      (ativoFilter === 'true' ? agregado.ativo === true : agregado.ativo === false);
+    const ativoMatch =
+  ativoFilter === ''
+    ? true
+    : ativoFilter === 'active'
+      ? agregado.ativo === true
+      : ativoFilter === 'inactive'
+        ? agregado.ativo === false
+        : true;
     
     try {
       // Verifica se o status do agregado está na lista de status filtrados
@@ -1009,7 +1015,11 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
             <button
               type="button"
               className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              onClick={() => setShowAtivoDropdown(!showAtivoDropdown)}
+              onMouseDown={e => e.stopPropagation()}
+              onClick={e => {
+                e.stopPropagation();
+                setShowAtivoDropdown((prev) => !prev);
+              }}
             >
               <span className="truncate">
                 {!ativoFilter ? 'Todos (Ativos/Inativos)' : ativoFilter === 'active' ? 'Somente Ativos' : 'Somente Inativos'}
@@ -1024,34 +1034,40 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
               <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
                 <div className="py-1">
                   <div 
-                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                    onClick={() => {
-                      setAtivoFilter('');
-                      setShowAtivoDropdown(false);
-                    }}
-                  >
+  className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+  onMouseDown={e => e.stopPropagation()}
+  onClick={e => {
+    e.stopPropagation();
+    setAtivoFilter('');
+    setShowAtivoDropdown(false);
+  }}
+>
                     <div className="flex items-center">
                       <span>Todos (Ativos/Inativos)</span>
                     </div>
                   </div>
                   <div 
-                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'active' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                    onClick={() => {
-                      setAtivoFilter('active');
-                      setShowAtivoDropdown(false);
-                    }}
-                  >
+  className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'active' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+  onMouseDown={e => e.stopPropagation()}
+  onClick={e => {
+    e.stopPropagation();
+    setAtivoFilter('active');
+    setShowAtivoDropdown(false);
+  }}
+>
                     <div className="flex items-center">
                       <span>Somente Ativos</span>
                     </div>
                   </div>
                   <div 
-                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inactive' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                    onClick={() => {
-                      setAtivoFilter('inactive');
-                      setShowAtivoDropdown(false);
-                    }}
-                  >
+  className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inactive' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+  onMouseDown={e => e.stopPropagation()}
+  onClick={e => {
+    e.stopPropagation();
+    setAtivoFilter('inactive');
+    setShowAtivoDropdown(false);
+  }}
+>
                     <div className="flex items-center">
                       <span>Somente Inativos</span>
                     </div>
@@ -1228,7 +1244,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                 <div className="max-h-48 overflow-y-auto py-1">
                   {cidades.map((cidade, index) => (
                     <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <label className="flex items-center space-x-2 cursor-pointer">
+                      <label className="flex items-center space-x-2 cursor-pointer" onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
@@ -1286,7 +1302,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                 </div>
                 <div className="max-h-48 overflow-y-auto py-1">
                   <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                    <label className="flex items-center space-x-2 cursor-pointer">
+                    <label className="flex items-center space-x-2 cursor-pointer" onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
@@ -1298,13 +1314,14 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                             setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== 'sem_veiculo'));
                           }
                         }}
+                        onClick={e => e.stopPropagation()}
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-200">Sem veículo</span>
                     </label>
                   </div>
                   {tiposVeiculo.map((tipo, index) => (
                     <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <label className="flex items-center space-x-2 cursor-pointer">
+                      <label className="flex items-center space-x-2 cursor-pointer" onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
@@ -1316,6 +1333,7 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
                               setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== tipo));
                             }
                           }}
+                          onClick={e => e.stopPropagation()}
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-200">{tipo}</span>
                       </label>
@@ -1856,7 +1874,10 @@ const [clienteDropdownCoords, setClienteDropdownCoords] = useState<{ [key: numbe
       <UnifiedAgregadoModal
         isOpen={isDetailViewOpen}
         onClose={() => setIsDetailViewOpen(false)}
-        motorista={selectedAgregado}
+        motorista={selectedAgregado ? {
+          ...selectedAgregado,
+          telefone: selectedAgregado.telefone ? Number(selectedAgregado.telefone) : null
+        } : null}
         onSuccess={() => {
           setIsDetailViewOpen(false);
           // Add any success callback logic here if needed

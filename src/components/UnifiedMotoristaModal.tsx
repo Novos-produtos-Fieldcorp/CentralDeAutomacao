@@ -471,30 +471,72 @@ const UnifiedMotoristaModal = ({
                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                               CNH
                             </dt>
-                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
-                              {motorista.documento_motorista?.[0]?.foto_cnh ? (
-                                <div className="flex items-center">
-                                  <button
-                                    onClick={() => openDocumentInNewTab(motorista.documento_motorista?.[0]?.foto_cnh || null)}
-                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
-                                  >
-                                    <FileText className="w-5 h-5 mr-2" />
-                                    {isPdf(motorista.documento_motorista?.[0]?.foto_cnh || null) ? 'Ver PDF' : 'Ver Imagem'}
-                                  </button>
-                                  {!isPdf(motorista.documento_motorista?.[0]?.foto_cnh || null) && (
-                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
-                                      <img 
-                                        src={motorista.documento_motorista?.[0]?.foto_cnh || ''} 
-                                        alt="CNH Preview" 
-                                        className="w-full h-full object-cover cursor-pointer"
-                                        onClick={() => setActiveDocument(motorista.documento_motorista?.[0]?.foto_cnh || null)}
-                                      />
+                            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-4">
+                                  {motorista.documento_motorista?.[0]?.foto_cnh ? (
+                                    <div className="flex items-center">
+                                      <button
+                                        onClick={() => openDocumentInNewTab(motorista.documento_motorista?.[0]?.foto_cnh || null)}
+                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                      >
+                                        <FileText className="w-5 h-5 mr-2" />
+                                        {isPdf(motorista.documento_motorista?.[0]?.foto_cnh || null) ? 'Ver PDF' : 'Ver Imagem'}
+                                      </button>
+                                      {!isPdf(motorista.documento_motorista?.[0]?.foto_cnh || null) && (
+                                        <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                          <img 
+                                            src={motorista.documento_motorista?.[0]?.foto_cnh || ''} 
+                                            alt="CNH Preview" 
+                                            className="w-full h-full object-cover cursor-pointer"
+                                            onClick={() => setActiveDocument(motorista.documento_motorista?.[0]?.foto_cnh || null)}
+                                          />
+                                        </div>
+                                      )}
                                     </div>
+                                  ) : (
+                                    <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
                                   )}
                                 </div>
-                              ) : (
-                                <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
-                              )}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Número da CNH</span>
+                                    <span className="block font-semibold">
+                                      {motorista.documento_motorista?.[0]?.nr_registro_cnh || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Categoria</span>
+                                    <span className="block font-semibold">
+                                      {motorista.documento_motorista?.[0]?.categoria_cnh || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Validade</span>
+                                    <span className="block font-semibold">
+                                      {motorista.documento_motorista?.[0]?.validade_cnh ? formatDate(motorista.documento_motorista[0].validade_cnh) : 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">UF</span>
+                                    <span className="block font-semibold">
+                                      {motorista.documento_motorista?.[0]?.uf_cnh || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
+                                    <span className="block font-semibold">
+                                      {motorista.documento_motorista?.[0]?.nome_pai || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
+                                    <span className="block font-semibold">
+                                      {motorista.documento_motorista?.[0]?.nome_mae || 'Não informado'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
                             </dd>
                           </div>
                           <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
