@@ -47,7 +47,7 @@ const UnifiedMotoristaModal = ({
   const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
   const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
   const [documentCount, setDocumentCount] = useState(0);
-  const [ajudantesCount, setAjudantesCount] = useState(0);
+  const [ajudantes, setAjudantes] = useState<any[]>([]);
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
   const [hasComentario, setHasComentario] = useState(false);
 
@@ -56,7 +56,7 @@ const UnifiedMotoristaModal = ({
       fetchEndereco();
       fetchDocumentCount();
       fetchDocumentoMotorista();
-      fetchAjudantesCount();
+      fetchAjudantes();
       fetchGestaoRiscoCount();
       checkComentario();
     }
@@ -170,18 +170,19 @@ const UnifiedMotoristaModal = ({
     }
   };
 
-  const fetchAjudantesCount = async () => {
+  const fetchAjudantes = async () => {
     if (!motorista) return;
     
     try {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from('documento_ajudante')
-        .select('id_ajudante', { count: 'exact', head: true })
-        .eq('motorista_id', motorista.motorista_id);
+        .select('*')
+        .eq('motorista_id', motorista.motorista_id)
+        .order('nome');
         
       if (error) throw error;
       
-      setAjudantesCount(count || 0);
+      setAjudantes(data || []);
     } catch (error) {
       console.error('Error fetching ajudantes count:', error);
     }
@@ -342,7 +343,7 @@ const UnifiedMotoristaModal = ({
                 >
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
-                    Ajudantes
+                    Ajudantes ({ajudantes.length})
                     {ajudantesCount > 0 && (
                       <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
                         {ajudantesCount}
@@ -668,7 +669,7 @@ const UnifiedMotoristaModal = ({
               ) : activeTab === 'ajudantes' ? (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    Ajudantes ({ajudantes.length})
                       Ajudantes
                     </h3>
                     <button
@@ -680,11 +681,11 @@ const UnifiedMotoristaModal = ({
                     </button>
                   </div>
                   
-                  {motorista.documento_ajudante && motorista.documento_ajudante.length > 0 ? (
+                {ajudantes.length > 0 ? (
                     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
                       <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {motorista.documento_ajudante.map((ajudante) => (
-                          <li key={ajudante.id_ajudante} className="px-4 py-4 sm:px-6">
+                       {ajudantes.map((ajudante) => (
+                         <li key={ajudante.id_ajudante} className="px-4 py-4 sm:px-6">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -692,10 +693,10 @@ const UnifiedMotoristaModal = ({
                                 </div>
                                 <div className="ml-4">
                                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {ajudante.nome}
+                                   {ajudante.nome || 'Sem nome'}
                                   </p>
                                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'CPF não informado'}
+                                   {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'CPF não informado'}
                                   </p>
                                 </div>
                               </div>
@@ -783,10 +784,9 @@ const UnifiedMotoristaModal = ({
       <AddAjudanteModal
         isOpen={isAddAjudanteModalOpen}
         onClose={() => setIsAddAjudanteModalOpen(false)}
-        motorista_id={motorista.motorista_id}
-        onSuccess={() => {
-          setIsAddAjudanteModalOpen(false);
-          fetchAjudantesCount();
+        motorista_id={motorista?.motorista_id || 0}
+          // Atualizar a lista de ajudantes após alguma alteração
+          fetchAjudantes();
           onSuccess?.();
         }}
       />
