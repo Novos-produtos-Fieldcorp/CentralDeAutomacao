@@ -49,6 +49,15 @@ const ChecklistManutencao = () => {
   const [statusItems, setStatusItems] = useState<StatusItem[]>([]);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
 
+  // Format date from YYYY-MM-DD to DD/MM/YYYY
+  const formatDate = (dateStr: string) => {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+
   useEffect(() => {
     fetchStatusItems();
   }, []);
@@ -237,10 +246,6 @@ const ChecklistManutencao = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-BR');
   };
 
   const getStatusColor = (status_id: number) => {
