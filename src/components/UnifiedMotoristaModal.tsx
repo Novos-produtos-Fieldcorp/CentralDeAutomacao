@@ -593,13 +593,13 @@ const UnifiedMotoristaModal = ({
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Número da CNH</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.nr_registro !== null && motorista.nr_registro !== undefined ? motorista.nr_registro : 'Não informado'}
+                                      {motorista.nr_registro || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Categoria</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.categoria !== null && motorista.categoria !== undefined ? motorista.categoria : 'Não informado'}
+                                      {motorista.categoria || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
@@ -617,13 +617,13 @@ const UnifiedMotoristaModal = ({
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.nome_pai !== null && motorista.nome_pai !== undefined ? motorista.nome_pai : 'Não informado'}
+                                      {motorista.nome_pai || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.nome_mae !== null && motorista.nome_mae !== undefined ? motorista.nome_mae : 'Não informado'}
+                                      {motorista.nome_mae || 'Não informado'}
                                     </span>
                                   </div>
                                 </div>
