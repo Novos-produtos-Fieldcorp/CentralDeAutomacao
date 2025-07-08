@@ -850,4 +850,3 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
 };
 
 export default UnifiedAgregadoModal;
-}
