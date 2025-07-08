@@ -57,6 +57,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
     if (!motorista) return;
 
     try {
+      console.log('Fetching details for agregado:', motorista.motorista_id);
       // Fetch veiculo
       const { data: veiculoData, error: veiculoError } = await supabase
         .from('veiculo')
@@ -112,15 +113,35 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
         console.error('Erro ao processar dados de gestão de risco:', error);
       }
 
-      // Fetch documento
+      // Fetch documento with a more detailed query
       const { data: documentoData, error: documentoError } = await supabase
         .from('documento_motorista')
-        .select('*')
+        .select(`
+          id_documento_motorista,
+          foto_cnh,
+          nr_rg,
+          orgao_expedidor,
+          data_expedicao,
+          foto_rg,
+          nome_pai,
+          nome_mae,
+          nr_registro_cnh,
+          categoria_cnh,
+          validade_cnh,
+          uf_cnh,
+          foto_comprovante_residencia,
+          motorista_id
+        `)
         .eq('motorista_id', motorista.motorista_id)
         .maybeSingle();
 
       if (documentoError) throw documentoError;
       setDocumento(documentoData);
+      console.log('Documento data fetched for agregado:', documentoData);
+      
+      if (!documentoData) {
+        console.warn('No documento data found for agregado:', motorista.motorista_id);
+      }
 
       // Fetch endereco
       const { data: enderecoArr, error: enderecoError } = await supabase
@@ -661,6 +682,44 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       />
                                     </div>
                                   )}
+                                  <div className="flex flex-col gap-2 mt-2">
+                                    <div>
+                                      <span className="block text-xs text-gray-500 dark:text-gray-400">Número da CNH</span>
+                                      <span className="block font-semibold text-gray-900 dark:text-white">
+                                        {documento?.nr_registro_cnh || 'Não informado'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="block text-xs text-gray-500 dark:text-gray-400">Categoria</span>
+                                      <span className="block font-semibold text-gray-900 dark:text-white">
+                                        {documento?.categoria_cnh || 'Não informado'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="block text-xs text-gray-500 dark:text-gray-400">Validade</span>
+                                      <span className="block font-semibold text-gray-900 dark:text-white">
+                                        {documento?.validade_cnh ? formatDate(documento.validade_cnh) : 'Não informado'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="block text-xs text-gray-500 dark:text-gray-400">UF</span>
+                                      <span className="block font-semibold text-gray-900 dark:text-white">
+                                        {documento?.uf_cnh || 'Não informado'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
+                                      <span className="block font-semibold text-gray-900 dark:text-white">
+                                        {documento?.nome_pai || 'Não informado'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
+                                      <span className="block font-semibold text-gray-900 dark:text-white">
+                                        {documento?.nome_mae || 'Não informado'}
+                                      </span>
+                                    </div>
+                                  </div>
                                 </div>
                               ) : (
                                 <span className="text-gray-500 dark:text-gray-400">Não enviado</span>
