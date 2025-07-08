@@ -247,14 +247,7 @@ const ChecklistManutencao = () => {
       setLoading(false);
     }
   };
-  const formatDate = (date: string) => {
-    // Split the date string (YYYY-MM-DD) and rearrange to DD/MM/YYYY
-    const parts = date.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return date; // Return original if format is unexpected
-  };
+  
   const getStatusColor = (status_id: number) => {
     const statusItem = statusItems.find(item => item.status_id === status_id);
     if (!statusItem) return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200';
