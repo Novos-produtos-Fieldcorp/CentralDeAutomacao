@@ -7,8 +7,9 @@ interface DateRange {
   endDate: string;
 }
 
-export const useDateRange = (initialPeriod: PeriodType = '30days') => {
+export const useDateRange = (initialPeriod: PeriodType = '30days', debounceCustomUpdate: boolean = false) => {
   const [periodType, setPeriodType] = useState<PeriodType>(initialPeriod);
+  const [pendingDateRange, setPendingDateRange] = useState<DateRange | null>(null);
   
   const calculateDateRange = useCallback((type: PeriodType): DateRange => {
     const end = new Date();
@@ -59,13 +60,35 @@ export const useDateRange = (initialPeriod: PeriodType = '30days') => {
       const newRange = calculateDateRange(type);
       console.log(`Setting new date range for ${type}:`, newRange);
       setDateRange(newRange);
+      setPendingDateRange(null);
     }
   }, [calculateDateRange]);
+
+  const updateDateRange = useCallback((newRange: DateRange) => {
+    if (debounceCustomUpdate && periodType === 'custom') {
+      // Store the pending date range but don't update the actual range yet
+      setPendingDateRange(newRange);
+    } else {
+      // Update the date range immediately
+      setDateRange(newRange);
+    }
+  }, [debounceCustomUpdate, periodType]);
+
+  const applyPendingDateRange = useCallback(() => {
+    if (pendingDateRange) {
+      setDateRange(pendingDateRange);
+      setPendingDateRange(null);
+      return true;
+    }
+    return false;
+  }, [pendingDateRange]);
 
   return {
     periodType,
     dateRange,
+    pendingDateRange,
     updatePeriod,
-    setDateRange
+    setDateRange: updateDateRange,
+    applyPendingDateRange
   };
 };
