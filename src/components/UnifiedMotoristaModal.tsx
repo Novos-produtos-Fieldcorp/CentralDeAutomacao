@@ -42,21 +42,21 @@ const UnifiedMotoristaModal = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
   const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
+  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
   const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
   const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
   const [documentCount, setDocumentCount] = useState(0);
   const [ajudantesCount, setAjudantesCount] = useState(0);
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
   const [hasComentario, setHasComentario] = useState(false);
-  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
 
   useEffect(() => {
     if (isOpen && motorista) {
       fetchDocumentCount();
+      fetchDocumentoMotorista();
       fetchAjudantesCount();
       fetchGestaoRiscoCount();
       checkComentario();
-      fetchDocumentoMotorista();
     }
   }, [isOpen, motorista]);
 
