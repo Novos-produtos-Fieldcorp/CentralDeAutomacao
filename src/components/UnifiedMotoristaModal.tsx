@@ -70,18 +70,10 @@ const UnifiedMotoristaModal = ({
         .select(`
           id_documento_motorista,
           foto_cnh,
-          nr_rg,
-          orgao_expedidor,
-          data_expedicao,
-          foto_rg,
-          nome_pai,
-          nome_mae,
-          nr_registro_cnh,
-          categoria_cnh,
-          validade_cnh,
-          uf_cnh,
           foto_comprovante_residencia,
-          motorista_id
+          motorista_id,
+          uf_cnh,
+          validade_cnh
         `)
         .eq('motorista_id', motorista.motorista_id)
         .maybeSingle();
@@ -543,13 +535,13 @@ const UnifiedMotoristaModal = ({
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Número da CNH</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documentoMotorista?.nr_registro_cnh || 'Não informado'}
+                                      {motorista.nr_registro || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Categoria</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documentoMotorista?.categoria_cnh || 'Não informado'}
+                                      {motorista.categoria || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
@@ -567,13 +559,13 @@ const UnifiedMotoristaModal = ({
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documentoMotorista?.nome_pai || 'Não informado'}
+                                      {motorista.nome_pai || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documentoMotorista?.nome_mae || 'Não informado'}
+                                      {motorista.nome_mae || 'Não informado'}
                                     </span>
                                   </div>
                                 </div>
@@ -588,19 +580,19 @@ const UnifiedMotoristaModal = ({
                               {motorista.documento_motorista?.[0]?.foto_comprovante_residencia ? (
                                 <div className="flex items-center">
                                   <button
-                                    onClick={() => openDocumentInNewTab(documentoMotorista?.foto_comprovante_residencia || null)}
+                                    onClick={() => openDocumentInNewTab(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null)}
                                     className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
                                   >
                                     <FileText className="w-5 h-5 mr-2" />
-                                    {isPdf(documentoMotorista?.foto_comprovante_residencia || null) ? 'Ver PDF' : 'Ver Imagem'}
+                                    {isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null) ? 'Ver PDF' : 'Ver Imagem'}
                                   </button>
-                                  {!isPdf(documentoMotorista?.foto_comprovante_residencia || null) && documentoMotorista?.foto_comprovante_residencia && (
+                                  {!isPdf(motorista.documento_motorista?.[0]?.foto_comprovante_residencia || null) && motorista.documento_motorista?.[0]?.foto_comprovante_residencia && (
                                     <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
                                       <img 
-                                        src={documentoMotorista.foto_comprovante_residencia}
+                                        src={motorista.documento_motorista[0].foto_comprovante_residencia}
                                         alt="Comprovante Preview" 
                                         className="w-full h-full object-cover cursor-pointer"
-                                        onClick={() => setActiveDocument(documentoMotorista.foto_comprovante_residencia)}
+                                        onClick={() => setActiveDocument(motorista.documento_motorista[0].foto_comprovante_residencia)}
                                       />
                                     </div>
                                   )}
