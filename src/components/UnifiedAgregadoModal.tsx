@@ -28,10 +28,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [endereco, setEndereco] = useState<any>(null);
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
-  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
+  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState<boolean>(false);
   const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
-  const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
-  const [selectedAjudante, setSelectedAjudante] = useState<DocumentoAjudante | null>(null);
+  const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState<boolean>(false);
+  const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
   const [documentCount, setDocumentCount] = useState(0);
   const [ajudantesCount, setAjudantesCount] = useState(0);
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
@@ -674,7 +674,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   {motorista.documento_ajudante && motorista.documento_ajudante.length > 0 ? (
                     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
                       <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {motorista.documento_ajudante.map((ajudante) => (
+                        {Array.isArray(motorista.documento_ajudante) && motorista.documento_ajudante.map((ajudante) => (
                           <li key={ajudante.id_ajudante} className="px-4 py-4 sm:px-6">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center">

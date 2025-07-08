@@ -45,7 +45,7 @@ const UnifiedMotoristaModal = ({
   const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
   const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
   const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
-  const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
+  const [selectedAjudante, setSelectedAjudante] = useState<DocumentoAjudante | null>(null);
   const [documentCount, setDocumentCount] = useState(0);
   const [ajudantesCount, setAjudantesCount] = useState(0);
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
@@ -683,7 +683,7 @@ const UnifiedMotoristaModal = ({
                   {motorista.documento_ajudante && motorista.documento_ajudante.length > 0 ? (
                     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
                       <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {motorista.documento_ajudante.map((ajudante) => (
+                        {Array.isArray(motorista.documento_ajudante) && motorista.documento_ajudante.map((ajudante) => (
                           <li key={ajudante.id_ajudante} className="px-4 py-4 sm:px-6">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center">
