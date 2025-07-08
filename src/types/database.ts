@@ -108,7 +108,6 @@ export interface DocumentoAjudante {
   id_ajudante: number;
   nome: string | null;
   cpf: number | null;
-  veiculo_id: number | null;
   motorista_id: number | null;
   comprovante_residencia?: string | null;
   telefone?: string | null;
