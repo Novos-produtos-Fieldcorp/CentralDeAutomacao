@@ -40,7 +40,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
   const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
   const [veiculo, setVeiculo] = useState<Veiculo | null>(null);
-  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
   const [endereco, setEndereco] = useState<any>(null);
   const [ajudantes, setAjudantes] = useState<any[]>([]);
   const [documentCount, setDocumentCount] = useState(0);
