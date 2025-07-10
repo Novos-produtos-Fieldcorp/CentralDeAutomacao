@@ -44,7 +44,7 @@ const HodometrosRelatorio = () => {
   const { companyId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
+  const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('30days', true);
   const [readings, setReadings] = useState<HodometroReading[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
@@ -154,8 +154,11 @@ const HodometrosRelatorio = () => {
   }, [dateRange, companyId]);
 
   useEffect(() => {
-    fetchReadings();
-  }, [fetchReadings]);
+    // Only fetch when date range actually changes, not on pending changes
+    if (!pendingDateRange) {
+      fetchReadings();
+    }
+  }, [fetchReadings, pendingDateRange]);
 
   // Format date from YYYY-MM-DD to DD/MM/YYYY
   const formatDateBR = (dateStr: string) => {
@@ -383,8 +386,14 @@ const HodometrosRelatorio = () => {
             <PeriodSelector
               periodType={periodType}
               dateRange={dateRange}
+              pendingDateRange={pendingDateRange}
               onPeriodChange={updatePeriod}
               onDateRangeChange={setDateRange}
+              onApplyCustomRange={() => {
+                if (applyPendingDateRange()) {
+                  fetchReadings();
+                }
+              }}
             />
           </div>
 

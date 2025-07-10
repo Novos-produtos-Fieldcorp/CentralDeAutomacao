@@ -58,7 +58,7 @@ const HodometrosLista = () => {
   const { companyId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
+  const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('all', true);
   const [vehicleData, setVehicleData] = useState<VehicleData[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleData | null>(null);
   const [showChartModal, setShowChartModal] = useState(false);
@@ -365,8 +365,11 @@ const HodometrosLista = () => {
   }, [dateRange, companyId]);
 
   useEffect(() => {
-    fetchVehicleData();
-  }, [fetchVehicleData]);
+    // Only fetch when date range actually changes, not on pending changes
+    if (!pendingDateRange) {
+      fetchVehicleData();
+    }
+  }, [fetchVehicleData, pendingDateRange]);
 
   const handleViewChart = (vehicle: VehicleData) => {
     setSelectedVehicle(vehicle);
@@ -577,8 +580,14 @@ const HodometrosLista = () => {
             <PeriodSelector
               periodType={periodType}
               dateRange={dateRange}
+              pendingDateRange={pendingDateRange}
               onPeriodChange={updatePeriod}
               onDateRangeChange={setDateRange}
+              onApplyCustomRange={() => {
+                if (applyPendingDateRange()) {
+                  fetchVehicleData();
+                }
+              }}
             />
           </div>
 

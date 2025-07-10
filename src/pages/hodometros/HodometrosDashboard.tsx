@@ -98,7 +98,7 @@ const HodometrosDashboard = () => {
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
   const [todayReadings, setTodayReadings] = useState(0);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
+  const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('30days', true);
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
   
   // Inconsistencies table state
@@ -111,10 +111,13 @@ const HodometrosDashboard = () => {
   const [connectionError, setConnectionError] = useState(false);
 
   useEffect(() => {
-    fetchData();
-    fetchTodayReadings();
-    fetchInconsistencies();
-  }, [dateRange, companyId]);
+    // Only fetch when date range actually changes, not on pending changes
+    if (!pendingDateRange) {
+      fetchData();
+      fetchTodayReadings();
+      fetchInconsistencies();
+    }
+  }, [dateRange, pendingDateRange]);
 
   // Enhanced error handling function
   const handleSupabaseError = (error: any, operation: string) => {
@@ -623,8 +626,16 @@ const HodometrosDashboard = () => {
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
+          pendingDateRange={pendingDateRange}
           onPeriodChange={updatePeriod}
           onDateRangeChange={setDateRange}
+          onApplyCustomRange={() => {
+            if (applyPendingDateRange()) {
+              fetchData();
+              fetchTodayReadings();
+              fetchInconsistencies();
+            }
+          }}
         />
       </div>
 
