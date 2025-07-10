@@ -1,20 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  X, Truck, User, MapPin, Phone, CreditCard, FileText, Camera, 
-  CheckCircle2, XCircle, ExternalLink, Home, Edit2, Users, ShieldAlert, MessageSquare 
+  X, User, MapPin, FileText, ExternalLink, Edit2, Users, ShieldAlert, MessageSquare 
 } from 'lucide-react';
 import type { 
   DocumentoMotorista, 
-  Veiculo, 
-  DocumentoVeiculo, 
   Motorista,
-  PessoaFisicaDonoVeiculo,
-  PessoaJuridicaDonoVeiculo
+  DocumentoAjudante
 } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
-import DocumentUploader from './DocumentUploader';
-import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
 import AddAjudanteModal from './AddAjudanteModal';
@@ -22,6 +16,7 @@ import EditAjudanteModal from './EditAjudanteModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import GestaoRiscoTab from './GestaoRiscoTab';
 import ComentariosTab from './ComentariosTab';
+import { toast } from 'sonner';
 
 interface UnifiedMotoristaModalProps {
   isOpen: boolean;
@@ -38,6 +33,14 @@ const UnifiedMotoristaModal = ({
 }: UnifiedMotoristaModalProps) => {
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
+  
+  const handleTabChange = async (tab: 'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios') => {
+    setActiveTab(tab);
+    
+    if (tab === 'ajudantes' && motorista) {
+      await fetchAjudantes();
+    }
+  };
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [endereco, setEndereco] = useState<any>(null);
@@ -50,6 +53,7 @@ const UnifiedMotoristaModal = ({
   const [ajudantesCount, setAjudantesCount] = useState(0);
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
   const [hasComentario, setHasComentario] = useState(false);
+  const [ajudantes, setAjudantes] = useState<DocumentoAjudante[]>([]);
 
   useEffect(() => {
     if (isOpen && motorista) {
@@ -129,7 +133,11 @@ const UnifiedMotoristaModal = ({
           foto_comprovante_residencia,
           motorista_id,
           uf_cnh,
-          validade_cnh
+          validade_cnh,
+          nr_registro_cnh,
+          categoria_cnh,
+          nome_pai,
+          nome_mae
         `)
         .eq('motorista_id', motorista.motorista_id)
         .maybeSingle();
@@ -170,6 +178,26 @@ const UnifiedMotoristaModal = ({
     }
   };
 
+  const fetchAjudantes = async () => {
+    if (!motorista) return;
+    
+    try {
+      const { data, error, count } = await supabase
+        .from('documento_ajudante')
+        .select('*', { count: 'exact' })
+        .eq('motorista_id', motorista.motorista_id)
+        .order('nome', { ascending: true });
+        
+      if (error) throw error;
+      
+      setAjudantes(data || []);
+      setAjudantesCount(count || 0);
+    } catch (error) {
+      console.error('Erro ao carregar ajudantes:', error);
+      toast.error('Erro ao carregar a lista de ajudantes');
+    }
+  };
+
   const fetchAjudantesCount = async () => {
     if (!motorista) return;
     
@@ -204,21 +232,16 @@ const UnifiedMotoristaModal = ({
     }
   };
 
-  const checkComentario = async () => {
+  const checkComentario = () => {
     if (!motorista) return;
     
     try {
-      const { data, error } = await supabase
-        .from('motorista')
-        .select('comentario')
-        .eq('motorista_id', motorista.motorista_id)
-        .single();
-        
-      if (error) throw error;
-      
-      setHasComentario(!!data?.comentario);
+      // Check if the comentario exists in the motorista object
+      // This assumes the comentario is already loaded with the motorista data
+      setHasComentario(!!motorista.comentario);
     } catch (error) {
       console.error('Error checking comentario:', error);
+      setHasComentario(false);
     }
   };
 
@@ -236,15 +259,53 @@ const UnifiedMotoristaModal = ({
 
   const isPdf = (url: string | null) => url?.toLowerCase().endsWith('.pdf');
 
-  const handleEditAjudante = (ajudante: any) => {
+  const handleEditAjudante = (ajudante: DocumentoAjudante) => {
     setSelectedAjudante(ajudante);
     setIsEditAjudanteModalOpen(true);
   };
 
-  const handleDeleteAjudante = (ajudante: any) => {
-    setSelectedAjudante(ajudante);
-    setIsDeleteAjudanteModalOpen(true);
+  const handleDeleteAjudante = async (ajudante: DocumentoAjudante) => {
+    if (!confirm('Tem certeza que deseja excluir este ajudante? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    try {
+      // First delete any related records in cnh_ajudante
+      const { error: cnhError } = await supabase
+        .from('cnh_ajudante')
+        .delete()
+        .eq('ajudante_id', ajudante.id_ajudante);
+
+      if (cnhError) throw cnhError;
+
+      // Then delete the ajudante
+      const { error: deleteError } = await supabase
+        .from('documento_ajudante')
+        .delete()
+        .eq('id_ajudante', ajudante.id_ajudante);
+
+      if (deleteError) throw deleteError;
+
+      // Update the list of ajudantes
+      await fetchAjudantes();
+      toast.success('Ajudante excluído com sucesso');
+    } catch (error) {
+      console.error('Erro ao excluir ajudante:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao excluir ajudante');
+    }
   };
+
+  const handleAjudanteAdded = async () => {
+    await fetchAjudantes();
+    toast.success('Ajudante adicionado com sucesso');
+  };
+
+  const handleAjudanteUpdated = async () => {
+    await fetchAjudantes();
+    toast.success('Ajudante atualizado com sucesso');
+  };
+
+
 
   const handleDeleteConfirm = async () => {
     if (!selectedAjudante) return;
@@ -302,7 +363,7 @@ const UnifiedMotoristaModal = ({
             <div className="border-b border-gray-200 dark:border-gray-700">
               <nav className="-mb-px flex space-x-8 px-6">
                 <button
-                  onClick={() => setActiveTab('details')}
+                  onClick={() => handleTabChange('details')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'details'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -315,7 +376,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('documents')}
+                  onClick={() => handleTabChange('documents')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'documents'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -333,7 +394,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('ajudantes')}
+                  onClick={() => handleTabChange('ajudantes')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'ajudantes'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -351,7 +412,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('gestao-risco')}
+                  onClick={() => handleTabChange('gestao-risco')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'gestao-risco'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -369,7 +430,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('comentarios')}
+                  onClick={() => handleTabChange('comentarios')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'comentarios'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -593,37 +654,37 @@ const UnifiedMotoristaModal = ({
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Número da CNH</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.nr_registro_cnh || motorista.nr_registro || 'Não informado'}
+                                      {documentoMotorista?.nr_registro_cnh || motorista.nr_registro_cnh || motorista.nr_registro || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Categoria</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.categoria_cnh || motorista.categoria || 'Não informado'}
+                                      {documentoMotorista?.categoria_cnh || motorista.categoria_cnh || motorista.categoria || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Validade</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documentoMotorista?.validade_cnh ? formatDate(documentoMotorista.validade_cnh) : 'Não informado'}
+                                      {documentoMotorista?.validade_cnh ? formatDate(documentoMotorista.validade_cnh) : motorista.validade_cnh ? formatDate(motorista.validade_cnh) : 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">UF</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documentoMotorista?.uf_cnh || 'Não informado'}
+                                      {documentoMotorista?.uf_cnh || motorista.uf_cnh || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.dm_nome_pai || motorista.nome_pai || 'Não informado'}
+                                      {documentoMotorista?.nome_pai || motorista.dm_nome_pai || motorista.nome_pai || 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {motorista.dm_nome_mae || motorista.nome_mae || 'Não informado'}
+                                      {documentoMotorista?.nome_mae || motorista.dm_nome_mae || motorista.nome_mae || 'Não informado'}
                                     </span>
                                   </div>
                                 </div>
@@ -680,10 +741,10 @@ const UnifiedMotoristaModal = ({
                     </button>
                   </div>
                   
-                  {motorista.documento_ajudante && motorista.documento_ajudante.length > 0 ? (
+                  {ajudantes.length > 0 ? (
                     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
                       <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {Array.isArray(motorista.documento_ajudante) && motorista.documento_ajudante.map((ajudante) => (
+                        {ajudantes.map((ajudante) => (
                           <li key={ajudante.id_ajudante} className="px-4 py-4 sm:px-6">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center">
@@ -780,31 +841,21 @@ const UnifiedMotoristaModal = ({
         />
       )}
 
-      <AddAjudanteModal
-        isOpen={isAddAjudanteModalOpen}
-        onClose={() => setIsAddAjudanteModalOpen(false)}
-        motorista_id={motorista.motorista_id}
-        onSuccess={() => {
-          setIsAddAjudanteModalOpen(false);
-          fetchAjudantesCount();
-          onSuccess?.();
-        }}
-      />
+      {isAddAjudanteModalOpen && motorista && (
+        <AddAjudanteModal
+          isOpen={isAddAjudanteModalOpen}
+          onClose={() => setIsAddAjudanteModalOpen(false)}
+          motorista_id={motorista.motorista_id}
+          onSuccess={handleAjudanteAdded}
+        />
+      )}
 
       {isEditAjudanteModalOpen && selectedAjudante && (
         <EditAjudanteModal
           isOpen={isEditAjudanteModalOpen}
-          onClose={() => {
-            setIsEditAjudanteModalOpen(false);
-            setSelectedAjudante(null);
-          }}
+          onClose={() => setIsEditAjudanteModalOpen(false)}
           ajudante={selectedAjudante}
-          onSuccess={() => {
-            setIsEditAjudanteModalOpen(false);
-            setSelectedAjudante(null);
-            fetchAjudantesCount();
-            onSuccess?.();
-          }}
+          onSuccess={handleAjudanteUpdated}
         />
       )}
 

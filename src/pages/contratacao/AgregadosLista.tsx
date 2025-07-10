@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck } from 'lucide-react';
+import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus } from 'lucide-react';
+import AddAgregadoModal from '../../components/AddAgregadoModal';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database'; // Adicionando tipos necessários
+import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
 import DocumentViewer from '../../components/DocumentViewer';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
@@ -19,6 +20,10 @@ import Pagination from '../../components/Pagination';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
+
+interface AgregadosListaProps {
+  onSuccess?: () => void;
+}
 
 // Interface para a view de contratados
 export interface ViewContratado {
@@ -48,7 +53,7 @@ export interface ViewContratado {
   logradouro?: string | null;
   nr_cep?: string | null;
   nome_bairro?: string | null;
-  nome_cidade?: string | null;
+  nome_cidade?: string | null | undefined;
   nome_estado?: string | null;
   sigla_estado?: string | null;
   veiculo_id?: number | null;
@@ -56,6 +61,12 @@ export interface ViewContratado {
   status_veiculo?: boolean | null;
   marca?: string | null;
   tipologia?: string | null;
+  veiculo?: Array<{
+    placa: string;
+    tipologia: string;
+    marca?: string;
+    tipo_veiculo?: string;
+  }>;
   ano?: string | null;
   combustivel?: string | null;
   peso?: string | null;
@@ -63,16 +74,11 @@ export interface ViewContratado {
   possui_rastreador?: boolean | null;
   marca_rastreador?: string | null;
   cor?: string | null;
+  tipo_veiculo?: string | null;
   tipo?: string | null;
-  veiculo?: Array<{
-    placa: string;
-    tipologia: string;
-    marca?: string;
-    tipo?: string;
-  }>;
 }
 
-const Contratados = () => {
+const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
@@ -93,47 +99,77 @@ const Contratados = () => {
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
   const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
   const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
-  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [documento] = useState<DocumentoMotorista | null>(null);
-  const [endereco, setEndereco] = useState<{
+  // Matches the type expected by DocumentViewer component
+  interface EnderecoState {
     logradouro?: {
-      logradouro?: string;
-      nr_cep?: string;
+      logradouro?: string | null;
+      nr_cep?: string | null;
       bairro?: {
-        bairro?: string;
+        bairro?: string | null;
         cidade?: {
-          cidade?: string;
+          cidade?: string | null;
           estado?: {
-            sigla_estado?: string;
-          };
-        };
-      };
-    };
-    nr_end?: number;
-    ds_complemento_end?: string;
-  } | null>(null);
+            sigla_estado?: string | null;
+          } | null;
+        } | null;
+      } | null;
+    } | null;
+    nr_end?: number | null;
+    ds_complemento_end?: string | null;
+  }
+  
+
+  const [endereco, setEndereco] = useState<EnderecoState | null>(null);
   
   // Atualiza o endereco quando o selectedMotorista mudar
   useEffect(() => {
     if (selectedMotorista) {
-      setEndereco({
-        logradouro: {
-          logradouro: selectedMotorista.logradouro || undefined,
-          nr_cep: selectedMotorista.nr_cep || undefined,
-          bairro: {
-            bairro: selectedMotorista.nome_bairro || undefined,
-            cidade: {
-              cidade: selectedMotorista.nome_cidade || undefined,
-              estado: {
-                sigla_estado: selectedMotorista.sigla_estado || undefined
-              }
-            }
+      // Initialize enderecoData with the correct type
+      const enderecoData: EnderecoState = {};
+      
+      // Only add properties if they exist and are not null/undefined
+      if (selectedMotorista.logradouro || selectedMotorista.nr_cep) {
+        const logradouro: EnderecoState['logradouro'] = {};
+        
+        if (selectedMotorista.logradouro) logradouro.logradouro = selectedMotorista.logradouro;
+        if (selectedMotorista.nr_cep) logradouro.nr_cep = selectedMotorista.nr_cep;
+
+        if (selectedMotorista.nome_bairro || selectedMotorista.nome_cidade || selectedMotorista.sigla_estado) {
+          logradouro.bairro = {};
+          
+          if (selectedMotorista.nome_bairro) logradouro.bairro.bairro = selectedMotorista.nome_bairro;
+          
+          const cidade: NonNullable<NonNullable<EnderecoState['logradouro']>['bairro']>['cidade'] = {};
+          if (selectedMotorista.nome_cidade) cidade.cidade = selectedMotorista.nome_cidade;
+          
+          if (selectedMotorista.sigla_estado) {
+            cidade.estado = {
+              sigla_estado: selectedMotorista.sigla_estado
+            };
           }
-        },
-        nr_end: selectedMotorista.nr_end || undefined,
-        ds_complemento_end: selectedMotorista.ds_complemento_end || undefined
-      });
+          
+          if (Object.keys(cidade).length > 0) {
+            logradouro.bairro.cidade = cidade;
+          }
+        }
+        
+        if (Object.keys(logradouro).length > 0) {
+          enderecoData.logradouro = logradouro;
+        }
+      }
+
+      if (selectedMotorista.nr_end !== undefined && selectedMotorista.nr_end !== null) {
+        enderecoData.nr_end = selectedMotorista.nr_end;
+      }
+      
+      if (selectedMotorista.ds_complemento_end) {
+        enderecoData.ds_complemento_end = selectedMotorista.ds_complemento_end;
+      }
+
+      // Only set endereco if we have data, otherwise set to null
+      setEndereco(Object.keys(enderecoData).length > 0 ? enderecoData : null);
     } else {
       setEndereco(null);
     }
@@ -186,7 +222,7 @@ const Contratados = () => {
   
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
 
-  const convertToMotorista = (contratado: ViewContratado | null): MotoristaWithAddress | null => {
+  const convertToMotorista = (contratado: ViewContratado): MotoristaWithAddress | null => {
     if (!contratado) return null;
     
     const motoristaBase: Motorista = {
@@ -206,7 +242,7 @@ const Contratados = () => {
       cliente_id: contratado.cliente_id || 0,
       ativo: contratado.ativo || false,
       conversation_id: contratado.conversation_id,
-      cidade: contratado.nome_cidade || undefined, // Garantindo que seja string | undefined
+      cidade: contratado.nome_cidade,
       documento_motorista: [],
       documento_ajudante: []
     };
@@ -229,12 +265,13 @@ const Contratados = () => {
         : undefined;
     
     // Criando o objeto de veículo se houver informações disponíveis
-    const veiculo: Veiculo | undefined = contratado.veiculo_id || contratado.placa || contratado.tipologia
+    const veiculo: Veiculo | undefined = contratado.veiculo_id || contratado.placa || contratado.tipo_veiculo
       ? {
           veiculo_id: contratado.veiculo_id || 0,
           placa: contratado.placa || '',
           status_veiculo: contratado.status_veiculo || false,
           marca: contratado.marca || '',
+          tipo: contratado.tipo_veiculo || '',
           tipologia: contratado.tipologia || '',
           ano: contratado.ano || '',
           combustivel: contratado.combustivel || '',
@@ -244,7 +281,6 @@ const Contratados = () => {
           marca_rastreador: contratado.marca_rastreador || '',
           motorista_id: contratado.motorista_id || 0,
           cor: contratado.cor || '',
-          tipo: contratado.tipo || ''
         }
       : undefined;
     
@@ -255,11 +291,14 @@ const Contratados = () => {
       ...(veiculo && { veiculo })
     };
   };
+
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
   const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
   const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [customDateRange, setCustomDateRange] = useState<{
     startDate: string;
     endDate: string;
@@ -300,9 +339,9 @@ const Contratados = () => {
   const fetchContratados = async () => {
     try {
       setLoading(true);
-      // Primeiro, vamos buscar os dados básicos da view
+      // Buscar os agregados da view específica
       let query = supabase
-        .from('vw_contratados_completo')
+        .from('vw_agregados_completo')
         .select('*')
         .eq('company_id', companyId);
 
@@ -342,10 +381,11 @@ const Contratados = () => {
 
       if (error) throw error;
 
-      // Log the data to check the ativo field
-      console.log('Fetched contratados:', data);
+      // Log para debug dos valores de funcao
+      console.log('Valores de funcao encontrados:', [...new Set(data?.map(item => item.funcao))]);
+      console.log('Dados completos:', data);
 
-      // Extract unique cities from contratados
+      // Extract unique cities from contratados - only include non-null/undefined city names
       const uniqueCities = new Set<string>();
       const uniqueVehicleTypes = new Set<string>();
       
@@ -387,21 +427,23 @@ const Contratados = () => {
       console.log('Dados processados:', JSON.parse(JSON.stringify(processedData)));
       
       processedData.forEach(motorista => {
+        // Only add non-null and non-undefined city names to the Set
         if (motorista.nome_cidade) {
           uniqueCities.add(motorista.nome_cidade);
         }
         
         // Extract vehicle types
         if (motorista.veiculo && motorista.veiculo.length > 0) {
-          motorista.veiculo.forEach((veiculo: { tipologia?: string }) => {
-            if (veiculo.tipologia) {
-              uniqueVehicleTypes.add(veiculo.tipologia);
+          motorista.veiculo.forEach((veiculo: { tipo_veiculo?: string }) => {
+            if (veiculo.tipo_veiculo) {
+              uniqueVehicleTypes.add(veiculo.tipo_veiculo);
             }
           });
         }
       });
       
-      setCidades(Array.from(uniqueCities).sort());
+      // Filter out null or undefined values before setting the state
+      setCidades(Array.from(uniqueCities).filter((c): c is string => c != null).sort());
       setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
 
       setContratados(processedData);
@@ -503,7 +545,9 @@ const Contratados = () => {
   };
   
   // Funções para manipular filtros de múltipla seleção
-  const toggleFilterOption = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo', value: string) => {
+  const toggleFilterOption = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo', value: string | null | undefined) => {
+    // Skip if value is null or undefined
+    if (value == null) return;
     switch (filterType) {
       case 'status':
         setStatusFilter(prev => 
@@ -782,128 +826,6 @@ const Contratados = () => {
     }
   };
 
-  const handleUpdateIntegracaoInterna = async (motorista: ViewContratado, dataIntegracao: string | null) => {
-    try {
-      // Primeiro, verifica se já existe um registro para este motorista
-      const { data: existingRecord, error: fetchError } = await supabase
-        .from('motorista_eventos_cliente')
-        .select('motorista_id')
-        .eq('motorista_id', motorista.motorista_id)
-        .maybeSingle();
-
-      if (fetchError) throw fetchError;
-
-      let error;
-      
-      if (existingRecord) {
-        // Se existir, faz update
-        const { error: updateError } = await supabase
-          .from('motorista_eventos_cliente')
-          .update({
-            integracao: !!dataIntegracao,
-            integracao_data: dataIntegracao
-          })
-          .eq('motorista_id', motorista.motorista_id);
-          
-        error = updateError;
-      } else {
-        // Se não existir, faz insert
-        const { error: insertError } = await supabase
-          .from('motorista_eventos_cliente')
-          .insert([{
-            motorista_id: motorista.motorista_id,
-            integracao: !!dataIntegracao,
-            integracao_data: dataIntegracao,
-            treinamento: false,
-            treinamento_data: null
-          }]);
-          
-        error = insertError;
-      }
-
-      if (error) throw error;
-
-      // Atualiza o estado local
-      setContratados(prev => 
-        prev.map(m => 
-          m.motorista_id === motorista.motorista_id 
-            ? { 
-                ...m, 
-                integracao_data: dataIntegracao,
-                integracao: !!dataIntegracao
-              } 
-            : m
-        )
-      );
-
-      toast.success('Status de integração interna atualizado');
-    } catch (error) {
-      console.error('Erro ao atualizar integração interna:', error);
-      toast.error('Erro ao atualizar status de integração');
-    }
-  };
-
-  const handleUpdateTreinamentoCliente = async (motorista: ViewContratado, dataTreinamento: string | null) => {
-    try {
-      // Primeiro, verifica se já existe um registro para este motorista
-      const { data: existingRecord, error: fetchError } = await supabase
-        .from('motorista_eventos_cliente')
-        .select('motorista_id')
-        .eq('motorista_id', motorista.motorista_id)
-        .maybeSingle();
-
-      if (fetchError) throw fetchError;
-
-      let error;
-      
-      if (existingRecord) {
-        // Se existir, faz update
-        const { error: updateError } = await supabase
-          .from('motorista_eventos_cliente')
-          .update({
-            treinamento: !!dataTreinamento,
-            treinamento_data: dataTreinamento
-          })
-          .eq('motorista_id', motorista.motorista_id);
-          
-        error = updateError;
-      } else {
-        // Se não existir, faz insert
-        const { error: insertError } = await supabase
-          .from('motorista_eventos_cliente')
-          .insert([{
-            motorista_id: motorista.motorista_id,
-            treinamento: !!dataTreinamento,
-            treinamento_data: dataTreinamento,
-            integracao: false,
-            integracao_data: null
-          }]);
-          
-        error = insertError;
-      }
-
-      if (error) throw error;
-
-      // Atualiza o estado local
-      setContratados(prev => 
-        prev.map(m => 
-          m.motorista_id === motorista.motorista_id 
-            ? { 
-                ...m, 
-                treinamento_data: dataTreinamento,
-                treinamento: !!dataTreinamento
-              } 
-            : m
-        )
-      );
-
-      toast.success('Status de treinamento do cliente atualizado');
-    } catch (error) {
-      console.error('Erro ao atualizar treinamento do cliente:', error);
-      toast.error('Erro ao atualizar status de treinamento');
-    }
-  };
-
   const handleUpdateCliente = async (e: React.MouseEvent, motorista: ViewContratado, clienteId: number | null) => {
     e.stopPropagation();
     try {
@@ -975,11 +897,9 @@ const Contratados = () => {
     }
   };
 
-  const getMotoristaCity = (motorista: ViewContratado): string | null => {
-    // Usa o campo nome_cidade que já está disponível no ViewContratado
-    return motorista.nome_cidade || null;
+  const getMotoristaCity = (motorista: ViewContratado): string => {
+    return motorista.nome_cidade ?? '';
   };
-
 
   const filteredContratados = contratados.filter((motorista): boolean => {
     const searchLower = searchTerm.toLowerCase();
@@ -1009,7 +929,7 @@ const Contratados = () => {
     
     // Lógica para filtro de cidade (multiseleção)
     const cidadeMatch = cidadeFilter.length === 0 || 
-      (motorista.nome_cidade && cidadeFilter.includes(motorista.nome_cidade));
+      (motorista.nome_cidade != null && cidadeFilter.includes(motorista.nome_cidade));
     
     // Lógica para filtro de tipo de veículo (multiseleção)
     let tipoVeiculoMatch = true;
@@ -1375,21 +1295,24 @@ const Contratados = () => {
                     Limpar
                   </button>
                 </div>
-                {cidades.map((cidade, index) => (
-                  <div key={index} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`cidade-${index}`}
-                      checked={cidadeFilter.includes(cidade)}
-                      onChange={() => toggleFilterOption('cidade', cidade)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <label htmlFor={`cidade-${index}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                      {cidade}
-                    </label>
-                  </div>
-                ))}
+                {cidades
+                  .filter((cidade): cidade is string => cidade != null)
+                  .map((cidade, index) => (
+                    <div key={index} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`cidade-${index}`}
+                        checked={cidadeFilter.includes(cidade)}
+                        onChange={() => toggleFilterOption('cidade', cidade)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <label htmlFor={`cidade-${index}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        {cidade}
+                      </label>
+                    </div>
+                  ))
+                }
               </div>
             )}
           </div>
@@ -1487,6 +1410,13 @@ const Contratados = () => {
             </svg>
             <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
+            aria-label="Novo Agregado"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
         </div>
 
         {dateFilter === 'custom' && (
@@ -1545,8 +1475,6 @@ const Contratados = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Integração Interna</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Treinamento Cliente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
@@ -1581,9 +1509,6 @@ const Contratados = () => {
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {motorista.nome_motorista || ''}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {motorista.funcao}
                             </div>
                           </div>
                         </div>
@@ -1813,53 +1738,15 @@ const Contratados = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <label className="inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={!!motorista.integracao_data}
-                              onChange={(e) => {
-                                const newDate = e.target.checked ? new Date().toISOString().split('T')[0] : null;
-                                handleUpdateIntegracaoInterna(motorista, newDate);
-                              }}
-                              className="form-checkbox h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                          </label>
-                          {motorista.integracao_data && (
-                            <span className="text-sm text-gray-600">
-                              {new Date(motorista.integracao_data).toLocaleDateString('pt-BR')}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <label className="inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={!!motorista.treinamento_data}
-                              onChange={(e) => {
-                                const newDate = e.target.checked ? new Date().toISOString().split('T')[0] : null;
-                                handleUpdateTreinamentoCliente(motorista, newDate);
-                              }}
-                              className="form-checkbox h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                          </label>
-                          {motorista.treinamento_data && (
-                            <span className="text-sm text-gray-600">
-                              {new Date(motorista.treinamento_data).toLocaleDateString('pt-BR')}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {motorista.veiculo && motorista.veiculo.length > 0 ? (
+                          {motorista.placa ? (
                             <div>
-                              <div className="font-medium">{motorista.veiculo[0].placa || ''}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {motorista.veiculo[0].tipologia || ''}
-                              </div>
+                              <div className="font-medium">{motorista.placa}</div>
+                              {motorista.tipologia && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  {motorista.tipologia}
+                                </div>
+                              )}
                             </div>
                           ) : (
                             '-'
@@ -1976,7 +1863,7 @@ const Contratados = () => {
       <UnifiedMotoristaModal
         isOpen={isUnifiedModalOpen}
         onClose={() => setIsUnifiedModalOpen(false)}
-        motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : undefined}
+        motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : null}
         onSuccess={fetchContratados}
       />
 
@@ -1989,7 +1876,7 @@ const Contratados = () => {
         email={selectedMotorista?.email || undefined}
         telefone={selectedMotorista?.telefone?.toString()}
         dt_nascimento={selectedMotorista?.dt_nascimento}
-        endereco={endereco}
+        endereco={endereco || undefined}
         st_cadastro={selectedMotorista?.st_cadastro || 'cadastrado'}
       />
 
@@ -2083,6 +1970,18 @@ const Contratados = () => {
             return motorista?.telefone ? motorista.telefone.toString() : '';
           })
           .filter(Boolean)}
+      />
+
+      {/* Add Agregado Modal */}
+      <AddAgregadoModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={() => {
+          setShowAddModal(false);
+          // Refresh the list after successful addition
+          fetchContratados();
+          if (onSuccess) onSuccess();
+        }}
       />
     </div>
   );

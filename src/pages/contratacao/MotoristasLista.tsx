@@ -146,14 +146,6 @@ const MotoristasLista = () => {
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
   const ativoDropdownRef = useRef<HTMLDivElement>(null);
   
-  // Refs para botões de status/cliente por linha (dropdown overlay)
-  const statusButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
-  const clienteButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
-
-  // Estado para coordenadas dos overlays
-  const [statusDropdownCoords, setStatusDropdownCoords] = useState<Record<number, { left: number; top: number }>>({});
-  const [clienteDropdownCoords, setClienteDropdownCoords] = useState<Record<number, { left: number; top: number }>>({});
-
   // Funções para alternar os dropdowns
   const handleToggleStatusDropdown = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -186,7 +178,6 @@ const MotoristasLista = () => {
     setShowCidadeDropdown(false);
     setShowClienteDropdown(false);
   };
-
   const [cidades, setCidades] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -617,43 +608,13 @@ const MotoristasLista = () => {
 
   const handleRowStatusDropdown = (e: React.MouseEvent, motoristaId: number) => {
     e.stopPropagation();
-    if (statusDropdownOpen === motoristaId) {
-      setStatusDropdownOpen(null);
-    } else {
-      const btn = statusButtonRefs.current[motoristaId];
-      if (btn) {
-        const rect = btn.getBoundingClientRect();
-        setStatusDropdownCoords((prev: Record<number, { left: number; top: number }>) => ({
-          ...prev,
-          [motoristaId]: {
-            left: rect.left,
-            top: rect.bottom + 4
-          }
-        }));
-      }
-      setStatusDropdownOpen(motoristaId);
-    }
+    setStatusDropdownOpen(statusDropdownOpen === motoristaId ? null : motoristaId);
     setClienteDropdownOpen(null);
   };
 
   const handleRowClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
     e.stopPropagation();
-    if (clienteDropdownOpen === motoristaId) {
-      setClienteDropdownOpen(null);
-    } else {
-      const btn = clienteButtonRefs.current[motoristaId];
-      if (btn) {
-        const rect = btn.getBoundingClientRect();
-        setClienteDropdownCoords((prev: Record<number, { left: number; top: number }>) => ({
-          ...prev,
-          [motoristaId]: {
-            left: rect.left,
-            top: rect.bottom + 4
-          }
-        }));
-      }
-      setClienteDropdownOpen(motoristaId);
-    }
+    setClienteDropdownOpen(clienteDropdownOpen === motoristaId ? null : motoristaId);
     setStatusDropdownOpen(null);
   };
 
@@ -932,7 +893,7 @@ const MotoristasLista = () => {
             </button>
             
             {showStatusDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-y-auto" id="status-dropdown-menu">
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto" id="status-dropdown-menu">
                 <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
                   <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
                     <span>Selecionar status</span>
@@ -1016,7 +977,7 @@ const MotoristasLista = () => {
                     </button>
                   </div>
                 </div>
-                <div className="max-h-48 overflow-y-auto py-1">
+                <div className="max-h-48 overflow-y-auto">
                   {cidades.map((cidade, index) => (
                     <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                       <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
@@ -1102,7 +1063,7 @@ const MotoristasLista = () => {
                     </button>
                   </div>
                 </div>
-                <div className="max-h-48 overflow-y-auto py-1">
+                <div className="max-h-48 overflow-y-auto">
                   {/* Opção "Sem cliente" */}
                   <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                     <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
@@ -1324,7 +1285,7 @@ const MotoristasLista = () => {
                     <tr 
                       key={motorista.motorista_id || Math.random()} 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-                        selectedItems.has(motorista.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        selectedItems.has(motorista.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
                       onContextMenu={(e) => handleContextMenu(e, motorista)}
                     >
@@ -1392,29 +1353,7 @@ const MotoristasLista = () => {
                         <div className="relative">
                           <div className="flex items-center">
                             <button
-                              ref={el => {
-                                if (el) statusButtonRefs.current[motorista.motorista_id || 0] = el;
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (statusDropdownOpen === motorista.motorista_id) {
-                                  setStatusDropdownOpen(null);
-                                } else {
-                                  const btn = statusButtonRefs.current[motorista.motorista_id || 0];
-                                  if (btn) {
-                                    const rect = btn.getBoundingClientRect();
-                                    setStatusDropdownCoords(prev => ({
-                                      ...prev,
-                                      [motorista.motorista_id || 0]: {
-                                        left: rect.left,
-                                        top: rect.bottom + 4
-                                      }
-                                    }));
-                                  }
-                                  setStatusDropdownOpen(motorista.motorista_id);
-                                }
-                                setClienteDropdownOpen(null);
-                              }}
+                              onClick={(e) => handleRowStatusDropdown(e, motorista.motorista_id || 0)}
                               className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                 !motorista.st_cadastro ? 'bg-gray-100 dark:bg-gray-700' :
                                 motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30' :
@@ -1440,24 +1379,11 @@ const MotoristasLista = () => {
                               <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
                             </button>
                           </div>
-
+                          
                           {statusDropdownOpen === motorista.motorista_id && (
-                            <div
-                              style={statusDropdownCoords[motorista.motorista_id || 0] ? {
-                                position: 'fixed',
-                                left: statusDropdownCoords[motorista.motorista_id || 0].left,
-                                top: statusDropdownCoords[motorista.motorista_id || 0].top,
-                                minWidth: 180,
-                                zIndex: 50
-                              } : {}}
-                              className="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
-                              onClick={e => e.stopPropagation()}
-                              onMouseLeave={() => setStatusDropdownOpen(null)}
-                              tabIndex={0}
-                              onBlur={() => setStatusDropdownOpen(null)}
-                              ref={el => {
-                                if (el) el.scrollTop = 0;
-                              }}
+                            <div 
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <div className="py-1">
                                 <button
@@ -1556,29 +1482,7 @@ const MotoristasLista = () => {
                         <div className="relative">
                           <div className="flex items-center">
                             <button
-                              ref={el => {
-                                if (el) clienteButtonRefs.current[motorista.motorista_id || 0] = el;
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (clienteDropdownOpen === motorista.motorista_id) {
-                                  setClienteDropdownOpen(null);
-                                } else {
-                                  const btn = clienteButtonRefs.current[motorista.motorista_id || 0];
-                                  if (btn) {
-                                    const rect = btn.getBoundingClientRect();
-                                    setClienteDropdownCoords(prev => ({
-                                      ...prev,
-                                      [motorista.motorista_id || 0]: {
-                                        left: rect.left,
-                                        top: rect.bottom + 4
-                                      }
-                                    }));
-                                  }
-                                  setClienteDropdownOpen(motorista.motorista_id);
-                                }
-                                setStatusDropdownOpen(null);
-                              }}
+                              onClick={(e) => handleRowClienteDropdown(e, motorista.motorista_id || 0)}
                               className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                 motorista.cliente_id 
                                   ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor || 
@@ -1593,24 +1497,11 @@ const MotoristasLista = () => {
                               <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
                             </button>
                           </div>
-
+                          
                           {clienteDropdownOpen === motorista.motorista_id && (
-                            <div
-                              style={clienteDropdownCoords[motorista.motorista_id || 0] ? {
-                                position: 'fixed',
-                                left: clienteDropdownCoords[motorista.motorista_id || 0].left,
-                                top: clienteDropdownCoords[motorista.motorista_id || 0].top,
-                                minWidth: 180,
-                                zIndex: 50
-                              } : {}}
-                              className="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
-                              onClick={e => e.stopPropagation()}
-                              onMouseLeave={() => setClienteDropdownOpen(null)}
-                              tabIndex={0}
-                              onBlur={() => setClienteDropdownOpen(null)}
-                              ref={el => {
-                                if (el) el.scrollTop = 0;
-                              }}
+                            <div 
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <div className="py-1">
                                 <button
@@ -1859,7 +1750,7 @@ const MotoristasLista = () => {
       <UnifiedMotoristaModal
         isOpen={isUnifiedModalOpen}
         onClose={() => setIsUnifiedModalOpen(false)}
-        motorista={selectedMotorista ? toMotorista(selectedMotorista) as Motorista : null}
+        motorista={selectedMotorista ? toMotorista(selectedMotorista) : undefined}
         onSuccess={fetchMotoristas}
       />
 
