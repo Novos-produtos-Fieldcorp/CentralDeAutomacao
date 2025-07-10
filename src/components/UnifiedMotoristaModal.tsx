@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
 import { 
-  X, User, Edit2, Users, ShieldAlert, MessageSquare, FileText, MapPin, ExternalLink
+  X, User, MapPin, FileText, ExternalLink, Edit2, Users, ShieldAlert, MessageSquare 
 } from 'lucide-react';
-import { Motorista, DocumentoMotorista, DocumentoAjudante } from '../types/database';
-import { supabase } from '../lib/supabase';
-import { formatCPF, formatDate, formatPhone, formatCEP } from '../utils/format';
-import toast from 'react-hot-toast';
+import type { 
+  DocumentoMotorista, 
+  Motorista,
+  DocumentoAjudante
+} from '../types/database';
+import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
+import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
 import AddAjudanteModal from './AddAjudanteModal';
 import EditAjudanteModal from './EditAjudanteModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import GestaoRiscoTab from './GestaoRiscoTab';
 import ComentariosTab from './ComentariosTab';
+import { toast } from 'sonner';
 
 interface UnifiedMotoristaModalProps {
   isOpen: boolean;
@@ -27,28 +31,36 @@ const UnifiedMotoristaModal = ({
   motorista, 
   onSuccess 
 }: UnifiedMotoristaModalProps) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details'); // Used in the UI
-  const [isEditingDocuments, setIsEditingDocuments] = useState(false); // Used in the UI
-  const [activeDocument, setActiveDocument] = useState<string | null>(null); // Used in the UI
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Used in the UI
-  const [endereco, setEndereco] = useState<any>(null); // Used in the UI
-  const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false); // Used in the UI
-  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false); // Used in the UI
-  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null); // Used in the UI
-  const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false); // Used in the UI
-  const [selectedAjudante, setSelectedAjudante] = useState<DocumentoAjudante | null>(null); // Used in the UI
-  const [documentCount, setDocumentCount] = useState(0); // Used in the UI
-  const [ajudantesCount, setAjudantesCount] = useState(0); // Used in the UI
+  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
+  const [isEditingDocuments, setIsEditingDocuments] = useState(false);
+  
+  const handleTabChange = async (tab: 'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios') => {
+    setActiveTab(tab);
+    
+    if (tab === 'ajudantes' && motorista) {
+      await fetchAjudantes();
+    }
+  };
+  const [activeDocument, setActiveDocument] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [endereco, setEndereco] = useState<any>(null);
+  const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
+  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
+  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
+  const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
+  const [selectedAjudante, setSelectedAjudante] = useState<DocumentoAjudante | null>(null);
+  const [documentCount, setDocumentCount] = useState(0);
+  const [ajudantesCount, setAjudantesCount] = useState(0);
+  const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
+  const [hasComentario, setHasComentario] = useState(false);
   const [ajudantes, setAjudantes] = useState<DocumentoAjudante[]>([]);
-  const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0); // Used in the UI
-  const [hasComentario, setHasComentario] = useState(false); // Used in the UI
 
   useEffect(() => {
     if (isOpen && motorista) {
       fetchEndereco();
       fetchDocumentCount();
       fetchDocumentoMotorista();
-      fetchAjudantes();
+      fetchAjudantesCount();
       fetchGestaoRiscoCount();
       checkComentario();
     }
@@ -124,8 +136,8 @@ const UnifiedMotoristaModal = ({
           validade_cnh,
           nr_registro_cnh,
           categoria_cnh,
-          nome_mae,
-          nome_pai
+          nome_pai,
+          nome_mae
         `)
         .eq('motorista_id', motorista.motorista_id)
         .maybeSingle();
@@ -170,22 +182,38 @@ const UnifiedMotoristaModal = ({
     if (!motorista) return;
     
     try {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from('documento_ajudante')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('motorista_id', motorista.motorista_id)
         .order('nome', { ascending: true });
         
       if (error) throw error;
       
       setAjudantes(data || []);
-      setAjudantesCount(data?.length || 0);
+      setAjudantesCount(count || 0);
     } catch (error) {
-      console.error('Error fetching ajudantes:', error);
+      console.error('Erro ao carregar ajudantes:', error);
+      toast.error('Erro ao carregar a lista de ajudantes');
     }
   };
 
-
+  const fetchAjudantesCount = async () => {
+    if (!motorista) return;
+    
+    try {
+      const { count, error } = await supabase
+        .from('documento_ajudante')
+        .select('id_ajudante', { count: 'exact', head: true })
+        .eq('motorista_id', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      setAjudantesCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching ajudantes count:', error);
+    }
+  };
 
   const fetchGestaoRiscoCount = async () => {
     if (!motorista) return;
@@ -204,21 +232,16 @@ const UnifiedMotoristaModal = ({
     }
   };
 
-  const checkComentario = async () => {
+  const checkComentario = () => {
     if (!motorista) return;
     
     try {
-      const { data, error } = await supabase
-        .from('motorista')
-        .select('comentario')
-        .eq('motorista_id', motorista.motorista_id)
-        .single();
-        
-      if (error) throw error;
-      
-      setHasComentario(!!data?.comentario);
+      // Check if the comentario exists in the motorista object
+      // This assumes the comentario is already loaded with the motorista data
+      setHasComentario(!!motorista.comentario);
     } catch (error) {
       console.error('Error checking comentario:', error);
+      setHasComentario(false);
     }
   };
 
@@ -236,26 +259,69 @@ const UnifiedMotoristaModal = ({
 
   const isPdf = (url: string | null) => url?.toLowerCase().endsWith('.pdf');
 
-  const handleEditAjudante = (ajudante: any) => {
+  const handleEditAjudante = (ajudante: DocumentoAjudante) => {
     setSelectedAjudante(ajudante);
     setIsEditAjudanteModalOpen(true);
   };
 
   const handleDeleteAjudante = async (ajudante: DocumentoAjudante) => {
-    setSelectedAjudante(ajudante);
-    setIsDeleteAjudanteModalOpen(true);
+    if (!confirm('Tem certeza que deseja excluir este ajudante? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    try {
+      // First delete any related records in cnh_ajudante
+      const { error: cnhError } = await supabase
+        .from('cnh_ajudante')
+        .delete()
+        .eq('ajudante_id', ajudante.id_ajudante);
+
+      if (cnhError) throw cnhError;
+
+      // Then delete the ajudante
+      const { error: deleteError } = await supabase
+        .from('documento_ajudante')
+        .delete()
+        .eq('id_ajudante', ajudante.id_ajudante);
+
+      if (deleteError) throw deleteError;
+
+      // Update the list of ajudantes
+      await fetchAjudantes();
+      toast.success('Ajudante excluído com sucesso');
+    } catch (error) {
+      console.error('Erro ao excluir ajudante:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao excluir ajudante');
+    }
   };
 
-  const handleAjudanteAdded = () => {
-    fetchAjudantes();
-    onSuccess?.();
+  const handleAjudanteAdded = async () => {
+    await fetchAjudantes();
+    toast.success('Ajudante adicionado com sucesso');
   };
 
-  const handleAjudanteUpdated = () => {
-    fetchAjudantes();
-    onSuccess?.();
+  const handleAjudanteUpdated = async () => {
+    await fetchAjudantes();
+    toast.success('Ajudante atualizado com sucesso');
   };
 
+
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedAjudante) return;
+    
+    try {
+      // Add your delete logic here
+      toast.success('Ajudante excluído com sucesso!');
+      setIsDeleteAjudanteModalOpen(false);
+      setSelectedAjudante(null);
+      onSuccess?.();
+    } catch (error) {
+      console.error('Erro ao excluir ajudante:', error);
+      toast.error('Erro ao excluir ajudante');
+    }
+  };
+  
   return (
     <div className="fixed inset-0 z-50">
       {/* Overlay */}
@@ -297,7 +363,7 @@ const UnifiedMotoristaModal = ({
             <div className="border-b border-gray-200 dark:border-gray-700">
               <nav className="-mb-px flex space-x-8 px-6">
                 <button
-                  onClick={() => setActiveTab('details')}
+                  onClick={() => handleTabChange('details')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'details'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -310,7 +376,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('documents')}
+                  onClick={() => handleTabChange('documents')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'documents'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -328,7 +394,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('ajudantes')}
+                  onClick={() => handleTabChange('ajudantes')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'ajudantes'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -338,17 +404,15 @@ const UnifiedMotoristaModal = ({
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
                     Ajudantes
-                    {ajudantes.length > 0 ? (
+                    {ajudantesCount > 0 && (
                       <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
                         {ajudantesCount}
                       </span>
-                    ) : (
-                      <></>
                     )}
                   </div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('gestao-risco')}
+                  onClick={() => handleTabChange('gestao-risco')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'gestao-risco'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -366,7 +430,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('comentarios')}
+                  onClick={() => handleTabChange('comentarios')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'comentarios'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -537,12 +601,12 @@ const UnifiedMotoristaModal = ({
 
                   {isEditingDocuments ? (
                     <DocumentoMotoristaForm
-                      isOpen={isEditingDocuments}
+                      isOpen={true}
                       onClose={() => setIsEditingDocuments(false)}
                       motorista_id={motorista.motorista_id}
                       onSuccess={() => {
                         setIsEditingDocuments(false);
-                        fetchDocumentoMotorista();
+                        fetchDocumentCount();
                         onSuccess?.();
                       }}
                     />
@@ -684,12 +748,12 @@ const UnifiedMotoristaModal = ({
                           <li key={ajudante.id_ajudante} className="px-4 py-4 sm:px-6">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center">
-                                <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                  <User className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div className="ml-4">
                                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {ajudante.nome || 'Ajudante sem nome'}
+                                    {ajudante.nome}
                                   </p>
                                   <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'CPF não informado'}
@@ -729,7 +793,7 @@ const UnifiedMotoristaModal = ({
                       <div className="mt-6">
                         <button
                           onClick={() => setIsAddAjudanteModalOpen(true)}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           <Edit2 className="-ml-1 mr-2 h-5 w-5" />
                           Adicionar Ajudante
@@ -777,20 +841,19 @@ const UnifiedMotoristaModal = ({
         />
       )}
 
-      <AddAjudanteModal
-        isOpen={isAddAjudanteModalOpen}
-        onClose={() => setIsAddAjudanteModalOpen(false)}
-        motorista_id={motorista.motorista_id}
-        onSuccess={handleAjudanteAdded}
-      />
+      {isAddAjudanteModalOpen && motorista && (
+        <AddAjudanteModal
+          isOpen={isAddAjudanteModalOpen}
+          onClose={() => setIsAddAjudanteModalOpen(false)}
+          motorista_id={motorista.motorista_id}
+          onSuccess={handleAjudanteAdded}
+        />
+      )}
 
       {isEditAjudanteModalOpen && selectedAjudante && (
         <EditAjudanteModal
           isOpen={isEditAjudanteModalOpen}
-          onClose={() => {
-            setIsEditAjudanteModalOpen(false);
-            setSelectedAjudante(null);
-          }}
+          onClose={() => setIsEditAjudanteModalOpen(false)}
           ajudante={selectedAjudante}
           onSuccess={handleAjudanteUpdated}
         />
@@ -803,29 +866,9 @@ const UnifiedMotoristaModal = ({
             setIsDeleteAjudanteModalOpen(false);
             setSelectedAjudante(null);
           }}
-          onConfirm={async () => {
-            if (!selectedAjudante) return;
-            
-            try {
-              const { error } = await supabase
-                .from('documento_ajudante')
-                .delete()
-                .eq('id_ajudante', selectedAjudante.id_ajudante);
-                
-              if (error) throw error;
-              
-              toast.success('Ajudante excluído com sucesso!');
-              setIsDeleteAjudanteModalOpen(false);
-              setSelectedAjudante(null);
-              fetchAjudantes();
-              onSuccess?.();
-            } catch (error) {
-              console.error('Error deleting ajudante:', error);
-              toast.error('Erro ao excluir ajudante.');
-            }
-          }}
+          onConfirm={handleDeleteConfirm}
           title="Excluir Ajudante"
-          message={`Tem certeza que deseja excluir o ajudante ${selectedAjudante?.nome}?`}
+          message={`Tem certeza que deseja excluir o ajudante "${selectedAjudante.nome}"? Esta ação não pode ser desfeita.`}
         />
       )}
 

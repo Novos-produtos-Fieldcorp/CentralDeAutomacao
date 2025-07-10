@@ -146,14 +146,6 @@ const MotoristasLista = () => {
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
   const ativoDropdownRef = useRef<HTMLDivElement>(null);
   
-  // Refs para botões de status/cliente por linha (dropdown overlay)
-  const statusButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
-  const clienteButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
-
-  // Estado para coordenadas dos overlays
-  const [statusDropdownCoords, setStatusDropdownCoords] = useState<Record<number, { left: number; top: number }>>({});
-  const [clienteDropdownCoords, setClienteDropdownCoords] = useState<Record<number, { left: number; top: number }>>({});
-
   // Funções para alternar os dropdowns
   const handleToggleStatusDropdown = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -186,7 +178,6 @@ const MotoristasLista = () => {
     setShowCidadeDropdown(false);
     setShowClienteDropdown(false);
   };
-
   const [cidades, setCidades] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -201,8 +192,10 @@ const MotoristasLista = () => {
     motorista: null,
   });
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
   const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
+  const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [customDateRange, setCustomDateRange] = useState<{
     startDate: string;
@@ -217,107 +210,6 @@ const MotoristasLista = () => {
   const [endereco] = useState<any | null>(null);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
-  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
-  const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
-
-  const handleUpdateStatus = async (e: React.MouseEvent, motorista: ViewMotorista, newStatus: string) => {
-    e.stopPropagation();
-    setUpdatingStatus(motorista.motorista_id);
-    try {
-      const { error } = await supabase
-        .from('motorista')
-        .update({ st_cadastro: newStatus })
-        .eq('motorista_id', motorista.motorista_id);
-        
-      if (error) throw error;
-      
-      // Update the local state
-      setMotoristas(prev => 
-        prev.map(m => 
-          m.motorista_id === motorista.motorista_id 
-            ? { ...m, st_cadastro: newStatus } 
-            : m
-        )
-      );
-      
-      toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Erro ao atualizar status');
-    } finally {
-      setUpdatingStatus(null);
-      setStatusDropdownOpen(null);
-    }
-  };
-
-  const handleUpdateCliente = async (e: React.MouseEvent, motorista: ViewMotorista, clienteId: number | null) => {
-    e.stopPropagation();
-    setUpdatingCliente(motorista.motorista_id);
-    try {
-      // Update the cliente_id in the database
-      const { error } = await supabase
-        .from('motorista')
-        .update({ cliente_id: clienteId })
-        .eq('motorista_id', motorista.motorista_id);
-        
-      if (error) throw error;
-      
-      // Update the local state
-      setMotoristas(prev => 
-        prev.map(m => 
-          m.motorista_id === motorista.motorista_id 
-            ? { 
-                ...m, 
-                cliente_id: clienteId,
-                cliente: clienteId 
-                  ? clientes.find(c => c.cliente_id === clienteId) 
-                  : null
-              } 
-            : m
-        )
-      );
-      
-      toast.success(clienteId ? 'Cliente atualizado com sucesso' : 'Cliente removido com sucesso');
-    } catch (error) {
-      console.error('Error updating cliente:', error);
-      toast.error('Erro ao atualizar cliente');
-    } finally {
-      setUpdatingCliente(null);
-      setClienteDropdownOpen(null);
-    }
-  };
-
-  const handleToggleStatus = async (e: React.MouseEvent, motorista: ViewMotorista) => {
-    e.stopPropagation();
-    setUpdatingStatus(motorista.motorista_id);
-    try {
-      // Toggle the ativo status
-      const newAtivo = !motorista.ativo;
-      
-      const { error } = await supabase
-        .from('motorista')
-        .update({ ativo: newAtivo })
-        .eq('motorista_id', motorista.motorista_id);
-
-      if (error) throw error;
-
-      // Update the local state
-      setMotoristas(prev => 
-        prev.map(m => 
-          m.motorista_id === motorista.motorista_id 
-            ? { ...m, ativo: newAtivo } 
-            : m
-        )
-      );
-
-      toast.success(`Motorista ${newAtivo ? 'ativado' : 'desativado'} com sucesso`);
-    } catch (error) {
-      console.error('Error toggling status:', error);
-      toast.error('Erro ao alternar status do motorista');
-    } finally {
-      setUpdatingStatus(null);
-    }
-  };
 
   // Role change modal state
   const [roleChangeModal, setRoleChangeModal] = useState<{
@@ -714,6 +606,120 @@ const MotoristasLista = () => {
     });
   };
 
+  const handleRowStatusDropdown = (e: React.MouseEvent, motoristaId: number) => {
+    e.stopPropagation();
+    setStatusDropdownOpen(statusDropdownOpen === motoristaId ? null : motoristaId);
+    setClienteDropdownOpen(null);
+  };
+
+  const handleRowClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
+    e.stopPropagation();
+    setClienteDropdownOpen(clienteDropdownOpen === motoristaId ? null : motoristaId);
+    setStatusDropdownOpen(null);
+  };
+
+  const handleUpdateCliente = async (e: React.MouseEvent, motorista: ViewMotorista, clienteId: number | null) => {
+    e.stopPropagation();
+    try {
+      setUpdatingCliente(motorista.motorista_id || 0);
+      
+      // Update the cliente_id in the database
+      const { error } = await supabase
+        .from('motorista')
+        .update({ cliente_id: clienteId })
+        .eq('motorista_id', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setMotoristas(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { 
+                ...m, 
+                cliente_id: clienteId,
+                cliente: clienteId 
+                  ? clientes.find(c => c.cliente_id === clienteId) 
+                  : null
+              } 
+            : m
+        )
+      );
+      
+      toast.success(clienteId ? 'Cliente atualizado com sucesso' : 'Cliente removido com sucesso');
+    } catch (error) {
+      console.error('Error updating cliente:', error);
+      toast.error('Erro ao atualizar cliente');
+    } finally {
+      setUpdatingCliente(null);
+      setClienteDropdownOpen(null);
+    }
+  };
+
+  const handleUpdateStatus = async (e: React.MouseEvent, motorista: ViewMotorista, newStatus: string) => {
+    e.stopPropagation();
+    try {
+      setUpdatingStatus(motorista.motorista_id || 0);
+      
+      const { error } = await supabase
+        .from('motorista')
+        .update({ st_cadastro: newStatus })
+        .eq('motorista_id', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setMotoristas(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { ...m, st_cadastro: newStatus } 
+            : m
+        )
+      );
+      
+      toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Erro ao atualizar status');
+    } finally {
+      setUpdatingStatus(null);
+      setStatusDropdownOpen(null);
+    }
+  };
+
+  const handleToggleStatus = async (e: React.MouseEvent, motorista: ViewMotorista) => {
+    e.stopPropagation();
+    try {
+      setUpdatingStatus(motorista.motorista_id || 0);
+      
+      // Update the ativo status in the database (toggle it)
+      const newAtivo = !motorista.ativo;
+      
+      const { error } = await supabase
+        .from('motorista')
+        .update({ ativo: newAtivo })
+        .eq('motorista_id', motorista.motorista_id);
+
+      if (error) throw error;
+
+      // Update the local state
+      setMotoristas(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { ...m, ativo: newAtivo } 
+            : m
+        )
+      );
+
+      toast.success(`Motorista ${newAtivo ? 'ativado' : 'desativado'} com sucesso`);
+    } catch (error) {
+      console.error('Error updating ativo status:', error);
+      toast.error('Erro ao atualizar status do motorista');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   const filteredMotoristas = (motoristas || []).filter(motorista => {
     if (!motorista) return false;
     
@@ -887,7 +893,7 @@ const MotoristasLista = () => {
             </button>
             
             {showStatusDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-y-auto" id="status-dropdown-menu">
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto" id="status-dropdown-menu">
                 <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
                   <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
                     <span>Selecionar status</span>
@@ -971,7 +977,7 @@ const MotoristasLista = () => {
                     </button>
                   </div>
                 </div>
-                <div className="max-h-48 overflow-y-auto py-1">
+                <div className="max-h-48 overflow-y-auto">
                   {cidades.map((cidade, index) => (
                     <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                       <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
@@ -1057,7 +1063,7 @@ const MotoristasLista = () => {
                     </button>
                   </div>
                 </div>
-                <div className="max-h-48 overflow-y-auto py-1">
+                <div className="max-h-48 overflow-y-auto">
                   {/* Opção "Sem cliente" */}
                   <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                     <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
@@ -1275,11 +1281,11 @@ const MotoristasLista = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedData.map((motorista, index) => (
+                  {paginatedData.map((motorista) => (
                     <tr 
-                      key={`${motorista.motorista_id || 'no-id'}-${index}`} 
+                      key={motorista.motorista_id || Math.random()} 
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-                        selectedItems.has(motorista.motorista_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        selectedItems.has(motorista.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
                       onContextMenu={(e) => handleContextMenu(e, motorista)}
                     >
@@ -1347,29 +1353,7 @@ const MotoristasLista = () => {
                         <div className="relative">
                           <div className="flex items-center">
                             <button
-                              ref={el => {
-                                if (el) statusButtonRefs.current[motorista.motorista_id || 0] = el;
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (statusDropdownOpen === motorista.motorista_id) {
-                                  setStatusDropdownOpen(null);
-                                } else {
-                                  const btn = statusButtonRefs.current[motorista.motorista_id || 0];
-                                  if (btn) {
-                                    const rect = btn.getBoundingClientRect();
-                                    setStatusDropdownCoords(prev => ({
-                                      ...prev,
-                                      [motorista.motorista_id || 0]: {
-                                        left: rect.left,
-                                        top: rect.bottom + 4
-                                      }
-                                    }));
-                                  }
-                                  setStatusDropdownOpen(motorista.motorista_id);
-                                }
-                                setClienteDropdownOpen(null);
-                              }}
+                              onClick={(e) => handleRowStatusDropdown(e, motorista.motorista_id || 0)}
                               className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                 !motorista.st_cadastro ? 'bg-gray-100 dark:bg-gray-700' :
                                 motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30' :
@@ -1395,24 +1379,11 @@ const MotoristasLista = () => {
                               <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
                             </button>
                           </div>
-
+                          
                           {statusDropdownOpen === motorista.motorista_id && (
-                            <div
-                              style={statusDropdownCoords[motorista.motorista_id || 0] ? {
-                                position: 'fixed',
-                                left: statusDropdownCoords[motorista.motorista_id || 0].left,
-                                top: statusDropdownCoords[motorista.motorista_id || 0].top,
-                                minWidth: 180,
-                                zIndex: 50
-                              } : {}}
-                              className="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
-                              onClick={e => e.stopPropagation()}
-                              onMouseLeave={() => setStatusDropdownOpen(null)}
-                              tabIndex={0}
-                              onBlur={() => setStatusDropdownOpen(null)}
-                              ref={el => {
-                                if (el) el.scrollTop = 0;
-                              }}
+                            <div 
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <div className="py-1">
                                 <button
@@ -1511,29 +1482,7 @@ const MotoristasLista = () => {
                         <div className="relative">
                           <div className="flex items-center">
                             <button
-                              ref={el => {
-                                if (el) clienteButtonRefs.current[motorista.motorista_id || 0] = el;
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (clienteDropdownOpen === motorista.motorista_id) {
-                                  setClienteDropdownOpen(null);
-                                } else {
-                                  const btn = clienteButtonRefs.current[motorista.motorista_id || 0];
-                                  if (btn) {
-                                    const rect = btn.getBoundingClientRect();
-                                    setClienteDropdownCoords(prev => ({
-                                      ...prev,
-                                      [motorista.motorista_id || 0]: {
-                                        left: rect.left,
-                                        top: rect.bottom + 4
-                                      }
-                                    }));
-                                  }
-                                  setClienteDropdownOpen(motorista.motorista_id);
-                                }
-                                setStatusDropdownOpen(null);
-                              }}
+                              onClick={(e) => handleRowClienteDropdown(e, motorista.motorista_id || 0)}
                               className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                 motorista.cliente_id 
                                   ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor || 
@@ -1548,24 +1497,11 @@ const MotoristasLista = () => {
                               <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
                             </button>
                           </div>
-
+                          
                           {clienteDropdownOpen === motorista.motorista_id && (
-                            <div
-                              style={clienteDropdownCoords[motorista.motorista_id || 0] ? {
-                                position: 'fixed',
-                                left: clienteDropdownCoords[motorista.motorista_id || 0].left,
-                                top: clienteDropdownCoords[motorista.motorista_id || 0].top,
-                                minWidth: 180,
-                                zIndex: 50
-                              } : {}}
-                              className="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
-                              onClick={e => e.stopPropagation()}
-                              onMouseLeave={() => setClienteDropdownOpen(null)}
-                              tabIndex={0}
-                              onBlur={() => setClienteDropdownOpen(null)}
-                              ref={el => {
-                                if (el) el.scrollTop = 0;
-                              }}
+                            <div 
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <div className="py-1">
                                 <button
@@ -1814,7 +1750,7 @@ const MotoristasLista = () => {
       <UnifiedMotoristaModal
         isOpen={isUnifiedModalOpen}
         onClose={() => setIsUnifiedModalOpen(false)}
-        motorista={selectedMotorista ? toMotorista(selectedMotorista) as Motorista : null}
+        motorista={selectedMotorista ? toMotorista(selectedMotorista) : undefined}
         onSuccess={fetchMotoristas}
       />
 

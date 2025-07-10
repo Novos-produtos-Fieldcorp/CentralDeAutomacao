@@ -14,20 +14,20 @@ interface DocumentViewerProps {
   dt_nascimento?: string;
   endereco?: {
     logradouro?: {
-      logradouro?: string;
-      nr_cep?: string;
+      logradouro?: string | null;
+      nr_cep?: string | null;
       bairro?: {
-        bairro?: string;
+        bairro?: string | null;
         cidade?: {
-          cidade?: string;
+          cidade?: string | null;
           estado?: {
-            sigla_estado?: string;
-          };
-        };
-      };
-    };
-    nr_end?: number;
-    ds_complemento_end?: string;
+            sigla_estado?: string | null;
+          } | null;
+        } | null;
+      } | null;
+    } | null;
+    nr_end?: number | null;
+    ds_complemento_end?: string | null;
   } | null;
   veiculo?: (Veiculo & {
     documento_veiculo: DocumentoVeiculo[];
