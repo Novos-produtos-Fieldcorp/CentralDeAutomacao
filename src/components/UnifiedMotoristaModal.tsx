@@ -52,7 +52,7 @@ const UnifiedMotoristaModal = ({
   const [documentCount, setDocumentCount] = useState(0);
   const [ajudantesCount, setAjudantesCount] = useState(0);
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
-  const [hasComentario, setHasComentario] = useState(false);
+  const [comentariosCount, setComentariosCount] = useState(0);
   const [ajudantes, setAjudantes] = useState<DocumentoAjudante[]>([]);
 
   useEffect(() => {
@@ -62,7 +62,7 @@ const UnifiedMotoristaModal = ({
       fetchDocumentoMotorista();
       fetchAjudantesCount();
       fetchGestaoRiscoCount();
-      checkComentario();
+      fetchComentariosCount();
     }
   }, [isOpen, motorista]);
 
@@ -232,16 +232,21 @@ const UnifiedMotoristaModal = ({
     }
   };
 
-  const checkComentario = () => {
+  const fetchComentariosCount = async () => {
     if (!motorista) return;
-    
+
     try {
-      // Check if the comentario exists in the motorista object
-      // This assumes the comentario is already loaded with the motorista data
-      setHasComentario(!!motorista.comentario);
+      const { count, error } = await supabase
+        .from('comentario')
+        .select('id', { count: 'exact', head: true })
+        .eq('id_motorista', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      setComentariosCount(count || 0);
     } catch (error) {
-      console.error('Error checking comentario:', error);
-      setHasComentario(false);
+      console.error('Error fetching comentarios count:', error);
+      setComentariosCount(0);
     }
   };
 
@@ -440,9 +445,9 @@ const UnifiedMotoristaModal = ({
                   <div className="flex items-center gap-1">
                     <MessageSquare className="w-4 h-4" />
                     Comentários
-                    {hasComentario && (
+                    {comentariosCount > 0 && (
                       <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
-                        1
+                        {comentariosCount}
                       </span>
                     )}
                   </div>

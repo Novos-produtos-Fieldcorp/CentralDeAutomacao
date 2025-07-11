@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import AddAjudanteModal from './AddAjudanteModal';
 import { supabase } from '../lib/supabase';
 import type { Ajudante } from '../types/ajudante';
+import type { Ajudante } from '../types/ajudante';
 
 interface Motorista {
   motorista_id: number;
@@ -23,6 +24,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [activeTab, setActiveTab] = useState<'details' | 'ajudantes'>('details');
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
   const [ajudantes, setAjudantes] = useState<Ajudante[]>([]);
+  const [comentariosCount, setComentariosCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
   const formatCPF = (cpf: string | number | null): string => {
@@ -94,10 +96,29 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   useEffect(() => {
     if (isOpen && motorista) {
       fetchAjudantes();
+      fetchComentariosCount();
     } else {
       setAjudantes([]);
     }
   }, [isOpen, motorista]);
+
+  const fetchComentariosCount = async () => {
+    if (!motorista) return;
+
+    try {
+      const { count, error } = await supabase
+        .from('comentario')
+        .select('id', { count: 'exact', head: true })
+        .eq('id_motorista', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      setComentariosCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching comentarios count:', error);
+      setComentariosCount(0);
+    }
+  };
 
   if (!isOpen || !motorista) return null;
 
@@ -151,6 +172,20 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   >
                     Ajudantes ({ajudantes.length})
                   </button>
+                </button>
+                <button
+                  onClick={() => navigate(`/motoristas/agregados/${motorista.motorista_id}/comentarios`)}
+                  className="group flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
+                >
+                  <MessageSquare className="w-5 h-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Comentários
+                    {comentariosCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        {comentariosCount}
+                      </span>
+                    )}
+                  </span>
                 </nav>
               </div>
 

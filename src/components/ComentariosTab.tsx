@@ -14,8 +14,8 @@ interface ComentariosTabProps {
 interface Comentario {
   id: number;
   created_at: string;
-  updated_at: string;
-  id_motorista: number;
+  updated_at: string | null;
+  id_motorista: number | null;
   id_atendente: number | null;
   comentario: string | null;
 }
@@ -40,7 +40,7 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
       
       const { data, error } = await supabase
         .from('comentario')
-        .select('*')
+        .select('id, created_at, updated_at, id_motorista, id_atendente, comentario')
         .eq('id_motorista', motorista_id)
         .order('updated_at', { ascending: false })
         .limit(1)
@@ -49,6 +49,11 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
       if (error) throw error;
       
       setCurrentComentario(data);
+      
+      // If onUpdateSuccess is provided, call it to update the comment count in the parent component
+      if (onUpdateSuccess) {
+        onUpdateSuccess();
+      }
     } catch (error) {
       console.error('Error fetching comment:', error);
       toast.error('Erro ao carregar comentário');
