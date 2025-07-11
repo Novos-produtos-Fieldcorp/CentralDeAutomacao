@@ -28,7 +28,7 @@ interface DashboardStats {
 
 const ChecklistDashboard = () => {
   const { query } = useCompanyData();
-  const [stats, setStats] = useState<DashboardStats>({ 
+  const [stats, setStats] = useState<DashboardStats>({
     totalChecklists: 0,
     totalMensal: 0,
     totalSemanal: 0,
@@ -214,7 +214,7 @@ const ChecklistDashboard = () => {
 
       {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
+        <StatCard
           title="Total de Checklists"
           value={stats.totalChecklists}
           icon={FileText}
@@ -241,7 +241,7 @@ const ChecklistDashboard = () => {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"> 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Problems by Category */}
         <div className="bg-white dark:bg-[#1B2537] rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
@@ -309,7 +309,7 @@ const ChecklistDashboard = () => {
 
 const StatCard = ({ 
   title, 
-  value,  
+  value, 
   icon: Icon,
   color = 'blue'
 }: { 
