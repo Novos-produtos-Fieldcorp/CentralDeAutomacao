@@ -197,7 +197,7 @@ const ChecklistDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1B2537] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
@@ -243,7 +243,7 @@ const ChecklistDashboard = () => {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Problems by Category */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+        <div className="bg-white dark:bg-[#1B2537] rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
             <BarChart2 className="text-blue-500 dark:text-blue-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
@@ -273,7 +273,7 @@ const ChecklistDashboard = () => {
         </div>
 
         {/* Checklists by Driver */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+        <div className="bg-white dark:bg-[#1B2537] rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="flex items-center gap-2 mb-6">
             <Users className="text-blue-500 dark:text-blue-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
@@ -357,7 +357,7 @@ const StatCard = ({
   const variant = colorVariants[color];
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+    <div className="bg-white dark:bg-[#1B2537] p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
       <div className="flex flex-col items-center text-center">
         <div className={`p-3 ${variant.iconBg} rounded-xl mb-3`}>
           <Icon className={`w-6 h-6 ${variant.iconColor}`} />
