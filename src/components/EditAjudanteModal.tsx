@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { X, Loader2, User, Phone, MapPin, Camera, Upload } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Loader2, Camera, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCEP } from '../utils/format';
+
+// Using any type for the address data to avoid complex type definitions
+// This is a temporary solution to fix TypeScript errors
 
 interface EditAjudanteModalProps {
   isOpen: boolean;
@@ -55,7 +58,8 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     comprovante_residencia: ''
   });
 
-  const [endereco, setEndereco] = useState<any | null>(null);
+  // Remove unused state since we're not using it elsewhere
+  // const [endereco, setEndereco] = useState<EnderecoAjudante | null>(null);
   const [cnhData, setCnhData] = useState<any | null>(null);
   const [rgData, setRgData] = useState<any | null>(null);
 
@@ -203,16 +207,26 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
       if (enderecoError && enderecoError.code !== 'PGRST116') throw enderecoError;
       
       if (enderecoData) {
-        setEndereco(enderecoData);
-        setFormData(prev => ({
-          ...prev,
-          cep: enderecoData.logradouro?.nr_cep || '',
-          estado: enderecoData.logradouro?.bairro?.cidade?.estado?.id_estado?.toString() || '',
-          cidade: enderecoData.logradouro?.bairro?.cidade?.cidade || '',
-          bairro: enderecoData.logradouro?.bairro?.bairro || '',
-          logradouro: enderecoData.logradouro?.logradouro || '',
+        // Simplify the address data handling
+        const logradouro = Array.isArray(enderecoData.logradouro) ? enderecoData.logradouro[0] : enderecoData.logradouro;
+        const bairro = logradouro?.bairro?.[0] || {};
+        const cidade = bairro?.cidade?.[0] || {};
+        const estado = cidade?.estado?.[0] || {};
+        
+        // Create a safe address object with fallbacks
+        const address = {
+          cep: logradouro?.nr_cep || '',
+          estado: estado?.id_estado?.toString() || '',
+          cidade: cidade?.cidade || '',
+          bairro: bairro?.bairro || '',
+          logradouro: logradouro?.logradouro || '',
           numero: enderecoData.nr_end?.toString() || '',
           complemento: enderecoData.ds_complemento_end || ''
+        };
+        
+        setFormData(prev => ({
+          ...prev,
+          ...address
         }));
       }
     } catch (error) {
@@ -235,15 +249,14 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
         throw new Error('CEP não encontrado');
       }
 
-      // Find estado_id based on UF
-      const estado = estados.find(e => e.sigla_estado === data.uf);
-
+      const estadoId = estados.find(e => e.sigla_estado === data.uf)?.id_estado.toString() || '';
+      
       setFormData(prev => ({
         ...prev,
         logradouro: data.logradouro || '',
         bairro: data.bairro || '',
         cidade: data.localidade || '',
-        estado: estado ? estado.id_estado.toString() : '',
+        estado: estadoId,
         complemento: data.complemento || ''
       }));
 
@@ -291,7 +304,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
       const fileName = `ajudante_${ajudante.id_ajudante}_${field}_${Date.now()}.${fileExt}`;
       
       // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('imagensdocs')
         .upload(fileName, file);
         
@@ -320,7 +333,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     try {
       setSubmitting(true);
 
-      // Update ajudante basic info
+      // Update ajudante basic info using the standard Supabase client
       const { error: ajudanteError } = await supabase
         .from('documento_ajudante')
         .update({
@@ -328,7 +341,8 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
           cpf: formData.cpf ? parseFloat(formData.cpf) : null,
           telefone: formData.telefone || null,
           genero: formData.genero || null,
-          comprovante_residencia: formData.comprovante_residencia || null
+          comprovante_residencia: formData.comprovante_residencia || null,
+          updated_at: new Date().toISOString()
         })
         .eq('id_ajudante', ajudante.id_ajudante);
 
