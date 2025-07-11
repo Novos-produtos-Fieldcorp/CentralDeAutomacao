@@ -54,7 +54,7 @@ const Hodometros = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-text-primary">Hodômetros</h1>
 
-      <div className="bg-white dark:bg-gray-900 rounded-lg">
+      <div className="bg-background rounded-lg">
         <div className="border-b border-card-border relative">
           <div 
             ref={navRef}
@@ -85,7 +85,7 @@ const Hodometros = () => {
           )}
         </div>
 
-        <div className="p-6 min-h-[calc(100vh-16rem)] bg-white dark:bg-gray-900">
+        <div className="p-6 min-h-[calc(100vh-16rem)] bg-background">
           <Routes>
             <Route index element={<Navigate to="/hodometros/dashboard\" replace />} />
             <Route path="dashboard" element={<HodometrosDashboard />} />
