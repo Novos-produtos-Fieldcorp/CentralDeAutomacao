@@ -622,7 +622,7 @@ const HodometrosDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="bg-white dark:bg-[#1B2537] p-4 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]">
+      <div className="bg-white dark:bg-[#1E2332] p-4 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]">
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
@@ -671,7 +671,7 @@ const HodometrosDashboard = () => {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Daily Mileage */}
-        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
           <div className="mb-6 flex items-center gap-2">
   <BarChart2 className="text-blue-500" size={20} />
   <h3 className="text-lg font-bold text-black dark:text-white">Quilometragem Diária</h3>
@@ -712,7 +712,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Driver Mileage */}
-        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
           <div className="mb-6 flex items-center gap-2">
   <Users className="text-green-500" size={20} />
   <h3 className="text-lg font-bold text-black dark:text-white">Quilometragem por Motorista</h3>
@@ -753,7 +753,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Vehicle Mileage */}
-        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
           <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
             <Truck className="text-purple-500 dark:text-purple-400" size={20} />
             Quilometragem por Veículo
@@ -794,7 +794,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Leituras por Motorista Chart and KM per Operation Chart */}
-        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
           <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
             <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             Leituras por Motorista
@@ -836,7 +836,7 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* KM per Operation Chart */}
-      <div className="bg-white dark:bg-[#1B2537] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+      <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
         <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
           <Gauge className="w-5 h-5 text-orange-500 dark:text-orange-400" />
           Quilômetros por Operação
@@ -877,7 +877,7 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* Inconsistencies Table */}
-      <div className="bg-white dark:bg-[#1B2537] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+      <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
@@ -944,7 +944,7 @@ const HodometrosDashboard = () => {
                   <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Foto</th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-[#1B2537] divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="bg-white dark:bg-[#1E2332] divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredHodometros.map((hodometro) => {
                   const isElectric = hodometro.bateria !== null && hodometro.bateria !== undefined;
                   
@@ -1059,7 +1059,7 @@ const HodometrosDashboard = () => {
           onClick={() => setShowPhotoModal(false)}
         >
           <div 
-            className="bg-white dark:bg-[#1B2537] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-none border-none"
+            className="bg-white dark:bg-[#1E2332] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-none border-none"
             onClick={e => e.stopPropagation()}
           >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
