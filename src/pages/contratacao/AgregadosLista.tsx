@@ -97,6 +97,7 @@
     const [isBulkActionsModalOpen, setIsBulkActionsModalOpen] = useState(false);
     const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
     const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
+    const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
     const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
     const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
     const [selectAll, setSelectAll] = useState(false);
@@ -241,8 +242,8 @@
         data_cadastro: contratado.data_cadastro || new Date().toISOString(),
         cliente_id: contratado.cliente_id || 0,
         ativo: contratado.ativo || false,
-        conversation_id: contratado.conversation_id,
-        cidade: contratado.nome_cidade,
+        conversation_id: contratado.conversation_id || undefined,
+        cidade: contratado.nome_cidade || undefined,
         documento_motorista: [],
         documento_ajudante: []
       };
@@ -493,10 +494,10 @@
     const handleViewDocument = async (motorista: ViewContratado) => {
       try {
         setSelectedMotorista(motorista);
-        setIsUnifiedModalOpen(true);
+        setIsUnifiedAgregadoModalOpen(true);
       } catch (error) {
-        console.error('Error fetching document details:', error);
-        toast.error('Erro ao carregar detalhes do documento');
+        console.error('Error opening agregado details:', error);
+        toast.error('Erro ao abrir detalhes do agregado');
       }
     };
 
@@ -1933,14 +1934,23 @@
           isOpen={isDeleteModalOpen}
           onClose={() => setIsDeleteModalOpen(false)}
           onConfirm={confirmDelete}
-          title="Confirmar Exclusão"
-          message="Tem certeza que deseja excluir este motorista? Esta ação não pode ser desfeita."
-          itemData={selectedMotorista ? [
-            { label: 'Nome', value: selectedMotorista.nome_motorista || 'Não informado' },
-            { label: 'CPF', value: selectedMotorista.cpf ? formatCPF(selectedMotorista.cpf) : 'Não informado' },
-            { label: 'Status', value: selectedMotorista.st_cadastro || 'Não informado' }
-          ].filter(item => item.value !== 'Não informado') : []}
+          title="Excluir Motorista"
+          message={`Tem certeza que deseja excluir o motorista ${selectedMotorista?.nome_motorista || ''}?`}
         />
+
+        {selectedMotorista && (
+          <UnifiedAgregadoModal
+            isOpen={isUnifiedAgregadoModalOpen}
+            onClose={() => setIsUnifiedAgregadoModalOpen(false)}
+            motorista={{
+              motorista_id: selectedMotorista.motorista_id || 0,
+              nome_motorista: selectedMotorista.nome_motorista || '',
+              cpf: selectedMotorista.cpf || '',
+              telefone: selectedMotorista.telefone?.toString() || '',
+              email: selectedMotorista.email || ''
+            }}
+          />
+        )}
 
         <BulkActionsModal
           isOpen={isBulkActionsModalOpen}
