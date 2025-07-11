@@ -11,6 +11,15 @@ interface ComentariosTabProps {
   onUpdateSuccess?: () => void;
 }
 
+interface Comentario {
+  id: number;
+  created_at: string;
+  updated_at: string;
+  id_motorista: number;
+  id_atendente: number | null;
+  comentario: string | null;
+}
+
 const ComentariosTab: React.FC<ComentariosTabProps> = ({
   motorista_id,
   onUpdateSuccess
@@ -18,7 +27,7 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
   const [comentario, setComentario] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [currentComentario, setCurrentComentario] = useState<string | null>(null);
+  const [currentComentario, setCurrentComentario] = useState<Comentario | null>(null);
   const { companyId } = useAuth();
 
   useEffect(() => {
@@ -30,14 +39,16 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
       setLoading(true);
       
       const { data, error } = await supabase
-        .from('motorista')
-        .select('comentario')
-        .eq('motorista_id', motorista_id)
-        .single();
+        .from('comentario')
+        .select('*')
+        .eq('id_motorista', motorista_id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
         
       if (error) throw error;
       
-      setCurrentComentario(data?.comentario || null);
+      setCurrentComentario(data);
     } catch (error) {
       console.error('Error fetching comment:', error);
       toast.error('Erro ao carregar comentário');
@@ -57,25 +68,39 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
     try {
       setSubmitting(true);
       
-      const { error } = await supabase
-        .from('motorista')
-        .update({
-          comentario: comentario.trim()
-        })
-        .eq('motorista_id', motorista_id);
-        
-      if (error) throw error;
+      if (currentComentario) {
+        // Update existing comment
+        const { error } = await supabase
+          .from('comentario')
+          .update({
+            comentario: comentario.trim(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentComentario.id);
+          
+        if (error) throw error;
+      } else {
+        // Create new comment
+        const { error } = await supabase
+          .from('comentario')
+          .insert({
+            id_motorista: motorista_id,
+            comentario: comentario.trim()
+          });
+          
+        if (error) throw error;
+      }
       
-      toast.success('Comentário atualizado com sucesso');
-      setCurrentComentario(comentario.trim());
+      toast.success('Comentário salvo com sucesso');
       setComentario('');
+      await fetchComentario(); // Refresh the comment
       
       if (onUpdateSuccess) {
         onUpdateSuccess();
       }
     } catch (error) {
-      console.error('Error updating comment:', error);
-      toast.error('Erro ao atualizar comentário');
+      console.error('Error saving comment:', error);
+      toast.error('Erro ao salvar comentário');
     } finally {
       setSubmitting(false);
     }
@@ -142,13 +167,16 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
       </div>
 
       {/* Current Comment */}
-      {currentComentario ? (
+      {currentComentario && currentComentario.comentario ? (
         <div className="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
           <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white flex items-center">
               <MessageSquare className="w-5 h-5 mr-2 text-blue-500" />
               Comentário Atual
             </h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Última atualização: {formatDate(currentComentario.updated_at || currentComentario.created_at)}
+            </p>
           </div>
           
           <div className="px-4 py-5 sm:p-6">
@@ -160,7 +188,7 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="mt-1 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                  {currentComentario}
+                  {currentComentario.comentario}
                 </div>
               </div>
             </div>
