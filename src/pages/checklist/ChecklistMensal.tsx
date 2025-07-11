@@ -31,7 +31,7 @@ const ChecklistMensal = () => {
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
+  const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('all', true);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -47,8 +47,11 @@ const ChecklistMensal = () => {
   });
 
   useEffect(() => {
-    fetchChecklists();
-  }, [dateRange]);
+    // Only fetch when date range actually changes, not on pending changes
+    if (!pendingDateRange) {
+      fetchChecklists();
+    }
+  }, [dateRange, pendingDateRange]);
 
   useEffect(() => {
     // Close context menu when clicking anywhere
@@ -430,8 +433,14 @@ const ChecklistMensal = () => {
           
           {/* Scroll indicators */}
           <ScrollableTableIndicator 
+            pendingDateRange={pendingDateRange}
             containerRef={tableContainerRef} 
             className="mr-2 ml-2"
+            onApplyCustomRange={() => {
+              if (applyPendingDateRange()) {
+                fetchChecklists();
+              }
+            }}
           />
         </div>
         </div>

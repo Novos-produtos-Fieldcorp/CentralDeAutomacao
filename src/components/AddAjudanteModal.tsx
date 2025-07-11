@@ -7,9 +7,8 @@ import { formatCEP } from '../utils/format';
 interface AddAjudanteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
   motorista_id: number;
-  veiculo_id?: number;
+  onSuccess: () => void;
 }
 
 interface ViaCepResponse {
@@ -22,7 +21,7 @@ interface ViaCepResponse {
   erro?: boolean;
 }
 
-const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id }: AddAjudanteModalProps) => {
+const AddAjudanteModal = ({ isOpen, onClose, motorista_id, onSuccess }: AddAjudanteModalProps) => {
   const [submitting, setSubmitting] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
@@ -105,7 +104,7 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
         logradouro: data.logradouro || '',
         bairro: data.bairro || '',
         cidade: data.localidade || '',
-        estado: estado ? estado.sigla_estado : '', // Use a sigla do estado
+        estado: estado ? estado.sigla_estado : '',
         complemento: data.complemento || ''
       }));
 
@@ -192,7 +191,7 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
         .from('documento_ajudante')
         .insert({
           nome: formData.nome,
-          cpf: formData.cpf,
+          cpf: formData.cpf ? parseFloat(formData.cpf) : null,
           telefone: formData.telefone || null,
           genero: formData.genero || null,
           motorista_id: motorista_id,
@@ -926,7 +925,10 @@ const AddAjudanteModal = ({ isOpen, onClose, onSuccess, motorista_id, veiculo_id
                   Salvando...
                 </>
               ) : (
-                'Salvar'
+                <>
+                  <Upload className="w-4 h-4" />
+                  Salvar
+                </>
               )}
             </button>
           </div>

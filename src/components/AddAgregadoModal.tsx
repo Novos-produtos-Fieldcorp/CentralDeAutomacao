@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import type { Motorista } from '../types/database';
 import toast from 'react-hot-toast';
 import { getCurrentDate, formatCEP } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
@@ -12,15 +11,6 @@ interface AddAgregadoModalProps {
   onSuccess: () => void;
 }
 
-interface ViaCepResponse {
-  cep: string;
-  logradouro: string;
-  complemento: string;
-  bairro: string;
-  localidade: string;
-  uf: string;
-  erro?: boolean;
-}
 
 const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps) => {
   const [submitting, setSubmitting] = useState(false);
@@ -132,6 +122,15 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
       // Validate CPF format
       if (!/^\d{11}$/.test(formData.cpf)) {
         throw new Error('CPF inválido. Digite 11 números.');
+      }
+
+      // Validate required fields
+      if (!formData.telefone) {
+        throw new Error('O telefone é obrigatório.');
+      }
+
+      if (!formData.dt_nascimento) {
+        throw new Error('A data de nascimento é obrigatória.');
       }
 
       // Insert motorista (agregado)
@@ -411,7 +410,7 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Telefone
+                    Telefone *
                   </label>
                   <input
                     type="tel"
@@ -423,12 +422,13 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
                     }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="(00) 00000-0000"
+                    required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Data de Nascimento
+                    Data de Nascimento *
                   </label>
                   <input
                     type="date"

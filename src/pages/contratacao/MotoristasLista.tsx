@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2 } from 'lucide-react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, ArrowLeftRight, AlertTriangle, XCircle } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -117,7 +117,7 @@ export interface ViewMotorista extends Omit<ViewMotoristaBase, 'nome_motorista'>
 }
 
 const MotoristasLista = () => {
-  const { query, companyId } = useCompanyData();
+  const { companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
   const [motoristas, setMotoristas] = useState<ViewMotorista[]>([]);
   const [loading, setLoading] = useState(true);
@@ -210,6 +210,19 @@ const MotoristasLista = () => {
   const [endereco] = useState<any | null>(null);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+
+  // Role change modal state
+  const [roleChangeModal, setRoleChangeModal] = useState<{
+    isOpen: boolean;
+    motorista: ViewMotorista | null;
+    newRole: 'Motorista' | 'Agregado' | null;
+    isLoading: boolean;
+  }>({
+    isOpen: false,
+    motorista: null,
+    newRole: null,
+    isLoading: false,
+  });
 
   useEffect(() => {
     fetchMotoristas();
@@ -400,7 +413,8 @@ const MotoristasLista = () => {
     if (!selectedMotorista) return;
 
     try {
-      const { error } = await query('motorista')
+      const { error } = await supabase
+        .from('motorista')
         .delete()
         .eq('motorista_id', selectedMotorista.motorista_id);
 
@@ -448,11 +462,11 @@ const MotoristasLista = () => {
             if (!motorista) return false;
             const searchLower = searchTerm.toLowerCase();
             
-            // Filtro de status (multiseleção)
+            // Lógica para filtro de status (multiseleção)
             const statusMatch = statusFilter.length === 0 || 
               (motorista.st_cadastro && statusFilter.includes(motorista.st_cadastro));
             
-            // Filtro de cliente (multiseleção)
+            // Lógica para filtro de cliente (multiseleção)
             let clienteMatch = true;
             if (clienteFilter.length > 0) {
               if (clienteFilter.includes('sem_cliente')) {
@@ -468,11 +482,11 @@ const MotoristasLista = () => {
               }
             }
             
-            // Filtro de cidade (multiseleção)
+            // Lógica para filtro de cidade (já está em multiseleção)
             const cidadeMatch = cidadeFilter.length === 0 || 
               (motorista.nome_cidade && cidadeFilter.includes(motorista.nome_cidade));
               
-            // Filtro de ativo/inativo (seleção única)
+            // Lógica para filtro de ativo/inativo (seleção única)
             const ativoMatch = !ativoFilter || 
               (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false);
             
@@ -491,11 +505,68 @@ const MotoristasLista = () => {
     setSelectAll(!selectAll);
   };
 
+  const handleRoleChangeConfirm = async () => {
+    if (!roleChangeModal.motorista || !roleChangeModal.newRole) return;
+    
+    try {
+      setRoleChangeModal(prev => ({ ...prev, isLoading: true }));
+      
+      const { error } = await supabase
+        .from('motorista')
+        .update({ funcao: roleChangeModal.newRole })
+        .eq('motorista_id', roleChangeModal.motorista.motorista_id);
+
+      if (error) throw error;
+
+      // Update local state
+      setMotoristas(prev => 
+        prev.map(m => 
+          m.motorista_id === roleChangeModal.motorista?.motorista_id 
+            ? { ...m, funcao: roleChangeModal.newRole as 'Motorista' | 'Agregado' } 
+            : m
+        )
+      );
+
+      toast.success(
+        `Função alterada com sucesso para ${roleChangeModal.newRole === 'Motorista' ? 'Motorista' : 'Agregado'}!`,
+        { duration: 3000 }
+      );
+      
+      // If in filtered view, refresh the list
+      if (searchTerm) {
+        fetchMotoristas();
+      }
+      
+      // Close the modal
+      setRoleChangeModal({ isOpen: false, motorista: null, newRole: null, isLoading: false });
+    } catch (error) {
+      console.error('Error changing role:', error);
+      toast.error(
+        <div className="flex items-center space-x-2">
+          <XCircle className="w-5 h-5 text-red-500" />
+          <span>Erro ao alterar função do motorista</span>
+        </div>,
+        { duration: 3000 }
+      );
+      setRoleChangeModal(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const openRoleChangeModal = (motorista: ViewMotorista, newRole: 'Motorista' | 'Agregado') => {
+    setRoleChangeModal({
+      isOpen: true,
+      motorista,
+      newRole,
+      isLoading: false
+    });
+  };
+
   const handleBulkDelete = async () => {
     try {
       // Delete all selected items
       for (const id of selectedItems) {
-        const { error } = await query('motorista')
+        const { error } = await supabase
+          .from('motorista')
           .delete()
           .eq('motorista_id', id);
 
@@ -628,9 +699,9 @@ const MotoristasLista = () => {
         .from('motorista')
         .update({ ativo: newAtivo })
         .eq('motorista_id', motorista.motorista_id);
-        
+
       if (error) throw error;
-      
+
       // Update the local state
       setMotoristas(prev => 
         prev.map(m => 
@@ -639,7 +710,7 @@ const MotoristasLista = () => {
             : m
         )
       );
-      
+
       toast.success(`Motorista ${newAtivo ? 'ativado' : 'desativado'} com sucesso`);
     } catch (error) {
       console.error('Error updating ativo status:', error);
@@ -839,7 +910,7 @@ const MotoristasLista = () => {
                   </div>
                 </div>
                 <div className="max-h-48 overflow-y-auto">
-                  {['cadastrado', 'qualificado', 'documentacao', 'contrato_enviado', 'contratado', 'repescagem', 'rejeitado', 'gestao_risco'].map((status, index) => (
+                  {['cadastrado', 'qualificado', 'documentacao', 'gestao_risco', 'contrato_enviado', 'contratado', 'repescagem', 'rejeitado'].map((status, index) => (
                     <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                       <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
                         <input
@@ -1185,7 +1256,7 @@ const MotoristasLista = () => {
                   // Impede que o clique no checkbox feche dropdowns ou acione outros eventos
                   e.stopPropagation();
                 }}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-blue-600 mr-2"
               />
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {selectedItems.size > 0 ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}` : 'Selecionar todos'}
@@ -1346,6 +1417,16 @@ const MotoristasLista = () => {
                                   Documentação
                                 </button>
                                 <button
+                                  onClick={(e) => handleUpdateStatus(e, motorista, 'gestao_risco')}
+                                  className={`block w-full text-left px-4 py-2 text-sm ${
+                                    motorista.st_cadastro === 'gestao_risco' 
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                >
+                                  Gestão de Risco
+                                </button>
+                                <button
                                   onClick={(e) => handleUpdateStatus(e, motorista, 'contrato_enviado')}
                                   className={`block w-full text-left px-4 py-2 text-sm ${
                                     motorista.st_cadastro === 'contrato_enviado' 
@@ -1385,16 +1466,7 @@ const MotoristasLista = () => {
                                 >
                                   Rejeitado
                                 </button>
-                                <button
-                                  onClick={(e) => handleUpdateStatus(e, motorista, 'gestao_risco')}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    motorista.st_cadastro === 'gestao_risco' 
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Gestão de Risco
-                                </button>
+
                               </div>
                             </div>
                           )}
@@ -1490,6 +1562,16 @@ const MotoristasLista = () => {
                             <FilePen size={18} />
                           </button>
                           <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openRoleChangeModal(motorista, 'Agregado')
+                            }}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            title="Transformar em Agregado"
+                          >
+                            <ArrowLeftRight size={18} />
+                          </button>
+                          <button
                             onClick={(e) => handleToggleStatus(e, motorista)}
                             disabled={updatingStatus === motorista.motorista_id}
                             className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
@@ -1544,6 +1626,72 @@ const MotoristasLista = () => {
           />
         )}
       </div>
+
+      {/* Role Change Confirmation Modal */}
+      {roleChangeModal.isOpen && roleChangeModal.motorista && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-full">
+                  <AlertTriangle className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white text-center mb-2">
+                Confirmar alteração de função
+              </h3>
+              
+              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mb-6">
+                Tem certeza que deseja transformar <span className="font-semibold">{roleChangeModal.motorista.nome}</span> em um <span className="font-semibold">{roleChangeModal.newRole === 'Motorista' ? 'Motorista' : 'Agregado'}</span>?
+              </p>
+
+              <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 mb-6">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertTriangle className="h-5 w-5 text-yellow-400 dark:text-yellow-300" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      {roleChangeModal.newRole === 'Agregado' 
+                        ? 'Ao transformar em Agregado, o motorista não aparecerá mais na lista de motoristas ativos.'
+                        : 'Ao transformar em Motorista, o registro será ativado automaticamente.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setRoleChangeModal({ isOpen: false, motorista: null, newRole: null, isLoading: false })}
+                  disabled={roleChangeModal.isLoading}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRoleChangeConfirm}
+                  disabled={roleChangeModal.isLoading}
+                  className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    roleChangeModal.isLoading ? 'pl-10' : ''
+                  }`}
+                >
+                  {roleChangeModal.isLoading ? (
+                    <>
+                      <Loader2 className="absolute w-4 h-4 mr-2 -ml-1 text-white animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    `Confirmar ${roleChangeModal.motorista?.nome ? `para ${roleChangeModal.motorista.nome}` : ''}`
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Context Menu */}
       {contextMenu.visible && contextMenu.motorista && (

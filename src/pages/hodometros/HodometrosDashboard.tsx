@@ -98,7 +98,7 @@ const HodometrosDashboard = () => {
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
   const [todayReadings, setTodayReadings] = useState(0);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days');
+  const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('30days', true);
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
   
   // Inconsistencies table state
@@ -111,10 +111,13 @@ const HodometrosDashboard = () => {
   const [connectionError, setConnectionError] = useState(false);
 
   useEffect(() => {
-    fetchData();
-    fetchTodayReadings();
-    fetchInconsistencies();
-  }, [dateRange, companyId]);
+    // Only fetch when date range actually changes, not on pending changes
+    if (!pendingDateRange) {
+      fetchData();
+      fetchTodayReadings();
+      fetchInconsistencies();
+    }
+  }, [dateRange, pendingDateRange]);
 
   // Enhanced error handling function
   const handleSupabaseError = (error: any, operation: string) => {
@@ -313,6 +316,7 @@ const HodometrosDashboard = () => {
             kmRodadoNoDia = 0;
           }
         } else if (data.vehicleType === 'ciclomotor' && data.firstReadingTrip !== null && data.lastReadingTrip !== null) {
+          // For ciclomotors, calculate km_rodado as the difference between last and first trip readings
           kmRodadoNoDia = data.lastReadingTrip - data.firstReadingTrip;
           if (kmRodadoNoDia < 0) {
             console.warn(`Negative km_rodado for ciclomotor on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
@@ -550,7 +554,7 @@ const HodometrosDashboard = () => {
 
   // Format number with dot as thousands separator
   const formatNumber = (num: number | null | undefined): string => {
-    if (num === null || num === undefined) return '-';
+    if (num === null || num === undefined || isNaN(num)) return '0';
     return num.toLocaleString('pt-BR');
   };
 
@@ -622,8 +626,16 @@ const HodometrosDashboard = () => {
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
+          pendingDateRange={pendingDateRange}
           onPeriodChange={updatePeriod}
           onDateRangeChange={setDateRange}
+          onApplyCustomRange={() => {
+            if (applyPendingDateRange()) {
+              fetchData();
+              fetchTodayReadings();
+              fetchInconsistencies();
+            }
+          }}
         />
       </div>
 
@@ -882,7 +894,7 @@ const HodometrosDashboard = () => {
                 onClick={() => setVehicleTypeFilter('all')}
                 className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                   vehicleTypeFilter === 'all'
-                    ? 'bg-blue-600 text-black dark:text-white dark:bg-blue-400 dark:text-black dark:text-white'
+                    ? 'bg-blue-600 text-white dark:bg-blue-400 dark:text-black'
                     : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
                 }`}
               >
@@ -892,7 +904,7 @@ const HodometrosDashboard = () => {
                 onClick={() => setVehicleTypeFilter('automovel')}
                 className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                   vehicleTypeFilter === 'automovel'
-                    ? 'bg-blue-600 text-black dark:text-white dark:bg-blue-400 dark:text-black dark:text-white'
+                    ? 'bg-blue-600 text-white dark:bg-blue-400 dark:text-black'
                     : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
                 }`}
               >
@@ -902,7 +914,7 @@ const HodometrosDashboard = () => {
                 onClick={() => setVehicleTypeFilter('ciclomotor')}
                 className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                   vehicleTypeFilter === 'ciclomotor'
-                    ? 'bg-blue-600 text-black dark:text-white dark:bg-blue-400 dark:text-black dark:text-white'
+                    ? 'bg-blue-600 text-white dark:bg-blue-400 dark:text-black'
                     : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
                 }`}
               >

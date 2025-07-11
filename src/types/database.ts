@@ -36,22 +36,57 @@ export interface Motorista {
   documento_motorista?: DocumentoMotorista[];
   documento_ajudante?: DocumentoAjudante[];
   ativo?: boolean;
+  gr_motorista_id?: number | null;
+  gr_motorista_motivo?: string | null;
+  empresa_motorista?: string | null;
+  status_motorista?: string | null;
+  // Fields from documento_motorista
+  id_documento_motorista?: number | null;
+  dm_foto_cnh?: string | null;
+  foto_comprovante_residencia?: string | null;
+  nr_registro_cnh?: number | null;
+  categoria_cnh?: string | null;
+  validade_cnh?: string | null;
+  uf_cnh?: string | null;
+  dm_nome_pai?: string | null;
+  dm_nome_mae?: string | null;
+  // Fields from vw_motoristas_completo view
+  nr_end?: number | null;
+  ds_complemento_end?: string | null;
+  st_end?: boolean | null;
+  id_end_motorista?: number | null;
+  logradouro?: string | null;
+  nr_cep?: string | null;
+  nome_bairro?: string | null;
+  nome_cidade?: string | null;
+  nome_estado?: string | null;
+  sigla_estado?: string | null;
+  // RG fields from view
+  nr_rg?: string | null;
+  data_emissao?: string | null;
+  orgao_expedidor?: string | null;
+  filiacao?: string | null;
+  foto_rg?: string | null;
+  // CNH fields from view
+  nr_registro?: number | null;
+  categoria?: string | null;
+  nome_pai?: string | null;
+  nome_mae?: string | null;
+  foto_cnh?: string | null;
+  comentario?: string | null;
 }
 
 export interface DocumentoMotorista {
   id_documento_motorista: number;
   foto_cnh: string | null;
-  nr_rg: string | null;
-  orgao_expedidor: string | null;
-  data_expedicao: string | null;
-  foto_rg: string | null;
-  nome_pai: string | null;
-  nome_mae: string | null;
-  nr_registro_cnh: number | null;
-  categoria_cnh: string | null;
-  validade_cnh: string | null;
   foto_comprovante_residencia: string | null;
   motorista_id: number;
+  uf_cnh?: string | null;
+  validade_cnh?: string | null;
+  nr_registro_cnh?: string | null;
+  categoria_cnh?: string | null;
+  nome_pai?: string | null;
+  nome_mae?: string | null;
 }
 
 export interface DocumentoVeiculo {
@@ -87,11 +122,14 @@ export interface DocumentoAjudante {
   id_ajudante: number;
   nome: string | null;
   cpf: number | null;
-  veiculo_id: number | null;
   motorista_id: number | null;
   comprovante_residencia?: string | null;
   telefone?: string | null;
   genero?: string | null;
+  gr_ajudante_id?: number | null;
+  gr_ajudante_motivo?: string | null;
+  empresa_ajudante?: string | null;
+  status_ajudante?: string | null;
 }
 
 export interface CnhAjudante {
@@ -221,4 +259,27 @@ export interface Checklist {
   documento: DocumentoMotorista | null;
   nome: string;
   endereco: any;
+}
+
+export interface GestaoRisco {
+  id: number;
+  motorista_id?: number;
+  ajudante_id?: number;
+  empresa_id: number;
+  status_id: number;
+  motivo?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GrEmpresa {
+  id: number;
+  nome: string;
+  created_at: string;
+}
+
+export interface GrStatus {
+  id: number;
+  status: string;
+  created_at: string;
 }

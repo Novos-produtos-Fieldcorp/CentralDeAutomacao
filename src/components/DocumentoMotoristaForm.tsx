@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { X, Loader2, CreditCard, Home, FileText, Camera, Upload, ExternalLink } from 'lucide-react';
-import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
 import { BaseModal } from './BaseModal';
 
@@ -194,13 +193,6 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleDocumentUpload = (field: string, url: string) => {
-    setFormData(prev => ({ ...prev, [field]: url }));
-  };
-
-  const handleVeiculoDocumentUpload = (field: string, url: string) => {
-    setVeiculoData(prev => ({ ...prev, [field]: url }));
-  };
 
   const openDocumentInNewTab = (url: string | null) => {
     if (url) {
@@ -458,7 +450,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                             upsert: true,
                             contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
                           })
-                          .then(({ data, error }) => {
+                          .then(({ error }) => {
                             if (error) {
                               toast.error('Erro ao enviar arquivo');
                               console.error(error);
@@ -600,7 +592,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                             upsert: true,
                             contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
                           })
-                          .then(({ data, error }) => {
+                          .then(({ error }) => {
                             if (error) {
                               toast.error('Erro ao enviar arquivo');
                               console.error(error);
@@ -670,7 +662,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                   
                   <div className="mb-2 flex justify-between items-center">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      CRV Digital
+
                     </label>
                     {veiculoData.foto_crv && (
                       <button
@@ -761,7 +753,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                               upsert: true,
                               contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
                             })
-                            .then(({ data, error }) => {
+                            .then(({ error }) => {
                               if (error) {
                                 toast.error('Erro ao enviar arquivo');
                                 console.error(error);

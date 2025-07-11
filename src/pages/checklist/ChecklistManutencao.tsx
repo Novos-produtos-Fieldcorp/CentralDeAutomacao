@@ -47,17 +47,27 @@ const ChecklistManutencao = () => {
   const [loading, setLoading] = useState(true);
   const [expandedAlert, setExpandedAlert] = useState<AlertDetails | null>(null);
   const [statusItems, setStatusItems] = useState<StatusItem[]>([]);
-  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all');
+  const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('all', true);
+
+  // Format date from YYYY-MM-DD to DD/MM/YYYY
+  const formatDate = (dateStr: string) => {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
 
   useEffect(() => {
     fetchStatusItems();
   }, []);
 
   useEffect(() => {
-    if (statusItems.length > 0) {
+    // Only fetch when date range actually changes, not on pending changes
+    if (statusItems.length > 0 && !pendingDateRange) {
       fetchMaintenanceAlerts();
     }
-  }, [dateRange, statusItems]);
+  }, [dateRange, statusItems, pendingDateRange]);
 
   const fetchStatusItems = async () => {
     try {
@@ -238,11 +248,7 @@ const ChecklistManutencao = () => {
       setLoading(false);
     }
   };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-BR');
-  };
-
+  
   const getStatusColor = (status_id: number) => {
     const statusItem = statusItems.find(item => item.status_id === status_id);
     if (!statusItem) return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200';
@@ -285,8 +291,14 @@ const ChecklistManutencao = () => {
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
+          pendingDateRange={pendingDateRange}
           onPeriodChange={updatePeriod}
           onDateRangeChange={setDateRange}
+          onApplyCustomRange={() => {
+            if (applyPendingDateRange()) {
+              fetchMaintenanceAlerts();
+            }
+          }}
         />
       </div>
 

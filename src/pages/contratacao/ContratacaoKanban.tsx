@@ -1,3 +1,4 @@
+// src/pages/contratacao/ContratacaoKanban.tsx
 import React, { useState, useEffect } from 'react';
 import { Search, FilePen, MessageCircle, Filter, X, User, ChevronLeft, ChevronRight, Truck, Phone, MapPin } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -320,13 +321,8 @@ const ContratacaoKanban = () => {
 
       // Apply function filter if not 'todos'
       if (funcaoFilter !== 'todos') {
-        // Match both title case and lowercase variations
-        query = query.or(
-          `and(funcao.eq.${funcaoFilter},funcao.eq.${funcaoFilter.toLowerCase()})`
-        );
-      } else {
-        // When 'todos' is selected, include both 'Motorista'/'motorista' and 'Agregado'/'agregado'
-        query = query.or('funcao.eq.Motorista,funcao.eq.motorista,funcao.eq.Agregado,funcao.eq.agregado');
+        // FIX: Use eq instead of or for filtering by function
+        query = query.eq('funcao', funcaoFilter);
       }
       
       // Apply search filter if provided
@@ -840,6 +836,12 @@ const ContratacaoKanban = () => {
                                     }`}>
                                       {motorista.funcao}
                                     </span>
+                                    <div className="mt-1">
+                                      {motorista.nome || 'Não informado'}
+                                    </div>
+                                    <div className="mt-1">
+                                      {motorista.nome || 'Não informado'}
+                                    </div>
                                   </div>
                                 </div>
                               </div>

@@ -69,24 +69,35 @@ Deno.serve(async (req)=>{
     });
   }
 });
-// Function to record webhook delivery status
-async function recordDelivery(grupo, status, message) {
+// Certifique-se de que a função get_current_brasilia_time_details no seu banco de dados
+// retorna dbTimeData.formatted_time no formato 'YYYY-MM-DD HH:MM:SS' (ou similar, completo)
+// para a coluna `data_envio` que é um `timestamp with time zone`.
+// A função recordDelivery revisada
+async function recordDelivery(grupo, status, message, utcExecutionTime) {
   try {
-    // Fetch current Brasilia time for data_envio
+    // Obtenha os detalhes de tempo do banco de dados novamente para garantir que estamos
+    // pegando o timestamp mais atual no momento da gravação.
+    // É importante que `dbTimeData.formatted_time` retorne um timestamp completo
+    // (ex: '2025-07-08 19:01:25') e não apenas '19:01'.
     const { data: dbTimeData, error: dbTimeError } = await supabase.rpc('get_current_brasilia_time_details');
     if (dbTimeError) {
-      console.error('Error getting database time for recordDelivery:', dbTimeData);
+      console.error('Error getting database time for recordDelivery:', dbTimeError);
+      // Não queremos que este erro crítico de log cause uma falha silenciosa
       throw new Error('Failed to get current Brasilia time for recording delivery.');
     }
-    const dataEnvio = dbTimeData.formatted_time; // Use formatted_time for `data_envio`
+    const dataEnvio = dbTimeData.formatted_time;
+    console.log(`Recording delivery for group ${grupo.id}: status=${status}, data_envio=${dataEnvio}, horario_execucao_utc=${utcExecutionTime}`);
     const { error } = await supabase.from('envio_resumo').insert({
       grupo_id: grupo.id,
       data_envio: dataEnvio,
+      horario_execucao_utc: utcExecutionTime,
       status: status,
       mensagem: message
     });
     if (error) {
       console.error('Error recording delivery:', error);
+    } else {
+      console.log(`Delivery record for group ${grupo.id} saved successfully.`);
     }
   } catch (error) {
     console.error('Critical error in recordDelivery:', error.message);
