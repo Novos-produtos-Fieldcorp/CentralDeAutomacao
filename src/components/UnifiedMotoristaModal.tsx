@@ -34,9 +34,14 @@ const UnifiedMotoristaModal = ({
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   
+  const [comentariosRefreshKey, setComentariosRefreshKey] = useState(0);
+  
   const handleTabChange = async (tab: 'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios') => {
-    // Only update if the tab is actually changing
-    if (activeTab === tab) return;
+    // If clicking the same tab and it's the comentarios tab, trigger a refresh
+    if (activeTab === tab && tab === 'comentarios') {
+      setComentariosRefreshKey(prev => prev + 1);
+      return;
+    }
     
     setActiveTab(tab);
     
@@ -825,6 +830,7 @@ const UnifiedMotoristaModal = ({
                 />
               ) : activeTab === 'comentarios' ? (
                 <ComentariosTab 
+                  key={`comentarios-${comentariosRefreshKey}`}
                   motorista_id={motorista.motorista_id}
                   onUpdateSuccess={() => {
                     fetchComentariosCount();

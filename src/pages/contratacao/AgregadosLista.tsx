@@ -1,5 +1,5 @@
   import React, { useState, useEffect, useRef } from 'react';
-  import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus } from 'lucide-react';
+  import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle } from 'lucide-react';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
   import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database';
@@ -21,105 +21,126 @@
   import ContextMenu from '../../components/ContextMenu';
   import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 
-  interface AgregadosListaProps {
-    onSuccess?: () => void;
+interface AgregadosListaProps {
+  onSuccess?: () => void;
+}
+
+// Interface para a view de contratados
+export interface ViewContratado {
+  motorista_id?: number;
+  nome_motorista?: string;
+  cpf?: string;
+  dt_nascimento?: string;
+  genero?: string;
+  telefone?: string | number | null;
+  email?: string | null;
+  funcao?: string;
+  origem_usuario?: string;
+  st_cadastro?: string | null;
+  autorizacao_lgpd?: string;
+  company_id?: number;
+  data_cadastro?: string;
+  cliente_id?: number | null;
+  conversation_id?: string;
+  ativo?: boolean;
+  nr_end?: number | null;
+  ds_complemento_end?: string | null;
+  st_end?: boolean | null;
+  id_end_motorista?: number | null;
+  logradouro?: string | null;
+  nr_cep?: string | null;
+  nome_bairro?: string | null;
+  nome_cidade?: string | null | undefined;
+  nome_estado?: string | null;
+  sigla_estado?: string | null;
+  veiculo_id?: number | null;
+  placa?: string | null;
+  status_veiculo?: boolean | null;
+  marca?: string | null;
+  tipologia?: string | null;
+  veiculo?: Array<{
+    placa: string;
+    tipologia: string;
+    marca?: string;
+    tipo_veiculo?: string;
+    tipo?: string;
+  }>;
+  ano?: string | null;
+  combustivel?: string | null;
+  peso?: string | null;
+  cubagem?: string | null;
+  possui_rastreador?: boolean | null;
+  marca_rastreador?: string | null;
+  cor?: string | null;
+  tipo_veiculo?: string | null;
+  tipo?: string | null;
+}
+
+const checkVehicleTypeMatch = (motorista: ViewContratado, filters: string[]): boolean => {
+  // Check direct properties first
+  if (
+    (motorista.tipo_veiculo && filters.includes(motorista.tipo_veiculo)) ||
+    (motorista.tipo && filters.includes(motorista.tipo)) ||
+    (motorista.tipologia && filters.includes(motorista.tipologia))
+  ) {
+    return true;
   }
 
-  // Interface para a view de contratados
-  export interface ViewContratado {
-    motorista_id?: number;
-    nome_motorista?: string;
-    cpf?: string;
-    dt_nascimento?: string;
-    genero?: string;
-    telefone?: string | number | null;
-    email?: string | null;
-    funcao?: string;
-    origem_usuario?: string;
-    st_cadastro?: string | null;
-    autorizacao_lgpd?: string;
-    company_id?: number;
-    data_cadastro?: string;
-    integracao_data?: string | null;
-    treinamento_data?: string | null;
-    treinamento?: boolean;
-    cliente_id?: number | null;
-    conversation_id?: string;
-    ativo?: boolean;
-    nr_end?: number | null;
-    ds_complemento_end?: string | null;
-    st_end?: boolean | null;
-    id_end_motorista?: number | null;
-    logradouro?: string | null;
-    nr_cep?: string | null;
-    nome_bairro?: string | null;
-    nome_cidade?: string | null | undefined;
-    nome_estado?: string | null;
-    sigla_estado?: string | null;
-    veiculo_id?: number | null;
-    placa?: string | null;
-    status_veiculo?: boolean | null;
-    marca?: string | null;
-    tipologia?: string | null;
-    veiculo?: Array<{
-      placa: string;
-      tipologia: string;
-      marca?: string;
-      tipo_veiculo?: string;
-    }>;
-    ano?: string | null;
-    combustivel?: string | null;
-    peso?: string | null;
-    cubagem?: string | null;
-    possui_rastreador?: boolean | null;
-    marca_rastreador?: string | null;
-    cor?: string | null;
-    tipo_veiculo?: string | null;
-    tipo?: string | null;
+  // Check veiculo array if it exists
+  if (motorista.veiculo && motorista.veiculo.length > 0) {
+    return motorista.veiculo.some((veiculo: { tipo_veiculo?: string; tipo?: string; tipologia?: string }) => 
+      (veiculo.tipo_veiculo && filters.includes(veiculo.tipo_veiculo)) ||
+      (veiculo.tipo && filters.includes(veiculo.tipo)) ||
+      (veiculo.tipologia && filters.includes(veiculo.tipologia))
+    );
   }
 
-  const Contratados = ({ onSuccess }: AgregadosListaProps) => {
-    const { query, companyId } = useCompanyData();
-    const { startChat } = useFloatingChat();
-    const [contratados, setContratados] = useState<ViewContratado[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string[]>([]);
-    const [ativoFilter, setAtivoFilter] = useState<string>('');
-    const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
-    const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-    const [showClienteDropdown, setShowClienteDropdown] = useState(false);
-    const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
-    const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
-    const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [isBulkActionsModalOpen, setIsBulkActionsModalOpen] = useState(false);
-    const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
-    const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
-    const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
-    const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
-    const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
-    const [selectAll, setSelectAll] = useState(false);
-    const [documento] = useState<DocumentoMotorista | null>(null);
-    // Matches the type expected by DocumentViewer component
-    interface EnderecoState {
-      logradouro?: {
-        logradouro?: string | null;
-        nr_cep?: string | null;
-        bairro?: {
-          bairro?: string | null;
-          cidade?: {
-            cidade?: string | null;
-            estado?: {
-              sigla_estado?: string | null;
-            } | null;
+  return false;
+};
+
+const Contratados = ({ onSuccess }: AgregadosListaProps) => {
+  const { query, companyId } = useCompanyData();
+  const { startChat } = useFloatingChat();
+  const [contratados, setContratados] = useState<ViewContratado[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [ativoFilter, setAtivoFilter] = useState<string>('');
+  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
+  const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
+  const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
+  const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isBulkActionsModalOpen, setIsBulkActionsModalOpen] = useState(false);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
+  const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
+  const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
+  const [selectAll, setSelectAll] = useState(false);
+  const [documento] = useState<DocumentoMotorista | null>(null);
+  
+  // Matches the type expected by DocumentViewer component
+  interface EnderecoState {
+    logradouro?: {
+      logradouro?: string | null;
+      nr_cep?: string | null;
+      bairro?: {
+        bairro?: string | null;
+        cidade?: {
+          cidade?: string | null;
+          estado?: {
+            sigla_estado?: string | null;
           } | null;
         } | null;
       } | null;
-      nr_end?: number | null;
-      ds_complemento_end?: string | null;
-    }
+    } | null;
+    nr_end?: number | null;
+    ds_complemento_end?: string | null;
+  }
     
 
     const [endereco, setEndereco] = useState<EnderecoState | null>(null);
@@ -300,6 +321,17 @@
     const [dateFilter, setDateFilter] = useState<string>('all');
     const [showAddModal, setShowAddModal] = useState<boolean>(false);
     const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const [roleChangeModal, setRoleChangeModal] = useState<{
+    isOpen: boolean;
+    motorista: ViewContratado | null;
+    newRole: 'Motorista' | 'Agregado' | null;
+    isLoading: boolean;
+  }>({
+    isOpen: false,
+    motorista: null,
+    newRole: null,
+    isLoading: false,
+  });
     const [customDateRange, setCustomDateRange] = useState<{
       startDate: string;
       endDate: string;
@@ -336,6 +368,62 @@
         document.removeEventListener('click', handleClick);
       };
     }, [contextMenu.visible, statusDropdownOpen, clienteDropdownOpen]);
+
+    const handleRoleChangeConfirm = async () => {
+      if (!roleChangeModal.motorista || !roleChangeModal.newRole) return;
+      
+      try {
+        setRoleChangeModal(prev => ({ ...prev, isLoading: true }));
+        
+        const { error } = await supabase
+          .from('motorista')
+          .update({ funcao: roleChangeModal.newRole })
+          .eq('motorista_id', roleChangeModal.motorista.motorista_id);
+
+        if (error) throw error;
+
+        // Atualiza o estado local
+        setContratados(prev => 
+          prev.map(m => 
+            m.motorista_id === roleChangeModal.motorista?.motorista_id 
+              ? { ...m, funcao: roleChangeModal.newRole as 'Motorista' | 'Agregado' } 
+              : m
+          )
+        );
+
+        toast.success(
+          `Função alterada com sucesso para ${roleChangeModal.newRole === 'Motorista' ? 'Motorista' : 'Agregado'}!`,
+          { duration: 3000 }
+        );
+        
+        // Se estiver em uma visualização filtrada, atualiza a lista
+        if (searchTerm) {
+          fetchContratados();
+        }
+        
+        // Fecha o modal
+        setRoleChangeModal({ isOpen: false, motorista: null, newRole: null, isLoading: false });
+      } catch (error) {
+        console.error('Erro ao alterar função:', error);
+        toast.error(
+          <div className="flex items-center space-x-2">
+            <XCircle className="w-5 h-5 text-red-500" />
+            <span>Erro ao alterar função do motorista</span>
+          </div>,
+          { duration: 3000 }
+        );
+        setRoleChangeModal(prev => ({ ...prev, isLoading: false }));
+      }
+    };
+
+    const openRoleChangeModal = (motorista: ViewContratado, newRole: 'Motorista' | 'Agregado') => {
+      setRoleChangeModal({
+        isOpen: true,
+        motorista,
+        newRole,
+        isLoading: false
+      });
+    };
 
     const fetchContratados = async () => {
       try {
@@ -433,14 +521,27 @@
             uniqueCities.add(motorista.nome_cidade);
           }
           
-          // Extract vehicle types
+          // Extract vehicle types from veiculo array and direct properties
+          const vehicleTypes = [];
+          
+          // Check direct properties first
+          if (motorista.tipo_veiculo) vehicleTypes.push(motorista.tipo_veiculo);
+          if (motorista.tipo) vehicleTypes.push(motorista.tipo);
+          if (motorista.tipologia) vehicleTypes.push(motorista.tipologia);
+          
+          // Check veiculo array
           if (motorista.veiculo && motorista.veiculo.length > 0) {
-            motorista.veiculo.forEach((veiculo: { tipo_veiculo?: string }) => {
-              if (veiculo.tipo_veiculo) {
-                uniqueVehicleTypes.add(veiculo.tipo_veiculo);
-              }
+            motorista.veiculo.forEach((veiculo: { tipo_veiculo?: string; tipo?: string; tipologia?: string }) => {
+              if (veiculo.tipo_veiculo) vehicleTypes.push(veiculo.tipo_veiculo);
+              if (veiculo.tipo) vehicleTypes.push(veiculo.tipo);
+              if (veiculo.tipologia) vehicleTypes.push(veiculo.tipologia);
             });
           }
+          
+          // Add unique non-empty types to the set
+          vehicleTypes
+            .filter(tipo => tipo && typeof tipo === 'string' && tipo.trim() !== '')
+            .forEach(tipo => uniqueVehicleTypes.add(tipo.trim()));
         });
         
         // Filter out null or undefined values before setting the state
@@ -935,17 +1036,18 @@
       // Lógica para filtro de tipo de veículo (multiseleção)
       let tipoVeiculoMatch = true;
       if (tipoVeiculoFilter.length > 0) {
+        // Check for 'sem_veiculo' filter
         if (tipoVeiculoFilter.includes('sem_veiculo')) {
           tipoVeiculoMatch = !motorista.veiculo || motorista.veiculo.length === 0;
+          
+          // If other filters are also selected, we need to check them too
+          if (tipoVeiculoFilter.length > 1) {
+            const hasMatchingVehicle = checkVehicleTypeMatch(motorista, tipoVeiculoFilter.filter(t => t !== 'sem_veiculo'));
+            tipoVeiculoMatch = tipoVeiculoMatch || hasMatchingVehicle;
+          }
         } else {
-          tipoVeiculoMatch = !!(motorista.veiculo && motorista.veiculo.some(v => 
-            v.tipologia && tipoVeiculoFilter.includes(v.tipologia)
-          ));
-        }
-        
-        // Se 'sem_veiculo' está selecionado junto com outros tipos, combina os resultados
-        if (tipoVeiculoFilter.includes('sem_veiculo') && tipoVeiculoFilter.length > 1) {
-          tipoVeiculoMatch = tipoVeiculoMatch || (!motorista.veiculo || motorista.veiculo.length === 0);
+          // Check vehicle type against filters
+          tipoVeiculoMatch = checkVehicleTypeMatch(motorista, tipoVeiculoFilter);
         }
       }
       
@@ -1769,6 +1871,16 @@
                               <FilePen size={18} />
                             </button>
                             <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openRoleChangeModal(motorista, motorista.funcao === 'Motorista' ? 'Agregado' : 'Motorista');
+                              }}
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                              title={motorista.funcao === 'Motorista' ? 'Transformar em Agregado' : 'Transformar em Motorista'}
+                            >
+                              <ArrowLeftRight size={18} />
+                            </button>
+                            <button
                               onClick={(e) => handleToggleStatus(e, motorista)}
                               disabled={updatingStatus === motorista.motorista_id}
                               className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
@@ -1943,11 +2055,24 @@
             isOpen={isUnifiedAgregadoModalOpen}
             onClose={() => setIsUnifiedAgregadoModalOpen(false)}
             motorista={{
+              ...selectedMotorista,
               motorista_id: selectedMotorista.motorista_id || 0,
-              nome_motorista: selectedMotorista.nome_motorista || '',
+              nome: selectedMotorista.nome_motorista || '',
               cpf: selectedMotorista.cpf || '',
-              telefone: selectedMotorista.telefone?.toString() || '',
-              email: selectedMotorista.email || ''
+              telefone: selectedMotorista.telefone ? Number(selectedMotorista.telefone) : null,
+              email: selectedMotorista.email || null,
+              dt_nascimento: selectedMotorista.dt_nascimento || '',
+              genero: selectedMotorista.genero || '',
+              funcao: selectedMotorista.funcao || '',
+              origem_usuario: selectedMotorista.origem_usuario || '',
+              st_cadastro: selectedMotorista.st_cadastro || 'cadastrado',
+              autorizacao_lgpd: selectedMotorista.autorizacao_lgpd || 'N',
+              company_id: selectedMotorista.company_id || 0,
+              data_cadastro: selectedMotorista.data_cadastro || new Date().toISOString(),
+              cliente_id: selectedMotorista.cliente_id || 0,
+              ativo: selectedMotorista.ativo || false,
+// Ensure all required properties are included with proper types
+              conversation_id: selectedMotorista.conversation_id || ''
             }}
           />
         )}
@@ -1993,6 +2118,72 @@
             if (onSuccess) onSuccess();
           }}
         />
+
+        {/* Role Change Confirmation Modal */}
+        {roleChangeModal.isOpen && roleChangeModal.motorista && roleChangeModal.newRole && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-full">
+                    <AlertTriangle className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                </div>
+                
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white text-center mb-2">
+                  Confirmar alteração de função
+                </h3>
+                
+                <p className="text-sm text-gray-600 dark:text-gray-300 text-center mb-6">
+                  Tem certeza que deseja transformar <span className="font-semibold">{roleChangeModal.motorista.nome_motorista}</span> em um <span className="font-semibold">{roleChangeModal.newRole}</span>?
+                </p>
+
+                <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 mb-6">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <AlertTriangle className="h-5 w-5 text-yellow-400 dark:text-yellow-300" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                        {roleChangeModal.newRole === 'Agregado' 
+                          ? 'Ao transformar em Agregado, o motorista não aparecerá mais na lista de motoristas ativos.'
+                          : 'Ao transformar em Motorista, o registro será ativado automaticamente.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setRoleChangeModal(prev => ({ ...prev, isOpen: false }))}
+                    disabled={roleChangeModal.isLoading}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRoleChangeConfirm}
+                    disabled={roleChangeModal.isLoading}
+                    className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      roleChangeModal.isLoading ? 'pl-10' : ''
+                    }`}
+                  >
+                    {roleChangeModal.isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin inline-block" />
+                        Alterando...
+                      </>
+                    ) : (
+                      'Confirmar Alteração'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
