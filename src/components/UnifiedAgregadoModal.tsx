@@ -3,6 +3,8 @@ import { X, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import AddAjudanteModal from './AddAjudanteModal';
 import { supabase } from '../lib/supabase';
+import { MessageSquare } from 'lucide-react';
+import ComentariosTab from './ComentariosTab';
 import type { Ajudante } from '../types/ajudante';
 
 interface Motorista {
@@ -20,7 +22,7 @@ interface UnifiedAgregadoModalProps {
 }
 
 const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: UnifiedAgregadoModalProps) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'ajudantes'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'ajudantes' | 'comentarios'>('details');
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
   const [ajudantes, setAjudantes] = useState<Ajudante[]>([]);
   const [comentariosCount, setComentariosCount] = useState(0);
@@ -172,7 +174,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                     Ajudantes ({ajudantes.length})
                   </button>
                   <button
-                    onClick={() => navigate(`/motoristas/agregados/${motorista.motorista_id}/comentarios`)}
+                    onClick={() => setActiveTab('comentarios')}
                     className="group flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
                   >
                     <MessageSquare className="w-5 h-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400" />
@@ -186,6 +188,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                     </span>
                   </button>
                 </nav>
+              </div>
               </div>
 
               <div className="mt-6">
@@ -296,6 +299,15 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       </ul>
                     </div>
                   </div>
+                )}
+                {activeTab === 'comentarios' && (
+                  <ComentariosTab 
+                    motorista_id={motorista.motorista_id}
+                    onUpdateSuccess={() => {
+                      fetchComentariosCount();
+                      onSuccess?.();
+                    }}
+                  />
                 )}
               </div>
             </div>
