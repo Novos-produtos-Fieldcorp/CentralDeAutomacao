@@ -559,7 +559,7 @@ const HodometrosLista = () => {
   return (
     <div className="space-y-6">
       {/* Filters Section */}
-      <div className="bg-white dark:bg-[#1B1F2B] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1E2332] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row items-center gap-4">
           {/* Search */}
           <div className="relative flex-grow w-full md:w-auto">
@@ -611,10 +611,10 @@ const HodometrosLista = () => {
       </div>
 
       {/* Vehicle Mileage Table */}
-      <div className="bg-white dark:bg-[#1B1F2B] rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1E2332] rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-[#1B1F2B]">
+            <thead className="bg-gray-50 dark:bg-[#1E2332]">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total KM</th>
@@ -623,7 +623,7 @@ const HodometrosLista = () => {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-[#1B1F2B] divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-[#1E2332] divide-y divide-gray-200 dark:divide-gray-700">
               {filteredVehicleData.map((vehicle) => (
                 <React.Fragment key={vehicle.veiculo_id}>
                   <tr 
@@ -685,7 +685,7 @@ const HodometrosLista = () => {
                   
                   {/* Expanded vehicle details */}
                   {vehicle.expanded && (
-                    <tr className="bg-gray-50 dark:bg-[#252A3B]"> 
+                    <tr className="bg-gray-50 dark:bg-[#252A3B]">
                       <td colSpan={5} className="px-6 py-4">
                         <div className="space-y-4">
                           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -829,7 +829,7 @@ const HodometrosLista = () => {
           onClick={() => setShowPhotoModal(false)}
         >
           <div 
-            className="bg-white dark:bg-[#1B1F2B] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
+            className="bg-white dark:bg-[#1E2332] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
             onClick={e => e.stopPropagation()}
           >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">

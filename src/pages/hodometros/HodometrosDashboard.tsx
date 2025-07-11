@@ -622,7 +622,7 @@ const HodometrosDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="bg-white dark:bg-[#1B1F2B] p-4 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]">
+      <div className="bg-white dark:bg-[#1E2332] p-4 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]">
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
@@ -669,7 +669,7 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"> 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Daily Mileage */}
         <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
           <div className="mb-6 flex items-center gap-2">
@@ -926,8 +926,8 @@ const HodometrosDashboard = () => {
         
         {filteredHodometros.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700"> 
-              <thead className="p-6 min-h-[calc(100vh-16rem)] bg-white dark:bg-[#1B1F2B]">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="p-6 min-h-[calc(100vh-16rem)] bg-white dark:bg-[#1B2537]">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nome</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Data</th>
@@ -944,7 +944,7 @@ const HodometrosDashboard = () => {
                   <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Foto</th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-[#1B1F2B] divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="bg-white dark:bg-[#1E2332] divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredHodometros.map((hodometro) => {
                   const isElectric = hodometro.bateria !== null && hodometro.bateria !== undefined;
                   
@@ -1059,7 +1059,7 @@ const HodometrosDashboard = () => {
           onClick={() => setShowPhotoModal(false)}
         >
           <div 
-            className="bg-white dark:bg-background rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-none border-none"
+            className="bg-white dark:bg-[#1E2332] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-none border-none"
             onClick={e => e.stopPropagation()}
           >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
@@ -1138,9 +1138,9 @@ const StatCard = ({
   const variant = colorVariants[color];
 
   return (
-    <div className="bg-white dark:bg-card p-6 rounded-2xl shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg transition-all duration-300 transform hover:-translate-y-1">
       <div className="flex flex-col items-center text-center">
-        <div className={`p-3 ${variant.iconBg} rounded-2xl mb-3`}> 
+        <div className={`p-3 ${variant.iconBg} rounded-2xl mb-3`}>
           <Icon className={`w-6 h-6 ${variant.iconColor}`} />
         </div>
         

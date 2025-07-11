@@ -365,7 +365,7 @@ const HodometrosRelatorio = () => {
   return (
     <div className="space-y-6">
       {/* Filters Section */}
-      <div className="bg-white dark:bg-[#1B1F2B] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1E2332] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row items-center gap-4">
           {/* Search */}
           <div className="relative flex-grow w-full md:w-auto">
@@ -451,11 +451,11 @@ const HodometrosRelatorio = () => {
       </div>
 
       {/* Readings Table */}
-      <div className="bg-white dark:bg-[#1B1F2B] rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1E2332] rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-[#1B1F2B]">
-              <tr className="bg-gray-50 dark:bg-[#1B1F2B]">
+            <thead className="bg-gray-50 dark:bg-[#1E2332]">
+              <tr className="bg-gray-50 dark:bg-[#1E2332]">
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
@@ -465,7 +465,7 @@ const HodometrosRelatorio = () => {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Editar</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-[#1B1F2B] divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-[#1E2332] divide-y divide-gray-200 dark:divide-gray-700">
               {filteredReadings.map((reading) => {
                 const isElectric = reading.bateria !== null && reading.bateria !== undefined;
                 
@@ -585,7 +585,7 @@ const HodometrosRelatorio = () => {
           onClick={() => setShowPhotoModal(false)}
         >
           <div 
-            className="bg-white dark:bg-[#1B1F2B] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
+            className="bg-white dark:bg-[#1E2332] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
             onClick={e => e.stopPropagation()}
           >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
@@ -632,7 +632,7 @@ const HodometrosRelatorio = () => {
           onClick={() => setIsEditModalOpen(false)}
         >
           <div 
-            className="bg-white dark:bg-[#1B1F2B] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-md border border-gray-200 dark:border-gray-700"
+            className="bg-white dark:bg-[#1E2332] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-md border border-gray-200 dark:border-gray-700"
             onClick={e => e.stopPropagation()}
           >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
