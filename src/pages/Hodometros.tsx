@@ -85,7 +85,7 @@ const Hodometros = () => {
           )}
         </div>
 
-        <div className="p-6 min-h-[calc(100vh-16rem)] bg-white dark:bg-[#1B1F2B]">
+        <div className="p-6 min-h-[calc(100vh-16rem)] bg-white dark:bg-[#1E2332]">
           <Routes>
             <Route index element={<Navigate to="/hodometros/dashboard\" replace />} />
             <Route path="dashboard" element={<HodometrosDashboard />} />
