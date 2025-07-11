@@ -109,7 +109,7 @@ export const PhotoThumbnail = React.memo(({ url, label }: PhotoThumbnailProps) =
       {/* Lightbox/Popup */}
       {showLightbox && (
         <div 
-          className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-transparent z-[60] flex items-center justify-center p-4"
           onClick={closeLightbox}
         >
           <div 

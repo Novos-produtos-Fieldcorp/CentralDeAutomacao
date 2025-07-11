@@ -52,7 +52,7 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
   return (
     <div className="fixed inset-0 z-50">
       {/* Overlay */}
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 bg-transparent" onClick={onClose} />
       
       {/* Modal Container */}
       <div className="fixed inset-0 overflow-y-auto">
@@ -444,7 +444,7 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
       {/* Full-screen document viewer */}
       {activeDocument && (
         <div 
-          className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-transparent z-[60] flex items-center justify-center p-4"
           onClick={() => setActiveDocument(null)}
         >
           <div 
