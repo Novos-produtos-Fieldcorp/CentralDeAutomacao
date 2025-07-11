@@ -671,7 +671,7 @@ const HodometrosDashboard = () => {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Daily Mileage */}
-        <div className="bg-card p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300">
+        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300">
           <div className="mb-6 flex items-center gap-2">
   <BarChart2 className="text-blue-500" size={20} />
   <h3 className="text-lg font-bold text-black dark:text-white">Quilometragem Diária</h3>
@@ -712,7 +712,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Driver Mileage */}
-        <div className="bg-card p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300">
+        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300">
           <div className="mb-6 flex items-center gap-2">
   <Users className="text-green-500" size={20} />
   <h3 className="text-lg font-bold text-black dark:text-white">Quilometragem por Motorista</h3>
@@ -753,7 +753,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Vehicle Mileage */}
-        <div className="bg-card p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300">
+        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300">
           <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
             <Truck className="text-purple-500 dark:text-purple-400" size={20} />
             Quilometragem por Veículo
@@ -794,7 +794,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Leituras por Motorista Chart and KM per Operation Chart */}
-        <div className="bg-card p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300">
+        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300">
           <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
             <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             Leituras por Motorista
@@ -836,7 +836,7 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* KM per Operation Chart */}
-      <div className="bg-card p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300">
+      <div className="bg-white dark:bg-[#1B2537] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300">
         <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
           <Gauge className="w-5 h-5 text-orange-500 dark:text-orange-400" />
           Quilômetros por Operação
