@@ -823,7 +823,7 @@ const UnifiedMotoristaModal = ({
                 <ComentariosTab 
                   motorista_id={motorista.motorista_id}
                   onUpdateSuccess={() => {
-                    checkComentario();
+                    fetchComentariosCount();
                     onSuccess?.();
                   }}
                 />
