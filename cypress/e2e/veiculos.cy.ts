@@ -1,9 +1,9 @@
 /// <reference types="cypress" />
 
-describe('Contratações - Contratados', () => {
+describe('Veículos', () => {
   beforeEach(() => {
     cy.loginWiseApp();
-    cy.visit('/?account_id=1#/motoristas/contratados');
+    cy.visit('/veiculos?account_id=1');
   });
 
   it('deve exibir o campo de busca', () => {
@@ -12,13 +12,20 @@ describe('Contratações - Contratados', () => {
 
   it('deve exibir filtros principais', () => {
     cy.contains('Todos os status').should('exist');
+    cy.contains('Todas as categorias').should('exist');
     cy.contains('Todos os clientes').should('exist');
-    cy.contains('Todas as cidades').should('exist');
     cy.get('select').should('exist');
   });
 
   it('deve filtrar por status', () => {
     cy.contains('Todos os status').click();
+    cy.get('.dropdown-menu li').first().click();
+    cy.get('tbody tr').should('exist');
+    cy.contains('Limpar').click();
+  });
+
+  it('deve filtrar por categoria', () => {
+    cy.contains('Todas as categorias').click();
     cy.get('.dropdown-menu li').first().click();
     cy.get('tbody tr').should('exist');
     cy.contains('Limpar').click();
@@ -31,30 +38,23 @@ describe('Contratações - Contratados', () => {
     cy.contains('Limpar').click();
   });
 
-  it('deve filtrar por cidade', () => {
-    cy.contains('Todas as cidades').click();
-    cy.get('.dropdown-menu li').first().click();
-    cy.get('tbody tr').should('exist');
-    cy.contains('Limpar').click();
-  });
-
   it('deve filtrar por período', () => {
     cy.get('select').select(1);
     cy.get('tbody tr').should('exist');
     cy.get('select').select(0);
   });
 
-  it('deve abrir e fechar o modal de adicionar contratado', () => {
-    cy.contains('button', 'Adicionar Contratado').click();
-    cy.contains('Cadastrar Contratado').should('exist');
+  it('deve abrir e fechar o modal de adicionar veículo', () => {
+    cy.contains('button', 'Adicionar Veículo').click();
+    cy.contains('Cadastrar Veículo').should('exist');
     cy.get('button').contains('Cancelar').click();
   });
 
   it('deve abrir e fechar o modal de edição', () => {
     cy.get('tbody tr').first().within(() => {
-      cy.get('button[title="Editar Contratado"]').click({ force: true });
+      cy.get('button[title="Editar Veículo"]').click({ force: true });
     });
-    cy.contains('Editar Contratado').should('exist');
+    cy.contains('Editar Veículo').should('exist');
     cy.get('button').contains('Cancelar').click();
   });
 
@@ -62,7 +62,7 @@ describe('Contratações - Contratados', () => {
     cy.get('tbody tr').first().within(() => {
       cy.get('button[title="Visualizar"]').click({ force: true });
     });
-    cy.contains('Detalhes do Contratado').should('exist');
+    cy.contains('Detalhes do Veículo').should('exist');
     cy.get('button').contains('Fechar').click();
   });
 

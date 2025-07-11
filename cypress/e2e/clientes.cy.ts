@@ -1,9 +1,9 @@
 /// <reference types="cypress" />
 
-describe('Contratações - Contratados', () => {
+describe('Clientes', () => {
   beforeEach(() => {
     cy.loginWiseApp();
-    cy.visit('/?account_id=1#/motoristas/contratados');
+    cy.visit('/clientes?account_id=1');
   });
 
   it('deve exibir o campo de busca', () => {
@@ -12,20 +12,12 @@ describe('Contratações - Contratados', () => {
 
   it('deve exibir filtros principais', () => {
     cy.contains('Todos os status').should('exist');
-    cy.contains('Todos os clientes').should('exist');
     cy.contains('Todas as cidades').should('exist');
     cy.get('select').should('exist');
   });
 
   it('deve filtrar por status', () => {
     cy.contains('Todos os status').click();
-    cy.get('.dropdown-menu li').first().click();
-    cy.get('tbody tr').should('exist');
-    cy.contains('Limpar').click();
-  });
-
-  it('deve filtrar por cliente', () => {
-    cy.contains('Todos os clientes').click();
     cy.get('.dropdown-menu li').first().click();
     cy.get('tbody tr').should('exist');
     cy.contains('Limpar').click();
@@ -44,17 +36,17 @@ describe('Contratações - Contratados', () => {
     cy.get('select').select(0);
   });
 
-  it('deve abrir e fechar o modal de adicionar contratado', () => {
-    cy.contains('button', 'Adicionar Contratado').click();
-    cy.contains('Cadastrar Contratado').should('exist');
+  it('deve abrir e fechar o modal de adicionar cliente', () => {
+    cy.contains('button', 'Adicionar Cliente').click();
+    cy.contains('Cadastrar Cliente').should('exist');
     cy.get('button').contains('Cancelar').click();
   });
 
   it('deve abrir e fechar o modal de edição', () => {
     cy.get('tbody tr').first().within(() => {
-      cy.get('button[title="Editar Contratado"]').click({ force: true });
+      cy.get('button[title="Editar Cliente"]').click({ force: true });
     });
-    cy.contains('Editar Contratado').should('exist');
+    cy.contains('Editar Cliente').should('exist');
     cy.get('button').contains('Cancelar').click();
   });
 
@@ -62,7 +54,7 @@ describe('Contratações - Contratados', () => {
     cy.get('tbody tr').first().within(() => {
       cy.get('button[title="Visualizar"]').click({ force: true });
     });
-    cy.contains('Detalhes do Contratado').should('exist');
+    cy.contains('Detalhes do Cliente').should('exist');
     cy.get('button').contains('Fechar').click();
   });
 
