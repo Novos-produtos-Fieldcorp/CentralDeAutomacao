@@ -1281,9 +1281,9 @@ const MotoristasLista = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedData.map((motorista) => (
+                  {paginatedData.map((motorista, index) => (
                     <tr 
-                      key={motorista.motorista_id || Math.random()} 
+                      key={`motorista-${motorista.motorista_id}-${motorista.cpf || ''}-${index}`}
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                         selectedItems.has(motorista.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}

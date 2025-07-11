@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Send, Loader2, User } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, testSupabaseConnection } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
@@ -27,36 +27,56 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
   const [comentario, setComentario] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [currentComentario, setCurrentComentario] = useState<Comentario | null>(null);
-  const { companyId } = useAuth();
+  const [comentarios, setComentarios] = useState<Comentario[]>([]);
+  const { accountId } = useAuth();
 
   useEffect(() => {
-    fetchComentario();
+    let isMounted = true;
+    
+    const loadComentarios = async () => {
+      if (isMounted) {
+        await fetchComentarios();
+      }
+    };
+    
+    loadComentarios();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [motorista_id]);
 
-  const fetchComentario = async () => {
+  const fetchComentarios = async () => {
     try {
       setLoading(true);
+      
+      // Test connection first
+      const isConnected = await testSupabaseConnection();
+      if (!isConnected) {
+        throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão com a internet.');
+      }
       
       const { data, error } = await supabase
         .from('comentario')
         .select('id, created_at, updated_at, id_motorista, id_atendente, comentario')
         .eq('id_motorista', motorista_id)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
         
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Erro ao buscar comentários: ${error.message}`);
+      }
       
-      setCurrentComentario(data);
+      setComentarios(data || []);
       
       // If onUpdateSuccess is provided, call it to update the comment count in the parent component
       if (onUpdateSuccess) {
         onUpdateSuccess();
       }
     } catch (error) {
-      console.error('Error fetching comment:', error);
-      toast.error('Erro ao carregar comentário');
+      console.error('Error fetching comments:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar comentários';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -73,32 +93,34 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
     try {
       setSubmitting(true);
       
-      if (currentComentario) {
-        // Update existing comment
-        const { error } = await supabase
-          .from('comentario')
-          .update({
-            comentario: comentario.trim(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', currentComentario.id);
-          
-        if (error) throw error;
-      } else {
-        // Create new comment
-        const { error } = await supabase
-          .from('comentario')
-          .insert({
-            id_motorista: motorista_id,
-            comentario: comentario.trim()
-          });
-          
-        if (error) throw error;
+      // Test connection first
+      const isConnected = await testSupabaseConnection();
+      if (!isConnected) {
+        throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão com a internet.');
+      }
+      
+      // Always create a new comment
+      const { data, error } = await supabase
+        .from('comentario')
+        .insert([{
+          id_motorista: motorista_id,
+          id_atendente: accountId ? parseInt(accountId) : null,
+          comentario: comentario.trim()
+        }])
+        .select();
+        
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Erro ao salvar comentário: ${error.message}`);
+      }
+      
+      if (!data || data.length === 0) {
+        throw new Error('Nenhum dado retornado ao salvar o comentário');
       }
       
       toast.success('Comentário salvo com sucesso');
       setComentario('');
-      await fetchComentario(); // Refresh the comment
+      await fetchComentarios(); // Refresh the comments
       
       if (onUpdateSuccess) {
         onUpdateSuccess();
@@ -134,7 +156,7 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
       <div className="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
-            {currentComentario ? 'Atualizar Comentário' : 'Adicionar Comentário'}
+            Adicionar Novo Comentário
           </h3>
           <form onSubmit={handleSubmit} className="mt-4">
             <div className="mt-1">
@@ -145,7 +167,7 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
                 value={comentario}
                 onChange={(e) => setComentario(e.target.value)}
                 className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
-                placeholder={currentComentario ? "Atualizar comentário existente..." : "Digite seu comentário aqui..."}
+                placeholder="Digite seu comentário aqui..."
               />
             </div>
             <div className="mt-4 flex justify-end">
@@ -171,32 +193,36 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
         </div>
       </div>
 
-      {/* Current Comment */}
-      {currentComentario && currentComentario.comentario ? (
+      {/* Comments List */}
+      {comentarios.length > 0 ? (
         <div className="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
           <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white flex items-center">
               <MessageSquare className="w-5 h-5 mr-2 text-blue-500" />
-              Comentário Atual
+              Comentários ({comentarios.length})
             </h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Última atualização: {formatDate(currentComentario.updated_at || currentComentario.created_at)}
-            </p>
           </div>
           
-          <div className="px-4 py-5 sm:p-6">
-            <div className="flex space-x-3">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {comentarios.map((comentario) => (
+              <div key={comentario.id} className="px-4 py-5 sm:p-6">
+                <div className="flex space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                      {formatDate(comentario.updated_at || comentario.created_at)}
+                    </p>
+                    <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                      {comentario.comentario}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="mt-1 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                  {currentComentario.comentario}
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       ) : (

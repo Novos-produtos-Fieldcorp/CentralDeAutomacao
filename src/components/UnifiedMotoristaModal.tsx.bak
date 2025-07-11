@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { supabase } from '../lib/supabase';
 import { 
-  X, User, MapPin, FileText, ExternalLink, Edit2, Users, ShieldAlert, MessageSquare 
+  User, MapPin, FileText, Edit2, Users, ShieldAlert, MessageSquare, X, ExternalLink 
 } from 'lucide-react';
 import type { 
   DocumentoMotorista, 
@@ -9,14 +11,17 @@ import type {
 } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
-import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
 import AddAjudanteModal from './AddAjudanteModal';
 import EditAjudanteModal from './EditAjudanteModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import GestaoRiscoTab from './GestaoRiscoTab';
 import ComentariosTab from './ComentariosTab';
-import { toast } from 'sonner';
+import { BaseModal } from './ui/BaseModal';
+import { TabNavigation } from './ui/TabNavigation';
+import { useModalTabs } from '../hooks/useModalTabs';
+
+type UnifiedMotoristaModalTabType = 'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios';
 
 interface UnifiedMotoristaModalProps {
   isOpen: boolean;
@@ -31,33 +36,30 @@ const UnifiedMotoristaModal = ({
   motorista, 
   onSuccess 
 }: UnifiedMotoristaModalProps) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
-  
-  const handleTabChange = async (tab: 'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios') => {
-    // Only update if the tab is actually changing
-    if (activeTab === tab) return;
-    
-    setActiveTab(tab);
-    
-    // Only fetch data if switching to ajudantes tab and we have a motorista
-    if (tab === 'ajudantes' && motorista) {
-      await fetchAjudantes();
-    }
-  };
-  const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [endereco, setEndereco] = useState<any>(null);
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
   const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
-  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
   const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
   const [selectedAjudante, setSelectedAjudante] = useState<DocumentoAjudante | null>(null);
+  const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
+  const [endereco, setEndereco] = useState<any>(null);
   const [documentCount, setDocumentCount] = useState(0);
   const [ajudantesCount, setAjudantesCount] = useState(0);
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
   const [comentariosCount, setComentariosCount] = useState(0);
   const [ajudantes, setAjudantes] = useState<DocumentoAjudante[]>([]);
+  
+  const { activeTab, isLoading, handleTabChange } = useModalTabs<UnifiedMotoristaModalTabType>({
+    initialTab: 'details',
+    onTabChange: async (tab) => {
+      if (tab === 'ajudantes' && motorista) {
+        await fetchAjudantes();
+      }
+    },
+  });
+  
+  const [activeDocument, setActiveDocument] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && motorista) {
@@ -249,11 +251,6 @@ const UnifiedMotoristaModal = ({
       
       setComentariosCount(count || 0);
     } catch (error) {
-      console.error('Error fetching comentarios count:', error);
-      setComentariosCount(0);
-    }
-  };
-
   if (!isOpen || !motorista) return null;
 
   // Ensure we have the motorista data
@@ -323,146 +320,282 @@ const UnifiedMotoristaModal = ({
       // Add your delete logic here
       toast.success('Ajudante excluído com sucesso!');
       setIsDeleteAjudanteModalOpen(false);
-      setSelectedAjudante(null);
-      onSuccess?.();
-    } catch (error) {
-      console.error('Erro ao excluir ajudante:', error);
-      toast.error('Erro ao excluir ajudante');
-    }
-  };
   
-  return (
-    <div className="fixed inset-0 z-50">
-      {/* Overlay */}
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+console.log('Document data fetched:', data);
+setDocumentoMotorista(data);
+  
+if (!data) {
+  console.warn('No document data found for motorista:', motorista.motorista_id);
+}
+} catch (error) {
+  console.error('Error fetching driver document:', error);
+}
+};
+
+const fetchDocumentCount = async () => {
+  if (!motorista) return;
+  
+  try {
+    // Count documents from documento_motorista
+    const { data: documentoData, error: documentoError } = await supabase
+      .from('documento_motorista')
+      .select('foto_cnh, foto_comprovante_residencia')
+      .eq('motorista_id', motorista.motorista_id)
+      .maybeSingle();
       
-      {/* Modal Container */}
-      <div className="fixed inset-0 overflow-y-auto">
-        <div className="flex min-h-full items-center justify-center p-4">
-          <div 
-            className="relative bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl shadow-xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <div className="p-6 flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                    <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+    if (documentoError) throw documentoError;
+      
+    let count = 0;
+    if (documentoData?.foto_cnh) count++;
+    if (documentoData?.foto_comprovante_residencia) count++;
+      
+    setDocumentCount(count);
+  } catch (error) {
+    console.error('Error fetching document count:', error);
+  }
+};
+
+const fetchAjudantes = async () => {
+  if (!motorista) return;
+  
+  try {
+    const { data, error, count } = await supabase
+      .from('documento_ajudante')
+      .select('*', { count: 'exact' })
+      .eq('motorista_id', motorista.motorista_id)
+      .order('nome', { ascending: true });
+      
+    if (error) throw error;
+      
+    setAjudantes(data || []);
+    setAjudantesCount(count || 0);
+  } catch (error) {
+    console.error('Erro ao carregar ajudantes:', error);
+    toast.error('Erro ao carregar a lista de ajudantes');
+  }
+};
+
+const fetchAjudantesCount = async () => {
+  if (!motorista) return;
+  
+  try {
+    const { count, error } = await supabase
+      .from('documento_ajudante')
+      .select('id_ajudante', { count: 'exact', head: true })
+      .eq('motorista_id', motorista.motorista_id);
+      
+    if (error) throw error;
+      
+    setAjudantesCount(count || 0);
+  } catch (error) {
+    console.error('Error fetching ajudantes count:', error);
+  }
+};
+
+const fetchGestaoRiscoCount = async () => {
+  if (!motorista) return;
+  
+  try {
+    const { count, error } = await supabase
+      .from('gr_motorista')
+      .select('id', { count: 'exact', head: true })
+      .eq('motorista_id', motorista.motorista_id);
+      
+    if (error) throw error;
+      
+    setGestaoRiscoCount(count || 0);
+  } catch (error) {
+    console.error('Error fetching gestao risco count:', error);
+  }
+};
+
+const fetchComentariosCount = async () => {
+  if (!motorista) return;
+
+  try {
+    const { count, error } = await supabase
+      .from('comentario')
+      .select('id', { count: 'exact', head: true })
+      .eq('id_motorista', motorista.motorista_id);
+      
+    if (error) throw error;
+      
+    setComentariosCount(count || 0);
+  } catch (error) {
+    console.error('Error fetching comentarios count:', error);
+    setComentariosCount(0);
+  }
+};
+
+if (!isOpen) return null;
+
+const tabConfigs = [
+  { id: 'details', label: 'Detalhes', icon: User, count: 0 },
+  { id: 'documents', label: 'Documentos', icon: FileText, count: documentCount },
+  { id: 'ajudantes', label: 'Ajudantes', icon: Users, count: ajudantesCount },
+  { id: 'gestao-risco', label: 'Gestão de Risco', icon: ShieldAlert, count: gestaoRiscoCount },
+  { id: 'comentarios', label: 'Comentários', icon: MessageSquare, count: comentariosCount }
+] as const;
+
+return (
+  <BaseModal 
+    isOpen={isOpen} 
+    onClose={onClose} 
+    title={motorista?.nome || 'Detalhes do Motorista'}
+    size="6xl"
+    actions={
+      motorista ? (
+        <button
+          onClick={() => setIsEditModalOpen(true)}
+          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <Edit2 className="w-4 h-4 mr-1" />
+          Editar
+        </button>
+      ) : null
+    }
+  >
+    <div className="mt-4">
+      <TabNavigation
+        tabs={tabConfigs}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        className="mb-6"
+      />
+      
+      <div className="mt-4">
+
+          {/* Content */}
+          <div className="p-6">
+            {activeTab === 'details' ? (
+              <div className="space-y-6">
+                {/* Personal Information */}
+                <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                  <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                      Informações Pessoais
+                    </h3>
+                    <button
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      <Edit2 className="w-4 h-4 mr-1" />
+                      Editar
+                    </button>
                   </div>
-                  <div className="flex flex-col">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                      {nome}
-                    </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Motorista • {formatCPF(cpf)}
-                    </p>
+                  <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                    <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                      <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Nome Completo
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                          {nome}
+                        </dd>
+                      </div>
+                      <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          CPF
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                          {formatCPF(cpf)}
+                        </dd>
+                      </div>
+                      <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Data de Nascimento
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                          {motorista.dt_nascimento ? formatDate(motorista.dt_nascimento) : 'Não informada'}
+                        </dd>
+                      </div>
+                      <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Telefone
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                          {motorista.telefone ? formatPhone(motorista.telefone.toString()) : 'Não informado'}
+                        </dd>
+                      </div>
+                      <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          E-mail
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                          {motorista.email || 'Não informado'}
+                        </dd>
+                      </div>
+                    </dl>
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-            
-            {/* Tabs */}
-            <div className="border-b border-gray-200 dark:border-gray-700">
-              <nav className="-mb-px flex space-x-8 px-6">
-                <button
-                  onClick={() => handleTabChange('details')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'details'
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-1">
-                    <User className="w-4 h-4" />
-                    Detalhes
-                  </div>
-                </button>
-                <button
-                  onClick={() => handleTabChange('documents')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'documents'
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-1">
-                    <FileText className="w-4 h-4" />
-                    Documentos
-                    {documentCount > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
-                        {documentCount}
-                      </span>
-                    )}
-                  </div>
-                </button>
-                <button
-                  onClick={() => handleTabChange('ajudantes')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'ajudantes'
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    Ajudantes
-                    {ajudantesCount > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
-                        {ajudantesCount}
-                      </span>
-                    )}
-                  </div>
-                </button>
-                <button
-                  onClick={() => handleTabChange('gestao-risco')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'gestao-risco'
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-1">
-                    <ShieldAlert className="w-4 h-4" />
-                    Gestão de Risco
-                    {gestaoRiscoCount > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
-                        {gestaoRiscoCount}
-                      </span>
-                    )}
-                  </div>
-                </button>
-                <button
-                  onClick={() => handleTabChange('comentarios')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'comentarios'
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-1">
-                    <MessageSquare className="w-4 h-4" />
-                    Comentários
-                    {comentariosCount > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
-                        {comentariosCount}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              </nav>
-            </div>
 
-            {/* Content */}
-            <div className="p-6">
-              {activeTab === 'details' ? (
-                <div className="space-y-6">
+                {/* Address Information */}
+                <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                  <div className="px-4 py-5 sm:px-6">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-gray-400" />
+                      Endereço
+                    </h3>
+                  </div>
+                  <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                    <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                      <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Logradouro
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                          {endereco?.logradouro?.logradouro ? 
+                            `${endereco.logradouro.logradouro}, ${endereco.nr_end || 'S/N'}${endereco.ds_complemento_end ? ` - ${endereco.ds_complemento_end}` : ''}` 
+                            : 'Não informado'}
+                        </dd>
+                      </div>
+                      <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Complemento
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                          {endereco?.ds_complemento_end || 'Não informado'}
+                        </dd>
+                      </div>
+                      <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Bairro
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                          {endereco?.logradouro?.bairro?.bairro || 'Não informado'}
+                        </dd>
+                      </div>
+                      <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Cidade/Estado
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                          {endereco?.logradouro?.bairro?.cidade?.cidade && endereco?.logradouro?.bairro?.cidade?.estado?.sigla_estado ? 
+                            `${endereco.logradouro.bairro.cidade.cidade}/${endereco.logradouro.bairro.cidade.estado.sigla_estado}` : 
+                            'Não informado'
+                          }
+                        </dd>
+                      </div>
+                      <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          CEP
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                          {endereco?.logradouro?.nr_cep ? formatCEP(endereco.logradouro.nr_cep) : 'Não informado'}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            ) : activeTab === 'documents' ? (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    Documentos
+                  </h3>
+                  <div className="flex space-x-2">
+                    {isEditingDocuments ? (
                   {/* Personal Information */}
                   <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
                     <div className="px-4 py-5 sm:px-6 flex justify-between items-center">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, User } from 'lucide-react';
+import { X, User, MessageSquare } from 'lucide-react';
+import ComentariosTab from './ComentariosTab';
 import { toast } from 'react-hot-toast';
 import AddAjudanteModal from './AddAjudanteModal';
 import { supabase } from '../lib/supabase';
@@ -20,7 +21,7 @@ interface UnifiedAgregadoModalProps {
 }
 
 const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: UnifiedAgregadoModalProps) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'ajudantes'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'ajudantes' | 'comentarios'>('details');
   const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
   const [ajudantes, setAjudantes] = useState<Ajudante[]>([]);
   const [comentariosCount, setComentariosCount] = useState(0);
@@ -172,18 +173,20 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                     Ajudantes ({ajudantes.length})
                   </button>
                   <button
-                    onClick={() => navigate(`/motoristas/agregados/${motorista.motorista_id}/comentarios`)}
-                    className="group flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
+                    onClick={() => setActiveTab('comentarios')}
+                    className={`${
+                      activeTab === 'comentarios'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-1`}
                   >
-                    <MessageSquare className="w-5 h-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400" />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Comentários
-                      {comentariosCount > 0 && (
-                        <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
-                          {comentariosCount}
-                        </span>
-                      )}
-                    </span>
+                    <MessageSquare className="w-4 h-4" />
+                    Comentários
+                    {comentariosCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                        {comentariosCount}
+                      </span>
+                    )}
                   </button>
                 </nav>
               </div>
@@ -219,6 +222,16 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       </div>
                     </div>
                   </div>
+                )}
+
+                {activeTab === 'comentarios' && (
+                  <ComentariosTab 
+                    motorista_id={motorista.motorista_id}
+                    onUpdateSuccess={() => {
+                      fetchComentariosCount();
+                      onSuccess?.();
+                    }}
+                  />
                 )}
 
                 {activeTab === 'ajudantes' && (
