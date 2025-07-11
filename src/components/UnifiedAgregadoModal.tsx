@@ -4,7 +4,6 @@ import { toast } from 'react-hot-toast';
 import AddAjudanteModal from './AddAjudanteModal';
 import { supabase } from '../lib/supabase';
 import type { Ajudante } from '../types/ajudante';
-import type { Ajudante } from '../types/ajudante';
 
 interface Motorista {
   motorista_id: number;
