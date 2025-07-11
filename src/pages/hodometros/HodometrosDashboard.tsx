@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   BarChart2, Calendar, TrendingUp, Truck, Users, 
   AlertTriangle, Activity, FileText, Camera, X, Eye,
-  Gauge, AlertCircle, FileBarChart, MapPin
+  Gauge, AlertCircle, FileBarChart
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
@@ -754,6 +754,86 @@ const HodometrosDashboard = () => {
           )}
         </div>
 
+        {/* Top 3 Cities */}
+        <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md">
+          <div className="flex items-center gap-2 mb-6">
+            <MapPin className="text-blue-500" size={20} />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              Top 3 Cidades
+            </h3>
+          </div>
+          
+          {topCities.length > 0 ? (
+            <div className="space-y-6">
+              {topCities.map((city, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {city.name}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {city.count} {city.count === 1 ? 'motorista' : 'motoristas'}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Math.max(
+                          5, 
+                          (city.count / Math.max(...topCities.map(c => c.count), 1)) * 100
+                        )}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/30 rounded-2xl">
+              <MapPin className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+              <p className="text-gray-400">Nenhum dado disponível</p>
+            </div>
+          )}
+        </div>
+
+        {/* Status Distribution */}
+        <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md">
+          <div className="flex items-center gap-2 mb-6">
+            <BarChart2 className="text-blue-500" size={20} />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              Distribuição por Status
+            </h3>
+          </div>
+          
+          <div className="space-y-6">
+            {statusDistribution.map((status, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {status.name}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {status.count} {status.count === 1 ? 'motorista' : 'motoristas'}
+                  </span>
+                </div>
+                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      status.name === 'Ativo' ? 'bg-green-500' : 'bg-red-500'
+                    }`}
+                    style={{ 
+                      width: `${Math.max(
+                        5, 
+                        (status.count / Math.max(...statusDistribution.map(s => s.count), 1)) * 100
+                      )}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* KM per Operation Chart */}

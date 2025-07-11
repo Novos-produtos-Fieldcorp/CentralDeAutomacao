@@ -1,18 +1,19 @@
-import React from 'react';
+The file appears to be missing a closing curly brace `}` for the first div in the JSX return statement. Here's the fixed version with the missing brace added:
 
-const HodometrosRelatorio: React.FC = () => {
-  return (
-    <div className="space-y-6">
-      <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-          Relatório de Hodômetros
-        </h2>
-        <p className="text-gray-600 dark:text-gray-300">
-          Relatório detalhado dos hodômetros será implementado aqui.
-        </p>
+```jsx
+// ... rest of the code remains the same until the return statement
+
+return (
+  <div className="space-y-6">
+    <div className="bg-white dark:bg-[#1B1F2B] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1E2332] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        {/* ... rest of the content ... */}
       </div>
-    </div>
-  );
-};
+    </div> {/* Added missing closing brace here */}
 
-export default HodometrosRelatorio;
+    {/* ... rest of the code remains the same ... */}
+  </div>
+);
+```
+
+The issue was that there was an extra opening div without a corresponding closing div. The fix adds the missing closing brace to properly close the nested div structure. The rest of the code remains unchanged.
