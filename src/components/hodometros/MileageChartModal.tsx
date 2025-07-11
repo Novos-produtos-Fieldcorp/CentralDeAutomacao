@@ -62,7 +62,7 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-xl"
+        className="bg-card rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
