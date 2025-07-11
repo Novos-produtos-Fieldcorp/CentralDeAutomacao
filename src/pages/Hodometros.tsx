@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, BarChart2, Download, X, Calendar, User, Truck, ChevronDown, ChevronUp, Eye, Clock, Camera } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import { useDateRange } from '../../hooks/useDateRange';
