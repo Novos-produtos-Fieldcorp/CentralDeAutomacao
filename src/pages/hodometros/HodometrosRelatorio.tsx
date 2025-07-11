@@ -581,7 +581,7 @@ const HodometrosRelatorio = () => {
       {/* Photo Modal */}
       {showPhotoModal && selectedPhoto && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4"
           onClick={() => setShowPhotoModal(false)}
         >
           <div 
@@ -628,7 +628,7 @@ const HodometrosRelatorio = () => {
       {/* Edit Modal */}
       {isEditModalOpen && selectedReading && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4"
           onClick={() => setIsEditModalOpen(false)}
         >
           <div 
