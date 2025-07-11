@@ -621,7 +621,7 @@ const HodometrosDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Period Selector */}
+      <div className="bg-white dark:bg-[#1B1F2B] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
       <div className="bg-white dark:bg-[#1E2332] p-4 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]">
         <PeriodSelector
           periodType={periodType}
@@ -641,7 +641,7 @@ const HodometrosDashboard = () => {
 
       {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
+        <StatCard 
           title="Total de Quilômetros"
           value={totalKm}
           icon={TrendingUp}
@@ -671,7 +671,7 @@ const HodometrosDashboard = () => {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Daily Mileage */}
-        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+        <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-[#334155]  transition-all duration-300">
           <div className="mb-6 flex items-center gap-2">
   <BarChart2 className="text-blue-500" size={20} />
   <h3 className="text-lg font-bold text-black dark:text-white">Quilometragem Diária</h3>
@@ -712,7 +712,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Driver Mileage */}
-        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+        <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-[#334155]  transition-all duration-300">
           <div className="mb-6 flex items-center gap-2">
   <Users className="text-green-500" size={20} />
   <h3 className="text-lg font-bold text-black dark:text-white">Quilometragem por Motorista</h3>
@@ -753,7 +753,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Vehicle Mileage */}
-        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+        <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-[#334155]  transition-all duration-300">
           <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
             <Truck className="text-purple-500 dark:text-purple-400" size={20} />
             Quilometragem por Veículo
@@ -794,7 +794,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Leituras por Motorista Chart and KM per Operation Chart */}
-        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+        <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-[#334155]  transition-all duration-300">
           <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
             <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             Leituras por Motorista
@@ -836,7 +836,7 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* KM per Operation Chart */}
-      <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+      <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-[#334155]  transition-all duration-300">
         <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
           <Gauge className="w-5 h-5 text-orange-500 dark:text-orange-400" />
           Quilômetros por Operação
@@ -877,7 +877,7 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* Inconsistencies Table */}
-      <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+      <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-[#334155]  transition-all duration-300">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
@@ -926,7 +926,7 @@ const HodometrosDashboard = () => {
         
         {filteredHodometros.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-[#1B1F2B]">
               <thead className="p-6 min-h-[calc(100vh-16rem)] bg-white dark:bg-[#1B2537]">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nome</th>
@@ -944,7 +944,7 @@ const HodometrosDashboard = () => {
                   <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Foto</th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-[#1E2332] divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="bg-white dark:bg-[#1B1F2B] divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredHodometros.map((hodometro) => {
                   const isElectric = hodometro.bateria !== null && hodometro.bateria !== undefined;
                   
@@ -1055,7 +1055,7 @@ const HodometrosDashboard = () => {
       {/* Photo Modal */}
       {showPhotoModal && selectedPhoto && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
           onClick={() => setShowPhotoModal(false)}
         >
           <div 
@@ -1139,7 +1139,7 @@ const StatCard = ({
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-      <div className="flex flex-col items-center text-center">
+      <div className="flex flex-col items-center text-center bg-white dark:bg-[#1E2332]">
         <div className={`p-3 ${variant.iconBg} rounded-2xl mb-3`}>
           <Icon className={`w-6 h-6 ${variant.iconColor}`} />
         </div>

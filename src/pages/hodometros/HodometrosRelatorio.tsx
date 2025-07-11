@@ -365,7 +365,7 @@ const HodometrosRelatorio = () => {
   return (
     <div className="space-y-6">
       {/* Filters Section */}
-      <div className="bg-white dark:bg-[#1E2332] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1B1F2B] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row items-center gap-4">
           {/* Search */}
           <div className="relative flex-grow w-full md:w-auto">
@@ -451,7 +451,7 @@ const HodometrosRelatorio = () => {
       </div>
 
       {/* Readings Table */}
-      <div className="bg-white dark:bg-[#1E2332] rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1B1F2B] rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-[#1E2332]">
@@ -465,7 +465,7 @@ const HodometrosRelatorio = () => {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Editar</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-[#1E2332] divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-[#1B1F2B] divide-y divide-gray-200 dark:divide-gray-700">
               {filteredReadings.map((reading) => {
                 const isElectric = reading.bateria !== null && reading.bateria !== undefined;
                 
@@ -581,7 +581,7 @@ const HodometrosRelatorio = () => {
       {/* Photo Modal */}
       {showPhotoModal && selectedPhoto && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
           onClick={() => setShowPhotoModal(false)}
         >
           <div 
@@ -628,7 +628,7 @@ const HodometrosRelatorio = () => {
       {/* Edit Modal */}
       {isEditModalOpen && selectedReading && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
           onClick={() => setIsEditModalOpen(false)}
         >
           <div 
