@@ -622,7 +622,7 @@ const HodometrosDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="bg-white dark:bg-[#1E2332] p-4 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]">
+      <div className="bg-white dark:bg-[#1B1F2B] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
@@ -671,10 +671,10 @@ const HodometrosDashboard = () => {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Daily Mileage */}
-        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+        <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="mb-6 flex items-center gap-2">
   <BarChart2 className="text-blue-500" size={20} />
-  <h3 className="text-lg font-bold text-black dark:text-white">Quilometragem Diária</h3>
+  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Quilometragem Diária</h3>
 </div>
           
           {dailyMileage.length > 0 ? (
@@ -712,11 +712,13 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Driver Mileage */}
-        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+        <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md">
           <div className="mb-6 flex items-center gap-2">
-  <Users className="text-green-500" size={20} />
-  <h3 className="text-lg font-bold text-black dark:text-white">Quilometragem por Motorista</h3>
-</div>
+            <Users className="text-blue-500" size={20} />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              Quilometragem por Motorista
+            </h3>
+          </div>
           
           {driverMileage.length > 0 ? (
             <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
@@ -752,32 +754,34 @@ const HodometrosDashboard = () => {
           )}
         </div>
 
-        {/* Vehicle Mileage */}
-        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
-          <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
-            <Truck className="text-purple-500 dark:text-purple-400" size={20} />
-            Quilometragem por Veículo
-          </h3>
+        {/* Top 3 Cities */}
+        <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md">
+          <div className="flex items-center gap-2 mb-6">
+            <MapPin className="text-blue-500" size={20} />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              Top 3 Cidades
+            </h3>
+          </div>
           
-          {vehicleMileage.length > 0 ? (
-            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-              {vehicleMileage.map((vehicle, index) => (
+          {topCities.length > 0 ? (
+            <div className="space-y-6">
+              {topCities.map((city, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-black dark:text-gray-400">
-                      {vehicle.placa}
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {city.name}
                     </span>
-                    <span className="text-sm font-medium text-black dark:text-white">
-                      {formatNumber(vehicle.totalKm)} km
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {city.count} {city.count === 1 ? 'motorista' : 'motoristas'}
                     </span>
                   </div>
-                  <div className="h-2 bg-purple-200 dark:bg-purple-800 rounded-full overflow-hidden">
+                  <div className="h-2 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-purple-500 rounded-full transition-all duration-300"
+                      className="h-full bg-blue-500 rounded-full transition-all duration-300"
                       style={{ 
                         width: `${Math.max(
                           5, 
-                          (vehicle.totalKm / Math.max(...vehicleMileage.map(v => v.totalKm), 1)) * 100
+                          (city.count / Math.max(...topCities.map(c => c.count), 1)) * 100
                         )}%` 
                       }}
                     />
@@ -786,59 +790,56 @@ const HodometrosDashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-white dark:bg-[#1F2937] rounded-2xl shadow">
-              <Truck className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
+            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-800/30 rounded-2xl">
+              <MapPin className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+              <p className="text-gray-400">Nenhum dado disponível</p>
             </div>
           )}
         </div>
 
-        {/* Leituras por Motorista Chart and KM per Operation Chart */}
-        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
-          <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
-            <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            Leituras por Motorista
-          </h3>
+        {/* Status Distribution */}
+        <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md">
+          <div className="flex items-center gap-2 mb-6">
+            <BarChart2 className="text-blue-500" size={20} />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              Distribuição por Status
+            </h3>
+          </div>
           
-          {driverReadings.length > 0 ? (
-            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-              {driverReadings.map((driver, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-black dark:text-gray-400">
-                      {driver.nome}
-                    </span>
-                    <span className="text-sm font-medium text-black dark:text-white">
-                      {driver.count} {driver.count === 1 ? 'leitura' : 'leituras'}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-white dark:bg-[#1F2937] rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-orange-500 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${Math.max(
-                          5, 
-                          (driver.count / Math.max(...driverReadings.map(d => d.count), 1)) * 100
-                        )}%` 
-                      }}
-                    />
-                  </div>
+          <div className="space-y-6">
+            {statusDistribution.map((status, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {status.name}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {status.count} {status.count === 1 ? 'motorista' : 'motoristas'}
+                  </span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-white dark:bg-[#1F2937] rounded-2xl shadow">
-              <FileBarChart className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
-            </div>
-          )}
+                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      status.name === 'Ativo' ? 'bg-green-500' : 'bg-red-500'
+                    }`}
+                    style={{ 
+                      width: `${Math.max(
+                        5, 
+                        (status.count / Math.max(...statusDistribution.map(s => s.count), 1)) * 100
+                      )}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* KM per Operation Chart */}
-      <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
-        <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
-          <Gauge className="w-5 h-5 text-orange-500 dark:text-orange-400" />
+      <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <Gauge className="w-5 h-5 text-orange-500" />
           Quilômetros por Operação
         </h3>
         
@@ -869,7 +870,7 @@ const HodometrosDashboard = () => {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-white dark:bg-[#1F2937]/30 rounded-2xl">
+          <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-[#1F2937]/30 rounded-2xl">
             <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
             <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
           </div>
@@ -877,7 +878,7 @@ const HodometrosDashboard = () => {
       </div>
 
       {/* Inconsistencies Table */}
-      <div className="bg-white dark:bg-[#1E2332] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-[#334155]  transition-all duration-300">
+      <div className="bg-white dark:bg-[#1B1F2B] p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
@@ -926,7 +927,7 @@ const HodometrosDashboard = () => {
         
         {filteredHodometros.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 dark:bg-[#1B1F2B]">
               <thead className="p-6 min-h-[calc(100vh-16rem)] bg-white dark:bg-[#1B2537]">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nome</th>
@@ -940,7 +941,7 @@ const HodometrosDashboard = () => {
                   {vehicleTypeFilter === 'all' || vehicleTypeFilter === 'ciclomotor' ? (
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Trip</th>
                   ) : null}
-                  
+
                   <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Foto</th>
                 </tr>
               </thead>
@@ -1045,7 +1046,7 @@ const HodometrosDashboard = () => {
             </table>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-40 bg-gray-50 dark:bg-white dark:bg-[#1B2537]/30 rounded-2xl">
+          <div className="flex flex-col items-center justify-center h-40 bg-gray-50 dark:bg-[#1B2537]/30 rounded-2xl">
             <Eye className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
             <p className="text-gray-400">Nenhuma inconsistência encontrada</p>
           </div>

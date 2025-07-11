@@ -558,7 +558,7 @@ const HodometrosLista = () => {
 
   return (
     <div className="space-y-6">
-      {/* Filters Section */}
+      <div className="bg-white dark:bg-[#1B1F2B] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
       <div className="bg-white dark:bg-[#1E2332] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row items-center gap-4">
           {/* Search */}
@@ -611,7 +611,7 @@ const HodometrosLista = () => {
       </div>
 
       {/* Vehicle Mileage Table */}
-      <div className="bg-white dark:bg-[#1E2332] rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1B1F2B] rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-[#1E2332]">
@@ -623,7 +623,7 @@ const HodometrosLista = () => {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-[#1E2332] divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-[#1B1F2B] divide-y divide-gray-200 dark:divide-gray-700">
               {filteredVehicleData.map((vehicle) => (
                 <React.Fragment key={vehicle.veiculo_id}>
                   <tr 
@@ -632,7 +632,7 @@ const HodometrosLista = () => {
                     }`}
                     onClick={() => toggleVehicleExpanded(vehicle.veiculo_id)}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap dark:bg-[#1B1F2B]">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
                           <Truck className="h-5 w-5" />
