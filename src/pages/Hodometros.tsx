@@ -54,7 +54,7 @@ const Hodometros = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-text-primary">Hodômetros</h1>
 
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-card">
+      <div className="bg-white dark:bg-gray-900 rounded-lg">
         <div className="border-b border-card-border relative">
           <div 
             ref={navRef}
