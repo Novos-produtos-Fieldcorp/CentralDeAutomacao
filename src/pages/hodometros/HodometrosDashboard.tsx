@@ -1034,10 +1034,10 @@ const HodometrosDashboard = () => {
                           </button>
                         ) : (
                           <span className="text-gray-400 dark:text-gray-600">
-                            <Camera size={18} className="inline-block opacity-50" />
-                          </span>
-                        )}
-                      </td>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nome</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Data</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Placa</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Hodômetro</th>
                     </tr>
                   );
                 })}

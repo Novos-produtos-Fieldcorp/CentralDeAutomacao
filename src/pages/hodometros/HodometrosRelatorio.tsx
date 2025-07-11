@@ -564,13 +564,13 @@ const HodometrosRelatorio = () => {
                       </button>
                     </td>
                   </tr>
-                );
-              })}
-              {filteredReadings.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    Nenhuma leitura encontrada para o período selecionado
-                  </td>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Data/Hora</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Veículo</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Hodômetro</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Trip</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Foto</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Editar</th>
                 </tr>
               )}
             </tbody>
