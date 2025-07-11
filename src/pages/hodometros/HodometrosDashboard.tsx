@@ -794,7 +794,7 @@ const HodometrosDashboard = () => {
         </div>
 
         {/* Leituras por Motorista Chart and KM per Operation Chart */}
-        <div className="bg-white dark:bg-[#1B2537] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300">
+        <div className="bg-white dark:bg-[#0F1117] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300">
           <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
             <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             Leituras por Motorista
