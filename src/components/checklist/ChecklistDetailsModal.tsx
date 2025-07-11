@@ -627,7 +627,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Overlay background */}
-      <div className="fixed inset-0 bg-transparent" onClick={isEditing ? undefined : onClose}></div>
+      <div className="fixed inset-0 bg-black/50" onClick={isEditing ? undefined : onClose}></div>
       
       {/* Modal container */}
       <div className="fixed inset-0 overflow-y-auto">

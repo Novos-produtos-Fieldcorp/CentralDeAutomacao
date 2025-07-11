@@ -40,7 +40,7 @@ export function BaseModal({
           }
         }}
       >
-        <div className="fixed inset-0 bg-transparent backdrop-blur-sm transition-opacity" aria-hidden="true" />
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity" aria-hidden="true" />
         
         <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">
           &#8203;
