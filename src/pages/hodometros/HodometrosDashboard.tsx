@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Users, Car, TrendingUp, Clock, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { PeriodSelector } from '../../components/hodometros/PeriodSelector';
-import { DriverMileageChart } from '../../components/hodometros/DriverMileageChart';
+import DriverMileageChart from '../../components/hodometros/DriverMileageChart';
 
 interface MileageData {
   id: string;
