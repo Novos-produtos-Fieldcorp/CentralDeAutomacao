@@ -288,7 +288,7 @@ const UnifiedMotoristaModal = ({
       const { error: cnhError } = await supabase
         .from('cnh_ajudante')
         .delete()
-        .eq('ajudante_id', ajudante.id_ajudante);
+        .eq('id_ajudante', ajudante.id_ajudante);
 
       if (cnhError) throw cnhError;
 
