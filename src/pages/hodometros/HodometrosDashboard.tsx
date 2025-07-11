@@ -622,7 +622,7 @@ const HodometrosDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="bg-card p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-card p-4 rounded-xl shadow-card border border-card-border">
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
