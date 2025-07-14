@@ -333,16 +333,33 @@ const MotoristasLista = () => {
         nome: motorista.nome || motorista.nome_motorista || 'N/A', // Usa nome_motorista se nome não estiver disponível
       }));
 
+      // Agrupar ajudantes por motorista_id
+      const motoristasAgrupadosMap = new Map();
+      motoristasMapeados?.forEach(motorista => {
+        if (!motoristasAgrupadosMap.has(motorista.motorista_id)) {
+          motoristasAgrupadosMap.set(motorista.motorista_id, {
+            ...motorista,
+            ajudantes: motorista.nome_ajudante ? [motorista.nome_ajudante] : [],
+          });
+        } else {
+          const existente = motoristasAgrupadosMap.get(motorista.motorista_id);
+          if (motorista.nome_ajudante && !existente.ajudantes.includes(motorista.nome_ajudante)) {
+            existente.ajudantes.push(motorista.nome_ajudante);
+          }
+        }
+      });
+      const motoristasAgrupados = Array.from(motoristasAgrupadosMap.values());
+
       // Extract unique cities from motoristas
       const uniqueCities = new Set<string>();
-      motoristasMapeados?.forEach(motorista => {
+      motoristasAgrupados?.forEach(motorista => {
         if (motorista.nome_cidade) {
           uniqueCities.add(motorista.nome_cidade);
         }
       });
       setCidades(Array.from(uniqueCities).sort());
 
-      setMotoristas(motoristasMapeados || []);
+      setMotoristas(motoristasAgrupados || []);
     } catch (error) {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
@@ -1196,20 +1213,13 @@ const MotoristasLista = () => {
               </svg>
               <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </div>
-            <div className="relative group">
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                         transition-colors flex items-center justify-center"
-                aria-label="Novo Motorista"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-              <div className="opacity-0 group-hover:opacity-100 absolute right-0 top-full mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
-                Novo Motorista
-              </div>
-            </div>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
+              aria-label="Novo Motorista"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
@@ -1281,9 +1291,9 @@ const MotoristasLista = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedData.map((motorista) => (
+                  {paginatedData.map((motorista, index) => (
                     <tr 
-                      key={motorista.motorista_id || Math.random()} 
+                      key={`motorista-${motorista.motorista_id}-${motorista.cpf || ''}-${index}`}
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                         selectedItems.has(motorista.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
@@ -1312,9 +1322,9 @@ const MotoristasLista = () => {
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white" data-component-name="MotoristasLista">
                               {motorista.nome || 'N/A'}
-                              {motorista.nome_ajudante && (
+                              {motorista.ajudantes && motorista.ajudantes.length > 0 && (
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Ajudante: {motorista.nome_ajudante}
+                                  Ajudantes: {motorista.ajudantes.join(', ')}
                                 </div>
                               )}
                             </div>
@@ -1382,8 +1392,11 @@ const MotoristasLista = () => {
                           
                           {statusDropdownOpen === motorista.motorista_id && (
                             <div 
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
+                              onMouseLeave={() => setStatusDropdownOpen(null)}
+                              tabIndex={0}
+                              onBlur={() => setStatusDropdownOpen(null)}
                             >
                               <div className="py-1">
                                 <button
@@ -1500,8 +1513,11 @@ const MotoristasLista = () => {
                           
                           {clienteDropdownOpen === motorista.motorista_id && (
                             <div 
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
+                              onMouseLeave={() => setClienteDropdownOpen(null)}
+                              tabIndex={0}
+                              onBlur={() => setClienteDropdownOpen(null)}
                             >
                               <div className="py-1">
                                 <button
@@ -1750,7 +1766,7 @@ const MotoristasLista = () => {
       <UnifiedMotoristaModal
         isOpen={isUnifiedModalOpen}
         onClose={() => setIsUnifiedModalOpen(false)}
-        motorista={selectedMotorista ? toMotorista(selectedMotorista) : undefined}
+        motorista={selectedMotorista ? toMotorista(selectedMotorista) : null}
         onSuccess={fetchMotoristas}
       />
 
