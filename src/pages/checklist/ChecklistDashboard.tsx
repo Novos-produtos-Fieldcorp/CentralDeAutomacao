@@ -243,7 +243,7 @@ const ChecklistDashboard = () => {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Problems by Category */}
-        <div className="bg-white dark:bg-[#1f2937] rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 mb-6">
             <BarChart2 className="text-blue-500 dark:text-blue-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
@@ -273,7 +273,7 @@ const ChecklistDashboard = () => {
         </div>
 
         {/* Checklists by Driver */}
-        <div className="bg-white dark:bg-[#1f2937] rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+        <div className="bg-white dark:bg-[#1E2332] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 mb-6">
             <Users className="text-blue-500 dark:text-blue-400" size={20} />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
