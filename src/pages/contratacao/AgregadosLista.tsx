@@ -515,30 +515,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             agregadosAgrupadosMap.set(agregado.motorista_id, {
               ...agregado,
               ajudantes: agregado.nome_ajudante ? [agregado.nome_ajudante] : [],
-        
-        console.log('Dados processados:', JSON.parse(JSON.stringify(processedData)));
-        
-        processedData.forEach(motorista => {
-          // Only add non-null and non-undefined city names to the Set
-          if (motorista.nome_cidade) {
-            uniqueCities.add(motorista.nome_cidade);
-          }
-          
-          // Extract vehicle types from veiculo array and direct properties
-          const vehicleTypes = [];
-          
-          // Check direct properties first
-          if (motorista.tipo_veiculo) vehicleTypes.push(motorista.tipo_veiculo);
-          if (motorista.tipo) vehicleTypes.push(motorista.tipo);
-          if (motorista.tipologia) vehicleTypes.push(motorista.tipologia);
-          
-          // Check veiculo array
-          if (motorista.veiculo && motorista.veiculo.length > 0) {
-            motorista.veiculo.forEach((veiculo: { tipo_veiculo?: string; tipo?: string; tipologia?: string }) => {
-              if (veiculo.tipo_veiculo) vehicleTypes.push(veiculo.tipo_veiculo);
-              if (veiculo.tipo) vehicleTypes.push(veiculo.tipo);
-              if (veiculo.tipologia) vehicleTypes.push(veiculo.tipologia);
-
             });
           } else {
             const existente = agregadosAgrupadosMap.get(agregado.motorista_id);
@@ -546,11 +522,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               existente.ajudantes.push(agregado.nome_ajudante);
             }
           }
-          
-          // Add unique non-empty types to the set
-          vehicleTypes
-            .filter(tipo => tipo && typeof tipo === 'string' && tipo.trim() !== '')
-            .forEach(tipo => uniqueVehicleTypes.add(tipo.trim()));
         });
         const agregadosAgrupados = Array.from(agregadosAgrupadosMap.values());
 
