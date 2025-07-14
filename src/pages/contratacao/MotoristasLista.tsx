@@ -333,16 +333,33 @@ const MotoristasLista = () => {
         nome: motorista.nome || motorista.nome_motorista || 'N/A', // Usa nome_motorista se nome não estiver disponível
       }));
 
+      // Agrupar ajudantes por motorista_id
+      const motoristasAgrupadosMap = new Map();
+      motoristasMapeados?.forEach(motorista => {
+        if (!motoristasAgrupadosMap.has(motorista.motorista_id)) {
+          motoristasAgrupadosMap.set(motorista.motorista_id, {
+            ...motorista,
+            ajudantes: motorista.nome_ajudante ? [motorista.nome_ajudante] : [],
+          });
+        } else {
+          const existente = motoristasAgrupadosMap.get(motorista.motorista_id);
+          if (motorista.nome_ajudante && !existente.ajudantes.includes(motorista.nome_ajudante)) {
+            existente.ajudantes.push(motorista.nome_ajudante);
+          }
+        }
+      });
+      const motoristasAgrupados = Array.from(motoristasAgrupadosMap.values());
+
       // Extract unique cities from motoristas
       const uniqueCities = new Set<string>();
-      motoristasMapeados?.forEach(motorista => {
+      motoristasAgrupados?.forEach(motorista => {
         if (motorista.nome_cidade) {
           uniqueCities.add(motorista.nome_cidade);
         }
       });
       setCidades(Array.from(uniqueCities).sort());
 
-      setMotoristas(motoristasMapeados || []);
+      setMotoristas(motoristasAgrupados || []);
     } catch (error) {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
@@ -1305,9 +1322,9 @@ const MotoristasLista = () => {
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white" data-component-name="MotoristasLista">
                               {motorista.nome || 'N/A'}
-                              {motorista.nome_ajudante && (
+                              {motorista.ajudantes && motorista.ajudantes.length > 0 && (
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Ajudante: {motorista.nome_ajudante}
+                                  Ajudantes: {motorista.ajudantes.join(', ')}
                                 </div>
                               )}
                             </div>
