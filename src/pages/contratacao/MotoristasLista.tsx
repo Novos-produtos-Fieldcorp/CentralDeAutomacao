@@ -1213,20 +1213,13 @@ const MotoristasLista = () => {
               </svg>
               <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </div>
-            <div className="relative group">
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                         transition-colors flex items-center justify-center"
-                aria-label="Novo Motorista"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-              <div className="opacity-0 group-hover:opacity-100 absolute right-0 top-full mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
-                Novo Motorista
-              </div>
-            </div>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
+              aria-label="Novo Motorista"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
@@ -1298,9 +1291,9 @@ const MotoristasLista = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedData.map((motorista) => (
+                  {paginatedData.map((motorista, index) => (
                     <tr 
-                      key={motorista.motorista_id || Math.random()} 
+                      key={`motorista-${motorista.motorista_id}-${motorista.cpf || ''}-${index}`}
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                         selectedItems.has(motorista.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
@@ -1399,8 +1392,11 @@ const MotoristasLista = () => {
                           
                           {statusDropdownOpen === motorista.motorista_id && (
                             <div 
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
+                              onMouseLeave={() => setStatusDropdownOpen(null)}
+                              tabIndex={0}
+                              onBlur={() => setStatusDropdownOpen(null)}
                             >
                               <div className="py-1">
                                 <button
@@ -1517,8 +1513,11 @@ const MotoristasLista = () => {
                           
                           {clienteDropdownOpen === motorista.motorista_id && (
                             <div 
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
+                              onMouseLeave={() => setClienteDropdownOpen(null)}
+                              tabIndex={0}
+                              onBlur={() => setClienteDropdownOpen(null)}
                             >
                               <div className="py-1">
                                 <button
@@ -1767,7 +1766,7 @@ const MotoristasLista = () => {
       <UnifiedMotoristaModal
         isOpen={isUnifiedModalOpen}
         onClose={() => setIsUnifiedModalOpen(false)}
-        motorista={selectedMotorista ? toMotorista(selectedMotorista) : undefined}
+        motorista={selectedMotorista ? toMotorista(selectedMotorista) : null}
         onSuccess={fetchMotoristas}
       />
 

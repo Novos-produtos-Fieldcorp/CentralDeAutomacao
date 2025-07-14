@@ -101,6 +101,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const [conversationId, setConversationId] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [inboxes, setInboxes] = useState<any[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -709,6 +710,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         });
 
         setFiles([]);
+        setAudioBlob(null); // Limpar áudio ao carregar mensagens
 
         setTimeout(() => {
           if (messagesEndRef.current) {
@@ -1015,64 +1017,19 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const recorder = new MediaRecorder(stream);
         mediaRecorderRef.current = recorder;
+        const chunks: BlobPart[] = [];
 
-        recorder.ondataavailable = async (event) => {
+        recorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
-            const audioBlob = new Blob([event.data], { type: 'audio/webm' });
-            const audioFile = createFile(audioBlob, 'audio-message.webm', 'audio/webm');
-
-            const tempMessage: Message = {
-              id: Date.now(),
-              content: 'Mensagem de voz',
-              created_at: formatDateTime(new Date()),
-              message_type: 'outgoing',
-              content_type: 'audio',
-              status: 'sending'
-            };
-
-            setActiveConversation(prev => {
-              if (!prev) return null;
-              return {
-                ...prev,
-                messages: [...prev.messages, tempMessage]
-              };
-            });
-
-            const formData = new FormData();
-            formData.append('attachments[]', audioFile);
-
-            const response = await api.post(
-              `/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`,
-              formData,
-              {
-                headers: {
-                  'Content-Type': 'multipart/form-data'
-                }
-              }
-            );
-
-            if (response.data) {
-              setActiveConversation(prev => {
-                if (!prev) return null;
-                return {
-                  ...prev,
-                  messages: prev.messages.map(msg => 
-                    msg.id === tempMessage.id 
-                      ? { ...msg, id: response.data.id, status: 'sent' }
-                      : msg
-                  )
-                };
-              });
-
-              await loadConversationMessages(activeConversation.id);
-
-              setTimeout(() => {
-                if (messagesEndRef.current) {
-                  messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-                }
-              }, 100);
-            }
+            chunks.push(event.data);
           }
+        };
+
+        recorder.onstop = () => {
+          const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+          setAudioBlob(audioBlob);
+          setIsRecording(false);
+          mediaRecorderRef.current = null;
         };
 
         recorder.start();
@@ -1083,11 +1040,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         setIsRecording(false);
         mediaRecorderRef.current = null;
       }
-
     } catch (error) {
       console.error('Error handling voice message:', error);
       handleError(error);
-      
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
@@ -1718,6 +1673,26 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               {authError && (
                 <div className="mb-2 p-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 rounded text-sm">
                   Erro de autenticação. Por favor, verifique suas credenciais.
+                </div>
+              )}
+              {(files.length > 0 || audioBlob) && (
+                <div className="flex gap-2 mt-2">
+                  {files.map((f, idx) => (
+                    <div key={idx} className="relative">
+                      {f.type === 'image' ? (
+                        <img src={f.preview} alt="preview" className="w-12 h-12 object-cover rounded" />
+                      ) : (
+                        <File className="w-8 h-8 text-gray-500" />
+                      )}
+                      <button type="button" onClick={() => setFiles(files.filter((_, i) => i !== idx))} className="absolute top-0 right-0 bg-white rounded-full p-1"><X className="w-3 h-3" /></button>
+                    </div>
+                  ))}
+                  {audioBlob && (
+                    <div className="flex items-center gap-2 bg-gray-100 p-2 rounded">
+                      <audio controls src={URL.createObjectURL(audioBlob)} />
+                      <button type="button" onClick={() => setAudioBlob(null)} className="text-red-500"><X className="w-4 h-4" /></button>
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex items-center space-x-2">
