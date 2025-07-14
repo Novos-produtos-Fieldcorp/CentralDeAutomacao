@@ -58,11 +58,11 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-xl"
+        className="bg-card rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
