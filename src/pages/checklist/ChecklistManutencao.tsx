@@ -312,7 +312,7 @@ const ChecklistManutencao = () => {
           {alerts.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 dark:bg-[#1f2937] rounded-xl border border-gray-200 dark:border-gray-700">
               <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
-            className="bg-white dark:bg-[#1f2937] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-none border-none"
+              <p className="text-gray-600 dark:text-gray-300">
                 Nenhum veículo necessita de manutenção no momento
               </p>
             </div>
