@@ -287,7 +287,7 @@ const ChecklistManutencao = () => {
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-[#1f2937] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <PeriodSelector
           periodType={periodType}
           dateRange={dateRange}
@@ -302,7 +302,7 @@ const ChecklistManutencao = () => {
         />
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-[#1f2937] rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <Truck className="text-blue-500" />
           Veículos que Precisam de Atenção
@@ -310,7 +310,7 @@ const ChecklistManutencao = () => {
 
         <div className="space-y-4">
           {alerts.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="text-center py-8 bg-gray-50 dark:bg-[#1f2937]/50 rounded-xl border border-gray-200 dark:border-gray-700">
               <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
               <p className="text-gray-600 dark:text-gray-400">
                 Nenhum veículo necessita de manutenção no momento
@@ -318,9 +318,9 @@ const ChecklistManutencao = () => {
             </div>
           ) : (
             alerts.map((alert) => (
-              <div 
+              <div
                 key={alert.id}
-                className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm"
+                className="bg-gray-50 dark:bg-[#1f2937]/50 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm"
               >
                 {/* Alert Header */}
                 <div 
@@ -388,7 +388,7 @@ const ChecklistManutencao = () => {
                       </h4>
                       <div className="grid grid-cols-1 gap-4">
                         {alert.componentes.map((componente, index) => (
-                          <div key={index} className="bg-white dark:bg-gray-700/50 rounded-lg p-4 space-y-4 shadow-sm">
+                          <div key={index} className="bg-white dark:bg-[#1f2937]/70 rounded-lg p-4 space-y-4 shadow-sm">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <AlertTriangle className="w-5 h-5 text-yellow-500" />
