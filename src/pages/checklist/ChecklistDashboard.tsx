@@ -357,7 +357,7 @@ const StatCard = ({
   const variant = colorVariants[color];
 
   return (
-    <div className="bg-white dark:bg-[#1E2332] p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+    <div className="bg-white dark:bg-[#1E2332] p-6 rounded-xl shadow-none hover:shadow-none transition-all duration-300 transform hover:-translate-y-1">
       <div className="flex flex-col items-center text-center">
         <div className={`p-3 ${variant.iconBg} rounded-xl mb-3`}>
           <Icon className={`w-6 h-6 ${variant.iconColor}`} />
