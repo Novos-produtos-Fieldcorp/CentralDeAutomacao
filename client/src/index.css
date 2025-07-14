@@ -34,7 +34,8 @@
   }
 
   body {
-    @apply bg-background text-text-primary;
+    background-color: var(--background);
+    color: var(--text-primary);
   }
   
   /* Aplica transição apenas para mudanças de tema */
