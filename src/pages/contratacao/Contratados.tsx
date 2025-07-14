@@ -70,6 +70,7 @@ export interface ViewContratado {
     marca?: string;
     tipo?: string;
   }>;
+  ajudantes?: string[];
 }
 
 const Contratados = () => {
@@ -373,19 +374,30 @@ const Contratados = () => {
       // Processar os dados com os status ativos
       const processedData = data?.map(motorista => {
         const ativo = ativosStatus[motorista.motorista_id] === true;
-        
-        // Log para depuração
-        console.log('Processando motorista ID:', motorista.motorista_id, 
-                   'ativo:', ativo, 
-                   'tipo:', typeof ativo);
-        
         return {
           ...motorista,
           ativo: ativo
         };
       }) || [];
-      
-      console.log('Dados processados:', JSON.parse(JSON.stringify(processedData)));
+
+      // Agrupar ajudantes por motorista_id
+      const contratadosAgrupadosMap = new Map();
+      processedData.forEach(contratado => {
+        if (!contratadosAgrupadosMap.has(contratado.motorista_id)) {
+          contratadosAgrupadosMap.set(contratado.motorista_id, {
+            ...contratado,
+            ajudantes: contratado.nome_ajudante ? [contratado.nome_ajudante] : [],
+          });
+        } else {
+          const existente = contratadosAgrupadosMap.get(contratado.motorista_id);
+          if (contratado.nome_ajudante && !existente.ajudantes.includes(contratado.nome_ajudante)) {
+            existente.ajudantes.push(contratado.nome_ajudante);
+          }
+        }
+      });
+      const contratadosAgrupados = Array.from(contratadosAgrupadosMap.values());
+
+      console.log('Dados processados:', JSON.parse(JSON.stringify(contratadosAgrupados)));
       
       processedData.forEach(motorista => {
         if (motorista.nome_cidade) {
@@ -405,7 +417,7 @@ const Contratados = () => {
       setCidades(Array.from(uniqueCities).sort());
       setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
 
-      setContratados(processedData);
+      setContratados(contratadosAgrupados);
     } catch (error) {
       console.error('Error fetching contratados:', error);
       toast.error('Erro ao carregar contratados');
@@ -1582,6 +1594,11 @@ const Contratados = () => {
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {motorista.nome_motorista || ''}
+                              {motorista.ajudantes && motorista.ajudantes.length > 0 && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Ajudantes: {motorista.ajudantes.join(', ')}
+                                </div>
+                              )}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
                               {motorista.funcao}

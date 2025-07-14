@@ -76,6 +76,7 @@
     cor?: string | null;
     tipo_veiculo?: string | null;
     tipo?: string | null;
+    ajudantes?: string[];
   }
 
   const Contratados = ({ onSuccess }: AgregadosListaProps) => {
@@ -412,41 +413,34 @@
         // Processar os dados com os status ativos
         const processedData = data?.map(motorista => {
           const ativo = ativosStatus[motorista.motorista_id] === true;
-          
-          // Log para depuração
-          console.log('Processando motorista ID:', motorista.motorista_id, 
-                    'ativo:', ativo, 
-                    'tipo:', typeof ativo);
-          
           return {
             ...motorista,
             ativo: ativo
           };
         }) || [];
-        
-        console.log('Dados processados:', JSON.parse(JSON.stringify(processedData)));
-        
-        processedData.forEach(motorista => {
-          // Only add non-null and non-undefined city names to the Set
-          if (motorista.nome_cidade) {
-            uniqueCities.add(motorista.nome_cidade);
-          }
-          
-          // Extract vehicle types
-          if (motorista.veiculo && motorista.veiculo.length > 0) {
-            motorista.veiculo.forEach((veiculo: { tipo_veiculo?: string }) => {
-              if (veiculo.tipo_veiculo) {
-                uniqueVehicleTypes.add(veiculo.tipo_veiculo);
-              }
+
+        // Agrupar ajudantes por motorista_id
+        const agregadosAgrupadosMap = new Map();
+        processedData.forEach(agregado => {
+          if (!agregadosAgrupadosMap.has(agregado.motorista_id)) {
+            agregadosAgrupadosMap.set(agregado.motorista_id, {
+              ...agregado,
+              ajudantes: agregado.nome_ajudante ? [agregado.nome_ajudante] : [],
             });
+          } else {
+            const existente = agregadosAgrupadosMap.get(agregado.motorista_id);
+            if (agregado.nome_ajudante && !existente.ajudantes.includes(agregado.nome_ajudante)) {
+              existente.ajudantes.push(agregado.nome_ajudante);
+            }
           }
         });
-        
+        const agregadosAgrupados = Array.from(agregadosAgrupadosMap.values());
+
         // Filter out null or undefined values before setting the state
         setCidades(Array.from(uniqueCities).filter((c): c is string => c != null).sort());
         setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
 
-        setContratados(processedData);
+        setContratados(agregadosAgrupados);
       } catch (error) {
         console.error('Error fetching contratados:', error);
         toast.error('Erro ao carregar contratados');
@@ -1509,6 +1503,11 @@
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
                                 {motorista.nome_motorista || ''}
+                                {motorista.ajudantes && motorista.ajudantes.length > 0 && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    Ajudantes: {motorista.ajudantes.join(', ')}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
