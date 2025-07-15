@@ -61,6 +61,17 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Custom text colors for the app
+        text: {
+          primary: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
+          muted: "var(--text-muted)",
+        },
+        // Custom background colors
+        "background-light": "var(--background-light)",
+        "background-lighter": "var(--background-lighter)",
+        "card-hover": "var(--card-hover)",
+        "card-border": "var(--card-border)",
       },
       keyframes: {
         "accordion-down": {
