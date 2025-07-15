@@ -1217,9 +1217,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                       e.stopPropagation();
                       clearFilter('status');
                     }}
-                    className="absolute right-8 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10"
+                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
                   >
-                    <X size={16} />
+                    <X size={14} />
                   </button>
                 )}
               </div>
@@ -1304,9 +1304,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                       e.stopPropagation();
                       clearFilter('cliente');
                     }}
-                    className="absolute right-8 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10"
+                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
                   >
-                    <X size={16} />
+                    <X size={14} />
                   </button>
                 )}
               </div>
@@ -1374,9 +1374,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                       e.stopPropagation();
                       clearFilter('cidade');
                     }}
-                    className="absolute right-8 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10"
+                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
                   >
-                    <X size={16} />
+                    <X size={14} />
                   </button>
                 )}
               </div>
@@ -1434,9 +1434,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                       e.stopPropagation();
                       clearFilter('tipoVeiculo');
                     }}
-                    className="absolute right-8 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10"
+                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
                   >
-                    <X size={16} />
+                    <X size={14} />
                   </button>
                 )}
               </div>
