@@ -647,7 +647,7 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Peso
+                    Peso (kg)
                   </label>
                   <input
                     type="text"
@@ -660,7 +660,7 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Cubagem
+                    Cubagem (m³)
                   </label>
                   <input
                     type="text"
