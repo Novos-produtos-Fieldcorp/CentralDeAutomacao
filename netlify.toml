@@ -8,7 +8,7 @@
 
 # Configuração das funções serverless
 [functions]
-  directory = "netlify/functions"
+  functions = "netlify/functions"
   node_bundler = "esbuild"
 
 # Redirecionamentos para API

@@ -1,5 +1,5 @@
-const { Pool } = require('pg');
-const { neon } = require('@neondatabase/serverless');
+import { Pool } from 'pg';
+import { neon } from '@neondatabase/serverless';
 
 // Configuração do banco de dados
 const getDatabaseConnection = () => {
@@ -16,7 +16,7 @@ const getDatabaseConnection = () => {
 };
 
 // Função principal para lidar com requests da API
-exports.handler = async (event, context) => {
+export const handler = async (event, context) => {
   // Configurar CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
