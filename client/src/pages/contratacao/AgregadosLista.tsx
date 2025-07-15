@@ -103,6 +103,7 @@ const checkVehicleTypeMatch = (motorista: ViewContratado, filters: string[]): bo
 // Status options for dropdown
 const STATUS_OPTIONS = [
   { value: 'cadastrado', label: 'Cadastrado', color: 'bg-gray-100 dark:bg-gray-700' },
+  { value: 'Cadastrado', label: 'Cadastrado', color: 'bg-gray-100 dark:bg-gray-700' },
   { value: 'qualificado', label: 'Qualificado', color: 'bg-blue-100 dark:bg-blue-900/30' },
   { value: 'documentacao', label: 'Documentação', color: 'bg-yellow-100 dark:bg-yellow-900/30' },
   { value: 'contrato_enviado', label: 'Contrato Enviado', color: 'bg-purple-100 dark:bg-purple-900/30' },
@@ -1671,6 +1672,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                 motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200' :
                                 motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200' :
                                 motorista.st_cadastro === 'gestao_risco' ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200' :
+                                motorista.st_cadastro === 'cadastrado' || motorista.st_cadastro === 'Cadastrado' ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200' :
                                 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                               }
                             />
