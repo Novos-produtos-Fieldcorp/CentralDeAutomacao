@@ -19,6 +19,7 @@ import Pagination from '../../components/Pagination';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
+import { TableDropdown } from '../../components/TableDropdown';
 
 // Interface para a view de contratados
 export interface ViewContratado {
@@ -72,6 +73,18 @@ export interface ViewContratado {
   }>;
   ajudantes?: string[];
 }
+
+// Status options for dropdown - matching database values exactly
+const STATUS_OPTIONS = [
+  { value: 'Cadastrado', label: 'Cadastrado', color: 'bg-gray-100 dark:bg-gray-700' },
+  { value: 'qualificado', label: 'Qualificado', color: 'bg-blue-100 dark:bg-blue-900/30' },
+  { value: 'documentacao', label: 'Documentação', color: 'bg-yellow-100 dark:bg-yellow-900/30' },
+  { value: 'contrato_enviado', label: 'Contrato Enviado', color: 'bg-purple-100 dark:bg-purple-900/30' },
+  { value: 'contratado', label: 'Contratado', color: 'bg-green-100 dark:bg-green-900/30' },
+  { value: 'repescagem', label: 'Repescagem', color: 'bg-orange-100 dark:bg-orange-900/30' },
+  { value: 'gestao_risco', label: 'Gestão de Risco', color: 'bg-rose-100 dark:bg-rose-900/30' },
+  { value: 'rejeitado', label: 'Rejeitado', color: 'bg-red-100 dark:bg-red-900/30' }
+];
 
 const Contratados = () => {
   const { query, companyId } = useCompanyData();
@@ -257,8 +270,7 @@ const Contratados = () => {
     };
   };
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
-  const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
+
   const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [customDateRange, setCustomDateRange] = useState<{
@@ -280,23 +292,13 @@ const Contratados = () => {
       if (contextMenu.visible) {
         setContextMenu({ ...contextMenu, visible: false });
       }
-      
-      // Close any open status dropdown
-      if (statusDropdownOpen !== null) {
-        setStatusDropdownOpen(null);
-      }
-      
-      // Close any open cliente dropdown
-      if (clienteDropdownOpen !== null) {
-        setClienteDropdownOpen(null);
-      }
     };
 
     document.addEventListener('click', handleClick);
     return () => {
       document.removeEventListener('click', handleClick);
     };
-  }, [contextMenu.visible, statusDropdownOpen, clienteDropdownOpen]);
+  }, [contextMenu.visible]);
 
   const fetchContratados = async () => {
     try {
@@ -740,26 +742,10 @@ const Contratados = () => {
     });
   };
 
-  const toggleStatusDropdown = (e: React.MouseEvent, motoristaId: number) => {
-    e.stopPropagation();
-    if (statusDropdownOpen === motoristaId) {
-      setStatusDropdownOpen(null);
-    } else {
-      setStatusDropdownOpen(motoristaId);
-    }
-  };
 
-  const toggleClienteDropdown = (e: React.MouseEvent, motoristaId: number) => {
-    e.stopPropagation();
-    if (clienteDropdownOpen === motoristaId) {
-      setClienteDropdownOpen(null);
-    } else {
-      setClienteDropdownOpen(motoristaId);
-    }
-  };
 
-  const handleUpdateStatus = async (e: React.MouseEvent, motorista: ViewContratado, newStatus: string) => {
-    e.stopPropagation();
+  const handleUpdateStatus = async (e: React.MouseEvent | null, motorista: ViewContratado, newStatus: string) => {
+    if (e) e.stopPropagation();
     try {
       setUpdatingStatus(motorista.motorista_id || 0);
       
@@ -917,8 +903,8 @@ const Contratados = () => {
     }
   };
 
-  const handleUpdateCliente = async (e: React.MouseEvent, motorista: ViewContratado, clienteId: number | null) => {
-    e.stopPropagation();
+  const handleUpdateCliente = async (e: React.MouseEvent | null, motorista: ViewContratado, clienteId: number | null) => {
+    if (e) e.stopPropagation();
     try {
       setUpdatingCliente(motorista.motorista_id || 0);
       
@@ -1632,128 +1618,24 @@ const Contratados = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
-                          <div className="flex items-center">
-                            <button
-                              onClick={(e) => toggleStatusDropdown(e, motorista.motorista_id || 0)}
-                              className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30' :
-                                motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 dark:bg-red-900/30' :
-                                motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
-                                motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 dark:bg-blue-900/30' :
-                                motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 dark:bg-purple-900/30' :
-                                motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 dark:bg-orange-900/30' :
-                                motorista.st_cadastro === 'gestao_risco' ? 'bg-rose-100 dark:bg-rose-900/30' :
-                                'bg-gray-100 dark:bg-gray-700'
-                              }`}
-                              title={!motorista.st_cadastro ? 'Indefinido' : 
-                                     motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' :
-                                     motorista.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
-                                     motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
-                            >
-                              <span className="truncate max-w-[130px] text-left">
-                                {!motorista.st_cadastro ? 'Indefinido' : 
-                                 motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' :
-                                 motorista.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
-                                 motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
-                              </span>
-                              <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
-                            </button>
-                          </div>
-                          
-                          {statusDropdownOpen === motorista.motorista_id && (
-                            <div 
-                              id={`status-dropdown-${motorista.motorista_id}`}
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
-                              onClick={(e) => e.stopPropagation()}
-                              onMouseLeave={() => setStatusDropdownOpen(null)}
-                              tabIndex={0}
-                              onBlur={() => setStatusDropdownOpen(null)}
-                            >
-                              <div className="py-1">
-                                <button
-                                  onClick={(e) => handleUpdateStatus(e, motorista, 'cadastrado')}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    motorista.st_cadastro === 'cadastrado' 
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Cadastrado
-                                </button>
-                                <button
-                                  onClick={(e) => handleUpdateStatus(e, motorista, 'qualificado')}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    motorista.st_cadastro === 'qualificado' 
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Qualificado
-                                </button>
-                                <button
-                                  onClick={(e) => handleUpdateStatus(e, motorista, 'documentacao')}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    motorista.st_cadastro === 'documentacao' 
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Documentação
-                                </button>
-                                <button
-                                  onClick={(e) => handleUpdateStatus(e, motorista, 'gestao_risco')}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    motorista.st_cadastro === 'gestao_risco' 
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Gestão de Risco
-                                </button>
-                                <button
-                                  onClick={(e) => handleUpdateStatus(e, motorista, 'contrato_enviado')}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    motorista.st_cadastro === 'contrato_enviado' 
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Contrato Enviado
-                                </button>
-                                <button
-                                  onClick={(e) => handleUpdateStatus(e, motorista, 'contratado')}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    motorista.st_cadastro === 'contratado' 
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Contratado
-                                </button>
-                                <button
-                                  onClick={(e) => handleUpdateStatus(e, motorista, 'repescagem')}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    motorista.st_cadastro === 'repescagem' 
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Repescagem
-                                </button>
-                                <button
-                                  onClick={(e) => handleUpdateStatus(e, motorista, 'rejeitado')}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    motorista.st_cadastro === 'rejeitado' 
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Rejeitado
-                                </button>
-
-                              </div>
-                            </div>
-                          )}
+                          <TableDropdown
+                            value={motorista.st_cadastro || ''}
+                            options={STATUS_OPTIONS}
+                            onSelect={(value) => handleUpdateStatus(null, motorista, value as string)}
+                            placeholder="Selecionar Status"
+                            disabled={updatingStatus === motorista.motorista_id}
+                            buttonClassName={
+                              motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' :
+                              motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200' :
+                              motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200' :
+                              motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' :
+                              motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200' :
+                              motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200' :
+                              motorista.st_cadastro === 'gestao_risco' ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200' :
+                              motorista.st_cadastro === 'cadastrado' || motorista.st_cadastro === 'Cadastrado' ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200' :
+                              'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                            }
+                          />
                           
                           {updatingStatus === motorista.motorista_id && (
                             <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
@@ -1764,60 +1646,26 @@ const Contratados = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="relative">
-                          <div className="flex items-center">
-                            <button
-                              onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id || 0)}
-                              className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                motorista.cliente_id 
-                                  ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor || 
-                                    'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
-                                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
-                              }`}
-                              title={motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
-                            >
-                              <span className="truncate max-w-[130px] text-left">
-                                {motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
-                              </span>
-                              <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
-                            </button>
-                          </div>
-                          
-                          {clienteDropdownOpen === motorista.motorista_id && (
-                            <div 
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
-                              onClick={(e) => e.stopPropagation()}
-                              onMouseLeave={() => setClienteDropdownOpen(null)}
-                              tabIndex={0}
-                              onBlur={() => setClienteDropdownOpen(null)}
-                            >
-                              <div className="py-1">
-                                <button
-                                  onClick={(e) => handleUpdateCliente(e, motorista, null)}
-                                  className={`block w-full text-left px-4 py-2 text-sm ${
-                                    !motorista.cliente_id
-                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  Sem cliente
-                                </button>
-                                
-                                {clientes.map(cliente => (
-                                  <button
-                                    key={cliente.cliente_id}
-                                    onClick={(e) => handleUpdateCliente(e, motorista, cliente.cliente_id)}
-                                    className={`block w-full text-left px-4 py-2 text-sm truncate ${
-                                      motorista.cliente_id === cliente.cliente_id
-                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' 
-                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                    }`}
-                                  >
-                                    {cliente.nome}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                          <TableDropdown
+                            value={motorista.cliente_id?.toString() || ''}
+                            options={[
+                              { value: '', label: 'Sem cliente', color: 'bg-gray-100 dark:bg-gray-700' },
+                              ...clientes.map(cliente => ({
+                                value: cliente.cliente_id.toString(),
+                                label: cliente.nome,
+                                color: cliente.cor || 'bg-gray-100 dark:bg-gray-700'
+                              }))
+                            ]}
+                            onSelect={(value) => handleUpdateCliente(null, motorista, value ? parseInt(value) : null)}
+                            placeholder="Selecionar Cliente"
+                            disabled={updatingCliente === motorista.motorista_id}
+                            buttonClassName={
+                              motorista.cliente_id 
+                                ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor || 
+                                  'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
+                                : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
+                            }
+                          />
                           
                           {updatingCliente === motorista.motorista_id && (
                             <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
