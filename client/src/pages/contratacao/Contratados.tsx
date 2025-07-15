@@ -76,7 +76,6 @@ export interface ViewContratado {
 
 // Status options for dropdown - matching database values exactly
 const STATUS_OPTIONS = [
-  { value: 'cadastrado', label: 'Cadastrado', color: 'bg-gray-100 dark:bg-gray-700' },
   { value: 'Cadastrado', label: 'Cadastrado', color: 'bg-gray-100 dark:bg-gray-700' },
   { value: 'qualificado', label: 'Qualificado', color: 'bg-blue-100 dark:bg-blue-900/30' },
   { value: 'documentacao', label: 'Documentação', color: 'bg-yellow-100 dark:bg-yellow-900/30' },
