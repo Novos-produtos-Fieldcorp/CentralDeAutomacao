@@ -124,11 +124,21 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
       });
       if (!response.ok) throw new Error('Erro ao consultar CPF');
       const data = await response.json();
-      if (!data || !data.nome || !data.data_nascimento) throw new Error('Dados não encontrados para este CPF');
+      const pessoa = data.CadastroPessoaFisica || {};
+      const receita = data.ReceitaFederalCpf || {};
+      const endereco = (pessoa.Enderecos && pessoa.Enderecos[0]) || {};
       setFormData(prev => ({
         ...prev,
-        nome: data.nome,
-        dt_nascimento: data.data_nascimento
+        nome: pessoa.Nome || receita.NomePessoaFisica || prev.nome,
+        dt_nascimento: (pessoa.DataNascimento || receita.DataNascimento || '').substring(0, 10) || prev.dt_nascimento,
+        telefone: pessoa.Telefones && pessoa.Telefones[0] ? pessoa.Telefones[0].TelefoneComDDD.replace(/\D/g, '') : prev.telefone,
+        logradouro: endereco.Logradouro || prev.logradouro,
+        numero: endereco.Numero || prev.numero,
+        complemento: endereco.Complemento || prev.complemento,
+        bairro: endereco.Bairro || prev.bairro,
+        cidade: endereco.Cidade || prev.cidade,
+        estado: endereco.UF || prev.estado,
+        cep: endereco.CEP || prev.cep
       }));
       toast.success('Dados do CPF preenchidos!');
     } catch (error) {
@@ -141,12 +151,17 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
     try {
       const response = await fetch(`https://placas.fipeapi.com.br/placas/${placa}?key=e8f29d24d6680c3ea04acd04aecc3de8`);
       if (!response.ok) throw new Error('Erro ao consultar placa');
-      const data = await response.json();
-      if (!data || !data.marca || !data.modelo) throw new Error('Dados não encontrados para esta placa');
+      const result = await response.json();
+      const veiculo = result.data?.veiculo || {};
+      const fipe = result.data?.fipes && result.data.fipes[0] ? result.data.fipes[0] : {};
       setFormData(prev => ({
         ...prev,
-        marca: data.marca,
-        tipo: data.modelo
+        marca: fipe.marca || veiculo.marca || veiculo.marca_modelo || prev.marca,
+        tipo: fipe.modelo || veiculo.marca_modelo || prev.tipo,
+        ano: veiculo.ano ? veiculo.ano.split('/')[0] : prev.ano,
+        cor: veiculo.cor || prev.cor,
+        combustivel: veiculo.combustivel || prev.combustivel,
+        tipologia: veiculo.tipo_de_veiculo || veiculo.tipo_carroceria || prev.tipologia
       }));
       toast.success('Dados da placa preenchidos!');
     } catch (error) {
