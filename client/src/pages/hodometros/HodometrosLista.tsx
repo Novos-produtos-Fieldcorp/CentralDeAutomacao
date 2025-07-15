@@ -559,7 +559,7 @@ const HodometrosLista = () => {
   return (
     <div className="space-y-6">
       {/* Filters Section */}
-      <div className="bg-white dark:bg-[#1E2332] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row items-center gap-4">
           {/* Search */}
           <div className="relative flex-grow w-full md:w-auto">
@@ -568,7 +568,7 @@ const HodometrosLista = () => {
               placeholder="Buscar por placa, marca, modelo ou motorista..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-[#1E2332] border border-gray-200 
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
                        dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
                        focus:border-blue-500 text-gray-900 dark:text-gray-100"
             />
@@ -611,10 +611,10 @@ const HodometrosLista = () => {
       </div>
 
       {/* Vehicle Mileage Table */}
-      <div className="bg-white dark:bg-[#1E2332] rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-[#1E2332]">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total KM</th>
@@ -623,7 +623,7 @@ const HodometrosLista = () => {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-[#1E2332] divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredVehicleData.map((vehicle) => (
                 <React.Fragment key={vehicle.veiculo_id}>
                   <tr 
