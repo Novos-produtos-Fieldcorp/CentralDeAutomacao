@@ -47,7 +47,7 @@ const netlifyConfig = fs.readFileSync(path.join(__dirname, 'netlify.toml'), 'utf
 const configs = [
   { name: 'Build command', check: netlifyConfig.includes('command = "npm run build"') },
   { name: 'Publish directory', check: netlifyConfig.includes('publish = "dist/public"') },
-  { name: 'Functions directory', check: netlifyConfig.includes('functions = "netlify/functions"') },
+  { name: 'Functions directory', check: netlifyConfig.includes('directory = "netlify/functions"') },
   { name: 'Redirects', check: netlifyConfig.includes('[[redirects]]') }
 ];
 
