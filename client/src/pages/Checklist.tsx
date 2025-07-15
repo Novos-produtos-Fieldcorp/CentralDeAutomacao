@@ -88,8 +88,8 @@ const Checklist = () => {
         </div>
       </div>
 
-      <div className="bg-card rounded-lg shadow-card">
-        <div className="border-b border-card-border relative">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+        <div className="border-b border-gray-200 dark:border-gray-700 relative">
           <div 
             ref={navRef}
             className="overflow-x-auto scrollbar-hide"
