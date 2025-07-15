@@ -39,9 +39,9 @@ export const TableDropdown: React.FC<TableDropdownProps> = ({
 
   const selectedOption = options.find(opt => opt.value === value);
   
-  // Debug log for troubleshooting
-  if (value === 'cadastrado' && !selectedOption) {
-    console.log('Debug - Value:', value, 'Options:', options.map(o => o.value));
+  // Debug log for troubleshooting - will remove after fixing
+  if (value && !selectedOption) {
+    console.log('TableDropdown - Value not found:', value, 'Available options:', options.map(o => ({ value: o.value, label: o.label })));
   }
 
   const updatePosition = () => {
