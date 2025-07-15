@@ -511,6 +511,22 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         // Agrupar ajudantes por motorista_id
         const agregadosAgrupadosMap = new Map();
         processedData.forEach(agregado => {
+          // Extract cities and vehicle types while processing data
+          if (agregado.nome_cidade && typeof agregado.nome_cidade === 'string') {
+            uniqueCities.add(agregado.nome_cidade);
+          }
+          
+          // Extract vehicle types from different fields
+          if (agregado.tipologia && typeof agregado.tipologia === 'string') {
+            uniqueVehicleTypes.add(agregado.tipologia);
+          }
+          if (agregado.tipo && typeof agregado.tipo === 'string') {
+            uniqueVehicleTypes.add(agregado.tipo);
+          }
+          if (agregado.tipo_veiculo && typeof agregado.tipo_veiculo === 'string') {
+            uniqueVehicleTypes.add(agregado.tipo_veiculo);
+          }
+          
           if (!agregadosAgrupadosMap.has(agregado.motorista_id)) {
             agregadosAgrupadosMap.set(agregado.motorista_id, {
               ...agregado,
