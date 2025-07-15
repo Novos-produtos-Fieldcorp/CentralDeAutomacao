@@ -1647,6 +1647,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             <button
                               onClick={(e) => toggleStatusDropdown(e, motorista.motorista_id || 0)}
                               className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                statusDropdownOpen === motorista.motorista_id 
+                                  ? 'ring-2 ring-blue-500 ring-offset-1 shadow-lg' 
+                                  : ''
+                              } ${
                                 motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30' :
                                 motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 dark:bg-red-900/30' :
                                 motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
@@ -1673,7 +1677,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                           
                           {statusDropdownOpen === motorista.motorista_id && (
                             <div 
-                              className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
+                              className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-[9999] border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
                               onMouseLeave={() => setStatusDropdownOpen(null)}
                               tabIndex={0}
@@ -1776,6 +1780,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             <button
                               onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id || 0)}
                               className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                clienteDropdownOpen === motorista.motorista_id 
+                                  ? 'ring-2 ring-blue-500 ring-offset-1 shadow-lg' 
+                                  : ''
+                              } ${
                                 motorista.cliente_id 
                                   ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor || 
                                     'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
@@ -1792,7 +1800,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                           
                           {clienteDropdownOpen === motorista.motorista_id && (
                             <div 
-                              className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
+                              className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-[9999] border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
                               onMouseLeave={() => setClienteDropdownOpen(null)}
                               tabIndex={0}
