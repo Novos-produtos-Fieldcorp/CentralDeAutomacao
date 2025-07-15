@@ -38,6 +38,11 @@ export const TableDropdown: React.FC<TableDropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find(opt => opt.value === value);
+  
+  // Debug log for troubleshooting
+  if (value === 'cadastrado' && !selectedOption) {
+    console.log('Debug - Value:', value, 'Options:', options.map(o => o.value));
+  }
 
   const updatePosition = () => {
     if (buttonRef.current) {
