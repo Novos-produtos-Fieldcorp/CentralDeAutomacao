@@ -37,7 +37,11 @@ export const TableDropdown: React.FC<TableDropdownProps> = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const selectedOption = options.find(opt => opt.value === value);
+  const selectedOption = options.find(opt => 
+    opt.value === value || 
+    (typeof opt.value === 'string' && typeof value === 'string' && 
+     opt.value.toLowerCase() === value.toLowerCase())
+  );
 
   const updatePosition = () => {
     if (buttonRef.current) {
