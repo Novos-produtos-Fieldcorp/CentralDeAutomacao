@@ -19,6 +19,7 @@ import Pagination from '../../components/Pagination';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
+import { TableDropdown } from '../../components/TableDropdown';
 
 // Interface para a view de contratados
 export interface ViewContratado {
@@ -72,6 +73,14 @@ export interface ViewContratado {
   }>;
   ajudantes?: string[];
 }
+
+// Status options for dropdown
+const STATUS_OPTIONS = [
+  { value: 'integrado', label: 'Integrado', color: 'bg-green-100 dark:bg-green-900/30' },
+  { value: 'em_treinamento', label: 'Em Treinamento', color: 'bg-yellow-100 dark:bg-yellow-900/30' },
+  { value: 'ativo', label: 'Ativo', color: 'bg-blue-100 dark:bg-blue-900/30' },
+  { value: 'inativo', label: 'Inativo', color: 'bg-red-100 dark:bg-red-900/30' }
+];
 
 const Contratados = () => {
   const { query, companyId } = useCompanyData();
