@@ -113,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!deleted) {
       return res.status(404).json({ error: 'Motorista not found' });
     }
-    res.json({ message: 'Motorista deleted successfully' });
+    res.status(204).send();
   }));
 
   // Veiculo routes
@@ -172,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!deleted) {
       return res.status(404).json({ error: 'Veiculo not found' });
     }
-    res.json({ message: 'Veiculo deleted successfully' });
+    res.status(204).send();
   }));
 
   // Cliente routes
@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!deleted) {
       return res.status(404).json({ error: 'Cliente not found' });
     }
-    res.json({ message: 'Cliente deleted successfully' });
+    res.status(204).send();
   }));
 
   // Hodometro routes
@@ -290,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!deleted) {
       return res.status(404).json({ error: 'Hodometro not found' });
     }
-    res.json({ message: 'Hodometro deleted successfully' });
+    res.status(204).send();
   }));
 
   // Checklist routes
@@ -349,10 +349,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!deleted) {
       return res.status(404).json({ error: 'Checklist not found' });
     }
-    res.json({ message: 'Checklist deleted successfully' });
+    res.status(204).send();
   }));
 
-  // Grupo Resumo routes
+  // Grupo Resumo routes (ported from Supabase Edge Functions)
   app.get('/api/grupo-resumo', asyncHandler(async (req: Request, res: Response) => {
     const companyId = getCompanyId(req);
     const grupos = await storage.getGrupoResumos(companyId);
@@ -364,7 +364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const companyId = getCompanyId(req);
     const grupo = await storage.getGrupoResumo(id, companyId);
     if (!grupo) {
-      return res.status(404).json({ error: 'Grupo Resumo not found' });
+      return res.status(404).json({ error: 'Group not found' });
     }
     res.json(grupo);
   }));
@@ -390,7 +390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertGrupoResumoSchema.partial().parse(req.body);
       const grupo = await storage.updateGrupoResumo(id, validatedData, companyId);
       if (!grupo) {
-        return res.status(404).json({ error: 'Grupo Resumo not found' });
+        return res.status(404).json({ error: 'Group not found' });
       }
       res.json(grupo);
     } catch (error) {
@@ -406,24 +406,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const companyId = getCompanyId(req);
     const deleted = await storage.deleteGrupoResumo(id, companyId);
     if (!deleted) {
-      return res.status(404).json({ error: 'Grupo Resumo not found' });
+      return res.status(404).json({ error: 'Group not found' });
     }
-    res.json({ message: 'Grupo Resumo deleted successfully' });
+    res.status(204).send();
   }));
 
-  // Trigger summary endpoint
+  // Manual summary trigger endpoint (ported from Supabase Edge Function)
   app.post('/api/grupo-resumo/:id/trigger-summary', asyncHandler(async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
+    const groupId = parseInt(req.params.id);
     const companyId = getCompanyId(req);
     
+    // Get group data
+    const grupo = await storage.getGrupoResumo(groupId, companyId);
+    if (!grupo) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    if (!grupo.ativo) {
+      return res.status(400).json({ error: 'Group is inactive' });
+    }
+
     try {
-      const grupo = await storage.getGrupoResumo(id, companyId);
-      if (!grupo) {
-        return res.status(404).json({ error: 'Grupo Resumo not found' });
+      // Send webhook to n8n (same as the original Edge Function)
+      const webhookData = {
+        "nome_do_grupo": grupo.nome_grupo,
+        "url_do_grupo": grupo.url_grupo
+      };
+
+      const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(webhookData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to send webhook: ${response.status} - ${errorText}`);
       }
 
-      // Here you would implement the webhook trigger logic
-      // For now, we'll just return a success response
       res.json({
         success: true,
         message: `Summary sent successfully for group ${grupo.nome_grupo}`,
