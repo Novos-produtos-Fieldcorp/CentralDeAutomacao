@@ -648,8 +648,8 @@ const MotoristasLista = () => {
     setStatusDropdownOpen(null);
   };
 
-  const handleUpdateCliente = async (e: React.MouseEvent, motorista: ViewMotorista, clienteId: number | null) => {
-    e.stopPropagation();
+  const handleUpdateCliente = async (e: React.MouseEvent | null, motorista: ViewMotorista, clienteId: number | null) => {
+    if (e) e.stopPropagation();
     try {
       setUpdatingCliente(motorista.motorista_id || 0);
       
@@ -686,8 +686,8 @@ const MotoristasLista = () => {
     }
   };
 
-  const handleUpdateStatus = async (e: React.MouseEvent, motorista: ViewMotorista, newStatus: string) => {
-    e.stopPropagation();
+  const handleUpdateStatus = async (e: React.MouseEvent | null, motorista: ViewMotorista, newStatus: string) => {
+    if (e) e.stopPropagation();
     try {
       setUpdatingStatus(motorista.motorista_id || 0);
       

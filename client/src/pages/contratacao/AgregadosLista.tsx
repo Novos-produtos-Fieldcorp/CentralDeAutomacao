@@ -901,8 +901,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     };
 
-    const handleUpdateStatus = async (e: React.MouseEvent, motorista: ViewContratado, newStatus: string) => {
-      e.stopPropagation();
+    const handleUpdateStatus = async (e: React.MouseEvent | null, motorista: ViewContratado, newStatus: string) => {
+      if (e) e.stopPropagation();
       try {
         setUpdatingStatus(motorista.motorista_id || 0);
         
@@ -938,8 +938,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     };
 
-    const handleUpdateCliente = async (e: React.MouseEvent, motorista: ViewContratado, clienteId: number | null) => {
-      e.stopPropagation();
+    const handleUpdateCliente = async (e: React.MouseEvent | null, motorista: ViewContratado, clienteId: number | null) => {
+      if (e) e.stopPropagation();
       try {
         setUpdatingCliente(motorista.motorista_id || 0);
         
