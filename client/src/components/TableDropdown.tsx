@@ -42,9 +42,11 @@ export const TableDropdown: React.FC<TableDropdownProps> = ({
   const updatePosition = () => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      
+      // Use viewport coordinates directly since we're using fixed positioning
       setDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
+        top: rect.bottom + 4,
+        left: rect.left,
         width: rect.width
       });
     }
