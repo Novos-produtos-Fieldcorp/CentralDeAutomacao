@@ -1663,7 +1663,7 @@ const Contratados = () => {
                           {statusDropdownOpen === motorista.motorista_id && (
                             <div 
                               id={`status-dropdown-${motorista.motorista_id}`}
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
                               onMouseLeave={() => setStatusDropdownOpen(null)}
                               tabIndex={0}
@@ -1784,7 +1784,7 @@ const Contratados = () => {
                           
                           {clienteDropdownOpen === motorista.motorista_id && (
                             <div 
-                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
+                              className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
                               onClick={(e) => e.stopPropagation()}
                               onMouseLeave={() => setClienteDropdownOpen(null)}
                               tabIndex={0}
