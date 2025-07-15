@@ -1201,28 +1201,28 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             </div>
 
             <div className="relative" id="status-dropdown">
-              <button
-                type="button"
-                onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
-              >
-                <span className="truncate w-full block">{getFilterButtonText('status')}</span>
-                <div className="flex items-center">
-                  {statusFilter.length > 0 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearFilter('status');
-                      }}
-                      className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                    >
-                      <X size={16} />
-                    </button>
-                  )}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                  className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
+                >
+                  <span className="truncate w-full block">{getFilterButtonText('status')}</span>
                   <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
-                </div>
-              </button>
-              <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                </button>
+                <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                {statusFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('status');
+                    }}
+                    className="absolute right-8 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
               {showStatusDropdown && (
                 <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
                   <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
@@ -1283,33 +1283,33 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative" id="cliente-dropdown">
-              <button
-                type="button"
-                onClick={() => setShowClienteDropdown(!showClienteDropdown)}
-                className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
-              >
-                <span className="truncate w-full block">{getFilterButtonText('cliente')}</span>
-                <div className="flex items-center">
-                  {clienteFilter.length > 0 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearFilter('cliente');
-                      }}
-                      className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                    >
-                      <X size={16} />
-                    </button>
-                  )}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowClienteDropdown(!showClienteDropdown)}
+                  className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
+                >
+                  <span className="truncate w-full block">{getFilterButtonText('cliente')}</span>
                   <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
-                </div>
-              </button>
-              <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
+                </button>
+                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                {clienteFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('cliente');
+                    }}
+                    className="absolute right-8 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
               {showClienteDropdown && (
                 <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
                   <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
@@ -1358,28 +1358,28 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             </div>
 
             <div className="relative" id="cidade-dropdown">
-              <button
-                type="button"
-                onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
-                className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
-              >
-                <span className="truncate w-full block">{getFilterButtonText('cidade')}</span>
-                <div className="flex items-center">
-                  {cidadeFilter.length > 0 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearFilter('cidade');
-                      }}
-                      className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                    >
-                      <X size={16} />
-                    </button>
-                  )}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
+                  className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
+                >
+                  <span className="truncate w-full block">{getFilterButtonText('cidade')}</span>
                   <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
-                </div>
-              </button>
-              <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                </button>
+                <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                {cidadeFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('cidade');
+                    }}
+                    className="absolute right-8 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
               {showCidadeDropdown && (
                 <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
                   <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
@@ -1418,28 +1418,28 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             </div>
 
             <div className="relative" id="tipo-veiculo-dropdown">
-              <button
-                type="button"
-                onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
-                className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
-              >
-                <span className="truncate w-full block">{getFilterButtonText('tipoVeiculo')}</span>
-                <div className="flex items-center">
-                  {tipoVeiculoFilter.length > 0 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearFilter('tipoVeiculo');
-                      }}
-                      className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                    >
-                      <X size={16} />
-                    </button>
-                  )}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
+                  className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
+                >
+                  <span className="truncate w-full block">{getFilterButtonText('tipoVeiculo')}</span>
                   <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showTipoVeiculoDropdown ? 'transform rotate-180' : ''}`} />
-                </div>
-              </button>
-              <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                </button>
+                <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                {tipoVeiculoFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('tipoVeiculo');
+                    }}
+                    className="absolute right-8 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
               {showTipoVeiculoDropdown && (
                 <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
                   <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
