@@ -1202,11 +1202,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
-              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   <X size={16} />
                 </button>
@@ -1221,9 +1221,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
                 >
                   <span className="truncate w-full block">{getFilterButtonText('status')}</span>
-                  <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
                 </button>
-                <Filter className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 {statusFilter.length > 0 && (
                   <button
                     onClick={(e) => {
@@ -1289,8 +1289,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <option value="active">Somente Ativos</option>
                 <option value="inactive">Somente Inativos</option>
               </select>
-              <User className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-              <ChevronDown className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </div>
           </div>
           
@@ -1303,9 +1303,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
                 >
                   <span className="truncate w-full block">{getFilterButtonText('cliente')}</span>
-                  <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
                 </button>
-                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                   <circle cx="9" cy="7" r="4"></circle>
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -1378,9 +1378,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
                 >
                   <span className="truncate w-full block">{getFilterButtonText('cidade')}</span>
-                  <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
                 </button>
-                <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 {cidadeFilter.length > 0 && (
                   <button
                     onClick={(e) => {
@@ -1438,9 +1438,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
                 >
                   <span className="truncate w-full block">{getFilterButtonText('tipoVeiculo')}</span>
-                  <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showTipoVeiculoDropdown ? 'transform rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showTipoVeiculoDropdown ? 'transform rotate-180' : ''}`} />
                 </button>
-                <Truck className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                <Truck className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 {tipoVeiculoFilter.length > 0 && (
                   <button
                     onClick={(e) => {
