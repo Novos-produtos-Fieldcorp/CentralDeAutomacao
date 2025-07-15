@@ -1642,44 +1642,43 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             {motorista.email || '-'}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="relative">
-                            <div className="flex items-center">
-                              <button
-                                onClick={(e) => toggleStatusDropdown(e, motorista.motorista_id || 0)}
-                                className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                  motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30' :
-                                  motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 dark:bg-red-900/30' :
-                                  motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
-                                  motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 dark:bg-blue-900/30' :
-                                  motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 dark:bg-purple-900/30' :
-                                  motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 dark:bg-orange-900/30' :
-                                  motorista.st_cadastro === 'gestao_risco' ? 'bg-rose-100 dark:bg-rose-900/30' :
-                                  'bg-gray-100 dark:bg-gray-700'
-                                }`}
-                                title={!motorista.st_cadastro ? 'Indefinido' : 
-                                      motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' :
-                                      motorista.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
-                                      motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
-                              >
-                                <span className="truncate max-w-[130px] text-left">
-                                  {!motorista.st_cadastro ? 'Indefinido' : 
-                                  motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' :
-                                  motorista.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
-                                  motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
-                                </span>
-                                <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
-                              </button>
-                            </div>
-                            
-                            {statusDropdownOpen === motorista.motorista_id && (
-                              <div 
-                                className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
-                                onClick={(e) => e.stopPropagation()}
-                                onMouseLeave={() => setStatusDropdownOpen(null)}
-                                tabIndex={0}
-                                onBlur={() => setStatusDropdownOpen(null)}
-                              >
+                        <td className="px-6 py-4 whitespace-nowrap relative">
+                          <div className="flex items-center">
+                            <button
+                              onClick={(e) => toggleStatusDropdown(e, motorista.motorista_id || 0)}
+                              className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30' :
+                                motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 dark:bg-red-900/30' :
+                                motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                                motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                                motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 dark:bg-purple-900/30' :
+                                motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 dark:bg-orange-900/30' :
+                                motorista.st_cadastro === 'gestao_risco' ? 'bg-rose-100 dark:bg-rose-900/30' :
+                                'bg-gray-100 dark:bg-gray-700'
+                              }`}
+                              title={!motorista.st_cadastro ? 'Indefinido' : 
+                                    motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' :
+                                    motorista.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
+                                    motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
+                            >
+                              <span className="truncate max-w-[130px] text-left">
+                                {!motorista.st_cadastro ? 'Indefinido' : 
+                                motorista.st_cadastro === 'contrato_enviado' ? 'Contrato Enviado' :
+                                motorista.st_cadastro === 'gestao_risco' ? 'Gestão de Risco' :
+                                motorista.st_cadastro.charAt(0).toUpperCase() + motorista.st_cadastro.slice(1)}
+                              </span>
+                              <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
+                            </button>
+                          </div>
+                          
+                          {statusDropdownOpen === motorista.motorista_id && (
+                            <div 
+                              className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
+                              onClick={(e) => e.stopPropagation()}
+                              onMouseLeave={() => setStatusDropdownOpen(null)}
+                              tabIndex={0}
+                              onBlur={() => setStatusDropdownOpen(null)}
+                            >
                                 <div className="py-1">
                                   <button
                                     onClick={(e) => handleUpdateStatus(e, motorista, 'cadastrado')}
@@ -1771,36 +1770,34 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                 <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                               </div>
                             )}
-                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="relative">
-                            <div className="flex items-center">
-                              <button
-                                onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id || 0)}
-                                className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                  motorista.cliente_id 
-                                    ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor || 
-                                      'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
-                                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
-                                }`}
-                                title={motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
-                              >
-                                <span className="truncate max-w-[130px] text-left">
-                                  {motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
-                                </span>
-                                <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
-                              </button>
-                            </div>
-                            
-                            {clienteDropdownOpen === motorista.motorista_id && (
-                              <div 
-                                className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
-                                onClick={(e) => e.stopPropagation()}
-                                onMouseLeave={() => setClienteDropdownOpen(null)}
-                                tabIndex={0}
-                                onBlur={() => setClienteDropdownOpen(null)}
-                              >
+                        <td className="px-6 py-4 whitespace-nowrap relative">
+                          <div className="flex items-center">
+                            <button
+                              onClick={(e) => toggleClienteDropdown(e, motorista.motorista_id || 0)}
+                              className={`flex items-center justify-between w-full px-3 py-1.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                motorista.cliente_id 
+                                  ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor || 
+                                    'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
+                                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
+                              }`}
+                              title={motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
+                            >
+                              <span className="truncate max-w-[130px] text-left">
+                                {motorista.cliente_id ? (clientes.find(c => c.cliente_id === motorista.cliente_id)?.nome || `Cliente ${motorista.cliente_id}`) : 'Sem cliente'}
+                              </span>
+                              <ChevronDown size={14} className="flex-shrink-0 ml-1.5" />
+                            </button>
+                          </div>
+                          
+                          {clienteDropdownOpen === motorista.motorista_id && (
+                            <div 
+                              className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 max-h-32 overflow-y-auto"
+                              onClick={(e) => e.stopPropagation()}
+                              onMouseLeave={() => setClienteDropdownOpen(null)}
+                              tabIndex={0}
+                              onBlur={() => setClienteDropdownOpen(null)}
+                            >
                                 <div className="py-1">
                                   <button
                                     onClick={(e) => handleUpdateCliente(e, motorista, null)}
@@ -1835,7 +1832,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                 <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                               </div>
                             )}
-                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 dark:text-white">
