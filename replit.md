@@ -112,6 +112,15 @@ Preferred communication style: Simple, everyday language.
 - Static file serving through Express in production
 - ES module format maintained throughout the build process
 
+### Netlify Deployment
+- **Configuration**: `netlify.toml` with build settings and redirects
+- **Functions**: Serverless functions in `netlify/functions/` directory
+- **Build Command**: `npm run build`
+- **Publish Directory**: `dist/public`
+- **Environment Variables**: Configured in Netlify dashboard
+- **Database**: PostgreSQL connection through environment variables
+- **API Routes**: Handled by Netlify Functions with `/api/*` redirects
+
 ### Database Management
 - Drizzle Kit for migrations: `npm run db:push`
 - Environment-based configuration for different deployment stages
@@ -122,3 +131,4 @@ Preferred communication style: Simple, everyday language.
 - Stateless backend design for horizontal scaling
 - CDN-ready static asset organization
 - Component-based architecture for code splitting
+- Netlify Functions for API scaling
