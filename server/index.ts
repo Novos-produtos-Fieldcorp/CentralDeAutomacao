@@ -12,10 +12,10 @@ app.use((req, res, next) => {
   res.removeHeader('X-Frame-Options');
   // Alternatively, you can set it to SAMEORIGIN if you want to allow only same-origin embedding
   // res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  
+
   // Configurar Content Security Policy para permitir iframe
   res.setHeader('Content-Security-Policy', "frame-ancestors *;");
-  
+
   next();
 });
 
@@ -71,7 +71,7 @@ app.use((req, res, next) => {
 
   // Using port 3000 with localhost to avoid network interface issues
   // This serves both the API and the client
-  const port = 3000;
+  const port = 5000;
   server.listen({
     port,
     host: "127.0.0.1",
