@@ -237,17 +237,13 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     }
   };
 
-  const consultarCep = async (cep: string) => {
+  const consultarCepLocal = async (cep: string) => {
     if (cep.length !== 8) return;
 
     setLoadingCep(true);
     try {
-      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-      const data = await response.json();
-
-      if (data.erro) {
-        throw new Error('CEP não encontrado');
-      }
+      const { consultarCep } = await import('../utils/cepService');
+      const data = await consultarCep(cep);
 
       const estadoId = estados.find(e => e.sigla_estado === data.uf)?.id_estado.toString() || '';
       
