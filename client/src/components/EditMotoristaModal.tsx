@@ -538,7 +538,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     
     // If CEP is being changed and has 8 digits, trigger CEP lookup
     if (name === 'cep' && value.length === 8) {
-      consultarCep(value);
+      consultarCepLocal(value);
     }
   };
 
