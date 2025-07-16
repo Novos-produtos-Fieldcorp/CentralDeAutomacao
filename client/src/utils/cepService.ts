@@ -30,7 +30,15 @@ export const consultarCep = async (cep: string): Promise<ViaCepResponse> => {
       const errorData = await response.json().catch(() => ({}));
       
       if (response.status === 404) {
-        throw new Error('CEP não encontrado');
+        throw new Error('CEP não encontrado. Verifique se digitou corretamente.');
+      }
+      
+      if (response.status === 503) {
+        throw new Error('⚠️ Consulta de CEP temporariamente indisponível. Preencha o endereço manualmente.');
+      }
+      
+      if (response.status >= 500) {
+        throw new Error('⚠️ Serviço de CEP temporariamente indisponível. Tente novamente em alguns segundos.');
       }
       
       throw new Error(errorData.error || `Erro ${response.status} ao consultar CEP`);
@@ -41,6 +49,11 @@ export const consultarCep = async (cep: string): Promise<ViaCepResponse> => {
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Erro de conexão. Verifique sua internet e tente novamente.');
+    }
+    
+    // Se já é uma mensagem de erro tratada, mantém ela
+    if (error instanceof Error && error.message.includes('⚠️')) {
+      throw error;
     }
     
     throw error;

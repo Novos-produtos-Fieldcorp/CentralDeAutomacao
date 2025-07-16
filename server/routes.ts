@@ -24,6 +24,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           name: 'ViaCEP',
           url: `https://viacep.com.br/ws/${cep}/json/`,
+          timeout: 8000,
           transform: (data: any) => ({
             cep: data.cep,
             logradouro: data.logradouro,
@@ -39,26 +40,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isError: (data: any) => data.erro
         },
         {
-          name: 'CEP Aberto',
-          url: `https://www.cepaberto.com/api/v3/cep?cep=${cep}`,
-          headers: { 'Authorization': 'Token token=demo' },
+          name: 'BrasilAPI',
+          url: `https://brasilapi.com.br/api/cep/v1/${cep}`,
+          timeout: 6000,
           transform: (data: any) => ({
-            cep: data.postal_code,
-            logradouro: data.address,
+            cep: data.cep,
+            logradouro: data.street,
             complemento: '',
             bairro: data.neighborhood,
-            localidade: data.city.name,
-            uf: data.state.code,
-            ibge: data.city.ibge,
+            localidade: data.city,
+            uf: data.state,
+            ibge: '',
             gia: '',
             ddd: '',
             siafi: ''
           }),
-          isError: (data: any) => !data.postal_code
+          isError: (data: any) => !data.cep || data.type === 'error'
         },
         {
           name: 'PostMon',
           url: `https://api.postmon.com.br/v1/cep/${cep}`,
+          timeout: 6000,
           transform: (data: any) => ({
             cep: data.cep,
             logradouro: data.logradouro,
@@ -72,6 +74,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             siafi: ''
           }),
           isError: (data: any) => !data.cep
+        },
+        {
+          name: 'RepublicaVirtual',
+          url: `https://cep.republicavirtual.com.br/web_cep.php?cep=${cep}&formato=json`,
+          timeout: 6000,
+          transform: (data: any) => ({
+            cep: cep,
+            logradouro: data.tipo_logradouro + ' ' + data.logradouro,
+            complemento: '',
+            bairro: data.bairro,
+            localidade: data.cidade,
+            uf: data.uf,
+            ibge: '',
+            gia: '',
+            ddd: '',
+            siafi: ''
+          }),
+          isError: (data: any) => data.resultado !== '1'
         }
       ];
 
@@ -82,15 +102,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`Tentando API ${api.name} para CEP ${cep}`);
           
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), api.timeout || 5000);
+          
           const fetchOptions: any = {
             method: 'GET',
+            signal: controller.signal,
             headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'application/json, text/plain, */*',
+              'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+              'Cache-Control': 'no-cache',
               ...api.headers
             }
           };
 
           const response = await fetch(api.url, fetchOptions);
+          clearTimeout(timeoutId);
           
           if (!response.ok) {
             throw new Error(`${api.name} retornou status ${response.status}`);
@@ -98,12 +126,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const data = await response.json();
           
-          if (api.isError(data)) {
+          if (api.isError && api.isError(data)) {
             throw new Error(`CEP não encontrado na API ${api.name}`);
           }
 
           const transformedData = api.transform(data);
-          console.log(`CEP encontrado com sucesso via ${api.name}`);
+          console.log(`✓ CEP encontrado com sucesso via ${api.name}`);
           
           return res.json(transformedData);
         } catch (error) {
@@ -115,10 +143,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Se chegou aqui, todas as APIs falharam
       console.error('Todas as APIs de CEP falharam:', lastError);
-      res.status(404).json({ 
-        error: 'CEP não encontrado em nenhuma API disponível',
-        details: 'Tente novamente em alguns instantes ou verifique se o CEP está correto'
-      });
+      const errorMessage = lastError?.message || '';
+      console.log('Última mensagem de erro:', errorMessage);
+      
+      // Verifica se o problema é indisponibilidade geral ou CEP inválido
+      const isGeneralFailure = lastError && (
+        errorMessage.includes('status 5') || 
+        errorMessage.includes('fetch failed') ||
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('502') ||
+        errorMessage.includes('503') ||
+        errorMessage.includes('401') ||
+        errorMessage.includes('aborted') ||
+        errorMessage.includes('retornou status')
+      );
+      
+      console.log('É falha geral?', isGeneralFailure);
+      
+      if (isGeneralFailure) {
+        res.status(503).json({ 
+          error: 'Serviços de CEP temporariamente indisponíveis. Todas as APIs estão fora do ar no momento.',
+          details: 'Preencha o endereço manualmente ou tente novamente em alguns minutos.'
+        });
+      } else {
+        res.status(404).json({ 
+          error: 'CEP não encontrado em nenhuma API disponível',
+          details: 'Tente novamente em alguns instantes ou verifique se o CEP está correto'
+        });
+      }
     } catch (error) {
       console.error('Erro geral ao consultar CEP:', error);
       res.status(500).json({ 
