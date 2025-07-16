@@ -6,6 +6,19 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Configurar headers para permitir iframe
+app.use((req, res, next) => {
+  // Permitir ser embutido em iframe de qualquer origem
+  res.removeHeader('X-Frame-Options');
+  // Alternatively, you can set it to SAMEORIGIN if you want to allow only same-origin embedding
+  // res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  
+  // Configurar Content Security Policy para permitir iframe
+  res.setHeader('Content-Security-Policy', "frame-ancestors *;");
+  
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

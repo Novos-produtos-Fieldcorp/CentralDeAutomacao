@@ -120,6 +120,7 @@ Preferred communication style: Simple, everyday language.
 - **Environment Variables**: Configured in Netlify dashboard
 - **Database**: PostgreSQL connection through environment variables
 - **API Routes**: Handled by Netlify Functions with `/api/*` redirects
+- **Iframe Support**: Configured to allow embedding via Content-Security-Policy headers
 
 ### Database Management
 - Drizzle Kit for migrations: `npm run db:push`
@@ -132,3 +133,25 @@ Preferred communication style: Simple, everyday language.
 - CDN-ready static asset organization
 - Component-based architecture for code splitting
 - Netlify Functions for API scaling
+
+## Iframe Configuration (Janeiro 2025)
+
+A aplicação foi configurada para permitir embedding em iframe através das seguintes modificações:
+
+### Servidor Express (server/index.ts)
+- Removido header X-Frame-Options restritivo
+- Adicionado Content-Security-Policy com frame-ancestors *
+- Headers aplicados a todas as rotas
+
+### Configuração Netlify (netlify.toml)
+- Removido X-Frame-Options = "DENY"
+- Adicionado Content-Security-Policy = "frame-ancestors *;"
+- Headers aplicados globalmente
+
+### Função Serverless (netlify/functions/api.js)
+- Adicionado Content-Security-Policy aos headers da API
+- Configuração aplicada a todas as respostas
+
+### Teste de Iframe
+- Arquivo test-iframe.html criado para validação
+- Aplicação pode ser embutida em qualquer domínio
