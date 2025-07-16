@@ -17,12 +17,13 @@ const getDatabaseConnection = () => {
 
 // Função principal para lidar com requests da API
 export const handler = async (event, context) => {
-  // Configurar CORS
+  // Configurar CORS e headers para iframe
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Content-Security-Policy': 'frame-ancestors *;'
   };
 
   // Lidar com preflight requests
