@@ -111,11 +111,20 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
       });
       if (!response.ok) throw new Error('Erro ao consultar CPF');
       const data = await response.json();
-      if (!data || !data.nome || !data.data_nascimento) throw new Error('Dados não encontrados para este CPF');
+      const pessoa = data.CadastroPessoaFisica;
+      if (!pessoa || !pessoa.Nome || !pessoa.DataNascimento) throw new Error('Dados não encontrados para este CPF');
       setFormData(prev => ({
         ...prev,
-        nome: data.nome,
-        dt_nascimento: data.data_nascimento
+        nome: pessoa.Nome,
+        dt_nascimento: pessoa.DataNascimento.split('T')[0],
+        telefone: pessoa.Telefones?.[0]?.TelefoneComDDD?.replace(/\D/g, '') || '',
+        cep: pessoa.Enderecos?.[0]?.CEP || '',
+        estado: pessoa.Enderecos?.[0]?.UF || '',
+        cidade: pessoa.Enderecos?.[0]?.Cidade || '',
+        bairro: pessoa.Enderecos?.[0]?.Bairro || '',
+        logradouro: pessoa.Enderecos?.[0]?.Logradouro || '',
+        numero: pessoa.Enderecos?.[0]?.Numero || '',
+        complemento: pessoa.Enderecos?.[0]?.Complemento || ''
       }));
       toast.success('Dados do CPF preenchidos!');
     } catch (error) {
