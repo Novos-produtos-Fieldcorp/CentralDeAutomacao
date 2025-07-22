@@ -47,12 +47,20 @@ export const handler = async (event, context) => {
       const queryString = new URLSearchParams(queryParams).toString();
       const fullUrl = queryString ? `${wiseAppUrl}?${queryString}` : wiseAppUrl;
       
-      console.log('Proxying request to:', fullUrl);
+      console.log('Netlify Proxy - Full URL:', fullUrl);
+      console.log('Netlify Proxy - Method:', method);
+      console.log('Netlify Proxy - Headers received:', event.headers);
+      
+      const apiToken = event.headers['api_access_token'] || 
+                      event.headers['api-access-token'] || 
+                      event.headers['Authorization'];
+      
+      console.log('Netlify Proxy - API Token found:', apiToken ? 'YES' : 'NO');
       
       const fetchOptions = {
         method,
         headers: {
-          'api_access_token': event.headers['api_access_token'] || event.headers['api-access-token'],
+          'api_access_token': apiToken,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         }

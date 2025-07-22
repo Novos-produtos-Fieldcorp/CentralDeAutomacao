@@ -11,17 +11,33 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Redirecionamentos para API
+# Proxy para WiseApp API - MAIS ESPECÍFICO PRIMEIRO
+[[redirects]]
+  from = "/api/api/v1/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+# Redirecionamentos para outras APIs
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
 
-# Redirecionamento para SPA (Single Page Application)
+# Redirecionamento para SPA (Single Page Application) - SEMPRE POR ÚLTIMO
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Headers para APIs - sem cache
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
+    Content-Security-Policy = "frame-ancestors *;"
 
 # Headers para melhor performance e permitir iframe
 [[headers]]

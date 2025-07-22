@@ -169,3 +169,9 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - Headers de autenticação mantidos através do proxy
 - Função Netlify atualizada com proxy para WiseApp API
 - Suporte completo para produção via netlify/functions/api.js
+
+### Configuração Netlify (netlify.toml)
+- Redirects específicos para `/api/api/v1/*` com force=true
+- Headers no-cache aplicados para todas as rotas `/api/*`
+- Configuração de funções serverless com esbuild
+- Ordem correta de redirects (mais específicos primeiro)
