@@ -120,11 +120,14 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const apiKey = localStorage.getItem('wiseapp_token');
 
   const api = axios.create({
-   baseURL: import.meta.env.VITE_CHAT_API_URL || 'https://chat.wiseapp360.com',
+    baseURL: '/api',
     headers: {
       'api_access_token': apiKey,
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     }
   });
 
@@ -295,19 +298,37 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           headers: {
             'api_access_token': apiKey,
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           }
         });
-        const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
-        if (response.data?.payload) {
+        const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`, {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          },
+          params: {
+            _t: Date.now() // timestamp para evitar cache
+          }
+        });
+        
+        console.log('Inbox response:', response.data);
+        console.log('Inbox payload:', response.data?.payload);
+        
+        if (response.data?.payload && Array.isArray(response.data.payload)) {
           const allInboxes = response.data.payload.map((inbox: any) => ({
             ...inbox,
             isOpen: true // ou lógica de horário se quiser
           }));
+          console.log('Processed inboxes:', allInboxes);
           setAvailableInboxes(allInboxes);
           setShowInboxSelector(true);
           setSelectedInboxId(null); // Não seleciona automaticamente
         } else {
+          console.log('No payload found or payload is not an array');
           setAvailableInboxes([]);
         }
       } catch (error) {
@@ -353,11 +374,23 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         headers: {
           'api_access_token': apiKey,
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       });
 
-      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
+      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        params: {
+          _t: Date.now() // timestamp para evitar cache
+        }
+      });
       if (response.data?.payload) {
         setInboxes(response.data.payload);
         

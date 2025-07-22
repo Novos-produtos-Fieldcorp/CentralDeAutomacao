@@ -6,15 +6,22 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Configurar headers para permitir iframe
+// Configurar headers para permitir iframe e evitar cache
 app.use((req, res, next) => {
   // Permitir ser embutido em iframe de qualquer origem
   res.removeHeader('X-Frame-Options');
-  // Alternatively, you can set it to SAMEORIGIN if you want to allow only same-origin embedding
-  // res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-
+  
   // Configurar Content Security Policy para permitir iframe
   res.setHeader('Content-Security-Policy', "frame-ancestors *;");
+  
+  // Headers para evitar cache em APIs de chat/inbox
+  if (req.path.includes('/api/v1/accounts') && req.path.includes('/inboxes')) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Last-Modified', new Date().toUTCString());
+    res.setHeader('ETag', `"${Date.now()}"`);
+  }
 
   next();
 });
