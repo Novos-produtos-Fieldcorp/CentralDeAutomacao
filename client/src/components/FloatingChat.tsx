@@ -3,7 +3,7 @@ import {Send, Loader2, AlertCircle, WifiOff, X, Mic, Paperclip, Minus, Square, M
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_CHAT_API_URL || '/api';
+const baseURL = '/api'; // Usar proxy local para evitar CORS
 
 const apiClient = axios.create({
   baseURL,
@@ -148,7 +148,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   // Usar o apiClient configurado acima
 
-  console.log('API URL:', import.meta.env.VITE_CHAT_API_URL);
+  console.log('API URL:', baseURL);
 
   const checkNetworkConnectivity = () => {
     return navigator.onLine;
@@ -310,8 +310,11 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
         const apiKey = localStorage.getItem('wiseapp_token');
         if (!accountId || !apiKey) return;
-        const api = axios.create({
-          baseURL: '/api',
+
+        const url = `/api/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
+        
+        const response = await fetch(url, {
+          method: 'GET',
           headers: {
             'api_access_token': apiKey,
             'Content-Type': 'application/json',
@@ -321,22 +324,18 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             'Expires': '0'
           }
         });
-        const response = await apiClient.get(`/api/v1/accounts/${accountId}/inboxes`, {
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          },
-          params: {
-            _t: Date.now() // timestamp para evitar cache
-          }
-        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
         
-        console.log('Inbox response:', response.data);
-        console.log('Inbox payload:', response.data?.payload);
+        console.log('Inbox response:', data);
+        console.log('Inbox payload:', data?.payload);
         
-        if (response.data?.payload && Array.isArray(response.data.payload)) {
-          const allInboxes = response.data.payload.map((inbox: any) => ({
+        if (data?.payload && Array.isArray(data.payload)) {
+          const allInboxes = data.payload.map((inbox: any) => ({
             ...inbox,
             isOpen: true // ou lógica de horário se quiser
           }));
@@ -349,6 +348,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           setAvailableInboxes([]);
         }
       } catch (error) {
+        console.error('Error fetching inboxes:', error);
+        setError('Erro ao carregar caixas de entrada');
         setAvailableInboxes([]);
       }
     };
@@ -386,8 +387,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   const fetchInboxes = async (accountId: string, apiKey: string) => {
     try {
-      const api = axios.create({
-        baseURL: '/api',
+      const url = `/api/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
         headers: {
           'api_access_token': apiKey,
           'Content-Type': 'application/json',
@@ -398,18 +401,13 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
       });
 
-      const response = await apiClient.get(`/api/v1/accounts/${accountId}/inboxes`, {
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        },
-        params: {
-          _t: Date.now() // timestamp para evitar cache
-        }
-      });
-      if (response.data?.payload) {
-        setInboxes(response.data.payload);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data?.payload) {
+        setInboxes(data.payload);
         
         const isInboxOpen = (inbox: any) => {
           const now = new Date();
@@ -435,7 +433,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           return currentTime >= openTime && currentTime <= closeTime;
         };
 
-        const allInboxes = response.data.payload.map((inbox: any) => ({
+        const allInboxes = data.payload.map((inbox: any) => ({
           ...inbox,
           isOpen: isInboxOpen(inbox)
         }));
