@@ -310,33 +310,38 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
         const apiKey = localStorage.getItem('wiseapp_token');
         if (!accountId || !apiKey) return;
-        const api = axios.create({
-          baseURL: '/api',
-          headers: {
-            'api_access_token': apiKey,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
-        });
-        const response = await apiClient.get(`/api/v1/accounts/${accountId}/inboxes`, {
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          },
-          params: {
-            _t: Date.now() // timestamp para evitar cache
-          }
-        });
+
+        console.log('Using token:', apiKey ? apiKey.substring(0, 8) + '...' : 'NO TOKEN');
+        console.log('Account ID:', accountId);
         
-        console.log('Inbox response:', response.data);
-        console.log('Inbox payload:', response.data?.payload);
+        const url = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
+        console.log('Fetch URL:', url);
         
-        if (response.data?.payload && Array.isArray(response.data.payload)) {
-          const allInboxes = response.data.payload.map((inbox: any) => ({
+        const headers = {
+          'api_access_token': apiKey || 'njMJg35ahX5D4FWPCprXabca', // fallback para o token da env
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        };
+        console.log('Headers:', headers);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers,
+          mode: 'cors',
+          credentials: 'omit'
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        console.log('Inbox response:', data);
+        console.log('Inbox payload:', data?.payload);
+        
+        if (data?.payload && Array.isArray(data.payload)) {
+          const allInboxes = data.payload.map((inbox: any) => ({
             ...inbox,
             isOpen: true // ou lógica de horário se quiser
           }));
@@ -349,6 +354,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           setAvailableInboxes([]);
         }
       } catch (error) {
+        console.error('Error fetching inboxes:', error);
+        setError('Erro ao carregar caixas de entrada');
         setAvailableInboxes([]);
       }
     };
@@ -386,8 +393,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   const fetchInboxes = async (accountId: string, apiKey: string) => {
     try {
-      const api = axios.create({
-        baseURL: '/api',
+      const url = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
         headers: {
           'api_access_token': apiKey,
           'Content-Type': 'application/json',
@@ -395,21 +404,18 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0'
-        }
+        },
+        mode: 'cors',
+        credentials: 'omit'
       });
 
-      const response = await apiClient.get(`/api/v1/accounts/${accountId}/inboxes`, {
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        },
-        params: {
-          _t: Date.now() // timestamp para evitar cache
-        }
-      });
-      if (response.data?.payload) {
-        setInboxes(response.data.payload);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data?.payload) {
+        setInboxes(data.payload);
         
         const isInboxOpen = (inbox: any) => {
           const now = new Date();
@@ -435,7 +441,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           return currentTime >= openTime && currentTime <= closeTime;
         };
 
-        const allInboxes = response.data.payload.map((inbox: any) => ({
+        const allInboxes = data.payload.map((inbox: any) => ({
           ...inbox,
           isOpen: isInboxOpen(inbox)
         }));
