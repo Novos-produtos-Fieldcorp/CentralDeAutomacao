@@ -167,3 +167,5 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - Proxy criado em `/api/api/v1/*` para redirecionar para API externa
 - Todas as instâncias do axios configuradas para usar o proxy local
 - Headers de autenticação mantidos através do proxy
+- Função Netlify atualizada com proxy para WiseApp API
+- Suporte completo para produção via netlify/functions/api.js
