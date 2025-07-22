@@ -3,7 +3,7 @@ import {Send, Loader2, AlertCircle, WifiOff, X, Mic, Paperclip, Minus, Square, M
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
-const baseURL = 'https://chat.wiseapp360.com'; // API direta do WiseApp
+const baseURL = '/api'; // Usar proxy local para evitar CORS
 
 const apiClient = axios.create({
   baseURL,
@@ -311,24 +311,18 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         const apiKey = localStorage.getItem('wiseapp_token');
         if (!accountId || !apiKey) return;
 
-        console.log('Using token:', apiKey ? apiKey.substring(0, 8) + '...' : 'NO TOKEN');
-        console.log('Account ID:', accountId);
-        
-        const url = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
-        console.log('Fetch URL:', url);
-        
-        const headers = {
-          'api_access_token': apiKey || 'njMJg35ahX5D4FWPCprXabca', // fallback para o token da env
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        };
-        console.log('Headers:', headers);
+        const url = `/api/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
         
         const response = await fetch(url, {
           method: 'GET',
-          headers,
-          mode: 'cors',
-          credentials: 'omit'
+          headers: {
+            'api_access_token': apiKey,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
         });
 
         if (!response.ok) {
@@ -393,7 +387,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   const fetchInboxes = async (accountId: string, apiKey: string) => {
     try {
-      const url = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
+      const url = `/api/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
       
       const response = await fetch(url, {
         method: 'GET',
@@ -404,9 +398,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0'
-        },
-        mode: 'cors',
-        credentials: 'omit'
+        }
       });
 
       if (!response.ok) {
