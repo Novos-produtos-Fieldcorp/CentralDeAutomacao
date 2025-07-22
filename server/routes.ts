@@ -10,6 +10,7 @@ import {
   insertGrupoResumoSchema,
   insertCompanySchema
 } from "@shared/schema";
+import { WiseAppService, getWiseAppService } from "@shared/wiseAppService";
 import { ZodError } from "zod";
 
 // Helper function to extract company ID from request
@@ -22,7 +23,7 @@ function getCompanyId(req: Request): number {
 }
 
 // Error handler wrapper
-function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
+function asyncHandler(fn: (req: Request, res: Response) => Promise<any>) {
   return (req: Request, res: Response, next: any) => {
     Promise.resolve(fn(req, res)).catch(next);
   };
@@ -79,7 +80,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const companyId = getCompanyId(req);
       const validatedData = insertMotoristaSchema.parse({ ...req.body, company_id: companyId });
       const motorista = await storage.createMotorista(validatedData);
-      res.status(201).json(motorista);
+      
+      // Automatically sync with WiseApp if enabled
+      const syncWithWiseApp = req.headers['x-sync-wiseapp'] === 'true';
+      let wiseAppSyncResult = null;
+      
+      if (syncWithWiseApp && motorista.telefone) {
+        try {
+          const wiseAppService = getWiseAppService();
+          if (wiseAppService) {
+            wiseAppSyncResult = await wiseAppService.syncMotorista({
+              motorista_id: motorista.motorista_id,
+              nome: motorista.nome,
+              telefone: motorista.telefone,
+              email: motorista.email || undefined,
+              cpf: motorista.cpf,
+              funcao: motorista.funcao,
+              company_id: motorista.company_id
+            });
+          }
+        } catch (syncError) {
+          console.warn('WiseApp sync failed for new motorista:', syncError);
+          // Don't fail the main request if sync fails
+        }
+      }
+      
+      res.status(201).json({
+        ...motorista,
+        wiseapp_sync: wiseAppSyncResult
+      });
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: 'Validation error', details: error.errors });
@@ -97,7 +126,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!motorista) {
         return res.status(404).json({ error: 'Motorista not found' });
       }
-      res.json(motorista);
+      
+      // Automatically sync with WiseApp if enabled
+      const syncWithWiseApp = req.headers['x-sync-wiseapp'] === 'true';
+      let wiseAppSyncResult = null;
+      
+      if (syncWithWiseApp && motorista.telefone) {
+        try {
+          const wiseAppService = getWiseAppService();
+          if (wiseAppService) {
+            wiseAppSyncResult = await wiseAppService.syncMotorista({
+              motorista_id: motorista.motorista_id,
+              nome: motorista.nome,
+              telefone: motorista.telefone,
+              email: motorista.email || undefined,
+              cpf: motorista.cpf,
+              funcao: motorista.funcao,
+              company_id: motorista.company_id
+            });
+          }
+        } catch (syncError) {
+          console.warn('WiseApp sync failed for updated motorista:', syncError);
+          // Don't fail the main request if sync fails
+        }
+      }
+      
+      res.json({
+        ...motorista,
+        wiseapp_sync: wiseAppSyncResult
+      });
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: 'Validation error', details: error.errors });
@@ -436,6 +493,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error sending webhook:', error);
       res.status(500).json({
         success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }));
+
+  // WiseApp Synchronization endpoints
+  app.post('/api/wiseapp/sync-motorista/:id', asyncHandler(async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    const companyId = getCompanyId(req);
+    
+    try {
+      const motorista = await storage.getMotorista(id, companyId);
+      if (!motorista) {
+        return res.status(404).json({ error: 'Motorista not found' });
+      }
+
+      if (!motorista.telefone) {
+        return res.status(400).json({ error: 'Phone number is required for WiseApp synchronization' });
+      }
+
+      const wiseAppService = getWiseAppService();
+      if (!wiseAppService) {
+        return res.status(500).json({ error: 'WiseApp service not configured' });
+      }
+
+      const syncResult = await wiseAppService.syncMotorista({
+        motorista_id: motorista.motorista_id,
+        nome: motorista.nome,
+        telefone: motorista.telefone,
+        email: motorista.email || undefined,
+        cpf: motorista.cpf,
+        funcao: motorista.funcao,
+        company_id: motorista.company_id
+      });
+
+      res.json({
+        success: syncResult.success,
+        message: syncResult.success ? 'Contact synchronized successfully' : 'Synchronization failed',
+        data: syncResult
+      });
+    } catch (error) {
+      console.error('Error syncing motorista with WiseApp:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }));
+
+  app.post('/api/wiseapp/sync-all-motoristas', asyncHandler(async (req: Request, res: Response) => {
+    const companyId = getCompanyId(req);
+    
+    try {
+      const motoristas = await storage.getMotoristas(companyId);
+      
+      // Filter motoristas with valid phone numbers
+      const motoristasToSync = motoristas.filter(m => m.telefone && m.ativo);
+      
+      if (motoristasToSync.length === 0) {
+        return res.json({
+          success: true,
+          message: 'No active motoristas with phone numbers found',
+          data: {
+            totalProcessed: 0,
+            successful: 0,
+            failed: 0,
+            errors: []
+          }
+        });
+      }
+
+      const wiseAppService = getWiseAppService();
+      if (!wiseAppService) {
+        return res.status(500).json({ error: 'WiseApp service not configured' });
+      }
+
+      const syncData = motoristasToSync.map(m => ({
+        motorista_id: m.motorista_id,
+        nome: m.nome,
+        telefone: m.telefone!,
+        email: m.email || undefined,
+        cpf: m.cpf,
+        funcao: m.funcao,
+        company_id: m.company_id
+      }));
+
+      const result = await wiseAppService.syncMultipleMotoristas(syncData);
+
+      res.json({
+        success: true,
+        message: `Bulk synchronization completed: ${result.successful} successful, ${result.failed} failed`,
+        data: result
+      });
+    } catch (error) {
+      console.error('Error in bulk sync:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }));
+
+  app.get('/api/wiseapp/validate-config', asyncHandler(async (req: Request, res: Response) => {
+    try {
+      const wiseAppService = getWiseAppService();
+      if (!wiseAppService) {
+        return res.status(400).json({ 
+          valid: false, 
+          error: 'WiseApp configuration not found' 
+        });
+      }
+
+      const validation = await wiseAppService.validateConfig();
+      res.json(validation);
+    } catch (error) {
+      console.error('Error validating WiseApp config:', error);
+      res.status(500).json({
+        valid: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }

@@ -20,6 +20,8 @@ import Pagination from '../../components/Pagination';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
+import { WiseAppSyncButton, WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
+import { useWiseAppAutoSync } from '../../hooks/useWiseAppSync';
 
 // Função auxiliar para converter ViewMotorista para Motorista
 const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
@@ -1251,6 +1253,9 @@ const MotoristasLista = () => {
         )}
       </div>
 
+      {/* WiseApp Bulk Sync Panel */}
+      <WiseAppBulkSyncPanel className="mb-6" />
+
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
         <div className="overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
@@ -1566,7 +1571,13 @@ const MotoristasLista = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-3">
+                        <div className="flex items-center justify-end space-x-2">
+                          <WiseAppSyncButton 
+                            motoristaId={motorista.motorista_id}
+                            variant="individual"
+                            size="sm"
+                            showLabel={false}
+                          />
                           <button
                             onClick={() => {
                               setSelectedMotorista(motorista);
