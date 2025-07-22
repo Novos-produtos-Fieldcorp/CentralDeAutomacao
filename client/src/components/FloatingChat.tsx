@@ -3,7 +3,7 @@ import {Send, Loader2, AlertCircle, WifiOff, X, Mic, Paperclip, Minus, Square, M
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_CHAT_API_URL || '/api';
+const baseURL = '/api'; // Sempre usar proxy local para evitar CORS
 
 const apiClient = axios.create({
   baseURL,
@@ -148,7 +148,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   // Usar o apiClient configurado acima
 
-  console.log('API URL:', import.meta.env.VITE_CHAT_API_URL);
+  console.log('API URL:', baseURL);
 
   const checkNetworkConnectivity = () => {
     return navigator.onLine;
