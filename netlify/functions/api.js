@@ -36,24 +36,43 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const path = event.path.replace('/.netlify/functions/api', '');
+    let path = event.path.replace('/.netlify/functions/api', '');
     const method = event.httpMethod;
     const body = event.body ? JSON.parse(event.body) : null;
     const queryParams = event.queryStringParameters || {};
 
-    // Proxy para WiseApp API
-    if (path.startsWith('/api/v1/')) {
-      const wiseAppUrl = `https://chat.wiseapp360.com${path}`;
+    console.log('Netlify Function - Raw path:', event.path);
+    console.log('Netlify Function - Processed path:', path);
+    console.log('Netlify Function - Method:', method);
+    
+    // Se o path vier como /api/v1/... (do redirect), usar como está
+    // Se vier vazio ou como /, significa que o redirect está enviando o splat
+    if (!path || path === '/') {
+      // Tentar pegar do pathParameters ou do event.rawPath se disponível
+      if (event.pathParameters && event.pathParameters.splat) {
+        path = '/' + event.pathParameters.splat;
+      } else if (event.rawPath) {
+        path = event.rawPath.replace('/.netlify/functions/api', '');
+      }
+    }
+    
+    console.log('Netlify Function - Final path to use:', path);
+    
+    // Proxy para WiseApp API - aceitar qualquer path que contenha api/v1
+    if (path.includes('/api/v1/')) {
+      // Extrair apenas a parte /api/v1/... do path
+      const apiPath = path.substring(path.indexOf('/api/v1/'));
+      const wiseAppUrl = `https://chat.wiseapp360.com${apiPath}`;
       const queryString = new URLSearchParams(queryParams).toString();
       const fullUrl = queryString ? `${wiseAppUrl}?${queryString}` : wiseAppUrl;
       
+      console.log('Netlify Proxy - API Path extracted:', apiPath);
       console.log('Netlify Proxy - Full URL:', fullUrl);
-      console.log('Netlify Proxy - Method:', method);
-      console.log('Netlify Proxy - Headers received:', event.headers);
+      console.log('Netlify Proxy - Headers received:', Object.keys(event.headers));
       
       const apiToken = event.headers['api_access_token'] || 
                       event.headers['api-access-token'] || 
-                      event.headers['Authorization'];
+                      event.headers['authorization'];
       
       console.log('Netlify Proxy - API Token found:', apiToken ? 'YES' : 'NO');
       

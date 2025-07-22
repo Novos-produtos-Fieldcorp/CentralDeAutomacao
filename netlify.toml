@@ -10,11 +10,15 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+  
+# Configuração específica para a função API
+[functions.api]
+  node_bundler = "esbuild"
 
 # Proxy para WiseApp API - MAIS ESPECÍFICO PRIMEIRO
 [[redirects]]
   from = "/api/api/v1/*"
-  to = "/.netlify/functions/api/:splat"
+  to = "/.netlify/functions/api-simple/:splat"
   status = 200
   force = true
 
