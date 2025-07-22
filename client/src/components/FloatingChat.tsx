@@ -3,7 +3,7 @@ import {Send, Loader2, AlertCircle, WifiOff, X, Mic, Paperclip, Minus, Square, M
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
-const baseURL = '/api'; // Sempre usar proxy local para evitar CORS
+const baseURL = 'https://chat.wiseapp360.com'; // API direta do WiseApp
 
 const apiClient = axios.create({
   baseURL,
