@@ -9,6 +9,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
+  // Proxy para API do WiseApp (Chat)
+  app.all('/api/api/v1/*', async (req, res) => {
+    try {
+      const wiseappApiUrl = process.env.VITE_CHAT_API_URL || 'https://chat.wiseapp360.com';
+      const apiKey = req.headers['api_access_token'] || req.headers['authorization'];
+      
+      if (!apiKey) {
+        return res.status(401).json({ error: 'Token de acesso não fornecido' });
+      }
+
+      // Remover /api do início da URL para fazer o proxy
+      const targetPath = req.url.replace('/api', '');
+      const targetUrl = `${wiseappApiUrl}${targetPath}`;
+      
+      console.log(`Proxying request to: ${targetUrl}`);
+      
+      const fetchOptions: any = {
+        method: req.method,
+        headers: {
+          'api_access_token': apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      };
+
+      // Adicionar body para requests que não sejam GET
+      if (req.method !== 'GET' && req.body) {
+        fetchOptions.body = JSON.stringify(req.body);
+      }
+
+      const response = await fetch(targetUrl, fetchOptions);
+      const data = await response.json();
+      
+      // Adicionar headers de no-cache na resposta
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Last-Modified', new Date().toUTCString());
+      res.setHeader('ETag', `"${Date.now()}"`);
+      
+      res.status(response.status).json(data);
+    } catch (error) {
+      console.error('Erro no proxy WiseApp:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor ao acessar a API do WiseApp',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
   // Proxy para consulta de CEP com múltiplas APIs de fallback
   app.get('/api/cep/:cep', async (req, res) => {
     try {
