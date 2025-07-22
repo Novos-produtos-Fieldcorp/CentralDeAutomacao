@@ -41,6 +41,43 @@ export const handler = async (event, context) => {
     const body = event.body ? JSON.parse(event.body) : null;
     const queryParams = event.queryStringParameters || {};
 
+    // Proxy para WiseApp API
+    if (path.startsWith('/api/v1/')) {
+      const wiseAppUrl = `https://chat.wiseapp360.com${path}`;
+      const queryString = new URLSearchParams(queryParams).toString();
+      const fullUrl = queryString ? `${wiseAppUrl}?${queryString}` : wiseAppUrl;
+      
+      console.log('Proxying request to:', fullUrl);
+      
+      const fetchOptions = {
+        method,
+        headers: {
+          'api_access_token': event.headers['api_access_token'] || event.headers['api-access-token'],
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      };
+      
+      if (method !== 'GET' && body) {
+        fetchOptions.body = JSON.stringify(body);
+      }
+      
+      const response = await fetch(fullUrl, fetchOptions);
+      
+      const data = await response.text();
+      
+      return {
+        statusCode: response.status,
+        headers: {
+          ...headers,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        body: data
+      };
+    }
+
     // Roteamento para health check
     if (path === '/health' && method === 'GET') {
       return {
