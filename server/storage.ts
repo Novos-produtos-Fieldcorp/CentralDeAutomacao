@@ -1,39 +1,355 @@
-import { users, type User, type InsertUser } from "@shared/schema";
-
-// modify the interface with any CRUD methods
-// you might need
+import { 
+  users, 
+  motorista, 
+  cliente, 
+  veiculo, 
+  documento_motorista, 
+  documento_ajudante, 
+  comentario, 
+  gestao_risco, 
+  end_motorista, 
+  logradouro, 
+  bairro, 
+  cidade, 
+  estado,
+  type User, 
+  type InsertUser,
+  type Motorista,
+  type InsertMotorista,
+  type Cliente,
+  type InsertCliente,
+  type Veiculo,
+  type InsertVeiculo,
+  type DocumentoMotorista,
+  type DocumentoAjudante,
+  type Comentario,
+  type InsertComentario,
+  type EndMotorista,
+  type MotoristaWithAddress
+} from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc, like, or, count, sql } from "drizzle-orm";
 
 export interface IStorage {
+  // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // Motorista methods
+  getMotoristas(companyId: number, page?: number, limit?: number, search?: string): Promise<{ motoristas: MotoristaWithAddress[], total: number }>;
+  getMotoristasById(id: number): Promise<MotoristaWithAddress | undefined>;
+  createMotorista(motorista: InsertMotorista): Promise<Motorista>;
+  updateMotorista(id: number, motorista: Partial<InsertMotorista>): Promise<Motorista | undefined>;
+  deleteMotorista(id: number): Promise<boolean>;
+  
+  // Cliente methods
+  getClientes(companyId: number): Promise<Cliente[]>;
+  createCliente(cliente: InsertCliente): Promise<Cliente>;
+  
+  // Veiculo methods
+  getVeiculos(motoristaId?: number): Promise<Veiculo[]>;
+  createVeiculo(veiculo: InsertVeiculo): Promise<Veiculo>;
+  
+  // Comentario methods
+  getComentarios(motoristaId: number): Promise<Comentario[]>;
+  createComentario(comentario: InsertComentario): Promise<Comentario>;
+  
+  // Document methods
+  getDocumentoMotorista(motoristaId: number): Promise<DocumentoMotorista | undefined>;
+  getDocumentosAjudante(motoristaId: number): Promise<DocumentoAjudante[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  currentId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.currentId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
+  // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
+  }
+
+  // Motorista methods
+  async getMotoristas(
+    companyId: number, 
+    page: number = 1, 
+    limit: number = 20, 
+    search?: string
+  ): Promise<{ motoristas: MotoristaWithAddress[], total: number }> {
+    let query = db
+      .select({
+        motorista_id: motorista.motorista_id,
+        nome: motorista.nome,
+        cpf: motorista.cpf,
+        dt_nascimento: motorista.dt_nascimento,
+        genero: motorista.genero,
+        telefone: motorista.telefone,
+        email: motorista.email,
+        funcao: motorista.funcao,
+        origem_usuario: motorista.origem_usuario,
+        st_cadastro: motorista.st_cadastro,
+        autorizacao_lgpd: motorista.autorizacao_lgpd,
+        company_id: motorista.company_id,
+        data_cadastro: motorista.data_cadastro,
+        cliente_id: motorista.cliente_id,
+        conversation_id: motorista.conversation_id,
+        ativo: motorista.ativo,
+        // Address fields
+        id_end_motorista: end_motorista.id_end_motorista,
+        nr_end: end_motorista.nr_end,
+        ds_complemento_end: end_motorista.ds_complemento_end,
+        st_end: end_motorista.st_end,
+        logradouro: logradouro.logradouro,
+        nr_cep: logradouro.nr_cep,
+        nome_bairro: bairro.bairro,
+        nome_cidade: cidade.cidade,
+        nome_estado: estado.estado,
+        sigla_estado: estado.sigla_estado,
+      })
+      .from(motorista)
+      .leftJoin(end_motorista, eq(motorista.motorista_id, end_motorista.id_motorista))
+      .leftJoin(logradouro, eq(end_motorista.id_logradouro, logradouro.id_logradouro))
+      .leftJoin(bairro, eq(logradouro.id_bairro, bairro.id_bairro))
+      .leftJoin(cidade, eq(bairro.id_cidade, cidade.id_cidade))
+      .leftJoin(estado, eq(cidade.id_estado, estado.id_estado))
+      .where(eq(motorista.company_id, companyId));
+
+    if (search) {
+      query = query.where(
+        and(
+          eq(motorista.company_id, companyId),
+          or(
+            like(motorista.nome, `%${search}%`),
+            like(motorista.cpf, `%${search}%`),
+            like(motorista.email, `%${search}%`),
+            like(sql`${motorista.telefone}::text`, `%${search}%`)
+          )
+        )
+      );
+    }
+
+    const totalResult = await db
+      .select({ count: count() })
+      .from(motorista)
+      .where(eq(motorista.company_id, companyId));
+
+    const total = totalResult[0]?.count || 0;
+
+    const results = await query
+      .orderBy(desc(motorista.data_cadastro))
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    const motoristas: MotoristaWithAddress[] = results.map(row => ({
+      motorista_id: row.motorista_id,
+      nome: row.nome,
+      cpf: row.cpf,
+      dt_nascimento: row.dt_nascimento,
+      genero: row.genero,
+      telefone: row.telefone,
+      email: row.email,
+      funcao: row.funcao,
+      origem_usuario: row.origem_usuario,
+      st_cadastro: row.st_cadastro,
+      autorizacao_lgpd: row.autorizacao_lgpd,
+      company_id: row.company_id,
+      data_cadastro: row.data_cadastro,
+      cliente_id: row.cliente_id,
+      conversation_id: row.conversation_id,
+      ativo: row.ativo,
+      endereco: row.id_end_motorista ? {
+        id_end_motorista: row.id_end_motorista,
+        nr_end: row.nr_end,
+        ds_complemento_end: row.ds_complemento_end,
+        st_end: row.st_end,
+        logradouro: row.logradouro,
+        nr_cep: row.nr_cep,
+        bairro: row.nome_bairro,
+        cidade: row.nome_cidade,
+        estado: row.nome_estado,
+        sigla_estado: row.sigla_estado,
+      } : undefined
+    }));
+
+    return { motoristas, total };
+  }
+
+  async getMotoristasById(id: number): Promise<MotoristaWithAddress | undefined> {
+    const result = await db
+      .select({
+        motorista_id: motorista.motorista_id,
+        nome: motorista.nome,
+        cpf: motorista.cpf,
+        dt_nascimento: motorista.dt_nascimento,
+        genero: motorista.genero,
+        telefone: motorista.telefone,
+        email: motorista.email,
+        funcao: motorista.funcao,
+        origem_usuario: motorista.origem_usuario,
+        st_cadastro: motorista.st_cadastro,
+        autorizacao_lgpd: motorista.autorizacao_lgpd,
+        company_id: motorista.company_id,
+        data_cadastro: motorista.data_cadastro,
+        cliente_id: motorista.cliente_id,
+        conversation_id: motorista.conversation_id,
+        ativo: motorista.ativo,
+        // Address fields
+        id_end_motorista: end_motorista.id_end_motorista,
+        nr_end: end_motorista.nr_end,
+        ds_complemento_end: end_motorista.ds_complemento_end,
+        st_end: end_motorista.st_end,
+        logradouro: logradouro.logradouro,
+        nr_cep: logradouro.nr_cep,
+        nome_bairro: bairro.bairro,
+        nome_cidade: cidade.cidade,
+        nome_estado: estado.estado,
+        sigla_estado: estado.sigla_estado,
+      })
+      .from(motorista)
+      .leftJoin(end_motorista, eq(motorista.motorista_id, end_motorista.id_motorista))
+      .leftJoin(logradouro, eq(end_motorista.id_logradouro, logradouro.id_logradouro))
+      .leftJoin(bairro, eq(logradouro.id_bairro, bairro.id_bairro))
+      .leftJoin(cidade, eq(bairro.id_cidade, cidade.id_cidade))
+      .leftJoin(estado, eq(cidade.id_estado, estado.id_estado))
+      .where(eq(motorista.motorista_id, id))
+      .limit(1);
+
+    if (!result.length) return undefined;
+
+    const row = result[0];
+    return {
+      motorista_id: row.motorista_id,
+      nome: row.nome,
+      cpf: row.cpf,
+      dt_nascimento: row.dt_nascimento,
+      genero: row.genero,
+      telefone: row.telefone,
+      email: row.email,
+      funcao: row.funcao,
+      origem_usuario: row.origem_usuario,
+      st_cadastro: row.st_cadastro,
+      autorizacao_lgpd: row.autorizacao_lgpd,
+      company_id: row.company_id,
+      data_cadastro: row.data_cadastro,
+      cliente_id: row.cliente_id,
+      conversation_id: row.conversation_id,
+      ativo: row.ativo,
+      endereco: row.id_end_motorista ? {
+        id_end_motorista: row.id_end_motorista,
+        nr_end: row.nr_end,
+        ds_complemento_end: row.ds_complemento_end,
+        st_end: row.st_end,
+        logradouro: row.logradouro,
+        nr_cep: row.nr_cep,
+        bairro: row.nome_bairro,
+        cidade: row.nome_cidade,
+        estado: row.nome_estado,
+        sigla_estado: row.sigla_estado,
+      } : undefined
+    };
+  }
+
+  async createMotorista(insertMotorista: InsertMotorista): Promise<Motorista> {
+    const [newMotorista] = await db
+      .insert(motorista)
+      .values(insertMotorista)
+      .returning();
+    return newMotorista;
+  }
+
+  async updateMotorista(id: number, updateData: Partial<InsertMotorista>): Promise<Motorista | undefined> {
+    const [updatedMotorista] = await db
+      .update(motorista)
+      .set(updateData)
+      .where(eq(motorista.motorista_id, id))
+      .returning();
+    return updatedMotorista || undefined;
+  }
+
+  async deleteMotorista(id: number): Promise<boolean> {
+    const result = await db
+      .delete(motorista)
+      .where(eq(motorista.motorista_id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Cliente methods
+  async getClientes(companyId: number): Promise<Cliente[]> {
+    return await db
+      .select()
+      .from(cliente)
+      .where(eq(cliente.company_id, companyId));
+  }
+
+  async createCliente(insertCliente: InsertCliente): Promise<Cliente> {
+    const [newCliente] = await db
+      .insert(cliente)
+      .values(insertCliente)
+      .returning();
+    return newCliente;
+  }
+
+  // Veiculo methods
+  async getVeiculos(motoristaId?: number): Promise<Veiculo[]> {
+    if (motoristaId) {
+      return await db.select().from(veiculo).where(eq(veiculo.motorista_id, motoristaId));
+    }
+    
+    return await db.select().from(veiculo);
+  }
+
+  async createVeiculo(insertVeiculo: InsertVeiculo): Promise<Veiculo> {
+    const [newVeiculo] = await db
+      .insert(veiculo)
+      .values(insertVeiculo)
+      .returning();
+    return newVeiculo;
+  }
+
+  // Comentario methods
+  async getComentarios(motoristaId: number): Promise<Comentario[]> {
+    return await db
+      .select()
+      .from(comentario)
+      .where(eq(comentario.id_motorista, motoristaId))
+      .orderBy(desc(comentario.created_at));
+  }
+
+  async createComentario(insertComentario: InsertComentario): Promise<Comentario> {
+    const [newComentario] = await db
+      .insert(comentario)
+      .values(insertComentario)
+      .returning();
+    return newComentario;
+  }
+
+  // Document methods
+  async getDocumentoMotorista(motoristaId: number): Promise<DocumentoMotorista | undefined> {
+    const [documento] = await db
+      .select()
+      .from(documento_motorista)
+      .where(eq(documento_motorista.motorista_id, motoristaId))
+      .limit(1);
+    return documento || undefined;
+  }
+
+  async getDocumentosAjudante(motoristaId: number): Promise<DocumentoAjudante[]> {
+    return await db
+      .select()
+      .from(documento_ajudante)
+      .where(eq(documento_ajudante.motorista_id, motoristaId));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
