@@ -155,3 +155,15 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 ### Teste de Iframe
 - Arquivo test-iframe.html criado para validação
 - Aplicação pode ser embutida em qualquer domínio
+
+## Correções de Chat (Janeiro 2025)
+
+### Problema de Cache HTTP 304
+- Headers de cache-busting adicionados no frontend e backend
+- Requisições forçadas sem cache usando timestamps
+- Headers no-cache aplicados em respostas da API
+
+### Proxy da API WiseApp
+- Proxy criado em `/api/api/v1/*` para redirecionar para API externa
+- Todas as instâncias do axios configuradas para usar o proxy local
+- Headers de autenticação mantidos através do proxy

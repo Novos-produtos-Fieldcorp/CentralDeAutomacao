@@ -120,11 +120,14 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const apiKey = localStorage.getItem('wiseapp_token');
 
   const api = axios.create({
-   baseURL: import.meta.env.VITE_CHAT_API_URL || 'https://chat.wiseapp360.com',
+    baseURL: '/api',
     headers: {
       'api_access_token': apiKey,
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     }
   });
 
