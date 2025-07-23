@@ -147,6 +147,8 @@ export const pessoa_fisica_dono_veiculo = pgTable("pessoa_fisica_dono_veiculo", 
   nome_mae: text("nome_mae"),
   nome_pai: text("nome_pai"),
   nome: text("nome"),
+  foto_documento: text("foto_documento"),
+  comprovante_residencia: text("comprovante_residencia"),
 });
 
 // Pessoa_juridica_dono_veiculo table
@@ -156,6 +158,7 @@ export const pessoa_juridica_dono_veiculo = pgTable("pessoa_juridica_dono_veicul
   inscricao_estadual: text("inscricao_estadual"),
   razao_social: text("razao_social"),
   id_documento_veiculo: bigint("id_documento_veiculo", { mode: "number" }),
+  comprovante_residencia: text("comprovante_residencia"),
 });
 
 // Comentario table
