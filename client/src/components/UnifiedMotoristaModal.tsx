@@ -69,7 +69,7 @@ const UnifiedMotoristaModal = ({
     if (isOpen && motorista) {
       console.log('Modal aberto para motorista:', motorista);
       console.log('Função do motorista:', motorista.funcao);
-      console.log('Veiculo ID:', motorista.veiculo_id);
+      console.log('Veiculo ID:', (motorista as any).veiculo_id);
       fetchEndereco();
       fetchDocumentCount();
       fetchDocumentoMotorista();
