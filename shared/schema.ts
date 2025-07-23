@@ -128,6 +128,36 @@ export const documento_ajudante = pgTable("documento_ajudante", {
   motorista_id: integer("motorista_id").references(() => motorista.motorista_id),
 });
 
+// Documento_veiculo table
+export const documento_veiculo = pgTable("documento_veiculo", {
+  id_documento_veiculo: bigint("id_documento_veiculo", { mode: "number" }).primaryKey(),
+  veiculo_id: integer("veiculo_id").references(() => veiculo.veiculo_id),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Pessoa_fisica_dono_veiculo table
+export const pessoa_fisica_dono_veiculo = pgTable("pessoa_fisica_dono_veiculo", {
+  id_pessoa_fisica_dono_veiculo: bigint("id_pessoa_fisica_dono_veiculo", { mode: "number" }).primaryKey(),
+  nr_rg: numeric("nr_rg"),
+  id_documento_veiculo: bigint("id_documento_veiculo", { mode: "number" }).references(() => documento_veiculo.id_documento_veiculo, { onUpdate: "cascade", onDelete: "cascade" }),
+  data_emissao: text("data_emissao"),
+  cpf: numeric("cpf"),
+  orgao_expedidor: text("orgao_expedidor"),
+  nome_mae: text("nome_mae"),
+  nome_pai: text("nome_pai"),
+  nome: text("nome"),
+});
+
+// Pessoa_juridica_dono_veiculo table
+export const pessoa_juridica_dono_veiculo = pgTable("pessoa_juridica_dono_veiculo", {
+  id_pessoa_juridica_dono_veiculo: bigint("id_pessoa_juridica_dono_veiculo", { mode: "number" }).primaryKey(),
+  cnpj: numeric("cnpj"),
+  inscricao_estadual: text("inscricao_estadual"),
+  razao_social: text("razao_social"),
+  id_documento_veiculo: bigint("id_documento_veiculo", { mode: "number" }).references(() => documento_veiculo.id_documento_veiculo, { onUpdate: "cascade", onDelete: "cascade" }),
+});
+
 // Comentario table
 export const comentario = pgTable("comentario", {
   id: serial("id").primaryKey(),
