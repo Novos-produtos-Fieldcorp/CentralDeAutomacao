@@ -67,6 +67,7 @@ const UnifiedMotoristaModal = ({
 
   useEffect(() => {
     if (isOpen && motorista) {
+      console.log('Modal aberto para motorista:', motorista);
       fetchEndereco();
       fetchDocumentCount();
       fetchDocumentoMotorista();
@@ -265,21 +266,38 @@ const UnifiedMotoristaModal = ({
     if (!motorista) return;
 
     try {
-      // Primeiro, buscar o veículo do motorista
-      const { data: veiculo, error: veiculoError } = await supabase
-        .from('veiculo')
-        .select('veiculo_id')
-        .eq('motorista_id', motorista.motorista_id)
-        .maybeSingle();
+      console.log('Buscando proprietário do veículo para motorista:', motorista.motorista_id);
+      console.log('Objeto motorista completo:', motorista);
+      
+      // Verificar se o motorista já tem veiculo_id
+      let veiculoId = (motorista as any).veiculo_id;
+      
+      if (!veiculoId) {
+        // Se não tem veiculo_id direto, buscar na tabela veiculo
+        const { data: veiculo, error: veiculoError } = await supabase
+          .from('veiculo')
+          .select('veiculo_id')
+          .eq('motorista_id', motorista.motorista_id)
+          .maybeSingle();
 
-      if (veiculoError) throw veiculoError;
-      if (!veiculo) return;
+        console.log('Resultado busca veículo:', { veiculo, veiculoError });
+        
+        if (veiculoError) throw veiculoError;
+        if (!veiculo) {
+          console.log('Nenhum veículo encontrado para o motorista');
+          return;
+        }
+        
+        veiculoId = veiculo.veiculo_id;
+      }
+
+      console.log('Usando veiculo_id:', veiculoId);
 
       // Buscar documento do veículo
       const { data: documentoVeiculo, error: docError } = await supabase
         .from('documento_veiculo')
         .select('*')
-        .eq('veiculo_id', veiculo.veiculo_id)
+        .eq('veiculo_id', veiculoId)
         .maybeSingle();
 
       if (docError) throw docError;
