@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { X, Loader2, CreditCard, Home, FileText, Camera, Upload, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { BaseModal } from './BaseModal';
+import DocumentUploader from './DocumentUploader';
 
 interface DocumentoMotoristaFormProps {
   isOpen: boolean;
@@ -48,12 +49,15 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
     data_emissao: '',
     orgao_expedidor: '',
     nome_pai: '',
-    nome_mae: ''
+    nome_mae: '',
+    foto_documento: '',
+    comprovante_residencia: ''
   });
   const [pessoaJuridicaData, setPessoaJuridicaData] = useState({
     razao_social: '',
     cnpj: '',
-    inscricao_estadual: ''
+    inscricao_estadual: '',
+    comprovante_residencia: ''
   });
 
   useEffect(() => {
@@ -127,7 +131,9 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
             data_emissao: pessoaFisica.data_emissao || '',
             orgao_expedidor: pessoaFisica.orgao_expedidor || '',
             nome_pai: pessoaFisica.nome_pai || '',
-            nome_mae: pessoaFisica.nome_mae || ''
+            nome_mae: pessoaFisica.nome_mae || '',
+            foto_documento: pessoaFisica.foto_documento || '',
+            comprovante_residencia: pessoaFisica.comprovante_residencia || ''
           });
         } else {
           // Buscar pessoa jurídica
@@ -144,7 +150,8 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
             setPessoaJuridicaData({
               razao_social: pessoaJuridica.razao_social || '',
               cnpj: pessoaJuridica.cnpj ? String(pessoaJuridica.cnpj) : '',
-              inscricao_estadual: pessoaJuridica.inscricao_estadual || ''
+              inscricao_estadual: pessoaJuridica.inscricao_estadual || '',
+              comprovante_residencia: pessoaJuridica.comprovante_residencia || ''
             });
           }
         }
@@ -1088,6 +1095,153 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
                       </div>
+
+                      {/* Documentos - Pessoa Física */}
+                      <div className="grid grid-cols-2 gap-3 mt-4">
+                        {/* Foto do Documento */}
+                        <div>
+                          <div className="mb-2 flex justify-between items-center">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Foto do Documento (RG/CNH)
+                            </label>
+                            {pessoaFisicaData.foto_documento && (
+                              <button
+                                type="button"
+                                onClick={() => openDocumentInNewTab(pessoaFisicaData.foto_documento)}
+                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-xs"
+                              >
+                                <ExternalLink size={14} />
+                                Abrir em nova aba
+                              </button>
+                            )}
+                          </div>
+                          
+                          {pessoaFisicaData.foto_documento ? (
+                            <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                              {isPdf(pessoaFisicaData.foto_documento) ? (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                  <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                                  <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveDocument(pessoaFisicaData.foto_documento)}
+                                      className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
+                                    >
+                                      <FileText size={16} />
+                                      Visualizar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setPessoaFisicaData(prev => ({ ...prev, foto_documento: '' }))}
+                                      className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center gap-1"
+                                    >
+                                      <X size={16} />
+                                      Remover
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <img
+                                    src={pessoaFisicaData.foto_documento}
+                                    alt="Documento"
+                                    className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                                    onClick={() => setActiveDocument(pessoaFisicaData.foto_documento)}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setPessoaFisicaData(prev => ({ ...prev, foto_documento: '' }))}
+                                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                    title="Remover documento"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          ) : (
+                            <DocumentUploader
+                              onUploadComplete={(url: string) => setPessoaFisicaData(prev => ({ ...prev, foto_documento: url }))}
+                              motorista_id={motorista_id}
+                              documentType="rg"
+                              label="Clique para enviar o documento"
+                            />
+                          )}
+                        </div>
+
+                        {/* Comprovante de Residência */}
+                        <div>
+                          <div className="mb-2 flex justify-between items-center">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Comprovante de Residência
+                            </label>
+                            {pessoaFisicaData.comprovante_residencia && (
+                              <button
+                                type="button"
+                                onClick={() => openDocumentInNewTab(pessoaFisicaData.comprovante_residencia)}
+                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-xs"
+                              >
+                                <ExternalLink size={14} />
+                                Abrir em nova aba
+                              </button>
+                            )}
+                          </div>
+                          
+                          {pessoaFisicaData.comprovante_residencia ? (
+                            <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                              {isPdf(pessoaFisicaData.comprovante_residencia) ? (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                  <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                                  <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveDocument(pessoaFisicaData.comprovante_residencia)}
+                                      className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
+                                    >
+                                      <FileText size={16} />
+                                      Visualizar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setPessoaFisicaData(prev => ({ ...prev, comprovante_residencia: '' }))}
+                                      className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center gap-1"
+                                    >
+                                      <X size={16} />
+                                      Remover
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <img
+                                    src={pessoaFisicaData.comprovante_residencia}
+                                    alt="Comprovante de residência"
+                                    className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                                    onClick={() => setActiveDocument(pessoaFisicaData.comprovante_residencia)}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setPessoaFisicaData(prev => ({ ...prev, comprovante_residencia: '' }))}
+                                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                    title="Remover documento"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          ) : (
+                            <DocumentUploader
+                              onUploadComplete={(url: string) => setPessoaFisicaData(prev => ({ ...prev, comprovante_residencia: url }))}
+                              motorista_id={motorista_id}
+                              documentType="comprovante_residencia"
+                              label="Clique para enviar o comprovante"
+                            />
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -1132,6 +1286,78 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                           />
                         </div>
+                      </div>
+
+                      {/* Documentos - Pessoa Jurídica */}
+                      <div className="mt-4">
+                        <div className="mb-2 flex justify-between items-center">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Comprovante de Residência
+                          </label>
+                          {pessoaJuridicaData.comprovante_residencia && (
+                            <button
+                              type="button"
+                              onClick={() => openDocumentInNewTab(pessoaJuridicaData.comprovante_residencia)}
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-xs"
+                            >
+                              <ExternalLink size={14} />
+                              Abrir em nova aba
+                            </button>
+                          )}
+                        </div>
+                        
+                        {pessoaJuridicaData.comprovante_residencia ? (
+                          <div className="relative aspect-[1.414] w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                            {isPdf(pessoaJuridicaData.comprovante_residencia) ? (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <FileText className="w-12 h-12 text-gray-400 mb-2" />
+                                <p className="text-sm text-gray-500 mb-4">Documento PDF</p>
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveDocument(pessoaJuridicaData.comprovante_residencia)}
+                                    className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-1"
+                                  >
+                                    <FileText size={16} />
+                                    Visualizar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPessoaJuridicaData(prev => ({ ...prev, comprovante_residencia: '' }))}
+                                    className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center gap-1"
+                                  >
+                                    <X size={16} />
+                                    Remover
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <img
+                                  src={pessoaJuridicaData.comprovante_residencia}
+                                  alt="Comprovante de residência"
+                                  className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+                                  onClick={() => setActiveDocument(pessoaJuridicaData.comprovante_residencia)}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setPessoaJuridicaData(prev => ({ ...prev, comprovante_residencia: '' }))}
+                                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                  title="Remover documento"
+                                >
+                                  <X size={16} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <DocumentUploader
+                            onUploadComplete={(url: string) => setPessoaJuridicaData(prev => ({ ...prev, comprovante_residencia: url }))}
+                            motorista_id={motorista_id}
+                            documentType="comprovante_residencia"
+                            label="Clique para enviar o comprovante"
+                          />
+                        )}
                       </div>
                     </div>
                   )}
