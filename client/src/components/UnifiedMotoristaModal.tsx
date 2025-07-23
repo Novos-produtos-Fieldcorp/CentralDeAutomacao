@@ -281,6 +281,12 @@ const UnifiedMotoristaModal = ({
           .maybeSingle();
 
         console.log('Resultado busca veículo:', { veiculo, veiculoError });
+      
+      // Adicionar mais logs detalhados
+      const { data: allDocumentosVeiculo, error: allDocError } = await supabase
+        .from('documento_veiculo')
+        .select('*');
+      console.log('Todos os documentos de veículo:', allDocumentosVeiculo);
         
         if (veiculoError) throw veiculoError;
         if (!veiculo) {
@@ -300,8 +306,13 @@ const UnifiedMotoristaModal = ({
         .eq('veiculo_id', veiculoId)
         .maybeSingle();
 
+      console.log('Documento do veículo encontrado:', { documentoVeiculo, docError });
+
       if (docError) throw docError;
-      if (!documentoVeiculo) return;
+      if (!documentoVeiculo) {
+        console.log('Nenhum documento do veículo encontrado');
+        return;
+      }
 
       // Buscar dados da pessoa física
       const { data: pessoaFisica, error: pfError } = await supabase
@@ -328,7 +339,9 @@ const UnifiedMotoristaModal = ({
         tipo: pessoaFisica ? 'fisica' : pessoaJuridica ? 'juridica' : null
       };
 
+      console.log('Proprietário estruturado:', proprietario);
       setProprietarioVeiculo(proprietario);
+      console.log('State proprietarioVeiculo atualizado');
     } catch (error) {
       console.error('Error fetching proprietario veiculo:', error);
       setProprietarioVeiculo(null);
@@ -817,6 +830,14 @@ const UnifiedMotoristaModal = ({
                   )}
 
                   {/* Seção Proprietário do Veículo - apenas para agregados */}
+                  {(() => {
+                    console.log('Verificando condições para exibir proprietário:');
+                    console.log('motorista.funcao === Agregado:', motorista.funcao === 'Agregado');
+                    console.log('proprietarioVeiculo:', proprietarioVeiculo);
+                    console.log('proprietarioVeiculo.pessoaFisica:', proprietarioVeiculo?.pessoaFisica);
+                    console.log('proprietarioVeiculo.pessoaJuridica:', proprietarioVeiculo?.pessoaJuridica);
+                    return null;
+                  })()}
                   {motorista.funcao === 'Agregado' && proprietarioVeiculo && (proprietarioVeiculo.pessoaFisica || proprietarioVeiculo.pessoaJuridica) && (
                     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg mt-6">
                       <div className="px-4 py-5 sm:px-6">
