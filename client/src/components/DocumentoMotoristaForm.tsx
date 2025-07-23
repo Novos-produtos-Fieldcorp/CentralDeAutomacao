@@ -319,10 +319,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
 
         const { error: pfError } = await supabase
           .from('pessoa_fisica_dono_veiculo')
-          .upsert(pessoaFisicaPayload, { 
-            onConflict: 'id_documento_veiculo',
-            ignoreDuplicates: false 
-          });
+          .insert(pessoaFisicaPayload);
 
         if (pfError) throw pfError;
       } else {
@@ -334,10 +331,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
 
         const { error: pjError } = await supabase
           .from('pessoa_juridica_dono_veiculo')
-          .upsert(pessoaJuridicaPayload, { 
-            onConflict: 'id_documento_veiculo',
-            ignoreDuplicates: false 
-          });
+          .insert(pessoaJuridicaPayload);
 
         if (pjError) throw pjError;
       }
@@ -616,7 +610,6 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                           .from('imagensdocs')
                           .upload(fileName, file, {
                             cacheControl: '3600',
-                            upsert: true,
                             contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
                           })
                           .then(({ error }) => {
@@ -758,7 +751,6 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                           .from('imagensdocs')
                           .upload(fileName, file, {
                             cacheControl: '3600',
-                            upsert: true,
                             contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
                           })
                           .then(({ error }) => {
@@ -919,7 +911,6 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                             .from('imagensdocs')
                             .upload(fileName, file, {
                               cacheControl: '3600',
-                              upsert: true,
                               contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
                             })
                             .then(({ error }) => {
@@ -1190,7 +1181,6 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                                     .from('imagensdocs')
                                     .upload(fileName, file, {
                                       cacheControl: '3600',
-                                      upsert: true,
                                       contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
                                     })
                                     .then(({ error }) => {
@@ -1323,7 +1313,6 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                                     .from('imagensdocs')
                                     .upload(fileName, file, {
                                       cacheControl: '3600',
-                                      upsert: true,
                                       contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
                                     })
                                     .then(({ error }) => {
@@ -1502,7 +1491,6 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                                   .from('imagensdocs')
                                   .upload(fileName, file, {
                                     cacheControl: '3600',
-                                    upsert: true,
                                     contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
                                   })
                                   .then(({ error }) => {
