@@ -39,6 +39,23 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
     foto_crv: ''
   });
 
+  // Estados para documentos do dono do veículo
+  const [tipoDonoVeiculo, setTipoDonoVeiculo] = useState<'fisica' | 'juridica'>('fisica');
+  const [pessoaFisicaData, setPessoaFisicaData] = useState({
+    nome: '',
+    cpf: '',
+    nr_rg: '',
+    data_emissao: '',
+    orgao_expedidor: '',
+    nome_pai: '',
+    nome_mae: ''
+  });
+  const [pessoaJuridicaData, setPessoaJuridicaData] = useState({
+    razao_social: '',
+    cnpj: '',
+    inscricao_estadual: ''
+  });
+
   useEffect(() => {
     if (isOpen && motorista_id) {
       fetchExistingDocumento();
@@ -78,6 +95,65 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
     }
   };
 
+  const fetchDocumentoDonoVeiculo = async (veiculo_id: number) => {
+    try {
+      // Buscar documento do veículo
+      const { data: docVeiculo, error: docError } = await supabase
+        .from('documento_veiculo')
+        .select('*')
+        .eq('veiculo_id', veiculo_id)
+        .maybeSingle();
+
+      if (docError && docError.code !== 'PGRST116') throw docError;
+
+      if (docVeiculo) {
+        setDocumentoVeiculo(docVeiculo);
+
+        // Buscar pessoa física
+        const { data: pessoaFisica, error: pfError } = await supabase
+          .from('pessoa_fisica_dono_veiculo')
+          .select('*')
+          .eq('id_documento_veiculo', docVeiculo.id_documento_veiculo)
+          .maybeSingle();
+
+        if (pfError && pfError.code !== 'PGRST116') throw pfError;
+
+        if (pessoaFisica) {
+          setTipoDonoVeiculo('fisica');
+          setPessoaFisicaData({
+            nome: pessoaFisica.nome || '',
+            cpf: pessoaFisica.cpf ? String(pessoaFisica.cpf) : '',
+            nr_rg: pessoaFisica.nr_rg ? String(pessoaFisica.nr_rg) : '',
+            data_emissao: pessoaFisica.data_emissao || '',
+            orgao_expedidor: pessoaFisica.orgao_expedidor || '',
+            nome_pai: pessoaFisica.nome_pai || '',
+            nome_mae: pessoaFisica.nome_mae || ''
+          });
+        } else {
+          // Buscar pessoa jurídica
+          const { data: pessoaJuridica, error: pjError } = await supabase
+            .from('pessoa_juridica_dono_veiculo')
+            .select('*')
+            .eq('id_documento_veiculo', docVeiculo.id_documento_veiculo)
+            .maybeSingle();
+
+          if (pjError && pjError.code !== 'PGRST116') throw pjError;
+
+          if (pessoaJuridica) {
+            setTipoDonoVeiculo('juridica');
+            setPessoaJuridicaData({
+              razao_social: pessoaJuridica.razao_social || '',
+              cnpj: pessoaJuridica.cnpj ? String(pessoaJuridica.cnpj) : '',
+              inscricao_estadual: pessoaJuridica.inscricao_estadual || ''
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching documento dono veiculo:', error);
+    }
+  };
+
   const fetchVeiculoInfo = async () => {
     try {
       // Get vehicle associated with this motorista
@@ -93,6 +169,9 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
       
       if (veiculoData) {
         setVeiculo(veiculoData);
+        
+        // Buscar documento do veículo
+        await fetchDocumentoDonoVeiculo(veiculoData.veiculo_id);
         
         // Get vehicle document if it exists
         const { data: docData, error: docError } = await supabase
@@ -177,6 +256,11 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
         }
       }
       
+      // Salvar documentos do dono do veículo se veículo existe
+      if (veiculo) {
+        await saveDocumentoDonoVeiculo();
+      }
+      
       toast.success('Documentos salvos com sucesso');
       onSuccess();
       onClose();
@@ -188,9 +272,87 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
     }
   };
 
+  const saveDocumentoDonoVeiculo = async () => {
+    try {
+      let documentoVeiculoId = documentoVeiculo?.id_documento_veiculo;
+
+      // Criar documento do veículo se não existir
+      if (!documentoVeiculoId) {
+        const { data: newDocVeiculo, error: docError } = await supabase
+          .from('documento_veiculo')
+          .insert({ veiculo_id: veiculo.veiculo_id })
+          .select('id_documento_veiculo')
+          .single();
+
+        if (docError) throw docError;
+        documentoVeiculoId = newDocVeiculo.id_documento_veiculo;
+      }
+
+      // Remover dados existentes do tipo oposto
+      if (tipoDonoVeiculo === 'fisica') {
+        await supabase
+          .from('pessoa_juridica_dono_veiculo')
+          .delete()
+          .eq('id_documento_veiculo', documentoVeiculoId);
+      } else {
+        await supabase
+          .from('pessoa_fisica_dono_veiculo')
+          .delete()
+          .eq('id_documento_veiculo', documentoVeiculoId);
+      }
+
+      // Salvar dados do tipo selecionado
+      if (tipoDonoVeiculo === 'fisica') {
+        const pessoaFisicaPayload = {
+          ...pessoaFisicaData,
+          id_documento_veiculo: documentoVeiculoId,
+          cpf: pessoaFisicaData.cpf ? parseFloat(pessoaFisicaData.cpf) : null,
+          nr_rg: pessoaFisicaData.nr_rg ? parseFloat(pessoaFisicaData.nr_rg) : null
+        };
+
+        const { error: pfError } = await supabase
+          .from('pessoa_fisica_dono_veiculo')
+          .upsert(pessoaFisicaPayload, { 
+            onConflict: 'id_documento_veiculo',
+            ignoreDuplicates: false 
+          });
+
+        if (pfError) throw pfError;
+      } else {
+        const pessoaJuridicaPayload = {
+          ...pessoaJuridicaData,
+          id_documento_veiculo: documentoVeiculoId,
+          cnpj: pessoaJuridicaData.cnpj ? parseFloat(pessoaJuridicaData.cnpj) : null
+        };
+
+        const { error: pjError } = await supabase
+          .from('pessoa_juridica_dono_veiculo')
+          .upsert(pessoaJuridicaPayload, { 
+            onConflict: 'id_documento_veiculo',
+            ignoreDuplicates: false 
+          });
+
+        if (pjError) throw pjError;
+      }
+    } catch (error) {
+      console.error('Error saving documento dono veiculo:', error);
+      throw error; // Re-throw para que seja capturado pelo handleSubmit
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePessoaFisicaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPessoaFisicaData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePessoaJuridicaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPessoaJuridicaData(prev => ({ ...prev, [name]: value }));
   };
 
 
@@ -787,6 +949,190 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                           </p>
                         </div>
                       </label>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Documentos do Dono do Veículo - Only show if vehicle exists */}
+              {veiculo && (
+                <div className="md:col-span-2">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                      <FileText className="w-8 h-8 text-green-600 dark:text-green-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2 flex-1">
+                      Documentos do Dono do Veículo
+                    </h3>
+                  </div>
+
+                  {/* Tipo de Pessoa Toggle */}
+                  <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setTipoDonoVeiculo('fisica')}
+                      className={`flex-1 px-4 py-2 text-sm font-medium rounded-l-lg transition-colors ${
+                        tipoDonoVeiculo === 'fisica'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Pessoa Física
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTipoDonoVeiculo('juridica')}
+                      className={`flex-1 px-4 py-2 text-sm font-medium rounded-r-lg transition-colors ${
+                        tipoDonoVeiculo === 'juridica'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Pessoa Jurídica
+                    </button>
+                  </div>
+
+                  {/* Pessoa Física Form */}
+                  {tipoDonoVeiculo === 'fisica' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Nome Completo
+                          </label>
+                          <input
+                            type="text"
+                            name="nome"
+                            value={pessoaFisicaData.nome}
+                            onChange={handlePessoaFisicaChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            CPF
+                          </label>
+                          <input
+                            type="text"
+                            name="cpf"
+                            value={pessoaFisicaData.cpf}
+                            onChange={handlePessoaFisicaChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            RG
+                          </label>
+                          <input
+                            type="text"
+                            name="nr_rg"
+                            value={pessoaFisicaData.nr_rg}
+                            onChange={handlePessoaFisicaChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Data de Emissão
+                          </label>
+                          <input
+                            type="date"
+                            name="data_emissao"
+                            value={pessoaFisicaData.data_emissao}
+                            onChange={handlePessoaFisicaChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Órgão Expedidor
+                          </label>
+                          <input
+                            type="text"
+                            name="orgao_expedidor"
+                            value={pessoaFisicaData.orgao_expedidor}
+                            onChange={handlePessoaFisicaChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Nome do Pai
+                          </label>
+                          <input
+                            type="text"
+                            name="nome_pai"
+                            value={pessoaFisicaData.nome_pai}
+                            onChange={handlePessoaFisicaChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Nome da Mãe
+                        </label>
+                        <input
+                          type="text"
+                          name="nome_mae"
+                          value={pessoaFisicaData.nome_mae}
+                          onChange={handlePessoaFisicaChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pessoa Jurídica Form */}
+                  {tipoDonoVeiculo === 'juridica' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Razão Social
+                        </label>
+                        <input
+                          type="text"
+                          name="razao_social"
+                          value={pessoaJuridicaData.razao_social}
+                          onChange={handlePessoaJuridicaChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            CNPJ
+                          </label>
+                          <input
+                            type="text"
+                            name="cnpj"
+                            value={pessoaJuridicaData.cnpj}
+                            onChange={handlePessoaJuridicaChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Inscrição Estadual
+                          </label>
+                          <input
+                            type="text"
+                            name="inscricao_estadual"
+                            value={pessoaJuridicaData.inscricao_estadual}
+                            onChange={handlePessoaJuridicaChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

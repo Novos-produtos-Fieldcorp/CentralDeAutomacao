@@ -288,6 +288,20 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
+export const insertDocumentoVeiculoSchema = createInsertSchema(documento_veiculo).omit({
+  id_documento_veiculo: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const insertPessoaFisicaDonoVeiculoSchema = createInsertSchema(pessoa_fisica_dono_veiculo).omit({
+  id_pessoa_fisica_dono_veiculo: true,
+});
+
+export const insertPessoaJuridicaDonoVeiculoSchema = createInsertSchema(pessoa_juridica_dono_veiculo).omit({
+  id_pessoa_juridica_dono_veiculo: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -299,6 +313,12 @@ export type Veiculo = typeof veiculo.$inferSelect;
 export type InsertVeiculo = z.infer<typeof insertVeiculoSchema>;
 export type DocumentoMotorista = typeof documento_motorista.$inferSelect;
 export type DocumentoAjudante = typeof documento_ajudante.$inferSelect;
+export type DocumentoVeiculo = typeof documento_veiculo.$inferSelect;
+export type PessoaFisicaDonoVeiculo = typeof pessoa_fisica_dono_veiculo.$inferSelect;
+export type PessoaJuridicaDonoVeiculo = typeof pessoa_juridica_dono_veiculo.$inferSelect;
+export type InsertDocumentoVeiculo = z.infer<typeof insertDocumentoVeiculoSchema>;
+export type InsertPessoaFisicaDonoVeiculo = z.infer<typeof insertPessoaFisicaDonoVeiculoSchema>;
+export type InsertPessoaJuridicaDonoVeiculo = z.infer<typeof insertPessoaJuridicaDonoVeiculoSchema>;
 export type Comentario = typeof comentario.$inferSelect;
 export type InsertComentario = z.infer<typeof insertComentarioSchema>;
 export type EndMotorista = typeof end_motorista.$inferSelect;
