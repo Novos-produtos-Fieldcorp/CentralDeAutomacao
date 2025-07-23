@@ -265,9 +265,10 @@ const UnifiedMotoristaModal = ({
   const fetchProprietarioVeiculo = async () => {
     if (!motorista) return;
 
+    console.log('=== INICIANDO BUSCA PROPRIETÁRIO VEÍCULO ===');
+    console.log('motorista.motorista_id:', motorista.motorista_id);
+
     try {
-      console.log('Buscando proprietário do veículo para motorista:', motorista.motorista_id);
-      console.log('Objeto motorista completo:', motorista);
       
       // Verificar se o motorista já tem veiculo_id
       let veiculoId = (motorista as any).veiculo_id;
@@ -830,14 +831,6 @@ const UnifiedMotoristaModal = ({
                   )}
 
                   {/* Seção Proprietário do Veículo - apenas para agregados */}
-                  {(() => {
-                    console.log('Verificando condições para exibir proprietário:');
-                    console.log('motorista.funcao === Agregado:', motorista.funcao === 'Agregado');
-                    console.log('proprietarioVeiculo:', proprietarioVeiculo);
-                    console.log('proprietarioVeiculo.pessoaFisica:', proprietarioVeiculo?.pessoaFisica);
-                    console.log('proprietarioVeiculo.pessoaJuridica:', proprietarioVeiculo?.pessoaJuridica);
-                    return null;
-                  })()}
                   {motorista.funcao === 'Agregado' && proprietarioVeiculo && (proprietarioVeiculo.pessoaFisica || proprietarioVeiculo.pessoaJuridica) && (
                     <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg mt-6">
                       <div className="px-4 py-5 sm:px-6">
