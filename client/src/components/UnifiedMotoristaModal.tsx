@@ -68,12 +68,15 @@ const UnifiedMotoristaModal = ({
   useEffect(() => {
     if (isOpen && motorista) {
       console.log('Modal aberto para motorista:', motorista);
+      console.log('Função do motorista:', motorista.funcao);
+      console.log('Veiculo ID:', motorista.veiculo_id);
       fetchEndereco();
       fetchDocumentCount();
       fetchDocumentoMotorista();
       fetchAjudantesCount();
       fetchGestaoRiscoCount();
       fetchComentariosCount();
+      console.log('Chamando fetchProprietarioVeiculo...');
       fetchProprietarioVeiculo();
     }
   }, [isOpen, motorista]);
