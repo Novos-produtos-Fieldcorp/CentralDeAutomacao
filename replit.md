@@ -175,3 +175,23 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - Headers no-cache aplicados para todas as rotas `/api/*`
 - Configuração de funções serverless com esbuild
 - Ordem correta de redirects (mais específicos primeiro)
+
+## Upload de Documentos do Proprietário (Janeiro 2025)
+
+### Sistema de Upload
+- Substituído uso do DocumentUploader por upload direto no bucket `imagensdocs`
+- Upload de foto de documento (RG/CNH) para proprietários pessoa física
+- Upload de comprovante de residência para ambos os tipos de proprietários
+- URLs salvos nas colunas corretas das tabelas do banco de dados
+
+### Funcionalidades Implementadas
+- Upload direto ao Supabase Storage bucket `imagensdocs`
+- Validação de tipo de arquivo (JPEG, PNG, PDF)
+- Validação de tamanho (máximo 15MB)
+- Nomeação única de arquivos com timestamp
+- Salvamento automático de URLs públicos no banco de dados
+
+### Estrutura do Banco de Dados
+- Tabela `pessoa_fisica_dono_veiculo`: colunas `foto_documento` e `comprovante_residencia`
+- Tabela `pessoa_juridica_dono_veiculo`: coluna `comprovante_residencia`
+- URLs dos documentos armazenados como texto no banco

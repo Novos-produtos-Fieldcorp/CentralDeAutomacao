@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { X, Loader2, CreditCard, Home, FileText, Camera, Upload, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { BaseModal } from './BaseModal';
-import DocumentUploader from './DocumentUploader';
+
 
 interface DocumentoMotoristaFormProps {
   isOpen: boolean;
@@ -1161,12 +1161,73 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                               )}
                             </div>
                           ) : (
-                            <DocumentUploader
-                              onUploadComplete={(url: string) => setPessoaFisicaData(prev => ({ ...prev, foto_documento: url }))}
-                              motorista_id={motorista_id}
-                              documentType="rg"
-                              label="Clique para enviar o documento"
-                            />
+                            <div className="relative">
+                              <input
+                                type="file"
+                                id="file-documento-pf"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  
+                                  // Check file size (max 15MB)
+                                  if (file.size > 15 * 1024 * 1024) {
+                                    toast.error('O arquivo é muito grande. Tamanho máximo: 15MB');
+                                    return;
+                                  }
+                                  
+                                  // Check file type
+                                  const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+                                  if (!validTypes.includes(file.type)) {
+                                    toast.error('Tipo de arquivo inválido. Use JPEG, PNG ou PDF');
+                                    return;
+                                  }
+                                  
+                                  // Upload file
+                                  const fileExt = file.name.split('.').pop();
+                                  const fileName = `${motorista_id}_documento_pf_${Date.now()}.${fileExt}`;
+                                  
+                                  supabase.storage
+                                    .from('imagensdocs')
+                                    .upload(fileName, file, {
+                                      cacheControl: '3600',
+                                      upsert: true,
+                                      contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
+                                    })
+                                    .then(({ error }) => {
+                                      if (error) {
+                                        toast.error('Erro ao enviar arquivo');
+                                        console.error(error);
+                                        return;
+                                      }
+                                      
+                                      const { data: { publicUrl } } = supabase.storage
+                                        .from('imagensdocs')
+                                        .getPublicUrl(fileName);
+                                        
+                                      setPessoaFisicaData(prev => ({ ...prev, foto_documento: publicUrl }));
+                                      toast.success('Arquivo enviado com sucesso');
+                                    });
+                                }}
+                                className="sr-only"
+                                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                              />
+                              <label
+                                htmlFor="file-documento-pf"
+                                className="flex flex-col items-center justify-center w-full aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
+                                          border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
+                                          hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                              >
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                  <Camera className="w-10 h-10 text-gray-400 mb-4" />
+                                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                    <span className="font-semibold">Clique para enviar</span> ou arraste e solte
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    JPEG, PNG ou PDF (máx. 15MB)
+                                  </p>
+                                </div>
+                              </label>
+                            </div>
                           )}
                         </div>
 
@@ -1233,12 +1294,73 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                               )}
                             </div>
                           ) : (
-                            <DocumentUploader
-                              onUploadComplete={(url: string) => setPessoaFisicaData(prev => ({ ...prev, comprovante_residencia: url }))}
-                              motorista_id={motorista_id}
-                              documentType="comprovante_residencia"
-                              label="Clique para enviar o comprovante"
-                            />
+                            <div className="relative">
+                              <input
+                                type="file"
+                                id="file-comprovante-pf"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  
+                                  // Check file size (max 15MB)
+                                  if (file.size > 15 * 1024 * 1024) {
+                                    toast.error('O arquivo é muito grande. Tamanho máximo: 15MB');
+                                    return;
+                                  }
+                                  
+                                  // Check file type
+                                  const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+                                  if (!validTypes.includes(file.type)) {
+                                    toast.error('Tipo de arquivo inválido. Use JPEG, PNG ou PDF');
+                                    return;
+                                  }
+                                  
+                                  // Upload file
+                                  const fileExt = file.name.split('.').pop();
+                                  const fileName = `${motorista_id}_comprovante_pf_${Date.now()}.${fileExt}`;
+                                  
+                                  supabase.storage
+                                    .from('imagensdocs')
+                                    .upload(fileName, file, {
+                                      cacheControl: '3600',
+                                      upsert: true,
+                                      contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
+                                    })
+                                    .then(({ error }) => {
+                                      if (error) {
+                                        toast.error('Erro ao enviar arquivo');
+                                        console.error(error);
+                                        return;
+                                      }
+                                      
+                                      const { data: { publicUrl } } = supabase.storage
+                                        .from('imagensdocs')
+                                        .getPublicUrl(fileName);
+                                        
+                                      setPessoaFisicaData(prev => ({ ...prev, comprovante_residencia: publicUrl }));
+                                      toast.success('Arquivo enviado com sucesso');
+                                    });
+                                }}
+                                className="sr-only"
+                                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                              />
+                              <label
+                                htmlFor="file-comprovante-pf"
+                                className="flex flex-col items-center justify-center w-full aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
+                                          border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
+                                          hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                              >
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                  <Camera className="w-10 h-10 text-gray-400 mb-4" />
+                                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                    <span className="font-semibold">Clique para enviar</span> ou arraste e solte
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    JPEG, PNG ou PDF (máx. 15MB)
+                                  </p>
+                                </div>
+                              </label>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1351,12 +1473,73 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                             )}
                           </div>
                         ) : (
-                          <DocumentUploader
-                            onUploadComplete={(url: string) => setPessoaJuridicaData(prev => ({ ...prev, comprovante_residencia: url }))}
-                            motorista_id={motorista_id}
-                            documentType="comprovante_residencia"
-                            label="Clique para enviar o comprovante"
-                          />
+                          <div className="relative">
+                            <input
+                              type="file"
+                              id="file-comprovante-pj"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                
+                                // Check file size (max 15MB)
+                                if (file.size > 15 * 1024 * 1024) {
+                                  toast.error('O arquivo é muito grande. Tamanho máximo: 15MB');
+                                  return;
+                                }
+                                
+                                // Check file type
+                                const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+                                if (!validTypes.includes(file.type)) {
+                                  toast.error('Tipo de arquivo inválido. Use JPEG, PNG ou PDF');
+                                  return;
+                                }
+                                
+                                // Upload file
+                                const fileExt = file.name.split('.').pop();
+                                const fileName = `${motorista_id}_comprovante_pj_${Date.now()}.${fileExt}`;
+                                
+                                supabase.storage
+                                  .from('imagensdocs')
+                                  .upload(fileName, file, {
+                                    cacheControl: '3600',
+                                    upsert: true,
+                                    contentType: fileExt?.toLowerCase() === 'pdf' ? 'application/pdf' : undefined
+                                  })
+                                  .then(({ error }) => {
+                                    if (error) {
+                                      toast.error('Erro ao enviar arquivo');
+                                      console.error(error);
+                                      return;
+                                    }
+                                    
+                                    const { data: { publicUrl } } = supabase.storage
+                                      .from('imagensdocs')
+                                      .getPublicUrl(fileName);
+                                      
+                                    setPessoaJuridicaData(prev => ({ ...prev, comprovante_residencia: publicUrl }));
+                                    toast.success('Arquivo enviado com sucesso');
+                                  });
+                              }}
+                              className="sr-only"
+                              accept="image/jpeg,image/png,image/jpg,application/pdf"
+                            />
+                            <label
+                              htmlFor="file-comprovante-pj"
+                              className="flex flex-col items-center justify-center w-full aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
+                                        border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
+                                        hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                            >
+                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <Camera className="w-10 h-10 text-gray-400 mb-4" />
+                                <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                  <span className="font-semibold">Clique para enviar</span> ou arraste e solte
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  JPEG, PNG ou PDF (máx. 15MB)
+                                </p>
+                              </div>
+                            </label>
+                          </div>
                         )}
                       </div>
                     </div>
