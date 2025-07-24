@@ -295,20 +295,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
         documentoVeiculoId = newDocVeiculo.id_documento_veiculo;
       }
 
-      // Remover dados existentes do tipo oposto
-      if (tipoDonoVeiculo === 'fisica') {
-        await supabase
-          .from('pessoa_juridica_dono_veiculo')
-          .delete()
-          .eq('id_documento_veiculo', documentoVeiculoId);
-      } else {
-        await supabase
-          .from('pessoa_fisica_dono_veiculo')
-          .delete()
-          .eq('id_documento_veiculo', documentoVeiculoId);
-      }
-
-      // Salvar dados do tipo selecionado
+      // Salvar dados do tipo selecionado usando upsert
       if (tipoDonoVeiculo === 'fisica') {
         const pessoaFisicaPayload = {
           ...pessoaFisicaData,
@@ -317,11 +304,35 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
           nr_rg: pessoaFisicaData.nr_rg ? parseFloat(pessoaFisicaData.nr_rg) : null
         };
 
-        const { error: pfError } = await supabase
+        // Primeiro verificar se já existe registro para este documento_veiculo
+        const { data: existingPF } = await supabase
           .from('pessoa_fisica_dono_veiculo')
-          .insert(pessoaFisicaPayload);
+          .select('id_pessoa_fisica_dono_veiculo')
+          .eq('id_documento_veiculo', documentoVeiculoId)
+          .maybeSingle();
 
-        if (pfError) throw pfError;
+        // Remover dados de pessoa jurídica se existirem
+        await supabase
+          .from('pessoa_juridica_dono_veiculo')
+          .delete()
+          .eq('id_documento_veiculo', documentoVeiculoId);
+
+        if (existingPF) {
+          // Atualizar registro existente
+          const { error: pfError } = await supabase
+            .from('pessoa_fisica_dono_veiculo')
+            .update(pessoaFisicaPayload)
+            .eq('id_documento_veiculo', documentoVeiculoId);
+
+          if (pfError) throw pfError;
+        } else {
+          // Criar novo registro
+          const { error: pfError } = await supabase
+            .from('pessoa_fisica_dono_veiculo')
+            .insert(pessoaFisicaPayload);
+
+          if (pfError) throw pfError;
+        }
       } else {
         const pessoaJuridicaPayload = {
           ...pessoaJuridicaData,
@@ -329,11 +340,35 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
           cnpj: pessoaJuridicaData.cnpj ? parseFloat(pessoaJuridicaData.cnpj) : null
         };
 
-        const { error: pjError } = await supabase
+        // Primeiro verificar se já existe registro para este documento_veiculo
+        const { data: existingPJ } = await supabase
           .from('pessoa_juridica_dono_veiculo')
-          .insert(pessoaJuridicaPayload);
+          .select('id_pessoa_juridica_dono_veiculo')
+          .eq('id_documento_veiculo', documentoVeiculoId)
+          .maybeSingle();
 
-        if (pjError) throw pjError;
+        // Remover dados de pessoa física se existirem
+        await supabase
+          .from('pessoa_fisica_dono_veiculo')
+          .delete()
+          .eq('id_documento_veiculo', documentoVeiculoId);
+
+        if (existingPJ) {
+          // Atualizar registro existente
+          const { error: pjError } = await supabase
+            .from('pessoa_juridica_dono_veiculo')
+            .update(pessoaJuridicaPayload)
+            .eq('id_documento_veiculo', documentoVeiculoId);
+
+          if (pjError) throw pjError;
+        } else {
+          // Criar novo registro
+          const { error: pjError } = await supabase
+            .from('pessoa_juridica_dono_veiculo')
+            .insert(pessoaJuridicaPayload);
+
+          if (pjError) throw pjError;
+        }
       }
     } catch (error) {
       console.error('Error saving documento dono veiculo:', error);
