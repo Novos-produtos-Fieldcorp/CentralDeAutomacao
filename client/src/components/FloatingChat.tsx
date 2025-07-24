@@ -3,7 +3,9 @@ import {Send, Loader2, AlertCircle, WifiOff, X, Mic, Paperclip, Minus, Square, M
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
-const baseURL = '/api'; // Usar proxy local para evitar CORS
+const baseURL = import.meta.env.VITE_CHAT_API_URL || '/api'; // Usar a URL do ambiente ou proxy local para evitar CORS
+console.log('Environment VITE_CHAT_API_URL:', import.meta.env.VITE_CHAT_API_URL);
+console.log('Resolved baseURL:', baseURL);
 
 const apiClient = axios.create({
   baseURL,
