@@ -195,3 +195,24 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - Tabela `pessoa_fisica_dono_veiculo`: colunas `foto_documento` e `comprovante_residencia`
 - Tabela `pessoa_juridica_dono_veiculo`: coluna `comprovante_residencia`
 - URLs dos documentos armazenados como texto no banco
+
+### Correções de Upsert (Janeiro 2025)
+- Corrigido problema de múltiplas inserções no banco de dados
+- Implementado sistema de upsert (insert ou update) para dados do proprietário
+- Verificação prévia de registros existentes antes de inserir
+- Prevenção de registros duplicados para o mesmo documento de veículo
+- Busca limitada a 1 registro para evitar erro de múltiplas linhas
+
+## Exibição de Proprietário do Veículo para Agregados (Janeiro 2025)
+
+### Funcionalidade Implementada
+- Busca e exibição de informações do proprietário do veículo apenas no modal de agregados
+- Relacionamento: motorista → veículo → documento_veiculo → pessoa_fisica/juridica_dono_veiculo
+- Exibição na aba "Documentos" do UnifiedAgregadoModal
+- Suporte a proprietários pessoa física e pessoa jurídica
+
+### Dados Exibidos
+- **Pessoa Física**: nome, CPF, RG, órgão expedidor, nomes dos pais, documentos
+- **Pessoa Jurídica**: razão social, CNPJ, inscrição estadual, comprovante de endereço
+- Links para visualização de documentos armazenados no Supabase Storage
+- Preview de imagens quando não são PDFs
