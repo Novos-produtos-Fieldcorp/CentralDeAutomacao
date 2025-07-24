@@ -230,20 +230,35 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
         return;
       }
 
-      // Buscar proprietário pessoa física
+      // Buscar documento do veículo
+      const { data: documentoVeiculo, error: docError } = await supabase
+        .from('documento_veiculo')
+        .select('id_documento_veiculo')
+        .eq('veiculo_id', veiculoData.veiculo_id)
+        .maybeSingle();
+
+      console.log('Documento veículo encontrado:', { documentoVeiculo, docError });
+
+      if (docError) throw docError;
+      if (!documentoVeiculo) {
+        console.log('Nenhum documento de veículo encontrado');
+        return;
+      }
+
+      // Buscar proprietário pessoa física usando id_documento_veiculo
       const { data: pessoaFisica, error: pfError } = await supabase
         .from('pessoa_fisica_dono_veiculo')
         .select('*')
-        .eq('veiculo_id', veiculoData.veiculo_id)
+        .eq('id_documento_veiculo', documentoVeiculo.id_documento_veiculo)
         .maybeSingle();
 
       console.log('Pessoa física encontrada:', { pessoaFisica, pfError });
 
-      // Buscar proprietário pessoa jurídica
+      // Buscar proprietário pessoa jurídica usando id_documento_veiculo
       const { data: pessoaJuridica, error: pjError } = await supabase
         .from('pessoa_juridica_dono_veiculo')
         .select('*')
-        .eq('veiculo_id', veiculoData.veiculo_id)
+        .eq('id_documento_veiculo', documentoVeiculo.id_documento_veiculo)
         .maybeSingle();
 
       console.log('Pessoa jurídica encontrada:', { pessoaJuridica, pjError });
@@ -895,7 +910,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       Nome Completo
                                     </dt>
                                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                      {proprietarioVeiculo.pessoaFisica.nome_completo || 'Não informado'}
+                                      {proprietarioVeiculo.pessoaFisica.nome || 'Não informado'}
                                     </dd>
                                   </div>
                                   <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -911,15 +926,31 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       RG
                                     </dt>
                                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                      {proprietarioVeiculo.pessoaFisica.rg || 'Não informado'}
+                                      {proprietarioVeiculo.pessoaFisica.nr_rg || 'Não informado'}
                                     </dd>
                                   </div>
                                   <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                                     <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                      Estado Civil
+                                      Órgão Expedidor
                                     </dt>
                                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                      {proprietarioVeiculo.pessoaFisica.estado_civil || 'Não informado'}
+                                      {proprietarioVeiculo.pessoaFisica.orgao_expedidor || 'Não informado'}
+                                    </dd>
+                                  </div>
+                                  <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                      Nome da Mãe
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                      {proprietarioVeiculo.pessoaFisica.nome_mae || 'Não informado'}
+                                    </dd>
+                                  </div>
+                                  <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                      Nome do Pai
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                      {proprietarioVeiculo.pessoaFisica.nome_pai || 'Não informado'}
                                     </dd>
                                   </div>
                                   {proprietarioVeiculo.pessoaFisica.foto_documento && (
