@@ -44,6 +44,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
   const [comentarioCount, setComentarioCount] = useState(0);
   const [isEditVeiculoModalOpen, setIsEditVeiculoModalOpen] = useState(false);
+  const [proprietarioVeiculo, setProprietarioVeiculo] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen && motorista) {
