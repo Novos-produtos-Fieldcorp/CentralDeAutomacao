@@ -250,6 +250,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
         .from('pessoa_fisica_dono_veiculo')
         .select('*')
         .eq('id_documento_veiculo', documentoVeiculo.id_documento_veiculo)
+        .limit(1)
         .maybeSingle();
 
       console.log('Pessoa física encontrada:', { pessoaFisica, pfError });
