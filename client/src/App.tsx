@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
+import { queryClient } from './lib/queryClient';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ChecklistProvider } from './context/ChecklistContext';
@@ -37,11 +39,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <ThemeProvider>
-      <ChecklistProvider>
-        <Router>
-          <AuthProvider>
-            <ChatProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <ChecklistProvider>
+          <Router>
+            <AuthProvider>
+              <ChatProvider>
               <Routes>
                 <Route path="/unauthorized" element={<Unauthorized />} />
                 <Route path="/admin" element={<Admin />} />
@@ -73,11 +76,12 @@ function App() {
                   </ProtectedRoute>
                 } />
               </Routes>
-            </ChatProvider>
-          </AuthProvider>
-        </Router>
-      </ChecklistProvider>
-    </ThemeProvider>
+              </ChatProvider>
+            </AuthProvider>
+          </Router>
+        </ChecklistProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
