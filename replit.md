@@ -99,6 +99,13 @@ Preferred communication style: Simple, everyday language.
 - **Vite**: Build tool and dev server
 - **PostCSS**: CSS processing for Tailwind
 - **ESBuild**: Fast JavaScript bundling for production
+- **Testing**: Cypress for E2E and component testing
+
+### Testing Infrastructure
+- **Cypress**: End-to-end and component testing framework
+- **Test Coverage**: Comprehensive test suite for contratação module
+- **Custom Commands**: Authentication, navigation, and data management helpers
+- **Test Data**: Fixtures and dynamic test data generation
 
 ### External Services
 - **Supabase**: Used for file storage and some database operations
@@ -123,3 +130,31 @@ Preferred communication style: Simple, everyday language.
 - **Database Updates**: Drizzle Kit push for schema synchronization
 
 The application is designed to be a comprehensive business management system with a focus on transportation and logistics, providing tools for driver management, vehicle tracking, document handling, and automated reporting.
+
+## Testing Implementation
+
+### Cypress Test Suite
+- **Complete E2E Testing**: Comprehensive test coverage for the contratação (hiring) module
+- **Test Files**: 5 test files covering dashboard, motoristas list, kanban board, agregados, and integration
+- **Custom Commands**: 8 custom Cypress commands for authentication, navigation, and data management
+- **Test Coverage Areas**:
+  - Dashboard statistics and charts
+  - Motorista CRUD operations and bulk actions
+  - Kanban board functionality and status workflows
+  - Agregados management with vehicle/client associations
+  - Cross-feature integration and data consistency
+  - Document management and WiseApp integration
+  - Responsive design and performance testing
+
+### Test Execution
+- Run all tests: `npx cypress run --spec 'cypress/e2e/contratacao/**/*.cy.ts'`
+- Interactive GUI: `npx cypress open`
+- Individual test files available for targeted testing
+- Comprehensive documentation in `cypress/README.md` and `CYPRESS_SETUP.md`
+
+### Recent Changes (January 2025)
+- ✓ Fixed QueryClient setup issue - Added QueryClientProvider to wrap entire application
+- ✓ Created comprehensive Cypress testing infrastructure
+- ✓ Implemented 80+ test scenarios covering all major contratação functionality
+- ✓ Added custom commands for efficient test automation
+- ✓ Created test data fixtures and documentation
