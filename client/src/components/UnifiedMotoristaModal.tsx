@@ -54,6 +54,16 @@ const UnifiedMotoristaModal = ({
   const [proprietarioVeiculo, setProprietarioVeiculo] = useState<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  const handleComentariosClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.nativeEvent) {
+      e.nativeEvent.stopImmediatePropagation();
+    }
+    setActiveTab('comentarios');
+    return false;
+  };
+
   useEffect(() => {
     if (isOpen && motorista && !isInitialized) {
       fetchEndereco();
@@ -395,8 +405,16 @@ const UnifiedMotoristaModal = ({
     }
   };
   
+  const handleModalClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.nativeEvent) {
+      e.nativeEvent.stopImmediatePropagation();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-50" onClick={handleModalClick}>
       {/* Overlay */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       
@@ -405,7 +423,8 @@ const UnifiedMotoristaModal = ({
         <div className="flex min-h-full items-center justify-center p-4">
           <div 
             className="relative bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl shadow-xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            onClick={handleModalClick}
+            onSubmit={(e) => e.preventDefault()}
           >
             {/* Header */}
             <div className="border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
@@ -509,22 +528,9 @@ const UnifiedMotoristaModal = ({
                     )}
                   </div>
                 </button>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setActiveTab('comentarios');
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setActiveTab('comentarios');
-                    }
-                  }}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm cursor-pointer ${
+                <span
+                  onClick={handleComentariosClick}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm cursor-pointer select-none ${
                     activeTab === 'comentarios'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
@@ -539,7 +545,7 @@ const UnifiedMotoristaModal = ({
                       </span>
                     )}
                   </div>
-                </div>
+                </span>
               </nav>
             </div>
 
