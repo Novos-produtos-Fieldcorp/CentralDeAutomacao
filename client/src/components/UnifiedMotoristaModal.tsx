@@ -52,9 +52,10 @@ const UnifiedMotoristaModal = ({
   const [comentariosCount, setComentariosCount] = useState(0);
   const [ajudantes, setAjudantes] = useState<DocumentoAjudante[]>([]);
   const [proprietarioVeiculo, setProprietarioVeiculo] = useState<any>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (isOpen && motorista) {
+    if (isOpen && motorista && !isInitialized) {
       console.log('Modal aberto para motorista:', motorista);
       console.log('Função do motorista:', motorista.funcao);
       console.log('Veiculo ID:', (motorista as any).veiculo_id);
@@ -66,8 +67,15 @@ const UnifiedMotoristaModal = ({
       fetchComentariosCount();
       console.log('Chamando fetchProprietarioVeiculo...');
       fetchProprietarioVeiculo();
+      setActiveTab('details');
+      setIsInitialized(true);
     }
-  }, [isOpen, motorista]);
+    
+    if (!isOpen) {
+      setIsInitialized(false);
+      setActiveTab('details');
+    }
+  }, [isOpen, motorista, isInitialized]);
 
   const fetchEndereco = async () => {
     if (!motorista) return;
