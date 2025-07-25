@@ -77,6 +77,13 @@ const UnifiedMotoristaModal = ({
   const [proprietarioVeiculo, setProprietarioVeiculo] = useState<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   
+  // Debug: rastrear mudanças específicas no isInitialized
+  const setIsInitializedWithLog = (value: boolean) => {
+    console.log(`🔴 MUDANDO isInitialized de ${isInitialized} para ${value}`);
+    console.trace('Stack trace do setIsInitialized:');
+    setIsInitialized(value);
+  };
+  
   // Debug: rastrear mudanças nas props que causam re-inicialização
   useEffect(() => {
     console.log('Props mudaram:', { 
@@ -102,12 +109,12 @@ const UnifiedMotoristaModal = ({
       fetchProprietarioVeiculo();
       // NUNCA resetar activeTab durante inicialização - deixar o usuário controlar
       console.log('PRESERVANDO activeTab durante inicialização:', activeTab);
-      setIsInitialized(true);
+      setIsInitializedWithLog(true);
     }
     
     if (!isOpen) {
       console.log('Modal fechando - resetando estado');
-      setIsInitialized(false);
+      setIsInitializedWithLog(false);
       setActiveTab('details');
     }
   }, [isOpen, motorista, isInitialized]);
