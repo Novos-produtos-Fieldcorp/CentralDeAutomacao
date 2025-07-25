@@ -1650,6 +1650,7 @@ const MotoristasLista = () => {
 
       {/* Modals */}
       <UnifiedMotoristaModal
+        key={`motorista-modal-${selectedMotorista?.motorista_id || 'none'}`}
         isOpen={isUnifiedModalOpen}
         onClose={() => setIsUnifiedModalOpen(false)}
         motorista={selectedMotorista ? toMotorista(selectedMotorista) : null}
