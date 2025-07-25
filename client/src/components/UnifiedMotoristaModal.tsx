@@ -97,27 +97,26 @@ const UnifiedMotoristaModal = ({
 
 
   useEffect(() => {
-    if (isOpen && motorista && !isInitialized) {
-      console.log('MODAL INICIALIZANDO - fetchando dados...');
-      console.log('activeTab atual durante inicialização:', activeTab);
-      fetchEndereco();
-      fetchDocumentCount();
-      fetchDocumentoMotorista();
-      fetchAjudantesCount();
-      fetchGestaoRiscoCount();
-      fetchComentariosCount();
-      fetchProprietarioVeiculo();
-      // NUNCA resetar activeTab durante inicialização - deixar o usuário controlar
-      console.log('PRESERVANDO activeTab durante inicialização:', activeTab);
-      setIsInitializedWithLog(true);
-    }
-    
-    if (!isOpen) {
+    if (isOpen && motorista) {
+      if (!isInitialized) {
+        console.log('MODAL INICIALIZANDO - fetchando dados...');
+        console.log('activeTab atual durante inicialização:', activeTab);
+        fetchEndereco();
+        fetchDocumentCount();
+        fetchDocumentoMotorista();
+        fetchAjudantesCount();
+        fetchGestaoRiscoCount();
+        fetchComentariosCount();
+        fetchProprietarioVeiculo();
+        console.log('PRESERVANDO activeTab durante inicialização:', activeTab);
+        setIsInitializedWithLog(true);
+      }
+    } else if (!isOpen) {
       console.log('Modal fechando - resetando estado');
       setIsInitializedWithLog(false);
       setActiveTab('details');
     }
-  }, [isOpen, motorista, isInitialized]);
+  }, [isOpen, motorista?.motorista_id]); // Removi isInitialized das dependências para evitar loop
   
   // useEffect separado apenas para modal aberto - resetar tab apenas na primeira abertura
   useEffect(() => {
