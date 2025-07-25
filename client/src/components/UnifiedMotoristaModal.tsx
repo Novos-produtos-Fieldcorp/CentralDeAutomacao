@@ -81,6 +81,7 @@ const UnifiedMotoristaModal = ({
 
   useEffect(() => {
     if (isOpen && motorista && !isInitialized) {
+      console.log('MODAL INICIALIZANDO - fetchando dados...');
       fetchEndereco();
       fetchDocumentCount();
       fetchDocumentoMotorista();
@@ -88,15 +89,22 @@ const UnifiedMotoristaModal = ({
       fetchGestaoRiscoCount();
       fetchComentariosCount();
       fetchProprietarioVeiculo();
-      setActiveTab('details');
+      // Só resetar activeTab se não for comentários
+      if (activeTab !== 'comentarios') {
+        console.log('Resetando activeTab para details (modal inicializando)');
+        setActiveTab('details');
+      } else {
+        console.log('PRESERVANDO activeTab comentários durante inicialização');
+      }
       setIsInitialized(true);
     }
     
     if (!isOpen) {
+      console.log('Modal fechando - resetando estado');
       setIsInitialized(false);
       setActiveTab('details');
     }
-  }, [isOpen, motorista, isInitialized]);
+  }, [isOpen, motorista, isInitialized, activeTab]);
 
   const fetchEndereco = async () => {
     if (!motorista) return;
