@@ -76,12 +76,23 @@ const UnifiedMotoristaModal = ({
   const [ajudantes, setAjudantes] = useState<DocumentoAjudante[]>([]);
   const [proprietarioVeiculo, setProprietarioVeiculo] = useState<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Debug: rastrear mudanças nas props que causam re-inicialização
+  useEffect(() => {
+    console.log('Props mudaram:', { 
+      isOpen, 
+      motoristaId: motorista?.motorista_id, 
+      isInitialized,
+      activeTab 
+    });
+  }, [isOpen, motorista, isInitialized, activeTab]);
 
 
 
   useEffect(() => {
     if (isOpen && motorista && !isInitialized) {
       console.log('MODAL INICIALIZANDO - fetchando dados...');
+      console.log('activeTab atual durante inicialização:', activeTab);
       fetchEndereco();
       fetchDocumentCount();
       fetchDocumentoMotorista();
@@ -89,13 +100,8 @@ const UnifiedMotoristaModal = ({
       fetchGestaoRiscoCount();
       fetchComentariosCount();
       fetchProprietarioVeiculo();
-      // Só resetar activeTab se não for comentários
-      if (activeTab !== 'comentarios') {
-        console.log('Resetando activeTab para details (modal inicializando)');
-        setActiveTab('details');
-      } else {
-        console.log('PRESERVANDO activeTab comentários durante inicialização');
-      }
+      // NUNCA resetar activeTab durante inicialização - deixar o usuário controlar
+      console.log('PRESERVANDO activeTab durante inicialização:', activeTab);
       setIsInitialized(true);
     }
     
@@ -104,7 +110,15 @@ const UnifiedMotoristaModal = ({
       setIsInitialized(false);
       setActiveTab('details');
     }
-  }, [isOpen, motorista, isInitialized, activeTab]);
+  }, [isOpen, motorista, isInitialized]);
+  
+  // useEffect separado apenas para modal aberto - resetar tab apenas na primeira abertura
+  useEffect(() => {
+    if (isOpen && motorista && activeTab === 'details') {
+      // Só resetar para details se ainda estiver em details (primeira abertura)
+      console.log('Modal aberto - mantendo aba details');
+    }
+  }, [isOpen, motorista]);
 
   const fetchEndereco = async () => {
     if (!motorista) return;
@@ -548,8 +562,10 @@ const UnifiedMotoristaModal = ({
                     e.preventDefault();
                     e.stopPropagation();
                     console.log('Comentários clicado! activeTab atual:', activeTab);
+                    console.log('isInitialized antes do clique:', isInitialized);
                     setActiveTab('comentarios');
                     console.log('setActiveTab chamado para comentarios');
+                    console.log('isInitialized depois do setActiveTab:', isInitialized);
                   }}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'comentarios'
