@@ -1417,7 +1417,7 @@ const MotoristasLista = () => {
                                 color: cliente.cor || 'bg-gray-100 dark:bg-gray-700'
                               }))
                             ]}
-                            onSelect={(value) => handleUpdateCliente(null, motorista, value ? parseInt(value, 10) : null)}
+                            onSelect={(value: string | number) => handleUpdateCliente(null, motorista, value ? parseInt(value.toString(), 10) : null)}
                             placeholder="Selecionar Cliente"
                             disabled={updatingCliente === motorista.motorista_id}
                             buttonClassName={
