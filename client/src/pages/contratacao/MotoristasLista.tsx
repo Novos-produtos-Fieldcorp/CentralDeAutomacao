@@ -112,6 +112,7 @@ export interface ViewMotorista extends Omit<ViewMotoristaBase, 'nome_motorista'>
   cliente_id: number | null;
   // Ajudante information
   nome_ajudante?: string;
+  ajudantes?: string[]; // Add ajudantes property
   // Adiciona propriedades opcionais para compatibilidade
   documento_motorista?: any[];
   veiculo?: any[];
@@ -583,7 +584,7 @@ const MotoristasLista = () => {
   const handleBulkDelete = async () => {
     try {
       // Delete all selected items
-      for (const id of selectedItems) {
+      for (const id of Array.from(selectedItems)) {
         const { error } = await supabase
           .from('motorista')
           .delete()
@@ -1325,7 +1326,7 @@ const MotoristasLista = () => {
                             <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white" data-component-name="MotoristasLista">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {motorista.nome || 'N/A'}
                               {motorista.ajudantes && motorista.ajudantes.length > 0 && (
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
