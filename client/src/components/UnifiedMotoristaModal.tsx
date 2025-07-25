@@ -513,7 +513,14 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => setActiveTab('comentarios')}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Comentários clicado! activeTab atual:', activeTab);
+                    setActiveTab('comentarios');
+                    console.log('setActiveTab chamado para comentarios');
+                  }}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'comentarios'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -1062,14 +1069,25 @@ const UnifiedMotoristaModal = ({
                     onSuccess?.();
                   }}
                 />
+              ) : activeTab === 'comentarios' ? (
+                <div>
+                  <p style={{color: 'red', fontSize: '18px', fontWeight: 'bold'}}>
+                    DEBUG: Aba comentários ativada! activeTab = {activeTab}
+                  </p>
+                  <ComentariosTab 
+                    motorista_id={motorista.motorista_id}
+                    onUpdateSuccess={() => {
+                      fetchComentariosCount();
+                      onSuccess?.();
+                    }}
+                  />
+                </div>
               ) : (
-                <ComentariosTab 
-                  motorista_id={motorista.motorista_id}
-                  onUpdateSuccess={() => {
-                    fetchComentariosCount();
-                    onSuccess?.();
-                  }}
-                />
+                <div>
+                  <p style={{color: 'blue', fontSize: '18px', fontWeight: 'bold'}}>
+                    DEBUG: Aba não reconhecida! activeTab = {activeTab}
+                  </p>
+                </div>
               )}
             </div>
           </div>
