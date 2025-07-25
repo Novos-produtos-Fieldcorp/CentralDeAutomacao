@@ -31,7 +31,7 @@ const UnifiedMotoristaModal = ({
   motorista, 
   onSuccess 
 }: UnifiedMotoristaModalProps) => {
-  console.log('UnifiedMotoristaModal renderizado - isOpen:', isOpen, 'motorista:', motorista?.nome);
+
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   
@@ -56,16 +56,12 @@ const UnifiedMotoristaModal = ({
 
   useEffect(() => {
     if (isOpen && motorista && !isInitialized) {
-      console.log('Modal aberto para motorista:', motorista);
-      console.log('Função do motorista:', motorista.funcao);
-      console.log('Veiculo ID:', (motorista as any).veiculo_id);
       fetchEndereco();
       fetchDocumentCount();
       fetchDocumentoMotorista();
       fetchAjudantesCount();
       fetchGestaoRiscoCount();
       fetchComentariosCount();
-      console.log('Chamando fetchProprietarioVeiculo...');
       fetchProprietarioVeiculo();
       setActiveTab('details');
       setIsInitialized(true);
@@ -135,7 +131,6 @@ const UnifiedMotoristaModal = ({
     if (!motorista) return;
     
     try {
-      console.log('Fetching document data for motorista:', motorista.motorista_id);
       const { data, error } = await supabase
         .from('documento_motorista')
         .select(`
@@ -155,12 +150,7 @@ const UnifiedMotoristaModal = ({
 
       if (error) throw error;
       
-      console.log('Document data fetched:', data);
       setDocumentoMotorista(data);
-      
-      if (!data) {
-        console.warn('No document data found for motorista:', motorista.motorista_id);
-      }
     } catch (error) {
       console.error('Error fetching driver document:', error);
     }
@@ -264,11 +254,7 @@ const UnifiedMotoristaModal = ({
   const fetchProprietarioVeiculo = async () => {
     if (!motorista) return;
 
-    console.log('=== INICIANDO BUSCA PROPRIETÁRIO VEÍCULO ===');
-    console.log('motorista.motorista_id:', motorista.motorista_id);
-
     try {
-      
       // Verificar se o motorista já tem veiculo_id
       let veiculoId = (motorista as any).veiculo_id;
       
@@ -279,25 +265,14 @@ const UnifiedMotoristaModal = ({
           .select('veiculo_id')
           .eq('motorista_id', motorista.motorista_id)
           .maybeSingle();
-
-        console.log('Resultado busca veículo:', { veiculo, veiculoError });
-      
-      // Adicionar mais logs detalhados
-      const { data: allDocumentosVeiculo, error: allDocError } = await supabase
-        .from('documento_veiculo')
-        .select('*');
-      console.log('Todos os documentos de veículo:', allDocumentosVeiculo);
         
         if (veiculoError) throw veiculoError;
         if (!veiculo) {
-          console.log('Nenhum veículo encontrado para o motorista');
           return;
         }
         
         veiculoId = veiculo.veiculo_id;
       }
-
-      console.log('Usando veiculo_id:', veiculoId);
 
       // Buscar documento do veículo
       const { data: documentoVeiculo, error: docError } = await supabase
@@ -306,11 +281,8 @@ const UnifiedMotoristaModal = ({
         .eq('veiculo_id', veiculoId)
         .maybeSingle();
 
-      console.log('Documento do veículo encontrado:', { documentoVeiculo, docError });
-
       if (docError) throw docError;
       if (!documentoVeiculo) {
-        console.log('Nenhum documento do veículo encontrado');
         return;
       }
 
@@ -339,9 +311,7 @@ const UnifiedMotoristaModal = ({
         tipo: pessoaFisica ? 'fisica' : pessoaJuridica ? 'juridica' : null
       };
 
-      console.log('Proprietário estruturado:', proprietario);
       setProprietarioVeiculo(proprietario);
-      console.log('State proprietarioVeiculo atualizado');
     } catch (error) {
       console.error('Error fetching proprietario veiculo:', error);
       setProprietarioVeiculo(null);
@@ -466,6 +436,7 @@ const UnifiedMotoristaModal = ({
             <div className="border-b border-gray-200 dark:border-gray-700">
               <nav className="-mb-px flex space-x-8 px-6">
                 <button
+                  type="button"
                   onClick={() => setActiveTab('details')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'details'
@@ -479,6 +450,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveTab('documents')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'documents'
@@ -497,6 +469,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     setActiveTab('ajudantes');
                     if (motorista) fetchAjudantes();
@@ -518,6 +491,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveTab('gestao-risco')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'gestao-risco'
@@ -536,12 +510,11 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Clique na aba comentários - activeTab atual:', activeTab);
                     setActiveTab('comentarios');
-                    console.log('Mudando para aba comentários');
                   }}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'comentarios'
@@ -1092,18 +1065,13 @@ const UnifiedMotoristaModal = ({
                   }}
                 />
               ) : activeTab === 'comentarios' ? (
-                (() => {
-                  console.log('Renderizando ComentariosTab para motorista_id:', motorista.motorista_id);
-                  return (
-                    <ComentariosTab 
-                      motorista_id={motorista.motorista_id}
-                      onUpdateSuccess={() => {
-                        fetchComentariosCount();
-                        onSuccess?.();
-                      }}
-                    />
-                  );
-                })()
+                <ComentariosTab 
+                  motorista_id={motorista.motorista_id}
+                  onUpdateSuccess={() => {
+                    fetchComentariosCount();
+                    onSuccess?.();
+                  }}
+                />
               ) : null}
             </div>
           </div>
