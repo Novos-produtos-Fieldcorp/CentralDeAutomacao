@@ -35,22 +35,9 @@ const UnifiedMotoristaModal = ({
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   
-  const [comentariosRefreshKey, setComentariosRefreshKey] = useState(0);
+
   
-  const handleTabChange = async (tab: 'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios') => {
-    // If clicking the same tab and it's the comentarios tab, trigger a refresh
-    if (activeTab === tab && tab === 'comentarios') {
-      setComentariosRefreshKey(prev => prev + 1);
-      return;
-    }
-    
-    setActiveTab(tab);
-    
-    // Only fetch data if switching to ajudantes tab and we have a motorista
-    if (tab === 'ajudantes' && motorista) {
-      await fetchAjudantes();
-    }
-  };
+
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [endereco, setEndereco] = useState<any>(null);
@@ -471,7 +458,7 @@ const UnifiedMotoristaModal = ({
             <div className="border-b border-gray-200 dark:border-gray-700">
               <nav className="-mb-px flex space-x-8 px-6">
                 <button
-                  onClick={() => handleTabChange('details')}
+                  onClick={() => setActiveTab('details')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'details'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -484,7 +471,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => handleTabChange('documents')}
+                  onClick={() => setActiveTab('documents')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'documents'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -502,7 +489,10 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => handleTabChange('ajudantes')}
+                  onClick={() => {
+                    setActiveTab('ajudantes');
+                    if (motorista) fetchAjudantes();
+                  }}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'ajudantes'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -520,7 +510,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => handleTabChange('gestao-risco')}
+                  onClick={() => setActiveTab('gestao-risco')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'gestao-risco'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -538,7 +528,7 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => handleTabChange('comentarios')}
+                  onClick={() => setActiveTab('comentarios')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'comentarios'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -1089,7 +1079,6 @@ const UnifiedMotoristaModal = ({
                 />
               ) : activeTab === 'comentarios' ? (
                 <ComentariosTab 
-                  key={`comentarios-${comentariosRefreshKey}`}
                   motorista_id={motorista.motorista_id}
                   onUpdateSuccess={() => {
                     fetchComentariosCount();
