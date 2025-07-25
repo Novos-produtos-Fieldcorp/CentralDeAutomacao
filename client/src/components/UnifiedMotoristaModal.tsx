@@ -54,13 +54,16 @@ const UnifiedMotoristaModal = ({
   const [proprietarioVeiculo, setProprietarioVeiculo] = useState<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const handleComentariosClick = (e: React.MouseEvent) => {
+  const handleComentariosClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.nativeEvent) {
-      e.nativeEvent.stopImmediatePropagation();
-    }
-    setActiveTab('comentarios');
+    e.nativeEvent?.stopImmediatePropagation?.();
+    
+    // Força a mudança para comentários sem qualquer refresh
+    setTimeout(() => {
+      setActiveTab('comentarios');
+    }, 0);
+    
     return false;
   };
 
@@ -405,16 +408,8 @@ const UnifiedMotoristaModal = ({
     }
   };
   
-  const handleModalClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.nativeEvent) {
-      e.nativeEvent.stopImmediatePropagation();
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-50" onClick={handleModalClick}>
+    <div className="fixed inset-0 z-50">
       {/* Overlay */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       
@@ -423,8 +418,7 @@ const UnifiedMotoristaModal = ({
         <div className="flex min-h-full items-center justify-center p-4">
           <div 
             className="relative bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl shadow-xl max-h-[90vh] overflow-y-auto"
-            onClick={handleModalClick}
-            onSubmit={(e) => e.preventDefault()}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
@@ -528,9 +522,10 @@ const UnifiedMotoristaModal = ({
                     )}
                   </div>
                 </button>
-                <span
+                <button
+                  type="button"
                   onClick={handleComentariosClick}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm cursor-pointer select-none ${
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'comentarios'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
@@ -545,7 +540,7 @@ const UnifiedMotoristaModal = ({
                       </span>
                     )}
                   </div>
-                </span>
+                </button>
               </nav>
             </div>
 
@@ -1079,13 +1074,15 @@ const UnifiedMotoristaModal = ({
                   }}
                 />
               ) : activeTab === 'comentarios' ? (
-                <ComentariosTab 
-                  motorista_id={motorista.motorista_id}
-                  onUpdateSuccess={() => {
-                    fetchComentariosCount();
-                    onSuccess?.();
-                  }}
-                />
+                <div onClick={(e) => e.stopPropagation()} onSubmit={(e) => e.preventDefault()}>
+                  <ComentariosTab 
+                    motorista_id={motorista.motorista_id}
+                    onUpdateSuccess={() => {
+                      fetchComentariosCount();
+                      onSuccess?.();
+                    }}
+                  />
+                </div>
               ) : null}
             </div>
           </div>
