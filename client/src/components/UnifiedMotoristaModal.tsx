@@ -35,27 +35,7 @@ const UnifiedMotoristaModal = ({
 
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
   
-  // Debug: rastrear mudanças no activeTab
-  useEffect(() => {
-    console.log('ActiveTab mudou para:', activeTab);
-    if (activeTab === 'comentarios') {
-      console.log('Aba comentários ativada - vamos rastrear reloads');
-      
-      // Interceptar qualquer tentativa de reload
-      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-        console.log('ALERT: Página tentando recarregar!!!');
-        e.preventDefault();
-        e.returnValue = '';
-        return '';
-      };
-      
-      window.addEventListener('beforeunload', handleBeforeUnload);
-      
-      return () => {
-        window.removeEventListener('beforeunload', handleBeforeUnload);
-      };
-    }
-  }, [activeTab]);
+
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   
 
@@ -77,24 +57,13 @@ const UnifiedMotoristaModal = ({
   const [proprietarioVeiculo, setProprietarioVeiculo] = useState<any>(null);
   const isInitializedRef = useRef(false);
   
-  // 🔍 DEBUGGING: Criar uma função proxy para detectar mudanças no isInitializedRef
-  const setInitializedRef = (value: boolean, reason: string) => {
-    console.log(`🔧 MUDANDO isInitializedRef de ${isInitializedRef.current} para ${value} - RAZÃO: ${reason}`);
-    const stack = new Error().stack;
-    console.log('📍 Stack trace:', stack);
+  // Função para controlar mudanças no isInitializedRef
+  const setInitializedRef = (value: boolean) => {
     isInitializedRef.current = value;
   };
   const currentMotoristaIdRef = useRef<number | null>(null);
   
-  // Debug: rastrear mudanças nas props que causam re-inicialização
-  useEffect(() => {
-    console.log('Props mudaram:', { 
-      isOpen, 
-      motoristaId: motorista?.motorista_id, 
-      isInitializedRef: isInitializedRef.current,
-      activeTab 
-    });
-  }, [isOpen, motorista, activeTab]);
+
 
 
 
@@ -104,40 +73,25 @@ const UnifiedMotoristaModal = ({
       
       // Só inicializar se for um motorista diferente ou primeira vez
       if (!isInitializedRef.current || currentMotoristaIdRef.current !== motoristaId) {
-        console.log('MODAL INICIALIZANDO - fetchando dados para motorista:', motoristaId);
-        console.log('activeTab atual durante inicialização:', activeTab);
-        
         currentMotoristaIdRef.current = motoristaId;
-        setInitializedRef(true, 'Modal inicializando');
+        setInitializedRef(true);
         
-        console.log('🚀 PULANDO FETCH FUNCTIONS PARA TESTE - focando só no activeTab');
-        // fetchEndereco();
-        // fetchDocumentCount();
-        // fetchDocumentoMotorista();
-        // fetchAjudantesCount();
-        // fetchGestaoRiscoCount();
-        // fetchComentariosCount();
-        // fetchProprietarioVeiculo();
-        
-        console.log('✅ INICIALIZACAO COMPLETA - PRESERVANDO activeTab:', activeTab);
-      } else {
-        console.log('Modal já inicializado para motorista:', motoristaId, 'activeTab:', activeTab);
+        fetchEndereco();
+        fetchDocumentCount();
+        fetchDocumentoMotorista();
+        fetchAjudantesCount();
+        fetchGestaoRiscoCount();
+        fetchComentariosCount();
+        fetchProprietarioVeiculo();
       }
     } else if (!isOpen) {
-      console.log('Modal fechando - resetando estado');
-      setInitializedRef(false, 'Modal fechando');
+      setInitializedRef(false);
       currentMotoristaIdRef.current = null;
       setActiveTab('details');
     }
   }, [isOpen, motorista?.motorista_id]);
   
-  // useEffect separado apenas para modal aberto - resetar tab apenas na primeira abertura
-  useEffect(() => {
-    if (isOpen && motorista && activeTab === 'details') {
-      // Só resetar para details se ainda estiver em details (primeira abertura)
-      console.log('Modal aberto - mantendo aba details');
-    }
-  }, [isOpen, motorista]);
+
 
   const fetchEndereco = async () => {
     if (!motorista) return;
@@ -580,11 +534,7 @@ const UnifiedMotoristaModal = ({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Comentários clicado! activeTab atual:', activeTab);
-                    console.log('isInitializedRef antes do clique:', isInitializedRef.current);
                     setActiveTab('comentarios');
-                    console.log('setActiveTab chamado para comentarios');
-                    console.log('isInitializedRef depois do setActiveTab:', isInitializedRef.current);
                   }}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'comentarios'
@@ -1135,19 +1085,12 @@ const UnifiedMotoristaModal = ({
                   }}
                 />
               ) : activeTab === 'comentarios' ? (
-                <div>
-                  <p style={{color: 'red', fontSize: '18px', fontWeight: 'bold'}}>
-                    DEBUG: Aba comentários ativada! activeTab = {activeTab}
-                  </p>
-                  <ComentariosTab 
-                    motorista_id={motorista.motorista_id}
-                    onUpdateSuccess={() => {
-                      console.log('🎯 ComentariosTab onUpdateSuccess chamado - SEM onSuccess');
-                      fetchComentariosCount();
-                      // Removido temporariamente para testar: onSuccess?.();
-                    }}
-                  />
-                </div>
+                <ComentariosTab 
+                  motorista_id={motorista.motorista_id}
+                  onUpdateSuccess={() => {
+                    fetchComentariosCount();
+                  }}
+                />
               ) : (
                 <div>
                   <p style={{color: 'blue', fontSize: '18px', fontWeight: 'bold'}}>
