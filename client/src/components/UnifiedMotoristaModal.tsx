@@ -1142,8 +1142,9 @@ const UnifiedMotoristaModal = ({
                   <ComentariosTab 
                     motorista_id={motorista.motorista_id}
                     onUpdateSuccess={() => {
+                      console.log('🎯 ComentariosTab onUpdateSuccess chamado - SEM onSuccess');
                       fetchComentariosCount();
-                      onSuccess?.();
+                      // Removido temporariamente para testar: onSuccess?.();
                     }}
                   />
                 </div>
