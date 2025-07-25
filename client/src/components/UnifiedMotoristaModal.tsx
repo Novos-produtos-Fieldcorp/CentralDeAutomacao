@@ -509,14 +509,22 @@ const UnifiedMotoristaModal = ({
                     )}
                   </div>
                 </button>
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     setActiveTab('comentarios');
                   }}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setActiveTab('comentarios');
+                    }
+                  }}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm cursor-pointer ${
                     activeTab === 'comentarios'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
@@ -531,7 +539,7 @@ const UnifiedMotoristaModal = ({
                       </span>
                     )}
                   </div>
-                </button>
+                </div>
               </nav>
             </div>
 
