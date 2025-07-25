@@ -102,13 +102,14 @@ const UnifiedMotoristaModal = ({
         currentMotoristaIdRef.current = motoristaId;
         isInitializedRef.current = true;
         
-        fetchEndereco();
-        fetchDocumentCount();
-        fetchDocumentoMotorista();
-        fetchAjudantesCount();
-        fetchGestaoRiscoCount();
-        fetchComentariosCount();
-        fetchProprietarioVeiculo();
+        console.log('🚀 PULANDO FETCH FUNCTIONS PARA TESTE - focando só no activeTab');
+        // fetchEndereco();
+        // fetchDocumentCount();
+        // fetchDocumentoMotorista();
+        // fetchAjudantesCount();
+        // fetchGestaoRiscoCount();
+        // fetchComentariosCount();
+        // fetchProprietarioVeiculo();
         
         console.log('✅ INICIALIZACAO COMPLETA - PRESERVANDO activeTab:', activeTab);
       } else {
