@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, User, MapPin, FileText, ExternalLink, Edit2, Users, ShieldAlert, MessageSquare 
 } from 'lucide-react';
@@ -62,6 +63,38 @@ const UnifiedMotoristaModal = ({
     setActiveTab('comentarios');
     return false;
   };
+
+  // Interceptar qualquer submit quando modal estiver aberto
+  useEffect(() => {
+    if (isOpen) {
+      const handlePageSubmit = (e: Event) => {
+        // Se o evento não veio de dentro de um form específico de comentário, cancela
+        const target = e.target as HTMLElement;
+        const isCommentForm = target.closest('form')?.querySelector('textarea[name="comment"]');
+        
+        if (!isCommentForm) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          return false;
+        }
+      };
+      
+      // Interceptar tanto submit quanto click que podem causar refresh
+      document.addEventListener('submit', handlePageSubmit, true);
+      window.addEventListener('beforeunload', (e) => {
+        if (activeTab === 'comentarios') {
+          e.preventDefault();
+          return '';
+        }
+      });
+      
+      return () => {
+        document.removeEventListener('submit', handlePageSubmit, true);
+        window.removeEventListener('beforeunload', () => {});
+      };
+    }
+  }, [isOpen, activeTab]);
 
   useEffect(() => {
     if (isOpen && motorista && !isInitialized) {
@@ -404,8 +437,17 @@ const UnifiedMotoristaModal = ({
     }
   };
   
+  const handleModalContainer = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  };
+
   return (
-    <div className="fixed inset-0 z-50">
+    <div 
+      className="fixed inset-0 z-50"
+      onSubmit={handleModalContainer}
+    >
       {/* Overlay */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       
@@ -415,6 +457,7 @@ const UnifiedMotoristaModal = ({
           <div 
             className="relative bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl shadow-xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
+            onSubmit={handleModalContainer}
           >
             {/* Header */}
             <div className="border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
