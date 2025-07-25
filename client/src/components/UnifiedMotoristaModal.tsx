@@ -34,6 +34,28 @@ const UnifiedMotoristaModal = ({
 }: UnifiedMotoristaModalProps) => {
 
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
+  
+  // Debug: rastrear mudanças no activeTab
+  useEffect(() => {
+    console.log('ActiveTab mudou para:', activeTab);
+    if (activeTab === 'comentarios') {
+      console.log('Aba comentários ativada - vamos rastrear reloads');
+      
+      // Interceptar qualquer tentativa de reload
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        console.log('ALERT: Página tentando recarregar!!!');
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      };
+      
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+    }
+  }, [activeTab]);
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   
 
