@@ -76,6 +76,14 @@ const UnifiedMotoristaModal = ({
   const [ajudantes, setAjudantes] = useState<DocumentoAjudante[]>([]);
   const [proprietarioVeiculo, setProprietarioVeiculo] = useState<any>(null);
   const isInitializedRef = useRef(false);
+  
+  // 🔍 DEBUGGING: Criar uma função proxy para detectar mudanças no isInitializedRef
+  const setInitializedRef = (value: boolean, reason: string) => {
+    console.log(`🔧 MUDANDO isInitializedRef de ${isInitializedRef.current} para ${value} - RAZÃO: ${reason}`);
+    const stack = new Error().stack;
+    console.log('📍 Stack trace:', stack);
+    isInitializedRef.current = value;
+  };
   const currentMotoristaIdRef = useRef<number | null>(null);
   
   // Debug: rastrear mudanças nas props que causam re-inicialização
@@ -100,7 +108,7 @@ const UnifiedMotoristaModal = ({
         console.log('activeTab atual durante inicialização:', activeTab);
         
         currentMotoristaIdRef.current = motoristaId;
-        isInitializedRef.current = true;
+        setInitializedRef(true, 'Modal inicializando');
         
         console.log('🚀 PULANDO FETCH FUNCTIONS PARA TESTE - focando só no activeTab');
         // fetchEndereco();
@@ -117,7 +125,7 @@ const UnifiedMotoristaModal = ({
       }
     } else if (!isOpen) {
       console.log('Modal fechando - resetando estado');
-      isInitializedRef.current = false;
+      setInitializedRef(false, 'Modal fechando');
       currentMotoristaIdRef.current = null;
       setActiveTab('details');
     }
