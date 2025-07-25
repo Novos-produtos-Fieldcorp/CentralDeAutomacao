@@ -572,10 +572,10 @@ const UnifiedMotoristaModal = ({
                     e.preventDefault();
                     e.stopPropagation();
                     console.log('Comentários clicado! activeTab atual:', activeTab);
-                    console.log('isInitialized antes do clique:', isInitialized);
+                    console.log('isInitializedRef antes do clique:', isInitializedRef.current);
                     setActiveTab('comentarios');
                     console.log('setActiveTab chamado para comentarios');
-                    console.log('isInitialized depois do setActiveTab:', isInitialized);
+                    console.log('isInitializedRef depois do setActiveTab:', isInitializedRef.current);
                   }}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'comentarios'
