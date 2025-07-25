@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -6,6 +5,38 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Configurar headers para permitir iframe, CORS e evitar cache
+app.use((req, res, next) => {
+  // Permitir ser embutido em iframe de qualquer origem
+  res.removeHeader('X-Frame-Options');
+  
+  // Configurar Content Security Policy para permitir iframe
+  res.setHeader('Content-Security-Policy', "frame-ancestors *;");
+  
+  // Headers CORS para permitir acesso direto à API do WiseApp
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, api_access_token, Cache-Control, Pragma, Expires');
+  res.setHeader('Access-Control-Allow-Credentials', 'false');
+  
+  // Responder a requisições OPTIONS (preflight)
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  // Headers para evitar cache em APIs de chat/inbox
+  if (req.path.includes('/api/v1/accounts') && req.path.includes('/inboxes')) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Last-Modified', new Date().toUTCString());
+    res.setHeader('ETag', `"${Date.now()}"`);
+  }
+
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -57,14 +88,13 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Using port 3000 with localhost to avoid network interface issues
+  // This serves both the API and the client
   const port = 5000;
   server.listen({
     port,
-    host: "0.0.0.0",
-    reusePort: true,
+    host: "127.0.0.1",
+    reusePort: false,
   }, () => {
     log(`serving on port ${port}`);
   });

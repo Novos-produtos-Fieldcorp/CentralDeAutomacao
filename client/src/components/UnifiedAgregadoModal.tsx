@@ -44,10 +44,13 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [gestaoRiscoCount, setGestaoRiscoCount] = useState(0);
   const [comentarioCount, setComentarioCount] = useState(0);
   const [isEditVeiculoModalOpen, setIsEditVeiculoModalOpen] = useState(false);
+  const [proprietarioVeiculo, setProprietarioVeiculo] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen && motorista) {
+      console.log('UnifiedAgregadoModal aberto para:', motorista.nome);
       fetchAgregadoDetails();
+      fetchProprietarioVeiculo();
     }
   }, [isOpen, motorista]);
 
@@ -202,6 +205,85 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
     } catch (error) {
       console.error('Error fetching agregado details:', error);
       toast.error('Erro ao carregar detalhes do agregado');
+    }
+  };
+
+  const fetchProprietarioVeiculo = async () => {
+    if (!motorista) return;
+
+    console.log('=== INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===');
+    console.log('motorista.motorista_id:', motorista.motorista_id);
+
+    try {
+      // Primeiro buscar o veículo do motorista
+      const { data: veiculoData, error: veiculoError } = await supabase
+        .from('veiculo')
+        .select('veiculo_id')
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      console.log('Veículo encontrado:', { veiculoData, veiculoError });
+
+      if (veiculoError) throw veiculoError;
+      if (!veiculoData) {
+        console.log('Nenhum veículo encontrado para este motorista');
+        return;
+      }
+
+      // Buscar documento do veículo
+      const { data: documentoVeiculo, error: docError } = await supabase
+        .from('documento_veiculo')
+        .select('id_documento_veiculo')
+        .eq('veiculo_id', veiculoData.veiculo_id)
+        .maybeSingle();
+
+      console.log('Documento veículo encontrado:', { documentoVeiculo, docError });
+
+      if (docError) throw docError;
+      if (!documentoVeiculo) {
+        console.log('Nenhum documento de veículo encontrado');
+        return;
+      }
+
+      // Buscar proprietário pessoa física usando id_documento_veiculo
+      const { data: pessoaFisica, error: pfError } = await supabase
+        .from('pessoa_fisica_dono_veiculo')
+        .select('*')
+        .eq('id_documento_veiculo', documentoVeiculo.id_documento_veiculo)
+        .limit(1)
+        .maybeSingle();
+
+      console.log('Pessoa física encontrada:', { pessoaFisica, pfError });
+
+      // Buscar proprietário pessoa jurídica usando id_documento_veiculo
+      const { data: pessoaJuridica, error: pjError } = await supabase
+        .from('pessoa_juridica_dono_veiculo')
+        .select('*')
+        .eq('id_documento_veiculo', documentoVeiculo.id_documento_veiculo)
+        .maybeSingle();
+
+      console.log('Pessoa jurídica encontrada:', { pessoaJuridica, pjError });
+
+      if (pfError) console.error('Erro ao buscar pessoa física:', pfError);
+      if (pjError) console.error('Erro ao buscar pessoa jurídica:', pjError);
+
+      // Se encontrou dados de proprietário, configurar o estado
+      if (pessoaFisica || pessoaJuridica) {
+        const proprietario = {
+          pessoaFisica,
+          pessoaJuridica,
+          veiculo_id: veiculoData.veiculo_id
+        };
+        console.log('Proprietário configurado:', proprietario);
+        setProprietarioVeiculo(proprietario);
+      } else {
+        console.log('Nenhum proprietário encontrado');
+        setProprietarioVeiculo(null);
+      }
+
+    } catch (error) {
+      console.error('Erro na busca do proprietário:', error);
+      setProprietarioVeiculo(null);
     }
   };
 
@@ -811,6 +893,183 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                 </div>
                               </dd>
                             </div>
+                          )}
+                          
+                          {/* Seção do Proprietário do Veículo */}
+                          {proprietarioVeiculo && (
+                            <>
+                              <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:px-6">
+                                <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                                  Informações do Proprietário do Veículo
+                                </h4>
+                              </div>
+                              
+                              {proprietarioVeiculo.pessoaFisica && (
+                                <>
+                                  <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                      Nome Completo
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                      {proprietarioVeiculo.pessoaFisica.nome || 'Não informado'}
+                                    </dd>
+                                  </div>
+                                  <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                      CPF
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                      {proprietarioVeiculo.pessoaFisica.cpf || 'Não informado'}
+                                    </dd>
+                                  </div>
+                                  <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                      RG
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                      {proprietarioVeiculo.pessoaFisica.nr_rg || 'Não informado'}
+                                    </dd>
+                                  </div>
+                                  <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                      Órgão Expedidor
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                      {proprietarioVeiculo.pessoaFisica.orgao_expedidor || 'Não informado'}
+                                    </dd>
+                                  </div>
+                                  <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                      Nome da Mãe
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                      {proprietarioVeiculo.pessoaFisica.nome_mae || 'Não informado'}
+                                    </dd>
+                                  </div>
+                                  <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                      Nome do Pai
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                      {proprietarioVeiculo.pessoaFisica.nome_pai || 'Não informado'}
+                                    </dd>
+                                  </div>
+                                  {proprietarioVeiculo.pessoaFisica.foto_documento && (
+                                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Documento (RG/CNH)
+                                      </dt>
+                                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
+                                        <div className="flex items-center">
+                                          <button
+                                            onClick={() => openDocumentInNewTab(proprietarioVeiculo.pessoaFisica.foto_documento)}
+                                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                          >
+                                            <FileText className="w-5 h-5 mr-2" />
+                                            {isPdf(proprietarioVeiculo.pessoaFisica.foto_documento) ? 'Ver PDF' : 'Ver Imagem'}
+                                          </button>
+                                          {!isPdf(proprietarioVeiculo.pessoaFisica.foto_documento) && (
+                                            <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                              <img 
+                                                src={proprietarioVeiculo.pessoaFisica.foto_documento} 
+                                                alt="Documento Preview" 
+                                                className="w-full h-full object-cover cursor-pointer"
+                                                onClick={() => setActiveDocument(proprietarioVeiculo.pessoaFisica.foto_documento)}
+                                              />
+                                            </div>
+                                          )}
+                                        </div>
+                                      </dd>
+                                    </div>
+                                  )}
+                                  {proprietarioVeiculo.pessoaFisica.comprovante_residencia && (
+                                    <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Comprovante de Residência
+                                      </dt>
+                                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
+                                        <div className="flex items-center">
+                                          <button
+                                            onClick={() => openDocumentInNewTab(proprietarioVeiculo.pessoaFisica.comprovante_residencia)}
+                                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                          >
+                                            <FileText className="w-5 h-5 mr-2" />
+                                            {isPdf(proprietarioVeiculo.pessoaFisica.comprovante_residencia) ? 'Ver PDF' : 'Ver Imagem'}
+                                          </button>
+                                          {!isPdf(proprietarioVeiculo.pessoaFisica.comprovante_residencia) && (
+                                            <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                              <img 
+                                                src={proprietarioVeiculo.pessoaFisica.comprovante_residencia} 
+                                                alt="Comprovante Preview" 
+                                                className="w-full h-full object-cover cursor-pointer"
+                                                onClick={() => setActiveDocument(proprietarioVeiculo.pessoaFisica.comprovante_residencia)}
+                                              />
+                                            </div>
+                                          )}
+                                        </div>
+                                      </dd>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              
+                              {proprietarioVeiculo.pessoaJuridica && (
+                                <>
+                                  <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                      Razão Social
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                      {proprietarioVeiculo.pessoaJuridica.razao_social || 'Não informado'}
+                                    </dd>
+                                  </div>
+                                  <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                      CNPJ
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                      {proprietarioVeiculo.pessoaJuridica.cnpj || 'Não informado'}
+                                    </dd>
+                                  </div>
+                                  <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                      Inscrição Estadual
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                      {proprietarioVeiculo.pessoaJuridica.inscricao_estadual || 'Não informado'}
+                                    </dd>
+                                  </div>
+                                  {proprietarioVeiculo.pessoaJuridica.comprovante_residencia && (
+                                    <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Comprovante de Endereço
+                                      </dt>
+                                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
+                                        <div className="flex items-center">
+                                          <button
+                                            onClick={() => openDocumentInNewTab(proprietarioVeiculo.pessoaJuridica.comprovante_residencia)}
+                                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                          >
+                                            <FileText className="w-5 h-5 mr-2" />
+                                            {isPdf(proprietarioVeiculo.pessoaJuridica.comprovante_residencia) ? 'Ver PDF' : 'Ver Imagem'}
+                                          </button>
+                                          {!isPdf(proprietarioVeiculo.pessoaJuridica.comprovante_residencia) && (
+                                            <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                              <img 
+                                                src={proprietarioVeiculo.pessoaJuridica.comprovante_residencia} 
+                                                alt="Comprovante Preview" 
+                                                className="w-full h-full object-cover cursor-pointer"
+                                                onClick={() => setActiveDocument(proprietarioVeiculo.pessoaJuridica.comprovante_residencia)}
+                                              />
+                                            </div>
+                                          )}
+                                        </div>
+                                      </dd>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </>
                           )}
                         </dl>
                       </div>

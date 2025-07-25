@@ -113,98 +113,36 @@ const VeiculosAgregados = () => {
   const fetchVeiculos = async () => {
     try {
       setError(null);
-      
+      setInitialLoading(true);
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
-      
-      // Buscar motoristas contratados
-      let motoristasQuery = supabase
-        .from('motorista')
-        .select('motorista_id')
+
+      // Buscar veículos agregados diretamente da view vw_agregados_completo
+      let query = supabase
+        .from('vw_agregados_completo')
+        .select('*', { count: 'exact' })
         .eq('company_id', companyId)
-        .eq('st_cadastro', 'contratado')
-        .eq('funcao', 'Agregado');
-        
-      const { data: motoristasData, error: motoristasError } = await motoristasQuery;
-      
-      if (motoristasError) {
-        throw new Error(`Erro ao buscar motoristas: ${motoristasError.message}`);
-      }
-      
-      if (!motoristasData || motoristasData.length === 0) {
-        setVeiculos([]);
-        setTotalCount(0);
-        setTotalPages(1);
-        return;
-      }
-      
-      const motoristaIds = motoristasData.map(m => m.motorista_id);
+        .eq('st_cadastro', 'contratado');
 
-      // Contar veículos apenas com os IDs filtrados
-      let vehicleCountQuery = supabase
-        .from('veiculo')
-        .select('veiculo_id', { count: 'exact', head: true })
-        .eq('status_veiculo', true)
-        .in('motorista_id', motoristaIds);
-        
       if (searchTerm) {
-        vehicleCountQuery = vehicleCountQuery.or(
-          `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%`
+        query = query.or(
+          `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%,nome_motorista.ilike.%${searchTerm}%,cpf.ilike.%${searchTerm}%`
         );
       }
-      
-      const { count: vehicleCount, error: vehicleCountError } = await vehicleCountQuery;
-      
-      if (vehicleCountError) {
-        throw new Error(`Erro ao contar veículos: ${vehicleCountError.message}`);
-      }
-      
-      setTotalCount(vehicleCount || 0);
-      setTotalPages(Math.max(1, Math.ceil((vehicleCount || 0) / pageSize)));
 
-      let dataQuery = supabase
-        .from('veiculo')
-        .select(`
-          *,
-          motorista:motorista_id (
-            motorista_id,
-            nome,
-            cpf,
-            telefone,
-            email,
-            st_cadastro,
-            documento_motorista (*)
-          ),
-          documento_veiculo (*)
-        `)
-        .in('motorista_id', motoristaIds);
-      
-      if (searchTerm) {
-        dataQuery = dataQuery.or(
-          `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%`
-        );
-      }
-      
-      dataQuery = dataQuery
-        .order('placa', { ascending: true })
-        .range(from, to);
-      
-      const { data: veiculosData, error: veiculosError } = await dataQuery;
+      query = query.order('placa', { ascending: true }).range(from, to);
 
-      if (veiculosError) {
-        throw new Error(`Erro ao buscar veículos: ${veiculosError.message}`);
-      }
+      const { data, error, count } = await query;
+      if (error) throw error;
 
-      if (!veiculosData) {
-        setVeiculos([]);
-        return;
-      }
+      setTotalCount(count || 0);
+      setTotalPages(Math.max(1, Math.ceil((count || 0) / pageSize)));
 
-      const veiculosContratados = veiculosData
-        .filter(veiculo => veiculo.motorista?.st_cadastro === 'contratado')
-        .map(veiculo => ({
+      // Normalizar placas para maiúsculo e garantir array
+      const veiculosContratados = (data || [])
+        .map((veiculo: any) => ({
           ...veiculo,
-          placa: veiculo.placa?.toUpperCase() || ''
+          placa: veiculo.placa?.toUpperCase() || '',
         }))
         .sort((a, b) => (a.placa || '').localeCompare(b.placa || ''));
 
@@ -215,6 +153,8 @@ const VeiculosAgregados = () => {
       setError(errorMessage);
       toast.error(errorMessage);
       setVeiculos([]);
+    } finally {
+      setInitialLoading(false);
     }
   };
 

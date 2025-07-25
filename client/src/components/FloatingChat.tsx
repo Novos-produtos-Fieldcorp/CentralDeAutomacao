@@ -3,6 +3,35 @@ import {Send, Loader2, AlertCircle, WifiOff, X, Mic, Paperclip, Minus, Square, M
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
+const baseURL = import.meta.env.VITE_CHAT_API_URL || '/api'; // Usar a URL do ambiente ou proxy local para evitar CORS
+console.log('Environment VITE_CHAT_API_URL:', import.meta.env.VITE_CHAT_API_URL);
+console.log('Resolved baseURL:', baseURL);
+
+const apiClient = axios.create({
+  baseURL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  }
+});
+
+// Adicionar interceptor para incluir o token em todas as requisições
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('wiseapp_token');
+  if (token) {
+    config.headers['api_access_token'] = token;
+  }
+  return config;
+});
+
+// Utilize o apiClient para fazer requisições
+export const getInboxes = (accountId: string) => {
+  return apiClient.get(`/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`);
+};
+
 interface FloatingChatProps {
   initialPhone?: string;
   initialName?: string;
@@ -119,16 +148,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
   const apiKey = localStorage.getItem('wiseapp_token');
 
-  const api = axios.create({
-   baseURL: import.meta.env.VITE_CHAT_API_URL || '/api',
-    headers: {
-      'api_access_token': apiKey,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    }
-  });
+  // Usar o apiClient configurado acima
 
-  console.log('API URL:', import.meta.env.VITE_CHAT_API_URL);
+  console.log('API URL:', baseURL);
 
   const checkNetworkConnectivity = () => {
     return navigator.onLine;
@@ -235,7 +257,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       // Iniciar polling para novas mensagens
       pollingIntervalRef.current = setInterval(async () => {
         try {
-          const response = await api.get(`/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`, {
+          const response = await apiClient.get(`/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages?_t=${Date.now()}`, {
             params: {
               page: 1,
               per_page: 20
@@ -290,27 +312,43 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
         const apiKey = localStorage.getItem('wiseapp_token');
         if (!accountId || !apiKey) return;
-        const api = axios.create({
-          baseURL: '/api',
+
+        const url = `/api/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
+        
+        const response = await fetch(url, {
+          method: 'GET',
           headers: {
             'api_access_token': apiKey,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           }
         });
-        const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
-        if (response.data?.payload) {
-          const allInboxes = response.data.payload.map((inbox: any) => ({
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        console.log('Inbox response:', data);
+        console.log('Inbox payload:', data?.payload);
+        
+        if (data?.payload && Array.isArray(data.payload)) {
+          const allInboxes = data.payload.map((inbox: any) => ({
             ...inbox,
             isOpen: true // ou lógica de horário se quiser
           }));
+          console.log('Processed inboxes:', allInboxes);
           setAvailableInboxes(allInboxes);
           setShowInboxSelector(true);
           setSelectedInboxId(null); // Não seleciona automaticamente
         } else {
+          console.log('No payload found or payload is not an array');
           setAvailableInboxes([]);
         }
       } catch (error) {
+        console.error('Error fetching inboxes:', error);
+        setError('Erro ao carregar caixas de entrada');
         setAvailableInboxes([]);
       }
     };
@@ -348,8 +386,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   const fetchInboxes = async (accountId: string, apiKey: string) => {
     try {
-      const api = axios.create({
-        baseURL: '/api',
+      const url = `/api/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
         headers: {
           'api_access_token': apiKey,
           'Content-Type': 'application/json',
@@ -357,9 +397,13 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
       });
 
-      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
-      if (response.data?.payload) {
-        setInboxes(response.data.payload);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data?.payload) {
+        setInboxes(data.payload);
         
         const isInboxOpen = (inbox: any) => {
           const now = new Date();
@@ -385,7 +429,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           return currentTime >= openTime && currentTime <= closeTime;
         };
 
-        const allInboxes = response.data.payload.map((inbox: any) => ({
+        const allInboxes = data.payload.map((inbox: any) => ({
           ...inbox,
           isOpen: isInboxOpen(inbox)
         }));
@@ -424,7 +468,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
       });
 
-      const contactResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contactId}`);
+      const contactResponse = await apiClient.get(`/api/v1/accounts/${accountId}/contacts/${contactId}`);
 
       if (contactResponse.data) {
         const contactData = {
@@ -458,12 +502,12 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
       });
 
-      const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contactId}/conversations`);
+      const conversationsResponse = await apiClient.get(`/api/v1/accounts/${accountId}/contacts/${contactId}/conversations`);
 
       if (conversationsResponse.data?.payload) {
         const conversations = await Promise.all(
           conversationsResponse.data.payload.map(async (conv: any) => {
-            const inboxResponse = await api.get(`/api/v1/accounts/${accountId}/inboxes/${conv.inbox_id}`);
+            const inboxResponse = await apiClient.get(`/api/v1/accounts/${accountId}/inboxes/${conv.inbox_id}`);
             const inbox = inboxResponse.data;
 
             return {
@@ -535,7 +579,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
         let contactToUse: Contact | undefined;
         try {
-          const searchResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/search`, {
+          const searchResponse = await apiClient.get(`/api/v1/accounts/${accountId}/contacts/search`, {
             params: {
               q: digitsOnly
             }
@@ -550,7 +594,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           const contactNameToUse = initialName || additionalInfo?.name || 'Novo Contato';
           const contactEmail = initialEmail || additionalInfo?.email;
           try {
-            const newContactResponse = await api.post(`/api/v1/accounts/${accountId}/contacts`, {
+            const newContactResponse = await apiClient.post(`/api/v1/accounts/${accountId}/contacts`, {
               name: contactNameToUse,
               phone_number: formattedNumber,
               email: contactEmail,
@@ -572,7 +616,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         if (contactToUse) {
           try {
             // Buscar conversas existentes para o contato e inbox
-            const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contactToUse.id}/conversations`);
+            const conversationsResponse = await apiClient.get(`/api/v1/accounts/${accountId}/contacts/${contactToUse.id}/conversations`);
             let existingConversation = null;
             if (conversationsResponse.data?.payload) {
               existingConversation = conversationsResponse.data.payload.find((conv: any) => conv.inbox_id === inboxId);
@@ -609,7 +653,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               });
             } else {
               // Se não existe, criar nova conversa
-              const newConversationResponse = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
+              const newConversationResponse = await apiClient.post(`/api/v1/accounts/${accountId}/conversations`, {
                 inbox_id: inboxId.toString(),
                 contact_id: contactToUse.id.toString()
               });
@@ -672,7 +716,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
       });
 
-      const response = await api.get(`/api/v1/accounts/${accountId}/conversations/${conversationId}/messages`, {
+      const response = await apiClient.get(`/api/v1/accounts/${accountId}/conversations/${conversationId}/messages`, {
         params: {
           page,
           per_page: perPage
@@ -830,7 +874,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   const handleNewConversation = async () => {
     try {
-      const response = await api.post(`/api/v1/accounts/${accountId}/conversations`, {
+      const response = await apiClient.post(`/api/v1/accounts/${accountId}/conversations`, {
         inbox_id: selectedInboxId,
         contact_id: null
       });
@@ -862,7 +906,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const handleInboxSelect = async (inboxId: number) => {
     try {
       setSelectedInboxId(inboxId);
-      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes/${inboxId}`);
+      const response = await apiClient.get(`/api/v1/accounts/${accountId}/inboxes/${inboxId}`);
       
       const conversation: Conversation = {
         id: 0,
@@ -917,7 +961,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           inputRef.current.value = '';
         }
 
-        const response = await api.post(`/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`, {
+        const response = await apiClient.post(`/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`, {
           content: textData,
           message_type: 'outgoing'
         });
@@ -961,11 +1005,11 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       setFiles(prev => [...prev, ...newFiles]);
 
       const formData = new FormData();
-      for (const file of selectedFiles) {
+      for (const file of Array.from(selectedFiles)) {
         formData.append('attachments[]', file);
       }
 
-      const response = await api.post(
+      const response = await apiClient.post(
         `/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`,
         formData,
         {
@@ -1129,7 +1173,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       };
 
       // Buscar apenas as conversas do contato específico
-      const conversationsResponse = await api.get(`/api/v1/accounts/${accountId}/contacts/${contact.id}/conversations`);
+      const conversationsResponse = await apiClient.get(`/api/v1/accounts/${accountId}/contacts/${contact.id}/conversations`);
       
       if (conversationsResponse.data?.payload) {
         // Filtrar conversas pelo inbox selecionado
@@ -1146,7 +1190,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         const conversationsWithMessages = await Promise.all(
           inboxConversations.map(async (conv: any) => {
             try {
-              const messagesResponse = await api.get(`/api/v1/accounts/${accountId}/conversations/${conv.id}/messages`, {
+              const messagesResponse = await apiClient.get(`/api/v1/accounts/${accountId}/conversations/${conv.id}/messages`, {
                 params: {
                   page: 1,
                   per_page: 20

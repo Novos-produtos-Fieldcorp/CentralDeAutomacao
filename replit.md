@@ -1,8 +1,8 @@
-# Replit.md
+# replit.md
 
 ## Overview
 
-This is a full-stack web application built with React, Node.js, Express, and PostgreSQL. The application uses TypeScript for type safety and modern web development practices. It follows a client-server architecture with a shared schema between frontend and backend.
+This is a full-stack web application built with React (frontend) and Express.js (backend) that appears to be a fleet management system. The application manages drivers (motoristas), vehicles (veiculos), clients (clientes), and various operational features like checklists and odometer readings. It uses PostgreSQL with Drizzle ORM for data persistence and integrates with external services like Supabase for additional functionality.
 
 ## User Preferences
 
@@ -12,149 +12,237 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 - **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite for fast development and building
-- **Styling**: Tailwind CSS with custom design system
-- **UI Components**: Radix UI primitives with shadcn/ui component library
-- **State Management**: React Context API for global state (Auth, Theme, Chat, Checklist)
+- **Build Tool**: Vite for development and bundling
+- **Styling**: Tailwind CSS with custom dark mode implementation
+- **UI Components**: Radix UI components with shadcn/ui design system
+- **State Management**: React Context API for authentication, themes, and chat functionality
 - **Routing**: React Router for client-side navigation
-- **Data Fetching**: TanStack React Query for server state management
-- **Form Handling**: React Hook Form with Zod validation
+- **HTTP Client**: TanStack Query for server state management
 
 ### Backend Architecture
-- **Runtime**: Node.js with TypeScript
-- **Framework**: Express.js for REST API
+- **Framework**: Express.js with TypeScript
 - **Database**: PostgreSQL with Drizzle ORM
-- **Database Provider**: Neon Database (serverless PostgreSQL)
-- **Schema Management**: Drizzle Kit for migrations
-- **Session Storage**: PostgreSQL-based sessions with connect-pg-simple
+- **Database Provider**: Neon Database (@neondatabase/serverless)
+- **Development**: Hot reload with Vite middleware integration
+- **Session Management**: In-memory storage with plans for database storage
 
-### Development Setup
-- **Monorepo Structure**: Client and server code in same repository
-- **Hot Reloading**: Vite dev server with HMR
-- **Type Safety**: Shared TypeScript types between client and server
-- **Path Aliases**: Configured for clean imports (@/, @shared/)
+### Build and Development
+- **Development**: Uses tsx for TypeScript execution and Vite dev server
+- **Production**: esbuild for backend bundling, Vite for frontend building
+- **Module System**: ES modules throughout the stack
 
 ## Key Components
 
-### Authentication System
-- **Account-based Authentication**: Uses WiseApp account IDs for authentication
-- **Company Isolation**: All data is filtered by company_id
-- **Module Access Control**: Granular permissions per company for different modules
-- **Session Management**: Server-side sessions with PostgreSQL storage
+### Authentication & Authorization
+- Context-based authentication system using account IDs from URL parameters
+- Company-based access control with module permissions
+- WiseApp integration for external authentication
+- Admin panel with password protection for system management
 
 ### Database Layer
-- **ORM**: Drizzle ORM for type-safe database operations
-- **Connection**: Neon serverless PostgreSQL with connection pooling
-- **Schema**: Centralized schema definition in shared/schema.ts
-- **Migrations**: Managed through Drizzle Kit
+- Drizzle ORM with PostgreSQL dialect
+- Schema defined in `shared/schema.ts` with Zod validation
+- Connection pooling using Neon's serverless driver
+- Database migrations stored in `./migrations` directory
 
-### UI/UX Features
-- **Dark/Light Theme**: Context-based theme switching with localStorage persistence
-- **Responsive Design**: Mobile-first approach with Tailwind CSS
-- **Component Library**: Custom components built on Radix UI primitives
-- **Modal System**: Unified modal components for forms and dialogs
-- **Loading States**: Consistent loading indicators throughout the app
+### UI/UX Framework
+- Comprehensive component library based on Radix UI primitives
+- Dark/light theme toggle with localStorage persistence
+- Responsive design with mobile-first approach
+- Custom CSS variables for theme consistency
 
-### Business Modules
-- **Dashboard**: Main landing page with module access cards
-- **Motoristas**: Driver management with document upload and verification
-- **Veículos**: Vehicle management for both company and contractor vehicles
-- **Clientes**: Client management with address information
-- **Checklist**: Vehicle inspection checklists (weekly, monthly, maintenance)
-- **Hodômetros**: Odometer readings and reports
-- **Resumos Grupo**: WhatsApp group summary automation
+### Fleet Management Features
+- Driver management with document upload capabilities
+- Vehicle tracking and maintenance records
+- Client relationship management
+- Checklist system for operational compliance
+- Odometer reading tracking
 
 ## Data Flow
 
-### Request Flow
-1. User interacts with React components
-2. Components use React Query for API calls
-3. Express server processes requests
-4. Drizzle ORM handles database operations
-5. Data flows back through the same chain
+### Frontend to Backend
+1. React components make API calls through custom hooks
+2. TanStack Query handles caching and synchronization
+3. Company-filtered queries ensure data isolation
+4. Context providers manage global state (auth, theme, chat)
 
-### Authentication Flow
-1. URL contains account_id parameter
-2. AuthContext validates account_id against company database
-3. If valid, user is authenticated and company_id is set
-4. All subsequent requests are filtered by company_id
+### Database Operations
+1. Drizzle ORM provides type-safe database queries
+2. Schema validation using Zod for data integrity
+3. Connection pooling optimizes database performance
+4. Migrations handle schema evolution
 
-### File Upload Flow
-1. Files uploaded to Supabase Storage
-2. File URLs stored in PostgreSQL database
-3. Document management through specialized components
+### External Integrations
+1. Supabase integration for additional data services
+2. WiseApp API integration for messaging/chat functionality
+3. Document storage and retrieval system
+4. Excel import/export capabilities
 
 ## External Dependencies
 
-### Core Dependencies
-- **React Ecosystem**: React, React Router, React Query
-- **Database**: Drizzle ORM, Neon Database
-- **UI Framework**: Radix UI, Tailwind CSS, Lucide React icons
+### Core Framework Dependencies
+- **React Ecosystem**: @radix-ui components, @tanstack/react-query
+- **Development Tools**: Vite, TypeScript, Tailwind CSS
+- **Database**: drizzle-orm, @neondatabase/serverless
 - **Validation**: Zod for schema validation
-- **Date Handling**: date-fns for date operations
-- **File Processing**: xlsx for Excel import/export
 
-### Development Dependencies
-- **TypeScript**: Full type safety across the stack
-- **Vite**: Build tool and dev server
-- **PostCSS**: CSS processing for Tailwind
-- **ESBuild**: Fast JavaScript bundling for production
-- **Testing**: Cypress for E2E and component testing
+### Third-party Services
+- **Supabase**: For additional database services and real-time features
+- **WiseApp**: For messaging and communication features
+- **Excel Processing**: xlsx library for import/export functionality
+- **Date Handling**: date-fns for date manipulation and formatting
 
-### Testing Infrastructure
-- **Cypress**: End-to-end and component testing framework
-- **Test Coverage**: Comprehensive test suite for contratação module
-- **Custom Commands**: Authentication, navigation, and data management helpers
-- **Test Data**: Fixtures and dynamic test data generation
-
-### External Services
-- **Supabase**: Used for file storage and some database operations
-- **WiseApp**: External authentication and chat integration
-- **WhatsApp Integration**: For messaging and group management
+### UI Enhancement Libraries
+- **Icons**: Lucide React for consistent iconography
+- **Forms**: React Hook Form with resolvers
+- **Notifications**: React Hot Toast for user feedback
+- **Styling**: Class Variance Authority for component variants
 
 ## Deployment Strategy
 
+### Development Environment
+- Vite dev server with HMR (Hot Module Replacement)
+- tsx for TypeScript execution without compilation
+- Environment variables for database and API configuration
+- Replit-specific plugins for development optimization
+
 ### Production Build
-- **Frontend**: Vite builds static assets to dist/public
-- **Backend**: ESBuild bundles server code to dist/index.js
-- **Database**: Drizzle migrations handle schema changes
+- Frontend: Vite builds to `dist/public` directory
+- Backend: esbuild bundles server code to `dist` directory
+- Static file serving through Express in production
+- ES module format maintained throughout the build process
 
-### Environment Configuration
-- **Database**: PostgreSQL connection via DATABASE_URL
-- **External APIs**: Configured through environment variables
-- **File Storage**: Supabase credentials for file uploads
+### Netlify Deployment
+- **Configuration**: `netlify.toml` with build settings and redirects
+- **Functions**: Serverless functions in `netlify/functions/` directory
+- **Build Command**: `npm run build`
+- **Publish Directory**: `dist/public`
+- **Environment Variables**: Configured in Netlify dashboard
+- **Database**: PostgreSQL connection through environment variables
+- **API Routes**: Handled by Netlify Functions with `/api/*` redirects
+- **Iframe Support**: Configured to allow embedding via Content-Security-Policy headers
 
-### Development Workflow
-- **Local Development**: tsx for TypeScript execution with hot reload
-- **Type Checking**: Shared TypeScript configuration
-- **Database Updates**: Drizzle Kit push for schema synchronization
+### Database Management
+- Drizzle Kit for migrations: `npm run db:push`
+- Environment-based configuration for different deployment stages
+- Connection string management through DATABASE_URL environment variable
 
-The application is designed to be a comprehensive business management system with a focus on transportation and logistics, providing tools for driver management, vehicle tracking, document handling, and automated reporting.
+### Scaling Considerations
+- Serverless-ready database connection pooling
+- Stateless backend design for horizontal scaling
+- CDN-ready static asset organization
+- Component-based architecture for code splitting
+- Netlify Functions for API scaling
 
-## Testing Implementation
+## Iframe Configuration (Janeiro 2025)
 
-### Cypress Test Suite
-- **Complete E2E Testing**: Comprehensive test coverage for the contratação (hiring) module
-- **Test Files**: 5 test files covering dashboard, motoristas list, kanban board, agregados, and integration
-- **Custom Commands**: 8 custom Cypress commands for authentication, navigation, and data management
-- **Test Coverage Areas**:
-  - Dashboard statistics and charts
-  - Motorista CRUD operations and bulk actions
-  - Kanban board functionality and status workflows
-  - Agregados management with vehicle/client associations
-  - Cross-feature integration and data consistency
-  - Document management and WiseApp integration
-  - Responsive design and performance testing
+A aplicação foi configurada para permitir embedding em iframe através das seguintes modificações:
 
-### Test Execution
-- Run all tests: `npx cypress run --spec 'cypress/e2e/contratacao/**/*.cy.ts'`
-- Interactive GUI: `npx cypress open`
-- Individual test files available for targeted testing
-- Comprehensive documentation in `cypress/README.md` and `CYPRESS_SETUP.md`
+### Servidor Express (server/index.ts)
+- Removido header X-Frame-Options restritivo
+- Adicionado Content-Security-Policy com frame-ancestors *
+- Headers aplicados a todas as rotas
 
-### Recent Changes (January 2025)
-- ✓ Fixed QueryClient setup issue - Added QueryClientProvider to wrap entire application
-- ✓ Created comprehensive Cypress testing infrastructure
-- ✓ Implemented 80+ test scenarios covering all major contratação functionality
-- ✓ Added custom commands for efficient test automation
-- ✓ Created test data fixtures and documentation
+### Configuração Netlify (netlify.toml)
+- Removido X-Frame-Options = "DENY"
+- Adicionado Content-Security-Policy = "frame-ancestors *;"
+- Headers aplicados globalmente
+
+### Função Serverless (netlify/functions/api.js)
+- Adicionado Content-Security-Policy aos headers da API
+- Configuração aplicada a todas as respostas
+
+### Teste de Iframe
+- Arquivo test-iframe.html criado para validação
+- Aplicação pode ser embutida em qualquer domínio
+
+## Resolução de Conflitos de Merge (Janeiro 2025)
+
+### Problema Inicial
+- Múltiplos conflitos de merge impedindo push/merge das alterações
+- Erros de TypeScript relacionados a conversões de telefone
+- Imports faltantes de componentes WiseApp
+- Lock file do git impedindo operações
+
+### Soluções Implementadas
+- Resolvidos todos os conflitos de merge mantendo conteúdo da seção especificada
+- Corrigidas conversões de `telefone?.toString()` para `String(telefone)`
+- Adicionadas importações faltantes: WiseAppBulkSyncPanel, WiseAppSyncButton
+- Instalada dependência cross-env que estava ausente
+- Aplicação funcionando perfeitamente na porta 5000
+
+### Arquivos Principais Corrigidos
+- `client/src/pages/contratacao/MotoristasLista.tsx`: Conversões de telefone
+- `client/src/context/AuthContext.tsx`: Imports WiseApp
+- `client/src/index.css`: Conflitos de CSS removidos
+- `package.json`: Dependência cross-env adicionada
+- Múltiplos arquivos: Marcadores de merge <<<< >>>> removidos
+
+### Status Final
+- ✅ Aplicação rodando sem erros
+- ✅ Todos os conflitos resolvidos
+- ✅ TypeScript sem erros
+- ✅ Dependências instaladas
+- ⚠️ Requer resolução manual do git lock para push
+
+## Correções de Chat (Janeiro 2025)
+
+### Problema de Cache HTTP 304
+- Headers de cache-busting adicionados no frontend e backend
+- Requisições forçadas sem cache usando timestamps
+- Headers no-cache aplicados em respostas da API
+
+### Proxy da API WiseApp
+- Proxy criado em `/api/api/v1/*` para redirecionar para API externa
+- Todas as instâncias do axios configuradas para usar o proxy local
+- Headers de autenticação mantidos através do proxy
+- Função Netlify atualizada com proxy para WiseApp API
+- Suporte completo para produção via netlify/functions/api.js
+
+### Configuração Netlify (netlify.toml)
+- Redirects específicos para `/api/api/v1/*` com force=true
+- Headers no-cache aplicados para todas as rotas `/api/*`
+- Configuração de funções serverless com esbuild
+- Ordem correta de redirects (mais específicos primeiro)
+
+## Upload de Documentos do Proprietário (Janeiro 2025)
+
+### Sistema de Upload
+- Substituído uso do DocumentUploader por upload direto no bucket `imagensdocs`
+- Upload de foto de documento (RG/CNH) para proprietários pessoa física
+- Upload de comprovante de residência para ambos os tipos de proprietários
+- URLs salvos nas colunas corretas das tabelas do banco de dados
+
+### Funcionalidades Implementadas
+- Upload direto ao Supabase Storage bucket `imagensdocs`
+- Validação de tipo de arquivo (JPEG, PNG, PDF)
+- Validação de tamanho (máximo 15MB)
+- Nomeação única de arquivos com timestamp
+- Salvamento automático de URLs públicos no banco de dados
+
+### Estrutura do Banco de Dados
+- Tabela `pessoa_fisica_dono_veiculo`: colunas `foto_documento` e `comprovante_residencia`
+- Tabela `pessoa_juridica_dono_veiculo`: coluna `comprovante_residencia`
+- URLs dos documentos armazenados como texto no banco
+
+### Correções de Upsert (Janeiro 2025)
+- Corrigido problema de múltiplas inserções no banco de dados
+- Implementado sistema de upsert (insert ou update) para dados do proprietário
+- Verificação prévia de registros existentes antes de inserir
+- Prevenção de registros duplicados para o mesmo documento de veículo
+- Busca limitada a 1 registro para evitar erro de múltiplas linhas
+
+## Exibição de Proprietário do Veículo para Agregados (Janeiro 2025)
+
+### Funcionalidade Implementada
+- Busca e exibição de informações do proprietário do veículo apenas no modal de agregados
+- Relacionamento: motorista → veículo → documento_veiculo → pessoa_fisica/juridica_dono_veiculo
+- Exibição na aba "Documentos" do UnifiedAgregadoModal
+- Suporte a proprietários pessoa física e pessoa jurídica
+
+### Dados Exibidos
+- **Pessoa Física**: nome, CPF, RG, órgão expedidor, nomes dos pais, documentos
+- **Pessoa Jurídica**: razão social, CNPJ, inscrição estadual, comprovante de endereço
+- Links para visualização de documentos armazenados no Supabase Storage
+- Preview de imagens quando não são PDFs
+

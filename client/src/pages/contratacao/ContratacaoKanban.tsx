@@ -836,12 +836,6 @@ const ContratacaoKanban = () => {
                                     }`}>
                                       {motorista.funcao}
                                     </span>
-                                    <div className="mt-1">
-                                      {motorista.nome || 'Não informado'}
-                                    </div>
-                                    <div className="mt-1">
-                                      {motorista.nome || 'Não informado'}
-                                    </div>
                                   </div>
                                 </div>
                               </div>

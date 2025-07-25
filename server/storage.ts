@@ -1,31 +1,34 @@
 import { 
   users, 
-  companies,
-  motoristas,
-  veiculos,
-  clientes,
-  hodometros,
-  checklists,
-  grupoResumo,
+  motorista, 
+  cliente, 
+  veiculo, 
+  documento_motorista, 
+  documento_ajudante, 
+  comentario, 
+  gestao_risco, 
+  end_motorista, 
+  logradouro, 
+  bairro, 
+  cidade, 
+  estado,
   type User, 
   type InsertUser,
-  type Company,
-  type InsertCompany,
   type Motorista,
   type InsertMotorista,
-  type Veiculo,
-  type InsertVeiculo,
   type Cliente,
   type InsertCliente,
-  type Hodometro,
-  type InsertHodometro,
-  type Checklist,
-  type InsertChecklist,
-  type GrupoResumo,
-  type InsertGrupoResumo
+  type Veiculo,
+  type InsertVeiculo,
+  type DocumentoMotorista,
+  type DocumentoAjudante,
+  type Comentario,
+  type InsertComentario,
+  type EndMotorista,
+  type MotoristaWithAddress
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc, like, or, count, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -33,270 +36,319 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
-  // Company methods
-  getCompany(id: number): Promise<Company | undefined>;
-  getCompanies(): Promise<Company[]>;
-  createCompany(company: InsertCompany): Promise<Company>;
-  
   // Motorista methods
-  getMotoristas(companyId: number): Promise<Motorista[]>;
-  getMotorista(id: number, companyId: number): Promise<Motorista | undefined>;
+  getMotoristas(companyId: number, page?: number, limit?: number, search?: string): Promise<{ motoristas: MotoristaWithAddress[], total: number }>;
+  getMotoristasById(id: number): Promise<MotoristaWithAddress | undefined>;
   createMotorista(motorista: InsertMotorista): Promise<Motorista>;
-  updateMotorista(id: number, motorista: Partial<InsertMotorista>, companyId: number): Promise<Motorista | undefined>;
-  deleteMotorista(id: number, companyId: number): Promise<boolean>;
-  
-  // Veiculo methods
-  getVeiculos(companyId: number): Promise<Veiculo[]>;
-  getVeiculo(id: number, companyId: number): Promise<Veiculo | undefined>;
-  createVeiculo(veiculo: InsertVeiculo): Promise<Veiculo>;
-  updateVeiculo(id: number, veiculo: Partial<InsertVeiculo>, companyId: number): Promise<Veiculo | undefined>;
-  deleteVeiculo(id: number, companyId: number): Promise<boolean>;
+  updateMotorista(id: number, motorista: Partial<InsertMotorista>): Promise<Motorista | undefined>;
+  deleteMotorista(id: number): Promise<boolean>;
   
   // Cliente methods
   getClientes(companyId: number): Promise<Cliente[]>;
-  getCliente(id: number, companyId: number): Promise<Cliente | undefined>;
   createCliente(cliente: InsertCliente): Promise<Cliente>;
-  updateCliente(id: number, cliente: Partial<InsertCliente>, companyId: number): Promise<Cliente | undefined>;
-  deleteCliente(id: number, companyId: number): Promise<boolean>;
   
-  // Hodometro methods
-  getHodometros(companyId: number): Promise<Hodometro[]>;
-  getHodometro(id: number, companyId: number): Promise<Hodometro | undefined>;
-  createHodometro(hodometro: InsertHodometro): Promise<Hodometro>;
-  updateHodometro(id: number, hodometro: Partial<InsertHodometro>, companyId: number): Promise<Hodometro | undefined>;
-  deleteHodometro(id: number, companyId: number): Promise<boolean>;
+  // Veiculo methods
+  getVeiculos(motoristaId?: number): Promise<Veiculo[]>;
+  createVeiculo(veiculo: InsertVeiculo): Promise<Veiculo>;
   
-  // Checklist methods
-  getChecklists(companyId: number): Promise<Checklist[]>;
-  getChecklist(id: number, companyId: number): Promise<Checklist | undefined>;
-  createChecklist(checklist: InsertChecklist): Promise<Checklist>;
-  updateChecklist(id: number, checklist: Partial<InsertChecklist>, companyId: number): Promise<Checklist | undefined>;
-  deleteChecklist(id: number, companyId: number): Promise<boolean>;
+  // Comentario methods
+  getComentarios(motoristaId: number): Promise<Comentario[]>;
+  createComentario(comentario: InsertComentario): Promise<Comentario>;
   
-  // Grupo Resumo methods
-  getGrupoResumos(companyId: number): Promise<GrupoResumo[]>;
-  getGrupoResumo(id: number, companyId: number): Promise<GrupoResumo | undefined>;
-  createGrupoResumo(grupo: InsertGrupoResumo): Promise<GrupoResumo>;
-  updateGrupoResumo(id: number, grupo: Partial<InsertGrupoResumo>, companyId: number): Promise<GrupoResumo | undefined>;
-  deleteGrupoResumo(id: number, companyId: number): Promise<boolean>;
+  // Document methods
+  getDocumentoMotorista(motoristaId: number): Promise<DocumentoMotorista | undefined>;
+  getDocumentosAjudante(motoristaId: number): Promise<DocumentoAjudante[]>;
 }
 
 export class DatabaseStorage implements IStorage {
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.id, id));
-    return result[0];
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.username, username));
-    return result[0];
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(insertUser).returning();
-    return result[0];
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
   }
-  
-  // Company methods
-  async getCompany(id: number): Promise<Company | undefined> {
-    const result = await db.select().from(companies).where(eq(companies.company_id, id));
-    return result[0];
-  }
-  
-  async getCompanies(): Promise<Company[]> {
-    return await db.select().from(companies);
-  }
-  
-  async createCompany(company: InsertCompany): Promise<Company> {
-    const result = await db.insert(companies).values(company).returning();
-    return result[0];
-  }
-  
+
   // Motorista methods
-  async getMotoristas(companyId: number): Promise<Motorista[]> {
-    return await db.select().from(motoristas).where(eq(motoristas.company_id, companyId));
+  async getMotoristas(
+    companyId: number, 
+    page: number = 1, 
+    limit: number = 20, 
+    search?: string
+  ): Promise<{ motoristas: MotoristaWithAddress[], total: number }> {
+    let query = db
+      .select({
+        motorista_id: motorista.motorista_id,
+        nome: motorista.nome,
+        cpf: motorista.cpf,
+        dt_nascimento: motorista.dt_nascimento,
+        genero: motorista.genero,
+        telefone: motorista.telefone,
+        email: motorista.email,
+        funcao: motorista.funcao,
+        origem_usuario: motorista.origem_usuario,
+        st_cadastro: motorista.st_cadastro,
+        autorizacao_lgpd: motorista.autorizacao_lgpd,
+        company_id: motorista.company_id,
+        data_cadastro: motorista.data_cadastro,
+        cliente_id: motorista.cliente_id,
+        conversation_id: motorista.conversation_id,
+        ativo: motorista.ativo,
+        // Address fields
+        id_end_motorista: end_motorista.id_end_motorista,
+        nr_end: end_motorista.nr_end,
+        ds_complemento_end: end_motorista.ds_complemento_end,
+        st_end: end_motorista.st_end,
+        logradouro: logradouro.logradouro,
+        nr_cep: logradouro.nr_cep,
+        nome_bairro: bairro.bairro,
+        nome_cidade: cidade.cidade,
+        nome_estado: estado.estado,
+        sigla_estado: estado.sigla_estado,
+      })
+      .from(motorista)
+      .leftJoin(end_motorista, eq(motorista.motorista_id, end_motorista.id_motorista))
+      .leftJoin(logradouro, eq(end_motorista.id_logradouro, logradouro.id_logradouro))
+      .leftJoin(bairro, eq(logradouro.id_bairro, bairro.id_bairro))
+      .leftJoin(cidade, eq(bairro.id_cidade, cidade.id_cidade))
+      .leftJoin(estado, eq(cidade.id_estado, estado.id_estado))
+      .where(eq(motorista.company_id, companyId));
+
+    if (search) {
+      query = query.where(
+        and(
+          eq(motorista.company_id, companyId),
+          or(
+            like(motorista.nome, `%${search}%`),
+            like(motorista.cpf, `%${search}%`),
+            like(motorista.email, `%${search}%`),
+            like(sql`${motorista.telefone}::text`, `%${search}%`)
+          )
+        )
+      );
+    }
+
+    const totalResult = await db
+      .select({ count: count() })
+      .from(motorista)
+      .where(eq(motorista.company_id, companyId));
+
+    const total = totalResult[0]?.count || 0;
+
+    const results = await query
+      .orderBy(desc(motorista.data_cadastro))
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    const motoristas: MotoristaWithAddress[] = results.map(row => ({
+      motorista_id: row.motorista_id,
+      nome: row.nome,
+      cpf: row.cpf,
+      dt_nascimento: row.dt_nascimento,
+      genero: row.genero,
+      telefone: row.telefone,
+      email: row.email,
+      funcao: row.funcao,
+      origem_usuario: row.origem_usuario,
+      st_cadastro: row.st_cadastro,
+      autorizacao_lgpd: row.autorizacao_lgpd,
+      company_id: row.company_id,
+      data_cadastro: row.data_cadastro,
+      cliente_id: row.cliente_id,
+      conversation_id: row.conversation_id,
+      ativo: row.ativo,
+      endereco: row.id_end_motorista ? {
+        id_end_motorista: row.id_end_motorista,
+        nr_end: row.nr_end,
+        ds_complemento_end: row.ds_complemento_end,
+        st_end: row.st_end,
+        logradouro: row.logradouro,
+        nr_cep: row.nr_cep,
+        bairro: row.nome_bairro,
+        cidade: row.nome_cidade,
+        estado: row.nome_estado,
+        sigla_estado: row.sigla_estado,
+      } : undefined
+    }));
+
+    return { motoristas, total };
   }
-  
-  async getMotorista(id: number, companyId: number): Promise<Motorista | undefined> {
-    const result = await db.select().from(motoristas)
-      .where(and(eq(motoristas.motorista_id, id), eq(motoristas.company_id, companyId)));
-    return result[0];
+
+  async getMotoristasById(id: number): Promise<MotoristaWithAddress | undefined> {
+    const result = await db
+      .select({
+        motorista_id: motorista.motorista_id,
+        nome: motorista.nome,
+        cpf: motorista.cpf,
+        dt_nascimento: motorista.dt_nascimento,
+        genero: motorista.genero,
+        telefone: motorista.telefone,
+        email: motorista.email,
+        funcao: motorista.funcao,
+        origem_usuario: motorista.origem_usuario,
+        st_cadastro: motorista.st_cadastro,
+        autorizacao_lgpd: motorista.autorizacao_lgpd,
+        company_id: motorista.company_id,
+        data_cadastro: motorista.data_cadastro,
+        cliente_id: motorista.cliente_id,
+        conversation_id: motorista.conversation_id,
+        ativo: motorista.ativo,
+        // Address fields
+        id_end_motorista: end_motorista.id_end_motorista,
+        nr_end: end_motorista.nr_end,
+        ds_complemento_end: end_motorista.ds_complemento_end,
+        st_end: end_motorista.st_end,
+        logradouro: logradouro.logradouro,
+        nr_cep: logradouro.nr_cep,
+        nome_bairro: bairro.bairro,
+        nome_cidade: cidade.cidade,
+        nome_estado: estado.estado,
+        sigla_estado: estado.sigla_estado,
+      })
+      .from(motorista)
+      .leftJoin(end_motorista, eq(motorista.motorista_id, end_motorista.id_motorista))
+      .leftJoin(logradouro, eq(end_motorista.id_logradouro, logradouro.id_logradouro))
+      .leftJoin(bairro, eq(logradouro.id_bairro, bairro.id_bairro))
+      .leftJoin(cidade, eq(bairro.id_cidade, cidade.id_cidade))
+      .leftJoin(estado, eq(cidade.id_estado, estado.id_estado))
+      .where(eq(motorista.motorista_id, id))
+      .limit(1);
+
+    if (!result.length) return undefined;
+
+    const row = result[0];
+    return {
+      motorista_id: row.motorista_id,
+      nome: row.nome,
+      cpf: row.cpf,
+      dt_nascimento: row.dt_nascimento,
+      genero: row.genero,
+      telefone: row.telefone,
+      email: row.email,
+      funcao: row.funcao,
+      origem_usuario: row.origem_usuario,
+      st_cadastro: row.st_cadastro,
+      autorizacao_lgpd: row.autorizacao_lgpd,
+      company_id: row.company_id,
+      data_cadastro: row.data_cadastro,
+      cliente_id: row.cliente_id,
+      conversation_id: row.conversation_id,
+      ativo: row.ativo,
+      endereco: row.id_end_motorista ? {
+        id_end_motorista: row.id_end_motorista,
+        nr_end: row.nr_end,
+        ds_complemento_end: row.ds_complemento_end,
+        st_end: row.st_end,
+        logradouro: row.logradouro,
+        nr_cep: row.nr_cep,
+        bairro: row.nome_bairro,
+        cidade: row.nome_cidade,
+        estado: row.nome_estado,
+        sigla_estado: row.sigla_estado,
+      } : undefined
+    };
   }
-  
-  async createMotorista(motorista: InsertMotorista): Promise<Motorista> {
-    const result = await db.insert(motoristas).values(motorista).returning();
-    return result[0];
-  }
-  
-  async updateMotorista(id: number, motorista: Partial<InsertMotorista>, companyId: number): Promise<Motorista | undefined> {
-    const result = await db.update(motoristas)
-      .set(motorista)
-      .where(and(eq(motoristas.motorista_id, id), eq(motoristas.company_id, companyId)))
+
+  async createMotorista(insertMotorista: InsertMotorista): Promise<Motorista> {
+    const [newMotorista] = await db
+      .insert(motorista)
+      .values(insertMotorista)
       .returning();
-    return result[0];
+    return newMotorista;
   }
-  
-  async deleteMotorista(id: number, companyId: number): Promise<boolean> {
-    const result = await db.delete(motoristas)
-      .where(and(eq(motoristas.motorista_id, id), eq(motoristas.company_id, companyId)))
+
+  async updateMotorista(id: number, updateData: Partial<InsertMotorista>): Promise<Motorista | undefined> {
+    const [updatedMotorista] = await db
+      .update(motorista)
+      .set(updateData)
+      .where(eq(motorista.motorista_id, id))
       .returning();
-    return result.length > 0;
+    return updatedMotorista || undefined;
   }
-  
-  // Veiculo methods
-  async getVeiculos(companyId: number): Promise<Veiculo[]> {
-    return await db.select().from(veiculos).where(eq(veiculos.company_id, companyId));
+
+  async deleteMotorista(id: number): Promise<boolean> {
+    const result = await db
+      .delete(motorista)
+      .where(eq(motorista.motorista_id, id));
+    return (result.rowCount ?? 0) > 0;
   }
-  
-  async getVeiculo(id: number, companyId: number): Promise<Veiculo | undefined> {
-    const result = await db.select().from(veiculos)
-      .where(and(eq(veiculos.veiculo_id, id), eq(veiculos.company_id, companyId)));
-    return result[0];
-  }
-  
-  async createVeiculo(veiculo: InsertVeiculo): Promise<Veiculo> {
-    const result = await db.insert(veiculos).values(veiculo).returning();
-    return result[0];
-  }
-  
-  async updateVeiculo(id: number, veiculo: Partial<InsertVeiculo>, companyId: number): Promise<Veiculo | undefined> {
-    const result = await db.update(veiculos)
-      .set(veiculo)
-      .where(and(eq(veiculos.veiculo_id, id), eq(veiculos.company_id, companyId)))
-      .returning();
-    return result[0];
-  }
-  
-  async deleteVeiculo(id: number, companyId: number): Promise<boolean> {
-    const result = await db.delete(veiculos)
-      .where(and(eq(veiculos.veiculo_id, id), eq(veiculos.company_id, companyId)))
-      .returning();
-    return result.length > 0;
-  }
-  
+
   // Cliente methods
   async getClientes(companyId: number): Promise<Cliente[]> {
-    return await db.select().from(clientes).where(eq(clientes.company_id, companyId));
+    return await db
+      .select()
+      .from(cliente)
+      .where(eq(cliente.company_id, companyId));
   }
-  
-  async getCliente(id: number, companyId: number): Promise<Cliente | undefined> {
-    const result = await db.select().from(clientes)
-      .where(and(eq(clientes.cliente_id, id), eq(clientes.company_id, companyId)));
-    return result[0];
-  }
-  
-  async createCliente(cliente: InsertCliente): Promise<Cliente> {
-    const result = await db.insert(clientes).values(cliente).returning();
-    return result[0];
-  }
-  
-  async updateCliente(id: number, cliente: Partial<InsertCliente>, companyId: number): Promise<Cliente | undefined> {
-    const result = await db.update(clientes)
-      .set(cliente)
-      .where(and(eq(clientes.cliente_id, id), eq(clientes.company_id, companyId)))
+
+  async createCliente(insertCliente: InsertCliente): Promise<Cliente> {
+    const [newCliente] = await db
+      .insert(cliente)
+      .values(insertCliente)
       .returning();
-    return result[0];
+    return newCliente;
   }
-  
-  async deleteCliente(id: number, companyId: number): Promise<boolean> {
-    const result = await db.delete(clientes)
-      .where(and(eq(clientes.cliente_id, id), eq(clientes.company_id, companyId)))
+
+  // Veiculo methods
+  async getVeiculos(motoristaId?: number): Promise<Veiculo[]> {
+    if (motoristaId) {
+      return await db.select().from(veiculo).where(eq(veiculo.motorista_id, motoristaId));
+    }
+    
+    return await db.select().from(veiculo);
+  }
+
+  async createVeiculo(insertVeiculo: InsertVeiculo): Promise<Veiculo> {
+    const [newVeiculo] = await db
+      .insert(veiculo)
+      .values(insertVeiculo)
       .returning();
-    return result.length > 0;
+    return newVeiculo;
   }
-  
-  // Hodometro methods
-  async getHodometros(companyId: number): Promise<Hodometro[]> {
-    return await db.select().from(hodometros).where(eq(hodometros.company_id, companyId));
+
+  // Comentario methods
+  async getComentarios(motoristaId: number): Promise<Comentario[]> {
+    return await db
+      .select()
+      .from(comentario)
+      .where(eq(comentario.id_motorista, motoristaId))
+      .orderBy(desc(comentario.created_at));
   }
-  
-  async getHodometro(id: number, companyId: number): Promise<Hodometro | undefined> {
-    const result = await db.select().from(hodometros)
-      .where(and(eq(hodometros.hodometro_id, id), eq(hodometros.company_id, companyId)));
-    return result[0];
-  }
-  
-  async createHodometro(hodometro: InsertHodometro): Promise<Hodometro> {
-    const result = await db.insert(hodometros).values(hodometro).returning();
-    return result[0];
-  }
-  
-  async updateHodometro(id: number, hodometro: Partial<InsertHodometro>, companyId: number): Promise<Hodometro | undefined> {
-    const result = await db.update(hodometros)
-      .set(hodometro)
-      .where(and(eq(hodometros.hodometro_id, id), eq(hodometros.company_id, companyId)))
+
+  async createComentario(insertComentario: InsertComentario): Promise<Comentario> {
+    const [newComentario] = await db
+      .insert(comentario)
+      .values(insertComentario)
       .returning();
-    return result[0];
+    return newComentario;
   }
-  
-  async deleteHodometro(id: number, companyId: number): Promise<boolean> {
-    const result = await db.delete(hodometros)
-      .where(and(eq(hodometros.hodometro_id, id), eq(hodometros.company_id, companyId)))
-      .returning();
-    return result.length > 0;
+
+  // Document methods
+  async getDocumentoMotorista(motoristaId: number): Promise<DocumentoMotorista | undefined> {
+    const [documento] = await db
+      .select()
+      .from(documento_motorista)
+      .where(eq(documento_motorista.motorista_id, motoristaId))
+      .limit(1);
+    return documento || undefined;
   }
-  
-  // Checklist methods
-  async getChecklists(companyId: number): Promise<Checklist[]> {
-    return await db.select().from(checklists).where(eq(checklists.company_id, companyId));
-  }
-  
-  async getChecklist(id: number, companyId: number): Promise<Checklist | undefined> {
-    const result = await db.select().from(checklists)
-      .where(and(eq(checklists.checklist_id, id), eq(checklists.company_id, companyId)));
-    return result[0];
-  }
-  
-  async createChecklist(checklist: InsertChecklist): Promise<Checklist> {
-    const result = await db.insert(checklists).values(checklist).returning();
-    return result[0];
-  }
-  
-  async updateChecklist(id: number, checklist: Partial<InsertChecklist>, companyId: number): Promise<Checklist | undefined> {
-    const result = await db.update(checklists)
-      .set(checklist)
-      .where(and(eq(checklists.checklist_id, id), eq(checklists.company_id, companyId)))
-      .returning();
-    return result[0];
-  }
-  
-  async deleteChecklist(id: number, companyId: number): Promise<boolean> {
-    const result = await db.delete(checklists)
-      .where(and(eq(checklists.checklist_id, id), eq(checklists.company_id, companyId)))
-      .returning();
-    return result.length > 0;
-  }
-  
-  // Grupo Resumo methods
-  async getGrupoResumos(companyId: number): Promise<GrupoResumo[]> {
-    return await db.select().from(grupoResumo).where(eq(grupoResumo.company_id, companyId));
-  }
-  
-  async getGrupoResumo(id: number, companyId: number): Promise<GrupoResumo | undefined> {
-    const result = await db.select().from(grupoResumo)
-      .where(and(eq(grupoResumo.id, id), eq(grupoResumo.company_id, companyId)));
-    return result[0];
-  }
-  
-  async createGrupoResumo(grupo: InsertGrupoResumo): Promise<GrupoResumo> {
-    const result = await db.insert(grupoResumo).values(grupo).returning();
-    return result[0];
-  }
-  
-  async updateGrupoResumo(id: number, grupo: Partial<InsertGrupoResumo>, companyId: number): Promise<GrupoResumo | undefined> {
-    const result = await db.update(grupoResumo)
-      .set(grupo)
-      .where(and(eq(grupoResumo.id, id), eq(grupoResumo.company_id, companyId)))
-      .returning();
-    return result[0];
-  }
-  
-  async deleteGrupoResumo(id: number, companyId: number): Promise<boolean> {
-    const result = await db.delete(grupoResumo)
-      .where(and(eq(grupoResumo.id, id), eq(grupoResumo.company_id, companyId)))
-      .returning();
-    return result.length > 0;
+
+  async getDocumentosAjudante(motoristaId: number): Promise<DocumentoAjudante[]> {
+    return await db
+      .select()
+      .from(documento_ajudante)
+      .where(eq(documento_ajudante.motorista_id, motoristaId));
   }
 }
 

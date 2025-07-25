@@ -237,17 +237,13 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     }
   };
 
-  const consultarCep = async (cep: string) => {
+  const consultarCepLocal = async (cep: string) => {
     if (cep.length !== 8) return;
 
     setLoadingCep(true);
     try {
-      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-      const data = await response.json();
-
-      if (data.erro) {
-        throw new Error('CEP não encontrado');
-      }
+      const { consultarCep } = await import('../utils/cepService');
+      const data = await consultarCep(cep);
 
       const estadoId = estados.find(e => e.sigla_estado === data.uf)?.id_estado.toString() || '';
       
@@ -959,7 +955,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                         const value = e.target.value.replace(/\D/g, '');
                         setFormData(prev => ({ ...prev, cep: value }));
                         if (value.length === 8) {
-                          consultarCep(value);
+                          consultarCepLocal(value);
                         }
                       }}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"

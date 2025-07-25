@@ -1,0 +1,8 @@
+{
+  "name": "netlify-functions",
+  "version": "1.0.0",
+  "dependencies": {
+    "pg": "^8.11.3",
+    "@neondatabase/serverless": "^0.10.4"
+  }
+}
