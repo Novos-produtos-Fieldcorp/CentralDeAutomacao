@@ -59,11 +59,7 @@ const UnifiedMotoristaModal = ({
     e.stopPropagation();
     e.nativeEvent?.stopImmediatePropagation?.();
     
-    // Força a mudança para comentários sem qualquer refresh
-    setTimeout(() => {
-      setActiveTab('comentarios');
-    }, 0);
-    
+    setActiveTab('comentarios');
     return false;
   };
 
@@ -1074,7 +1070,15 @@ const UnifiedMotoristaModal = ({
                   }}
                 />
               ) : activeTab === 'comentarios' ? (
-                <div onClick={(e) => e.stopPropagation()} onSubmit={(e) => e.preventDefault()}>
+                <div 
+                  onClick={(e) => e.stopPropagation()} 
+                  onSubmit={(e) => {
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    return false;
+                  }}
+                  style={{ isolation: 'isolate' }}
+                >
                   <ComentariosTab 
                     motorista_id={motorista.motorista_id}
                     onUpdateSuccess={() => {
