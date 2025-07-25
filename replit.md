@@ -246,3 +246,21 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - Links para visualização de documentos armazenados no Supabase Storage
 - Preview de imagens quando não são PDFs
 
+## Correção de Comentários no Modal de Motoristas (Janeiro 2025)
+
+### Problema Identificado
+- Aba comentários no UnifiedMotoristaModal resetava automaticamente para "details"
+- Problema causado pelo callback `onSuccess` do ComentariosTab que chamava `fetchMotoristas`
+- `fetchMotoristas` causava re-renderização do componente pai, resetando o estado do modal
+
+### Solução Implementada
+- Removido `onSuccess?.()` do callback `onUpdateSuccess` do ComentariosTab
+- Mantido apenas `fetchComentariosCount()` para atualizar contador de comentários
+- Implementado sistema useRef para controle de inicialização mais robusto
+- Adicionada key estável ao modal baseada no motorista_id para evitar remontagens
+
+### Resultado
+- Aba comentários agora funciona corretamente sem reset automático
+- Mantida funcionalidade de atualização do contador de comentários
+- Sistema mais estável e performático
+

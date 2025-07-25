@@ -21,7 +21,7 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
-import { WiseAppBulkSyncPanel, WiseAppSyncButton } from '../../components/WiseAppSyncButton';
+import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
 
 // Função auxiliar para converter ViewMotorista para Motorista
 const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
@@ -1417,7 +1417,7 @@ const MotoristasLista = () => {
                                 color: cliente.cor || 'bg-gray-100 dark:bg-gray-700'
                               }))
                             ]}
-                            onSelect={(value) => handleUpdateCliente(null, motorista, value ? parseInt(value, 10) : null)}
+                            onSelect={(value: string | number) => handleUpdateCliente(null, motorista, value ? parseInt(value.toString(), 10) : null)}
                             placeholder="Selecionar Cliente"
                             disabled={updatingCliente === motorista.motorista_id}
                             buttonClassName={
@@ -1447,12 +1447,6 @@ const MotoristasLista = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
-                          <WiseAppSyncButton 
-                            motoristaId={motorista.motorista_id}
-                            variant="individual"
-                            size="sm"
-                            showLabel={false}
-                          />
                           <button
                             onClick={() => {
                               setSelectedMotorista(motorista);
@@ -1650,6 +1644,7 @@ const MotoristasLista = () => {
 
       {/* Modals */}
       <UnifiedMotoristaModal
+        key={`motorista-modal-${selectedMotorista?.motorista_id || 'none'}`}
         isOpen={isUnifiedModalOpen}
         onClose={() => setIsUnifiedModalOpen(false)}
         motorista={selectedMotorista ? toMotorista(selectedMotorista) : null}

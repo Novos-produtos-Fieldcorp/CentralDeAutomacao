@@ -47,7 +47,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // If still no account_id, use default for testing
         if (!currentAccountId || currentAccountId === 'null' || currentAccountId === 'undefined') {
-          console.log('No valid account ID found, using default for testing');
           currentAccountId = '6'; // Default account ID for testing
         }
 
@@ -57,7 +56,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         setAccountId(currentAccountId);
-        console.log('Checking company for account ID:', currentAccountId);
 
         try {
           // Find company by account ID
@@ -78,14 +76,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           const isValid = company.st_company === true;
-          console.log('Company status:', isValid);
 
           // Update authentication state
           setIsAuthenticated(isValid);
           setCompanyId(company.company_id);
 
           if (!isValid) {
-            console.log('Company is not active');
             localStorage.removeItem('account_id');
             setAccountId(undefined);
             navigate('/unauthorized');

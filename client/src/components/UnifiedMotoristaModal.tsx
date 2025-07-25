@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, User, MapPin, FileText, ExternalLink, Edit2, Users, ShieldAlert, MessageSquare 
 } from 'lucide-react';
@@ -31,26 +32,15 @@ const UnifiedMotoristaModal = ({
   motorista, 
   onSuccess 
 }: UnifiedMotoristaModalProps) => {
-  console.log('UnifiedMotoristaModal renderizado - isOpen:', isOpen, 'motorista:', motorista?.nome);
+
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
+  
+
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   
-  const [comentariosRefreshKey, setComentariosRefreshKey] = useState(0);
+
   
-  const handleTabChange = async (tab: 'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios') => {
-    // If clicking the same tab and it's the comentarios tab, trigger a refresh
-    if (activeTab === tab && tab === 'comentarios') {
-      setComentariosRefreshKey(prev => prev + 1);
-      return;
-    }
-    
-    setActiveTab(tab);
-    
-    // Only fetch data if switching to ajudantes tab and we have a motorista
-    if (tab === 'ajudantes' && motorista) {
-      await fetchAjudantes();
-    }
-  };
+
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [endereco, setEndereco] = useState<any>(null);
@@ -65,22 +55,43 @@ const UnifiedMotoristaModal = ({
   const [comentariosCount, setComentariosCount] = useState(0);
   const [ajudantes, setAjudantes] = useState<DocumentoAjudante[]>([]);
   const [proprietarioVeiculo, setProprietarioVeiculo] = useState<any>(null);
+  const isInitializedRef = useRef(false);
+  
+  // Função para controlar mudanças no isInitializedRef
+  const setInitializedRef = (value: boolean) => {
+    isInitializedRef.current = value;
+  };
+  const currentMotoristaIdRef = useRef<number | null>(null);
+  
+
+
+
 
   useEffect(() => {
     if (isOpen && motorista) {
-      console.log('Modal aberto para motorista:', motorista);
-      console.log('Função do motorista:', motorista.funcao);
-      console.log('Veiculo ID:', (motorista as any).veiculo_id);
-      fetchEndereco();
-      fetchDocumentCount();
-      fetchDocumentoMotorista();
-      fetchAjudantesCount();
-      fetchGestaoRiscoCount();
-      fetchComentariosCount();
-      console.log('Chamando fetchProprietarioVeiculo...');
-      fetchProprietarioVeiculo();
+      const motoristaId = motorista.motorista_id;
+      
+      // Só inicializar se for um motorista diferente ou primeira vez
+      if (!isInitializedRef.current || currentMotoristaIdRef.current !== motoristaId) {
+        currentMotoristaIdRef.current = motoristaId;
+        setInitializedRef(true);
+        
+        fetchEndereco();
+        fetchDocumentCount();
+        fetchDocumentoMotorista();
+        fetchAjudantesCount();
+        fetchGestaoRiscoCount();
+        fetchComentariosCount();
+        fetchProprietarioVeiculo();
+      }
+    } else if (!isOpen) {
+      setInitializedRef(false);
+      currentMotoristaIdRef.current = null;
+      setActiveTab('details');
     }
-  }, [isOpen, motorista]);
+  }, [isOpen, motorista?.motorista_id]);
+  
+
 
   const fetchEndereco = async () => {
     if (!motorista) return;
@@ -140,7 +151,6 @@ const UnifiedMotoristaModal = ({
     if (!motorista) return;
     
     try {
-      console.log('Fetching document data for motorista:', motorista.motorista_id);
       const { data, error } = await supabase
         .from('documento_motorista')
         .select(`
@@ -160,12 +170,7 @@ const UnifiedMotoristaModal = ({
 
       if (error) throw error;
       
-      console.log('Document data fetched:', data);
       setDocumentoMotorista(data);
-      
-      if (!data) {
-        console.warn('No document data found for motorista:', motorista.motorista_id);
-      }
     } catch (error) {
       console.error('Error fetching driver document:', error);
     }
@@ -269,11 +274,7 @@ const UnifiedMotoristaModal = ({
   const fetchProprietarioVeiculo = async () => {
     if (!motorista) return;
 
-    console.log('=== INICIANDO BUSCA PROPRIETÁRIO VEÍCULO ===');
-    console.log('motorista.motorista_id:', motorista.motorista_id);
-
     try {
-      
       // Verificar se o motorista já tem veiculo_id
       let veiculoId = (motorista as any).veiculo_id;
       
@@ -284,25 +285,14 @@ const UnifiedMotoristaModal = ({
           .select('veiculo_id')
           .eq('motorista_id', motorista.motorista_id)
           .maybeSingle();
-
-        console.log('Resultado busca veículo:', { veiculo, veiculoError });
-      
-      // Adicionar mais logs detalhados
-      const { data: allDocumentosVeiculo, error: allDocError } = await supabase
-        .from('documento_veiculo')
-        .select('*');
-      console.log('Todos os documentos de veículo:', allDocumentosVeiculo);
         
         if (veiculoError) throw veiculoError;
         if (!veiculo) {
-          console.log('Nenhum veículo encontrado para o motorista');
           return;
         }
         
         veiculoId = veiculo.veiculo_id;
       }
-
-      console.log('Usando veiculo_id:', veiculoId);
 
       // Buscar documento do veículo
       const { data: documentoVeiculo, error: docError } = await supabase
@@ -311,11 +301,8 @@ const UnifiedMotoristaModal = ({
         .eq('veiculo_id', veiculoId)
         .maybeSingle();
 
-      console.log('Documento do veículo encontrado:', { documentoVeiculo, docError });
-
       if (docError) throw docError;
       if (!documentoVeiculo) {
-        console.log('Nenhum documento do veículo encontrado');
         return;
       }
 
@@ -344,9 +331,7 @@ const UnifiedMotoristaModal = ({
         tipo: pessoaFisica ? 'fisica' : pessoaJuridica ? 'juridica' : null
       };
 
-      console.log('Proprietário estruturado:', proprietario);
       setProprietarioVeiculo(proprietario);
-      console.log('State proprietarioVeiculo atualizado');
     } catch (error) {
       console.error('Error fetching proprietario veiculo:', error);
       setProprietarioVeiculo(null);
@@ -471,7 +456,8 @@ const UnifiedMotoristaModal = ({
             <div className="border-b border-gray-200 dark:border-gray-700">
               <nav className="-mb-px flex space-x-8 px-6">
                 <button
-                  onClick={() => handleTabChange('details')}
+                  type="button"
+                  onClick={() => setActiveTab('details')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'details'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -484,7 +470,8 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => handleTabChange('documents')}
+                  type="button"
+                  onClick={() => setActiveTab('documents')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'documents'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -502,7 +489,11 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => handleTabChange('ajudantes')}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('ajudantes');
+                    if (motorista) fetchAjudantes();
+                  }}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'ajudantes'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -520,7 +511,8 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => handleTabChange('gestao-risco')}
+                  type="button"
+                  onClick={() => setActiveTab('gestao-risco')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'gestao-risco'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -538,7 +530,12 @@ const UnifiedMotoristaModal = ({
                   </div>
                 </button>
                 <button
-                  onClick={() => handleTabChange('comentarios')}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveTab('comentarios');
+                  }}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'comentarios'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -1089,14 +1086,18 @@ const UnifiedMotoristaModal = ({
                 />
               ) : activeTab === 'comentarios' ? (
                 <ComentariosTab 
-                  key={`comentarios-${comentariosRefreshKey}`}
                   motorista_id={motorista.motorista_id}
                   onUpdateSuccess={() => {
                     fetchComentariosCount();
-                    onSuccess?.();
                   }}
                 />
-              ) : null}
+              ) : (
+                <div>
+                  <p style={{color: 'blue', fontSize: '18px', fontWeight: 'bold'}}>
+                    DEBUG: Aba não reconhecida! activeTab = {activeTab}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
