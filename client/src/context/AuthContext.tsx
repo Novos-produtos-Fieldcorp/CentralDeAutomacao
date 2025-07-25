@@ -45,13 +45,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           currentAccountId = localStorage.getItem('account_id');
         }
 
-        // If still no account_id, redirect to unauthorized
+        // For development/testing, use default account_id if none provided
         if (!currentAccountId || currentAccountId === 'null' || currentAccountId === 'undefined') {
-          console.log('No valid account ID found');
-          setIsAuthenticated(false);
-          setAccountId(undefined);
-          navigate('/unauthorized');
-          return;
+          // Use a default account_id for testing purposes
+          currentAccountId = '1';
+          console.log('Using default account ID for testing:', currentAccountId);
         }
 
         // Store account_id in localStorage
