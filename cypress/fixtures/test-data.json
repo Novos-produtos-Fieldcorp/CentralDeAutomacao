@@ -1,0 +1,71 @@
+{
+  "motoristas": [
+    {
+      "nome": "João Silva",
+      "cpf": "11111111111",
+      "telefone": "11999999999",
+      "email": "joao@test.com",
+      "funcao": "Motorista",
+      "st_cadastro": "cadastrado"
+    },
+    {
+      "nome": "Maria Santos",
+      "cpf": "22222222222", 
+      "telefone": "11888888888",
+      "email": "maria@test.com",
+      "funcao": "Agregado",
+      "st_cadastro": "documentacao"
+    },
+    {
+      "nome": "Pedro Oliveira",
+      "cpf": "33333333333",
+      "telefone": "11777777777", 
+      "email": "pedro@test.com",
+      "funcao": "Motorista",
+      "st_cadastro": "qualificado"
+    }
+  ],
+  "documents": [
+    {
+      "tipo": "rg",
+      "nome": "rg-frente.jpg",
+      "url": "/fixtures/documents/rg-frente.jpg"
+    },
+    {
+      "tipo": "cnh",
+      "nome": "cnh.jpg", 
+      "url": "/fixtures/documents/cnh.jpg"
+    },
+    {
+      "tipo": "comprovante_residencia",
+      "nome": "comprovante.pdf",
+      "url": "/fixtures/documents/comprovante.pdf"
+    }
+  ],
+  "veiculos": [
+    {
+      "placa": "ABC1234",
+      "marca_veiculo": "Toyota Corolla",
+      "ano": "2020/2020",
+      "cor": "Branco",
+      "tipologia": "carro"
+    },
+    {
+      "placa": "DEF5678", 
+      "marca_veiculo": "Honda Civic",
+      "ano": "2019/2019",
+      "cor": "Prata",
+      "tipologia": "carro"
+    }
+  ],
+  "clientes": [
+    {
+      "nome": "Empresa A Ltda",
+      "cnpj": "11111111000111"
+    },
+    {
+      "nome": "Empresa B Ltda", 
+      "cnpj": "22222222000122"
+    }
+  ]
+}

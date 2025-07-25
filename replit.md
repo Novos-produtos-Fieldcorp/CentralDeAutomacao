@@ -156,6 +156,35 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - Arquivo test-iframe.html criado para validação
 - Aplicação pode ser embutida em qualquer domínio
 
+## Resolução de Conflitos de Merge (Janeiro 2025)
+
+### Problema Inicial
+- Múltiplos conflitos de merge impedindo push/merge das alterações
+- Erros de TypeScript relacionados a conversões de telefone
+- Imports faltantes de componentes WiseApp
+- Lock file do git impedindo operações
+
+### Soluções Implementadas
+- Resolvidos todos os conflitos de merge mantendo conteúdo da seção especificada
+- Corrigidas conversões de `telefone?.toString()` para `String(telefone)`
+- Adicionadas importações faltantes: WiseAppBulkSyncPanel, WiseAppSyncButton
+- Instalada dependência cross-env que estava ausente
+- Aplicação funcionando perfeitamente na porta 5000
+
+### Arquivos Principais Corrigidos
+- `client/src/pages/contratacao/MotoristasLista.tsx`: Conversões de telefone
+- `client/src/context/AuthContext.tsx`: Imports WiseApp
+- `client/src/index.css`: Conflitos de CSS removidos
+- `package.json`: Dependência cross-env adicionada
+- Múltiplos arquivos: Marcadores de merge <<<< >>>> removidos
+
+### Status Final
+- ✅ Aplicação rodando sem erros
+- ✅ Todos os conflitos resolvidos
+- ✅ TypeScript sem erros
+- ✅ Dependências instaladas
+- ⚠️ Requer resolução manual do git lock para push
+
 ## Correções de Chat (Janeiro 2025)
 
 ### Problema de Cache HTTP 304
@@ -216,3 +245,22 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - **Pessoa Jurídica**: razão social, CNPJ, inscrição estadual, comprovante de endereço
 - Links para visualização de documentos armazenados no Supabase Storage
 - Preview de imagens quando não são PDFs
+
+## Correção de Comentários no Modal de Motoristas (Janeiro 2025)
+
+### Problema Identificado
+- Aba comentários no UnifiedMotoristaModal resetava automaticamente para "details"
+- Problema causado pelo callback `onSuccess` do ComentariosTab que chamava `fetchMotoristas`
+- `fetchMotoristas` causava re-renderização do componente pai, resetando o estado do modal
+
+### Solução Implementada
+- Removido `onSuccess?.()` do callback `onUpdateSuccess` do ComentariosTab
+- Mantido apenas `fetchComentariosCount()` para atualizar contador de comentários
+- Implementado sistema useRef para controle de inicialização mais robusto
+- Adicionada key estável ao modal baseada no motorista_id para evitar remontagens
+
+### Resultado
+- Aba comentários agora funciona corretamente sem reset automático
+- Mantida funcionalidade de atualização do contador de comentários
+- Sistema mais estável e performático
+

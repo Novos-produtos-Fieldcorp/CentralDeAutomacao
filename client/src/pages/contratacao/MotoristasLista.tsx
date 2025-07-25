@@ -21,6 +21,7 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
+import { WiseAppBulkSyncPanel, WiseAppSyncButton } from '../../components/WiseAppSyncButton';
 
 // Função auxiliar para converter ViewMotorista para Motorista
 const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
@@ -123,6 +124,7 @@ export interface ViewMotorista extends Omit<ViewMotoristaBase, 'nome_motorista'>
   cliente_id: number | null;
   // Ajudante information
   nome_ajudante?: string;
+  ajudantes?: string[]; // Add ajudantes property
   // Adiciona propriedades opcionais para compatibilidade
   documento_motorista?: any[];
   veiculo?: any[];
@@ -525,7 +527,7 @@ const MotoristasLista = () => {
               (motorista.nome?.toLowerCase().includes(searchLower) ||
                motorista.cpf?.includes(searchLower) ||
                (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
-               motorista.telefone?.toString().includes(searchLower));
+               (motorista.telefone ? String(motorista.telefone).includes(searchLower) : false));
             
             return statusMatch && clienteMatch && cidadeMatch && ativoMatch && searchMatch;
           })
@@ -594,7 +596,7 @@ const MotoristasLista = () => {
   const handleBulkDelete = async () => {
     try {
       // Delete all selected items
-      for (const id of selectedItems) {
+      for (const id of Array.from(selectedItems)) {
         const { error } = await supabase
           .from('motorista')
           .delete()
@@ -788,7 +790,7 @@ const MotoristasLista = () => {
       (motorista.nome?.toLowerCase().includes(searchLower) ||
        motorista.cpf?.includes(searchLower) ||
        (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
-       motorista.telefone?.toString().includes(searchLower));
+       (motorista.telefone ? String(motorista.telefone).includes(searchLower) : false));
     
     try {
       return statusMatch && clienteMatch && cidadeMatch && ativoMatch && searchMatch;
@@ -1264,6 +1266,9 @@ const MotoristasLista = () => {
         )}
       </div>
 
+      {/* WiseApp Bulk Sync Panel */}
+      <WiseAppBulkSyncPanel className="mb-6" />
+
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
         <div className="overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
@@ -1352,13 +1357,13 @@ const MotoristasLista = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="text-sm text-gray-900 dark:text-white">
-                            {motorista.telefone ? formatPhone(motorista.telefone.toString()) : '-'}
+                            {motorista.telefone ? formatPhone(String(motorista.telefone)) : '-'}
                           </div>
                           {motorista.telefone && (
                             <button
                               onClick={() => {
                                 if (motorista.telefone) {
-                                  startChat(motorista.telefone.toString(), motorista.nome || '');
+                                  startChat(String(motorista.telefone), motorista.nome || '');
                                 }
                               }}
                               className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
@@ -1412,7 +1417,7 @@ const MotoristasLista = () => {
                                 color: cliente.cor || 'bg-gray-100 dark:bg-gray-700'
                               }))
                             ]}
-                            onSelect={(value) => handleUpdateCliente(null, motorista, value ? parseInt(value) : null)}
+                            onSelect={(value: string | number) => handleUpdateCliente(null, motorista, value ? parseInt(value.toString(), 10) : null)}
                             placeholder="Selecionar Cliente"
                             disabled={updatingCliente === motorista.motorista_id}
                             buttonClassName={
@@ -1441,7 +1446,13 @@ const MotoristasLista = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-3">
+                        <div className="flex items-center justify-end space-x-2">
+                          <WiseAppSyncButton 
+                            motoristaId={motorista.motorista_id}
+                            variant="individual"
+                            size="sm"
+                            showLabel={false}
+                          />
                           <button
                             onClick={() => {
                               setSelectedMotorista(motorista);
@@ -1612,7 +1623,7 @@ const MotoristasLista = () => {
             {
               icon: <MessageCircle size={16} />,
               label: 'Iniciar Chat',
-              onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome || ''),
+              onClick: () => startChat(contextMenu.motorista!.telefone ? String(contextMenu.motorista!.telefone) : '', contextMenu.motorista!.nome || ''),
               color: 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300',
               disabled: !contextMenu.motorista!.telefone
             },
@@ -1653,7 +1664,7 @@ const MotoristasLista = () => {
         nome={selectedMotorista?.nome || ''}
         cpf={selectedMotorista?.cpf || undefined}
         email={selectedMotorista?.email || undefined}
-        telefone={selectedMotorista?.telefone?.toString() || undefined}
+        telefone={selectedMotorista?.telefone ? String(selectedMotorista.telefone) : undefined}
         dt_nascimento={selectedMotorista?.dt_nascimento}
         endereco={endereco}
         st_cadastro={selectedMotorista?.st_cadastro}
@@ -1749,7 +1760,7 @@ const MotoristasLista = () => {
         numbers={Array.from(selectedItems)
           .map(id => {
             const motorista = motoristas.find(m => m.motorista_id === id);
-            return motorista?.telefone ? motorista.telefone.toString() : '';
+            return motorista?.telefone ? String(motorista.telefone) : '';
           })
           .filter(Boolean)}
       />
