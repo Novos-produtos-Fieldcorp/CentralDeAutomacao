@@ -84,7 +84,6 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    e.stopPropagation();
     
     if (!comentario.trim()) {
       toast.error('O comentário não pode estar vazio');
@@ -159,7 +158,7 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
           <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
             Adicionar Novo Comentário
           </h3>
-          <form onSubmit={handleSubmit} className="mt-4" onClick={(e) => e.stopPropagation()}>
+          <form onSubmit={handleSubmit} className="mt-4">
             <div className="mt-1">
               <textarea
                 rows={4}
@@ -175,7 +174,6 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
               <button
                 type="submit"
                 disabled={submitting || !comentario.trim()}
-                onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (
