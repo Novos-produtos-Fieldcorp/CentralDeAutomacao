@@ -783,91 +783,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       setIsBulkActionsModalOpen(true);
     };
 
-    const handleBulkUpdateTreinamento = async (marcar: boolean) => {
-      if (selectedItems.size === 0) {
-        toast.error('Selecione pelo menos um motorista');
-        return;
-      }
 
-      try {
-        const newDate = marcar ? new Date().toISOString().split('T')[0] : null;
-        
-        // Atualiza no banco de dados
-        const { error } = await supabase
-          .from('motorista_eventos_cliente')
-          .upsert(
-            Array.from(selectedItems).map(id => ({
-              motorista_id: id,
-              treinamento: marcar,
-              treinamento_data: newDate
-            })),
-            { onConflict: 'motorista_id' }
-          );
-
-        if (error) throw error;
-
-        // Atualiza o estado local
-        setContratados(prev =>
-          prev.map(motorista =>
-            selectedItems.has(motorista.motorista_id!)
-              ? {
-                  ...motorista,
-                  treinamento: marcar,
-                  treinamento_data: newDate
-                }
-              : motorista
-          )
-        );
-
-        toast.success(`Treinamento ${marcar ? 'marcado' : 'desmarcado'} em massa com sucesso`);
-      } catch (error) {
-        console.error('Erro ao atualizar treinamento em massa:', error);
-        toast.error('Erro ao atualizar treinamento');
-      }
-    };
-
-    const handleBulkUpdateIntegracao = async (marcar: boolean) => {
-      if (selectedItems.size === 0) {
-        toast.error('Selecione pelo menos um motorista');
-        return;
-      }
-
-      try {
-        const newDate = marcar ? new Date().toISOString().split('T')[0] : null;
-        
-        // Atualiza no banco de dados
-        const { error } = await supabase
-          .from('motorista_eventos_cliente')
-          .upsert(
-            Array.from(selectedItems).map(id => ({
-              motorista_id: id,
-              integracao: marcar,
-              integracao_data: newDate
-            })),
-            { onConflict: 'motorista_id' }
-          );
-
-        if (error) throw error;
-
-        // Atualiza o estado local
-        setContratados(prev =>
-          prev.map(motorista =>
-            selectedItems.has(motorista.motorista_id!)
-              ? {
-                  ...motorista,
-                  integracao: marcar,
-                  integracao_data: newDate
-                }
-              : motorista
-          )
-        );
-
-        toast.success(`Integração Interna ${marcar ? 'marcada' : 'desmarcada'} em massa com sucesso`);
-      } catch (error) {
-        console.error('Erro ao atualizar integração em massa:', error);
-        toast.error('Erro ao atualizar integração');
-      }
-    };
 
     const handleMassMessage = () => {
       setIsMassMessageModalOpen(true);
@@ -1123,33 +1039,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     Atualizar Status
                   </button>
                   
-                  <button
-                    onClick={() => handleBulkUpdateIntegracao(true)}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 
-                            focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 
-                            transition-colors flex items-center gap-2"
-                    title="Marcar Integração Interna"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check-circle">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                      <path d="m9 11 3 3L22 4"/>
-                    </svg>
-                    Int. Interna
-                  </button>
-                  
-                  <button
-                    onClick={() => handleBulkUpdateTreinamento(true)}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 
-                            focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 
-                            transition-colors flex items-center gap-2"
-                    title="Marcar Treinamento Cliente"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-graduation-cap">
-                      <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                      <path d="M6 12v5c3 3 9 1 9-1v-5"/>
-                    </svg>
-                    Treinamento
-                  </button>
+
                 </div>
                 <button
                   onClick={() => handleBulkAction('client')}
