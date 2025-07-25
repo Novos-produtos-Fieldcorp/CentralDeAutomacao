@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, User, MapPin, FileText, ExternalLink, Edit2, Users, ShieldAlert, MessageSquare 
@@ -75,32 +75,33 @@ const UnifiedMotoristaModal = ({
   const [comentariosCount, setComentariosCount] = useState(0);
   const [ajudantes, setAjudantes] = useState<DocumentoAjudante[]>([]);
   const [proprietarioVeiculo, setProprietarioVeiculo] = useState<any>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-  
-  // Debug: rastrear mudanças específicas no isInitialized
-  const setIsInitializedWithLog = (value: boolean) => {
-    console.log(`🔴 MUDANDO isInitialized de ${isInitialized} para ${value}`);
-    console.trace('Stack trace do setIsInitialized:');
-    setIsInitialized(value);
-  };
+  const isInitializedRef = useRef(false);
+  const currentMotoristaIdRef = useRef<number | null>(null);
   
   // Debug: rastrear mudanças nas props que causam re-inicialização
   useEffect(() => {
     console.log('Props mudaram:', { 
       isOpen, 
       motoristaId: motorista?.motorista_id, 
-      isInitialized,
+      isInitializedRef: isInitializedRef.current,
       activeTab 
     });
-  }, [isOpen, motorista, isInitialized, activeTab]);
+  }, [isOpen, motorista, activeTab]);
 
 
 
   useEffect(() => {
     if (isOpen && motorista) {
-      if (!isInitialized) {
-        console.log('MODAL INICIALIZANDO - fetchando dados...');
+      const motoristaId = motorista.motorista_id;
+      
+      // Só inicializar se for um motorista diferente ou primeira vez
+      if (!isInitializedRef.current || currentMotoristaIdRef.current !== motoristaId) {
+        console.log('MODAL INICIALIZANDO - fetchando dados para motorista:', motoristaId);
         console.log('activeTab atual durante inicialização:', activeTab);
+        
+        currentMotoristaIdRef.current = motoristaId;
+        isInitializedRef.current = true;
+        
         fetchEndereco();
         fetchDocumentCount();
         fetchDocumentoMotorista();
@@ -108,15 +109,18 @@ const UnifiedMotoristaModal = ({
         fetchGestaoRiscoCount();
         fetchComentariosCount();
         fetchProprietarioVeiculo();
-        console.log('PRESERVANDO activeTab durante inicialização:', activeTab);
-        setIsInitializedWithLog(true);
+        
+        console.log('✅ INICIALIZACAO COMPLETA - PRESERVANDO activeTab:', activeTab);
+      } else {
+        console.log('Modal já inicializado para motorista:', motoristaId, 'activeTab:', activeTab);
       }
     } else if (!isOpen) {
       console.log('Modal fechando - resetando estado');
-      setIsInitializedWithLog(false);
+      isInitializedRef.current = false;
+      currentMotoristaIdRef.current = null;
       setActiveTab('details');
     }
-  }, [isOpen, motorista?.motorista_id]); // Removi isInitialized das dependências para evitar loop
+  }, [isOpen, motorista?.motorista_id]);
   
   // useEffect separado apenas para modal aberto - resetar tab apenas na primeira abertura
   useEffect(() => {
