@@ -165,8 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
               'Accept': 'application/json, text/plain, */*',
               'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
-              'Cache-Control': 'no-cache',
-              ...api.headers
+              'Cache-Control': 'no-cache'
             }
           };
 
@@ -196,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Se chegou aqui, todas as APIs falharam
       console.error('Todas as APIs de CEP falharam:', lastError);
-      const errorMessage = lastError?.message || '';
+      const errorMessage = (lastError as Error)?.message || '';
       console.log('Última mensagem de erro:', errorMessage);
       
       // Verifica se o problema é indisponibilidade geral ou CEP inválido
