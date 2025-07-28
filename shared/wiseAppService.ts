@@ -120,8 +120,8 @@ export class WiseAppService {
       if (contactData.email) payload.email = contactData.email;
       if (contactData.custom_attributes) {
         payload.custom_attributes = {
-          source: 'website_sync',
-          ...contactData.custom_attributes
+          ...contactData.custom_attributes,
+          source: 'website_sync'
         };
       }
 
