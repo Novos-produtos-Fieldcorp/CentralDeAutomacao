@@ -264,3 +264,32 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - Mantida funcionalidade de atualização do contador de comentários
 - Sistema mais estável e performático
 
+## Integração CPF API em Formulários de Ajudante e Proprietário de Veículo (Janeiro 2025)
+
+### Funcionalidade Implementada
+- Criado serviço reutilizável `client/src/utils/cpfService.ts` para consulta de CPF
+- API endpoint: `https://api.gw.cellereit.com.br/bg-check/cpf-completo?cpf=${cpf}`
+- Integração em três componentes principais:
+  - `AddAjudanteModal.tsx`: Adição de novos ajudantes
+  - `EditAjudanteModal.tsx`: Edição de ajudantes existentes
+  - `DocumentoMotoristaForm.tsx`: Formulário de proprietário pessoa física do veículo
+
+### Dados Preenchidos Automaticamente
+- **Pessoa Física**: nome, telefone, endereço completo (logradouro, número, complemento, bairro, cidade, estado, CEP)
+- **Validação**: CPF deve conter exatamente 11 dígitos
+- **Trigger**: onBlur no campo CPF quando possui 11 dígitos
+- **Feedback**: Toast de sucesso ou erro para informar o usuário
+
+### Arquivos Modificados
+- `client/src/utils/cpfService.ts`: Serviço de consulta CPF (novo)
+- `client/src/components/AddAjudanteModal.tsx`: Integração CPF API
+- `client/src/components/EditAjudanteModal.tsx`: Integração CPF API
+- `client/src/components/DocumentoMotoristaForm.tsx`: Integração CPF API para proprietário pessoa física
+
+### Benefícios
+- Redução de erros de digitação
+- Preenchimento automático de dados pessoais
+- Padronização de endereços
+- Melhoria na experiência do usuário
+- Consistência de dados no sistema
+

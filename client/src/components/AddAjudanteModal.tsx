@@ -123,6 +123,33 @@ const AddAjudanteModal = ({ isOpen, onClose, motorista_id, onSuccess }: AddAjuda
     }
   };
 
+  const consultarCpfApi = async (cpf: string) => {
+    if (!cpf || cpf.length !== 11) return;
+    
+    try {
+      const { consultarCpfApi } = await import('../utils/cpfService');
+      const data = await consultarCpfApi(cpf);
+      
+      setFormData(prev => ({
+        ...prev,
+        nome: data.nome || prev.nome,
+        telefone: data.telefone || prev.telefone,
+        logradouro: data.logradouro || prev.logradouro,
+        numero: data.numero || prev.numero,
+        complemento: data.complemento || prev.complemento,
+        bairro: data.bairro || prev.bairro,
+        cidade: data.cidade || prev.cidade,
+        estado: data.estado || prev.estado,
+        cep: data.cep || prev.cep
+      }));
+      
+      toast.success('Dados do CPF preenchidos!');
+    } catch (error) {
+      console.error('Erro ao consultar CPF:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao consultar CPF');
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'foto_cnh' | 'foto_rg' | 'comprovante_residencia') => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -428,6 +455,12 @@ const AddAjudanteModal = ({ isOpen, onClose, motorista_id, onSuccess }: AddAjuda
                     const value = e.target.value.replace(/\D/g, '');
                     if (value.length <= 11) {
                       setFormData(prev => ({ ...prev, cpf: value }));
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const cpf = e.target.value.replace(/\D/g, '');
+                    if (cpf.length === 11) {
+                      consultarCpfApi(cpf);
                     }
                   }}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
