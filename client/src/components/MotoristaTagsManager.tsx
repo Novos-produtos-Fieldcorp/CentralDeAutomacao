@@ -96,20 +96,20 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   };
 
   if (isLoadingMotorTags) {
-    return <div className="text-center">Carregando tags...</div>;
+    return <div className="text-center text-gray-600 dark:text-gray-400">Carregando tags...</div>;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-md font-medium flex items-center gap-2">
+        <h4 className="text-md font-medium flex items-center gap-2 text-gray-900 dark:text-gray-100">
           <TagIcon className="w-4 h-4" />
           Tags do Motorista
         </h4>
         <button
           onClick={() => setIsModalOpen(true)}
           disabled={availableTags.length === 0}
-          className="bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-blue-600 dark:bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Plus className="w-3 h-3" />
           Adicionar
@@ -127,7 +127,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
             </span>
             <button
               onClick={() => handleRemoveTag(tag.id)}
-              className="p-1 text-gray-500 hover:text-red-600"
+              className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
             >
               <X className="w-3 h-3" />
             </button>
@@ -136,22 +136,22 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       </div>
 
       {motoristaTags.length === 0 && (
-        <p className="text-gray-500 text-sm">Nenhuma tag atribuída ainda.</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">Nenhuma tag atribuída ainda.</p>
       )}
 
       {availableTags.length === 0 && motoristaTags.length > 0 && (
-        <p className="text-gray-500 text-sm">Todas as tags disponíveis já foram atribuídas.</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">Todas as tags disponíveis já foram atribuídas.</p>
       )}
 
       {/* Modal para adicionar tags */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
+        <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4 border dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Adicionar Tag</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Adicionar Tag</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -159,9 +159,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
             <div className="space-y-2">
               {isLoadingAllTags ? (
-                <div className="text-center py-4">Carregando tags...</div>
+                <div className="text-center py-4 text-gray-600 dark:text-gray-400">Carregando tags...</div>
               ) : availableTags.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">
+                <div className="text-center py-4 text-gray-500 dark:text-gray-400">
                   Nenhuma tag disponível para adicionar.
                 </div>
               ) : (
@@ -170,7 +170,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                     key={tag.id}
                     onClick={() => handleAddTag(tag.id)}
                     disabled={addTagMutation.isPending}
-                    className="w-full flex items-center gap-2 p-2 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                    className="w-full flex items-center gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
                   >
                     <span
                       style={{ backgroundColor: tag.cor }}
@@ -186,7 +186,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
             <div className="flex justify-end gap-2 pt-4">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 Cancelar
               </button>

@@ -146,10 +146,10 @@ export function TagManager({ companyId }: TagManagerProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Tags</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Tags</h3>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 flex items-center gap-2"
+          className="bg-blue-600 dark:bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-2 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Nova Tag
@@ -167,13 +167,13 @@ export function TagManager({ companyId }: TagManagerProps) {
             </span>
             <button
               onClick={() => handleEdit(tag)}
-              className="p-1 text-gray-500 hover:text-blue-600"
+              className="p-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
               <Edit className="w-3 h-3" />
             </button>
             <button
               onClick={() => handleDelete(tag.id)}
-              className="p-1 text-gray-500 hover:text-red-600"
+              className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
             >
               <Trash2 className="w-3 h-3" />
             </button>
@@ -182,20 +182,20 @@ export function TagManager({ companyId }: TagManagerProps) {
       </div>
 
       {tags.length === 0 && (
-        <p className="text-gray-500 text-sm">Nenhuma tag criada ainda.</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">Nenhuma tag criada ainda.</p>
       )}
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
+        <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4 border dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {editingTag ? "Editar Tag" : "Nova Tag"}
               </h2>
               <button
                 onClick={handleModalClose}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -203,7 +203,7 @@ export function TagManager({ companyId }: TagManagerProps) {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nome
                 </label>
                 <input
@@ -211,13 +211,13 @@ export function TagManager({ companyId }: TagManagerProps) {
                   value={formData.nome}
                   onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                   placeholder="Digite o nome da tag"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Cor
                 </label>
                 <div className="flex items-center gap-2">
@@ -225,14 +225,14 @@ export function TagManager({ companyId }: TagManagerProps) {
                     type="color"
                     value={formData.cor}
                     onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
-                    className="w-10 h-10 border border-gray-300 rounded cursor-pointer"
+                    className="w-10 h-10 border border-gray-300 dark:border-gray-600 rounded cursor-pointer bg-white dark:bg-gray-700"
                   />
                   <input
                     type="text"
                     value={formData.cor}
                     onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
                     placeholder="#3B82F6"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
               </div>
@@ -241,14 +241,14 @@ export function TagManager({ companyId }: TagManagerProps) {
                 <button
                   type="button"
                   onClick={handleModalClose}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                  className="px-4 py-2 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={createTagMutation.isPending || updateTagMutation.isPending}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors"
                 >
                   {editingTag ? "Atualizar" : "Criar"}
                 </button>

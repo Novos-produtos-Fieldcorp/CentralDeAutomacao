@@ -293,3 +293,39 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - Melhoria na experiência do usuário
 - Consistência de dados no sistema
 
+## Sistema de Tags Completo com Suporte a Temas (Janeiro 2025)
+
+### Funcionalidade Implementada
+- Sistema completo de tags para categorização de motoristas
+- Criação manual de tabelas via SQL (evitando conflitos com Drizzle)
+- Backend API com CRUD completo para gerenciamento de tags
+- Frontend com componentes dedicados para administração e atribuição
+- Navegação incluída no menu principal da aplicação
+
+### Componentes Criados
+- `TagManager.tsx`: Administração completa de tags (criação, edição, exclusão)
+- `MotoristaTagsManager.tsx`: Gerenciamento de tags para motoristas específicos
+- `TagsAdmin.tsx`: Página dedicada para administração do sistema de tags
+
+### Suporte a Temas Dark/Light
+- Aplicado suporte completo a tema escuro e claro em todos os componentes
+- Transições suaves entre temas com `transition-colors`
+- Cores consistentes com o sistema de design da aplicação
+- Modais e formulários adaptados para ambos os temas
+
+### Estrutura de Banco de Dados
+- Tabela `tags`: id, nome, cor, company_id, created_at
+- Tabela `motorista_tags`: id, motorista_id, tag_id, company_id, created_at
+- Relacionamentos adequados para isolamento por empresa
+
+### Funcionalidades
+- Criação de tags personalizadas com cores customizáveis
+- Atribuição/remoção de tags para motoristas individuais
+- Interface visual consistente com o restante da aplicação
+- Integração preparada para sincronização com WiseApp via Chatwoot API
+
+### Navegação
+- Item "Tags" adicionado ao menu principal com ícone da Lucide React
+- Rota `/tags-admin` configurada no sistema de roteamento
+- Acesso direto através do menu lateral da aplicação
+
