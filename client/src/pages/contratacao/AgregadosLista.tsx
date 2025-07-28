@@ -1734,12 +1734,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
               },
               {
-                icon: <FileText size={16} />,
-                label: 'Gerenciar Documentos',
-                onClick: () => handleUploadDocument(contextMenu.motorista!),
-                color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
-              },
-              {
                 icon: <MessageCircle size={16} />,
                 label: 'Iniciar Chat',
                 onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome_motorista || ''),

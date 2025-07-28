@@ -324,13 +324,15 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 
 ## Melhorias na Interface do Usuário (Janeiro 2025)
 
-### Context Menu - Remoção de Opção de Edição
-- **Funcionalidade Removida**: Opção "Editar Motorista" do menu de contexto (botão direito)
+### Context Menu - Simplificação das Opções
+- **Funcionalidades Removidas**: 
+  - Opção "Editar Motorista" do menu de contexto (botão direito)
+  - Opção "Gerenciar Documentos" do menu de contexto (botão direito)
 - **Aplicado em**: Listas de Motoristas e Agregados
 - **Motivo**: Simplificação da interface e redução de opções desnecessárias
 - **Opções Mantidas**: 
-  - Motoristas: Visualizar Detalhes, Gerenciar Documentos, Iniciar Chat, Excluir Motorista
-  - Agregados: Visualizar Detalhes, Gerenciar Documentos, Iniciar Chat
+  - Motoristas: Visualizar Detalhes, Iniciar Chat, Excluir Motorista
+  - Agregados: Visualizar Detalhes, Iniciar Chat
 - **Arquivos Modificados**: 
   - `client/src/pages/contratacao/MotoristasLista.tsx`
   - `client/src/pages/contratacao/AgregadosLista.tsx`
