@@ -1939,7 +1939,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     <div className="ml-3">
                       <p className="text-sm text-yellow-700 dark:text-yellow-300">
                         {roleChangeModal.newRole === 'Agregado' 
-                          ? 'Ao transformar em Agregado, o motorista não aparecerá mais na lista de motoristas ativos.'
+                          ? 'Ao transformar em Agregado, o registro será ativado automaticamente.'
                           : 'Ao transformar em Motorista, o registro será ativado automaticamente.'}
                       </p>
                     </div>
