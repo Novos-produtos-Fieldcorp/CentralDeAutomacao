@@ -12,6 +12,8 @@ import {
   bairro, 
   cidade, 
   estado,
+  tags,
+  motorista_tags,
   type User, 
   type InsertUser,
   type Motorista,
@@ -25,7 +27,11 @@ import {
   type Comentario,
   type InsertComentario,
   type EndMotorista,
-  type MotoristaWithAddress
+  type MotoristaWithAddress,
+  type Tag,
+  type InsertTag,
+  type MotoristaTag,
+  type InsertMotoristaTag
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, like, or, count, sql } from "drizzle-orm";
@@ -58,6 +64,17 @@ export interface IStorage {
   // Document methods
   getDocumentoMotorista(motoristaId: number): Promise<DocumentoMotorista | undefined>;
   getDocumentosAjudante(motoristaId: number): Promise<DocumentoAjudante[]>;
+
+  // Tags methods
+  getTags(companyId: number): Promise<Tag[]>;
+  createTag(tag: InsertTag): Promise<Tag>;
+  updateTag(id: number, tag: Partial<InsertTag>): Promise<Tag | undefined>;
+  deleteTag(id: number): Promise<boolean>;
+
+  // Motorista Tags methods
+  getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]>;
+  addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag>;
+  removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -349,6 +366,72 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(documento_ajudante)
       .where(eq(documento_ajudante.motorista_id, motoristaId));
+  }
+
+  // Tags methods
+  async getTags(companyId: number): Promise<Tag[]> {
+    return await db
+      .select()
+      .from(tags)
+      .where(eq(tags.company_id, companyId));
+  }
+
+  async createTag(insertTag: InsertTag): Promise<Tag> {
+    const [newTag] = await db
+      .insert(tags)
+      .values(insertTag)
+      .returning();
+    return newTag;
+  }
+
+  async updateTag(id: number, insertTag: Partial<InsertTag>): Promise<Tag | undefined> {
+    const [updatedTag] = await db
+      .update(tags)
+      .set(insertTag)
+      .where(eq(tags.id, id))
+      .returning();
+    return updatedTag || undefined;
+  }
+
+  async deleteTag(id: number): Promise<boolean> {
+    const result = await db
+      .delete(tags)
+      .where(eq(tags.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Motorista Tags methods
+  async getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]> {
+    return await db
+      .select({
+        id: tags.id,
+        nome: tags.nome,
+        cor: tags.cor,
+        company_id: tags.company_id,
+        created_at: tags.created_at,
+        updated_at: tags.updated_at
+      })
+      .from(motorista_tags)
+      .innerJoin(tags, eq(motorista_tags.tag_id, tags.id))
+      .where(eq(motorista_tags.motorista_id, motoristaId));
+  }
+
+  async addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag> {
+    const [newMotoristaTag] = await db
+      .insert(motorista_tags)
+      .values({ motorista_id: motoristaId, tag_id: tagId })
+      .returning();
+    return newMotoristaTag;
+  }
+
+  async removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean> {
+    const result = await db
+      .delete(motorista_tags)
+      .where(and(
+        eq(motorista_tags.motorista_id, motoristaId),
+        eq(motorista_tags.tag_id, tagId)
+      ));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 

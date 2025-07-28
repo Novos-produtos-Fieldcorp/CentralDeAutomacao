@@ -1,0 +1,262 @@
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Trash2, Edit, X } from "lucide-react";
+import toast from "react-hot-toast";
+
+interface TagFormData {
+  nome: string;
+  cor: string;
+}
+
+interface Tag {
+  id: number;
+  nome: string;
+  cor: string;
+  company_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface TagManagerProps {
+  companyId: number;
+}
+
+export function TagManager({ companyId }: TagManagerProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTag, setEditingTag] = useState<Tag | null>(null);
+  const [formData, setFormData] = useState<TagFormData>({
+    nome: "",
+    cor: "#3B82F6",
+  });
+  const queryClient = useQueryClient();
+
+  // Query para buscar tags
+  const { data: tags = [], isLoading } = useQuery<Tag[]>({
+    queryKey: ['/api/tags', companyId],
+    queryFn: async () => {
+      const response = await fetch(`/api/tags?company_id=${companyId}`);
+      if (!response.ok) throw new Error('Erro ao buscar tags');
+      return response.json();
+    },
+  });
+
+  // Mutation para criar tag
+  const createTagMutation = useMutation({
+    mutationFn: async (data: TagFormData) => {
+      const response = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, company_id: companyId }),
+      });
+      if (!response.ok) throw new Error('Erro ao criar tag');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tags', companyId] });
+      setIsModalOpen(false);
+      resetForm();
+      toast.success("Tag criada com sucesso!");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erro ao criar tag");
+    },
+  });
+
+  // Mutation para atualizar tag
+  const updateTagMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: TagFormData }) => {
+      const response = await fetch(`/api/tags/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Erro ao atualizar tag');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tags', companyId] });
+      setIsModalOpen(false);
+      setEditingTag(null);
+      resetForm();
+      toast.success("Tag atualizada com sucesso!");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erro ao atualizar tag");
+    },
+  });
+
+  // Mutation para deletar tag
+  const deleteTagMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/tags/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Erro ao deletar tag');
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tags', companyId] });
+      toast.success("Tag deletada com sucesso!");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erro ao deletar tag");
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({ nome: "", cor: "#3B82F6" });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.nome.trim()) {
+      toast.error("Nome é obrigatório");
+      return;
+    }
+    
+    if (editingTag) {
+      updateTagMutation.mutate({ id: editingTag.id, data: formData });
+    } else {
+      createTagMutation.mutate(formData);
+    }
+  };
+
+  const handleEdit = (tag: Tag) => {
+    setEditingTag(tag);
+    setFormData({ nome: tag.nome, cor: tag.cor });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (id: number) => {
+    if (confirm("Tem certeza que deseja deletar esta tag?")) {
+      deleteTagMutation.mutate(id);
+    }
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setEditingTag(null);
+    resetForm();
+  };
+
+  if (isLoading) {
+    return <div className="text-center">Carregando tags...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">Tags</h3>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Nova Tag
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <div key={tag.id} className="flex items-center gap-1">
+            <span
+              style={{ backgroundColor: tag.cor }}
+              className="text-white px-2 py-1 rounded-md text-sm"
+            >
+              {tag.nome}
+            </span>
+            <button
+              onClick={() => handleEdit(tag)}
+              className="p-1 text-gray-500 hover:text-blue-600"
+            >
+              <Edit className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => handleDelete(tag.id)}
+              className="p-1 text-gray-500 hover:text-red-600"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {tags.length === 0 && (
+        <p className="text-gray-500 text-sm">Nenhuma tag criada ainda.</p>
+      )}
+
+      {/* Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">
+                {editingTag ? "Editar Tag" : "Nova Tag"}
+              </h2>
+              <button
+                onClick={handleModalClose}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nome
+                </label>
+                <input
+                  type="text"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  placeholder="Digite o nome da tag"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cor
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={formData.cor}
+                    onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
+                    className="w-10 h-10 border border-gray-300 rounded cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={formData.cor}
+                    onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
+                    placeholder="#3B82F6"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <button
+                  type="button"
+                  onClick={handleModalClose}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={createTagMutation.isPending || updateTagMutation.isPending}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {editingTag ? "Atualizar" : "Criar"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

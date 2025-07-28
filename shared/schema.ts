@@ -5,9 +5,11 @@ import { relations } from "drizzle-orm";
 
 // Company table
 export const company = pgTable("company", {
-  id: serial("id").primaryKey(),
+  company_id: serial("company_id").primaryKey(),
   nome: text("nome").notNull(),
   cnpj: text("cnpj"),
+  telefone: text("telefone"),
+  email: text("email"),
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
 });
@@ -32,11 +34,29 @@ export const motorista = pgTable("motorista", {
   origem_usuario: text("origem_usuario"),
   st_cadastro: text("st_cadastro").default("Cadastrado"),
   autorizacao_lgpd: text("autorizacao_lgpd"),
-  company_id: integer("company_id").references(() => company.id),
+  company_id: integer("company_id").references(() => company.company_id),
   data_cadastro: date("data_cadastro").defaultNow(),
   cliente_id: integer("cliente_id"),
   conversation_id: text("conversation_id"),
   ativo: boolean("ativo").default(true),
+});
+
+// Tags table for WiseApp integration
+export const tags = pgTable("tags", {
+  id: serial("id").primaryKey(),
+  nome: text("nome").notNull(),
+  cor: text("cor").default("#3B82F6"), // Default blue color
+  company_id: integer("company_id").references(() => company.company_id),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Tag assignments (many-to-many relationship with motoristas)
+export const motorista_tags = pgTable("motorista_tags", {
+  id: serial("id").primaryKey(),
+  motorista_id: integer("motorista_id").references(() => motorista.motorista_id),
+  tag_id: integer("tag_id").references(() => tags.id),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
 // Estado table
@@ -82,7 +102,7 @@ export const end_motorista = pgTable("end_motorista", {
 export const cliente = pgTable("cliente", {
   cliente_id: serial("cliente_id").primaryKey(),
   nome_cliente: text("nome_cliente").notNull(),
-  company_id: integer("company_id").references(() => company.id),
+  company_id: integer("company_id").references(() => company.company_id),
   created_at: timestamp("created_at").defaultNow(),
 });
 
@@ -206,7 +226,7 @@ export const hodometro = pgTable("hodometro", {
 export const motoristaRelations = relations(motorista, ({ one, many }) => ({
   company: one(company, {
     fields: [motorista.company_id],
-    references: [company.id],
+    references: [company.company_id],
   }),
   endereco: many(end_motorista),
   veiculo: many(veiculo),
@@ -219,11 +239,32 @@ export const motoristaRelations = relations(motorista, ({ one, many }) => ({
   gestaoRisco: many(gestao_risco),
   checklists: many(checklist),
   hodometros: many(hodometro),
+  tags: many(motorista_tags),
+}));
+
+export const tagsRelations = relations(tags, ({ one, many }) => ({
+  company: one(company, {
+    fields: [tags.company_id],
+    references: [company.company_id],
+  }),
+  motoristas: many(motorista_tags),
+}));
+
+export const motoristaTagsRelations = relations(motorista_tags, ({ one }) => ({
+  motorista: one(motorista, {
+    fields: [motorista_tags.motorista_id],
+    references: [motorista.motorista_id],
+  }),
+  tag: one(tags, {
+    fields: [motorista_tags.tag_id],
+    references: [tags.id],
+  }),
 }));
 
 export const companyRelations = relations(company, ({ many }) => ({
   motoristas: many(motorista),
   clientes: many(cliente),
+  tags: many(tags),
 }));
 
 export const endMotoristaRelations = relations(end_motorista, ({ one }) => ({
@@ -305,6 +346,17 @@ export const insertPessoaJuridicaDonoVeiculoSchema = createInsertSchema(pessoa_j
   id_pessoa_juridica_dono_veiculo: true,
 });
 
+export const insertTagSchema = createInsertSchema(tags).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const insertMotoristaTagSchema = createInsertSchema(motorista_tags).omit({
+  id: true,
+  created_at: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -329,6 +381,10 @@ export type Logradouro = typeof logradouro.$inferSelect;
 export type Bairro = typeof bairro.$inferSelect;
 export type Cidade = typeof cidade.$inferSelect;
 export type Estado = typeof estado.$inferSelect;
+export type Tag = typeof tags.$inferSelect;
+export type InsertTag = z.infer<typeof insertTagSchema>;
+export type MotoristaTag = typeof motorista_tags.$inferSelect;
+export type InsertMotoristaTag = z.infer<typeof insertMotoristaTagSchema>;
 
 // Extended types for joins
 export interface MotoristaWithAddress extends Motorista {

@@ -233,6 +233,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Tags API routes
+  app.get('/api/tags', async (req, res) => {
+    try {
+      const companyId = req.query.company_id;
+      if (!companyId) {
+        return res.status(400).json({ error: 'company_id é obrigatório' });
+      }
+
+      const tags = await storage.getTags(Number(companyId));
+      res.json(tags);
+    } catch (error) {
+      console.error('Erro ao buscar tags:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  app.post('/api/tags', async (req, res) => {
+    try {
+      const { nome, cor, company_id } = req.body;
+      
+      if (!nome || !company_id) {
+        return res.status(400).json({ error: 'nome e company_id são obrigatórios' });
+      }
+
+      const tag = await storage.createTag({ nome, cor, company_id });
+      res.status(201).json(tag);
+    } catch (error) {
+      console.error('Erro ao criar tag:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  app.put('/api/tags/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { nome, cor } = req.body;
+      
+      if (!nome) {
+        return res.status(400).json({ error: 'nome é obrigatório' });
+      }
+
+      const tag = await storage.updateTag(Number(id), { nome, cor });
+      if (!tag) {
+        return res.status(404).json({ error: 'Tag não encontrada' });
+      }
+      
+      res.json(tag);
+    } catch (error) {
+      console.error('Erro ao atualizar tag:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  app.delete('/api/tags/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteTag(Number(id));
+      
+      if (!deleted) {
+        return res.status(404).json({ error: 'Tag não encontrada' });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error('Erro ao deletar tag:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Motorista tags API routes
+  app.get('/api/motoristas/:motoristaId/tags', async (req, res) => {
+    try {
+      const { motoristaId } = req.params;
+      const tags = await storage.getMotoristaTagsWithDetails(Number(motoristaId));
+      res.json(tags);
+    } catch (error) {
+      console.error('Erro ao buscar tags do motorista:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  app.post('/api/motoristas/:motoristaId/tags', async (req, res) => {
+    try {
+      const { motoristaId } = req.params;
+      const { tag_id } = req.body;
+      
+      if (!tag_id) {
+        return res.status(400).json({ error: 'tag_id é obrigatório' });
+      }
+
+      const motoristaTag = await storage.addTagToMotorista(Number(motoristaId), Number(tag_id));
+      res.status(201).json(motoristaTag);
+    } catch (error) {
+      console.error('Erro ao adicionar tag ao motorista:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  app.delete('/api/motoristas/:motoristaId/tags/:tagId', async (req, res) => {
+    try {
+      const { motoristaId, tagId } = req.params;
+      const deleted = await storage.removeTagFromMotorista(Number(motoristaId), Number(tagId));
+      
+      if (!deleted) {
+        return res.status(404).json({ error: 'Associação tag-motorista não encontrada' });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error('Erro ao remover tag do motorista:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

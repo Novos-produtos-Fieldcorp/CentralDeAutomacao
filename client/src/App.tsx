@@ -18,6 +18,7 @@ import Clientes from './pages/Clientes';
 import Unauthorized from './pages/Unauthorized';
 import Admin from './pages/Admin'; 
 import ResumosGrupo from './pages/ResumosGrupo';
+import TagsAdmin from './pages/TagsAdmin';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -62,6 +63,7 @@ function App() {
                             <Route path="/checklist/*" element={<Checklist />} />
                             <Route path="/clientes" element={<Clientes />} />
                             <Route path="/resumos-grupo" element={<ResumosGrupo />} />
+                            <Route path="/tags-admin" element={<TagsAdmin />} />
                           </Routes>
                         </div>
                       </main>
