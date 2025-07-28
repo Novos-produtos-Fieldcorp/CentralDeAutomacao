@@ -293,3 +293,32 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - Melhoria na experiência do usuário
 - Consistência de dados no sistema
 
+## Migração Replit Agent para Replit (Janeiro 2025)
+
+### Migração Completa
+- **Status**: ✅ Concluída com sucesso
+- **Data**: Janeiro 2025
+- **Ambiente**: Aplicação rodando na porta 5000
+
+### Correções e Melhorias Implementadas
+- **LSP Errors**: Corrigidos todos os erros de TypeScript nos arquivos `server/routes.ts` e `shared/wiseAppService.ts`
+- **UI Consistency**: Removido botão duplicado "Adicionar Gestão de Risco" na aba de gestão de risco
+- **Modal Styling**: Padronizada a estética dos modais de alteração de função para motoristas e agregados
+- **Database**: Mantida configuração Supabase existente conforme solicitado
+- **WiseApp Integration**: Proxy funcionando corretamente para integração com chat
+
+### Arquivos Principais Modificados
+- `client/src/components/GestaoRiscoTab.tsx`: Removido botão duplicado
+- `client/src/pages/contratacao/MotoristasLista.tsx`: Estética modal padronizada
+- `client/src/pages/contratacao/AgregadosLista.tsx`: Estética modal padronizada  
+- `server/routes.ts`: Correções de TypeScript
+- `shared/wiseAppService.ts`: Correções de TypeScript
+
+### Status Final da Migração
+- ✅ Todas as dependências instaladas
+- ✅ Workflow funcionando corretamente
+- ✅ Supabase mantido conforme solicitado
+- ✅ APIs e integrações funcionais
+- ✅ Interface padronizada
+- ✅ Aplicação pronta para uso
+
