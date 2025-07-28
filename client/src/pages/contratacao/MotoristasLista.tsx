@@ -1610,18 +1610,6 @@ const MotoristasLista = () => {
               color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
             },
             {
-              icon: <Edit2 size={16} />,
-              label: 'Editar Motorista',
-              onClick: () => handleEdit(contextMenu.motorista!),
-              color: 'text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300'
-            },
-            {
-              icon: <FileText size={16} />,
-              label: 'Gerenciar Documentos',
-              onClick: () => handleUploadDocument(contextMenu.motorista!),
-              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
-            },
-            {
               icon: <MessageCircle size={16} />,
               label: 'Iniciar Chat',
               onClick: () => startChat(contextMenu.motorista!.telefone ? String(contextMenu.motorista!.telefone) : '', contextMenu.motorista!.nome || ''),
