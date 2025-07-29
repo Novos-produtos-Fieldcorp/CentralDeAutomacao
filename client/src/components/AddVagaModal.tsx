@@ -282,8 +282,8 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               >
                 <option value="">Selecione um cliente</option>
                 {clientes.map((cliente) => (
-                  <option key={cliente.cliente_id} value={cliente.cliente_id}>
-                    {cliente.nome}
+                  <option key={cliente.id} value={cliente.id}>
+                    {cliente.nome_cliente}
                   </option>
                 ))}
               </select>
