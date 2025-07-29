@@ -337,3 +337,60 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
   - `client/src/pages/contratacao/MotoristasLista.tsx`
   - `client/src/pages/contratacao/AgregadosLista.tsx`
 
+## Sistema de Gestão de Vagas (Janeiro 2025)
+
+### Funcionalidade Implementada
+- **Novo Módulo**: Sistema completo de gestão de vagas de trabalho
+- **Acessível via**: `/vagas` URL com estrutura de abas igual ao módulo de Contratações
+- **Design**: Segue o mesmo padrão visual dos módulos Motoristas/Contratados
+
+### Estrutura do Banco de Dados
+- **Tabelas Criadas**:
+  - `vaga`: Tabela principal com nome, descrição, quantidade, dias de trabalho, horário, data limite
+  - `unidade`: Unidades organizacionais
+  - `operacao`: Tipos de operação
+  - `st_vaga`: Status das vagas (Aberta, Fechada, Pausada)
+  - `end_vaga`: Endereços das vagas
+- **Relacionamentos**: Vagas vinculadas a empresa, cliente, unidade, operação e status
+- **Migração**: Executada com sucesso via `npm run db:push`
+
+### Interface do Usuário
+- **Layout**: Abas Dashboard e Vagas seguindo padrão do módulo Contratações
+- **Dashboard**: Cards estatísticos mostrando total de vagas, abertas, fechadas e vencendo
+- **Lista de Vagas**: Tabela com informações de cliente/unidade, operação, quantidade, data limite e status
+- **Modal de Criação**: Formulário completo para adicionar nova vaga com dropdowns para cliente, unidade, operação e status
+
+### Arquivos Criados/Modificados
+- `shared/schema.ts`: Adicionadas tabelas e tipos para o sistema de vagas
+- `client/src/pages/Vagas.tsx`: Página principal com estrutura de abas
+- `client/src/components/VagasList.tsx`: Componente de listagem de vagas
+- `client/src/components/AddVagaModal.tsx`: Modal para adicionar novas vagas
+- `client/src/components/DashboardStats.tsx`: Componente reutilizável para cards estatísticos
+- `server/routes.ts`: APIs para CRUD de vagas e dados auxiliares
+- `client/src/App.tsx`: Rota adicionada para `/vagas/*`
+
+### APIs Implementadas
+- `GET /api/vagas/dashboard/:companyId`: Dados do dashboard
+- `GET /api/vagas/:companyId`: Lista de vagas por empresa
+- `POST /api/vagas`: Criação de nova vaga
+- `GET /api/clientes/:companyId`: Lista de clientes
+- `GET /api/unidades/:companyId`: Lista de unidades
+- `POST /api/unidades`: Criação de nova unidade
+- `GET /api/operacoes/:companyId`: Lista de operações
+- `POST /api/operacoes`: Criação de nova operação
+- `GET /api/status-vagas/:companyId`: Lista de status de vagas
+- `POST /api/status-vagas`: Criação de novo status
+
+### Funcionalidades de Criação Inline (Janeiro 2025)
+- **Dropdowns com Criação**: Unidades, Operações e Status permitem criação inline
+- **Interface**: Opção "+ Adicionar nova..." no final de cada dropdown
+- **Funcionamento**: Seleção da opção "+" transforma campo em input de texto
+- **Ações**: Botões ✓ (salvar) e ✗ (cancelar) para confirmar ou cancelar criação
+- **Validação**: Enter para confirmar, dados salvos automaticamente no banco
+- **Isolamento**: Todas as criações respeitam company_id para isolamento de dados
+- **Auto-seleção**: Item criado é automaticamente selecionado no dropdown
+- **Persistência**: Dados realmente salvos nas tabelas do banco (unidade, operacao, st_vaga)
+- **Integração**: APIs implementadas com real inserção e busca no PostgreSQL via Drizzle ORM
+- **Mapeamento Account**: Sistema mapeia account_id da URL para company_id através de id_conta_wiseapp
+- **Exemplo**: account_id=6 na URL → busca company onde id_conta_wiseapp='6' → usa company_id=1
+

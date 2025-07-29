@@ -1,6 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { cliente, unidade, operacao, st_vaga } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -229,6 +232,228 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: 'Erro interno do servidor ao consultar CEP',
         details: error instanceof Error ? error.message : 'Erro desconhecido'
       });
+    }
+  });
+
+  // Vagas API routes
+  // Get vagas dashboard data
+  app.get('/api/vagas/dashboard/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      
+      // For now, return mock data since we need to set up the database first
+      const dashboardData = {
+        totalVagas: 0,
+        vagasAbertas: 0,
+        vagasFechadas: 0,
+        vagasVencendo: 0,
+      };
+
+      res.json(dashboardData);
+    } catch (error) {
+      console.error('Error fetching vagas dashboard:', error);
+      res.status(500).json({ error: 'Erro ao buscar dados do dashboard' });
+    }
+  });
+
+  // Get all vagas for a company
+  app.get('/api/vagas/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      
+      // For now, return empty array since we need to set up the database first
+      const vagas = [];
+
+      res.json(vagas);
+    } catch (error) {
+      console.error('Error fetching vagas:', error);
+      res.status(500).json({ error: 'Erro ao buscar vagas' });
+    }
+  });
+
+  // Create new vaga
+  app.post('/api/vagas', async (req, res) => {
+    try {
+      const vagaData = req.body;
+      
+      // For now, return success since we need to set up the database first
+      res.status(201).json({ message: 'Vaga criada com sucesso', id: Date.now() });
+    } catch (error) {
+      console.error('Error creating vaga:', error);
+      res.status(500).json({ error: 'Erro ao criar vaga' });
+    }
+  });
+
+  // Get supporting data for dropdowns
+  app.get('/api/clientes/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      console.log('Fetching clientes for company:', companyId);
+      
+      const clientes = await db
+        .select({
+          id: cliente.cliente_id,
+          nome_cliente: cliente.nome_cliente,
+          company_id: cliente.company_id
+        })
+        .from(cliente)
+        .where(eq(cliente.company_id, Number(companyId)));
+
+      console.log('Found clientes:', clientes);
+      res.json(clientes);
+    } catch (error) {
+      console.error('Error fetching clientes:', error);
+      res.status(500).json({ error: 'Erro ao buscar clientes' });
+    }
+  });
+
+  app.get('/api/unidades/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      
+      const unidades = await db
+        .select({
+          id: unidade.id,
+          unidade: unidade.unidade,
+          company_id: unidade.company_id
+        })
+        .from(unidade)
+        .where(eq(unidade.company_id, Number(companyId)));
+
+      res.json(unidades);
+    } catch (error) {
+      console.error('Error fetching unidades:', error);
+      res.status(500).json({ error: 'Erro ao buscar unidades' });
+    }
+  });
+
+  app.post('/api/unidades', async (req, res) => {
+    try {
+      const { unidade: unidadeName, company_id } = req.body;
+      
+      if (!unidadeName || !company_id) {
+        return res.status(400).json({ error: 'Nome da unidade e company_id são obrigatórios' });
+      }
+
+      const [newUnidade] = await db
+        .insert(unidade)
+        .values({
+          unidade: unidadeName,
+          company_id: Number(company_id)
+        })
+        .returning({
+          id: unidade.id,
+          unidade: unidade.unidade,
+          company_id: unidade.company_id
+        });
+
+      res.status(201).json(newUnidade);
+    } catch (error) {
+      console.error('Error creating unidade:', error);
+      res.status(500).json({ error: 'Erro ao criar unidade' });
+    }
+  });
+
+  app.get('/api/operacoes/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      
+      const operacoes = await db
+        .select({
+          id: operacao.id,
+          operacao: operacao.operacao,
+          company_id: operacao.company_id
+        })
+        .from(operacao)
+        .where(eq(operacao.company_id, Number(companyId)));
+
+      res.json(operacoes);
+    } catch (error) {
+      console.error('Error fetching operacoes:', error);
+      res.status(500).json({ error: 'Erro ao buscar operações' });
+    }
+  });
+
+  app.post('/api/operacoes', async (req, res) => {
+    try {
+      const { operacao: operacaoName, company_id } = req.body;
+      
+      if (!operacaoName || !company_id) {
+        return res.status(400).json({ error: 'Nome da operação e company_id são obrigatórios' });
+      }
+
+      const [newOperacao] = await db
+        .insert(operacao)
+        .values({
+          operacao: operacaoName,
+          company_id: Number(company_id)
+        })
+        .returning({
+          id: operacao.id,
+          operacao: operacao.operacao,
+          company_id: operacao.company_id
+        });
+
+      res.status(201).json(newOperacao);
+    } catch (error) {
+      console.error('Error creating operacao:', error);
+      res.status(500).json({ error: 'Erro ao criar operação' });
+    }
+  });
+
+  app.get('/api/status-vagas/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      
+      const statusVagas = await db
+        .select({
+          id: st_vaga.id,
+          status_vaga: st_vaga.status_vaga,
+          company_id: st_vaga.company_id
+        })
+        .from(st_vaga)
+        .where(eq(st_vaga.company_id, Number(companyId)));
+
+      // If no custom status found, return default ones
+      if (statusVagas.length === 0) {
+        res.json([
+          { id: 1, status_vaga: 'Aberta', company_id: Number(companyId) },
+          { id: 2, status_vaga: 'Fechada', company_id: Number(companyId) },
+          { id: 3, status_vaga: 'Pausada', company_id: Number(companyId) }
+        ]);
+      } else {
+        res.json(statusVagas);
+      }
+    } catch (error) {
+      console.error('Error fetching status vagas:', error);
+      res.status(500).json({ error: 'Erro ao buscar status das vagas' });
+    }
+  });
+
+  app.post('/api/status-vagas', async (req, res) => {
+    try {
+      const { status_vaga, company_id } = req.body;
+      
+      if (!status_vaga || !company_id) {
+        return res.status(400).json({ error: 'Nome do status e company_id são obrigatórios' });
+      }
+
+      const [newStatus] = await db
+        .insert(st_vaga)
+        .values({
+          status_vaga: status_vaga,
+          company_id: Number(company_id)
+        })
+        .returning({
+          id: st_vaga.id,
+          status_vaga: st_vaga.status_vaga,
+          company_id: st_vaga.company_id
+        });
+
+      res.status(201).json(newStatus);
+    } catch (error) {
+      console.error('Error creating status:', error);
+      res.status(500).json({ error: 'Erro ao criar status' });
     }
   });
 

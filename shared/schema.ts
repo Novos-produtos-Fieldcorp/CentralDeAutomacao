@@ -8,6 +8,12 @@ export const company = pgTable("company", {
   id: serial("id").primaryKey(),
   nome: text("nome").notNull(),
   cnpj: text("cnpj"),
+  id_conta_wiseapp: text("id_conta_wiseapp"),
+  company_id: serial("company_id").unique(),
+  st_company: boolean("st_company").default(true),
+  checklist_access: boolean("checklist_access").default(true),
+  motorista_access: boolean("motorista_access").default(true),
+  hodometro_acsess: boolean("hodometro_acsess").default(true),
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
 });
@@ -330,7 +336,162 @@ export type Bairro = typeof bairro.$inferSelect;
 export type Cidade = typeof cidade.$inferSelect;
 export type Estado = typeof estado.$inferSelect;
 
+// Job-related types
+export type Vaga = typeof vaga.$inferSelect;
+export type InsertVaga = z.infer<typeof insertVagaSchema>;
+export type Unidade = typeof unidade.$inferSelect;
+export type InsertUnidade = z.infer<typeof insertUnidadeSchema>;
+export type Operacao = typeof operacao.$inferSelect;
+export type InsertOperacao = z.infer<typeof insertOperacaoSchema>;
+export type StVaga = typeof st_vaga.$inferSelect;
+export type InsertStVaga = z.infer<typeof insertStVagaSchema>;
+export type EndVaga = typeof end_vaga.$inferSelect;
+export type InsertEndVaga = z.infer<typeof insertEndVagaSchema>;
+
 // Extended types for joins
+// Job-related tables
+export const st_vaga = pgTable("st_vaga", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedByDefaultAsIdentity(),
+  status_vaga: text("status_vaga"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at"),
+  company_id: bigint("company_id", { mode: "number" }).references(() => company.id),
+});
+
+export const operacao = pgTable("operacao", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedByDefaultAsIdentity(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at"),
+  operacao: text("operacao"),
+  company_id: bigint("company_id", { mode: "number" }).references(() => company.id),
+});
+
+export const unidade = pgTable("unidade", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedByDefaultAsIdentity(),
+  unidade: text("unidade"),
+  company_id: bigint("company_id", { mode: "number" }).references(() => company.id),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at"),
+});
+
+export const vaga = pgTable("vaga", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedByDefaultAsIdentity(),
+  nome: text("nome"),
+  descricao: text("descricao"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at"),
+  quantidade: numeric("quantidade"),
+  dias_trabalho: text("dias_trabalho"),
+  horario: text("horario"),
+  dt_limite: timestamp("dt_limite"),
+  company_id: bigint("company_id", { mode: "number" }).references(() => company.id),
+  unidade_id: bigint("unidade_id", { mode: "number" }).references(() => unidade.id),
+  operacao_id: bigint("operacao_id", { mode: "number" }).references(() => operacao.id),
+  st_vaga_id: bigint("st_vaga_id", { mode: "number" }).references(() => st_vaga.id),
+  cliente_id: bigint("cliente_id", { mode: "number" }).references(() => cliente.cliente_id),
+  gr_id: bigint("gr_id", { mode: "number" }),
+});
+
+export const end_vaga = pgTable("end_vaga", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedByDefaultAsIdentity(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  numero: numeric("numero"),
+  ds_complemento: text("ds_complemento"),
+  st_end: boolean("st_end"),
+  logradouro_id: bigint("logradouro_id", { mode: "number" }).references(() => logradouro.id_logradouro),
+  vaga_id: bigint("vaga_id", { mode: "number" }).references(() => vaga.id),
+});
+
+// Relations for new tables
+export const vagaRelations = relations(vaga, ({ one }) => ({
+  company: one(company, {
+    fields: [vaga.company_id],
+    references: [company.id],
+  }),
+  unidade: one(unidade, {
+    fields: [vaga.unidade_id],
+    references: [unidade.id],
+  }),
+  operacao: one(operacao, {
+    fields: [vaga.operacao_id],
+    references: [operacao.id],
+  }),
+  st_vaga: one(st_vaga, {
+    fields: [vaga.st_vaga_id],
+    references: [st_vaga.id],
+  }),
+  cliente: one(cliente, {
+    fields: [vaga.cliente_id],
+    references: [cliente.cliente_id],
+  }),
+  endereco: one(end_vaga, {
+    fields: [vaga.id],
+    references: [end_vaga.vaga_id],
+  }),
+}));
+
+export const unidadeRelations = relations(unidade, ({ one }) => ({
+  company: one(company, {
+    fields: [unidade.company_id],
+    references: [company.id],
+  }),
+}));
+
+export const operacaoRelations = relations(operacao, ({ one }) => ({
+  company: one(company, {
+    fields: [operacao.company_id],
+    references: [company.id],
+  }),
+}));
+
+export const stVagaRelations = relations(st_vaga, ({ one }) => ({
+  company: one(company, {
+    fields: [st_vaga.company_id],
+    references: [company.id],
+  }),
+}));
+
+export const endVagaRelations = relations(end_vaga, ({ one }) => ({
+  vaga: one(vaga, {
+    fields: [end_vaga.vaga_id],
+    references: [vaga.id],
+  }),
+  logradouro: one(logradouro, {
+    fields: [end_vaga.logradouro_id],
+    references: [logradouro.id_logradouro],
+  }),
+}));
+
+// Insert schemas for new tables
+export const insertVagaSchema = createInsertSchema(vaga).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const insertUnidadeSchema = createInsertSchema(unidade).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const insertOperacaoSchema = createInsertSchema(operacao).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const insertStVagaSchema = createInsertSchema(st_vaga).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const insertEndVagaSchema = createInsertSchema(end_vaga).omit({
+  id: true,
+  created_at: true,
+});
+
 export interface MotoristaWithAddress extends Motorista {
   endereco?: {
     id_end_motorista: number;
