@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { cliente, unidade, operacao, st_vaga } from "@shared/schema";
+import { cliente, unidade, operacao, st_vaga, company } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -262,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       
       // For now, return empty array since we need to set up the database first
-      const vagas = [];
+      const vagas: any[] = [];
 
       res.json(vagas);
     } catch (error) {
@@ -285,19 +285,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get supporting data for dropdowns
-  app.get('/api/clientes/:companyId', async (req, res) => {
+  app.get('/api/clientes/:accountId', async (req, res) => {
     try {
-      const { companyId } = req.params;
-      console.log('Fetching clientes for company:', companyId);
+      const { accountId } = req.params;
+      console.log('Fetching clientes for account:', accountId);
+      
+      // First, find the company id based on account_id
+      const companyResult = await db
+        .select({ id: company.id })
+        .from(company)
+        .where(eq(company.id_conta_wiseapp, accountId))
+        .limit(1);
+
+      if (companyResult.length === 0) {
+        console.log('No company found for account_id:', accountId);
+        return res.json([]);
+      }
+
+      const companyId = companyResult[0].id;
+      console.log('Mapped account_id', accountId, 'to company.id', companyId);
       
       const clientes = await db
         .select({
-          id: cliente.cliente_id,
+          cliente_id: cliente.cliente_id,
           nome_cliente: cliente.nome_cliente,
           company_id: cliente.company_id
         })
         .from(cliente)
-        .where(eq(cliente.company_id, Number(companyId)));
+        .where(eq(cliente.company_id, companyId));
 
       console.log('Found clientes:', clientes);
       res.json(clientes);
