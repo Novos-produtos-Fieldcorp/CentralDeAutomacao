@@ -391,4 +391,6 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - **Auto-seleção**: Item criado é automaticamente selecionado no dropdown
 - **Persistência**: Dados realmente salvos nas tabelas do banco (unidade, operacao, st_vaga)
 - **Integração**: APIs implementadas com real inserção e busca no PostgreSQL via Drizzle ORM
+- **Mapeamento Account**: Sistema mapeia account_id da URL para company_id através de id_conta_wiseapp
+- **Exemplo**: account_id=6 na URL → busca company onde id_conta_wiseapp='6' → usa company_id=1
 
