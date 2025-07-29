@@ -375,6 +375,18 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - `POST /api/vagas`: Criação de nova vaga
 - `GET /api/clientes/:companyId`: Lista de clientes
 - `GET /api/unidades/:companyId`: Lista de unidades
+- `POST /api/unidades`: Criação de nova unidade
 - `GET /api/operacoes/:companyId`: Lista de operações
+- `POST /api/operacoes`: Criação de nova operação
 - `GET /api/status-vagas/:companyId`: Lista de status de vagas
+- `POST /api/status-vagas`: Criação de novo status
+
+### Funcionalidades de Criação Inline (Janeiro 2025)
+- **Dropdowns com Criação**: Unidades, Operações e Status permitem criação inline
+- **Interface**: Opção "+ Adicionar nova..." no final de cada dropdown
+- **Funcionamento**: Seleção da opção "+" transforma campo em input de texto
+- **Ações**: Botões ✓ (salvar) e ✗ (cancelar) para confirmar ou cancelar criação
+- **Validação**: Enter para confirmar, dados salvos automaticamente no banco
+- **Isolamento**: Todas as criações respeitam company_id para isolamento de dados
+- **Auto-seleção**: Item criado é automaticamente selecionado no dropdown
 

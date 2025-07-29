@@ -333,12 +333,12 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   }}
                 >
                   <option value="">Selecione uma unidade</option>
-                  <option value="__new__">+ Adicionar nova unidade</option>
                   {unidades.map((unidade) => (
                     <option key={unidade.id} value={unidade.id}>
                       {unidade.unidade}
                     </option>
                   ))}
+                  <option value="__new__">+ Adicionar nova unidade</option>
                 </select>
               )}
             </div>
@@ -389,12 +389,12 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   }}
                 >
                   <option value="">Selecione uma operação</option>
-                  <option value="__new__">+ Adicionar nova operação</option>
                   {operacoes.map((operacao) => (
                     <option key={operacao.id} value={operacao.id}>
                       {operacao.operacao}
                     </option>
                   ))}
+                  <option value="__new__">+ Adicionar nova operação</option>
                 </select>
               )}
             </div>
@@ -443,12 +443,12 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   }}
                 >
                   <option value="">Selecione um status</option>
-                  <option value="__new__">+ Adicionar novo status</option>
                   {statusVagas.map((status) => (
                     <option key={status.id} value={status.id}>
                       {status.status_vaga}
                     </option>
                   ))}
+                  <option value="__new__">+ Adicionar novo status</option>
                 </select>
               )}
             </div>
