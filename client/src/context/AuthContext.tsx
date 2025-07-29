@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // If no account_id in URL, try localStorage
         if (!currentAccountId) {
-          currentAccountId = localStorage.getItem('account_id');
+          currentAccountId = localStorage.getItem('account_id') || undefined;
         }
 
         // If still no account_id, use default for testing
