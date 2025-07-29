@@ -232,6 +232,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Vagas API routes
+  // Get vagas dashboard data
+  app.get('/api/vagas/dashboard/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      
+      // For now, return mock data since we need to set up the database first
+      const dashboardData = {
+        totalVagas: 0,
+        vagasAbertas: 0,
+        vagasFechadas: 0,
+        vagasVencendo: 0,
+      };
+
+      res.json(dashboardData);
+    } catch (error) {
+      console.error('Error fetching vagas dashboard:', error);
+      res.status(500).json({ error: 'Erro ao buscar dados do dashboard' });
+    }
+  });
+
+  // Get all vagas for a company
+  app.get('/api/vagas/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      
+      // For now, return empty array since we need to set up the database first
+      const vagas = [];
+
+      res.json(vagas);
+    } catch (error) {
+      console.error('Error fetching vagas:', error);
+      res.status(500).json({ error: 'Erro ao buscar vagas' });
+    }
+  });
+
+  // Create new vaga
+  app.post('/api/vagas', async (req, res) => {
+    try {
+      const vagaData = req.body;
+      
+      // For now, return success since we need to set up the database first
+      res.status(201).json({ message: 'Vaga criada com sucesso', id: Date.now() });
+    } catch (error) {
+      console.error('Error creating vaga:', error);
+      res.status(500).json({ error: 'Erro ao criar vaga' });
+    }
+  });
+
+  // Get supporting data for dropdowns
+  app.get('/api/clientes/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      // Return empty for now
+      res.json([]);
+    } catch (error) {
+      console.error('Error fetching clientes:', error);
+      res.status(500).json({ error: 'Erro ao buscar clientes' });
+    }
+  });
+
+  app.get('/api/unidades/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      // Return empty for now
+      res.json([]);
+    } catch (error) {
+      console.error('Error fetching unidades:', error);
+      res.status(500).json({ error: 'Erro ao buscar unidades' });
+    }
+  });
+
+  app.get('/api/operacoes/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      // Return empty for now
+      res.json([]);
+    } catch (error) {
+      console.error('Error fetching operacoes:', error);
+      res.status(500).json({ error: 'Erro ao buscar operações' });
+    }
+  });
+
+  app.get('/api/status-vagas/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      // Return default statuses
+      res.json([
+        { id: 1, status_vaga: 'Aberta' },
+        { id: 2, status_vaga: 'Fechada' },
+        { id: 3, status_vaga: 'Pausada' }
+      ]);
+    } catch (error) {
+      console.error('Error fetching status vagas:', error);
+      res.status(500).json({ error: 'Erro ao buscar status das vagas' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
