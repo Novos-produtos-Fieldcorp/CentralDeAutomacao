@@ -304,6 +304,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/unidades', async (req, res) => {
+    try {
+      const { unidade, company_id } = req.body;
+      
+      if (!unidade || !company_id) {
+        return res.status(400).json({ error: 'Nome da unidade e company_id são obrigatórios' });
+      }
+
+      // For now, return mock data since we need to implement real database operations
+      const newUnidade = {
+        id: Date.now(),
+        unidade: unidade,
+        company_id: company_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      res.status(201).json(newUnidade);
+    } catch (error) {
+      console.error('Error creating unidade:', error);
+      res.status(500).json({ error: 'Erro ao criar unidade' });
+    }
+  });
+
   app.get('/api/operacoes/:companyId', async (req, res) => {
     try {
       const { companyId } = req.params;
@@ -312,6 +336,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching operacoes:', error);
       res.status(500).json({ error: 'Erro ao buscar operações' });
+    }
+  });
+
+  app.post('/api/operacoes', async (req, res) => {
+    try {
+      const { operacao, company_id } = req.body;
+      
+      if (!operacao || !company_id) {
+        return res.status(400).json({ error: 'Nome da operação e company_id são obrigatórios' });
+      }
+
+      // For now, return mock data since we need to implement real database operations
+      const newOperacao = {
+        id: Date.now(),
+        operacao: operacao,
+        company_id: company_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      res.status(201).json(newOperacao);
+    } catch (error) {
+      console.error('Error creating operacao:', error);
+      res.status(500).json({ error: 'Erro ao criar operação' });
     }
   });
 
@@ -327,6 +375,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching status vagas:', error);
       res.status(500).json({ error: 'Erro ao buscar status das vagas' });
+    }
+  });
+
+  app.post('/api/status-vagas', async (req, res) => {
+    try {
+      const { status_vaga, company_id } = req.body;
+      
+      if (!status_vaga || !company_id) {
+        return res.status(400).json({ error: 'Nome do status e company_id são obrigatórios' });
+      }
+
+      // For now, return mock data since we need to implement real database operations
+      const newStatus = {
+        id: Date.now(),
+        status_vaga: status_vaga,
+        company_id: company_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      res.status(201).json(newStatus);
+    } catch (error) {
+      console.error('Error creating status:', error);
+      res.status(500).json({ error: 'Erro ao criar status' });
     }
   });
 

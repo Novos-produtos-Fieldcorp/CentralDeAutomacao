@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, MapPin, Users, Building, Clock, FileText } from 'lucide-react';
+import { X, Calendar, MapPin, Users, Building, Clock, FileText, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,11 +19,18 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [operacoes, setOperacoes] = useState<Operacao[]>([]);
   const [statusVagas, setStatusVagas] = useState<StVaga[]>([]);
+  const [showNewUnidadeInput, setShowNewUnidadeInput] = useState(false);
+  const [showNewOperacaoInput, setShowNewOperacaoInput] = useState(false);
+  const [showNewStatusInput, setShowNewStatusInput] = useState(false);
+  const [newUnidadeName, setNewUnidadeName] = useState('');
+  const [newOperacaoName, setNewOperacaoName] = useState('');
+  const [newStatusName, setNewStatusName] = useState('');
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<InsertVaga>({
     resolver: zodResolver(insertVagaSchema),
@@ -100,6 +107,93 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       toast.error('Erro ao criar vaga');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const createNewUnidade = async () => {
+    if (!newUnidadeName.trim()) return;
+    
+    try {
+      const response = await fetch('/api/unidades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          unidade: newUnidadeName.trim(),
+          company_id: Number(accountId)
+        })
+      });
+
+      if (response.ok) {
+        const newUnidade = await response.json();
+        setUnidades(prev => [...prev, newUnidade]);
+        setValue('unidade_id', newUnidade.id);
+        setShowNewUnidadeInput(false);
+        setNewUnidadeName('');
+        toast.success('Unidade criada com sucesso!');
+      } else {
+        toast.error('Erro ao criar unidade');
+      }
+    } catch (error) {
+      console.error('Error creating unidade:', error);
+      toast.error('Erro ao criar unidade');
+    }
+  };
+
+  const createNewOperacao = async () => {
+    if (!newOperacaoName.trim()) return;
+    
+    try {
+      const response = await fetch('/api/operacoes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operacao: newOperacaoName.trim(),
+          company_id: Number(accountId)
+        })
+      });
+
+      if (response.ok) {
+        const newOperacao = await response.json();
+        setOperacoes(prev => [...prev, newOperacao]);
+        setValue('operacao_id', newOperacao.id);
+        setShowNewOperacaoInput(false);
+        setNewOperacaoName('');
+        toast.success('Operação criada com sucesso!');
+      } else {
+        toast.error('Erro ao criar operação');
+      }
+    } catch (error) {
+      console.error('Error creating operacao:', error);
+      toast.error('Erro ao criar operação');
+    }
+  };
+
+  const createNewStatus = async () => {
+    if (!newStatusName.trim()) return;
+    
+    try {
+      const response = await fetch('/api/status-vagas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status_vaga: newStatusName.trim(),
+          company_id: Number(accountId)
+        })
+      });
+
+      if (response.ok) {
+        const newStatus = await response.json();
+        setStatusVagas(prev => [...prev, newStatus]);
+        setValue('st_vaga_id', newStatus.id);
+        setShowNewStatusInput(false);
+        setNewStatusName('');
+        toast.success('Status criado com sucesso!');
+      } else {
+        toast.error('Erro ao criar status');
+      }
+    } catch (error) {
+      console.error('Error creating status:', error);
+      toast.error('Erro ao criar status');
     }
   };
 
@@ -199,17 +293,54 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Unidade
               </label>
-              <select
-                {...register('unidade_id', { setValueAs: (value) => value ? Number(value) : null })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="">Selecione uma unidade</option>
-                {unidades.map((unidade) => (
-                  <option key={unidade.id} value={unidade.id}>
-                    {unidade.unidade}
-                  </option>
-                ))}
-              </select>
+              {showNewUnidadeInput ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newUnidadeName}
+                    onChange={(e) => setNewUnidadeName(e.target.value)}
+                    placeholder="Nome da nova unidade"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    onKeyPress={(e) => e.key === 'Enter' && createNewUnidade()}
+                  />
+                  <button
+                    type="button"
+                    onClick={createNewUnidade}
+                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewUnidadeInput(false);
+                      setNewUnidadeName('');
+                    }}
+                    className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                  >
+                    ✗
+                  </button>
+                </div>
+              ) : (
+                <select
+                  {...register('unidade_id', { setValueAs: (value) => value ? Number(value) : null })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  onChange={(e) => {
+                    if (e.target.value === '__new__') {
+                      setShowNewUnidadeInput(true);
+                      e.target.value = '';
+                    }
+                  }}
+                >
+                  <option value="">Selecione uma unidade</option>
+                  <option value="__new__">+ Adicionar nova unidade</option>
+                  {unidades.map((unidade) => (
+                    <option key={unidade.id} value={unidade.id}>
+                      {unidade.unidade}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
@@ -218,34 +349,108 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Operação
               </label>
-              <select
-                {...register('operacao_id', { setValueAs: (value) => value ? Number(value) : null })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="">Selecione uma operação</option>
-                {operacoes.map((operacao) => (
-                  <option key={operacao.id} value={operacao.id}>
-                    {operacao.operacao}
-                  </option>
-                ))}
-              </select>
+              {showNewOperacaoInput ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newOperacaoName}
+                    onChange={(e) => setNewOperacaoName(e.target.value)}
+                    placeholder="Nome da nova operação"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    onKeyPress={(e) => e.key === 'Enter' && createNewOperacao()}
+                  />
+                  <button
+                    type="button"
+                    onClick={createNewOperacao}
+                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewOperacaoInput(false);
+                      setNewOperacaoName('');
+                    }}
+                    className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                  >
+                    ✗
+                  </button>
+                </div>
+              ) : (
+                <select
+                  {...register('operacao_id', { setValueAs: (value) => value ? Number(value) : null })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  onChange={(e) => {
+                    if (e.target.value === '__new__') {
+                      setShowNewOperacaoInput(true);
+                      e.target.value = '';
+                    }
+                  }}
+                >
+                  <option value="">Selecione uma operação</option>
+                  <option value="__new__">+ Adicionar nova operação</option>
+                  {operacoes.map((operacao) => (
+                    <option key={operacao.id} value={operacao.id}>
+                      {operacao.operacao}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Status
               </label>
-              <select
-                {...register('st_vaga_id', { setValueAs: (value) => value ? Number(value) : null })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="">Selecione um status</option>
-                {statusVagas.map((status) => (
-                  <option key={status.id} value={status.id}>
-                    {status.status_vaga}
-                  </option>
-                ))}
-              </select>
+              {showNewStatusInput ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newStatusName}
+                    onChange={(e) => setNewStatusName(e.target.value)}
+                    placeholder="Nome do novo status"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    onKeyPress={(e) => e.key === 'Enter' && createNewStatus()}
+                  />
+                  <button
+                    type="button"
+                    onClick={createNewStatus}
+                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewStatusInput(false);
+                      setNewStatusName('');
+                    }}
+                    className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                  >
+                    ✗
+                  </button>
+                </div>
+              ) : (
+                <select
+                  {...register('st_vaga_id', { setValueAs: (value) => value ? Number(value) : null })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  onChange={(e) => {
+                    if (e.target.value === '__new__') {
+                      setShowNewStatusInput(true);
+                      e.target.value = '';
+                    }
+                  }}
+                >
+                  <option value="">Selecione um status</option>
+                  <option value="__new__">+ Adicionar novo status</option>
+                  {statusVagas.map((status) => (
+                    <option key={status.id} value={status.id}>
+                      {status.status_vaga}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
