@@ -1,6 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { cliente } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -285,8 +288,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/clientes/:companyId', async (req, res) => {
     try {
       const { companyId } = req.params;
-      // Return empty for now
-      res.json([]);
+      console.log('Fetching clientes for company:', companyId);
+      
+      const clientes = await db
+        .select({
+          id: cliente.cliente_id,
+          nome_cliente: cliente.nome_cliente,
+          company_id: cliente.company_id
+        })
+        .from(cliente)
+        .where(eq(cliente.company_id, Number(companyId)));
+
+      console.log('Found clientes:', clientes);
+      res.json(clientes);
     } catch (error) {
       console.error('Error fetching clientes:', error);
       res.status(500).json({ error: 'Erro ao buscar clientes' });
