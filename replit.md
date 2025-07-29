@@ -389,4 +389,6 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - **Validação**: Enter para confirmar, dados salvos automaticamente no banco
 - **Isolamento**: Todas as criações respeitam company_id para isolamento de dados
 - **Auto-seleção**: Item criado é automaticamente selecionado no dropdown
+- **Persistência**: Dados realmente salvos nas tabelas do banco (unidade, operacao, st_vaga)
+- **Integração**: APIs implementadas com real inserção e busca no PostgreSQL via Drizzle ORM
 

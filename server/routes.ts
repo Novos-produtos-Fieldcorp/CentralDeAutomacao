@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { cliente } from "@shared/schema";
+import { cliente, unidade, operacao, st_vaga } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -310,8 +310,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/unidades/:companyId', async (req, res) => {
     try {
       const { companyId } = req.params;
-      // Return empty for now
-      res.json([]);
+      
+      const unidades = await db
+        .select({
+          id: unidade.id,
+          unidade: unidade.unidade,
+          company_id: unidade.company_id
+        })
+        .from(unidade)
+        .where(eq(unidade.company_id, Number(companyId)));
+
+      res.json(unidades);
     } catch (error) {
       console.error('Error fetching unidades:', error);
       res.status(500).json({ error: 'Erro ao buscar unidades' });
@@ -320,20 +329,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/unidades', async (req, res) => {
     try {
-      const { unidade, company_id } = req.body;
+      const { unidade: unidadeName, company_id } = req.body;
       
-      if (!unidade || !company_id) {
+      if (!unidadeName || !company_id) {
         return res.status(400).json({ error: 'Nome da unidade e company_id são obrigatórios' });
       }
 
-      // For now, return mock data since we need to implement real database operations
-      const newUnidade = {
-        id: Date.now(),
-        unidade: unidade,
-        company_id: company_id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      const [newUnidade] = await db
+        .insert(unidade)
+        .values({
+          unidade: unidadeName,
+          company_id: Number(company_id)
+        })
+        .returning({
+          id: unidade.id,
+          unidade: unidade.unidade,
+          company_id: unidade.company_id
+        });
 
       res.status(201).json(newUnidade);
     } catch (error) {
@@ -345,8 +357,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/operacoes/:companyId', async (req, res) => {
     try {
       const { companyId } = req.params;
-      // Return empty for now
-      res.json([]);
+      
+      const operacoes = await db
+        .select({
+          id: operacao.id,
+          operacao: operacao.operacao,
+          company_id: operacao.company_id
+        })
+        .from(operacao)
+        .where(eq(operacao.company_id, Number(companyId)));
+
+      res.json(operacoes);
     } catch (error) {
       console.error('Error fetching operacoes:', error);
       res.status(500).json({ error: 'Erro ao buscar operações' });
@@ -355,20 +376,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/operacoes', async (req, res) => {
     try {
-      const { operacao, company_id } = req.body;
+      const { operacao: operacaoName, company_id } = req.body;
       
-      if (!operacao || !company_id) {
+      if (!operacaoName || !company_id) {
         return res.status(400).json({ error: 'Nome da operação e company_id são obrigatórios' });
       }
 
-      // For now, return mock data since we need to implement real database operations
-      const newOperacao = {
-        id: Date.now(),
-        operacao: operacao,
-        company_id: company_id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      const [newOperacao] = await db
+        .insert(operacao)
+        .values({
+          operacao: operacaoName,
+          company_id: Number(company_id)
+        })
+        .returning({
+          id: operacao.id,
+          operacao: operacao.operacao,
+          company_id: operacao.company_id
+        });
 
       res.status(201).json(newOperacao);
     } catch (error) {
@@ -380,12 +404,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/status-vagas/:companyId', async (req, res) => {
     try {
       const { companyId } = req.params;
-      // Return default statuses
-      res.json([
-        { id: 1, status_vaga: 'Aberta' },
-        { id: 2, status_vaga: 'Fechada' },
-        { id: 3, status_vaga: 'Pausada' }
-      ]);
+      
+      const statusVagas = await db
+        .select({
+          id: st_vaga.id,
+          status_vaga: st_vaga.status_vaga,
+          company_id: st_vaga.company_id
+        })
+        .from(st_vaga)
+        .where(eq(st_vaga.company_id, Number(companyId)));
+
+      // If no custom status found, return default ones
+      if (statusVagas.length === 0) {
+        res.json([
+          { id: 1, status_vaga: 'Aberta', company_id: Number(companyId) },
+          { id: 2, status_vaga: 'Fechada', company_id: Number(companyId) },
+          { id: 3, status_vaga: 'Pausada', company_id: Number(companyId) }
+        ]);
+      } else {
+        res.json(statusVagas);
+      }
     } catch (error) {
       console.error('Error fetching status vagas:', error);
       res.status(500).json({ error: 'Erro ao buscar status das vagas' });
@@ -400,14 +438,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Nome do status e company_id são obrigatórios' });
       }
 
-      // For now, return mock data since we need to implement real database operations
-      const newStatus = {
-        id: Date.now(),
-        status_vaga: status_vaga,
-        company_id: company_id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      const [newStatus] = await db
+        .insert(st_vaga)
+        .values({
+          status_vaga: status_vaga,
+          company_id: Number(company_id)
+        })
+        .returning({
+          id: st_vaga.id,
+          status_vaga: st_vaga.status_vaga,
+          company_id: st_vaga.company_id
+        });
 
       res.status(201).json(newStatus);
     } catch (error) {
