@@ -8,6 +8,12 @@ export const company = pgTable("company", {
   id: serial("id").primaryKey(),
   nome: text("nome").notNull(),
   cnpj: text("cnpj"),
+  id_conta_wiseapp: text("id_conta_wiseapp"),
+  company_id: serial("company_id").unique(),
+  st_company: boolean("st_company").default(true),
+  checklist_access: boolean("checklist_access").default(true),
+  motorista_access: boolean("motorista_access").default(true),
+  hodometro_acsess: boolean("hodometro_acsess").default(true),
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
 });
