@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 // Configuração do Supabase para produção
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
@@ -19,7 +19,7 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 });
 
 // Função principal para lidar com requests da API
-export const handler = async (event, context) => {
+exports.handler = async (event, context) => {
   // Configurar CORS e headers para iframe
   const headers = {
     'Access-Control-Allow-Origin': '*',
