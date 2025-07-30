@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { Vaga } from '@shared/schema';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import toast from 'react-hot-toast';
+import VagaDetailsModal from './VagaDetailsModal';
 
 interface VagasListProps {
   onRefresh: () => void;
@@ -14,6 +16,8 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
   const [vagas, setVagas] = useState<Vaga[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedVaga, setSelectedVaga] = useState<Vaga | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchVagas = async () => {
     try {
@@ -46,6 +50,62 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
     } catch {
       return '-';
     }
+  };
+
+  const handleDeleteVaga = async (vagaId: number) => {
+    // Show confirmation toast
+    toast((t) => (
+      <div className="flex items-center space-x-3">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Deletar vaga?</p>
+          <p className="text-xs text-gray-500">Esta ação não pode ser desfeita</p>
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              
+              // Show loading toast
+              const loadingToast = toast.loading('Deletando vaga...');
+              
+              try {
+                const response = await fetch(`/api/vagas/${vagaId}`, {
+                  method: 'DELETE',
+                });
+
+                toast.dismiss(loadingToast);
+
+                if (response.ok) {
+                  // Refresh the list and dashboard
+                  await fetchVagas();
+                  onRefresh();
+                  toast.success('Vaga deletada com sucesso!');
+                } else {
+                  const errorData = await response.json();
+                  toast.error(`Erro ao deletar: ${errorData.error || 'Erro desconhecido'}`);
+                }
+              } catch (error) {
+                toast.dismiss(loadingToast);
+                console.error('Error deleting vaga:', error);
+                toast.error('Erro ao deletar vaga');
+              }
+            }}
+            className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700"
+          >
+            Deletar
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="bg-gray-200 text-gray-800 px-3 py-1 rounded text-xs hover:bg-gray-300"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 5000,
+      position: 'top-center',
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -179,18 +239,17 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
                       <button
+                        onClick={() => {
+                          setSelectedVaga(vaga);
+                          setIsModalOpen(true);
+                        }}
                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                         title="Visualizar"
                       >
                         <Eye size={18} />
                       </button>
                       <button
-                        className="text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300"
-                        title="Editar"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
+                        onClick={() => handleDeleteVaga(vaga.id)}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                         title="Excluir"
                       >
@@ -203,6 +262,22 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
             </tbody>
           </table>
         </div>
+      )}
+      
+      {/* Modal de Detalhes/Edição */}
+      {selectedVaga && (
+        <VagaDetailsModal
+          vaga={selectedVaga}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedVaga(null);
+          }}
+          onUpdate={() => {
+            fetchVagas();
+            onRefresh();
+          }}
+        />
       )}
     </div>
   );

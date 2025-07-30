@@ -87,7 +87,7 @@ export const end_motorista = pgTable("end_motorista", {
 // Cliente table
 export const cliente = pgTable("cliente", {
   cliente_id: serial("cliente_id").primaryKey(),
-  nome_cliente: text("nome_cliente").notNull(),
+  nome: text("nome").notNull(),
   company_id: integer("company_id").references(() => company.id),
   created_at: timestamp("created_at").defaultNow(),
 });
@@ -381,10 +381,10 @@ export const vaga = pgTable("vaga", {
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at"),
   quantidade: numeric("quantidade"),
-  dias_trabalho: text("dias_trabalho"),
+  dias_trabalho: text("dias_trabalho").array(),
   horario: text("horario"),
   dt_limite: timestamp("dt_limite"),
-  company_id: bigint("company_id", { mode: "number" }).references(() => company.id),
+  company_id: integer("company_id").references(() => company.company_id),
   unidade_id: bigint("unidade_id", { mode: "number" }).references(() => unidade.id),
   operacao_id: bigint("operacao_id", { mode: "number" }).references(() => operacao.id),
   st_vaga_id: bigint("st_vaga_id", { mode: "number" }).references(() => st_vaga.id),
@@ -462,11 +462,13 @@ export const endVagaRelations = relations(end_vaga, ({ one }) => ({
   }),
 }));
 
-// Insert schemas for new tables
+// Insert schemas for new tables  
 export const insertVagaSchema = createInsertSchema(vaga).omit({
   id: true,
   created_at: true,
   updated_at: true,
+}).extend({
+  dt_limite: z.string().optional(),
 });
 
 export const insertUnidadeSchema = createInsertSchema(unidade).omit({

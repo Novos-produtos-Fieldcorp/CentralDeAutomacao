@@ -1,9 +1,52 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { db } from "./db";
+// Removed NeonDB import - using only Supabase now
 import { eq } from "drizzle-orm";
-import { cliente, unidade, operacao, st_vaga } from "@shared/schema";
+import { cliente, unidade, operacao, st_vaga, company, vaga } from "@shared/schema";
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client with bypass RLS for backend operations
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  db: { schema: 'public' },
+  auth: { 
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false
+  },
+  global: {
+    headers: {
+      'Authorization': `Bearer ${supabaseKey}`
+    }
+  }
+});
+
+// Helper function to get company_id from account_id
+async function getCompanyIdFromAccount(accountId: string): Promise<number | null> {
+  try {
+    const { data: companies, error } = await supabase
+      .from('company')
+      .select('company_id')
+      .eq('id_conta_wiseapp', accountId)
+      .limit(1);
+
+    if (error) {
+      console.error('Error fetching company:', error);
+      return null;
+    }
+
+    if (!companies || companies.length === 0) {
+      return null;
+    }
+
+    return companies[0].company_id;
+  } catch (error) {
+    console.error('Error in getCompanyIdFromAccount:', error);
+    return null;
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -236,19 +279,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Vagas API routes
-  // Get vagas dashboard data
-  app.get('/api/vagas/dashboard/:companyId', async (req, res) => {
+  // Get vagas dashboard data - using Supabase
+  app.get('/api/vagas/dashboard/:accountId', async (req, res) => {
     try {
-      const { companyId } = req.params;
+      const { accountId } = req.params;
+      console.log('Fetching vagas dashboard for account:', accountId);
       
-      // For now, return mock data since we need to set up the database first
+      // Get company from Supabase
+      const { data: companies, error: companyError } = await supabase
+        .from('company')
+        .select('company_id')
+        .eq('id_conta_wiseapp', accountId)
+        .limit(1);
+
+      if (companyError) {
+        console.error('Supabase company error:', companyError);
+        return res.status(500).json({ error: 'Failed to fetch company' });
+      }
+
+      if (!companies || companies.length === 0) {
+        console.log('No company found for account_id:', accountId);
+        return res.json({ totalVagas: 0, vagasAbertas: 0, vagasFechadas: 0, vagasVencendo: 0 });
+      }
+
+      const companyId = companies[0].company_id;
+      console.log('Mapped account_id', accountId, 'to company.id', companyId);
+      
+      // Count vagas from Supabase
+      const { data: vagas, error: vagasError } = await supabase
+        .from('vaga')
+        .select('id')
+        .eq('company_id', companyId);
+      
+      if (vagasError) {
+        console.error('Supabase vagas error:', vagasError);
+        return res.status(500).json({ error: 'Failed to fetch vagas' });
+      }
+      
+      const totalVagas = vagas?.length || 0;
+      
+      // Count vagas by status (we'll implement this when status data is available)
       const dashboardData = {
-        totalVagas: 0,
-        vagasAbertas: 0,
+        totalVagas,
+        vagasAbertas: totalVagas, // Assuming all are open for now
         vagasFechadas: 0,
         vagasVencendo: 0,
       };
 
+      console.log('Dashboard data:', dashboardData);
       res.json(dashboardData);
     } catch (error) {
       console.error('Error fetching vagas dashboard:', error);
@@ -256,71 +334,296 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all vagas for a company
-  app.get('/api/vagas/:companyId', async (req, res) => {
+  // Get all vagas for a company - using Supabase
+  app.get('/api/vagas/:accountId', async (req, res) => {
     try {
-      const { companyId } = req.params;
+      const { accountId } = req.params;
+      console.log('Fetching vagas for account:', accountId);
       
-      // For now, return empty array since we need to set up the database first
-      const vagas = [];
+      // Get company from Supabase
+      const { data: companies, error: companyError } = await supabase
+        .from('company')
+        .select('company_id')
+        .eq('id_conta_wiseapp', accountId)
+        .limit(1);
 
-      res.json(vagas);
+      if (companyError) {
+        console.error('Supabase company error:', companyError);
+        return res.status(500).json({ error: 'Failed to fetch company' });
+      }
+
+      if (!companies || companies.length === 0) {
+        console.log('No company found for account_id:', accountId);
+        return res.json([]);
+      }
+
+      const companyId = companies[0].company_id;
+      console.log('Mapped account_id', accountId, 'to company.id', companyId);
+      
+      // Fetch vagas from Supabase with related data
+      const { data: vagas, error: vagasError } = await supabase
+        .from('vaga')
+        .select(`
+          id,
+          nome,
+          descricao,
+          quantidade,
+          dias_trabalho,
+          horario,
+          dt_limite,
+          created_at
+        `)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: true });
+
+      if (vagasError) {
+        console.error('Supabase vagas error:', vagasError);
+        return res.status(500).json({ error: 'Failed to fetch vagas' });
+      }
+
+      // Transform data to match expected format
+      const transformedVagas = vagas?.map(vaga => ({
+        id: vaga.id,
+        nome: vaga.nome,
+        descricao: vaga.descricao,
+        quantidade: vaga.quantidade,
+        dias_trabalho: vaga.dias_trabalho,
+        horario: vaga.horario,
+        dt_limite: vaga.dt_limite,
+        created_at: vaga.created_at,
+        unidade_nome: null, // Will be populated when relations are set up
+        operacao_nome: null,
+        status_vaga: null,
+        cliente_nome: null
+      })) || [];
+
+      console.log('Found vagas:', transformedVagas.length);
+      res.json(transformedVagas);
     } catch (error) {
       console.error('Error fetching vagas:', error);
       res.status(500).json({ error: 'Erro ao buscar vagas' });
     }
   });
 
-  // Create new vaga
+  // Create new vaga - using Supabase
   app.post('/api/vagas', async (req, res) => {
     try {
       const vagaData = req.body;
+      console.log('Creating vaga with data:', vagaData);
       
-      // For now, return success since we need to set up the database first
-      res.status(201).json({ message: 'Vaga criada com sucesso', id: Date.now() });
+      // Convert company_id from account_id to actual company.id using Supabase
+      let companyId = vagaData.company_id;
+      
+      // Map account_id to company_id using Supabase
+      const { data: companies, error: companyError } = await supabase
+        .from('company')
+        .select('company_id')
+        .eq('id_conta_wiseapp', String(companyId))
+        .limit(1);
+        
+      if (companyError) {
+        console.error('Supabase company error:', companyError);
+        return res.status(500).json({ error: 'Failed to fetch company' });
+      }
+      
+      if (companies && companies.length > 0) {
+        companyId = companies[0].company_id;
+        console.log('Mapped account_id', vagaData.company_id, 'to company_id', companyId);
+      } else {
+        console.error('No company found for account_id:', vagaData.company_id);
+        return res.status(400).json({ error: 'Company not found for this account' });
+      }
+      
+      // Prepare data for Supabase insertion
+      const insertData: any = {
+        nome: vagaData.nome,
+        descricao: vagaData.descricao,
+        company_id: companyId,
+        quantidade: vagaData.quantidade ? Number(vagaData.quantidade) : null,
+        dias_trabalho: vagaData.dias_trabalho || null,
+        horario: vagaData.horario || null,
+        dt_limite: vagaData.dt_limite || null,
+        unidade_id: vagaData.unidade_id ? Number(vagaData.unidade_id) : null,
+        operacao_id: vagaData.operacao_id ? Number(vagaData.operacao_id) : null,
+        st_vaga_id: vagaData.st_vaga_id ? Number(vagaData.st_vaga_id) : null,
+        cliente_id: vagaData.cliente_id ? Number(vagaData.cliente_id) : null,
+      };
+      
+      // Insert into Supabase
+      const { data: newVaga, error: insertError } = await supabase
+        .from('vaga')
+        .insert(insertData)
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error('Supabase insert error:', insertError);
+        return res.status(500).json({ error: 'Failed to create vaga', details: insertError.message });
+      }
+      
+      console.log('Vaga created successfully in Supabase:', newVaga);
+      res.status(201).json({ message: 'Vaga criada com sucesso', vaga: newVaga });
     } catch (error) {
       console.error('Error creating vaga:', error);
-      res.status(500).json({ error: 'Erro ao criar vaga' });
+      res.status(500).json({ error: 'Erro ao criar vaga', details: error instanceof Error ? error.message : 'Erro desconhecido' });
     }
   });
 
-  // Get supporting data for dropdowns
-  app.get('/api/clientes/:companyId', async (req, res) => {
+  // Delete vaga - using Supabase
+  app.delete('/api/vagas/:id', async (req, res) => {
     try {
-      const { companyId } = req.params;
-      console.log('Fetching clientes for company:', companyId);
+      const vagaId = req.params.id;
+      console.log('Deleting vaga with id:', vagaId);
       
-      const clientes = await db
-        .select({
-          id: cliente.cliente_id,
-          nome_cliente: cliente.nome_cliente,
-          company_id: cliente.company_id
-        })
-        .from(cliente)
-        .where(eq(cliente.company_id, Number(companyId)));
+      // Delete from Supabase
+      const { error: deleteError } = await supabase
+        .from('vaga')
+        .delete()
+        .eq('id', vagaId);
+      
+      if (deleteError) {
+        console.error('Supabase delete error:', deleteError);
+        return res.status(500).json({ error: 'Failed to delete vaga', details: deleteError.message });
+      }
+      
+      console.log('Vaga deleted successfully');
+      res.json({ message: 'Vaga deletada com sucesso' });
+    } catch (error) {
+      console.error('Error deleting vaga:', error);
+      res.status(500).json({ error: 'Erro ao deletar vaga', details: error instanceof Error ? error.message : 'Erro desconhecido' });
+    }
+  });
 
-      console.log('Found clientes:', clientes);
-      res.json(clientes);
+  // Update vaga - using Supabase
+  app.put('/api/vagas/:id', async (req, res) => {
+    try {
+      const vagaId = req.params.id;
+      const vagaData = req.body;
+      console.log('Updating vaga with id:', vagaId, 'data:', vagaData);
+      
+      // Map account_id to company_id using Supabase
+      let companyId = vagaData.company_id;
+      if (companyId) {
+        const { data: companies, error: companyError } = await supabase
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', String(companyId))
+          .limit(1);
+          
+        if (companyError) {
+          console.error('Supabase company error:', companyError);
+          return res.status(500).json({ error: 'Failed to fetch company' });
+        }
+        
+        if (companies && companies.length > 0) {
+          companyId = companies[0].company_id;
+          console.log('Mapped account_id', vagaData.company_id, 'to company_id', companyId);
+        }
+      }
+      
+      // Prepare update data
+      const updateData: any = {
+        nome: vagaData.nome,
+        descricao: vagaData.descricao,
+        quantidade: vagaData.quantidade ? Number(vagaData.quantidade) : null,
+        dias_trabalho: vagaData.dias_trabalho || null,
+        horario: vagaData.horario || null,
+        dt_limite: vagaData.dt_limite || null,
+        unidade_id: vagaData.unidade_id ? Number(vagaData.unidade_id) : null,
+        operacao_id: vagaData.operacao_id ? Number(vagaData.operacao_id) : null,
+        st_vaga_id: vagaData.st_vaga_id ? Number(vagaData.st_vaga_id) : null,
+        cliente_id: vagaData.cliente_id ? Number(vagaData.cliente_id) : null,
+        updated_at: new Date().toISOString(),
+      };
+      
+      // Update in Supabase
+      const { data: updatedVaga, error: updateError } = await supabase
+        .from('vaga')
+        .update(updateData)
+        .eq('id', vagaId)
+        .select()
+        .single();
+      
+      if (updateError) {
+        console.error('Supabase update error:', updateError);
+        return res.status(500).json({ error: 'Failed to update vaga', details: updateError.message });
+      }
+      
+      console.log('Vaga updated successfully in Supabase:', updatedVaga);
+      res.json({ message: 'Vaga atualizada com sucesso', vaga: updatedVaga });
+    } catch (error) {
+      console.error('Error updating vaga:', error);
+      res.status(500).json({ error: 'Erro ao atualizar vaga', details: error instanceof Error ? error.message : 'Erro desconhecido' });
+    }
+  });
+
+  // Get supporting data for dropdowns - using Supabase
+  app.get('/api/clientes/:accountId', async (req, res) => {
+    try {
+      const { accountId } = req.params;
+      console.log('Fetching clientes for account:', accountId);
+      
+      // Get company from Supabase
+      const { data: companies, error: companyError } = await supabase
+        .from('company')
+        .select('company_id')
+        .eq('id_conta_wiseapp', accountId)
+        .limit(1);
+
+      if (companyError) {
+        console.error('Supabase company error:', companyError);
+        return res.status(500).json({ error: 'Failed to fetch company' });
+      }
+
+      if (!companies || companies.length === 0) {
+        console.log('No company found for account_id:', accountId);
+        return res.json([]);
+      }
+
+      const companyId = companies[0].company_id;
+      console.log('Mapped account_id', accountId, 'to company.id', companyId);
+      
+      // Get clientes from Supabase
+      const { data: clientes, error: clientesError } = await supabase
+        .from('cliente')
+        .select('cliente_id, nome, company_id')
+        .eq('company_id', companyId);
+
+      if (clientesError) {
+        console.error('Supabase clientes error:', clientesError);
+        return res.status(500).json({ error: 'Failed to fetch clientes' });
+      }
+
+      console.log('Found clientes:', clientes?.length || 0);
+      res.json(clientes || []);
     } catch (error) {
       console.error('Error fetching clientes:', error);
       res.status(500).json({ error: 'Erro ao buscar clientes' });
     }
   });
 
-  app.get('/api/unidades/:companyId', async (req, res) => {
+  app.get('/api/unidades/:accountId', async (req, res) => {
     try {
-      const { companyId } = req.params;
+      const { accountId } = req.params;
       
-      const unidades = await db
-        .select({
-          id: unidade.id,
-          unidade: unidade.unidade,
-          company_id: unidade.company_id
-        })
-        .from(unidade)
-        .where(eq(unidade.company_id, Number(companyId)));
+      // Get company_id from account_id
+      const companyId = await getCompanyIdFromAccount(accountId);
+      if (!companyId) {
+        return res.json([]);
+      }
+      
+      // Get unidades from Supabase
+      const { data: unidades, error: unidadesError } = await supabase
+        .from('unidade')
+        .select('id, unidade, company_id')
+        .eq('company_id', companyId);
 
-      res.json(unidades);
+      if (unidadesError) {
+        console.error('Supabase unidades error:', unidadesError);
+        return res.status(500).json({ error: 'Failed to fetch unidades' });
+      }
+
+      res.json(unidades || []);
     } catch (error) {
       console.error('Error fetching unidades:', error);
       res.status(500).json({ error: 'Erro ao buscar unidades' });
@@ -335,17 +638,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Nome da unidade e company_id são obrigatórios' });
       }
 
-      const [newUnidade] = await db
-        .insert(unidade)
-        .values({
+      // Resolve the actual company_id from the account mapping
+      const actualCompanyId = await getCompanyIdFromAccount(String(company_id));
+      if (!actualCompanyId) {
+        return res.status(404).json({ error: 'Company not found for this account' });
+      }
+
+      // Insert into Supabase
+      const { data: newUnidade, error: insertError } = await supabase
+        .from('unidade')
+        .insert({
           unidade: unidadeName,
-          company_id: Number(company_id)
+          company_id: actualCompanyId
         })
-        .returning({
-          id: unidade.id,
-          unidade: unidade.unidade,
-          company_id: unidade.company_id
-        });
+        .select('id, unidade, company_id')
+        .single();
+
+      if (insertError) {
+        console.error('Supabase insert error:', insertError);
+        return res.status(500).json({ error: 'Failed to create unidade', details: insertError.message });
+      }
 
       res.status(201).json(newUnidade);
     } catch (error) {
@@ -354,20 +666,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/operacoes/:companyId', async (req, res) => {
+  app.get('/api/operacoes/:accountId', async (req, res) => {
     try {
-      const { companyId } = req.params;
+      const { accountId } = req.params;
       
-      const operacoes = await db
-        .select({
-          id: operacao.id,
-          operacao: operacao.operacao,
-          company_id: operacao.company_id
-        })
-        .from(operacao)
-        .where(eq(operacao.company_id, Number(companyId)));
+      // Get company_id from account_id
+      const companyId = await getCompanyIdFromAccount(accountId);
+      if (!companyId) {
+        return res.json([]);
+      }
+      
+      // Get operacoes from Supabase
+      const { data: operacoes, error: operacoesError } = await supabase
+        .from('operacao')
+        .select('id, operacao, company_id')
+        .eq('company_id', companyId);
 
-      res.json(operacoes);
+      if (operacoesError) {
+        console.error('Supabase operacoes error:', operacoesError);
+        return res.status(500).json({ error: 'Failed to fetch operacoes' });
+      }
+
+      res.json(operacoes || []);
     } catch (error) {
       console.error('Error fetching operacoes:', error);
       res.status(500).json({ error: 'Erro ao buscar operações' });
@@ -382,17 +702,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Nome da operação e company_id são obrigatórios' });
       }
 
-      const [newOperacao] = await db
-        .insert(operacao)
-        .values({
+      // Resolve the actual company_id from the account mapping
+      const actualCompanyId = await getCompanyIdFromAccount(String(company_id));
+      if (!actualCompanyId) {
+        return res.status(404).json({ error: 'Company not found for this account' });
+      }
+
+      // Insert into Supabase
+      const { data: newOperacao, error: insertError } = await supabase
+        .from('operacao')
+        .insert({
           operacao: operacaoName,
-          company_id: Number(company_id)
+          company_id: actualCompanyId
         })
-        .returning({
-          id: operacao.id,
-          operacao: operacao.operacao,
-          company_id: operacao.company_id
-        });
+        .select('id, operacao, company_id')
+        .single();
+
+      if (insertError) {
+        console.error('Supabase insert error:', insertError);
+        return res.status(500).json({ error: 'Failed to create operacao', details: insertError.message });
+      }
 
       res.status(201).json(newOperacao);
     } catch (error) {
@@ -401,25 +730,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/status-vagas/:companyId', async (req, res) => {
+  app.get('/api/status-vagas/:accountId', async (req, res) => {
     try {
-      const { companyId } = req.params;
+      const { accountId } = req.params;
       
-      const statusVagas = await db
-        .select({
-          id: st_vaga.id,
-          status_vaga: st_vaga.status_vaga,
-          company_id: st_vaga.company_id
-        })
-        .from(st_vaga)
-        .where(eq(st_vaga.company_id, Number(companyId)));
+      // Get company_id from account_id
+      const companyId = await getCompanyIdFromAccount(accountId);
+      if (!companyId) {
+        return res.json([
+          { id: 1, status_vaga: 'Aberta', company_id: 1 },
+          { id: 2, status_vaga: 'Fechada', company_id: 1 },
+          { id: 3, status_vaga: 'Pausada', company_id: 1 }
+        ]);
+      }
+      
+      // Get status vagas from Supabase
+      const { data: statusVagas, error: statusError } = await supabase
+        .from('st_vaga')
+        .select('id, status_vaga, company_id')
+        .eq('company_id', companyId);
+
+      if (statusError) {
+        console.error('Supabase status vagas error:', statusError);
+        return res.status(500).json({ error: 'Failed to fetch status vagas' });
+      }
 
       // If no custom status found, return default ones
-      if (statusVagas.length === 0) {
+      if (!statusVagas || statusVagas.length === 0) {
         res.json([
-          { id: 1, status_vaga: 'Aberta', company_id: Number(companyId) },
-          { id: 2, status_vaga: 'Fechada', company_id: Number(companyId) },
-          { id: 3, status_vaga: 'Pausada', company_id: Number(companyId) }
+          { id: 1, status_vaga: 'Aberta', company_id: companyId },
+          { id: 2, status_vaga: 'Fechada', company_id: companyId },
+          { id: 3, status_vaga: 'Pausada', company_id: companyId }
         ]);
       } else {
         res.json(statusVagas);
@@ -438,17 +779,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Nome do status e company_id são obrigatórios' });
       }
 
-      const [newStatus] = await db
-        .insert(st_vaga)
-        .values({
+      // Resolve the actual company_id from the account mapping
+      const actualCompanyId = await getCompanyIdFromAccount(String(company_id));
+      if (!actualCompanyId) {
+        return res.status(404).json({ error: 'Company not found for this account' });
+      }
+
+      // Insert into Supabase
+      const { data: newStatus, error: insertError } = await supabase
+        .from('st_vaga')
+        .insert({
           status_vaga: status_vaga,
-          company_id: Number(company_id)
+          company_id: actualCompanyId
         })
-        .returning({
-          id: st_vaga.id,
-          status_vaga: st_vaga.status_vaga,
-          company_id: st_vaga.company_id
-        });
+        .select('id, status_vaga, company_id')
+        .single();
+
+      if (insertError) {
+        console.error('Supabase insert error:', insertError);
+        return res.status(500).json({ error: 'Failed to create status', details: insertError.message });
+      }
 
       res.status(201).json(newStatus);
     } catch (error) {
