@@ -35,16 +35,28 @@ export const handler = async (event, context) => {
       const queryString = new URLSearchParams(queryParams).toString();
       const fullUrl = queryString ? `${wiseAppUrl}?${queryString}` : wiseAppUrl;
       
+      // Configurar headers para WiseApp
+      const wiseAppHeaders = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Usar API key das variáveis de ambiente ou das headers
+      const apiKey = process.env.VITE_CHAT_API_KEY || event.headers['x-api-key'] || event.headers.authorization;
+      if (apiKey) {
+        wiseAppHeaders['Authorization'] = apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`;
+      }
+      
+      console.log('Proxying to WiseApp:', fullUrl, 'Headers:', Object.keys(wiseAppHeaders));
+      
       const response = await fetch(fullUrl, {
         method: method,
-        headers: {
-          'Authorization': event.headers.authorization || '',
-          'Content-Type': 'application/json'
-        },
+        headers: wiseAppHeaders,
         body: method !== 'GET' ? JSON.stringify(body) : undefined
       });
 
       const data = await response.text();
+      console.log('WiseApp response status:', response.status);
+      
       return {
         statusCode: response.status,
         headers,
