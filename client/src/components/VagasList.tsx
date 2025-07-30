@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Vaga } from '@shared/schema';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import toast from 'react-hot-toast';
 
 interface VagasListProps {
   onRefresh: () => void;
@@ -49,28 +50,59 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
   };
 
   const handleDeleteVaga = async (vagaId: number) => {
-    if (!confirm('Tem certeza que deseja deletar esta vaga?')) {
-      return;
-    }
+    // Show confirmation toast
+    toast((t) => (
+      <div className="flex items-center space-x-3">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Deletar vaga?</p>
+          <p className="text-xs text-gray-500">Esta ação não pode ser desfeita</p>
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              
+              // Show loading toast
+              const loadingToast = toast.loading('Deletando vaga...');
+              
+              try {
+                const response = await fetch(`/api/vagas/${vagaId}`, {
+                  method: 'DELETE',
+                });
 
-    try {
-      const response = await fetch(`/api/vagas/${vagaId}`, {
-        method: 'DELETE',
-      });
+                toast.dismiss(loadingToast);
 
-      if (response.ok) {
-        // Refresh the list and dashboard
-        await fetchVagas();
-        onRefresh();
-        alert('Vaga deletada com sucesso!');
-      } else {
-        const errorData = await response.json();
-        alert(`Erro ao deletar vaga: ${errorData.error || 'Erro desconhecido'}`);
-      }
-    } catch (error) {
-      console.error('Error deleting vaga:', error);
-      alert('Erro ao deletar vaga');
-    }
+                if (response.ok) {
+                  // Refresh the list and dashboard
+                  await fetchVagas();
+                  onRefresh();
+                  toast.success('Vaga deletada com sucesso!');
+                } else {
+                  const errorData = await response.json();
+                  toast.error(`Erro ao deletar: ${errorData.error || 'Erro desconhecido'}`);
+                }
+              } catch (error) {
+                toast.dismiss(loadingToast);
+                console.error('Error deleting vaga:', error);
+                toast.error('Erro ao deletar vaga');
+              }
+            }}
+            className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700"
+          >
+            Deletar
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="bg-gray-200 text-gray-800 px-3 py-1 rounded text-xs hover:bg-gray-300"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 5000,
+      position: 'top-center',
+    });
   };
 
   const getStatusColor = (status: string) => {
