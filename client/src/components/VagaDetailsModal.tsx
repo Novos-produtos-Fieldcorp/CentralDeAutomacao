@@ -427,7 +427,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                     <Building className="h-4 w-4 text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">Cliente:</span>
                     <span className="text-sm text-gray-900 dark:text-white">
-                      {vaga.cliente_id ? `Cliente #${vaga.cliente_id}` : 'Não definido'}
+                      {(vaga as any).cliente_nome || (vaga.cliente_id ? `Cliente #${vaga.cliente_id}` : 'Não definido')}
                     </span>
                   </div>
                   
@@ -435,7 +435,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                     <MapPin className="h-4 w-4 text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">Unidade:</span>
                     <span className="text-sm text-gray-900 dark:text-white">
-                      {vaga.unidade_id ? `Unidade #${vaga.unidade_id}` : 'Não definido'}
+                      {(vaga as any).unidade_nome || (vaga.unidade_id ? `Unidade #${vaga.unidade_id}` : 'Não definido')}
                     </span>
                   </div>
                   
@@ -443,7 +443,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                     <User className="h-4 w-4 text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">Operação:</span>
                     <span className="text-sm text-gray-900 dark:text-white">
-                      {vaga.operacao_id ? `Operação #${vaga.operacao_id}` : 'Não definido'}
+                      {(vaga as any).operacao_nome || (vaga.operacao_id ? `Operação #${vaga.operacao_id}` : 'Não definido')}
                     </span>
                   </div>
                 </div>

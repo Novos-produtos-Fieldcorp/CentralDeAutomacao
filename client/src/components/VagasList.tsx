@@ -202,21 +202,20 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {/* Cliente name would come from relation */}
                       <div className="flex items-center">
                         <Building size={16} className="mr-1 text-gray-400" />
-                        Cliente #{vaga.cliente_id || '-'}
+                        {(vaga as any).cliente_nome || (vaga.cliente_id ? `Cliente #${vaga.cliente_id}` : 'Sem cliente')}
                       </div>
-                      {vaga.unidade_id && (
+                      {((vaga as any).unidade_nome || vaga.unidade_id) && (
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          Unidade #{vaga.unidade_id}
+                          {(vaga as any).unidade_nome || `Unidade #${vaga.unidade_id}`}
                         </div>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {vaga.operacao_id ? `Operação #${vaga.operacao_id}` : '-'}
+                      {(vaga as any).operacao_nome || (vaga.operacao_id ? `Operação #${vaga.operacao_id}` : '-')}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -232,8 +231,8 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('aberta')}`}>
-                      Aberta
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor((vaga as any).status_nome || 'aberta')}`}>
+                      {(vaga as any).status_nome || 'Aberta'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
