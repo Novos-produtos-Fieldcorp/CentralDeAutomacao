@@ -345,6 +345,9 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - **Design**: Segue o mesmo padrão visual dos módulos Motoristas/Contratados
 - **Database**: Migrado completamente para Supabase com RLS configurado
 - **Status Final**: Sistema 100% funcional com dados reais
+- **✅ Criação de Vagas**: Sistema funcionando perfeitamente com todos os campos
+- **✅ Data Limite Opcional**: Campo dt_limite agora é opcional no formulário
+- **✅ Foreign Keys**: Mapeamento correto de account_id para company_id resolvido
 
 ### Estrutura do Banco de Dados
 - **Tabelas Criadas**:
