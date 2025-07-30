@@ -20,13 +20,14 @@ VITE_CHAT_ACCOUNT_ID=123456s
 
 ### 3. Correções Aplicadas para Deploy
 ✅ Função convertida para ES Modules (.mjs)  
-✅ Configuração external_node_modules no netlify.toml  
 ✅ Versão simplificada da função para evitar erros de bundling  
-✅ Node.js 18.x especificado  
+✅ Node.js 18.x especificado (.nvmrc + netlify.toml)  
 ✅ Package.json específico para funções  
 ✅ Corrigido problema de tipo de dados (removido parseInt)  
 ✅ Adicionados logs de debug para troubleshooting  
 ✅ Tratamento de erro melhorado para consultas vazias  
+✅ **IMPORTANTE**: Sistema de detecção automática de ambiente  
+✅ Frontend agora usa URLs dinâmicas (/.netlify/functions/api no Netlify)  
 
 ### 4. Funcionalidades Suportadas
 ✅ Autenticação dinâmica por account_id  

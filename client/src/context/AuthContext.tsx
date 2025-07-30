@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase-fixed';
 import { useNavigate } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { createApiUrl } from '../lib/api-config';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -58,16 +59,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAccountId(currentAccountId);
 
         try {
-          // Buscar a empresa real baseada no account_id
-          const response = await fetch(`/api/company/by-account/${currentAccountId}`);
+          // Buscar a empresa real baseada no account_id usando URL dinâmica
+          const apiUrl = createApiUrl(`company/by-account/${currentAccountId}`);
+          console.log('Fetching company data from:', apiUrl);
+          const response = await fetch(apiUrl);
           
           if (response.ok) {
             const companyData = await response.json();
             setIsAuthenticated(true);
             setCompanyId(companyData.company_id);
-            console.log('Auth successful - account_id:', currentAccountId, 'company_id:', companyData.company_id, 'company:', companyData.razao_social);
+            console.log('Auth successful - account_id:', currentAccountId, 'company_id:', companyData.company_id, 'company:', companyData.nome_company);
           } else {
-            console.warn('Company not found for account_id:', currentAccountId);
+            console.warn('Company not found for account_id:', currentAccountId, 'Status:', response.status);
             setIsAuthenticated(false);
             navigate('/unauthorized');
           }
