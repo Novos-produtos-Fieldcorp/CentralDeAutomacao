@@ -322,6 +322,42 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - ✅ Interface padronizada
 - ✅ Aplicação pronta para uso
 
+## Sistema de Autenticação Dinâmico (Janeiro 2025)
+
+### Funcionalidade Implementada
+- **Autenticação por Account ID**: Sistema dinâmico que busca empresa real baseada no account_id da URL
+- **API Backend**: Rota `/api/company/by-account/:accountId` para buscar dados da empresa
+- **Mapeamento Automático**: account_id da URL mapeia para company_id no banco de dados
+- **Suporte Multi-Empresa**: Cada account_id carrega dados específicos da empresa correspondente
+- **Produção e Desenvolvimento**: Funcionamento tanto no Replit quanto no Netlify
+
+### Estrutura Implementada
+- **Frontend**: `client/src/context/AuthContext.tsx` com busca dinâmica de empresa
+- **Backend Replit**: `server/routes.ts` com rota para buscar empresa via Supabase
+- **Backend Netlify**: `netlify/functions/api.js` com todas as rotas necessárias
+- **Sistema de Vagas**: Rotas completas para CRUD de vagas, clientes, unidades, operações e status
+- **Proxy WiseApp**: Mantido para funcionalidade de chat e caixas de entrada
+
+### Rotas da API Netlify
+- `GET /api/company/by-account/:accountId`: Buscar empresa por account_id
+- `GET /api/vagas/dashboard/:accountId`: Dashboard de estatísticas das vagas
+- `GET /api/vagas/:accountId`: Listar vagas da empresa
+- `POST /api/vagas`: Criar nova vaga
+- `PUT /api/vagas/:id`: Atualizar vaga existente
+- `GET /api/clientes/:accountId`: Listar clientes da empresa
+- `GET /api/unidades/:accountId`: Listar unidades da empresa
+- `GET /api/operacoes/:accountId`: Listar operações da empresa
+- `GET /api/status-vagas/:accountId`: Listar status de vagas da empresa
+- `POST /api/unidades`, `/api/operacoes`, `/api/status-vagas`: Criação inline
+- Proxy `/api/api/v1/*`: Redirecionamento para WiseApp API (chat/caixas de entrada)
+
+### Benefícios
+- **Isolamento de Dados**: Cada empresa vê apenas seus próprios dados
+- **Escalabilidade**: Sistema preparado para múltiplas empresas
+- **Flexibilidade**: URL com ?account_id=X carrega empresa correspondente
+- **Compatibilidade**: Funciona tanto em desenvolvimento quanto produção
+- **Manutenção**: Código centralizado e reutilizável
+
 ## Melhorias na Interface do Usuário (Janeiro 2025)
 
 ### Context Menu - Simplificação das Opções
