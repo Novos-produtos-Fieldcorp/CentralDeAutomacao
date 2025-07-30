@@ -465,7 +465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get clientes from Supabase
       const { data: clientes, error: clientesError } = await supabase
         .from('cliente')
-        .select('cliente_id, nome_fantasia, company_id')
+        .select('cliente_id, nome, company_id')
         .eq('company_id', companyId);
 
       if (clientesError) {
@@ -488,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get unidades from Supabase
       const { data: unidades, error: unidadesError } = await supabase
         .from('unidade')
-        .select('id, nome, company_id')
+        .select('id, unidade, company_id')
         .eq('company_id', Number(companyId));
 
       if (unidadesError) {
@@ -515,10 +515,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { data: newUnidade, error: insertError } = await supabase
         .from('unidade')
         .insert({
-          nome: unidadeName,
+          unidade: unidadeName,
           company_id: Number(company_id)
         })
-        .select('id, nome, company_id')
+        .select('id, unidade, company_id')
         .single();
 
       if (insertError) {
@@ -540,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get operacoes from Supabase
       const { data: operacoes, error: operacoesError } = await supabase
         .from('operacao')
-        .select('id, nome, company_id')
+        .select('id, operacao, company_id')
         .eq('company_id', Number(companyId));
 
       if (operacoesError) {
@@ -567,10 +567,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { data: newOperacao, error: insertError } = await supabase
         .from('operacao')
         .insert({
-          nome: operacaoName,
+          operacao: operacaoName,
           company_id: Number(company_id)
         })
-        .select('id, nome, company_id')
+        .select('id, operacao, company_id')
         .single();
 
       if (insertError) {
@@ -592,7 +592,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get status vagas from Supabase
       const { data: statusVagas, error: statusError } = await supabase
         .from('st_vaga')
-        .select('id, status, company_id')
+        .select('id, status_vaga, company_id')
         .eq('company_id', Number(companyId));
 
       if (statusError) {
@@ -603,9 +603,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If no custom status found, return default ones
       if (!statusVagas || statusVagas.length === 0) {
         res.json([
-          { id: 1, status: 'Aberta', company_id: Number(companyId) },
-          { id: 2, status: 'Fechada', company_id: Number(companyId) },
-          { id: 3, status: 'Pausada', company_id: Number(companyId) }
+          { id: 1, status_vaga: 'Aberta', company_id: Number(companyId) },
+          { id: 2, status_vaga: 'Fechada', company_id: Number(companyId) },
+          { id: 3, status_vaga: 'Pausada', company_id: Number(companyId) }
         ]);
       } else {
         res.json(statusVagas);
@@ -628,10 +628,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { data: newStatus, error: insertError } = await supabase
         .from('st_vaga')
         .insert({
-          status: status_vaga,
+          status_vaga: status_vaga,
           company_id: Number(company_id)
         })
-        .select('id, status, company_id')
+        .select('id, status_vaga, company_id')
         .single();
 
       if (insertError) {
