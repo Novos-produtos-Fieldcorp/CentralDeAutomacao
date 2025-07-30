@@ -83,6 +83,10 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     try {
       setIsLoading(true);
       
+      // Get selected weekdays from checkboxes
+      const checkboxes = document.querySelectorAll('input[name="dias_trabalho"]:checked') as NodeListOf<HTMLInputElement>;
+      const diasSelecionados: string[] = Array.from(checkboxes).map(checkbox => checkbox.value);
+      
       const response = await fetch(`/api/vagas`, {
         method: 'POST',
         headers: {
@@ -90,6 +94,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         },
         body: JSON.stringify({
           ...data,
+          dias_trabalho: diasSelecionados,
           company_id: Number(accountId),
         }),
       });
@@ -455,19 +460,34 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           </div>
 
           {/* Work Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Dias de Trabalho
               </label>
-              <input
-                {...register('dias_trabalho')}
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Ex: Segunda a Sexta"
-              />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { key: 'segunda', label: 'Segunda' },
+                  { key: 'terca', label: 'Terça' },
+                  { key: 'quarta', label: 'Quarta' },
+                  { key: 'quinta', label: 'Quinta' },
+                  { key: 'sexta', label: 'Sexta' },
+                  { key: 'sabado', label: 'Sábado' },
+                  { key: 'domingo', label: 'Domingo' }
+                ].map((dia) => (
+                  <label key={dia.key} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={dia.key}
+                      {...register('dias_trabalho')}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{dia.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Horário
