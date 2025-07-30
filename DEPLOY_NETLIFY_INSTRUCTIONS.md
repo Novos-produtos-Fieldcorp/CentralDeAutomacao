@@ -47,18 +47,32 @@ VITE_CHAT_ACCOUNT_ID=123456s
 - `/api/status-vagas/:accountId` - Listar status
 - `/api/api/v1/*` - Proxy para WiseApp API
 
-### 6. Debugging
+### 6. Configurações Adicionais no Netlify
+**IMPORTANTE**: Configure manualmente no painel do Netlify:
+
+#### Site Settings > Build & Deploy > Environment
+- **Node.js version**: 18.x (selecione nas opções)
+- **Package directory**: Deixe vazio
+
+#### Site Settings > Functions
+- **Functions directory**: `netlify/functions` (deve aparecer automaticamente)
+
+#### Teste de Função
+Após o deploy, teste se as funções estão funcionando:
+- `https://seu-site.netlify.app/.netlify/functions/test`
+
+### 7. Debugging
 Se ainda houver erros, verifique os logs das funções no painel do Netlify:
 - Site Settings > Functions > Function logs
 - Procure por mensagens "Looking for company with account_id" e "Supabase query result"
 
-### 7. Teste
+### 8. Teste
 Após o deploy, teste com:
 - `https://seu-site.netlify.app/?account_id=6`
 - `https://seu-site.netlify.app/?account_id=20`
 - `https://seu-site.netlify.app/vagas?account_id=1`
 
-### 8. Verificação de Dados
+### 9. Verificação de Dados
 Os account_ids válidos no banco são:
 - account_id=6 → Fox-e (company_id=1)
 - account_id=20 → Entrega já (company_id=5)
