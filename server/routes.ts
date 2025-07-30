@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { db } from "./db";
+// Removed NeonDB import - using only Supabase now
 import { eq } from "drizzle-orm";
 import { cliente, unidade, operacao, st_vaga, company, vaga } from "@shared/schema";
 import { createClient } from '@supabase/supabase-js';
@@ -436,38 +436,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get supporting data for dropdowns
+  // Get supporting data for dropdowns - using Supabase
   app.get('/api/clientes/:accountId', async (req, res) => {
     try {
       const { accountId } = req.params;
       console.log('Fetching clientes for account:', accountId);
       
-      // First, find the company id based on account_id
-      const companyResult = await db
-        .select({ id: company.id })
-        .from(company)
-        .where(eq(company.id_conta_wiseapp, accountId))
+      // Get company from Supabase
+      const { data: companies, error: companyError } = await supabase
+        .from('company')
+        .select('company_id')
+        .eq('id_conta_wiseapp', accountId)
         .limit(1);
 
-      if (companyResult.length === 0) {
+      if (companyError) {
+        console.error('Supabase company error:', companyError);
+        return res.status(500).json({ error: 'Failed to fetch company' });
+      }
+
+      if (!companies || companies.length === 0) {
         console.log('No company found for account_id:', accountId);
         return res.json([]);
       }
 
-      const companyId = companyResult[0].id;
+      const companyId = companies[0].company_id;
       console.log('Mapped account_id', accountId, 'to company.id', companyId);
       
-      const clientes = await db
-        .select({
-          cliente_id: cliente.cliente_id,
-          nome_cliente: cliente.nome_cliente,
-          company_id: cliente.company_id
-        })
-        .from(cliente)
-        .where(eq(cliente.company_id, companyId));
+      // Get clientes from Supabase
+      const { data: clientes, error: clientesError } = await supabase
+        .from('cliente')
+        .select('cliente_id, nome_fantasia, company_id')
+        .eq('company_id', companyId);
 
-      console.log('Found clientes:', clientes);
-      res.json(clientes);
+      if (clientesError) {
+        console.error('Supabase clientes error:', clientesError);
+        return res.status(500).json({ error: 'Failed to fetch clientes' });
+      }
+
+      console.log('Found clientes:', clientes?.length || 0);
+      res.json(clientes || []);
     } catch (error) {
       console.error('Error fetching clientes:', error);
       res.status(500).json({ error: 'Erro ao buscar clientes' });
@@ -478,16 +485,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { companyId } = req.params;
       
-      const unidades = await db
-        .select({
-          id: unidade.id,
-          unidade: unidade.unidade,
-          company_id: unidade.company_id
-        })
-        .from(unidade)
-        .where(eq(unidade.company_id, Number(companyId)));
+      // Get unidades from Supabase
+      const { data: unidades, error: unidadesError } = await supabase
+        .from('unidade')
+        .select('id, nome, company_id')
+        .eq('company_id', Number(companyId));
 
-      res.json(unidades);
+      if (unidadesError) {
+        console.error('Supabase unidades error:', unidadesError);
+        return res.status(500).json({ error: 'Failed to fetch unidades' });
+      }
+
+      res.json(unidades || []);
     } catch (error) {
       console.error('Error fetching unidades:', error);
       res.status(500).json({ error: 'Erro ao buscar unidades' });
@@ -502,17 +511,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Nome da unidade e company_id são obrigatórios' });
       }
 
-      const [newUnidade] = await db
-        .insert(unidade)
-        .values({
-          unidade: unidadeName,
+      // Insert into Supabase
+      const { data: newUnidade, error: insertError } = await supabase
+        .from('unidade')
+        .insert({
+          nome: unidadeName,
           company_id: Number(company_id)
         })
-        .returning({
-          id: unidade.id,
-          unidade: unidade.unidade,
-          company_id: unidade.company_id
-        });
+        .select('id, nome, company_id')
+        .single();
+
+      if (insertError) {
+        console.error('Supabase insert error:', insertError);
+        return res.status(500).json({ error: 'Failed to create unidade', details: insertError.message });
+      }
 
       res.status(201).json(newUnidade);
     } catch (error) {
@@ -525,16 +537,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { companyId } = req.params;
       
-      const operacoes = await db
-        .select({
-          id: operacao.id,
-          operacao: operacao.operacao,
-          company_id: operacao.company_id
-        })
-        .from(operacao)
-        .where(eq(operacao.company_id, Number(companyId)));
+      // Get operacoes from Supabase
+      const { data: operacoes, error: operacoesError } = await supabase
+        .from('operacao')
+        .select('id, nome, company_id')
+        .eq('company_id', Number(companyId));
 
-      res.json(operacoes);
+      if (operacoesError) {
+        console.error('Supabase operacoes error:', operacoesError);
+        return res.status(500).json({ error: 'Failed to fetch operacoes' });
+      }
+
+      res.json(operacoes || []);
     } catch (error) {
       console.error('Error fetching operacoes:', error);
       res.status(500).json({ error: 'Erro ao buscar operações' });
@@ -549,17 +563,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Nome da operação e company_id são obrigatórios' });
       }
 
-      const [newOperacao] = await db
-        .insert(operacao)
-        .values({
-          operacao: operacaoName,
+      // Insert into Supabase
+      const { data: newOperacao, error: insertError } = await supabase
+        .from('operacao')
+        .insert({
+          nome: operacaoName,
           company_id: Number(company_id)
         })
-        .returning({
-          id: operacao.id,
-          operacao: operacao.operacao,
-          company_id: operacao.company_id
-        });
+        .select('id, nome, company_id')
+        .single();
+
+      if (insertError) {
+        console.error('Supabase insert error:', insertError);
+        return res.status(500).json({ error: 'Failed to create operacao', details: insertError.message });
+      }
 
       res.status(201).json(newOperacao);
     } catch (error) {
@@ -572,21 +589,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { companyId } = req.params;
       
-      const statusVagas = await db
-        .select({
-          id: st_vaga.id,
-          status_vaga: st_vaga.status_vaga,
-          company_id: st_vaga.company_id
-        })
-        .from(st_vaga)
-        .where(eq(st_vaga.company_id, Number(companyId)));
+      // Get status vagas from Supabase
+      const { data: statusVagas, error: statusError } = await supabase
+        .from('st_vaga')
+        .select('id, status, company_id')
+        .eq('company_id', Number(companyId));
+
+      if (statusError) {
+        console.error('Supabase status vagas error:', statusError);
+        return res.status(500).json({ error: 'Failed to fetch status vagas' });
+      }
 
       // If no custom status found, return default ones
-      if (statusVagas.length === 0) {
+      if (!statusVagas || statusVagas.length === 0) {
         res.json([
-          { id: 1, status_vaga: 'Aberta', company_id: Number(companyId) },
-          { id: 2, status_vaga: 'Fechada', company_id: Number(companyId) },
-          { id: 3, status_vaga: 'Pausada', company_id: Number(companyId) }
+          { id: 1, status: 'Aberta', company_id: Number(companyId) },
+          { id: 2, status: 'Fechada', company_id: Number(companyId) },
+          { id: 3, status: 'Pausada', company_id: Number(companyId) }
         ]);
       } else {
         res.json(statusVagas);
@@ -605,17 +624,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Nome do status e company_id são obrigatórios' });
       }
 
-      const [newStatus] = await db
-        .insert(st_vaga)
-        .values({
-          status_vaga: status_vaga,
+      // Insert into Supabase
+      const { data: newStatus, error: insertError } = await supabase
+        .from('st_vaga')
+        .insert({
+          status: status_vaga,
           company_id: Number(company_id)
         })
-        .returning({
-          id: st_vaga.id,
-          status_vaga: st_vaga.status_vaga,
-          company_id: st_vaga.company_id
-        });
+        .select('id, status, company_id')
+        .single();
+
+      if (insertError) {
+        console.error('Supabase insert error:', insertError);
+        return res.status(500).json({ error: 'Failed to create status', details: insertError.message });
+      }
 
       res.status(201).json(newStatus);
     } catch (error) {
