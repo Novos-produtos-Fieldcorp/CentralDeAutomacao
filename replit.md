@@ -343,6 +343,7 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - **Novo Módulo**: Sistema completo de gestão de vagas de trabalho
 - **Acessível via**: `/vagas` URL com estrutura de abas igual ao módulo de Contratações
 - **Design**: Segue o mesmo padrão visual dos módulos Motoristas/Contratados
+- **Database**: Migrado completamente para Supabase com RLS configurado
 
 ### Estrutura do Banco de Dados
 - **Tabelas Criadas**:
@@ -352,7 +353,7 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
   - `st_vaga`: Status das vagas (Aberta, Fechada, Pausada)
   - `end_vaga`: Endereços das vagas
 - **Relacionamentos**: Vagas vinculadas a empresa, cliente, unidade, operação e status
-- **Migração**: Executada com sucesso via `npm run db:push`
+- **Supabase RLS**: Configurado e funcionando para todas as tabelas
 
 ### Interface do Usuário
 - **Layout**: Abas Dashboard e Vagas seguindo padrão do módulo Contratações
