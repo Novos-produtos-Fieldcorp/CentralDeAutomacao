@@ -1,19 +1,22 @@
-import { Pool } from 'pg';
-import { neon } from '@neondatabase/serverless';
+import { createClient } from '@supabase/supabase-js';
 
-// Configuração do banco de dados
-const getDatabaseConnection = () => {
-  if (process.env.DATABASE_URL) {
-    // Usa Neon serverless se disponível
-    return neon(process.env.DATABASE_URL);
-  } else {
-    // Fallback para Pool tradicional
-    return new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
+// Configuração do Supabase para produção
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
+
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  db: { schema: 'public' },
+  auth: { 
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false
+  },
+  global: {
+    headers: {
+      'Authorization': `Bearer ${supabaseKey}`
+    }
   }
-};
+});
 
 // Função principal para lidar com requests da API
 export const handler = async (event, context) => {
@@ -114,114 +117,59 @@ export const handler = async (event, context) => {
       };
     }
 
-    // Inicializar conexão com banco
-    const db = getDatabaseConnection();
+    // Rota para buscar empresa por account_id
+    if (path.match(/^\/company\/by-account\/(.+)$/) && method === 'GET') {
+      const accountId = path.match(/^\/company\/by-account\/(.+)$/)[1];
+      console.log('Netlify: Fetching company for account_id:', accountId);
+      
+      try {
+        const { data: companies, error } = await supabase
+          .from('company')
+          .select('*')
+          .eq('id_conta_wiseapp', accountId)
+          .limit(1);
 
-    // Rota para buscar motoristas
-    if (path === '/motoristas' && method === 'GET') {
-      const companyId = queryParams.company_id || 1;
-      
-      const query = `
-        SELECT 
-          m.*,
-          e.logradouro,
-          e.nr_cep,
-          b.nome_bairro,
-          c.nome_cidade,
-          est.sigla_estado
-        FROM motorista m
-        LEFT JOIN end_motorista em ON m.motorista_id = em.motorista_id
-        LEFT JOIN endereco e ON em.id_endereco = e.id_endereco
-        LEFT JOIN bairro b ON e.id_bairro = b.id_bairro
-        LEFT JOIN cidade c ON b.id_cidade = c.id_cidade
-        LEFT JOIN estado est ON c.id_estado = est.id_estado
-        WHERE m.company_id = $1
-        ORDER BY m.data_cadastro DESC
-      `;
-      
-      const result = await db.query ? db.query(query, [companyId]) : await db(query, [companyId]);
-      
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify(result.rows || result)
-      };
-    }
+        if (error) {
+          console.error('Netlify: Error fetching company:', error);
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ error: 'Erro ao buscar empresa' })
+          };
+        }
 
-    // Rota para buscar agregados
-    if (path === '/agregados' && method === 'GET') {
-      const companyId = queryParams.company_id || 1;
-      
-      const query = `
-        SELECT 
-          m.*,
-          e.logradouro,
-          e.nr_cep,
-          b.nome_bairro,
-          c.nome_cidade,
-          est.sigla_estado,
-          v.placa,
-          v.tipologia,
-          v.marca as marca_veiculo
-        FROM motorista m
-        LEFT JOIN end_motorista em ON m.motorista_id = em.motorista_id
-        LEFT JOIN endereco e ON em.id_endereco = e.id_endereco
-        LEFT JOIN bairro b ON e.id_bairro = b.id_bairro
-        LEFT JOIN cidade c ON b.id_cidade = c.id_cidade
-        LEFT JOIN estado est ON c.id_estado = est.id_estado
-        LEFT JOIN veiculo v ON m.motorista_id = v.motorista_id
-        WHERE m.company_id = $1 AND m.funcao = 'Agregado'
-        ORDER BY m.data_cadastro DESC
-      `;
-      
-      const result = await db.query ? db.query(query, [companyId]) : await db(query, [companyId]);
-      
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify(result.rows || result)
-      };
-    }
+        if (!companies || companies.length === 0) {
+          console.log('Netlify: No company found for account_id:', accountId);
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ error: 'Empresa não encontrada' })
+          };
+        }
 
-    // Rota para buscar clientes
-    if (path === '/clientes' && method === 'GET') {
-      const companyId = queryParams.company_id || 1;
-      
-      const query = `
-        SELECT cliente_id, nome, cor
-        FROM cliente
-        WHERE company_id = $1
-        ORDER BY nome
-      `;
-      
-      const result = await db.query ? db.query(query, [companyId]) : await db(query, [companyId]);
-      
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify(result.rows || result)
-      };
-    }
+        const company = companies[0];
+        console.log('Netlify: Found company:', company);
 
-    // Rota para atualizar status
-    if (path === '/motoristas/status' && method === 'PUT') {
-      const { motorista_id, status } = body;
-      const companyId = queryParams.company_id || 1;
-      
-      const query = `
-        UPDATE motorista 
-        SET st_cadastro = $1
-        WHERE motorista_id = $2 AND company_id = $3
-        RETURNING *
-      `;
-      
-      const result = await db.query ? db.query(query, [status, motorista_id, companyId]) : await db(query, [status, motorista_id, companyId]);
-      
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify(result.rows?.[0] || result[0])
-      };
+        // Retornar dados no formato esperado pelo frontend
+        const response = {
+          company_id: company.company_id || company.id,
+          razao_social: company.nome_company || company.nome,
+          id_conta_wiseapp: company.id_conta_wiseapp
+        };
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(response)
+        };
+      } catch (error) {
+        console.error('Netlify: Error in company lookup:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: 'Erro interno do servidor' })
+        };
+      }
     }
 
     // Rota não encontrada
