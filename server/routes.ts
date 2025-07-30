@@ -413,23 +413,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Convert company_id from account_id to actual company.id using Supabase
       let companyId = vagaData.company_id;
-      if (typeof companyId === 'string') {
-        // Get company from Supabase
-        const { data: companies, error: companyError } = await supabase
-          .from('company')
-          .select('company_id')
-          .eq('id_conta_wiseapp', companyId)
-          .limit(1);
-
-        if (companyError) {
-          console.error('Supabase company error:', companyError);
-          return res.status(500).json({ error: 'Failed to fetch company' });
-        }
-
-        if (companies && companies.length > 0) {
-          companyId = companies[0].company_id;
-          console.log('Mapped account_id', vagaData.company_id, 'to company.id', companyId);
-        }
+      
+      // Map account_id to company_id using Supabase
+      const { data: companies, error: companyError } = await supabase
+        .from('company')
+        .select('company_id')
+        .eq('id_conta_wiseapp', String(companyId))
+        .limit(1);
+        
+      if (companyError) {
+        console.error('Supabase company error:', companyError);
+        return res.status(500).json({ error: 'Failed to fetch company' });
+      }
+      
+      if (companies && companies.length > 0) {
+        companyId = companies[0].company_id;
+        console.log('Mapped account_id', vagaData.company_id, 'to company_id', companyId);
+      } else {
+        console.error('No company found for account_id:', vagaData.company_id);
+        return res.status(400).json({ error: 'Company not found for this account' });
       }
       
       // Prepare data for Supabase insertion
