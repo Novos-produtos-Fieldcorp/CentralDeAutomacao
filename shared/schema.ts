@@ -381,7 +381,7 @@ export const vaga = pgTable("vaga", {
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at"),
   quantidade: numeric("quantidade"),
-  dias_trabalho: text("dias_trabalho"),
+  dias_trabalho: text("dias_trabalho").array(),
   horario: text("horario"),
   dt_limite: timestamp("dt_limite"),
   company_id: bigint("company_id", { mode: "number" }).references(() => company.id),
