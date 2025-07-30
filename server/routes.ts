@@ -434,21 +434,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Prepare data for Supabase insertion
       const insertData: any = {
-        nome: vagaData.nome_vaga,
+        nome: vagaData.nome,
         descricao: vagaData.descricao,
         company_id: companyId,
+        quantidade: vagaData.quantidade ? Number(vagaData.quantidade) : null,
+        dias_trabalho: vagaData.dias_trabalho || null,
+        horario: vagaData.horario || null,
+        dt_limite: vagaData.dt_limite || null,
+        unidade_id: vagaData.unidade_id ? Number(vagaData.unidade_id) : null,
+        operacao_id: vagaData.operacao_id ? Number(vagaData.operacao_id) : null,
+        st_vaga_id: vagaData.st_vaga_id ? Number(vagaData.st_vaga_id) : null,
+        cliente_id: vagaData.cliente_id ? Number(vagaData.cliente_id) : null,
       };
-      
-      // Add optional fields only if they have values
-      if (vagaData.quantidade) insertData.quantidade = String(vagaData.quantidade);
-      if (vagaData.dias_trabalho) insertData.dias_trabalho = vagaData.dias_trabalho;
-      if (vagaData.horario) insertData.horario = vagaData.horario;
-      if (vagaData.dt_limite) insertData.dt_limite = vagaData.dt_limite;
-      if (vagaData.unidade_id) insertData.unidade_id = vagaData.unidade_id;
-      // Note: Relations will be added when tables are properly set up in Supabase
-      // if (vagaData.operacao_id) insertData.operacao_id = vagaData.operacao_id;
-      // if (vagaData.status_id) insertData.status_id = vagaData.status_id;
-      // if (vagaData.cliente_id) insertData.cliente_id = vagaData.cliente_id;
       
       // Insert into Supabase
       const { data: newVaga, error: insertError } = await supabase
