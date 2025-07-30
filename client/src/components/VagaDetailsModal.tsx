@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Edit2, Calendar, Users, Building, Clock, MapPin, User } from 'lucide-react';
+import { X, Edit2, Calendar, Users, Building, Clock, MapPin, User, Briefcase } from 'lucide-react';
 import { Vaga } from '@shared/schema';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -183,147 +183,101 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
 
         {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Nome e Descrição */}
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Nome da Vaga
-              </label>
-              {isEditing ? (
+          {isEditing ? (
+            // Modo Edição - Formulário
+            <div className="space-y-4">
+              {/* Nome */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nome da Vaga
+                </label>
                 <input
                   type="text"
                   value={formData.nome}
                   onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 />
-              ) : (
-                <p className="text-lg font-medium text-gray-900 dark:text-white px-3 py-2">
-                  {vaga.nome || 'Sem nome'}
-                </p>
-              )}
-            </div>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Descrição
-              </label>
-              {isEditing ? (
+              {/* Descrição */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Descrição
+                </label>
                 <textarea
                   value={formData.descricao}
                   onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 />
-              ) : (
-                <p className="text-gray-600 dark:text-gray-400 px-3 py-2">
-                  {vaga.descricao || 'Sem descrição'}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Informações principais */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Users className="inline h-4 w-4 mr-1" />
-                Quantidade
-              </label>
-              {isEditing ? (
-                <input
-                  type="number"
-                  value={formData.quantidade}
-                  onChange={(e) => setFormData(prev => ({ ...prev, quantidade: Number(e.target.value) }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              ) : (
-                <p className="text-gray-900 dark:text-white px-3 py-2">
-                  {vaga.quantidade || 'Não definido'}
-                </p>
-              )}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Clock className="inline h-4 w-4 mr-1" />
-                Horário
-              </label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={formData.horario}
-                  onChange={(e) => setFormData(prev => ({ ...prev, horario: e.target.value }))}
-                  placeholder="Ex: 08:00 às 17:00"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              ) : (
-                <p className="text-gray-900 dark:text-white px-3 py-2">
-                  {vaga.horario || 'Não definido'}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Data Limite */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <Calendar className="inline h-4 w-4 mr-1" />
-              Data Limite
-            </label>
-            {isEditing ? (
-              <input
-                type="datetime-local"
-                value={formData.dt_limite}
-                onChange={(e) => setFormData(prev => ({ ...prev, dt_limite: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            ) : (
-              <p className="text-gray-900 dark:text-white px-3 py-2">
-                {formatDate(vaga.dt_limite?.toString() || null)}
-              </p>
-            )}
-          </div>
-
-          {/* Dias da Semana */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <Calendar className="inline h-4 w-4 mr-1" />
-              Dias de Trabalho
-            </label>
-            {isEditing ? (
-              <div className="flex flex-wrap gap-2">
-                {diasSemana.map((dia: { value: string; label: string }) => (
-                  <label key={dia.value} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.dias_trabalho.includes(dia.value)}
-                      onChange={() => handleDiaToggle(dia.value)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{dia.label}</span>
-                  </label>
-                ))}
               </div>
-            ) : (
-              <p className="text-gray-900 dark:text-white px-3 py-2">
-                {getDiasTrabalhoFormatted()}
-              </p>
-            )}
-          </div>
 
-          {/* Informações de relacionamento */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">
-              Informações Adicionais
-            </h4>
-            
-            <div className="grid grid-cols-2 gap-4">
+              {/* Quantidade e Horário */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Quantidade
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.quantidade}
+                    onChange={(e) => setFormData(prev => ({ ...prev, quantidade: Number(e.target.value) }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Horário
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.horario}
+                    onChange={(e) => setFormData(prev => ({ ...prev, horario: e.target.value }))}
+                    placeholder="Ex: 08:00 às 17:00"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Data Limite */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <Building className="inline h-4 w-4 mr-1" />
-                  Cliente
+                  Data Limite (Opcional)
                 </label>
-                {isEditing ? (
+                <input
+                  type="datetime-local"
+                  value={formData.dt_limite}
+                  onChange={(e) => setFormData(prev => ({ ...prev, dt_limite: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+
+              {/* Dias da Semana */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Dias de Trabalho
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {diasSemana.map((dia: { value: string; label: string }) => (
+                    <label key={dia.value} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.dias_trabalho.includes(dia.value)}
+                        onChange={() => handleDiaToggle(dia.value)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{dia.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dropdowns */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Cliente
+                  </label>
                   <select
                     value={formData.cliente_id}
                     onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value }))}
@@ -336,19 +290,12 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                       </option>
                     ))}
                   </select>
-                ) : (
-                  <p className="text-gray-900 dark:text-white px-3 py-2">
-                    {(vaga as any).cliente_nome || (vaga.cliente_id ? `Cliente #${vaga.cliente_id}` : 'Não definido')}
-                  </p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <MapPin className="inline h-4 w-4 mr-1" />
-                  Unidade
-                </label>
-                {isEditing ? (
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Unidade
+                  </label>
                   <select
                     value={formData.unidade_id}
                     onChange={(e) => setFormData(prev => ({ ...prev, unidade_id: e.target.value }))}
@@ -361,21 +308,14 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                       </option>
                     ))}
                   </select>
-                ) : (
-                  <p className="text-gray-900 dark:text-white px-3 py-2">
-                    {(vaga as any).unidade_nome || (vaga.unidade_id ? `Unidade #${vaga.unidade_id}` : 'Não definido')}
-                  </p>
-                )}
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <User className="inline h-4 w-4 mr-1" />
-                  Operação
-                </label>
-                {isEditing ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Operação
+                  </label>
                   <select
                     value={formData.operacao_id}
                     onChange={(e) => setFormData(prev => ({ ...prev, operacao_id: e.target.value }))}
@@ -388,18 +328,12 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                       </option>
                     ))}
                   </select>
-                ) : (
-                  <p className="text-gray-900 dark:text-white px-3 py-2">
-                    {(vaga as any).operacao_nome || (vaga.operacao_id ? `Operação #${vaga.operacao_id}` : 'Não definido')}
-                  </p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Status
-                </label>
-                {isEditing ? (
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Status
+                  </label>
                   <select
                     value={formData.st_vaga_id}
                     onChange={(e) => setFormData(prev => ({ ...prev, st_vaga_id: e.target.value }))}
@@ -412,31 +346,139 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                       </option>
                     ))}
                   </select>
-                ) : (
-                  <p className="text-gray-900 dark:text-white px-3 py-2">
-                    {(vaga as any).status_nome || 'Aberta'}
-                  </p>
-                )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg"
+                >
+                  {loading ? 'Salvando...' : 'Salvar'}
+                </button>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg"
+                >
+                  Cancelar
+                </button>
               </div>
             </div>
-          </div>
+          ) : (
+            // Modo Visualização - Estilo do modal de motoristas
+            <div className="space-y-6">
+              {/* Informações Básicas */}
+              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                <div className="px-4 py-5 sm:px-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-gray-400" />
+                    Informações da Vaga
+                  </h3>
+                  <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                    Detalhes completos da vaga de trabalho.
+                  </p>
+                </div>
+                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                  <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Nome da Vaga
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {vaga.nome || 'Não informado'}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Descrição
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {vaga.descricao || 'Não informado'}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Quantidade de Vagas
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {vaga.quantidade || 'Não informado'}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Horário de Trabalho
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {vaga.horario || 'Não informado'}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Dias de Trabalho
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {getDiasTrabalhoFormatted()}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Data Limite
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {formatDate(vaga.dt_limite?.toString() || null)}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
 
-          {/* Action Buttons */}
-          {isEditing && (
-            <div className="flex space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={handleSave}
-                disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg"
-              >
-                {loading ? 'Salvando...' : 'Salvar'}
-              </button>
-              <button
-                onClick={() => setIsEditing(false)}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg"
-              >
-                Cancelar
-              </button>
+              {/* Informações de Relacionamento */}
+              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                <div className="px-4 py-5 sm:px-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <Building className="w-5 h-5 text-gray-400" />
+                    Cliente e Unidade
+                  </h3>
+                </div>
+                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                  <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Cliente
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {(vaga as any).cliente_nome || (vaga.cliente_id ? `Cliente #${vaga.cliente_id}` : 'Não informado')}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Unidade
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {(vaga as any).unidade_nome || (vaga.unidade_id ? `Unidade #${vaga.unidade_id}` : 'Não informado')}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Operação
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {(vaga as any).operacao_nome || (vaga.operacao_id ? `Operação #${vaga.operacao_id}` : 'Não informado')}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Status
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {(vaga as any).status_nome || 'Aberta'}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
             </div>
           )}
         </div>
