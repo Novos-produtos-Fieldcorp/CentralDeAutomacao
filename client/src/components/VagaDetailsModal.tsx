@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Edit2, Calendar, Users, Building, Clock, MapPin, User } from 'lucide-react';
+import { X, Edit2, Calendar, Users, Building, Clock, MapPin, User, Briefcase } from 'lucide-react';
 import { Vaga } from '@shared/schema';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -20,21 +20,22 @@ interface DropdownData {
   statusVagas: Array<{ id: number; status_vaga: string }>;
 }
 
-const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClose, onUpdate }) => {
+const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, isOpen, onClose, onUpdate }) => {
   const { accountId } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [currentVaga, setCurrentVaga] = useState(initialVaga);
   const [formData, setFormData] = useState({
-    nome: vaga.nome || '',
-    descricao: vaga.descricao || '',
-    quantidade: vaga.quantidade || 0,
-    dias_trabalho: Array.isArray(vaga.dias_trabalho) ? vaga.dias_trabalho : 
-                   typeof vaga.dias_trabalho === 'string' ? JSON.parse(vaga.dias_trabalho || '[]') : [],
-    horario: vaga.horario || '',
-    dt_limite: vaga.dt_limite ? new Date(vaga.dt_limite).toISOString().slice(0, 16) : '',
-    unidade_id: vaga.unidade_id || '',
-    operacao_id: vaga.operacao_id || '',
-    st_vaga_id: vaga.st_vaga_id || '',
-    cliente_id: vaga.cliente_id || '',
+    nome: initialVaga.nome || '',
+    descricao: initialVaga.descricao || '',
+    quantidade: initialVaga.quantidade || 0,
+    dias_trabalho: Array.isArray(initialVaga.dias_trabalho) ? initialVaga.dias_trabalho : 
+                   typeof initialVaga.dias_trabalho === 'string' ? JSON.parse(initialVaga.dias_trabalho || '[]') : [],
+    horario: initialVaga.horario || '',
+    dt_limite: initialVaga.dt_limite ? new Date(initialVaga.dt_limite).toISOString().slice(0, 16) : '',
+    unidade_id: initialVaga.unidade_id || '',
+    operacao_id: initialVaga.operacao_id || '',
+    st_vaga_id: initialVaga.st_vaga_id || '',
+    cliente_id: initialVaga.cliente_id || '',
   });
   const [dropdownData, setDropdownData] = useState<DropdownData>({
     clientes: [],
@@ -59,6 +60,24 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
       fetchDropdownData();
     }
   }, [isOpen, isEditing, accountId]);
+
+  // Atualizar dados quando a vaga inicial mudar
+  useEffect(() => {
+    setCurrentVaga(initialVaga);
+    setFormData({
+      nome: initialVaga.nome || '',
+      descricao: initialVaga.descricao || '',
+      quantidade: initialVaga.quantidade || 0,
+      dias_trabalho: Array.isArray(initialVaga.dias_trabalho) ? initialVaga.dias_trabalho : 
+                     typeof initialVaga.dias_trabalho === 'string' ? JSON.parse(initialVaga.dias_trabalho || '[]') : [],
+      horario: initialVaga.horario || '',
+      dt_limite: initialVaga.dt_limite ? new Date(initialVaga.dt_limite).toISOString().slice(0, 16) : '',
+      unidade_id: initialVaga.unidade_id || '',
+      operacao_id: initialVaga.operacao_id || '',
+      st_vaga_id: initialVaga.st_vaga_id || '',
+      cliente_id: initialVaga.cliente_id || '',
+    });
+  }, [initialVaga]);
 
   const fetchDropdownData = async () => {
     if (!accountId) return;
@@ -109,13 +128,16 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
         dt_limite: formData.dt_limite || null
       };
 
-      const response = await fetch(`/api/vagas/${vaga.id}`, {
+      const response = await fetch(`/api/vagas/${currentVaga.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
       });
 
       if (response.ok) {
+        const updatedVaga = await response.json();
+        // Atualizar a vaga local com os dados mais recentes
+        setCurrentVaga(updatedVaga.vaga || { ...currentVaga, ...updateData });
         toast.success('Vaga atualizada com sucesso!');
         setIsEditing(false);
         onUpdate();
@@ -141,8 +163,8 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
   };
 
   const getDiasTrabalhoFormatted = () => {
-    const dias = Array.isArray(vaga.dias_trabalho) ? vaga.dias_trabalho : 
-                 typeof vaga.dias_trabalho === 'string' ? JSON.parse(vaga.dias_trabalho || '[]') : [];
+    const dias = Array.isArray(currentVaga.dias_trabalho) ? currentVaga.dias_trabalho : 
+                 typeof currentVaga.dias_trabalho === 'string' ? JSON.parse(currentVaga.dias_trabalho || '[]') : [];
     
     if (dias.length === 0) return 'Não definido';
     
@@ -184,268 +206,329 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
         {/* Content */}
         <div className="p-6 space-y-6">
           {isEditing ? (
-            // Edit Form
-            <div className="space-y-4">
-              {/* Nome */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Nome da Vaga
-                </label>
-                <input
-                  type="text"
-                  value={formData.nome}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              {/* Descrição */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Descrição
-                </label>
-                <textarea
-                  value={formData.descricao}
-                  onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              {/* Quantidade e Horário */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Quantidade
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.quantidade}
-                    onChange={(e) => setFormData(prev => ({ ...prev, quantidade: Number(e.target.value) }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  />
+            // Modo Edição - Estilo do modal de motoristas
+            <div className="space-y-6">
+              {/* Informações Básicas - Card Editável */}
+              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                <div className="px-4 py-5 sm:px-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-gray-400" />
+                    Informações da Vaga
+                  </h3>
+                  <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                    Edite os detalhes da vaga de trabalho.
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Horário
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.horario}
-                    onChange={(e) => setFormData(prev => ({ ...prev, horario: e.target.value }))}
-                    placeholder="Ex: 08:00 às 17:00"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              {/* Dias da Semana */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Dias de Trabalho
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {diasSemana.map((dia: { value: string; label: string }) => (
-                    <label key={dia.value} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.dias_trabalho.includes(dia.value)}
-                        onChange={() => handleDiaToggle(dia.value)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{dia.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Data Limite */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Data Limite (Opcional)
-                </label>
-                <input
-                  type="datetime-local"
-                  value={formData.dt_limite}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dt_limite: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              {/* Dropdowns */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Cliente
-                  </label>
-                  <select
-                    value={formData.cliente_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">Selecione um cliente</option>
-                    {dropdownData.clientes.map((cliente) => (
-                      <option key={cliente.cliente_id} value={cliente.cliente_id}>
-                        {cliente.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Unidade
-                  </label>
-                  <select
-                    value={formData.unidade_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, unidade_id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">Selecione uma unidade</option>
-                    {dropdownData.unidades.map((unidade) => (
-                      <option key={unidade.id} value={unidade.id}>
-                        {unidade.unidade}
-                      </option>
-                    ))}
-                  </select>
+                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                  <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                        Nome da Vaga
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <input
+                          type="text"
+                          value={formData.nome}
+                          onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        />
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Descrição
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <textarea
+                          value={formData.descricao}
+                          onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        />
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Quantidade de Vagas
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <input
+                          type="number"
+                          value={formData.quantidade}
+                          onChange={(e) => setFormData(prev => ({ ...prev, quantidade: Number(e.target.value) }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        />
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Horário de Trabalho
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <input
+                          type="text"
+                          value={formData.horario}
+                          onChange={(e) => setFormData(prev => ({ ...prev, horario: e.target.value }))}
+                          placeholder="Ex: 08:00 às 17:00"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        />
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Dias de Trabalho
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <div className="flex flex-wrap gap-2">
+                          {diasSemana.map((dia: { value: string; label: string }) => (
+                            <label key={dia.value} className="flex items-center space-x-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.dias_trabalho.includes(dia.value)}
+                                onChange={() => handleDiaToggle(dia.value)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">{dia.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Data Limite
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <input
+                          type="datetime-local"
+                          value={formData.dt_limite}
+                          onChange={(e) => setFormData(prev => ({ ...prev, dt_limite: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        />
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Operação
-                  </label>
-                  <select
-                    value={formData.operacao_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, operacao_id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">Selecione uma operação</option>
-                    {dropdownData.operacoes.map((operacao) => (
-                      <option key={operacao.id} value={operacao.id}>
-                        {operacao.operacao}
-                      </option>
-                    ))}
-                  </select>
+              {/* Informações de Relacionamento - Card Editável */}
+              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                <div className="px-4 py-5 sm:px-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <Building className="w-5 h-5 text-gray-400" />
+                    Cliente e Unidade
+                  </h3>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Status
-                  </label>
-                  <select
-                    value={formData.st_vaga_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, st_vaga_id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">Selecione um status</option>
-                    {dropdownData.statusVagas.map((status) => (
-                      <option key={status.id} value={status.id}>
-                        {status.status_vaga}
-                      </option>
-                    ))}
-                  </select>
+                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                  <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Cliente
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <select
+                          value={formData.cliente_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        >
+                          <option value="">Selecione um cliente</option>
+                          {dropdownData.clientes.map((cliente) => (
+                            <option key={cliente.cliente_id} value={cliente.cliente_id}>
+                              {cliente.nome}
+                            </option>
+                          ))}
+                        </select>
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Unidade
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <select
+                          value={formData.unidade_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, unidade_id: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        >
+                          <option value="">Selecione uma unidade</option>
+                          {dropdownData.unidades.map((unidade) => (
+                            <option key={unidade.id} value={unidade.id}>
+                              {unidade.unidade}
+                            </option>
+                          ))}
+                        </select>
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Operação
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <select
+                          value={formData.operacao_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, operacao_id: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        >
+                          <option value="">Selecione uma operação</option>
+                          {dropdownData.operacoes.map((operacao) => (
+                            <option key={operacao.id} value={operacao.id}>
+                              {operacao.operacao}
+                            </option>
+                          ))}
+                        </select>
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Status
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <select
+                          value={formData.st_vaga_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, st_vaga_id: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        >
+                          <option value="">Selecione um status</option>
+                          {dropdownData.statusVagas.map((status) => (
+                            <option key={status.id} value={status.id}>
+                              {status.status_vaga}
+                            </option>
+                          ))}
+                        </select>
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex space-x-3 pt-4">
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                >
+                  Cancelar
+                </button>
                 <button
                   onClick={handleSave}
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg"
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
                 >
-                  {loading ? 'Salvando...' : 'Salvar'}
-                </button>
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg"
-                >
-                  Cancelar
+                  {loading ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
               </div>
             </div>
           ) : (
-            // View Mode
-            <div className="space-y-4">
-              {/* Nome e Descrição */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  {vaga.nome || 'Sem nome'}
-                </h3>
-                {vaga.descricao && (
-                  <p className="text-gray-600 dark:text-gray-400">{vaga.descricao}</p>
-                )}
-              </div>
-
-              {/* Informações principais */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-5 w-5 text-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Quantidade:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {vaga.quantidade || 'Não definido'}
-                  </span>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-5 w-5 text-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Horário:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {vaga.horario || 'Não definido'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-gray-400" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">Data Limite:</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {formatDate(vaga.dt_limite?.toString() || null)}
-                </span>
-              </div>
-
-              <div className="flex items-start space-x-2">
-                <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Dias de Trabalho:</span>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {getDiasTrabalhoFormatted()}
+            // Modo Visualização - Estilo do modal de motoristas
+            <div className="space-y-6">
+              {/* Informações Básicas */}
+              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                <div className="px-4 py-5 sm:px-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-gray-400" />
+                    Informações da Vaga
+                  </h3>
+                  <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                    Detalhes completos da vaga de trabalho.
                   </p>
                 </div>
+                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                  <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Nome da Vaga
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {currentVaga.nome || 'Não informado'}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Descrição
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {currentVaga.descricao || 'Não informado'}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Quantidade de Vagas
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {currentVaga.quantidade || 'Não informado'}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Horário de Trabalho
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {currentVaga.horario || 'Não informado'}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Dias de Trabalho
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {getDiasTrabalhoFormatted()}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Data Limite
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {formatDate(currentVaga.dt_limite?.toString() || null)}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
               </div>
 
-              {/* Informações de relacionamento */}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">
-                  Informações Adicionais
-                </h4>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Building className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Cliente:</span>
-                    <span className="text-sm text-gray-900 dark:text-white">
-                      {vaga.cliente_id ? `Cliente #${vaga.cliente_id}` : 'Não definido'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Unidade:</span>
-                    <span className="text-sm text-gray-900 dark:text-white">
-                      {vaga.unidade_id ? `Unidade #${vaga.unidade_id}` : 'Não definido'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <User className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Operação:</span>
-                    <span className="text-sm text-gray-900 dark:text-white">
-                      {vaga.operacao_id ? `Operação #${vaga.operacao_id}` : 'Não definido'}
-                    </span>
-                  </div>
+              {/* Informações de Relacionamento */}
+              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                <div className="px-4 py-5 sm:px-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <Building className="w-5 h-5 text-gray-400" />
+                    Cliente e Unidade
+                  </h3>
+                </div>
+                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                  <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Cliente
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {(currentVaga as any).cliente_nome || (currentVaga.cliente_id ? `Cliente #${currentVaga.cliente_id}` : 'Não informado')}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Unidade
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {(currentVaga as any).unidade_nome || (currentVaga.unidade_id ? `Unidade #${currentVaga.unidade_id}` : 'Não informado')}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Operação
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {(currentVaga as any).operacao_nome || (currentVaga.operacao_id ? `Operação #${currentVaga.operacao_id}` : 'Não informado')}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Status
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {(currentVaga as any).status_nome || 'Aberta'}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
               </div>
             </div>

@@ -364,37 +364,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { data: vagas, error: vagasError } = await supabase
         .from('vaga')
         .select(`
-          id,
-          nome,
-          descricao,
-          quantidade,
-          dias_trabalho,
-          horario,
-          dt_limite,
-          created_at
+          *,
+          cliente:cliente_id(cliente_id, nome),
+          unidade:unidade_id(id, unidade),
+          operacao:operacao_id(id, operacao),
+          status:st_vaga_id(id, status_vaga)
         `)
         .eq('company_id', companyId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (vagasError) {
         console.error('Supabase vagas error:', vagasError);
         return res.status(500).json({ error: 'Failed to fetch vagas' });
       }
 
-      // Transform data to match expected format
-      const transformedVagas = vagas?.map(vaga => ({
-        id: vaga.id,
-        nome: vaga.nome,
-        descricao: vaga.descricao,
-        quantidade: vaga.quantidade,
-        dias_trabalho: vaga.dias_trabalho,
-        horario: vaga.horario,
-        dt_limite: vaga.dt_limite,
-        created_at: vaga.created_at,
-        unidade_nome: null, // Will be populated when relations are set up
-        operacao_nome: null,
-        status_vaga: null,
-        cliente_nome: null
+      // Transform data to match expected format with relations
+      const transformedVagas = vagas?.map((vaga: any) => ({
+        ...vaga,
+        cliente_nome: vaga.cliente?.nome || null,
+        unidade_nome: vaga.unidade?.unidade || null,
+        operacao_nome: vaga.operacao?.operacao || null,
+        status_nome: vaga.status?.status_vaga || null
       })) || [];
 
       console.log('Found vagas:', transformedVagas.length);
