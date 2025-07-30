@@ -22,10 +22,6 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   db: {
     schema: 'public',
   },
-  httpOptions: {
-    timeout: 60000, // 60 seconds
-    retries: 3,
-  },
 });
 
 // Test Supabase connection function
