@@ -469,6 +469,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete vaga - using Supabase
+  app.delete('/api/vagas/:id', async (req, res) => {
+    try {
+      const vagaId = req.params.id;
+      console.log('Deleting vaga with id:', vagaId);
+      
+      // Delete from Supabase
+      const { error: deleteError } = await supabase
+        .from('vaga')
+        .delete()
+        .eq('id', vagaId);
+      
+      if (deleteError) {
+        console.error('Supabase delete error:', deleteError);
+        return res.status(500).json({ error: 'Failed to delete vaga', details: deleteError.message });
+      }
+      
+      console.log('Vaga deleted successfully');
+      res.json({ message: 'Vaga deletada com sucesso' });
+    } catch (error) {
+      console.error('Error deleting vaga:', error);
+      res.status(500).json({ error: 'Erro ao deletar vaga', details: error instanceof Error ? error.message : 'Erro desconhecido' });
+    }
+  });
+
   // Get supporting data for dropdowns - using Supabase
   app.get('/api/clientes/:accountId', async (req, res) => {
     try {

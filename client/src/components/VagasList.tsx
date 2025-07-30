@@ -48,6 +48,31 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
     }
   };
 
+  const handleDeleteVaga = async (vagaId: number) => {
+    if (!confirm('Tem certeza que deseja deletar esta vaga?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/vagas/${vagaId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Refresh the list and dashboard
+        await fetchVagas();
+        onRefresh();
+        alert('Vaga deletada com sucesso!');
+      } else {
+        const errorData = await response.json();
+        alert(`Erro ao deletar vaga: ${errorData.error || 'Erro desconhecido'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting vaga:', error);
+      alert('Erro ao deletar vaga');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'aberta':
@@ -191,6 +216,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
                         <Edit2 size={18} />
                       </button>
                       <button
+                        onClick={() => handleDeleteVaga(vaga.id)}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                         title="Excluir"
                       >
