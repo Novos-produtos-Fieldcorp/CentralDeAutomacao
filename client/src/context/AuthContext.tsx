@@ -58,11 +58,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAccountId(currentAccountId);
 
         try {
-          // For testing, bypass Supabase auth and use the backend API that already works
-          if (currentAccountId === '6') {
+          // For testing, accept multiple account_ids
+          const validAccountIds = ['6', '20', '1', '2', '3', '4', '5']; // Add more as needed
+          
+          if (validAccountIds.includes(currentAccountId)) {
             setIsAuthenticated(true);
-            setCompanyId(1); // We know account_id 6 maps to company_id 1
-            console.log('Auth bypassed for testing - account_id:', currentAccountId, 'company_id:', 1);
+            // Map known account_ids to company_ids
+            const accountToCompanyMap: { [key: string]: number } = {
+              '6': 1,
+              '20': 1, // Assuming account_id 20 also maps to company_id 1 for now
+              '1': 1,
+              '2': 1,
+              '3': 1,
+              '4': 1,
+              '5': 1
+            };
+            
+            const mappedCompanyId = accountToCompanyMap[currentAccountId] || 1;
+            setCompanyId(mappedCompanyId);
+            console.log('Auth bypassed for testing - account_id:', currentAccountId, 'company_id:', mappedCompanyId);
           } else {
             console.warn('Unknown account_id:', currentAccountId);
             setIsAuthenticated(false);
@@ -70,8 +84,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (fetchError) {
           console.error('Auth check failed:', fetchError);
-          // For testing, still allow access with account_id=6
-          if (currentAccountId === '6') {
+          // For testing, still allow access with valid account_ids
+          const validAccountIds = ['6', '20', '1', '2', '3', '4', '5'];
+          if (validAccountIds.includes(currentAccountId)) {
             setIsAuthenticated(true);
             setCompanyId(1);
           } else {
