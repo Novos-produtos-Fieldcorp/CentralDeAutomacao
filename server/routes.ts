@@ -515,15 +515,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/unidades/:companyId', async (req, res) => {
+  app.get('/api/unidades/:accountId', async (req, res) => {
     try {
-      const { companyId } = req.params;
+      const { accountId } = req.params;
+      
+      // Get company_id from account_id
+      const companyId = await getCompanyIdFromAccount(accountId);
+      if (!companyId) {
+        return res.json([]);
+      }
       
       // Get unidades from Supabase
       const { data: unidades, error: unidadesError } = await supabase
         .from('unidade')
         .select('id, unidade, company_id')
-        .eq('company_id', Number(companyId));
+        .eq('company_id', companyId);
 
       if (unidadesError) {
         console.error('Supabase unidades error:', unidadesError);
@@ -573,15 +579,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/operacoes/:companyId', async (req, res) => {
+  app.get('/api/operacoes/:accountId', async (req, res) => {
     try {
-      const { companyId } = req.params;
+      const { accountId } = req.params;
+      
+      // Get company_id from account_id
+      const companyId = await getCompanyIdFromAccount(accountId);
+      if (!companyId) {
+        return res.json([]);
+      }
       
       // Get operacoes from Supabase
       const { data: operacoes, error: operacoesError } = await supabase
         .from('operacao')
         .select('id, operacao, company_id')
-        .eq('company_id', Number(companyId));
+        .eq('company_id', companyId);
 
       if (operacoesError) {
         console.error('Supabase operacoes error:', operacoesError);
@@ -631,15 +643,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/status-vagas/:companyId', async (req, res) => {
+  app.get('/api/status-vagas/:accountId', async (req, res) => {
     try {
-      const { companyId } = req.params;
+      const { accountId } = req.params;
+      
+      // Get company_id from account_id
+      const companyId = await getCompanyIdFromAccount(accountId);
+      if (!companyId) {
+        return res.json([
+          { id: 1, status_vaga: 'Aberta', company_id: 1 },
+          { id: 2, status_vaga: 'Fechada', company_id: 1 },
+          { id: 3, status_vaga: 'Pausada', company_id: 1 }
+        ]);
+      }
       
       // Get status vagas from Supabase
       const { data: statusVagas, error: statusError } = await supabase
         .from('st_vaga')
         .select('id, status_vaga, company_id')
-        .eq('company_id', Number(companyId));
+        .eq('company_id', companyId);
 
       if (statusError) {
         console.error('Supabase status vagas error:', statusError);
@@ -649,9 +671,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If no custom status found, return default ones
       if (!statusVagas || statusVagas.length === 0) {
         res.json([
-          { id: 1, status_vaga: 'Aberta', company_id: Number(companyId) },
-          { id: 2, status_vaga: 'Fechada', company_id: Number(companyId) },
-          { id: 3, status_vaga: 'Pausada', company_id: Number(companyId) }
+          { id: 1, status_vaga: 'Aberta', company_id: companyId },
+          { id: 2, status_vaga: 'Fechada', company_id: companyId },
+          { id: 3, status_vaga: 'Pausada', company_id: companyId }
         ]);
       } else {
         res.json(statusVagas);
