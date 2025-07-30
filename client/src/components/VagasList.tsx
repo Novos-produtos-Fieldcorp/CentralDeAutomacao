@@ -5,6 +5,7 @@ import { Vaga } from '@shared/schema';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import VagaDetailsModal from './VagaDetailsModal';
 
 interface VagasListProps {
   onRefresh: () => void;
@@ -15,6 +16,8 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
   const [vagas, setVagas] = useState<Vaga[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedVaga, setSelectedVaga] = useState<Vaga | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchVagas = async () => {
     try {
@@ -236,16 +239,14 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
                       <button
+                        onClick={() => {
+                          setSelectedVaga(vaga);
+                          setIsModalOpen(true);
+                        }}
                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                         title="Visualizar"
                       >
                         <Eye size={18} />
-                      </button>
-                      <button
-                        className="text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300"
-                        title="Editar"
-                      >
-                        <Edit2 size={18} />
                       </button>
                       <button
                         onClick={() => handleDeleteVaga(vaga.id)}
@@ -261,6 +262,22 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
             </tbody>
           </table>
         </div>
+      )}
+      
+      {/* Modal de Detalhes/Edição */}
+      {selectedVaga && (
+        <VagaDetailsModal
+          vaga={selectedVaga}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedVaga(null);
+          }}
+          onUpdate={() => {
+            fetchVagas();
+            onRefresh();
+          }}
+        />
       )}
     </div>
   );
