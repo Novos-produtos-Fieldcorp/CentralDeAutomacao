@@ -58,35 +58,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAccountId(currentAccountId);
 
         try {
-          // For testing, accept multiple account_ids
-          const validAccountIds = ['6', '20', '1', '2', '3', '4', '5']; // Add more as needed
+          // Buscar a empresa real baseada no account_id
+          const response = await fetch(`/api/company/by-account/${currentAccountId}`);
           
-          if (validAccountIds.includes(currentAccountId)) {
+          if (response.ok) {
+            const companyData = await response.json();
             setIsAuthenticated(true);
-            // Map known account_ids to company_ids
-            const accountToCompanyMap: { [key: string]: number } = {
-              '6': 1,
-              '20': 1, // Assuming account_id 20 also maps to company_id 1 for now
-              '1': 1,
-              '2': 1,
-              '3': 1,
-              '4': 1,
-              '5': 1
-            };
-            
-            const mappedCompanyId = accountToCompanyMap[currentAccountId] || 1;
-            setCompanyId(mappedCompanyId);
-            console.log('Auth bypassed for testing - account_id:', currentAccountId, 'company_id:', mappedCompanyId);
+            setCompanyId(companyData.company_id);
+            console.log('Auth successful - account_id:', currentAccountId, 'company_id:', companyData.company_id, 'company:', companyData.razao_social);
           } else {
-            console.warn('Unknown account_id:', currentAccountId);
+            console.warn('Company not found for account_id:', currentAccountId);
             setIsAuthenticated(false);
             navigate('/unauthorized');
           }
         } catch (fetchError) {
           console.error('Auth check failed:', fetchError);
-          // For testing, still allow access with valid account_ids
-          const validAccountIds = ['6', '20', '1', '2', '3', '4', '5'];
-          if (validAccountIds.includes(currentAccountId)) {
+          // Fallback apenas para account_id=6 (para testes de desenvolvimento)
+          if (currentAccountId === '6') {
             setIsAuthenticated(true);
             setCompanyId(1);
           } else {
