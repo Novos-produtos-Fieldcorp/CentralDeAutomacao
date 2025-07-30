@@ -55,6 +55,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
+  // Rota para buscar empresa por account_id
+  app.get('/api/company/by-account/:accountId', async (req, res) => {
+    try {
+      const { accountId } = req.params;
+      console.log('Fetching company for account_id:', accountId);
+
+      const { data: companies, error } = await supabase
+        .from('company')
+        .select('*')
+        .eq('id_conta_wiseapp', accountId)
+        .limit(1);
+
+      if (error) {
+        console.error('Error fetching company:', error);
+        return res.status(500).json({ error: 'Erro ao buscar empresa' });
+      }
+
+      if (!companies || companies.length === 0) {
+        console.log('No company found for account_id:', accountId);
+        return res.status(404).json({ error: 'Empresa não encontrada' });
+      }
+
+      const company = companies[0];
+      console.log('Found company:', company);
+      
+      // Retornar dados no formato esperado pelo frontend
+      res.json({
+        company_id: company.company_id || company.id,
+        razao_social: company.nome, // usar 'nome' em vez de 'razao_social'
+        id_conta_wiseapp: company.id_conta_wiseapp
+      });
+    } catch (error) {
+      console.error('Error in company lookup:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
   // Proxy para API do WiseApp (Chat)
   app.all('/api/api/v1/*', async (req, res) => {
     try {
