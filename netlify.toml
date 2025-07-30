@@ -2,10 +2,12 @@
   command = "npm run build"
   publish = "dist/public"
 
+[build.environment]
+  NODE_VERSION = "18"
+
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
-  external_node_modules = ["@supabase/supabase-js"]
 
 [[redirects]]
   from = "/api/api/v1/*"
