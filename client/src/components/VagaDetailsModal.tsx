@@ -184,185 +184,215 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
         {/* Content */}
         <div className="p-6 space-y-6">
           {isEditing ? (
-            // Modo Edição - Formulário
-            <div className="space-y-4">
-              {/* Nome */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Nome da Vaga
-                </label>
-                <input
-                  type="text"
-                  value={formData.nome}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              {/* Descrição */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Descrição
-                </label>
-                <textarea
-                  value={formData.descricao}
-                  onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              {/* Quantidade e Horário */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Quantidade
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.quantidade}
-                    onChange={(e) => setFormData(prev => ({ ...prev, quantidade: Number(e.target.value) }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  />
+            // Modo Edição - Estilo do modal de motoristas
+            <div className="space-y-6">
+              {/* Informações Básicas - Card Editável */}
+              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                <div className="px-4 py-5 sm:px-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-gray-400" />
+                    Informações da Vaga
+                  </h3>
+                  <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                    Edite os detalhes da vaga de trabalho.
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Horário
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.horario}
-                    onChange={(e) => setFormData(prev => ({ ...prev, horario: e.target.value }))}
-                    placeholder="Ex: 08:00 às 17:00"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              {/* Data Limite */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Data Limite (Opcional)
-                </label>
-                <input
-                  type="datetime-local"
-                  value={formData.dt_limite}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dt_limite: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              {/* Dias da Semana */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Dias de Trabalho
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {diasSemana.map((dia: { value: string; label: string }) => (
-                    <label key={dia.value} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.dias_trabalho.includes(dia.value)}
-                        onChange={() => handleDiaToggle(dia.value)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{dia.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Dropdowns */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Cliente
-                  </label>
-                  <select
-                    value={formData.cliente_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">Selecione um cliente</option>
-                    {dropdownData.clientes.map((cliente) => (
-                      <option key={cliente.cliente_id} value={cliente.cliente_id}>
-                        {cliente.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Unidade
-                  </label>
-                  <select
-                    value={formData.unidade_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, unidade_id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">Selecione uma unidade</option>
-                    {dropdownData.unidades.map((unidade) => (
-                      <option key={unidade.id} value={unidade.id}>
-                        {unidade.unidade}
-                      </option>
-                    ))}
-                  </select>
+                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                  <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                        Nome da Vaga
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <input
+                          type="text"
+                          value={formData.nome}
+                          onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        />
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Descrição
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <textarea
+                          value={formData.descricao}
+                          onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        />
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Quantidade de Vagas
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <input
+                          type="number"
+                          value={formData.quantidade}
+                          onChange={(e) => setFormData(prev => ({ ...prev, quantidade: Number(e.target.value) }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        />
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Horário de Trabalho
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <input
+                          type="text"
+                          value={formData.horario}
+                          onChange={(e) => setFormData(prev => ({ ...prev, horario: e.target.value }))}
+                          placeholder="Ex: 08:00 às 17:00"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        />
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Dias de Trabalho
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <div className="flex flex-wrap gap-2">
+                          {diasSemana.map((dia: { value: string; label: string }) => (
+                            <label key={dia.value} className="flex items-center space-x-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.dias_trabalho.includes(dia.value)}
+                                onChange={() => handleDiaToggle(dia.value)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">{dia.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Data Limite
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <input
+                          type="datetime-local"
+                          value={formData.dt_limite}
+                          onChange={(e) => setFormData(prev => ({ ...prev, dt_limite: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        />
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Operação
-                  </label>
-                  <select
-                    value={formData.operacao_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, operacao_id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">Selecione uma operação</option>
-                    {dropdownData.operacoes.map((operacao) => (
-                      <option key={operacao.id} value={operacao.id}>
-                        {operacao.operacao}
-                      </option>
-                    ))}
-                  </select>
+              {/* Informações de Relacionamento - Card Editável */}
+              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                <div className="px-4 py-5 sm:px-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <Building className="w-5 h-5 text-gray-400" />
+                    Cliente e Unidade
+                  </h3>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Status
-                  </label>
-                  <select
-                    value={formData.st_vaga_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, st_vaga_id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">Selecione um status</option>
-                    {dropdownData.statusVagas.map((status) => (
-                      <option key={status.id} value={status.id}>
-                        {status.status_vaga}
-                      </option>
-                    ))}
-                  </select>
+                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                  <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Cliente
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <select
+                          value={formData.cliente_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        >
+                          <option value="">Selecione um cliente</option>
+                          {dropdownData.clientes.map((cliente) => (
+                            <option key={cliente.cliente_id} value={cliente.cliente_id}>
+                              {cliente.nome}
+                            </option>
+                          ))}
+                        </select>
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Unidade
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <select
+                          value={formData.unidade_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, unidade_id: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        >
+                          <option value="">Selecione uma unidade</option>
+                          {dropdownData.unidades.map((unidade) => (
+                            <option key={unidade.id} value={unidade.id}>
+                              {unidade.unidade}
+                            </option>
+                          ))}
+                        </select>
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Operação
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <select
+                          value={formData.operacao_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, operacao_id: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        >
+                          <option value="">Selecione uma operação</option>
+                          {dropdownData.operacoes.map((operacao) => (
+                            <option key={operacao.id} value={operacao.id}>
+                              {operacao.operacao}
+                            </option>
+                          ))}
+                        </select>
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Status
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <select
+                          value={formData.st_vaga_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, st_vaga_id: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        >
+                          <option value="">Selecione um status</option>
+                          {dropdownData.statusVagas.map((status) => (
+                            <option key={status.id} value={status.id}>
+                              {status.status_vaga}
+                            </option>
+                          ))}
+                        </select>
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex space-x-3 pt-4">
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                >
+                  Cancelar
+                </button>
                 <button
                   onClick={handleSave}
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg"
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
                 >
-                  {loading ? 'Salvando...' : 'Salvar'}
-                </button>
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg"
-                >
-                  Cancelar
+                  {loading ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
               </div>
             </div>
