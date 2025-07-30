@@ -23,6 +23,31 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   }
 });
 
+// Helper function to get company_id from account_id
+async function getCompanyIdFromAccount(accountId: string): Promise<number | null> {
+  try {
+    const { data: companies, error } = await supabase
+      .from('company')
+      .select('company_id')
+      .eq('id_conta_wiseapp', accountId)
+      .limit(1);
+
+    if (error) {
+      console.error('Error fetching company:', error);
+      return null;
+    }
+
+    if (!companies || companies.length === 0) {
+      return null;
+    }
+
+    return companies[0].company_id;
+  } catch (error) {
+    console.error('Error in getCompanyIdFromAccount:', error);
+    return null;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
   // prefix all routes with /api
@@ -520,12 +545,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Nome da unidade e company_id são obrigatórios' });
       }
 
+      // Resolve the actual company_id from the account mapping
+      const actualCompanyId = await getCompanyIdFromAccount(String(company_id));
+      if (!actualCompanyId) {
+        return res.status(404).json({ error: 'Company not found for this account' });
+      }
+
       // Insert into Supabase
       const { data: newUnidade, error: insertError } = await supabase
         .from('unidade')
         .insert({
           unidade: unidadeName,
-          company_id: Number(company_id)
+          company_id: actualCompanyId
         })
         .select('id, unidade, company_id')
         .single();
@@ -572,12 +603,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Nome da operação e company_id são obrigatórios' });
       }
 
+      // Resolve the actual company_id from the account mapping
+      const actualCompanyId = await getCompanyIdFromAccount(String(company_id));
+      if (!actualCompanyId) {
+        return res.status(404).json({ error: 'Company not found for this account' });
+      }
+
       // Insert into Supabase
       const { data: newOperacao, error: insertError } = await supabase
         .from('operacao')
         .insert({
           operacao: operacaoName,
-          company_id: Number(company_id)
+          company_id: actualCompanyId
         })
         .select('id, operacao, company_id')
         .single();
@@ -633,12 +670,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Nome do status e company_id são obrigatórios' });
       }
 
+      // Resolve the actual company_id from the account mapping
+      const actualCompanyId = await getCompanyIdFromAccount(String(company_id));
+      if (!actualCompanyId) {
+        return res.status(404).json({ error: 'Company not found for this account' });
+      }
+
       // Insert into Supabase
       const { data: newStatus, error: insertError } = await supabase
         .from('st_vaga')
         .insert({
           status_vaga: status_vaga,
-          company_id: Number(company_id)
+          company_id: actualCompanyId
         })
         .select('id, status_vaga, company_id')
         .single();
