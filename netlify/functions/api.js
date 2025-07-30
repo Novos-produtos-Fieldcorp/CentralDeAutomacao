@@ -172,6 +172,349 @@ export const handler = async (event, context) => {
       }
     }
 
+    // Rotas para o sistema de vagas
+    if (path.match(/^\/vagas\/dashboard\/(.+)$/) && method === 'GET') {
+      const accountId = path.match(/^\/vagas\/dashboard\/(.+)$/)[1];
+      console.log('Netlify: Fetching vagas dashboard for account:', accountId);
+      
+      try {
+        // Mapear account_id para company_id
+        const { data: companies } = await supabase
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', accountId)
+          .limit(1);
+
+        if (!companies || companies.length === 0) {
+          return { statusCode: 404, headers, body: JSON.stringify({ error: 'Company not found' }) };
+        }
+
+        const companyId = companies[0].company_id;
+
+        // Buscar estatísticas das vagas
+        const { data: vagas } = await supabase
+          .from('vaga')
+          .select('*')
+          .eq('company_id', companyId);
+
+        const totalVagas = vagas ? vagas.length : 0;
+        const vagasAbertas = vagas ? vagas.filter(v => !v.st_vaga_id || v.st_vaga_id === 2).length : 0;
+        const vagasFechadas = vagas ? vagas.filter(v => v.st_vaga_id === 1).length : 0;
+        const vagasVencendo = vagas ? vagas.filter(v => {
+          if (!v.dt_limite) return false;
+          const hoje = new Date();
+          const limite = new Date(v.dt_limite);
+          const diffTime = limite.getTime() - hoje.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays <= 7 && diffDays >= 0;
+        }).length : 0;
+
+        const dashboardData = { totalVagas, vagasAbertas, vagasFechadas, vagasVencendo };
+        
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(dashboardData)
+        };
+      } catch (error) {
+        console.error('Netlify: Error fetching vagas dashboard:', error);
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erro interno' }) };
+      }
+    }
+
+    // Rota para listar vagas
+    if (path.match(/^\/vagas\/(.+)$/) && method === 'GET') {
+      const accountId = path.match(/^\/vagas\/(.+)$/)[1];
+      
+      try {
+        const { data: companies } = await supabase
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', accountId)
+          .limit(1);
+
+        if (!companies || companies.length === 0) {
+          return { statusCode: 404, headers, body: JSON.stringify({ error: 'Company not found' }) };
+        }
+
+        const companyId = companies[0].company_id;
+
+        const { data: vagas } = await supabase
+          .from('vaga')
+          .select(`
+            *,
+            cliente:cliente_id(nome),
+            unidade:unidade_id(unidade),
+            operacao:operacao_id(operacao),
+            status:st_vaga_id(status_vaga)
+          `)
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: false });
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(vagas || [])
+        };
+      } catch (error) {
+        console.error('Netlify: Error fetching vagas:', error);
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erro interno' }) };
+      }
+    }
+
+    // Rota para criar vaga
+    if (path === '/vagas' && method === 'POST') {
+      try {
+        const { data: vaga, error } = await supabase
+          .from('vaga')
+          .insert([body])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Netlify: Error creating vaga:', error);
+          return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erro ao criar vaga' }) };
+        }
+
+        return {
+          statusCode: 201,
+          headers,
+          body: JSON.stringify({ message: 'Vaga criada com sucesso', vaga })
+        };
+      } catch (error) {
+        console.error('Netlify: Error in create vaga:', error);
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erro interno' }) };
+      }
+    }
+
+    // Rota para atualizar vaga
+    if (path.match(/^\/vagas\/(\d+)$/) && method === 'PUT') {
+      const vagaId = path.match(/^\/vagas\/(\d+)$/)[1];
+      
+      try {
+        const { data: vaga, error } = await supabase
+          .from('vaga')
+          .update(body)
+          .eq('id', vagaId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Netlify: Error updating vaga:', error);
+          return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erro ao atualizar vaga' }) };
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ message: 'Vaga atualizada com sucesso', vaga })
+        };
+      } catch (error) {
+        console.error('Netlify: Error in update vaga:', error);
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erro interno' }) };
+      }
+    }
+
+    // Rotas para clientes, unidades, operações e status
+    if (path.match(/^\/clientes\/(.+)$/) && method === 'GET') {
+      const accountId = path.match(/^\/clientes\/(.+)$/)[1];
+      
+      try {
+        const { data: companies } = await supabase
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', accountId)
+          .limit(1);
+
+        if (!companies || companies.length === 0) {
+          return { statusCode: 404, headers, body: JSON.stringify([]) };
+        }
+
+        const companyId = companies[0].company_id;
+
+        const { data: clientes } = await supabase
+          .from('cliente')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('nome');
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(clientes || [])
+        };
+      } catch (error) {
+        console.error('Netlify: Error fetching clientes:', error);
+        return { statusCode: 500, headers, body: JSON.stringify([]) };
+      }
+    }
+
+    if (path.match(/^\/unidades\/(.+)$/) && method === 'GET') {
+      const accountId = path.match(/^\/unidades\/(.+)$/)[1];
+      
+      try {
+        const { data: companies } = await supabase
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', accountId)
+          .limit(1);
+
+        if (!companies || companies.length === 0) {
+          return { statusCode: 404, headers, body: JSON.stringify([]) };
+        }
+
+        const companyId = companies[0].company_id;
+
+        const { data: unidades } = await supabase
+          .from('unidade')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('unidade');
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(unidades || [])
+        };
+      } catch (error) {
+        console.error('Netlify: Error fetching unidades:', error);
+        return { statusCode: 500, headers, body: JSON.stringify([]) };
+      }
+    }
+
+    if (path.match(/^\/operacoes\/(.+)$/) && method === 'GET') {
+      const accountId = path.match(/^\/operacoes\/(.+)$/)[1];
+      
+      try {
+        const { data: companies } = await supabase
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', accountId)
+          .limit(1);
+
+        if (!companies || companies.length === 0) {
+          return { statusCode: 404, headers, body: JSON.stringify([]) };
+        }
+
+        const companyId = companies[0].company_id;
+
+        const { data: operacoes } = await supabase
+          .from('operacao')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('operacao');
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(operacoes || [])
+        };
+      } catch (error) {
+        console.error('Netlify: Error fetching operacoes:', error);
+        return { statusCode: 500, headers, body: JSON.stringify([]) };
+      }
+    }
+
+    if (path.match(/^\/status-vagas\/(.+)$/) && method === 'GET') {
+      const accountId = path.match(/^\/status-vagas\/(.+)$/)[1];
+      
+      try {
+        const { data: companies } = await supabase
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', accountId)
+          .limit(1);
+
+        if (!companies || companies.length === 0) {
+          return { statusCode: 404, headers, body: JSON.stringify([]) };
+        }
+
+        const companyId = companies[0].company_id;
+
+        const { data: statusVagas } = await supabase
+          .from('st_vaga')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('status_vaga');
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(statusVagas || [])
+        };
+      } catch (error) {
+        console.error('Netlify: Error fetching status vagas:', error);
+        return { statusCode: 500, headers, body: JSON.stringify([]) };
+      }
+    }
+
+    // Rotas POST para criar unidades, operações e status inline
+    if (path === '/unidades' && method === 'POST') {
+      try {
+        const { data: unidade, error } = await supabase
+          .from('unidade')
+          .insert([body])
+          .select()
+          .single();
+
+        if (error) {
+          return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erro ao criar unidade' }) };
+        }
+
+        return {
+          statusCode: 201,
+          headers,
+          body: JSON.stringify({ message: 'Unidade criada com sucesso', unidade })
+        };
+      } catch (error) {
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erro interno' }) };
+      }
+    }
+
+    if (path === '/operacoes' && method === 'POST') {
+      try {
+        const { data: operacao, error } = await supabase
+          .from('operacao')
+          .insert([body])
+          .select()
+          .single();
+
+        if (error) {
+          return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erro ao criar operação' }) };
+        }
+
+        return {
+          statusCode: 201,
+          headers,
+          body: JSON.stringify({ message: 'Operação criada com sucesso', operacao })
+        };
+      } catch (error) {
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erro interno' }) };
+      }
+    }
+
+    if (path === '/status-vagas' && method === 'POST') {
+      try {
+        const { data: status, error } = await supabase
+          .from('st_vaga')
+          .insert([body])
+          .select()
+          .single();
+
+        if (error) {
+          return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erro ao criar status' }) };
+        }
+
+        return {
+          statusCode: 201,
+          headers,
+          body: JSON.stringify({ message: 'Status criado com sucesso', status })
+        };
+      } catch (error) {
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erro interno' }) };
+      }
+    }
+
     // Rota não encontrada
     return {
       statusCode: 404,
