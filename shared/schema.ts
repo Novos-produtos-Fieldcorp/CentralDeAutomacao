@@ -462,11 +462,13 @@ export const endVagaRelations = relations(end_vaga, ({ one }) => ({
   }),
 }));
 
-// Insert schemas for new tables
+// Insert schemas for new tables  
 export const insertVagaSchema = createInsertSchema(vaga).omit({
   id: true,
   created_at: true,
   updated_at: true,
+}).extend({
+  dt_limite: z.string().optional(),
 });
 
 export const insertUnidadeSchema = createInsertSchema(unidade).omit({

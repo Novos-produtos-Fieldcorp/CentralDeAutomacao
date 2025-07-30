@@ -504,13 +504,16 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           {/* Deadline */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Data Limite
+              Data Limite (Opcional)
             </label>
             <input
               {...register('dt_limite')}
               type="datetime-local"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
             />
+            {errors.dt_limite && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.dt_limite.message}</p>
+            )}
           </div>
 
           {/* Actions */}
