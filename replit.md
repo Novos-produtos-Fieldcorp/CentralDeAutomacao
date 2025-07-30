@@ -359,7 +359,7 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - **Manutenção**: Código centralizado e reutilizável
 
 ### Deploy no Netlify (Janeiro 2025)
-- **Status**: ✅ Pronto para produção - Corrigido erro "Company not found"
+- **Status**: ✅ Pronto para produção - Sistema de detecção automática de ambiente
 - **Configuração**: netlify.toml criado com redirects e headers
 - **Função Serverless**: netlify/functions/api.mjs (ES Modules) com todas as rotas
 - **Build**: Testado localmente - funcionando perfeitamente  
@@ -367,6 +367,8 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - **Instruções**: Documentadas em DEPLOY_NETLIFY_INSTRUCTIONS.md
 - **Correções**: Removido parseInt() e melhorado tratamento de erros nas consultas
 - **Debug**: Logs adicionados para troubleshooting no Netlify
+- **API Dinâmica**: Frontend detecta automaticamente se está no Netlify e usa URLs corretas
+- **Compatibilidade**: Funciona tanto no Replit quanto no Netlify sem modificações
 
 ## Melhorias na Interface do Usuário (Janeiro 2025)
 

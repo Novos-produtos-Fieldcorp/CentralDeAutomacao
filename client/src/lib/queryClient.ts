@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { createApiUrl } from './api-config';
 
 // Create a client
 export const queryClient = new QueryClient({
@@ -28,7 +29,11 @@ export const queryClient = new QueryClient({
 export const apiRequest = async (url: string, options: RequestInit = {}) => {
   const companyId = localStorage.getItem('company_id') || '1';
   
-  const response = await fetch(url, {
+  // Usar URL dinâmica baseada no ambiente
+  const apiUrl = url.startsWith('/') ? createApiUrl(url.slice(1)) : createApiUrl(url);
+  console.log('API Request to:', apiUrl);
+  
+  const response = await fetch(apiUrl, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
