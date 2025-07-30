@@ -15,8 +15,10 @@ VITE_SUPABASE_URL=https://ohmoxsvwjvohmqqgxjhb.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ
 VITE_CHAT_API_URL=https://chat.wiseapp360.com
 VITE_CHAT_API_KEY=njMJg35ahX5D4FWPCprXabca
-VITE_CHAT_ACCOUNT_ID=123456s
+VITE_CHAT_ACCOUNT_ID=6
 ```
+
+**IMPORTANTE:** As variáveis VITE_CHAT_API_KEY e VITE_CHAT_ACCOUNT_ID devem ser as reais da sua conta WiseApp. As mostradas acima são exemplos.
 
 ### 3. Correções Aplicadas para Deploy
 ✅ Função convertida para ES Modules (.mjs)  
@@ -67,7 +69,22 @@ Se ainda houver erros, verifique os logs das funções no painel do Netlify:
 - Site Settings > Functions > Function logs
 - Procure por mensagens "Looking for company with account_id" e "Supabase query result"
 
-### 8. Teste
+### 8. Configuração do Chat WiseApp
+**CRÍTICO:** Para o chat funcionar em produção, você DEVE:
+
+1. **Obter API Key real do WiseApp**
+   - Acesse sua conta WiseApp
+   - Vá em Settings > Integrations > API Access Tokens
+   - Gere uma nova API key
+
+2. **Configurar no Netlify Dashboard**
+   - Site Settings > Environment Variables
+   - Adicione: `VITE_CHAT_API_KEY` com sua API key real
+   - Adicione: `VITE_CHAT_ACCOUNT_ID` com seu account ID real
+
+3. **Redeploy após configurar as variáveis**
+
+### 9. Teste
 Após o deploy, teste com:
 - `https://seu-site.netlify.app/?account_id=6`
 - `https://seu-site.netlify.app/?account_id=20`
