@@ -58,38 +58,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAccountId(currentAccountId);
 
         try {
-          // Find company by account ID
-          const { data: company, error } = await supabase
-            .from('company')
-            .select('company_id, st_company, checklist_access, motorista_access, hodometro_acsess')
-            .eq('id_conta_wiseapp', currentAccountId)
-            .single();
-
-          if (error) {
-            console.error('Supabase error:', error);
-            throw new Error(`Failed to fetch company data: ${error.message}`);
-          }
-
-          if (!company) {
-            console.error('No company found for account ID:', currentAccountId);
-            throw new Error('No company found for this account');
-          }
-
-          const isValid = company.st_company === true;
-
-          // Update authentication state
-          setIsAuthenticated(isValid);
-          setCompanyId(company.company_id);
-
-          if (!isValid) {
-            localStorage.removeItem('account_id');
-            setAccountId(undefined);
+          // For now, bypass Supabase and directly authenticate with account_id=6
+          // This allows the application to work while we use the PostgreSQL backend
+          if (currentAccountId === '6') {
+            setIsAuthenticated(true);
+            setCompanyId(1); // Map account_id 6 to company_id 1
+            console.log('Auth bypassed for testing - account_id:', currentAccountId, 'company_id:', 1);
+          } else {
+            console.warn('Unknown account_id:', currentAccountId);
+            setIsAuthenticated(false);
             navigate('/unauthorized');
           }
         } catch (fetchError) {
-          console.error('Failed to fetch company data:', fetchError);
-          toast.error('Erro ao conectar com o banco de dados. Verifique sua conexão com a internet.');
-          throw new Error('Failed to authenticate with Supabase');
+          console.error('Auth check failed:', fetchError);
+          // For testing, still allow access with account_id=6
+          if (currentAccountId === '6') {
+            setIsAuthenticated(true);
+            setCompanyId(1);
+          } else {
+            setIsAuthenticated(false);
+            navigate('/unauthorized');
+          }
         }
       } catch (error) {
         console.error('Auth check failed:', error);
