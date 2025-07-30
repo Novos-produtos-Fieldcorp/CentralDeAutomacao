@@ -6,6 +6,7 @@
 - **Build command**: `npm run build`
 - **Publish directory**: `dist/public`
 - **Functions directory**: `netlify/functions`
+- **Node.js version**: 18.x (configure no painel do Netlify)
 
 ### 2. Environment Variables
 Configure no painel do Netlify (copie do arquivo .env):
@@ -17,7 +18,14 @@ VITE_CHAT_API_KEY=njMJg35ahX5D4FWPCprXabca
 VITE_CHAT_ACCOUNT_ID=123456s
 ```
 
-### 3. Funcionalidades Suportadas
+### 3. Correções Aplicadas para Deploy
+✅ Função convertida para ES Modules (.mjs)  
+✅ Configuração external_node_modules no netlify.toml  
+✅ Versão simplificada da função para evitar erros de bundling  
+✅ Node.js 18.x especificado  
+✅ Package.json específico para funções  
+
+### 4. Funcionalidades Suportadas
 ✅ Autenticação dinâmica por account_id  
 ✅ Sistema completo de vagas  
 ✅ Proxy WiseApp/Chatwoot para chat  
@@ -25,7 +33,7 @@ VITE_CHAT_ACCOUNT_ID=123456s
 ✅ Isolamento de dados por empresa  
 ✅ Suporte para iframe embedding  
 
-### 4. Rotas da API
+### 5. Rotas da API
 - `/api/company/by-account/:accountId` - Buscar empresa por account_id
 - `/api/vagas/dashboard/:accountId` - Dashboard de vagas
 - `/api/vagas/:accountId` - Listar vagas
@@ -36,7 +44,7 @@ VITE_CHAT_ACCOUNT_ID=123456s
 - `/api/status-vagas/:accountId` - Listar status
 - `/api/api/v1/*` - Proxy para WiseApp API
 
-### 5. Teste
+### 6. Teste
 Após o deploy, teste com:
 - `https://seu-site.netlify.app/?account_id=6`
 - `https://seu-site.netlify.app/?account_id=20`
