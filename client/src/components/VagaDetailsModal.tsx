@@ -20,21 +20,22 @@ interface DropdownData {
   statusVagas: Array<{ id: number; status_vaga: string }>;
 }
 
-const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClose, onUpdate }) => {
+const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, isOpen, onClose, onUpdate }) => {
   const { accountId } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [currentVaga, setCurrentVaga] = useState(initialVaga);
   const [formData, setFormData] = useState({
-    nome: vaga.nome || '',
-    descricao: vaga.descricao || '',
-    quantidade: vaga.quantidade || 0,
-    dias_trabalho: Array.isArray(vaga.dias_trabalho) ? vaga.dias_trabalho : 
-                   typeof vaga.dias_trabalho === 'string' ? JSON.parse(vaga.dias_trabalho || '[]') : [],
-    horario: vaga.horario || '',
-    dt_limite: vaga.dt_limite ? new Date(vaga.dt_limite).toISOString().slice(0, 16) : '',
-    unidade_id: vaga.unidade_id || '',
-    operacao_id: vaga.operacao_id || '',
-    st_vaga_id: vaga.st_vaga_id || '',
-    cliente_id: vaga.cliente_id || '',
+    nome: initialVaga.nome || '',
+    descricao: initialVaga.descricao || '',
+    quantidade: initialVaga.quantidade || 0,
+    dias_trabalho: Array.isArray(initialVaga.dias_trabalho) ? initialVaga.dias_trabalho : 
+                   typeof initialVaga.dias_trabalho === 'string' ? JSON.parse(initialVaga.dias_trabalho || '[]') : [],
+    horario: initialVaga.horario || '',
+    dt_limite: initialVaga.dt_limite ? new Date(initialVaga.dt_limite).toISOString().slice(0, 16) : '',
+    unidade_id: initialVaga.unidade_id || '',
+    operacao_id: initialVaga.operacao_id || '',
+    st_vaga_id: initialVaga.st_vaga_id || '',
+    cliente_id: initialVaga.cliente_id || '',
   });
   const [dropdownData, setDropdownData] = useState<DropdownData>({
     clientes: [],
@@ -59,6 +60,24 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
       fetchDropdownData();
     }
   }, [isOpen, isEditing, accountId]);
+
+  // Atualizar dados quando a vaga inicial mudar
+  useEffect(() => {
+    setCurrentVaga(initialVaga);
+    setFormData({
+      nome: initialVaga.nome || '',
+      descricao: initialVaga.descricao || '',
+      quantidade: initialVaga.quantidade || 0,
+      dias_trabalho: Array.isArray(initialVaga.dias_trabalho) ? initialVaga.dias_trabalho : 
+                     typeof initialVaga.dias_trabalho === 'string' ? JSON.parse(initialVaga.dias_trabalho || '[]') : [],
+      horario: initialVaga.horario || '',
+      dt_limite: initialVaga.dt_limite ? new Date(initialVaga.dt_limite).toISOString().slice(0, 16) : '',
+      unidade_id: initialVaga.unidade_id || '',
+      operacao_id: initialVaga.operacao_id || '',
+      st_vaga_id: initialVaga.st_vaga_id || '',
+      cliente_id: initialVaga.cliente_id || '',
+    });
+  }, [initialVaga]);
 
   const fetchDropdownData = async () => {
     if (!accountId) return;
@@ -109,13 +128,16 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
         dt_limite: formData.dt_limite || null
       };
 
-      const response = await fetch(`/api/vagas/${vaga.id}`, {
+      const response = await fetch(`/api/vagas/${currentVaga.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
       });
 
       if (response.ok) {
+        const updatedVaga = await response.json();
+        // Atualizar a vaga local com os dados mais recentes
+        setCurrentVaga(updatedVaga.vaga || { ...currentVaga, ...updateData });
         toast.success('Vaga atualizada com sucesso!');
         setIsEditing(false);
         onUpdate();
@@ -141,8 +163,8 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
   };
 
   const getDiasTrabalhoFormatted = () => {
-    const dias = Array.isArray(vaga.dias_trabalho) ? vaga.dias_trabalho : 
-                 typeof vaga.dias_trabalho === 'string' ? JSON.parse(vaga.dias_trabalho || '[]') : [];
+    const dias = Array.isArray(currentVaga.dias_trabalho) ? currentVaga.dias_trabalho : 
+                 typeof currentVaga.dias_trabalho === 'string' ? JSON.parse(currentVaga.dias_trabalho || '[]') : [];
     
     if (dias.length === 0) return 'Não definido';
     
@@ -417,7 +439,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                         Nome da Vaga
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                        {vaga.nome || 'Não informado'}
+                        {currentVaga.nome || 'Não informado'}
                       </dd>
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -425,7 +447,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                         Descrição
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                        {vaga.descricao || 'Não informado'}
+                        {currentVaga.descricao || 'Não informado'}
                       </dd>
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -433,7 +455,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                         Quantidade de Vagas
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                        {vaga.quantidade || 'Não informado'}
+                        {currentVaga.quantidade || 'Não informado'}
                       </dd>
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -441,7 +463,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                         Horário de Trabalho
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                        {vaga.horario || 'Não informado'}
+                        {currentVaga.horario || 'Não informado'}
                       </dd>
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -457,7 +479,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                         Data Limite
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                        {formatDate(vaga.dt_limite?.toString() || null)}
+                        {formatDate(currentVaga.dt_limite?.toString() || null)}
                       </dd>
                     </div>
                   </dl>
@@ -479,7 +501,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                         Cliente
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                        {(vaga as any).cliente_nome || (vaga.cliente_id ? `Cliente #${vaga.cliente_id}` : 'Não informado')}
+                        {(currentVaga as any).cliente_nome || (currentVaga.cliente_id ? `Cliente #${currentVaga.cliente_id}` : 'Não informado')}
                       </dd>
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -487,7 +509,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                         Unidade
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                        {(vaga as any).unidade_nome || (vaga.unidade_id ? `Unidade #${vaga.unidade_id}` : 'Não informado')}
+                        {(currentVaga as any).unidade_nome || (currentVaga.unidade_id ? `Unidade #${currentVaga.unidade_id}` : 'Não informado')}
                       </dd>
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -495,7 +517,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                         Operação
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                        {(vaga as any).operacao_nome || (vaga.operacao_id ? `Operação #${vaga.operacao_id}` : 'Não informado')}
+                        {(currentVaga as any).operacao_nome || (currentVaga.operacao_id ? `Operação #${currentVaga.operacao_id}` : 'Não informado')}
                       </dd>
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -503,7 +525,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga, isOpen, onClo
                         Status
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                        {(vaga as any).status_nome || 'Aberta'}
+                        {(currentVaga as any).status_nome || 'Aberta'}
                       </dd>
                     </div>
                   </dl>
