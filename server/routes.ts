@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { cliente, unidade, operacao, st_vaga, company } from "@shared/schema";
+import { cliente, unidade, operacao, st_vaga, company, vaga } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -237,18 +237,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Vagas API routes
   // Get vagas dashboard data
-  app.get('/api/vagas/dashboard/:companyId', async (req, res) => {
+  app.get('/api/vagas/dashboard/:accountId', async (req, res) => {
     try {
-      const { companyId } = req.params;
+      const { accountId } = req.params;
+      console.log('Fetching vagas dashboard for account:', accountId);
       
-      // For now, return mock data since we need to set up the database first
+      // First, find the company id based on account_id
+      const companyResult = await db
+        .select({ id: company.id })
+        .from(company)
+        .where(eq(company.id_conta_wiseapp, accountId))
+        .limit(1);
+
+      if (companyResult.length === 0) {
+        console.log('No company found for account_id:', accountId);
+        return res.json({ totalVagas: 0, vagasAbertas: 0, vagasFechadas: 0, vagasVencendo: 0 });
+      }
+
+      const companyId = companyResult[0].id;
+      console.log('Mapped account_id', accountId, 'to company.id', companyId);
+      
+      // Count total vagas
+      const totalVagasResult = await db
+        .select({ count: vaga.id })
+        .from(vaga)
+        .where(eq(vaga.company_id, companyId));
+      
+      const totalVagas = totalVagasResult.length;
+      
+      // Count vagas by status (we'll implement this when status data is available)
       const dashboardData = {
-        totalVagas: 0,
-        vagasAbertas: 0,
+        totalVagas,
+        vagasAbertas: totalVagas, // Assuming all are open for now
         vagasFechadas: 0,
         vagasVencendo: 0,
       };
 
+      console.log('Dashboard data:', dashboardData);
       res.json(dashboardData);
     } catch (error) {
       console.error('Error fetching vagas dashboard:', error);
@@ -257,13 +282,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all vagas for a company
-  app.get('/api/vagas/:companyId', async (req, res) => {
+  app.get('/api/vagas/:accountId', async (req, res) => {
     try {
-      const { companyId } = req.params;
+      const { accountId } = req.params;
+      console.log('Fetching vagas for account:', accountId);
       
-      // For now, return empty array since we need to set up the database first
-      const vagas: any[] = [];
+      // First, find the company id based on account_id
+      const companyResult = await db
+        .select({ id: company.id })
+        .from(company)
+        .where(eq(company.id_conta_wiseapp, accountId))
+        .limit(1);
 
+      if (companyResult.length === 0) {
+        console.log('No company found for account_id:', accountId);
+        return res.json([]);
+      }
+
+      const companyId = companyResult[0].id;
+      console.log('Mapped account_id', accountId, 'to company.id', companyId);
+      
+      // Fetch vagas with related data
+      const vagas = await db
+        .select({
+          id: vaga.id,
+          nome: vaga.nome,
+          descricao: vaga.descricao,
+          quantidade: vaga.quantidade,
+          dias_trabalho: vaga.dias_trabalho,
+          horario: vaga.horario,
+          dt_limite: vaga.dt_limite,
+          created_at: vaga.created_at,
+          unidade_nome: unidade.unidade,
+          operacao_nome: operacao.operacao,
+          status_vaga: st_vaga.status_vaga,
+          cliente_nome: cliente.nome_cliente,
+        })
+        .from(vaga)
+        .leftJoin(unidade, eq(vaga.unidade_id, unidade.id))
+        .leftJoin(operacao, eq(vaga.operacao_id, operacao.id))
+        .leftJoin(st_vaga, eq(vaga.st_vaga_id, st_vaga.id))
+        .leftJoin(cliente, eq(vaga.cliente_id, cliente.cliente_id))
+        .where(eq(vaga.company_id, companyId))
+        .orderBy(vaga.created_at);
+
+      console.log('Found vagas:', vagas.length);
       res.json(vagas);
     } catch (error) {
       console.error('Error fetching vagas:', error);
@@ -275,12 +338,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/vagas', async (req, res) => {
     try {
       const vagaData = req.body;
+      console.log('Creating vaga with data:', vagaData);
       
-      // For now, return success since we need to set up the database first
-      res.status(201).json({ message: 'Vaga criada com sucesso', id: Date.now() });
+      // Convert company_id from account_id to actual company.id
+      let companyId = vagaData.company_id;
+      if (typeof companyId === 'string') {
+        // If it's a string, it might be an account_id, so we need to map it
+        const companyResult = await db
+          .select({ id: company.id })
+          .from(company)
+          .where(eq(company.id_conta_wiseapp, companyId))
+          .limit(1);
+        
+        if (companyResult.length > 0) {
+          companyId = companyResult[0].id;
+          console.log('Mapped account_id', vagaData.company_id, 'to company.id', companyId);
+        }
+      }
+      
+      // Insert the vaga into the database
+      const insertData = {
+        nome: vagaData.nome_vaga,
+        descricao: vagaData.descricao,
+        company_id: BigInt(companyId),
+      };
+      
+      // Add optional fields only if they have values
+      if (vagaData.quantidade) insertData.quantidade = String(vagaData.quantidade);
+      if (vagaData.dias_trabalho) insertData.dias_trabalho = vagaData.dias_trabalho;
+      if (vagaData.horario) insertData.horario = vagaData.horario;
+      if (vagaData.dt_limite) insertData.dt_limite = new Date(vagaData.dt_limite);
+      if (vagaData.unidade_id) insertData.unidade_id = BigInt(vagaData.unidade_id);
+      if (vagaData.operacao_id) insertData.operacao_id = BigInt(vagaData.operacao_id);
+      if (vagaData.st_vaga_id) insertData.st_vaga_id = BigInt(vagaData.st_vaga_id);
+      if (vagaData.cliente_id) insertData.cliente_id = BigInt(vagaData.cliente_id);
+      
+      const [newVaga] = await db
+        .insert(vaga)
+        .values(insertData)
+        .returning();
+      
+      console.log('Vaga created successfully:', newVaga);
+      res.status(201).json({ message: 'Vaga criada com sucesso', vaga: newVaga });
     } catch (error) {
       console.error('Error creating vaga:', error);
-      res.status(500).json({ error: 'Erro ao criar vaga' });
+      res.status(500).json({ error: 'Erro ao criar vaga', details: error instanceof Error ? error.message : 'Erro desconhecido' });
     }
   });
 
