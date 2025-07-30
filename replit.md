@@ -359,12 +359,14 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - **Manutenção**: Código centralizado e reutilizável
 
 ### Deploy no Netlify (Janeiro 2025)
-- **Status**: ✅ Pronto para produção
+- **Status**: ✅ Pronto para produção - Corrigido erro "Company not found"
 - **Configuração**: netlify.toml criado com redirects e headers
-- **Função Serverless**: netlify/functions/api.js com todas as rotas
+- **Função Serverless**: netlify/functions/api.mjs (ES Modules) com todas as rotas
 - **Build**: Testado localmente - funcionando perfeitamente  
 - **Variáveis**: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_CHAT_API_URL, VITE_CHAT_API_KEY, VITE_CHAT_ACCOUNT_ID
 - **Instruções**: Documentadas em DEPLOY_NETLIFY_INSTRUCTIONS.md
+- **Correções**: Removido parseInt() e melhorado tratamento de erros nas consultas
+- **Debug**: Logs adicionados para troubleshooting no Netlify
 
 ## Melhorias na Interface do Usuário (Janeiro 2025)
 

@@ -55,16 +55,27 @@ export const handler = async (event, context) => {
     // API Routes
     if (path.startsWith('/company/by-account/')) {
       const accountId = path.split('/').pop();
-      const { data } = await supabase
+      console.log('Looking for company with account_id:', accountId);
+      
+      const { data, error } = await supabase
         .from('company')
         .select('*')
-        .eq('id_conta_wiseapp', parseInt(accountId))
-        .single();
+        .eq('id_conta_wiseapp', accountId);
+      
+      console.log('Supabase query result:', { data, error });
+      
+      if (error || !data || data.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: `Company not found for account_id: ${accountId}` })
+        };
+      }
       
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify(data)
+        body: JSON.stringify(data[0])
       };
     }
 
@@ -72,15 +83,16 @@ export const handler = async (event, context) => {
       const accountId = path.split('/').pop();
       
       // Buscar company_id
-      const { data: company } = await supabase
+      const { data: companies } = await supabase
         .from('company')
         .select('company_id')
-        .eq('id_conta_wiseapp', parseInt(accountId))
-        .single();
+        .eq('id_conta_wiseapp', accountId);
 
-      if (!company) {
-        return { statusCode: 404, headers, body: JSON.stringify({ error: 'Company not found' }) };
+      if (!companies || companies.length === 0) {
+        return { statusCode: 404, headers, body: JSON.stringify({ error: `Company not found for account_id: ${accountId}` }) };
       }
+      
+      const company = companies[0];
 
       // Contar vagas
       const { data: vagas } = await supabase
@@ -114,15 +126,16 @@ export const handler = async (event, context) => {
     if (path.startsWith('/vagas/') && method === 'GET') {
       const accountId = path.split('/').pop();
       
-      const { data: company } = await supabase
+      const { data: companies } = await supabase
         .from('company')
         .select('company_id')
-        .eq('id_conta_wiseapp', parseInt(accountId))
-        .single();
+        .eq('id_conta_wiseapp', accountId);
 
-      if (!company) {
-        return { statusCode: 404, headers, body: JSON.stringify({ error: 'Company not found' }) };
+      if (!companies || companies.length === 0) {
+        return { statusCode: 404, headers, body: JSON.stringify({ error: `Company not found for account_id: ${accountId}` }) };
       }
+      
+      const company = companies[0];
 
       const { data: vagas } = await supabase
         .from('vaga')
@@ -160,15 +173,16 @@ export const handler = async (event, context) => {
     if (path.startsWith('/clientes/')) {
       const accountId = path.split('/').pop();
       
-      const { data: company } = await supabase
+      const { data: companies } = await supabase
         .from('company')
         .select('company_id')
-        .eq('id_conta_wiseapp', parseInt(accountId))
-        .single();
+        .eq('id_conta_wiseapp', accountId);
 
-      if (!company) {
+      if (!companies || companies.length === 0) {
         return { statusCode: 404, headers, body: JSON.stringify([]) };
       }
+      
+      const company = companies[0];
 
       const { data: clientes } = await supabase
         .from('cliente')
@@ -186,15 +200,16 @@ export const handler = async (event, context) => {
     if (path.startsWith('/unidades/')) {
       const accountId = path.split('/').pop();
       
-      const { data: company } = await supabase
+      const { data: companies } = await supabase
         .from('company')
         .select('company_id')
-        .eq('id_conta_wiseapp', parseInt(accountId))
-        .single();
+        .eq('id_conta_wiseapp', accountId);
 
-      if (!company) {
+      if (!companies || companies.length === 0) {
         return { statusCode: 404, headers, body: JSON.stringify([]) };
       }
+      
+      const company = companies[0];
 
       const { data: unidades } = await supabase
         .from('unidade')
@@ -226,15 +241,16 @@ export const handler = async (event, context) => {
     if (path.startsWith('/operacoes/')) {
       const accountId = path.split('/').pop();
       
-      const { data: company } = await supabase
+      const { data: companies } = await supabase
         .from('company')
         .select('company_id')
-        .eq('id_conta_wiseapp', parseInt(accountId))
-        .single();
+        .eq('id_conta_wiseapp', accountId);
 
-      if (!company) {
+      if (!companies || companies.length === 0) {
         return { statusCode: 404, headers, body: JSON.stringify([]) };
       }
+      
+      const company = companies[0];
 
       const { data: operacoes } = await supabase
         .from('operacao')
@@ -266,15 +282,16 @@ export const handler = async (event, context) => {
     if (path.startsWith('/status-vagas/')) {
       const accountId = path.split('/').pop();
       
-      const { data: company } = await supabase
+      const { data: companies } = await supabase
         .from('company')
         .select('company_id')
-        .eq('id_conta_wiseapp', parseInt(accountId))
-        .single();
+        .eq('id_conta_wiseapp', accountId);
 
-      if (!company) {
+      if (!companies || companies.length === 0) {
         return { statusCode: 404, headers, body: JSON.stringify([]) };
       }
+      
+      const company = companies[0];
 
       const { data: status } = await supabase
         .from('st_vaga')

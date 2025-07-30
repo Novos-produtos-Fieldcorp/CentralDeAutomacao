@@ -24,6 +24,9 @@ VITE_CHAT_ACCOUNT_ID=123456s
 ✅ Versão simplificada da função para evitar erros de bundling  
 ✅ Node.js 18.x especificado  
 ✅ Package.json específico para funções  
+✅ Corrigido problema de tipo de dados (removido parseInt)  
+✅ Adicionados logs de debug para troubleshooting  
+✅ Tratamento de erro melhorado para consultas vazias  
 
 ### 4. Funcionalidades Suportadas
 ✅ Autenticação dinâmica por account_id  
@@ -44,10 +47,20 @@ VITE_CHAT_ACCOUNT_ID=123456s
 - `/api/status-vagas/:accountId` - Listar status
 - `/api/api/v1/*` - Proxy para WiseApp API
 
-### 6. Teste
+### 6. Debugging
+Se ainda houver erros, verifique os logs das funções no painel do Netlify:
+- Site Settings > Functions > Function logs
+- Procure por mensagens "Looking for company with account_id" e "Supabase query result"
+
+### 7. Teste
 Após o deploy, teste com:
 - `https://seu-site.netlify.app/?account_id=6`
 - `https://seu-site.netlify.app/?account_id=20`
 - `https://seu-site.netlify.app/vagas?account_id=1`
+
+### 8. Verificação de Dados
+Os account_ids válidos no banco são:
+- account_id=6 → Fox-e (company_id=1)
+- account_id=20 → Entrega já (company_id=5)
 
 Cada account_id carregará os dados da empresa correspondente automaticamente.
