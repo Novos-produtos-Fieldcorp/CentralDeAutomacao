@@ -494,6 +494,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update vaga - using Supabase
+  app.put('/api/vagas/:id', async (req, res) => {
+    try {
+      const vagaId = req.params.id;
+      const vagaData = req.body;
+      console.log('Updating vaga with id:', vagaId, 'data:', vagaData);
+      
+      // Map account_id to company_id using Supabase
+      let companyId = vagaData.company_id;
+      if (companyId) {
+        const { data: companies, error: companyError } = await supabase
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', String(companyId))
+          .limit(1);
+          
+        if (companyError) {
+          console.error('Supabase company error:', companyError);
+          return res.status(500).json({ error: 'Failed to fetch company' });
+        }
+        
+        if (companies && companies.length > 0) {
+          companyId = companies[0].company_id;
+          console.log('Mapped account_id', vagaData.company_id, 'to company_id', companyId);
+        }
+      }
+      
+      // Prepare update data
+      const updateData: any = {
+        nome: vagaData.nome,
+        descricao: vagaData.descricao,
+        quantidade: vagaData.quantidade ? Number(vagaData.quantidade) : null,
+        dias_trabalho: vagaData.dias_trabalho || null,
+        horario: vagaData.horario || null,
+        dt_limite: vagaData.dt_limite || null,
+        unidade_id: vagaData.unidade_id ? Number(vagaData.unidade_id) : null,
+        operacao_id: vagaData.operacao_id ? Number(vagaData.operacao_id) : null,
+        st_vaga_id: vagaData.st_vaga_id ? Number(vagaData.st_vaga_id) : null,
+        cliente_id: vagaData.cliente_id ? Number(vagaData.cliente_id) : null,
+        updated_at: new Date().toISOString(),
+      };
+      
+      // Update in Supabase
+      const { data: updatedVaga, error: updateError } = await supabase
+        .from('vaga')
+        .update(updateData)
+        .eq('id', vagaId)
+        .select()
+        .single();
+      
+      if (updateError) {
+        console.error('Supabase update error:', updateError);
+        return res.status(500).json({ error: 'Failed to update vaga', details: updateError.message });
+      }
+      
+      console.log('Vaga updated successfully in Supabase:', updatedVaga);
+      res.json({ message: 'Vaga atualizada com sucesso', vaga: updatedVaga });
+    } catch (error) {
+      console.error('Error updating vaga:', error);
+      res.status(500).json({ error: 'Erro ao atualizar vaga', details: error instanceof Error ? error.message : 'Erro desconhecido' });
+    }
+  });
+
   // Get supporting data for dropdowns - using Supabase
   app.get('/api/clientes/:accountId', async (req, res) => {
     try {
