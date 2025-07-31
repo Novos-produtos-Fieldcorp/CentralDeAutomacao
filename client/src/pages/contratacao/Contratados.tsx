@@ -1187,18 +1187,18 @@ const Contratados = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
           {/* Busca */}
-          <div className="xl:col-span-1">
-            <div className="relative">
+          <div className="xl:col-span-2">
+            <div className="relative h-[38px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 z-10" />
               <input
                 type="text"
                 placeholder="Buscar motorista..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-[42px] pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg 
+                className="w-full h-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm
                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                           transition-colors placeholder:text-gray-500"
@@ -1216,11 +1216,11 @@ const Contratados = () => {
 
           {/* Status */}
           <div className="xl:col-span-1">
-            <div className="relative h-[42px]" id="status-dropdown">
+            <div className="relative h-[38px]" id="status-dropdown">
               <button
                 type="button"
                 onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                className="w-full h-full flex justify-between items-center pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg 
+                className="w-full h-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm text-left
                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
                           transition-colors hover:bg-gray-50 dark:hover:bg-gray-750"
@@ -1287,11 +1287,11 @@ const Contratados = () => {
 
           {/* Ativo/Inativo */}
           <div className="xl:col-span-1">
-            <div className="relative h-[42px]">
+            <div className="relative h-[38px]">
               <select
                 value={ativoFilter}
                 onChange={(e) => setAtivoFilter(e.target.value)}
-                className="w-full h-full pl-10 pr-8 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg 
+                className="w-full h-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm appearance-none
                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
                           transition-colors hover:bg-gray-50 dark:hover:bg-gray-750"
@@ -1307,11 +1307,11 @@ const Contratados = () => {
 
           {/* Cliente */}
           <div className="xl:col-span-1">
-            <div className="relative h-[42px]" id="cliente-dropdown">
+            <div className="relative h-[38px]" id="cliente-dropdown">
               <button
                 type="button"
                 onClick={() => setShowClienteDropdown(!showClienteDropdown)}
-                className="w-full h-full flex justify-between items-center pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg 
+                className="w-full h-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm text-left
                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
                           transition-colors hover:bg-gray-50 dark:hover:bg-gray-750"
@@ -1388,7 +1388,7 @@ const Contratados = () => {
 
           {/* Tags */}
           <div className="xl:col-span-1">
-            <div className="h-[42px]">
+            <div className="h-[38px]">
               <TagsFilter
                 selectedTags={tagFilter}
                 onTagsChange={setTagFilter}
