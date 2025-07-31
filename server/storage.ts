@@ -143,17 +143,55 @@ export class DatabaseStorage implements IStorage {
       .where(eq(motorista.company_id, companyId));
 
     if (search) {
-      query = query.where(
-        and(
-          eq(motorista.company_id, companyId),
-          or(
-            like(motorista.nome, `%${search}%`),
-            like(motorista.cpf, `%${search}%`),
-            like(motorista.email, `%${search}%`),
-            like(sql`${motorista.telefone}::text`, `%${search}%`)
+      const baseQuery = db
+        .select({
+          motorista_id: motorista.motorista_id,
+          nome: motorista.nome,
+          cpf: motorista.cpf,
+          dt_nascimento: motorista.dt_nascimento,
+          genero: motorista.genero,
+          telefone: motorista.telefone,
+          email: motorista.email,
+          funcao: motorista.funcao,
+          origem_usuario: motorista.origem_usuario,
+          st_cadastro: motorista.st_cadastro,
+          autorizacao_lgpd: motorista.autorizacao_lgpd,
+          company_id: motorista.company_id,
+          data_cadastro: motorista.data_cadastro,
+          cliente_id: motorista.cliente_id,
+          conversation_id: motorista.conversation_id,
+          ativo: motorista.ativo,
+          // Address fields
+          id_end_motorista: end_motorista.id_end_motorista,
+          nr_end: end_motorista.nr_end,
+          ds_complemento_end: end_motorista.ds_complemento_end,
+          st_end: end_motorista.st_end,
+          logradouro: logradouro.logradouro,
+          nr_cep: logradouro.nr_cep,
+          nome_bairro: bairro.bairro,
+          nome_cidade: cidade.cidade,
+          nome_estado: estado.estado,
+          sigla_estado: estado.sigla_estado,
+        })
+        .from(motorista)
+        .leftJoin(end_motorista, eq(motorista.motorista_id, end_motorista.id_motorista))
+        .leftJoin(logradouro, eq(end_motorista.id_logradouro, logradouro.id_logradouro))
+        .leftJoin(bairro, eq(logradouro.id_bairro, bairro.id_bairro))
+        .leftJoin(cidade, eq(bairro.id_cidade, cidade.id_cidade))
+        .leftJoin(estado, eq(cidade.id_estado, estado.id_estado))
+        .where(
+          and(
+            eq(motorista.company_id, companyId),
+            or(
+              like(motorista.nome, `%${search}%`),
+              like(motorista.cpf, `%${search}%`),
+              like(motorista.email, `%${search}%`),
+              like(sql`${motorista.telefone}::text`, `%${search}%`)
+            )
           )
-        )
-      );
+        );
+      
+      query = baseQuery;
     }
 
     const totalResult = await db

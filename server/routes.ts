@@ -78,6 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: 'ViaCEP',
           url: `https://viacep.com.br/ws/${cep}/json/`,
           timeout: 8000,
+          headers: {},
           transform: (data: any) => ({
             cep: data.cep,
             logradouro: data.logradouro,
@@ -96,6 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: 'BrasilAPI',
           url: `https://brasilapi.com.br/api/cep/v1/${cep}`,
           timeout: 6000,
+          headers: {},
           transform: (data: any) => ({
             cep: data.cep,
             logradouro: data.street,
@@ -114,6 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: 'PostMon',
           url: `https://api.postmon.com.br/v1/cep/${cep}`,
           timeout: 6000,
+          headers: {},
           transform: (data: any) => ({
             cep: data.cep,
             logradouro: data.logradouro,
@@ -132,6 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: 'RepublicaVirtual',
           url: `https://cep.republicavirtual.com.br/web_cep.php?cep=${cep}&formato=json`,
           timeout: 6000,
+          headers: {},
           transform: (data: any) => ({
             cep: cep,
             logradouro: data.tipo_logradouro + ' ' + data.logradouro,
@@ -166,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'Accept': 'application/json, text/plain, */*',
               'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
               'Cache-Control': 'no-cache',
-              ...api.headers
+              ...(api.headers || {})
             }
           };
 
@@ -196,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Se chegou aqui, todas as APIs falharam
       console.error('Todas as APIs de CEP falharam:', lastError);
-      const errorMessage = lastError?.message || '';
+      const errorMessage = (lastError as Error)?.message || '';
       console.log('Última mensagem de erro:', errorMessage);
       
       // Verifica se o problema é indisponibilidade geral ou CEP inválido

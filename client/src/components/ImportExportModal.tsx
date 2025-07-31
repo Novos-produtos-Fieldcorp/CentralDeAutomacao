@@ -234,7 +234,7 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
             return;
           }
 
-          const previewRows = jsonData.map((row, index) => ({
+          const previewRows = jsonData.map((row: any, index) => ({
             row: index + 2,
             ...row
           }));
@@ -640,7 +640,7 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
           
           if (motoristasError) throw motoristasError;
           
-          data = motoristas.map(m => ({
+          data = motoristas.map((m: any) => ({
             Nome: m.nome,
             CPF: m.cpf,
             Email: m.email || '',
@@ -659,7 +659,7 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
           
           if (clientesError) throw clientesError;
           
-          data = clientes.map(c => ({
+          data = clientes.map((c: any) => ({
             Nome: c.nome,
             CNPJ: c.cnpj,
             Email: c.email || '',
@@ -678,7 +678,7 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
           
           if (veiculosError) throw veiculosError;
           
-          data = veiculos.map(v => ({
+          data = veiculos.map((v: any) => ({
             Placa: v.placa,
             Marca: v.marca || '',
             Modelo: v.tipo || '',
