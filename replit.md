@@ -329,3 +329,28 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - Rota `/tags-admin` configurada no sistema de roteamento
 - Acesso direto através do menu lateral da aplicação
 
+## Filtro de Tags na Lista de Motoristas (Janeiro 2025)
+
+### Funcionalidade Implementada
+- Dropdown de filtro por tags adicionado na página de motoristas (MotoristasLista.tsx)
+- Interface responsiva com 4 colunas: busca, status, cliente/ativo, tags
+- Sincronização com WiseApp preparada com botão "Sync WiseApp" no TagManager
+- Filtro de tags com multiseleção e interface visual consistente
+
+### Componentes Atualizados
+- `MotoristasLista.tsx`: Filtro por tags integrado ao sistema existente
+- `TagManager.tsx`: Botão de sincronização com WiseApp adicionado
+- Layout responsivo expandido para comportar o novo filtro
+
+### Estrutura de Filtros
+- Grid responsivo: 1 coluna (mobile) → 2 colunas (tablet) → 4 colunas (desktop)  
+- Dropdown de tags com cores visuais e contadores de seleção
+- Integração com sistema existente de filtros (status, cliente, cidade, ativo)
+
+### Status da Implementação
+- ✅ Interface de filtro por tags completa
+- ✅ API de tags funcionando corretamente
+- ✅ Botão de sincronização com WiseApp
+- ⚠️ Lógica de filtro aguarda dados de motoristas para teste completo
+- 🔄 Sincronização bidirecional com WiseApp em desenvolvimento
+
