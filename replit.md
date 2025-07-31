@@ -185,7 +185,6 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - ✅ Dependências instaladas
 - ⚠️ Requer resolução manual do git lock para push
 
-
 ## Correções de Chat (Janeiro 2025)
 
 ### Problema de Cache HTTP 304

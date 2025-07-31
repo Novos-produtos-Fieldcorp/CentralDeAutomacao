@@ -997,6 +997,7 @@ const MotoristasLista = () => {
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                           checked={statusFilter.includes(status)}
                           onChange={(e) => {
+                            // Não precisamos de stopPropagation aqui, pois o onChange não propaga o clique
                             if (e.target.checked) {
                               setStatusFilter([...statusFilter, status]);
                             } else {
@@ -1004,6 +1005,7 @@ const MotoristasLista = () => {
                             }
                           }}
                           onClick={(e) => {
+                            // Impede que o clique no checkbox feche o dropdown
                             e.stopPropagation();
                           }}
                         />
@@ -1063,6 +1065,7 @@ const MotoristasLista = () => {
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                           checked={cidadeFilter.includes(cidade)}
                           onChange={(e) => {
+                            // Não precisamos de stopPropagation aqui, pois o onChange não propaga o clique
                             if (e.target.checked) {
                               setCidadeFilter([...cidadeFilter, cidade]);
                             } else {
@@ -1070,6 +1073,7 @@ const MotoristasLista = () => {
                             }
                           }}
                           onClick={(e) => {
+                            // Impede que o clique no checkbox feche o dropdown
                             e.stopPropagation();
                           }}
                         />
@@ -1167,6 +1171,7 @@ const MotoristasLista = () => {
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                           checked={clienteFilter.includes(cliente.cliente_id.toString())}
                           onChange={(e) => {
+                            // Não precisamos de stopPropagation aqui, pois o onChange não propaga o clique
                             const clienteId = cliente.cliente_id.toString();
                             if (e.target.checked) {
                               setClienteFilter([...clienteFilter, clienteId]);
@@ -1175,6 +1180,7 @@ const MotoristasLista = () => {
                             }
                           }}
                           onClick={(e) => {
+                            // Impede que o clique no checkbox feche o dropdown
                             e.stopPropagation();
                           }}
                         />
