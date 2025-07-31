@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase-fixed';
 import { useNavigate } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { createApiUrl } from '../lib/api-config';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // If no account_id in URL, try localStorage
         if (!currentAccountId) {
-          currentAccountId = localStorage.getItem('account_id');
+          currentAccountId = localStorage.getItem('account_id') || undefined;
         }
 
         // If still no account_id, use default for testing
@@ -58,38 +59,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAccountId(currentAccountId);
 
         try {
-          // Find company by account ID
-          const { data: company, error } = await supabase
-            .from('company')
-            .select('company_id, st_company, checklist_access, motorista_access, hodometro_acsess')
-            .eq('id_conta_wiseapp', currentAccountId)
-            .single();
-
-          if (error) {
-            console.error('Supabase error:', error);
-            throw new Error(`Failed to fetch company data: ${error.message}`);
-          }
-
-          if (!company) {
-            console.error('No company found for account ID:', currentAccountId);
-            throw new Error('No company found for this account');
-          }
-
-          const isValid = company.st_company === true;
-
-          // Update authentication state
-          setIsAuthenticated(isValid);
-          setCompanyId(company.company_id);
-
-          if (!isValid) {
-            localStorage.removeItem('account_id');
-            setAccountId(undefined);
+          // Buscar a empresa real baseada no account_id usando URL dinâmica
+          const apiUrl = createApiUrl(`company/by-account/${currentAccountId}`);
+          console.log('Fetching company data from:', apiUrl);
+          const response = await fetch(apiUrl);
+          
+          if (response.ok) {
+            const companyData = await response.json();
+            setIsAuthenticated(true);
+            setCompanyId(companyData.company_id);
+            console.log('Auth successful - account_id:', currentAccountId, 'company_id:', companyData.company_id, 'company:', companyData.nome_company);
+          } else {
+            console.warn('Company not found for account_id:', currentAccountId, 'Status:', response.status);
+            setIsAuthenticated(false);
             navigate('/unauthorized');
           }
         } catch (fetchError) {
-          console.error('Failed to fetch company data:', fetchError);
-          toast.error('Erro ao conectar com o banco de dados. Verifique sua conexão com a internet.');
-          throw new Error('Failed to authenticate with Supabase');
+          console.error('Auth check failed:', fetchError);
+          // Fallback apenas para account_id=6 (para testes de desenvolvimento)
+          if (currentAccountId === '6') {
+            setIsAuthenticated(true);
+            setCompanyId(1);
+          } else {
+            setIsAuthenticated(false);
+            navigate('/unauthorized');
+          }
         }
       } catch (error) {
         console.error('Auth check failed:', error);

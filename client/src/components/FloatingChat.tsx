@@ -18,9 +18,11 @@ const apiClient = axios.create({
 
 // Adicionar interceptor para incluir o token em todas as requisições
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('wiseapp_token');
-  if (token) {
-    config.headers['api_access_token'] = token;
+  // Usar API key das variáveis de ambiente primeiro
+  const apiKey = import.meta.env.VITE_CHAT_API_KEY || localStorage.getItem('wiseapp_token');
+  if (apiKey) {
+    config.headers['api_access_token'] = apiKey;
+    config.headers['Authorization'] = `Bearer ${apiKey}`;
   }
   return config;
 });

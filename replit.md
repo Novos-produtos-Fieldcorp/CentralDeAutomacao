@@ -328,4 +328,158 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - Item "Tags" adicionado ao menu principal com ícone da Lucide React
 - Rota `/tags-admin` configurada no sistema de roteamento
 - Acesso direto através do menu lateral da aplicação
+## Migração Replit Agent para Replit (Janeiro 2025)
+
+### Migração Completa
+- **Status**: ✅ Concluída com sucesso
+- **Data**: Janeiro 2025
+- **Ambiente**: Aplicação rodando na porta 5000
+
+### Correções e Melhorias Implementadas
+- **LSP Errors**: Corrigidos todos os erros de TypeScript nos arquivos `server/routes.ts` e `shared/wiseAppService.ts`
+- **UI Consistency**: Removido botão duplicado "Adicionar Gestão de Risco" na aba de gestão de risco
+- **Modal Styling**: Padronizada a estética dos modais de alteração de função para motoristas e agregados
+- **Database**: Mantida configuração Supabase existente conforme solicitado
+- **WiseApp Integration**: Proxy funcionando corretamente para integração com chat
+
+### Arquivos Principais Modificados
+- `client/src/components/GestaoRiscoTab.tsx`: Removido botão duplicado
+- `client/src/pages/contratacao/MotoristasLista.tsx`: Estética modal padronizada
+- `client/src/pages/contratacao/AgregadosLista.tsx`: Estética modal padronizada  
+- `server/routes.ts`: Correções de TypeScript
+- `shared/wiseAppService.ts`: Correções de TypeScript
+
+### Status Final da Migração
+- ✅ Todas as dependências instaladas
+- ✅ Workflow funcionando corretamente
+- ✅ Supabase mantido conforme solicitado
+- ✅ APIs e integrações funcionais
+- ✅ Interface padronizada
+- ✅ Aplicação pronta para uso
+
+## Sistema de Autenticação Dinâmico (Janeiro 2025)
+
+### Funcionalidade Implementada
+- **Autenticação por Account ID**: Sistema dinâmico que busca empresa real baseada no account_id da URL
+- **API Backend**: Rota `/api/company/by-account/:accountId` para buscar dados da empresa
+- **Mapeamento Automático**: account_id da URL mapeia para company_id no banco de dados
+- **Suporte Multi-Empresa**: Cada account_id carrega dados específicos da empresa correspondente
+- **Produção e Desenvolvimento**: Funcionamento tanto no Replit quanto no Netlify
+
+### Estrutura Implementada
+- **Frontend**: `client/src/context/AuthContext.tsx` com busca dinâmica de empresa
+- **Backend Replit**: `server/routes.ts` com rota para buscar empresa via Supabase
+- **Backend Netlify**: `netlify/functions/api.js` com todas as rotas necessárias
+- **Sistema de Vagas**: Rotas completas para CRUD de vagas, clientes, unidades, operações e status
+- **Proxy WiseApp**: Mantido para funcionalidade de chat e caixas de entrada
+
+### Rotas da API Netlify
+- `GET /api/company/by-account/:accountId`: Buscar empresa por account_id
+- `GET /api/vagas/dashboard/:accountId`: Dashboard de estatísticas das vagas
+- `GET /api/vagas/:accountId`: Listar vagas da empresa
+- `POST /api/vagas`: Criar nova vaga
+- `PUT /api/vagas/:id`: Atualizar vaga existente
+- `GET /api/clientes/:accountId`: Listar clientes da empresa
+- `GET /api/unidades/:accountId`: Listar unidades da empresa
+- `GET /api/operacoes/:accountId`: Listar operações da empresa
+- `GET /api/status-vagas/:accountId`: Listar status de vagas da empresa
+- `POST /api/unidades`, `/api/operacoes`, `/api/status-vagas`: Criação inline
+- Proxy `/api/api/v1/*`: Redirecionamento para WiseApp API (chat/caixas de entrada)
+
+### Benefícios
+- **Isolamento de Dados**: Cada empresa vê apenas seus próprios dados
+- **Escalabilidade**: Sistema preparado para múltiplas empresas
+- **Flexibilidade**: URL com ?account_id=X carrega empresa correspondente
+- **Compatibilidade**: Funciona tanto em desenvolvimento quanto produção
+- **Manutenção**: Código centralizado e reutilizável
+
+### Deploy no Netlify (Janeiro 2025)
+- **Status**: ✅ Pronto para produção - Sistema de detecção automática de ambiente
+- **Configuração**: netlify.toml criado com redirects e headers
+- **Função Serverless**: netlify/functions/api.mjs (ES Modules) com todas as rotas
+- **Build**: Testado localmente - funcionando perfeitamente  
+- **Variáveis**: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_CHAT_API_URL, VITE_CHAT_API_KEY, VITE_CHAT_ACCOUNT_ID
+- **Instruções**: Documentadas em DEPLOY_NETLIFY_INSTRUCTIONS.md
+- **Correções**: Removido parseInt() e melhorado tratamento de erros nas consultas
+- **Debug**: Logs adicionados para troubleshooting no Netlify
+- **API Dinâmica**: Frontend detecta automaticamente se está no Netlify e usa URLs corretas
+- **Compatibilidade**: Funciona tanto no Replit quanto no Netlify sem modificações
+
+## Melhorias na Interface do Usuário (Janeiro 2025)
+
+### Context Menu - Simplificação das Opções
+- **Funcionalidades Removidas**: 
+  - Opção "Editar Motorista" do menu de contexto (botão direito)
+  - Opção "Gerenciar Documentos" do menu de contexto (botão direito)
+- **Aplicado em**: Listas de Motoristas e Agregados
+- **Motivo**: Simplificação da interface e redução de opções desnecessárias
+- **Opções Mantidas**: 
+  - Motoristas: Visualizar Detalhes, Iniciar Chat, Excluir Motorista
+  - Agregados: Visualizar Detalhes, Iniciar Chat
+- **Arquivos Modificados**: 
+  - `client/src/pages/contratacao/MotoristasLista.tsx`
+  - `client/src/pages/contratacao/AgregadosLista.tsx`
+
+## Sistema de Gestão de Vagas (Janeiro 2025)
+
+### Funcionalidade Implementada
+- **Novo Módulo**: Sistema completo de gestão de vagas de trabalho
+- **Acessível via**: `/vagas` URL com estrutura de abas igual ao módulo de Contratações
+- **Design**: Segue o mesmo padrão visual dos módulos Motoristas/Contratados
+- **Database**: Migrado completamente para Supabase com RLS configurado
+- **Status Final**: Sistema 100% funcional com dados reais
+- **✅ Criação de Vagas**: Sistema funcionando perfeitamente com todos os campos
+- **✅ Data Limite Opcional**: Campo dt_limite agora é opcional no formulário
+- **✅ Foreign Keys**: Mapeamento correto de account_id para company_id resolvido
+
+### Estrutura do Banco de Dados
+- **Tabelas Criadas**:
+  - `vaga`: Tabela principal com nome, descrição, quantidade, dias de trabalho, horário, data limite
+  - `unidade`: Unidades organizacionais (3 unidades criadas)
+  - `operacao`: Tipos de operação (1 operação criada)
+  - `st_vaga`: Status das vagas (2 status criados: Em Andamento, Pausada)
+  - `end_vaga`: Endereços das vagas
+- **Relacionamentos**: Vagas vinculadas a empresa, cliente, unidade, operação e status
+- **Supabase RLS**: Configurado e funcionando para todas as tabelas
+- **Mapeamento**: account_id (URL) → company_id (Fox-e: id=1, account_id=6)
+
+### Interface do Usuário
+- **Layout**: Abas Dashboard e Vagas seguindo padrão do módulo Contratações
+- **Dashboard**: Cards estatísticos mostrando total de vagas, abertas, fechadas e vencendo
+- **Lista de Vagas**: Tabela com informações de cliente/unidade, operação, quantidade, data limite e status
+- **Modal de Criação**: Formulário completo para adicionar nova vaga com dropdowns para cliente, unidade, operação e status
+
+### Arquivos Criados/Modificados
+- `shared/schema.ts`: Adicionadas tabelas e tipos para o sistema de vagas
+- `client/src/pages/Vagas.tsx`: Página principal com estrutura de abas
+- `client/src/components/VagasList.tsx`: Componente de listagem de vagas
+- `client/src/components/AddVagaModal.tsx`: Modal para adicionar novas vagas
+- `client/src/components/DashboardStats.tsx`: Componente reutilizável para cards estatísticos
+- `server/routes.ts`: APIs para CRUD de vagas e dados auxiliares
+- `client/src/App.tsx`: Rota adicionada para `/vagas/*`
+
+### APIs Implementadas
+- `GET /api/vagas/dashboard/:companyId`: Dados do dashboard
+- `GET /api/vagas/:companyId`: Lista de vagas por empresa
+- `POST /api/vagas`: Criação de nova vaga
+- `GET /api/clientes/:companyId`: Lista de clientes
+- `GET /api/unidades/:companyId`: Lista de unidades
+- `POST /api/unidades`: Criação de nova unidade
+- `GET /api/operacoes/:companyId`: Lista de operações
+- `POST /api/operacoes`: Criação de nova operação
+- `GET /api/status-vagas/:companyId`: Lista de status de vagas
+- `POST /api/status-vagas`: Criação de novo status
+
+### Funcionalidades de Criação Inline (Janeiro 2025)
+- **Dropdowns com Criação**: Unidades, Operações e Status permitem criação inline
+- **Interface**: Opção "+ Adicionar nova..." no final de cada dropdown
+- **Funcionamento**: Seleção da opção "+" transforma campo em input de texto
+- **Ações**: Botões ✓ (salvar) e ✗ (cancelar) para confirmar ou cancelar criação
+- **Validação**: Enter para confirmar, dados salvos automaticamente no banco
+- **Isolamento**: Todas as criações respeitam company_id para isolamento de dados
+- **Auto-seleção**: Item criado é automaticamente selecionado no dropdown
+- **Persistência**: Dados realmente salvos nas tabelas do banco (unidade, operacao, st_vaga)
+- **Integração**: APIs implementadas com real inserção e busca no PostgreSQL via Drizzle ORM
+- **Mapeamento Account**: Sistema mapeia account_id da URL para company_id através de id_conta_wiseapp
+- **Exemplo**: account_id=6 na URL → busca company onde id_conta_wiseapp='6' → usa company_id=1
 

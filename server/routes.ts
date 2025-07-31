@@ -1,6 +1,64 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+// Removed NeonDB import - using only Supabase now
+import { eq } from "drizzle-orm";
+import {
+  cliente,
+  unidade,
+  operacao,
+  st_vaga,
+  company,
+  vaga,
+} from "@shared/schema";
+import { createClient } from "@supabase/supabase-js";
+
+// Initialize Supabase client with bypass RLS for backend operations
+const supabaseUrl =
+  process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co";
+const supabaseKey =
+  process.env.VITE_SUPABASE_ANON_KEY ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ";
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  db: { schema: "public" },
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
+  global: {
+    headers: {
+      Authorization: `Bearer ${supabaseKey}`,
+    },
+  },
+});
+
+// Helper function to get company_id from account_id
+async function getCompanyIdFromAccount(
+  accountId: string,
+): Promise<number | null> {
+  try {
+    const { data: companies, error } = await supabase
+      .from("company")
+      .select("company_id")
+      .eq("id_conta_wiseapp", accountId)
+      .limit(1);
+
+    if (error) {
+      console.error("Error fetching company:", error);
+      return null;
+    }
+
+    if (!companies || companies.length === 0) {
+      return null;
+    }
+
+    return companies[0].company_id;
+  } catch (error) {
+    console.error("Error in getCompanyIdFromAccount:", error);
+    return null;
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -9,73 +67,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
-  // Proxy para API do WiseApp (Chat)
-  app.all('/api/api/v1/*', async (req, res) => {
+  // Rota para buscar empresa por account_id
+  app.get("/api/company/by-account/:accountId", async (req, res) => {
     try {
-      const wiseappApiUrl = process.env.VITE_CHAT_API_URL || 'https://chat.wiseapp360.com';
-      const apiKey = req.headers['api_access_token'] || req.headers['authorization'];
-      
+      const { accountId } = req.params;
+      console.log("Fetching company for account_id:", accountId);
+
+      const { data: companies, error } = await supabase
+        .from("company")
+        .select("*")
+        .eq("id_conta_wiseapp", accountId)
+        .limit(1);
+
+      if (error) {
+        console.error("Error fetching company:", error);
+        return res.status(500).json({ error: "Erro ao buscar empresa" });
+      }
+
+      if (!companies || companies.length === 0) {
+        console.log("No company found for account_id:", accountId);
+        return res.status(404).json({ error: "Empresa não encontrada" });
+      }
+
+      const company = companies[0];
+      console.log("Found company:", company);
+
+      // Retornar dados no formato esperado pelo frontend
+      res.json({
+        company_id: company.company_id || company.id,
+        razao_social: company.nome, // usar 'nome' em vez de 'razao_social'
+        id_conta_wiseapp: company.id_conta_wiseapp,
+      });
+    } catch (error) {
+      console.error("Error in company lookup:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  // Proxy para API do WiseApp (Chat)
+  app.all("/api/api/v1/*", async (req, res) => {
+    try {
+      const wiseappApiUrl =
+        process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
+      const apiKey =
+        req.headers["api_access_token"] || req.headers["authorization"];
+
       if (!apiKey) {
-        return res.status(401).json({ error: 'Token de acesso não fornecido' });
+        return res.status(401).json({ error: "Token de acesso não fornecido" });
       }
 
       // Remover /api do início da URL para fazer o proxy
-      const targetPath = req.url.replace('/api', '');
+      const targetPath = req.url.replace("/api", "");
       const targetUrl = `${wiseappApiUrl}${targetPath}`;
-      
+
       console.log(`Proxying request to: ${targetUrl}`);
-      
+
       const fetchOptions: any = {
         method: req.method,
         headers: {
-          'api_access_token': apiKey,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
+          api_access_token: apiKey,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       };
 
       // Adicionar body para requests que não sejam GET
-      if (req.method !== 'GET' && req.body) {
+      if (req.method !== "GET" && req.body) {
         fetchOptions.body = JSON.stringify(req.body);
       }
 
       const response = await fetch(targetUrl, fetchOptions);
       const data = await response.json();
-      
+
       // Adicionar headers de no-cache na resposta
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.setHeader('Last-Modified', new Date().toUTCString());
-      res.setHeader('ETag', `"${Date.now()}"`);
-      
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.setHeader("Last-Modified", new Date().toUTCString());
+      res.setHeader("ETag", `"${Date.now()}"`);
+
       res.status(response.status).json(data);
     } catch (error) {
-      console.error('Erro no proxy WiseApp:', error);
-      res.status(500).json({ 
-        error: 'Erro interno do servidor ao acessar a API do WiseApp',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      console.error("Erro no proxy WiseApp:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor ao acessar a API do WiseApp",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }
   });
 
   // Proxy para consulta de CEP com múltiplas APIs de fallback
-  app.get('/api/cep/:cep', async (req, res) => {
+  app.get("/api/cep/:cep", async (req, res) => {
     try {
       const { cep } = req.params;
-      
+
       // Validar formato do CEP
       if (!/^\d{8}$/.test(cep)) {
-        return res.status(400).json({ error: 'CEP deve conter exatamente 8 dígitos' });
+        return res
+          .status(400)
+          .json({ error: "CEP deve conter exatamente 8 dígitos" });
       }
 
       // Lista de APIs de CEP para fallback
       const cepApis = [
         {
-          name: 'ViaCEP',
+          name: "ViaCEP",
           url: `https://viacep.com.br/ws/${cep}/json/`,
           timeout: 8000,
           headers: {},
@@ -89,67 +188,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ibge: data.ibge,
             gia: data.gia,
             ddd: data.ddd,
-            siafi: data.siafi
+            siafi: data.siafi,
           }),
-          isError: (data: any) => data.erro
+          isError: (data: any) => data.erro,
         },
         {
-          name: 'BrasilAPI',
+          name: "BrasilAPI",
           url: `https://brasilapi.com.br/api/cep/v1/${cep}`,
           timeout: 6000,
           headers: {},
           transform: (data: any) => ({
             cep: data.cep,
             logradouro: data.street,
-            complemento: '',
+            complemento: "",
             bairro: data.neighborhood,
             localidade: data.city,
             uf: data.state,
-            ibge: '',
-            gia: '',
-            ddd: '',
-            siafi: ''
+            ibge: "",
+            gia: "",
+            ddd: "",
+            siafi: "",
           }),
-          isError: (data: any) => !data.cep || data.type === 'error'
+          isError: (data: any) => !data.cep || data.type === "error",
         },
         {
-          name: 'PostMon',
+          name: "PostMon",
           url: `https://api.postmon.com.br/v1/cep/${cep}`,
           timeout: 6000,
           headers: {},
           transform: (data: any) => ({
             cep: data.cep,
             logradouro: data.logradouro,
-            complemento: data.complemento || '',
+            complemento: data.complemento || "",
             bairro: data.bairro,
             localidade: data.cidade,
             uf: data.estado,
-            ibge: data.cidade_info?.codigo_ibge || '',
-            gia: '',
-            ddd: '',
-            siafi: ''
+            ibge: data.cidade_info?.codigo_ibge || "",
+            gia: "",
+            ddd: "",
+            siafi: "",
           }),
-          isError: (data: any) => !data.cep
+          isError: (data: any) => !data.cep,
         },
         {
-          name: 'RepublicaVirtual',
+          name: "RepublicaVirtual",
           url: `https://cep.republicavirtual.com.br/web_cep.php?cep=${cep}&formato=json`,
           timeout: 6000,
           headers: {},
           transform: (data: any) => ({
             cep: cep,
-            logradouro: data.tipo_logradouro + ' ' + data.logradouro,
-            complemento: '',
+            logradouro: data.tipo_logradouro + " " + data.logradouro,
+            complemento: "",
             bairro: data.bairro,
             localidade: data.cidade,
             uf: data.uf,
-            ibge: '',
-            gia: '',
-            ddd: '',
-            siafi: ''
+            ibge: "",
+            gia: "",
+            ddd: "",
+            siafi: "",
           }),
-          isError: (data: any) => data.resultado !== '1'
-        }
+          isError: (data: any) => data.resultado !== "1",
+        },
       ];
 
       let lastError = null;
@@ -158,238 +257,266 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const api of cepApis) {
         try {
           console.log(`Tentando API ${api.name} para CEP ${cep}`);
-          
+
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), api.timeout || 5000);
-          
+          const timeoutId = setTimeout(
+            () => controller.abort(),
+            api.timeout || 5000,
+          );
+
           const fetchOptions: any = {
-            method: 'GET',
+            method: "GET",
             signal: controller.signal,
             headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Accept': 'application/json, text/plain, */*',
-              'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
-              'Cache-Control': 'no-cache',
-              ...(api.headers || {})
-            }
+              "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              Accept: "application/json, text/plain, */*",
+              "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+              "Cache-Control": "no-cache",
+              ...(api.headers || {}),
+            },
           };
 
           const response = await fetch(api.url, fetchOptions);
           clearTimeout(timeoutId);
-          
+
           if (!response.ok) {
             throw new Error(`${api.name} retornou status ${response.status}`);
           }
 
           const data = await response.json();
-          
+
           if (api.isError && api.isError(data)) {
             throw new Error(`CEP não encontrado na API ${api.name}`);
           }
 
           const transformedData = api.transform(data);
           console.log(`✓ CEP encontrado com sucesso via ${api.name}`);
-          
+
           return res.json(transformedData);
         } catch (error) {
-          console.warn(`Erro na API ${api.name}:`, error instanceof Error ? error.message : error);
+          console.warn(
+            `Erro na API ${api.name}:`,
+            error instanceof Error ? error.message : error,
+          );
           lastError = error;
           continue;
         }
       }
 
       // Se chegou aqui, todas as APIs falharam
-      console.error('Todas as APIs de CEP falharam:', lastError);
-      const errorMessage = (lastError as Error)?.message || '';
-      console.log('Última mensagem de erro:', errorMessage);
-      
+      console.error("Todas as APIs de CEP falharam:", lastError);
+      const errorMessage = (lastError as Error)?.message || "";
+      console.log("Última mensagem de erro:", errorMessage);
+
       // Verifica se o problema é indisponibilidade geral ou CEP inválido
-      const isGeneralFailure = lastError && (
-        errorMessage.includes('status 5') || 
-        errorMessage.includes('fetch failed') ||
-        errorMessage.includes('timeout') ||
-        errorMessage.includes('502') ||
-        errorMessage.includes('503') ||
-        errorMessage.includes('401') ||
-        errorMessage.includes('aborted') ||
-        errorMessage.includes('retornou status')
-      );
-      
-      console.log('É falha geral?', isGeneralFailure);
-      
+      const isGeneralFailure =
+        lastError &&
+        (errorMessage.includes("status 5") ||
+          errorMessage.includes("fetch failed") ||
+          errorMessage.includes("timeout") ||
+          errorMessage.includes("502") ||
+          errorMessage.includes("503") ||
+          errorMessage.includes("401") ||
+          errorMessage.includes("aborted") ||
+          errorMessage.includes("retornou status"));
+
+      console.log("É falha geral?", isGeneralFailure);
+
       if (isGeneralFailure) {
-        res.status(503).json({ 
-          error: 'Serviços de CEP temporariamente indisponíveis. Todas as APIs estão fora do ar no momento.',
-          details: 'Preencha o endereço manualmente ou tente novamente em alguns minutos.'
+        res.status(503).json({
+          error:
+            "Serviços de CEP temporariamente indisponíveis. Todas as APIs estão fora do ar no momento.",
+          details:
+            "Preencha o endereço manualmente ou tente novamente em alguns minutos.",
         });
       } else {
-        res.status(404).json({ 
-          error: 'CEP não encontrado em nenhuma API disponível',
-          details: 'Tente novamente em alguns instantes ou verifique se o CEP está correto'
+        res.status(404).json({
+          error: "CEP não encontrado em nenhuma API disponível",
+          details:
+            "Tente novamente em alguns instantes ou verifique se o CEP está correto",
         });
       }
     } catch (error) {
-      console.error('Erro geral ao consultar CEP:', error);
-      res.status(500).json({ 
-        error: 'Erro interno do servidor ao consultar CEP',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      console.error("Erro geral ao consultar CEP:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor ao consultar CEP",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }
   });
 
   // Tags API routes
-  app.get('/api/tags', async (req, res) => {
+  app.get("/api/tags", async (req, res) => {
     try {
       const companyId = req.query.company_id;
       if (!companyId) {
-        return res.status(400).json({ error: 'company_id é obrigatório' });
+        return res.status(400).json({ error: "company_id é obrigatório" });
       }
 
       const tags = await storage.getTags(Number(companyId));
       res.json(tags);
     } catch (error) {
-      console.error('Erro ao buscar tags:', error);
-      res.status(500).json({ 
-        error: 'Erro interno do servidor',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      console.error("Erro ao buscar tags:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }
   });
 
-  app.post('/api/tags', async (req, res) => {
+  app.post("/api/tags", async (req, res) => {
     try {
       const { nome, cor, company_id } = req.body;
-      
+
       if (!nome || !company_id) {
-        return res.status(400).json({ error: 'nome e company_id são obrigatórios' });
+        return res
+          .status(400)
+          .json({ error: "nome e company_id são obrigatórios" });
       }
 
       const tag = await storage.createTag({ nome, cor, company_id });
       res.status(201).json(tag);
     } catch (error) {
-      console.error('Erro ao criar tag:', error);
-      res.status(500).json({ 
-        error: 'Erro interno do servidor',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      console.error("Erro ao criar tag:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }
   });
 
-  app.put('/api/tags/:id', async (req, res) => {
+  app.put("/api/tags/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const { nome, cor } = req.body;
-      
+
       if (!nome) {
-        return res.status(400).json({ error: 'nome é obrigatório' });
+        return res.status(400).json({ error: "nome é obrigatório" });
       }
 
       const tag = await storage.updateTag(Number(id), { nome, cor });
       if (!tag) {
-        return res.status(404).json({ error: 'Tag não encontrada' });
+        return res.status(404).json({ error: "Tag não encontrada" });
       }
-      
+
       res.json(tag);
     } catch (error) {
-      console.error('Erro ao atualizar tag:', error);
-      res.status(500).json({ 
-        error: 'Erro interno do servidor',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      console.error("Erro ao atualizar tag:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }
   });
 
-  app.delete('/api/tags/:id', async (req, res) => {
+  app.delete("/api/tags/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const deleted = await storage.deleteTag(Number(id));
-      
+
       if (!deleted) {
-        return res.status(404).json({ error: 'Tag não encontrada' });
+        return res.status(404).json({ error: "Tag não encontrada" });
       }
-      
+
       res.status(204).send();
     } catch (error) {
-      console.error('Erro ao deletar tag:', error);
-      res.status(500).json({ 
-        error: 'Erro interno do servidor',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      console.error("Erro ao deletar tag:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }
   });
 
   // Sync tags from WiseApp
-  app.post('/api/tags/sync-wiseapp', async (req, res) => {
+  app.post("/api/tags/sync-wiseapp", async (req, res) => {
     try {
       const { company_id } = req.body;
       if (!company_id) {
-        return res.status(400).json({ error: 'company_id é obrigatório' });
+        return res.status(400).json({ error: "company_id é obrigatório" });
       }
 
       // Esta funcionalidade será implementada no frontend
       // Por enquanto, apenas retorna as tags locais
       const tags = await storage.getTags(Number(company_id));
-      res.json({ 
-        success: true, 
-        message: 'Sincronização será implementada no frontend com WiseApp API',
-        tags 
+      res.json({
+        success: true,
+        message: "Sincronização será implementada no frontend com WiseApp API",
+        tags,
       });
     } catch (error) {
-      console.error('Erro ao sincronizar tags do WiseApp:', error);
-      res.status(500).json({ error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' });
+      console.error("Erro ao sincronizar tags do WiseApp:", error);
+      res
+        .status(500)
+        .json({
+          error: "Erro interno do servidor",
+          details: error instanceof Error ? error.message : "Erro desconhecido",
+        });
     }
   });
 
   // Motorista tags API routes
-  app.get('/api/motoristas/:motoristaId/tags', async (req, res) => {
+  app.get("/api/motoristas/:motoristaId/tags", async (req, res) => {
     try {
       const { motoristaId } = req.params;
-      const tags = await storage.getMotoristaTagsWithDetails(Number(motoristaId));
+      const tags = await storage.getMotoristaTagsWithDetails(
+        Number(motoristaId),
+      );
       res.json(tags);
     } catch (error) {
-      console.error('Erro ao buscar tags do motorista:', error);
-      res.status(500).json({ 
-        error: 'Erro interno do servidor',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      console.error("Erro ao buscar tags do motorista:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }
   });
 
-  app.post('/api/motoristas/:motoristaId/tags', async (req, res) => {
+  app.post("/api/motoristas/:motoristaId/tags", async (req, res) => {
     try {
       const { motoristaId } = req.params;
       const { tag_id, company_id } = req.body;
-      
+
       if (!tag_id) {
-        return res.status(400).json({ error: 'tag_id é obrigatório' });
+        return res.status(400).json({ error: "tag_id é obrigatório" });
       }
 
-      const motoristaTag = await storage.addTagToMotorista(Number(motoristaId), Number(tag_id), company_id ? Number(company_id) : undefined);
+      const motoristaTag = await storage.addTagToMotorista(
+        Number(motoristaId),
+        Number(tag_id),
+        company_id ? Number(company_id) : undefined,
+      );
       res.status(201).json(motoristaTag);
     } catch (error) {
-      console.error('Erro ao adicionar tag ao motorista:', error);
-      res.status(500).json({ 
-        error: 'Erro interno do servidor',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      console.error("Erro ao adicionar tag ao motorista:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }
   });
 
-  app.delete('/api/motoristas/:motoristaId/tags/:tagId', async (req, res) => {
+  app.delete("/api/motoristas/:motoristaId/tags/:tagId", async (req, res) => {
     try {
       const { motoristaId, tagId } = req.params;
-      const deleted = await storage.removeTagFromMotorista(Number(motoristaId), Number(tagId));
-      
+      const deleted = await storage.removeTagFromMotorista(
+        Number(motoristaId),
+        Number(tagId),
+      );
+
       if (!deleted) {
-        return res.status(404).json({ error: 'Associação tag-motorista não encontrada' });
+        return res
+          .status(404)
+          .json({ error: "Associação tag-motorista não encontrada" });
       }
-      
+
       res.status(204).send();
     } catch (error) {
-      console.error('Erro ao remover tag do motorista:', error);
-      res.status(500).json({ 
-        error: 'Erro interno do servidor',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      console.error("Erro ao remover tag do motorista:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }
   });

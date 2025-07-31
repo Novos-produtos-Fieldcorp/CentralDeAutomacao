@@ -1750,18 +1750,27 @@ const MotoristasLista = () => {
 
       {/* Role Change Confirmation Modal */}
       {roleChangeModal.isOpen && roleChangeModal.motorista && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Confirmar alteração de função
+              </h2>
+              <button
+                onClick={() => setRoleChangeModal({ isOpen: false, motorista: null, newRole: null, isLoading: false })}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                disabled={roleChangeModal.isLoading}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
             <div className="p-6">
               <div className="flex items-center justify-center mb-4">
                 <div className="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-full">
                   <AlertTriangle className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
                 </div>
               </div>
-              
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white text-center mb-2">
-                Confirmar alteração de função
-              </h3>
               
               <p className="text-sm text-gray-600 dark:text-gray-300 text-center mb-6">
                 Tem certeza que deseja transformar <span className="font-semibold">{roleChangeModal.motorista.nome}</span> em um <span className="font-semibold">{roleChangeModal.newRole === 'Motorista' ? 'Motorista' : 'Agregado'}</span>?
@@ -1775,19 +1784,19 @@ const MotoristasLista = () => {
                   <div className="ml-3">
                     <p className="text-sm text-yellow-700 dark:text-yellow-300">
                       {roleChangeModal.newRole === 'Agregado' 
-                        ? 'Ao transformar em Agregado, o motorista não aparecerá mais na lista de motoristas ativos.'
+                        ? 'Ao transformar em Agregado, o registro será ativado automaticamente.'
                         : 'Ao transformar em Motorista, o registro será ativado automaticamente.'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   type="button"
                   onClick={() => setRoleChangeModal({ isOpen: false, motorista: null, newRole: null, isLoading: false })}
                   disabled={roleChangeModal.isLoading}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancelar
                 </button>
@@ -1795,17 +1804,15 @@ const MotoristasLista = () => {
                   type="button"
                   onClick={handleRoleChangeConfirm}
                   disabled={roleChangeModal.isLoading}
-                  className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-                    roleChangeModal.isLoading ? 'pl-10' : ''
-                  }`}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {roleChangeModal.isLoading ? (
                     <>
-                      <Loader2 className="absolute w-4 h-4 mr-2 -ml-1 text-white animate-spin" />
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Processando...
                     </>
                   ) : (
-                    `Confirmar ${roleChangeModal.motorista?.nome ? `para ${roleChangeModal.motorista.nome}` : ''}`
+                    'Confirmar Alteração'
                   )}
                 </button>
               </div>
@@ -1825,18 +1832,6 @@ const MotoristasLista = () => {
               icon: <User size={16} />,
               label: 'Visualizar Detalhes',
               onClick: () => handleViewDocument(contextMenu.motorista!),
-              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
-            },
-            {
-              icon: <Edit2 size={16} />,
-              label: 'Editar Motorista',
-              onClick: () => handleEdit(contextMenu.motorista!),
-              color: 'text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300'
-            },
-            {
-              icon: <FileText size={16} />,
-              label: 'Gerenciar Documentos',
-              onClick: () => handleUploadDocument(contextMenu.motorista!),
               color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
             },
             {
