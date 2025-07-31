@@ -185,6 +185,38 @@ A aplicação foi configurada para permitir embedding em iframe através das seg
 - ✅ Dependências instaladas
 - ⚠️ Requer resolução manual do git lock para push
 
+## Melhoria do Layout de Filtros Dropdown (Janeiro 2025)
+
+### Problema Identificado
+- Filtros dropdown exibindo opções em lista vertical ocupando muito espaço
+- Layout não otimizado para múltiplas opções de filtro
+- Interface pouco eficiente para seleção de múltiplos itens
+
+### Solução Implementada
+- Implementado grid de 4 colunas (`grid-cols-4`) em todos os filtros dropdown
+- Aplicado nas três páginas principais: Contratados, Agregados e Motoristas
+- Reduzidos tamanhos de checkboxes (h-3 w-3) e texto (text-xs) para melhor aproveitamento do espaço
+- Adicionado `truncate` para evitar quebras de texto em labels longas
+- Mantida funcionalidade de hover e interação em cada item
+
+### Páginas Atualizadas
+- **Contratados.tsx**: Filtros de Status e Cliente
+- **AgregadosLista.tsx**: Filtros de Status e Cliente  
+- **MotoristasLista.tsx**: Filtros de Status, Cidade e Cliente
+
+### Benefícios
+- Layout mais compacto e organizado
+- Melhor aproveitamento do espaço vertical
+- Interface mais limpa e profissional
+- Seleção mais eficiente de múltiplas opções
+- Consistência visual entre todas as páginas
+
+### Resultado
+- ✅ Grid de 4 colunas implementado em todos os filtros
+- ✅ Layout responsivo mantido
+- ✅ Funcionalidade completa preservada
+- ✅ Interface visual aprimorada
+
 ## Correções de Chat (Janeiro 2025)
 
 ### Problema de Cache HTTP 304
