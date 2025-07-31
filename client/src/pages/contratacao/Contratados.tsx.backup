@@ -1606,9 +1606,315 @@ const Contratados = () => {
 
       {/* Modais */}
       <UnifiedContratadoModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        motorista={selectedMotorista}
+                            <button
+                              onClick={() => startChat(motorista.telefone?.toString() || '', motorista.nome_motorista || '')}
+                              className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
+                              title="Iniciar chat"
+                            >
+                              <MessageCircle size={16} />
+                            </button>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {motorista.email || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="relative">
+                          <TableDropdown
+                            value={motorista.st_cadastro || ''}
+                            options={STATUS_OPTIONS}
+                            onSelect={(value) => handleUpdateStatus(null, motorista, value as string)}
+                            placeholder="Selecionar Status"
+                            disabled={updatingStatus === motorista.motorista_id}
+                            buttonClassName={
+                              motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' :
+                              motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200' :
+                              motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200' :
+                              motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' :
+                              motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200' :
+                              motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200' :
+                              motorista.st_cadastro === 'gestao_risco' ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200' :
+                              motorista.st_cadastro === 'cadastrado' || motorista.st_cadastro === 'Cadastrado' ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200' :
+                              'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                            }
+                          />
+                          
+                          {updatingStatus === motorista.motorista_id && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="relative">
+                          <TableDropdown
+                            value={motorista.cliente_id?.toString() || ''}
+                            options={[
+                              { value: '', label: 'Sem cliente', color: 'bg-gray-100 dark:bg-gray-700' },
+                              ...clientes.map(cliente => ({
+                                value: cliente.cliente_id.toString(),
+                                label: cliente.nome,
+                                color: cliente.cor || 'bg-gray-100 dark:bg-gray-700'
+                              }))
+                            ]}
+                            onSelect={(value) => handleUpdateCliente(null, motorista, value && value !== '' ? parseInt(value as string) : null)}
+                            placeholder="Selecionar Cliente"
+                            disabled={updatingCliente === motorista.motorista_id}
+                            buttonClassName={
+                              motorista.cliente_id 
+                                ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor || 
+                                  'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
+                                : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
+                            }
+                          />
+                          
+                          {updatingCliente === motorista.motorista_id && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <TagsDisplay
+                          motoristaId={motorista.motorista_id || 0}
+                          className="min-w-[120px]"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {getMotoristaCity(motorista) || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <label className="inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={!!motorista.integracao_data}
+                              onChange={(e) => {
+                                const newDate = e.target.checked ? new Date().toISOString().split('T')[0] : null;
+                                handleUpdateIntegracaoInterna(motorista, newDate);
+                              }}
+                              className="form-checkbox h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </label>
+                          {motorista.integracao_data && (
+                            <span className="text-sm text-gray-600">
+                              {new Date(motorista.integracao_data).toLocaleDateString('pt-BR')}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <label className="inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={!!motorista.treinamento_data}
+                              onChange={(e) => {
+                                const newDate = e.target.checked ? new Date().toISOString().split('T')[0] : null;
+                                handleUpdateTreinamentoCliente(motorista, newDate);
+                              }}
+                              className="form-checkbox h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </label>
+                          {motorista.treinamento_data && (
+                            <span className="text-sm text-gray-600">
+                              {new Date(motorista.treinamento_data).toLocaleDateString('pt-BR')}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {motorista.veiculo && motorista.veiculo.length > 0 ? (
+                            <div>
+                              <div className="font-medium">{motorista.veiculo[0].placa || ''}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {motorista.veiculo[0].tipologia || ''}
+                              </div>
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {formatDate(motorista.data_cadastro)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-3">
+                          <button
+                            onClick={() => handleViewDocument(motorista)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            title="Visualizar"
+                          >
+                            <FilePen size={18} />
+                          </button>
+                          <button
+                            onClick={(e) => handleToggleStatus(e, motorista)}
+                            disabled={updatingStatus === motorista.motorista_id}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                              motorista.ativo 
+                                ? 'bg-green-500 dark:bg-green-600' 
+                                : 'bg-gray-200 dark:bg-gray-700'
+                            } ${updatingStatus === motorista.motorista_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            role="switch"
+                            aria-checked={motorista.ativo}
+                            title={motorista.ativo ? "Desativar motorista" : "Ativar motorista"}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                motorista.ativo ? 'translate-x-5' : 'translate-x-0'
+                              }`}
+                            />
+                            {updatingStatus === motorista.motorista_id && (
+                              <Loader2 
+                                className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
+                              />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <ScrollableTableIndicator 
+              containerRef={tableContainerRef} 
+              className="mr-2 ml-2"
+            />
+          </div>
+        </div>
+        
+        {filteredContratados.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 dark:text-gray-400">
+              Nenhum contratado encontrado
+            </p>
+          </div>
+        ) : (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        )}
+      </div>
+
+      {/* Context Menu */}
+      {contextMenu.visible && contextMenu.motorista && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu({ ...contextMenu, visible: false })}
+          actions={[
+            {
+              icon: <User size={16} />,
+              label: 'Visualizar Detalhes' as const satisfies string,
+              onClick: () => handleViewDocument(contextMenu.motorista!),
+              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
+            },
+            {
+              icon: <Edit2 size={16} />,
+              label: 'Editar Motorista',
+              onClick: () => handleEdit(contextMenu.motorista!),
+              color: 'text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300'
+            },
+            {
+              icon: <FileText size={16} />,
+              label: 'Gerenciar Documentos',
+              onClick: () => handleUploadDocument(contextMenu.motorista!),
+              color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
+            },
+            {
+              icon: <MessageCircle size={16} />,
+              label: 'Iniciar Chat',
+              onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome_motorista || ''),
+              color: 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300',
+              disabled: !contextMenu.motorista!.telefone
+            }
+          ]}
+        />
+      )}
+
+      {/* Modals */}
+      <UnifiedMotoristaModal
+        isOpen={isUnifiedModalOpen}
+        onClose={() => setIsUnifiedModalOpen(false)}
+        motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : null}
+        onSuccess={fetchContratados}
+      />
+
+      <DocumentViewer
+        isOpen={isDocumentViewerOpen}
+        onClose={() => setIsDocumentViewerOpen(false)}
+        documento={documento}
+        nome={selectedMotorista?.nome_motorista || ''}
+        cpf={selectedMotorista?.cpf}
+        email={selectedMotorista?.email || undefined}
+        telefone={selectedMotorista?.telefone?.toString()}
+        dt_nascimento={selectedMotorista?.dt_nascimento}
+        endereco={endereco}
+        st_cadastro={selectedMotorista?.st_cadastro || 'cadastrado'}
+      />
+
+      <DocumentUploadModal
+        isOpen={isDocumentUploadOpen}
+        onClose={() => setIsDocumentUploadOpen(false)}
+        motorista_id={selectedMotorista?.motorista_id || 0}
+        nome={selectedMotorista?.nome_motorista || ''}
+        onUploadSuccess={fetchContratados}
+      />
+
+      <EditMotoristaModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        motorista={selectedMotorista ? (() => {
+          const motoristaWithAddress: MotoristaWithAddress = {
+            ...selectedMotorista as unknown as Motorista,
+            nome: selectedMotorista.nome_motorista || '',
+            endereco: {
+              id_end_motorista: selectedMotorista.id_end_motorista || 0,
+              nr_end: selectedMotorista.nr_end ?? null,
+              ds_complemento_end: selectedMotorista.ds_complemento_end ?? null,
+              st_end: selectedMotorista.st_end ?? null,
+              logradouro: selectedMotorista.logradouro ?? null,
+              nr_cep: selectedMotorista.nr_cep ?? null,
+              bairro: selectedMotorista.nome_bairro ?? null,
+              cidade: selectedMotorista.nome_cidade ?? null,
+              estado: selectedMotorista.nome_estado ?? null,
+              sigla_estado: selectedMotorista.sigla_estado ?? null
+            },
+            veiculo: selectedMotorista.veiculo_id ? {
+              veiculo_id: selectedMotorista.veiculo_id,
+              placa: selectedMotorista.placa || '',
+              status_veiculo: selectedMotorista.status_veiculo || false,
+              marca: selectedMotorista.marca || '',
+              tipologia: selectedMotorista.tipologia || '',
+              ano: selectedMotorista.ano || '',
+              combustivel: selectedMotorista.combustivel || '',
+              peso: selectedMotorista.peso || '',
+              cubagem: selectedMotorista.cubagem || '',
+              possui_rastreador: selectedMotorista.possui_rastreador || false,
+              marca_rastreador: selectedMotorista.marca_rastreador || '',
+              motorista_id: selectedMotorista.motorista_id || 0,
+              cor: selectedMotorista.cor || '',
+              tipo: selectedMotorista.tipo || ''
+            } : undefined
+          };
+          return motoristaWithAddress;
+        })() : null}
         onUpdate={fetchContratados}
       />
 
@@ -1619,10 +1925,10 @@ const Contratados = () => {
         title="Confirmar Exclusão"
         message="Tem certeza que deseja excluir este motorista? Esta ação não pode ser desfeita."
         itemData={selectedMotorista ? [
-          { label: "Nome", value: selectedMotorista.nome_motorista || "Não informado" },
-          { label: "CPF", value: selectedMotorista.cpf ? formatCPF(selectedMotorista.cpf) : "Não informado" },
-          { label: "Status", value: selectedMotorista.st_cadastro || "Não informado" }
-        ].filter(item => item.value !== "Não informado") : []}
+          { label: 'Nome', value: selectedMotorista.nome_motorista || 'Não informado' },
+          { label: 'CPF', value: selectedMotorista.cpf ? formatCPF(selectedMotorista.cpf) : 'Não informado' },
+          { label: 'Status', value: selectedMotorista.st_cadastro || 'Não informado' }
+        ].filter(item => item.value !== 'Não informado') : []}
       />
 
       <BulkActionsModal
@@ -1650,7 +1956,7 @@ const Contratados = () => {
         numbers={Array.from(selectedItems)
           .map(id => {
             const motorista = contratados.find(m => m.motorista_id === id);
-            return motorista?.telefone ? motorista.telefone.toString() : "";
+            return motorista?.telefone ? motorista.telefone.toString() : '';
           })
           .filter(Boolean)}
       />
