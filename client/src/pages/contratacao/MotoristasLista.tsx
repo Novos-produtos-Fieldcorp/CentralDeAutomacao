@@ -824,8 +824,9 @@ const MotoristasLista = () => {
     // Lógica para filtro de tags (multiseleção)
     let tagMatch = true;
     if (tagFilter.length > 0) {
-      // Para implementar o filtro de tags, seria necessário buscar as tags do motorista
-      // Por enquanto, vamos permitir todos passarem até implementarmos a busca de tags por motorista
+      // Buscar tags do motorista para comparar com o filtro
+      // Por enquanto, permitir todos passarem pois o filtro de tags requer implementação de busca assíncrona
+      // Em uma implementação completa, seria necessário buscar as tags do motorista via API
       tagMatch = true;
     }
     

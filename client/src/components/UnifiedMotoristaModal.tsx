@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  X, User, MapPin, FileText, ExternalLink, Edit2, Users, ShieldAlert, MessageSquare 
+  X, User, MapPin, FileText, ExternalLink, Edit2, Users, ShieldAlert, MessageSquare, Tag 
 } from 'lucide-react';
 import type { 
   DocumentoMotorista, 
@@ -17,6 +17,7 @@ import EditAjudanteModal from './EditAjudanteModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import GestaoRiscoTab from './GestaoRiscoTab';
 import ComentariosTab from './ComentariosTab';
+import { MotoristaTagsManager } from './MotoristaTagsManager';
 import { toast } from 'sonner';
 
 interface UnifiedMotoristaModalProps {
@@ -33,7 +34,7 @@ const UnifiedMotoristaModal = ({
   onSuccess 
 }: UnifiedMotoristaModalProps) => {
 
-  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios' | 'tags'>('details');
   
 
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
@@ -550,6 +551,20 @@ const UnifiedMotoristaModal = ({
                         {comentariosCount}
                       </span>
                     )}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('tags')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'tags'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1">
+                    <Tag className="w-4 h-4" />
+                    Tags
                   </div>
                 </button>
               </nav>
@@ -1091,6 +1106,19 @@ const UnifiedMotoristaModal = ({
                     fetchComentariosCount();
                   }}
                 />
+              ) : activeTab === 'tags' ? (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      Gerenciar Tags
+                    </h3>
+                  </div>
+                  
+                  <MotoristaTagsManager 
+                    motoristaId={motorista.motorista_id}
+                    companyId={motorista.company_id || 2}
+                  />
+                </div>
               ) : (
                 <div>
                   <p style={{color: 'blue', fontSize: '18px', fontWeight: 'bold'}}>
