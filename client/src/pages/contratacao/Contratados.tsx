@@ -3,6 +3,8 @@ import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, L
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database'; // Adicionando tipos necessários
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import DocumentViewer from '../../components/DocumentViewer';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
 import EditMotoristaModal from '../../components/EditMotoristaModal';
@@ -74,6 +76,13 @@ export interface ViewContratado {
     tipo?: string;
   }>;
   ajudantes?: string[];
+  // Missing properties needed by the components
+  nome_cliente?: string;
+  cidade?: string;
+  tags?: string[];
+  integr_interna?: string;
+  treinamento_cliente?: string;
+  tipo_veiculo?: string;
 }
 
 // Status options for dropdown - matching database values exactly
@@ -202,6 +211,13 @@ const Contratados = () => {
   });
   
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Utility function to get status color
+  const getStatusColor = (status: string) => {
+    const statusOption = STATUS_OPTIONS.find(opt => opt.value === status);
+    return statusOption?.color || 'bg-gray-100 dark:bg-gray-700';
+  };
 
   const convertToMotorista = (contratado: ViewContratado | null): MotoristaWithAddress | null => {
     if (!contratado) return null;
@@ -1376,7 +1392,6 @@ const Contratados = () => {
               <TagsFilter
                 selectedTags={tagFilter}
                 onTagsChange={setTagFilter}
-                placeholder="Tags"
               />
             </div>
           </div>
@@ -1530,7 +1545,7 @@ const Contratados = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <TagsDisplay tags={motorista.tags || []} />
+                        <TagsDisplay motoristaId={motorista.motorista_id || 0} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {motorista.cidade || '-'}
@@ -1605,11 +1620,11 @@ const Contratados = () => {
       </div>
 
       {/* Modais */}
-      <UnifiedContratadoModal
+      <UnifiedMotoristaModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        motorista={selectedMotorista}
-        onUpdate={fetchContratados}
+        motorista={convertToMotorista(selectedMotorista)}
+        onSuccess={fetchContratados}
       />
 
       <DeleteConfirmationModal
@@ -1654,6 +1669,7 @@ const Contratados = () => {
           })
           .filter(Boolean)}
       />
+    </div>
     </div>
   );
 };
