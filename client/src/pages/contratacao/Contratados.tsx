@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck } from 'lucide-react';
+import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Tag } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database'; // Adicionando tipos necessários
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -159,6 +159,11 @@ const Contratados = () => {
   const [cidades, setCidades] = useState<string[]>([]);
   const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
   const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [visibleTags, setVisibleTags] = useState<string[]>([]);
+  const [motoristaTags, setMotoristaTags] = useState<{[key: number]: any[]}>({});
+  const [showTagsDropdown, setShowTagsDropdown] = useState(false);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   
 
@@ -178,13 +183,16 @@ const Contratados = () => {
       if (showTipoVeiculoDropdown && !(event.target as HTMLElement).closest('#tipo-veiculo-dropdown')) {
         setShowTipoVeiculoDropdown(false);
       }
+      if (showTagsDropdown && !(event.target as HTMLElement).closest('#tags-dropdown')) {
+        setShowTagsDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown]);
+  }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown, showTagsDropdown]);
   
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;

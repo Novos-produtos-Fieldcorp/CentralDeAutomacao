@@ -1,5 +1,5 @@
   import React, { useState, useEffect, useRef } from 'react';
-  import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle } from 'lucide-react';
+  import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag } from 'lucide-react';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
   import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database';
@@ -125,6 +125,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
+  const [showTagsDropdown, setShowTagsDropdown] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -217,6 +218,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const [cidades, setCidades] = useState<string[]>([]);
     const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
     const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
+    const [tags, setTags] = useState<any[]>([]);
+    const [tagFilter, setTagFilter] = useState<string[]>([]);
+    const [visibleTags, setVisibleTags] = useState<string[]>([]);
+    const [motoristaTags, setMotoristaTags] = useState<{[key: number]: any[]}>({});
     const tableContainerRef = useRef<HTMLDivElement>(null);
     
 
@@ -236,13 +241,16 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         if (showTipoVeiculoDropdown && !(event.target as HTMLElement).closest('#tipo-veiculo-dropdown')) {
           setShowTipoVeiculoDropdown(false);
         }
+        if (showTagsDropdown && !(event.target as HTMLElement).closest('#tags-dropdown')) {
+          setShowTagsDropdown(false);
+        }
       };
 
       document.addEventListener('mousedown', handleClickOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
       };
-    }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown]);
+    }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown, showTagsDropdown]);
     
     const [contextMenu, setContextMenu] = useState<{
       visible: boolean;
@@ -357,6 +365,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     useEffect(() => {
       fetchContratados();
       fetchClientes();
+      fetchTags();
     }, [dateFilter, customDateRange]);
 
     useEffect(() => {
@@ -559,12 +568,50 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
 
         setContratados(agregadosAgrupados);
+        
+        // Buscar tags para cada motorista
+        if (agregadosAgrupados && agregadosAgrupados.length > 0) {
+          await fetchAllMotoristaTags(agregadosAgrupados);
+        }
       } catch (error) {
         console.error('Error fetching contratados:', error);
         toast.error('Erro ao carregar contratados');
       } finally {
         setLoading(false);
       }
+    };
+
+    const fetchTags = async () => {
+      try {
+        const response = await fetch(`/api/tags?company_id=${companyId}`);
+        if (!response.ok) throw new Error('Erro ao buscar tags');
+        const data = await response.json();
+        setTags(data);
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+      }
+    };
+
+    const fetchMotoristaTags = async (motoristaId: number) => {
+      try {
+        const response = await fetch(`/api/motoristas/${motoristaId}/tags`);
+        if (response.ok) {
+          const tagsData = await response.json();
+          setMotoristaTags(prev => ({ ...prev, [motoristaId]: tagsData }));
+        }
+      } catch (error) {
+        console.error('Erro ao buscar tags do motorista:', error);
+      }
+    };
+
+    const fetchAllMotoristaTags = async (contratados: ViewContratado[]) => {
+      const promises = contratados.map(contratado => {
+        if (contratado.motorista_id) {
+          return fetchMotoristaTags(contratado.motorista_id);
+        }
+        return Promise.resolve();
+      });
+      await Promise.all(promises);
     };
 
     // Cores padrão para os clientes (apenas fundo, sem borda)
@@ -1188,7 +1235,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             </div>
           </div>
           
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative" id="cliente-dropdown">
               <div className="relative">
                 <button
@@ -1405,6 +1452,76 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 </div>
               )}
             </div>
+
+            <div className="relative" id="tags-dropdown">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowTagsDropdown(!showTagsDropdown)}
+                  className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
+                >
+                  <span className="truncate">Tags visíveis</span>
+                  <div className="absolute inset-y-0 right-2 flex items-center">
+                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showTagsDropdown ? 'transform rotate-180' : ''}`} />
+                  </div>
+                </button>
+                <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                {visibleTags.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setVisibleTags([]);
+                    }}
+                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              {showTagsDropdown && (
+                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                  <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Tags para ocultar</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setVisibleTags([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  {tags.map(tag => (
+                    <div key={tag.id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`tag-visible-${tag.id}`}
+                        checked={visibleTags.includes(tag.id.toString())}
+                        onChange={() => {
+                          const tagId = tag.id.toString();
+                          setVisibleTags(prev => 
+                            prev.includes(tagId) 
+                              ? prev.filter(id => id !== tagId)
+                              : [...prev, tagId]
+                          );
+                        }}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <label htmlFor={`tag-visible-${tag.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300 flex items-center">
+                        <span
+                          className="inline-block w-3 h-3 rounded-full mr-2"
+                          style={{ backgroundColor: tag.cor }}
+                        />
+                        {tag.nome}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mt-4 flex flex-col md:flex-row gap-4">
@@ -1495,6 +1612,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Tags</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
                     </tr>
@@ -1637,6 +1755,29 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                               </div>
                             ) : (
                               '-'
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-wrap gap-1">
+                            {motoristaTags[motorista.motorista_id]?.filter((tag: any) => !visibleTags.includes(tag.id.toString())).length > 0 ? (
+                              motoristaTags[motorista.motorista_id]
+                                .filter((tag: any) => !visibleTags.includes(tag.id.toString()))
+                                .map((tag: any) => (
+                                <span
+                                  key={tag.id}
+                                  className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
+                                  style={{
+                                    backgroundColor: tag.cor + '30',
+                                    color: tag.cor,
+                                    border: `1px solid ${tag.cor}50`
+                                  }}
+                                >
+                                  {tag.nome}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-sm text-gray-500 dark:text-gray-400">-</span>
                             )}
                           </div>
                         </td>

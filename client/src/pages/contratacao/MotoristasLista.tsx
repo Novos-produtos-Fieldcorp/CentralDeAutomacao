@@ -140,6 +140,7 @@ const MotoristasLista = () => {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [tags, setTags] = useState<any[]>([]);
+  const [motoristaTags, setMotoristaTags] = useState<{[key: number]: any[]}>({});
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -152,6 +153,7 @@ const MotoristasLista = () => {
   const [clienteFilter, setClienteFilter] = useState<string[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
   const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [visibleTags, setVisibleTags] = useState<string[]>([]);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
@@ -399,12 +401,39 @@ const MotoristasLista = () => {
       setCidades(Array.from(uniqueCities).sort());
 
       setMotoristas(motoristasAgrupados || []);
+      
+      // Buscar tags para cada motorista
+      if (motoristasAgrupados && motoristasAgrupados.length > 0) {
+        await fetchAllMotoristaTags(motoristasAgrupados);
+      }
     } catch (error) {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchMotoristaTags = async (motoristaId: number) => {
+    try {
+      const response = await fetch(`/api/motoristas/${motoristaId}/tags`);
+      if (response.ok) {
+        const tagsData = await response.json();
+        setMotoristaTags(prev => ({ ...prev, [motoristaId]: tagsData }));
+      }
+    } catch (error) {
+      console.error('Erro ao buscar tags do motorista:', error);
+    }
+  };
+
+  const fetchAllMotoristaTags = async (motoristas: ViewMotorista[]) => {
+    const promises = motoristas.map(motorista => {
+      if (motorista.motorista_id) {
+        return fetchMotoristaTags(motorista.motorista_id);
+      }
+      return Promise.resolve();
+    });
+    await Promise.all(promises);
   };
 
   // Cores padrão para os clientes (apenas fundo, sem borda)
@@ -824,10 +853,9 @@ const MotoristasLista = () => {
     // Lógica para filtro de tags (multiseleção)
     let tagMatch = true;
     if (tagFilter.length > 0) {
-      // Buscar tags do motorista para comparar com o filtro
-      // Por enquanto, permitir todos passarem pois o filtro de tags requer implementação de busca assíncrona
-      // Em uma implementação completa, seria necessário buscar as tags do motorista via API
-      tagMatch = true;
+      const motoristaTagsList = motoristaTags[motorista.motorista_id] || [];
+      const motoristaTagIds = motoristaTagsList.map((tag: any) => tag.id.toString());
+      tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
     }
     
     // Verificação de busca por texto
@@ -1271,57 +1299,109 @@ const MotoristasLista = () => {
             </button>
             
             {showTagDropdown && (
-              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto" id="tag-dropdown-menu">
-                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
-                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    <span>Selecionar tags</span>
-                    <button 
-                      type="button" 
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTagFilter([]);
-                      }}
-                    >
-                      Limpar
-                    </button>
+              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-80 overflow-auto" id="tag-dropdown-menu">
+                <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                  <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    Filtros de Tags
                   </div>
-                </div>
-                <div className="max-h-48 overflow-y-auto">
-                  {tags.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                      Nenhuma tag disponível
+                  
+                  {/* Seção para Filtrar por Tags */}
+                  <div className="mb-3">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Filtrar por:</div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {tagFilter.length === 0 ? 'Nenhuma selecionada' : `${tagFilter.length} selecionada(s)`}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTagFilter([]);
+                        }}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Limpar filtros
+                      </button>
                     </div>
-                  ) : (
-                    tags.map((tag) => (
-                      <div key={tag.id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                        <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                    {tags.map((tag) => (
+                      <div key={`filter-${tag.id}`} className="flex items-center py-1 px-1">
+                        <label className="flex items-center cursor-pointer w-full hover:bg-gray-50 dark:hover:bg-gray-600 rounded px-1 py-1">
                           <input
                             type="checkbox"
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                             checked={tagFilter.includes(tag.id.toString())}
                             onChange={(e) => {
+                              const tagId = tag.id.toString();
                               if (e.target.checked) {
-                                setTagFilter([...tagFilter, tag.id.toString()]);
+                                setTagFilter([...tagFilter, tagId]);
                               } else {
-                                setTagFilter(tagFilter.filter(id => id !== tag.id.toString()));
+                                setTagFilter(tagFilter.filter(id => id !== tagId));
                               }
                             }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                            }}
+                            onClick={(e) => e.stopPropagation()}
                           />
-                          <div className="flex items-center space-x-2">
-                            <div 
-                              className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
-                              style={{ backgroundColor: tag.cor }}
-                            ></div>
-                            <span className="text-sm text-gray-700 dark:text-gray-200">{tag.nome}</span>
-                          </div>
+                          <span
+                            className="text-sm rounded-full px-2 py-1"
+                            style={{
+                              backgroundColor: tag.cor + '20',
+                              color: tag.cor,
+                              border: `1px solid ${tag.cor}40`
+                            }}
+                          >
+                            {tag.nome}
+                          </span>
                         </label>
                       </div>
-                    ))
-                  )}
+                    ))}
+                  </div>
+                  
+                  {/* Seção para Mostrar/Ocultar Tags na Tabela */}
+                  <div className="border-t border-gray-200 dark:border-gray-600 pt-2">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Exibir na tabela:</div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {visibleTags.length === 0 ? 'Todas visíveis' : `${tags.length - visibleTags.length} visíveis`}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setVisibleTags([]);
+                        }}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Mostrar todas
+                      </button>
+                    </div>
+                    {tags.map((tag) => (
+                      <div key={`visible-${tag.id}`} className="flex items-center py-1 px-1">
+                        <label className="flex items-center cursor-pointer w-full hover:bg-gray-50 dark:hover:bg-gray-600 rounded px-1 py-1">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-green-600 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                            checked={!visibleTags.includes(tag.id.toString())}
+                            onChange={(e) => {
+                              const tagId = tag.id.toString();
+                              if (e.target.checked) {
+                                setVisibleTags(visibleTags.filter(id => id !== tagId));
+                              } else {
+                                setVisibleTags([...visibleTags, tagId]);
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span
+                            className="text-sm rounded-full px-2 py-1"
+                            style={{
+                              backgroundColor: tag.cor + '20',
+                              color: tag.cor,
+                              border: `1px solid ${tag.cor}40`
+                            }}
+                          >
+                            {tag.nome}
+                          </span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -1424,6 +1504,7 @@ const MotoristasLista = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Tags</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
@@ -1553,6 +1634,29 @@ const MotoristasLista = () => {
                             <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
                               <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                             </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1">
+                          {motoristaTags[motorista.motorista_id]?.filter((tag: any) => !visibleTags.includes(tag.id.toString())).length > 0 ? (
+                            motoristaTags[motorista.motorista_id]
+                              .filter((tag: any) => !visibleTags.includes(tag.id.toString()))
+                              .map((tag: any) => (
+                              <span
+                                key={tag.id}
+                                className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
+                                style={{
+                                  backgroundColor: tag.cor + '30',
+                                  color: tag.cor,
+                                  border: `1px solid ${tag.cor}50`
+                                }}
+                              >
+                                {tag.nome}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-500 dark:text-gray-400">-</span>
                           )}
                         </div>
                       </td>
