@@ -354,13 +354,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/motoristas/:motoristaId/tags', async (req, res) => {
     try {
       const { motoristaId } = req.params;
-      const { tag_id } = req.body;
+      const { tag_id, company_id } = req.body;
       
       if (!tag_id) {
         return res.status(400).json({ error: 'tag_id é obrigatório' });
       }
 
-      const motoristaTag = await storage.addTagToMotorista(Number(motoristaId), Number(tag_id));
+      const motoristaTag = await storage.addTagToMotorista(Number(motoristaId), Number(tag_id), company_id ? Number(company_id) : undefined);
       res.status(201).json(motoristaTag);
     } catch (error) {
       console.error('Erro ao adicionar tag ao motorista:', error);

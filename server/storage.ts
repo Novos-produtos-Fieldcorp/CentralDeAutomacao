@@ -416,10 +416,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(motorista_tags.motorista_id, motoristaId));
   }
 
-  async addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag> {
+  async addTagToMotorista(motoristaId: number, tagId: number, companyId?: number): Promise<MotoristaTag> {
     const [newMotoristaTag] = await db
       .insert(motorista_tags)
-      .values({ motorista_id: motoristaId, tag_id: tagId })
+      .values({ 
+        motorista_id: motoristaId, 
+        tag_id: tagId
+      })
       .returning();
     return newMotoristaTag;
   }
