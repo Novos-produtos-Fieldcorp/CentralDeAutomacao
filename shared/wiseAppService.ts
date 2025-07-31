@@ -16,6 +16,15 @@ export interface WiseAppContact {
   };
 }
 
+export interface WiseAppTag {
+  id: number;
+  name: string;
+  description?: string;
+  color?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface WiseAppConfig {
   apiKey: string;
   accountId: string;
@@ -282,6 +291,136 @@ export class WiseAppService {
         valid: false,
         error: error instanceof Error ? error.message : 'Erro de validação'
       };
+    }
+  }
+
+  /**
+   * Buscar todas as tags do WiseApp
+   */
+  async getTags(): Promise<WiseAppTag[]> {
+    try {
+      const response = await this.api.get(`/api/v1/accounts/${this.config.accountId}/labels`);
+      
+      if (response.data?.payload) {
+        return response.data.payload.map((tag: any) => ({
+          id: tag.id,
+          name: tag.title,
+          description: tag.description,
+          color: tag.color,
+          created_at: tag.created_at,
+          updated_at: tag.updated_at
+        }));
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Erro ao buscar tags do WiseApp:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Criar nova tag no WiseApp
+   */
+  async createTag(tagData: { name: string; description?: string; color?: string }): Promise<WiseAppTag | null> {
+    try {
+      const payload = {
+        title: tagData.name,
+        description: tagData.description || '',
+        color: tagData.color || '#3B82F6'
+      };
+
+      const response = await this.api.post(`/api/v1/accounts/${this.config.accountId}/labels`, payload);
+      
+      if (response.data?.payload) {
+        const tag = response.data.payload;
+        return {
+          id: tag.id,
+          name: tag.title,
+          description: tag.description,
+          color: tag.color,
+          created_at: tag.created_at,
+          updated_at: tag.updated_at
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Erro ao criar tag no WiseApp:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Atualizar tag no WiseApp
+   */
+  async updateTag(tagId: number, tagData: { name: string; description?: string; color?: string }): Promise<WiseAppTag | null> {
+    try {
+      const payload = {
+        title: tagData.name,
+        description: tagData.description || '',
+        color: tagData.color || '#3B82F6'
+      };
+
+      const response = await this.api.patch(`/api/v1/accounts/${this.config.accountId}/labels/${tagId}`, payload);
+      
+      if (response.data?.payload) {
+        const tag = response.data.payload;
+        return {
+          id: tag.id,
+          name: tag.title,
+          description: tag.description,
+          color: tag.color,
+          created_at: tag.created_at,
+          updated_at: tag.updated_at
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Erro ao atualizar tag no WiseApp:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Excluir tag do WiseApp
+   */
+  async deleteTag(tagId: number): Promise<boolean> {
+    try {
+      await this.api.delete(`/api/v1/accounts/${this.config.accountId}/labels/${tagId}`);
+      return true;
+    } catch (error) {
+      console.error('Erro ao excluir tag do WiseApp:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Aplicar tag a um contato no WiseApp
+   */
+  async applyTagToContact(contactId: number, tagId: number): Promise<boolean> {
+    try {
+      await this.api.post(`/api/v1/accounts/${this.config.accountId}/contacts/${contactId}/labels`, {
+        labels: [tagId]
+      });
+      return true;
+    } catch (error) {
+      console.error('Erro ao aplicar tag ao contato no WiseApp:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Remover tag de um contato no WiseApp
+   */
+  async removeTagFromContact(contactId: number, tagId: number): Promise<boolean> {
+    try {
+      await this.api.delete(`/api/v1/accounts/${this.config.accountId}/contacts/${contactId}/labels/${tagId}`);
+      return true;
+    } catch (error) {
+      console.error('Erro ao remover tag do contato no WiseApp:', error);
+      return false;
     }
   }
 }

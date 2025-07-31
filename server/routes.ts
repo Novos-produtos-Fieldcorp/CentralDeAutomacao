@@ -314,6 +314,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync tags from WiseApp
+  app.post('/api/tags/sync-wiseapp', async (req, res) => {
+    try {
+      const { company_id } = req.body;
+      if (!company_id) {
+        return res.status(400).json({ error: 'company_id é obrigatório' });
+      }
+
+      // Esta funcionalidade será implementada no frontend
+      // Por enquanto, apenas retorna as tags locais
+      const tags = await storage.getTags(Number(company_id));
+      res.json({ 
+        success: true, 
+        message: 'Sincronização será implementada no frontend com WiseApp API',
+        tags 
+      });
+    } catch (error) {
+      console.error('Erro ao sincronizar tags do WiseApp:', error);
+      res.status(500).json({ error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' });
+    }
+  });
+
   // Motorista tags API routes
   app.get('/api/motoristas/:motoristaId/tags', async (req, res) => {
     try {

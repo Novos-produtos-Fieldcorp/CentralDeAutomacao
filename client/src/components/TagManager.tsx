@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Edit, X } from "lucide-react";
+import { Plus, Trash2, Edit, X, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
+// Note: Importing WiseApp service for tag synchronization
+// import { getWiseAppService } from "../../../shared/wiseAppService";
 
 interface TagFormData {
   nome: string;
@@ -28,6 +30,7 @@ export function TagManager({ companyId }: TagManagerProps) {
     nome: "",
     cor: "#3B82F6",
   });
+  const [isSyncingWiseApp, setIsSyncingWiseApp] = useState(false);
   const queryClient = useQueryClient();
 
   // Query para buscar tags
@@ -139,6 +142,25 @@ export function TagManager({ companyId }: TagManagerProps) {
     resetForm();
   };
 
+  // Sincronizar tags do WiseApp
+  const syncWiseAppTags = async () => {
+    if (isSyncingWiseApp) return;
+    
+    setIsSyncingWiseApp(true);
+    try {
+      // Implementação de sincronização será feita em versão futura
+      toast.info('Funcionalidade de sincronização com WiseApp em desenvolvimento.');
+      
+      // Simulação de sucesso por enquanto
+      queryClient.invalidateQueries({ queryKey: ['/api/tags', companyId] });
+    } catch (error) {
+      console.error('Erro ao sincronizar tags do WiseApp:', error);
+      toast.error('Erro ao sincronizar tags do WiseApp');
+    } finally {
+      setIsSyncingWiseApp(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="text-center">Carregando tags...</div>;
   }
@@ -147,13 +169,23 @@ export function TagManager({ companyId }: TagManagerProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Tags</h3>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 dark:bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-2 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Nova Tag
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={syncWiseAppTags}
+            disabled={isSyncingWiseApp}
+            className="bg-green-600 dark:bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-700 dark:hover:bg-green-600 flex items-center gap-2 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${isSyncingWiseApp ? 'animate-spin' : ''}`} />
+            {isSyncingWiseApp ? 'Sincronizando...' : 'Sync WiseApp'}
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-600 dark:bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-2 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Nova Tag
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">

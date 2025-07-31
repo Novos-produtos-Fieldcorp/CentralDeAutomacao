@@ -1,0 +1,168 @@
+Campaigns
+﻿
+
+Authorization
+API Key
+This folder is using an authorization helper from collection Chatwoot Application API v1.0
+POST
+Create Campaign
+http://localhost:3000/{{api_version}}/accounts/1/campaigns
+﻿
+
+Authorization
+Bearer Token
+Request Headers
+Content-Type
+application/json
+api_access_token
+nil
+Body
+raw (json)
+json
+{
+    "title": "test",
+    "message": "test",
+    "inbox_id": 37,
+    "sender_id":21
+}
+PATCH
+Edit Campaign
+http://localhost:3000/{{api_version}}/accounts/1/campaigns/{{campaign_id}}
+﻿
+
+Authorization
+Bearer Token
+Request Headers
+Content-Type
+application/json
+api_access_token
+nil
+Body
+raw (json)
+json
+{
+	"title":"test 1",
+    "content": "test",
+    "inbox_id": {{inbox_id}}
+}
+GET
+List Campaigns
+http://localhost:3000/{{api_version}}/accounts/1/campaigns
+﻿
+
+Authorization
+Bearer Token
+Request Headers
+api_access_token
+nil
+GET
+Show Campaign
+http://localhost:3000/{{api_version}}/accounts/1/campaigns/{{campaign_id}}
+﻿
+
+Authorization
+Bearer Token
+Request Headers
+api_access_token
+nil
+DELETE
+Delete campaign
+http://localhost:3000/{{api_version}}/accounts/1/campaigns/{{campaign_id}}
+﻿
+
+Authorization
+Bearer Token
+Request Headers
+api_access_token
+nil
+GET
+Get Inbox Campaigns
+http://localhost:3000/{{api_version}}/widget/campaigns?website_token={{website_token}}
+﻿
+
+Authorization
+Bearer Token
+Request Headers
+api_access_token
+nil
+Query Params
+website_token
+{{website_token}}
+SLA
+﻿
+
+Authorization
+API Key
+This folder is using an authorization helper from collection Chatwoot Application API v1.0
+GET
+List SLAs
+http://localhost:3000/{{api_version}}/accounts/1/sla_policies
+﻿
+
+Authorization
+Bearer Token
+Request Headers
+api_access_token
+nil
+POST
+Create SLA
+http://localhost:3000/{{api_version}}/accounts/1/sla_policies
+﻿
+
+Authorization
+Bearer Token
+Request Headers
+Content-Type
+application/json
+api_access_token
+nil
+Body
+raw (json)
+json
+{
+    "name": "SLA-1",
+    "frt_threshold": 1000,
+    "rt_threshold": 2000,
+    "only_during_business_hours": false
+}
+PATCH
+Update SLA
+http://localhost:3000/{{api_version}}/accounts/1/sla_policies/1
+﻿
+
+Authorization
+Bearer Token
+Request Headers
+Content-Type
+application/json
+api_access_token
+nil
+Body
+raw (json)
+json
+{
+    "name": "SLA-1",
+    "frt_threshold": 21,
+    "rt_threshold": 2000,
+    "only_during_business_hours": false
+}
+GET
+Show SLA
+http://localhost:3000/{{api_version}}/accounts/1/sla_policies/1
+﻿
+
+Authorization
+Bearer Token
+Request Headers
+api_access_token
+nil
+DELETE
+Delete SLA
+http://localhost:3000/{{api_version}}/accounts/1/sla_policies/1
+﻿
+
+Authorization
+Bearer Token
+Request Headers
+api_access_token
+nil

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, ArrowLeftRight, AlertTriangle, XCircle } from 'lucide-react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, ArrowLeftRight, AlertTriangle, XCircle, Tag } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -139,6 +139,7 @@ const MotoristasLista = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
+  const [tags, setTags] = useState<any[]>([]);
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -150,16 +151,19 @@ const MotoristasLista = () => {
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteFilter, setClienteFilter] = useState<string[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
   
   // Refs para os dropdowns
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
   const ativoDropdownRef = useRef<HTMLDivElement>(null);
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
   
   // Funções para alternar os dropdowns
   const handleToggleStatusDropdown = (e: React.MouseEvent) => {
@@ -168,6 +172,7 @@ const MotoristasLista = () => {
     setShowCidadeDropdown(false);
     setShowClienteDropdown(false);
     setShowAtivoDropdown(false);
+    setShowTagDropdown(false);
   };
   
   const handleToggleCidadeDropdown = (e: React.MouseEvent) => {
@@ -176,6 +181,7 @@ const MotoristasLista = () => {
     setShowStatusDropdown(false);
     setShowClienteDropdown(false);
     setShowAtivoDropdown(false);
+    setShowTagDropdown(false);
   };
   
   const handleToggleClienteDropdown = (e: React.MouseEvent) => {
@@ -184,6 +190,7 @@ const MotoristasLista = () => {
     setShowStatusDropdown(false);
     setShowCidadeDropdown(false);
     setShowAtivoDropdown(false);
+    setShowTagDropdown(false);
   };
   
   const handleToggleAtivoDropdown = (e: React.MouseEvent) => {
@@ -192,7 +199,18 @@ const MotoristasLista = () => {
     setShowStatusDropdown(false);
     setShowCidadeDropdown(false);
     setShowClienteDropdown(false);
+    setShowTagDropdown(false);
   };
+
+  const handleToggleTagDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowTagDropdown(!showTagDropdown);
+    setShowStatusDropdown(false);
+    setShowCidadeDropdown(false);
+    setShowClienteDropdown(false);
+    setShowAtivoDropdown(false);
+  };
+
   const [cidades, setCidades] = useState<string[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -242,6 +260,7 @@ const MotoristasLista = () => {
   useEffect(() => {
     fetchMotoristas();
     fetchClientes();
+    fetchTags();
   }, [dateFilter, customDateRange]);
 
   useEffect(() => {
@@ -291,13 +310,18 @@ const MotoristasLista = () => {
     if (showAtivoDropdown && ativoDropdownRef.current && !ativoDropdownRef.current.contains(target)) {
       setShowAtivoDropdown(false);
     }
+    
+    // Verifica se o clique foi fora do dropdown de tags
+    if (showTagDropdown && tagDropdownRef.current && !tagDropdownRef.current.contains(target)) {
+      setShowTagDropdown(false);
+    }
   };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showStatusDropdown, showCidadeDropdown, showClienteDropdown, showAtivoDropdown]);
+  }, [showStatusDropdown, showCidadeDropdown, showClienteDropdown, showAtivoDropdown, showTagDropdown]);
 
   const fetchMotoristas = async () => {
     try {
@@ -415,6 +439,18 @@ const MotoristasLista = () => {
     } catch (error) {
       console.error('Error fetching clientes:', error);
       toast.error('Erro ao carregar clientes');
+    }
+  };
+
+  const fetchTags = async () => {
+    try {
+      const response = await fetch(`/api/tags?company_id=${companyId}`);
+      if (!response.ok) throw new Error('Erro ao buscar tags');
+      const data = await response.json();
+      setTags(data);
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+      // Não mostrar toast de erro para evitar spam, tags são opcionais
     }
   };
 
@@ -785,6 +821,14 @@ const MotoristasLista = () => {
     const ativoMatch = !ativoFilter || 
       (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false);
     
+    // Lógica para filtro de tags (multiseleção)
+    let tagMatch = true;
+    if (tagFilter.length > 0) {
+      // Para implementar o filtro de tags, seria necessário buscar as tags do motorista
+      // Por enquanto, vamos permitir todos passarem até implementarmos a busca de tags por motorista
+      tagMatch = true;
+    }
+    
     // Verificação de busca por texto
     const searchMatch = searchTerm === '' ||
       (motorista.nome?.toLowerCase().includes(searchLower) ||
@@ -793,7 +837,7 @@ const MotoristasLista = () => {
        (motorista.telefone ? String(motorista.telefone).includes(searchLower) : false));
     
     try {
-      return statusMatch && clienteMatch && cidadeMatch && ativoMatch && searchMatch;
+      return statusMatch && clienteMatch && cidadeMatch && ativoMatch && tagMatch && searchMatch;
     } catch (error) {
       console.error('Erro ao filtrar motorista:', error, motorista);
       return false;
@@ -882,7 +926,7 @@ const MotoristasLista = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="relative">
             <input
               type="text"
@@ -1201,6 +1245,82 @@ const MotoristasLista = () => {
                       <span>Somente Inativos</span>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="relative group" ref={tagDropdownRef}>
+            <button
+              type="button"
+              id="tag-dropdown-button"
+              className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+              onClick={handleToggleTagDropdown}
+              aria-expanded={showTagDropdown}
+              aria-haspopup="listbox"
+              aria-labelledby="tag-dropdown-button"
+            >
+              <span className="truncate">
+                {tagFilter.length === 0 ? 'Todas as tags' : `${tagFilter.length} tag(s) selecionada(s)`}
+              </span>
+              <div className="absolute inset-y-0 right-2 flex items-center">
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showTagDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+              <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            </button>
+            
+            {showTagDropdown && (
+              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto" id="tag-dropdown-menu">
+                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span>Selecionar tags</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTagFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {tags.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                      Nenhuma tag disponível
+                    </div>
+                  ) : (
+                    tags.map((tag) => (
+                      <div key={tag.id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                        <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                            checked={tagFilter.includes(tag.id.toString())}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setTagFilter([...tagFilter, tag.id.toString()]);
+                              } else {
+                                setTagFilter(tagFilter.filter(id => id !== tag.id.toString()));
+                              }
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                          />
+                          <div className="flex items-center space-x-2">
+                            <div 
+                              className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                              style={{ backgroundColor: tag.cor }}
+                            ></div>
+                            <span className="text-sm text-gray-700 dark:text-gray-200">{tag.nome}</span>
+                          </div>
+                        </label>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
