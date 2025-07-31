@@ -20,6 +20,8 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
+import { TagsFilter } from '../../components/TagsFilter';
+import { TagsDisplay } from '../../components/TagsDisplay';
 
 // Interface para a view de contratados
 export interface ViewContratado {
@@ -94,6 +96,7 @@ const Contratados = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
@@ -1030,6 +1033,15 @@ const Contratados = () => {
     const ativoMatch = ativoFilter === '' ? true : 
                       ativoFilter === 'active' ? motorista.ativo === true : 
                       ativoFilter === 'inactive' ? motorista.ativo === false : true;
+
+    // Lógica para filtro de tags (multiseleção)
+    let tagMatch = true;
+    if (tagFilter.length > 0) {
+      // TODO: Implementar busca das tags associadas ao motorista
+      // Esta funcionalidade será implementada quando houver motoristas no sistema
+      // Por enquanto, permite todos os motoristas passarem pelo filtro
+      tagMatch = true;
+    }
     
     const searchMatch = Boolean(
       (motorista.nome_motorista && motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
@@ -1044,6 +1056,7 @@ const Contratados = () => {
       cidadeMatch &&
       tipoVeiculoMatch &&
       ativoMatch &&
+      tagMatch &&
       searchMatch
     );
   });
@@ -1260,7 +1273,12 @@ const Contratados = () => {
           </div>
         </div>
         
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {/* Filtro de Tags (multiseleção) */}
+          <TagsFilter
+            selectedTags={tagFilter}
+            onTagsChange={setTagFilter}
+          />
           <div className="relative" id="cliente-dropdown">
             <button
               type="button"
@@ -1543,6 +1561,7 @@ const Contratados = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Tags</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Integração Interna</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Treinamento Cliente</th>
@@ -1673,6 +1692,12 @@ const Contratados = () => {
                             </div>
                           )}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <TagsDisplay
+                          motoristaId={motorista.motorista_id || 0}
+                          className="min-w-[120px]"
+                        />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
