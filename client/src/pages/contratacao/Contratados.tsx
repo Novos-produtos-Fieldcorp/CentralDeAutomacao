@@ -1257,32 +1257,30 @@ const Contratados = () => {
                     Limpar
                   </button>
                 </div>
-                <div className="grid grid-cols-4 gap-2 p-2">
-                  {[
-                    { value: 'cadastrado', label: 'Cadastrado' },
-                    { value: 'qualificado', label: 'Qualificado' },
-                    { value: 'documentacao', label: 'Documentação' },
-                    { value: 'gestao_risco', label: 'Gestão de Risco' },
-                    { value: 'contrato_enviado', label: 'Contrato Enviado' },
-                    { value: 'contratado', label: 'Contratado' },
-                    { value: 'repescagem', label: 'Repescagem' },
-                    { value: 'rejeitado', label: 'Rejeitado' }
-                  ].map(({ value, label }) => (
-                    <div key={value} className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                      <input
-                        type="checkbox"
-                        id={`status-${value}`}
-                        checked={statusFilter.includes(value)}
-                        onChange={() => toggleFilterOption('status', value)}
-                        className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <label htmlFor={`status-${value}`} className="ml-1 block text-xs text-gray-700 dark:text-gray-300 truncate">
-                        {label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                {[
+                  { value: 'cadastrado', label: 'Cadastrado' },
+                  { value: 'qualificado', label: 'Qualificado' },
+                  { value: 'documentacao', label: 'Documentação' },
+                  { value: 'gestao_risco', label: 'Gestão de Risco' },
+                  { value: 'contrato_enviado', label: 'Contrato Enviado' },
+                  { value: 'contratado', label: 'Contratado' },
+                  { value: 'repescagem', label: 'Repescagem' },
+                  { value: 'rejeitado', label: 'Rejeitado' }
+                ].map(({ value, label }) => (
+                  <div key={value} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`status-${value}`}
+                      checked={statusFilter.includes(value)}
+                      onChange={() => toggleFilterOption('status', value)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`status-${value}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {label}
+                    </label>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -1355,36 +1353,34 @@ const Contratados = () => {
                       Limpar
                     </button>
                   </div>
-                  <div className="grid grid-cols-4 gap-2 p-2">
-                    <div className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                  <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id="cliente-sem_cliente"
+                      checked={clienteFilter.includes('sem_cliente')}
+                      onChange={() => toggleFilterOption('cliente', 'sem_cliente')}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor="cliente-sem_cliente" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      Sem cliente
+                    </label>
+                  </div>
+                  {clientes.map((cliente) => (
+                    <div key={cliente.cliente_id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
                       <input
                         type="checkbox"
-                        id="cliente-sem_cliente"
-                        checked={clienteFilter.includes('sem_cliente')}
-                        onChange={() => toggleFilterOption('cliente', 'sem_cliente')}
-                        className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        id={`cliente-${cliente.cliente_id}`}
+                        checked={clienteFilter.includes(cliente.cliente_id.toString())}
+                        onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         onClick={(e) => e.stopPropagation()}
                       />
-                      <label htmlFor="cliente-sem_cliente" className="ml-1 block text-xs text-gray-700 dark:text-gray-300 truncate">
-                        Sem cliente
+                      <label htmlFor={`cliente-${cliente.cliente_id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        {cliente.nome}
                       </label>
                     </div>
-                    {clientes.map((cliente) => (
-                      <div key={cliente.cliente_id} className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                        <input
-                          type="checkbox"
-                          id={`cliente-${cliente.cliente_id}`}
-                          checked={clienteFilter.includes(cliente.cliente_id.toString())}
-                          onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
-                          className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <label htmlFor={`cliente-${cliente.cliente_id}`} className="ml-1 block text-xs text-gray-700 dark:text-gray-300 truncate">
-                          {cliente.nome}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+                  ))}
                 </div>
               )}
             </div>

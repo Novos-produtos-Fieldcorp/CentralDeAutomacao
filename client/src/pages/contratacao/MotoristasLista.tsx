@@ -988,26 +988,28 @@ const MotoristasLista = () => {
                     </button>
                   </div>
                 </div>
-                <div className="grid grid-cols-4 gap-2 p-2">
+                <div className="max-h-48 overflow-y-auto">
                   {['cadastrado', 'qualificado', 'documentacao', 'gestao_risco', 'contrato_enviado', 'contratado', 'repescagem', 'rejeitado'].map((status, index) => (
-                    <div key={index} className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                      <input
-                        type="checkbox"
-                        className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        checked={statusFilter.includes(status)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setStatusFilter([...statusFilter, status]);
-                          } else {
-                            setStatusFilter(statusFilter.filter(s => s !== status));
-                          }
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
-                      />
-                      <label className="ml-1 block text-xs text-gray-700 dark:text-gray-300 truncate">
-                        {status === 'contrato_enviado' ? 'Contrato Enviado' : status === 'gestao_risco' ? 'Gestão de Risco' : status}
+                    <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          checked={statusFilter.includes(status)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setStatusFilter([...statusFilter, status]);
+                            } else {
+                              setStatusFilter(statusFilter.filter(s => s !== status));
+                            }
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200 capitalize">
+                          {status === 'contrato_enviado' ? 'Contrato Enviado' : status === 'gestao_risco' ? 'Gestão de Risco' : status}
+                        </span>
                       </label>
                     </div>
                   ))}
@@ -1052,25 +1054,27 @@ const MotoristasLista = () => {
                     </button>
                   </div>
                 </div>
-                <div className="grid grid-cols-4 gap-2 p-2">
+                <div className="max-h-48 overflow-y-auto">
                   {cidades.map((cidade, index) => (
-                    <div key={index} className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                      <input
-                        type="checkbox"
-                        className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        checked={cidadeFilter.includes(cidade)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setCidadeFilter([...cidadeFilter, cidade]);
-                          } else {
-                            setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
-                          }
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
-                      />
-                      <label className="ml-1 block text-xs text-gray-700 dark:text-gray-300 truncate">{cidade}</label>
+                    <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          checked={cidadeFilter.includes(cidade)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCidadeFilter([...cidadeFilter, cidade]);
+                            } else {
+                              setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
+                            }
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{cidade}</span>
+                      </label>
                     </div>
                   ))}
                 </div>
@@ -1134,45 +1138,48 @@ const MotoristasLista = () => {
                     </button>
                   </div>
                 </div>
-                <div className="grid grid-cols-4 gap-2 p-2">
+                <div className="max-h-48 overflow-y-auto">
                   {/* Opção "Sem cliente" */}
-                  <div className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                    <input
-                      type="checkbox"
-                      className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      checked={clienteFilter.includes('sem_cliente')}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setClienteFilter([...clienteFilter, 'sem_cliente']);
-                        } else {
-                          setClienteFilter(clienteFilter.filter(id => id !== 'sem_cliente'));
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <label className="ml-1 block text-xs text-gray-700 dark:text-gray-300 truncate">Sem cliente</label>
+                  <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                    <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                        checked={clienteFilter.includes('sem_cliente')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setClienteFilter([...clienteFilter, 'sem_cliente']);
+                          } else {
+                            setClienteFilter(clienteFilter.filter(id => id !== 'sem_cliente'));
+                          }
+                        }}
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-200">Sem cliente</span>
+                    </label>
                   </div>
                   
                   {/* Lista de clientes */}
                   {clientes.map(cliente => (
-                    <div key={cliente.cliente_id} className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                      <input
-                        type="checkbox"
-                        className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        checked={clienteFilter.includes(cliente.cliente_id.toString())}
-                        onChange={(e) => {
-                          const clienteId = cliente.cliente_id.toString();
-                          if (e.target.checked) {
-                            setClienteFilter([...clienteFilter, clienteId]);
-                          } else {
-                            setClienteFilter(clienteFilter.filter(id => id !== clienteId));
-                          }
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
-                      />
-                      <label className="ml-1 block text-xs text-gray-700 dark:text-gray-300 truncate">{cliente.nome}</label>
+                    <div key={cliente.cliente_id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          checked={clienteFilter.includes(cliente.cliente_id.toString())}
+                          onChange={(e) => {
+                            const clienteId = cliente.cliente_id.toString();
+                            if (e.target.checked) {
+                              setClienteFilter([...clienteFilter, clienteId]);
+                            } else {
+                              setClienteFilter(clienteFilter.filter(id => id !== clienteId));
+                            }
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{cliente.nome}</span>
+                      </label>
                     </div>
                   ))}
                 </div>
