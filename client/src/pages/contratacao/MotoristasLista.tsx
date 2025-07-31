@@ -22,8 +22,6 @@ import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
-import { TagsFilter } from '../../components/TagsFilter';
-import { TagsDisplay } from '../../components/TagsDisplay';
 
 // Função auxiliar para converter ViewMotorista para Motorista
 const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
@@ -826,9 +824,8 @@ const MotoristasLista = () => {
     // Lógica para filtro de tags (multiseleção)
     let tagMatch = true;
     if (tagFilter.length > 0) {
-      // TODO: Implementar busca das tags associadas ao motorista
-      // Esta funcionalidade será implementada quando houver motoristas no sistema
-      // Por enquanto, permite todos os motoristas passarem pelo filtro
+      // Para implementar o filtro de tags, seria necessário buscar as tags do motorista
+      // Por enquanto, vamos permitir todos passarem até implementarmos a busca de tags por motorista
       tagMatch = true;
     }
     
@@ -929,7 +926,7 @@ const MotoristasLista = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="relative">
             <input
               type="text"
@@ -1253,36 +1250,104 @@ const MotoristasLista = () => {
             )}
           </div>
 
-          {/* Filtro de Tags (multiseleção) */}
-          <TagsFilter
-            selectedTags={tagFilter}
-            onTagsChange={setTagFilter}
-          />
-
-
-          <div className="relative">
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none truncate"
+          <div className="relative group" ref={tagDropdownRef}>
+            <button
+              type="button"
+              id="tag-dropdown-button"
+              className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+              onClick={handleToggleTagDropdown}
+              aria-expanded={showTagDropdown}
+              aria-haspopup="listbox"
+              aria-labelledby="tag-dropdown-button"
             >
-              <option value="all">Todos os períodos</option>
-              <option value="today">Hoje</option>
-              <option value="2days">Últimos 2 dias</option>
-              <option value="15days">Últimos 15 dias</option>
-              <option value="30days">Último mês</option>
-              <option value="custom">Personalizado</option>
-            </select>
-            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <span className="truncate">
+                {tagFilter.length === 0 ? 'Todas as tags' : `${tagFilter.length} tag(s) selecionada(s)`}
+              </span>
+              <div className="absolute inset-y-0 right-2 flex items-center">
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showTagDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+              <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            </button>
+            
+            {showTagDropdown && (
+              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 max-h-60 overflow-auto" id="tag-dropdown-menu">
+                <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span>Selecionar tags</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTagFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {tags.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                      Nenhuma tag disponível
+                    </div>
+                  ) : (
+                    tags.map((tag) => (
+                      <div key={tag.id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                        <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                            checked={tagFilter.includes(tag.id.toString())}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setTagFilter([...tagFilter, tag.id.toString()]);
+                              } else {
+                                setTagFilter(tagFilter.filter(id => id !== tag.id.toString()));
+                              }
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                          />
+                          <div className="flex items-center space-x-2">
+                            <div 
+                              className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                              style={{ backgroundColor: tag.cor }}
+                            ></div>
+                            <span className="text-sm text-gray-700 dark:text-gray-200">{tag.nome}</span>
+                          </div>
+                        </label>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-          
-          <div className="flex justify-end">
+
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none truncate"
+              >
+                <option value="all">Todos os períodos</option>
+                <option value="today">Hoje</option>
+                <option value="2days">Últimos 2 dias</option>
+                <option value="15days">Últimos 15 dias</option>
+                <option value="30days">Último mês</option>
+                <option value="custom">Personalizado</option>
+              </select>
+              <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            </div>
             <button
               onClick={() => setIsAddModalOpen(true)}
               className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"

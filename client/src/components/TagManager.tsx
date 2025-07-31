@@ -149,7 +149,7 @@ export function TagManager({ companyId }: TagManagerProps) {
     setIsSyncingWiseApp(true);
     try {
       // Implementação de sincronização será feita em versão futura
-      toast('Funcionalidade de sincronização com WiseApp em desenvolvimento.');
+      toast.info('Funcionalidade de sincronização com WiseApp em desenvolvimento.');
       
       // Simulação de sucesso por enquanto
       queryClient.invalidateQueries({ queryKey: ['/api/tags', companyId] });
