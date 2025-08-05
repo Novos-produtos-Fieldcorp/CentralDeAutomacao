@@ -211,36 +211,35 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                       <div className="overflow-hidden">
                         <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Número da CNH</div>
                         <div className="text-base text-gray-900 dark:text-white break-words">
-                          {documento?.nr_registro_cnh || motorista.nr_registro_cnh || 'Não informado'}
+                          {documento?.nr_registro_cnh || 'Não informado'}
                         </div>
                       </div>
                       
                       <div className="overflow-hidden">
                         <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Categoria</div>
                         <div className="text-base text-gray-900 dark:text-white break-words">
-                          {documento?.categoria_cnh || motorista.categoria_cnh || 'Não informada'}
+                          {documento?.categoria_cnh || 'Não informada'}
                         </div>
                       </div>
                       
                       <div className="overflow-hidden">
                         <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Validade</div>
                         <div className="text-base text-gray-900 dark:text-white break-words">
-                          {documento?.validade_cnh ? formatDate(documento.validade_cnh) : 
-                           motorista.validade_cnh ? formatDate(motorista.validade_cnh) : 'Não informada'}
+                          {documento?.validade_cnh ? formatDate(documento.validade_cnh) : 'Não informada'}
                         </div>
                       </div>
                       
                       <div className="overflow-hidden">
                         <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome da Mãe</div>
                         <div className="text-base text-gray-900 dark:text-white break-words">
-                          {documento?.nome_mae || motorista.dm_nome_mae || motorista.nome_mae || 'Não informado'}
+                          {documento?.nome_mae || 'Não informado'}
                         </div>
                       </div>
                       
                       <div className="overflow-hidden">
                         <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome do Pai</div>
                         <div className="text-base text-gray-900 dark:text-white break-words">
-                          {documento?.nome_pai || motorista.dm_nome_pai || motorista.nome_pai || 'Não informado'}
+                          {documento?.nome_pai || 'Não informado'}
                         </div>
                       </div>
                     </div>
