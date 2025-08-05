@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-// Removed NeonDB import - using only Supabase now
-import { eq } from "drizzle-orm";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 import {
   cliente,
   unidade,
@@ -10,6 +10,7 @@ import {
   st_vaga,
   company,
   vaga,
+  motorista,
 } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 
@@ -530,7 +531,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 Searching motorista by phone: ${cleanPhone}`);
       
-      // Usar storage diretamente
       const accountId = req.header('account_id') || '1';
       const companyId = await getCompanyIdFromAccount(accountId);
       
@@ -538,23 +538,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Company not found' });
       }
 
-      // Buscar motoristas da empresa usando storage
-      const motoristasResult = await storage.getMotoristasWithAddresses(companyId, {}, 1, 1000);
-      const motoristas = motoristasResult.motoristas;
+      // Buscar diretamente usando Supabase
+      const { data: result, error } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome, telefone')
+        .eq('company_id', companyId)
+        .eq('telefone', cleanPhone)
+        .limit(1);
       
-      console.log(`📋 Procurando entre ${motoristas.length} motoristas da empresa ${companyId}`);
+      console.log(`📋 Query executada para company_id: ${companyId}, telefone: ${cleanPhone}`);
       
-      const found = motoristas.find((m: any) => {
-        const telefoneStr = m.telefone ? m.telefone.toString() : '';
-        const cleanPhoneStr = cleanPhone.toString();
-        const match = telefoneStr === cleanPhoneStr;
-        if (match) {
-          console.log(`✅ MATCH encontrado: ${m.nome} (${telefoneStr} === ${cleanPhoneStr})`);
-        }
-        return match;
-      });
+      if (error) {
+        console.error('Database error:', error);
+        return res.status(500).json({ error: 'Database error' });
+      }
       
-      if (found) {
+      if (result && result.length > 0) {
+        const found = result[0];
         console.log(`✅ Motorista encontrado: ${found.nome} (ID: ${found.motorista_id})`);
         return res.json({
           motorista_id: found.motorista_id,
@@ -562,10 +562,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           telefone: found.telefone
         });
       } else {
-        console.log(`❌ Nenhum motorista encontrado com telefone ${cleanPhone}`);
-        // Mostrar alguns exemplos para debug
-        const examples = motoristas.slice(0, 3).map((m: any) => `${m.nome}: ${m.telefone}`);
-        console.log(`📝 Exemplos no banco:`, examples);
+        console.log(`❌ Nenhum motorista encontrado com telefone ${cleanPhone} na empresa ${companyId}`);
+        
+        // Debug: mostrar alguns motoristas da empresa
+        const { data: allMotoristas } = await supabase
+          .from('motorista')
+          .select('nome, telefone')
+          .eq('company_id', companyId)
+          .limit(3);
+        
+        console.log(`📝 Exemplos na empresa ${companyId}:`, allMotoristas);
         return res.status(404).json({ error: 'Motorista not found' });
       }
       
