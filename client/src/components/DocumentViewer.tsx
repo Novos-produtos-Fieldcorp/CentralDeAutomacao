@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { X, FileText, Camera, ExternalLink, Home, CreditCard } from 'lucide-react';
+import { X, FileText, Camera, ExternalLink, Home, CreditCard, User } from 'lucide-react';
 import type { DocumentoMotorista, Veiculo, DocumentoVeiculo } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
+import WhatsAppAvatar from './WhatsAppAvatar';
 
 interface DocumentViewerProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface DocumentViewerProps {
   email?: string;
   telefone?: string;
   dt_nascimento?: string;
+  foto_whatsapp?: string | null;
   endereco?: {
     logradouro?: {
       logradouro?: string | null;
@@ -36,7 +38,7 @@ interface DocumentViewerProps {
   st_cadastro?: string | null;
 }
 
-const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone, dt_nascimento, endereco, veiculo, isAgregado = false, st_cadastro }: DocumentViewerProps) => {
+const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone, dt_nascimento, foto_whatsapp, endereco, veiculo, isAgregado = false, st_cadastro }: DocumentViewerProps) => {
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -81,9 +83,24 @@ const DocumentViewer = ({ isOpen, onClose, documento, nome, cpf, email, telefone
                 <div className="space-y-6">
                   {/* Informações Pessoais */}
                   <section className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+                      <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                       Informações Pessoais
                     </h3>
+                    
+                    {/* WhatsApp Profile Photo */}
+                    <div className="mb-6 flex justify-center">
+                      <div className="text-center">
+                        <WhatsAppAvatar 
+                          photoUrl={foto_whatsapp}
+                          name={nome}
+                          size="lg"
+                        />
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                          Foto do WhatsApp
+                        </p>
+                      </div>
+                    </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="overflow-hidden">
