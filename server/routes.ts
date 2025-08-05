@@ -611,10 +611,215 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Rota removida - agora usamos diretamente o ID do motorista para salvar a foto
-
-  // The WhatsApp photo capture is now handled automatically by FloatingChat
-  // when a contact is loaded. This reduces complexity and avoids multiple API calls.
+  // Rotas para sincronização WiseApp
+  app.post("/api/wiseapp/sync-motorista/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const companyId = req.headers['company-id'] || '1';
+      
+      // Buscar dados do motorista
+      const { data: motorista, error: motoristaError } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome, telefone, foto_whatsapp')
+        .eq('motorista_id', id)
+        .eq('company_id', companyId)
+        .single();
+      
+      if (motoristaError || !motorista) {
+        return res.status(404).json({ error: 'Motorista não encontrado' });
+      }
+      
+      if (!motorista.telefone) {
+        return res.json({ success: false, message: 'Motorista não possui telefone cadastrado' });
+      }
+      
+      // Buscar contato no WiseApp
+      const phone = `55${motorista.telefone}`;
+      const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${companyId}/contacts/search?q=${phone}`;
+      
+      const searchResponse = await fetch(searchUrl, {
+        headers: {
+          'api_access_token': process.env.WISEAPP_API_TOKEN || '',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!searchResponse.ok) {
+        return res.json({ success: false, message: 'Erro ao buscar contato no WiseApp' });
+      }
+      
+      const searchData = await searchResponse.json();
+      
+      if (searchData.payload?.length > 0) {
+        const contact = searchData.payload[0];
+        
+        // Se tem foto e é diferente da atual, atualizar
+        if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
+          const { error: updateError } = await supabase
+            .from('motorista')
+            .update({ foto_whatsapp: contact.thumbnail })
+            .eq('motorista_id', id);
+          
+          if (updateError) {
+            return res.json({ success: false, message: 'Erro ao atualizar foto' });
+          }
+          
+          return res.json({ 
+            success: true, 
+            message: 'Foto sincronizada com sucesso',
+            contactId: contact.id,
+            photoUpdated: true
+          });
+        }
+        
+        return res.json({ 
+          success: true, 
+          message: 'Contato encontrado, foto já atualizada',
+          contactId: contact.id,
+          photoUpdated: false
+        });
+      }
+      
+      res.json({ success: false, message: 'Contato não encontrado no WiseApp' });
+      
+    } catch (error) {
+      console.error('Erro na sincronização:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+  
+  app.post("/api/wiseapp/sync-all-motoristas", async (req, res) => {
+    try {
+      const companyId = req.headers['company-id'] || '1';
+      
+      // Buscar todos os motoristas ativos com telefone
+      const { data: motoristas, error: motoristasError } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome, telefone, foto_whatsapp')
+        .eq('company_id', companyId)
+        .eq('ativo', true)
+        .not('telefone', 'is', null);
+      
+      if (motoristasError) {
+        return res.status(500).json({ error: 'Erro ao buscar motoristas' });
+      }
+      
+      const results = {
+        totalProcessed: motoristas?.length || 0,
+        successful: 0,
+        failed: 0,
+        errors: [] as Array<{ motorista_id: number; nome: string; error: string }>
+      };
+      
+      if (!motoristas || motoristas.length === 0) {
+        return res.json({ success: true, data: results });
+      }
+      
+      // Processar cada motorista
+      for (const motorista of motoristas) {
+        try {
+          const phone = `55${motorista.telefone}`;
+          const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${companyId}/contacts/search?q=${phone}`;
+          
+          const searchResponse = await fetch(searchUrl, {
+            headers: {
+              'api_access_token': process.env.WISEAPP_API_TOKEN || '',
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (searchResponse.ok) {
+            const searchData = await searchResponse.json();
+            
+            if (searchData.payload?.length > 0) {
+              const contact = searchData.payload[0];
+              
+              // Se tem foto e é diferente da atual, atualizar
+              if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
+                const { error: updateError } = await supabase
+                  .from('motorista')
+                  .update({ foto_whatsapp: contact.thumbnail })
+                  .eq('motorista_id', motorista.motorista_id);
+                
+                if (!updateError) {
+                  results.successful++;
+                } else {
+                  results.failed++;
+                  results.errors.push({
+                    motorista_id: motorista.motorista_id,
+                    nome: motorista.nome || 'N/A',
+                    error: 'Erro ao atualizar foto no banco'
+                  });
+                }
+              } else {
+                results.successful++;
+              }
+            } else {
+              results.failed++;
+              results.errors.push({
+                motorista_id: motorista.motorista_id,
+                nome: motorista.nome || 'N/A',
+                error: 'Contato não encontrado no WiseApp'
+              });
+            }
+          } else {
+            results.failed++;
+            results.errors.push({
+              motorista_id: motorista.motorista_id,
+              nome: motorista.nome || 'N/A',
+              error: 'Erro na busca do WiseApp'
+            });
+          }
+          
+          // Pequena pausa para não sobrecarregar a API
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+        } catch (error) {
+          results.failed++;
+          results.errors.push({
+            motorista_id: motorista.motorista_id,
+            nome: motorista.nome || 'N/A',
+            error: error instanceof Error ? error.message : 'Erro desconhecido'
+          });
+        }
+      }
+      
+      res.json({ success: true, data: results });
+      
+    } catch (error) {
+      console.error('Erro na sincronização em lote:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+  
+  app.post("/api/wiseapp/validate-config", async (req, res) => {
+    try {
+      const companyId = req.headers['company-id'] || '1';
+      
+      // Testar conexão com WiseApp
+      const testUrl = `https://chat.wiseapp360.com/api/v1/accounts/${companyId}/inboxes`;
+      
+      const testResponse = await fetch(testUrl, {
+        headers: {
+          'api_access_token': process.env.WISEAPP_API_TOKEN || '',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const isValid = testResponse.ok;
+      
+      res.json({ 
+        valid: isValid,
+        error: isValid ? null : 'Token ou configuração inválida'
+      });
+      
+    } catch (error) {
+      res.json({ 
+        valid: false, 
+        error: 'Erro ao conectar com WiseApp'
+      });
+    }
+  });
 
   const httpServer = createServer(app);
 

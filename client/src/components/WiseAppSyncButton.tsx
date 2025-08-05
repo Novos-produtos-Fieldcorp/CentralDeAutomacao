@@ -51,8 +51,8 @@ export function WiseAppSyncButton({
       disabled={isLoading || (variant === 'individual' && !motoristaId)}
       className={`inline-flex items-center gap-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${buttonClass}`}
       title={variant === 'individual' 
-        ? 'Sincronizar este motorista com os contatos do WiseApp'
-        : 'Sincronizar todos os motoristas ativos com o WiseApp'
+        ? 'Sincronizar contato e foto do WhatsApp deste motorista com o WiseApp'
+        : 'Sincronizar contatos e fotos do WhatsApp de todos os motoristas ativos com o WiseApp'
       }
     >
       {isLoading ? (
@@ -140,7 +140,7 @@ export function WiseAppBulkSyncPanel({ className }: WiseAppBulkSyncPanelProps) {
       <div>
         <h3 className="text-lg font-semibold">Sincronização WiseApp</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Sincronize os contatos de motoristas e agregados com o WiseApp
+          Sincronize os contatos e fotos do WhatsApp de motoristas e agregados com o WiseApp
         </p>
       </div>
 

@@ -63,11 +63,7 @@ const saveWhatsAppPhotoFromFloatingChat = async (motoristaId: string, photoUrl: 
       console.log(`🎉 SUCESSO! Foto do WhatsApp capturada e salva para motorista ID: ${motoristaId}`);
       console.log(`📸 Nova foto no sistema: ${photoUrl}`);
       
-      // Recarregar a página para mostrar a nova foto
-      setTimeout(() => {
-        console.log('🔄 Recarregando página para mostrar a nova foto...');
-        window.location.reload();
-      }, 1500);
+      // Não precisamos recarregar a página - a atualização será automática via query invalidation
     } else {
       console.error('❌ Erro ao salvar foto no banco:', await saveResponse.text());
     }
