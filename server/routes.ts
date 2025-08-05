@@ -577,6 +577,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update vaga status
+  app.patch("/api/vagas/:vagaId/status", async (req, res) => {
+    try {
+      const { vagaId } = req.params;
+      const { st_vaga_id } = req.body;
+
+      console.log("Updating vaga status:", { vagaId, st_vaga_id });
+
+      const { data: updatedVaga, error } = await supabase
+        .from("vaga")
+        .update({ 
+          st_vaga_id: Number(st_vaga_id),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", Number(vagaId))
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error updating vaga status:", error);
+        return res.status(500).json({
+          error: "Erro ao atualizar status da vaga",
+          details: error.message,
+        });
+      }
+
+      console.log("Vaga status updated successfully:", updatedVaga);
+      res.json(updatedVaga);
+    } catch (error) {
+      console.error("Error updating vaga status:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
+  // Delete vaga
+  app.delete("/api/vagas/:vagaId", async (req, res) => {
+    try {
+      const { vagaId } = req.params;
+
+      console.log("Deleting vaga:", vagaId);
+
+      const { error } = await supabase
+        .from("vaga")
+        .delete()
+        .eq("id", Number(vagaId));
+
+      if (error) {
+        console.error("Error deleting vaga:", error);
+        return res.status(500).json({
+          error: "Erro ao deletar vaga",
+          details: error.message,
+        });
+      }
+
+      console.log("Vaga deleted successfully");
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting vaga:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
   // APIs para criar novas unidades, operações e status usando Supabase
   app.post("/api/unidades", async (req, res) => {
     try {

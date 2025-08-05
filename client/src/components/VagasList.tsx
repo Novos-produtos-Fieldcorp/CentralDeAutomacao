@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye } from 'lucide-react';
+import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Vaga } from '@shared/schema';
 import { format } from 'date-fns';
@@ -18,6 +18,8 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedVaga, setSelectedVaga] = useState<Vaga | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [statusOptions, setStatusOptions] = useState<Array<{id: number, status_vaga: string}>>([]);
+  const [companyId, setCompanyId] = useState<number | null>(null);
 
   const fetchVagas = async () => {
     try {
@@ -31,16 +33,28 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
       }
       
       const companyData = await companyRes.json();
-      const companyId = companyData.company_id;
+      const fetchedCompanyId = companyData.company_id;
+      setCompanyId(fetchedCompanyId);
       
-      // Now fetch vagas using company_id with joins
-      const response = await fetch(`/api/vagas/company/${companyId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setVagas(data);
+      // Fetch vagas and status options in parallel
+      const [vagasResponse, statusResponse] = await Promise.all([
+        fetch(`/api/vagas/company/${fetchedCompanyId}`),
+        fetch(`/api/status-vagas/${fetchedCompanyId}`)
+      ]);
+      
+      if (vagasResponse.ok) {
+        const vagasData = await vagasResponse.json();
+        setVagas(vagasData);
       } else {
         setError('Erro ao carregar vagas');
+        return;
       }
+      
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        setStatusOptions(statusData);
+      }
+      
     } catch (error) {
       console.error('Error fetching vagas:', error);
       setError('Erro ao carregar vagas');
@@ -61,6 +75,29 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
       return format(new Date(date), 'dd/MM/yyyy', { locale: ptBR });
     } catch {
       return '-';
+    }
+  };
+
+  const handleStatusChange = async (vagaId: number, newStatusId: number) => {
+    try {
+      const response = await fetch(`/api/vagas/${vagaId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ st_vaga_id: newStatusId }),
+      });
+
+      if (response.ok) {
+        toast.success('Status atualizado com sucesso!');
+        fetchVagas(); // Refresh the list
+        onRefresh(); // Update dashboard
+      } else {
+        toast.error('Erro ao atualizar status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Erro ao atualizar status');
     }
   };
 
@@ -243,9 +280,24 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor((vaga as any).status_nome || 'Ativa')}`}>
-                      {(vaga as any).status_nome || 'Ativa'}
-                    </span>
+                    <div className="relative">
+                      <select
+                        value={vaga.st_vaga_id || ''}
+                        onChange={(e) => handleStatusChange(vaga.id, Number(e.target.value))}
+                        className={`appearance-none px-3 py-1 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer ${getStatusColor((vaga as any).status_nome || 'Ativa')}`}
+                        style={{ paddingRight: '24px' }}
+                      >
+                        {statusOptions.map((status) => (
+                          <option key={status.id} value={status.id} className="bg-white text-gray-900">
+                            {status.status_vaga}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown 
+                        size={12} 
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-current" 
+                      />
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
