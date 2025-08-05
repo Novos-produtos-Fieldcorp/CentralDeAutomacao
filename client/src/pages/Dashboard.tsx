@@ -184,7 +184,7 @@ const Dashboard = () => {
     {
       title: "Tags",
       icon: Tag,
-      link: "/tags",
+      link: "/tags-admin",
       description: "Gerencie tags para categorizar e organizar motoristas",
       enabled: moduleAccess.tags
     }
