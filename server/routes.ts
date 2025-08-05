@@ -347,6 +347,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET routes for dropdowns
+  app.get("/api/clientes/:companyId", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const clientes = await db
+        .select()
+        .from(cliente)
+        .where(eq(cliente.company_id, Number(companyId)));
+      res.json(clientes);
+    } catch (error) {
+      console.error("Error fetching clientes:", error);
+      res.status(500).json({ error: "Erro ao buscar clientes" });
+    }
+  });
+
+  app.get("/api/unidades/:companyId", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const unidades = await db
+        .select()
+        .from(unidade)
+        .where(eq(unidade.company_id, Number(companyId)));
+      res.json(unidades);
+    } catch (error) {
+      console.error("Error fetching unidades:", error);
+      res.status(500).json({ error: "Erro ao buscar unidades" });
+    }
+  });
+
+  app.get("/api/operacoes/:companyId", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const operacoes = await db
+        .select()
+        .from(operacao)
+        .where(eq(operacao.company_id, Number(companyId)));
+      res.json(operacoes);
+    } catch (error) {
+      console.error("Error fetching operacoes:", error);
+      res.status(500).json({ error: "Erro ao buscar operações" });
+    }
+  });
+
+  app.get("/api/status-vagas/:companyId", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const statusVagas = await db
+        .select()
+        .from(st_vaga)
+        .where(eq(st_vaga.company_id, Number(companyId)));
+      res.json(statusVagas);
+    } catch (error) {
+      console.error("Error fetching status vagas:", error);
+      res.status(500).json({ error: "Erro ao buscar status das vagas" });
+    }
+  });
+
+  app.get("/api/vagas/:companyId", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const vagas = await db
+        .select()
+        .from(vaga)
+        .where(eq(vaga.company_id, Number(companyId)));
+      res.json(vagas);
+    } catch (error) {
+      console.error("Error fetching vagas:", error);
+      res.status(500).json({ error: "Erro ao buscar vagas" });
+    }
+  });
+
+  app.get("/api/vagas/dashboard/:companyId", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      // Return empty dashboard data for now - can be implemented later
+      res.json({
+        total: 0,
+        active: 0,
+        paused: 0,
+        completed: 0
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      res.status(500).json({ error: "Erro ao buscar dados do dashboard" });
+    }
+  });
+
   // Vagas API routes
   app.post("/api/vagas", async (req, res) => {
     try {
