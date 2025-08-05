@@ -93,25 +93,45 @@ const Admin = () => {
     }
   };
 
-  const handleToggleAccess = (index: number, field: keyof AccessControl) => {
-    const updatedControls = [...accessControls];
-    const currentValue = updatedControls[index][field];
+  const handleToggleAccess = async (index: number, field: keyof AccessControl) => {
+    const control = accessControls[index];
+    const currentValue = control[field];
     
-    // Handle null values and ensure we get a boolean result
+    // Calculate new value: if null, set to true; if true, set to false; if false, set to true
+    let newValue;
     if (field === 'tags_access') {
-      updatedControls[index] = {
-        ...updatedControls[index],
-        [field]: currentValue === true ? false : true
-      };
+      newValue = currentValue === true ? false : true;
     } else {
       if (typeof currentValue !== 'boolean') return;
+      newValue = !currentValue;
+    }
+
+    try {
+      // Update in Supabase immediately
+      const { error } = await supabase
+        .from('company')
+        .update({ [field]: newValue })
+        .eq('company_id', control.company_id);
+
+      if (error) {
+        console.error(`Error updating ${field} for company ${control.company_id}:`, error);
+        toast.error(`Erro ao atualizar ${field}`);
+        return;
+      }
+
+      // Update local state only if Supabase update was successful
+      const updatedControls = [...accessControls];
       updatedControls[index] = {
         ...updatedControls[index],
-        [field]: !currentValue
+        [field]: newValue
       };
+      setAccessControls(updatedControls);
+      
+      toast.success('Configuração atualizada com sucesso');
+    } catch (error) {
+      console.error(`Error toggling ${field}:`, error);
+      toast.error('Erro ao atualizar configuração');
     }
-    
-    setAccessControls(updatedControls);
   };
 
   const handleSaveChanges = async () => {
