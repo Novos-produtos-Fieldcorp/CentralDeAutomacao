@@ -178,7 +178,7 @@ const Dashboard = () => {
       icon: MessagesSquare,
       link: "/resumos-grupo",
       description: "Configure resumos automáticos para seus grupos de WhatsApp",
-      enabled: true,
+      enabled: moduleAccess.resumos,
       onClick: moduleAccess.resumos ? undefined : handleResumosClick
     },
     {
