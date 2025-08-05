@@ -148,19 +148,10 @@ const Vagas: React.FC = () => {
               </div>
             } />
             <Route path="lista" element={
-              <div>
-                <div className="flex justify-end mb-6">
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="inline-flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                    title="Adicionar Vaga"
-                  >
-                    <Plus size={20} />
-                  </button>
-                </div>
-                
-                <VagasList onRefresh={fetchDashboardData} />
-              </div>
+              <VagasList 
+                onRefresh={fetchDashboardData} 
+                onAddClick={() => setShowAddModal(true)}
+              />
             } />
           </Routes>
         </div>

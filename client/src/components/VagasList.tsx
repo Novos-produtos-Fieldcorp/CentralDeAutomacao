@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X } from 'lucide-react';
+import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Vaga } from '@shared/schema';
 import { format } from 'date-fns';
@@ -9,9 +9,10 @@ import VagaDetailsModal from './VagaDetailsModal';
 
 interface VagasListProps {
   onRefresh: () => void;
+  onAddClick?: () => void;
 }
 
-const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
+const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const { accountId } = useAuth();
   const [vagas, setVagas] = useState<Vaga[]>([]);
   const [loading, setLoading] = useState(true);
@@ -371,111 +372,113 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
   return (
     <div className="space-y-6">
       {/* Filters Section */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar por nome, descrição, cliente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <X size={16} />
-              </button>
-            )}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        {/* Header with title and add button */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 pb-0 gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-gray-400" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Filtros</h2>
           </div>
-
-          {/* Status Filter */}
-          <div className="relative" id="status-dropdown">
+          {onAddClick && (
             <button
-              type="button"
-              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
+              onClick={onAddClick}
+              className="inline-flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shrink-0"
+              title="Adicionar Vaga"
             >
-              <span>{getFilterButtonText('status')}</span>
-              <div className="flex items-center">
-                {statusFilter.length > 0 && (
+              <Plus size={20} />
+            </button>
+          )}
+        </div>
+        
+        <div className="p-4 space-y-6">
+          {/* Primary Filters Row */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">Busca e Status</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Search */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar por nome, descrição, cliente..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                {searchTerm && (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      clearFilter('status');
-                    }}
-                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     <X size={16} />
                   </button>
                 )}
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
               </div>
-            </button>
-            <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            {showStatusDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
-                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os status</span>
-                  <button 
-                    type="button" 
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setStatusFilter([]);
-                    }}
-                  >
-                    Limpar
-                  </button>
-                </div>
-                {statusOptions.map((status) => (
-                  <div key={status.id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`status-${status.id}`}
-                      checked={statusFilter.includes(status.id.toString())}
-                      onChange={() => toggleFilterOption('status', status.id.toString())}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <label htmlFor={`status-${status.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                      {status.status_vaga}
-                    </label>
+
+              {/* Status Filter */}
+              <div className="relative" id="status-dropdown">
+                <button
+                  type="button"
+                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                  className="w-full flex justify-between items-center pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
+                >
+                  <span>{getFilterButtonText('status')}</span>
+                  <div className="flex items-center">
+                    {statusFilter.length > 0 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          clearFilter('status');
+                        }}
+                        className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
                   </div>
-                ))}
+                </button>
+                <Building className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                {showStatusDropdown && (
+                  <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+                    <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os status</span>
+                      <button 
+                        type="button" 
+                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setStatusFilter([]);
+                        }}
+                      >
+                        Limpar
+                      </button>
+                    </div>
+                    {statusOptions.map((status) => (
+                      <div key={status.id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                        <input
+                          type="checkbox"
+                          id={`status-${status.id}`}
+                          checked={statusFilter.includes(status.id.toString())}
+                          onChange={() => toggleFilterOption('status', status.id.toString())}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <label htmlFor={`status-${status.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                          {status.status_vaga}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Quantity Filters */}
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <input
-                type="number"
-                placeholder="Qtde Min"
-                value={quantidadeFilter.min || ''}
-                onChange={(e) => setQuantidadeFilter(prev => ({...prev, min: e.target.value ? Number(e.target.value) : null}))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              />
-            </div>
-            <div className="flex-1">
-              <input
-                type="number"
-                placeholder="Qtde Max"
-                value={quantidadeFilter.max || ''}
-                onChange={(e) => setQuantidadeFilter(prev => ({...prev, max: e.target.value ? Number(e.target.value) : null}))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              />
-            </div>
-          </div>
-        </div>
-        
-        {/* Second row of filters */}
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Secondary Filters Row */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">Filtros Avançados</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Cliente Filter */}
           <div className="relative" id="cliente-dropdown">
             <button
@@ -650,48 +653,83 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
             )}
           </div>
 
-          {/* Date Range Filter */}
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <input
-                type="date"
-                value={dateFilter.start}
-                onChange={(e) => setDateFilter(prev => ({...prev, start: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                title="Data inicial"
-              />
-            </div>
-            <div className="flex-1">
-              <input
-                type="date"
-                value={dateFilter.end}
-                onChange={(e) => setDateFilter(prev => ({...prev, end: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                title="Data final"
-              />
-            </div>
-          </div>
-        </div>
+              {/* Date Range Filter */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Período</label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <input
+                      type="date"
+                      value={dateFilter.start}
+                      onChange={(e) => setDateFilter(prev => ({...prev, start: e.target.value}))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                      title="Data inicial"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="date"
+                      value={dateFilter.end}
+                      onChange={(e) => setDateFilter(prev => ({...prev, end: e.target.value}))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                      title="Data final"
+                    />
+                  </div>
+                </div>
+              </div>
 
-        {/* Clear all filters button */}
-        {(searchTerm || statusFilter.length > 0 || clienteFilter.length > 0 || unidadeFilter.length > 0 || operacaoFilter.length > 0 || quantidadeFilter.min !== null || quantidadeFilter.max !== null || dateFilter.start || dateFilter.end) && (
-          <div className="mt-4 flex justify-center">
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setStatusFilter([]);
-                setClienteFilter([]);
-                setUnidadeFilter([]);
-                setOperacaoFilter([]);
-                setQuantidadeFilter({min: null, max: null});
-                setDateFilter({start: '', end: ''});
-              }}
-              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              Limpar todos os filtros
-            </button>
+              {/* Quantity Filters */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Quantidade</label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <input
+                      type="number"
+                      placeholder="Mín"
+                      value={quantidadeFilter.min || ''}
+                      onChange={(e) => setQuantidadeFilter(prev => ({...prev, min: e.target.value ? Number(e.target.value) : null}))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="number"
+                      placeholder="Máx"
+                      value={quantidadeFilter.max || ''}
+                      onChange={(e) => setQuantidadeFilter(prev => ({...prev, max: e.target.value ? Number(e.target.value) : null}))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* Footer with results and clear button */}
+          {(searchTerm || statusFilter.length > 0 || clienteFilter.length > 0 || unidadeFilter.length > 0 || operacaoFilter.length > 0 || quantidadeFilter.min !== null || quantidadeFilter.max !== null || dateFilter.start || dateFilter.end) && (
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3 items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>{filteredVagas.length} vaga{filteredVagas.length !== 1 ? 's' : ''} encontrada{filteredVagas.length !== 1 ? 's' : ''}</span>
+              </div>
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setStatusFilter([]);
+                  setClienteFilter([]);
+                  setUnidadeFilter([]);
+                  setOperacaoFilter([]);
+                  setQuantidadeFilter({min: null, max: null});
+                  setDateFilter({start: '', end: ''});
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X size={14} />
+                Limpar filtros
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
