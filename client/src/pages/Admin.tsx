@@ -79,18 +79,12 @@ const Admin = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('company')
-        .select('company_id, nome, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, tags_access, st_company')
+        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, tags_access, st_company')
         .order('company_id', { ascending: true });
 
       if (error) throw error;
-      
-      // Map nome to nome_company for compatibility
-      const mappedData = data?.map(company => ({
-        ...company,
-        nome_company: company.nome
-      }));
 
-      setAccessControls(mappedData || []);
+      setAccessControls(data || []);
     } catch (error) {
       console.error('Error fetching access controls:', error);
       toast.error('Erro ao carregar controles de acesso');
@@ -185,7 +179,7 @@ const Admin = () => {
       const { data, error } = await supabase
         .from('company')
         .insert([{
-          nome: companyFormData.nome_company,
+          nome_company: companyFormData.nome_company,
           cnpj: companyFormData.cnpj.replace(/\D/g, ''),
           email: companyFormData.email,
           telefone: companyFormData.telefone.replace(/\D/g, ''),
