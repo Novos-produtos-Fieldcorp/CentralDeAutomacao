@@ -13,6 +13,7 @@ interface AccessControl {
   motorista_access: boolean;
   hodometro_acsess: boolean;
   resumo_access: boolean;
+  tags_access: boolean;
   st_company: boolean;
 }
 
@@ -78,7 +79,7 @@ const Admin = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('company')
-        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, st_company')
+        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, tags_access, st_company')
         .order('company_id', { ascending: true });
 
       if (error) throw error;
@@ -115,7 +116,8 @@ const Admin = () => {
             checklist_access: control.checklist_access,
             motorista_access: control.motorista_access,
             hodometro_acsess: control.hodometro_acsess,
-            resumo_access: control.resumo_access
+            resumo_access: control.resumo_access,
+            tags_access: control.tags_access
           })
           .eq('company_id', control.company_id);
 
@@ -172,7 +174,8 @@ const Admin = () => {
           telefone: companyFormData.telefone.replace(/\D/g, ''),
           st_company: true,
           id_conta_wiseapp: companyFormData.id_conta_wiseapp,
-          resumo_access: false
+          resumo_access: false,
+          tags_access: true
         }])
         .select();
 
@@ -326,6 +329,9 @@ const Admin = () => {
                       Resumos em Grupo
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Tags
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
                     </th>
                   </tr>
@@ -388,6 +394,18 @@ const Admin = () => {
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleToggleAccess(index, 'tags_access')}
+                          className={`p-2 rounded-full ${
+                            control.tags_access
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                          }`}
+                        >
+                          <CheckCircle size={20} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           control.st_company
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
@@ -400,7 +418,7 @@ const Admin = () => {
                   ))}
                   {accessControls.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                         Nenhuma conta configurada
                       </td>
                     </tr>
