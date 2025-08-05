@@ -528,42 +528,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { phone } = req.params;
       const cleanPhone = parseInt(phone.replace(/\D/g, ''));
       
-      console.log(`Searching motorista by phone: ${cleanPhone}`);
+      console.log(`🔍 Searching motorista by phone: ${cleanPhone}`);
       
-      // Usar a API já existente de motoristas-list diretamente
+      // Usar storage diretamente
       const accountId = req.header('account_id') || '1';
+      const companyId = await getCompanyIdFromAccount(accountId);
       
-      try {
-        // Buscar na lista completa de motoristas
-        const motoristasResponse = await fetch(`http://localhost:5000/api/motoristas-list?account_id=${accountId}`);
-        if (motoristasResponse.ok) {
-          const motoristas = await motoristasResponse.json();
-          const found = motoristas.find((m: any) => m.telefone && m.telefone.toString() === cleanPhone.toString());
-          
-          if (found) {
-            console.log(`✅ Motorista encontrado: ${found.nome_motorista} (${found.motorista_id})`);
-            return res.json({
-              motorista_id: found.motorista_id,
-              nome: found.nome_motorista,
-              telefone: found.telefone
-            });
-          }
+      if (!companyId) {
+        return res.status(404).json({ error: 'Company not found' });
+      }
+
+      // Buscar motoristas da empresa usando storage
+      const motoristasResult = await storage.getMotoristasWithAddresses(companyId, {}, 1, 1000);
+      const motoristas = motoristasResult.motoristas;
+      
+      console.log(`📋 Procurando entre ${motoristas.length} motoristas da empresa ${companyId}`);
+      
+      const found = motoristas.find((m: any) => {
+        const telefoneStr = m.telefone ? m.telefone.toString() : '';
+        const cleanPhoneStr = cleanPhone.toString();
+        const match = telefoneStr === cleanPhoneStr;
+        if (match) {
+          console.log(`✅ MATCH encontrado: ${m.nome} (${telefoneStr} === ${cleanPhoneStr})`);
         }
-        
-        console.log(`❌ Motorista não encontrado para telefone: ${cleanPhone}`);
+        return match;
+      });
+      
+      if (found) {
+        console.log(`✅ Motorista encontrado: ${found.nome} (ID: ${found.motorista_id})`);
+        return res.json({
+          motorista_id: found.motorista_id,
+          nome: found.nome,
+          telefone: found.telefone
+        });
+      } else {
+        console.log(`❌ Nenhum motorista encontrado com telefone ${cleanPhone}`);
+        // Mostrar alguns exemplos para debug
+        const examples = motoristas.slice(0, 3).map((m: any) => `${m.nome}: ${m.telefone}`);
+        console.log(`📝 Exemplos no banco:`, examples);
         return res.status(404).json({ error: 'Motorista not found' });
-      } catch (searchError) {
-        console.error('Search failed:', searchError);
-        return res.status(500).json({ error: 'Failed to search motorista' });
       }
-
-      if (!data || data.length === 0) {
-        return res.status(404).json({ error: 'Motorista not found' });
-      }
-
-      res.json(data[0]);
+      
     } catch (error) {
-      console.error("Error searching motorista by phone:", error);
+      console.error("❌ Error searching motorista by phone:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
