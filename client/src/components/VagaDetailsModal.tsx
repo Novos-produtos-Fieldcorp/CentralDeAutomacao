@@ -149,9 +149,19 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
     setLoading(true);
     
     try {
+      // First get company_id from account_id
+      const companyRes = await fetch(`/api/company/by-account/${accountId}`);
+      if (!companyRes.ok) {
+        toast.error('Erro ao obter dados da empresa');
+        return;
+      }
+      
+      const companyData = await companyRes.json();
+      const companyId = companyData.company_id;
+
       const updateData = {
         ...formData,
-        company_id: accountId,
+        company_id: companyId,
         quantidade: Number(formData.quantidade),
         unidade_id: formData.unidade_id ? Number(formData.unidade_id) : null,
         operacao_id: formData.operacao_id ? Number(formData.operacao_id) : null,
