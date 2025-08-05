@@ -32,11 +32,11 @@ export const getInboxes = (accountId: string) => {
   return apiClient.get(`/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`);
 };
 
-// Função para salvar a foto do WhatsApp de um motorista no banco
-const saveWhatsAppPhotoFromFloatingChat = async (phoneNumber: string, photoUrl: string) => {
+// Função para salvar a foto do WhatsApp diretamente usando o ID do motorista
+const saveWhatsAppPhotoFromFloatingChat = async (motoristaId: string, photoUrl: string) => {
   try {
     // Validar se temos dados válidos
-    if (!phoneNumber || !photoUrl) {
+    if (!motoristaId || !photoUrl) {
       console.log('❌ Dados inválidos para salvamento de foto');
       return;
     }
@@ -47,51 +47,29 @@ const saveWhatsAppPhotoFromFloatingChat = async (phoneNumber: string, photoUrl: 
       return;
     }
 
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    console.log(`🎯 CAPTURA AUTOMÁTICA INICIADA - Telefone: ${cleanPhone}, Foto: ${photoUrl}`);
+    console.log(`🎯 CAPTURA AUTOMÁTICA INICIADA - Motorista ID: ${motoristaId}, Foto: ${photoUrl}`);
     
-    // Buscar motorista pelo telefone
-    const response = await fetch(`/api/motoristas/by-phone/${cleanPhone}`, {
+    // Salvar a foto diretamente usando o ID do motorista
+    const saveResponse = await fetch(`/api/motoristas/${motoristaId}/whatsapp-photo`, {
+      method: 'PUT',
       headers: {
-        'account_id': '1',
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+        'account_id': '1'
+      },
+      body: JSON.stringify({ foto_whatsapp: photoUrl }),
     });
     
-    if (response.ok) {
-      const motorista = await response.json();
-      console.log(`✅ MOTORISTA ENCONTRADO: ${motorista.nome} (ID: ${motorista.motorista_id})`);
+    if (saveResponse.ok) {
+      console.log(`🎉 SUCESSO! Foto do WhatsApp capturada e salva para motorista ID: ${motoristaId}`);
+      console.log(`📸 Nova foto no sistema: ${photoUrl}`);
       
-      // Verificar se a foto já existe no banco
-      if (motorista.foto_whatsapp === photoUrl) {
-        console.log('📸 Foto já está atualizada no banco');
-        return;
-      }
-      
-      // Salvar a nova foto
-      const saveResponse = await fetch(`/api/motoristas/${motorista.motorista_id}/whatsapp-photo`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'account_id': '1'
-        },
-        body: JSON.stringify({ foto_whatsapp: photoUrl }),
-      });
-      
-      if (saveResponse.ok) {
-        console.log(`🎉 SUCESSO! Foto do WhatsApp capturada e salva para: ${motorista.nome}`);
-        console.log(`📱 Telefone: ${cleanPhone} | 📸 Nova foto no sistema`);
-        
-        // Recarregar a página para mostrar a nova foto
-        setTimeout(() => {
-          console.log('🔄 Recarregando página para mostrar a nova foto...');
-          window.location.reload();
-        }, 1500);
-      } else {
-        console.error('❌ Erro ao salvar foto no banco:', await saveResponse.text());
-      }
+      // Recarregar a página para mostrar a nova foto
+      setTimeout(() => {
+        console.log('🔄 Recarregando página para mostrar a nova foto...');
+        window.location.reload();
+      }, 1500);
     } else {
-      console.log(`❌ Motorista não encontrado para telefone: ${cleanPhone}`);
+      console.error('❌ Erro ao salvar foto no banco:', await saveResponse.text());
     }
   } catch (error) {
     console.error('❌ Erro no processo de captura automática:', error);
@@ -102,6 +80,7 @@ interface FloatingChatProps {
   initialPhone?: string;
   initialName?: string;
   initialEmail?: string;
+  motoristaId?: number;
   sourceType?: 'agregado' | 'contratado' | 'motorista';
   additionalInfo?: {
     name?: string;
@@ -175,6 +154,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   initialPhone,
   initialName,
   initialEmail,
+  motoristaId,
   sourceType,
   additionalInfo,
 }) => {
@@ -550,9 +530,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         setContact(contactData);
         
         // Se temos uma foto do contato, salvar no banco de dados para motoristas
-        if (contactData.thumbnail && contactData.phone_number) {
+        if (contactData.thumbnail && motoristaId) {
           console.log('💾 Salvando foto automaticamente do FloatingChat (thumbnail):', contactData.thumbnail);
-          saveWhatsAppPhotoFromFloatingChat(contactData.phone_number, contactData.thumbnail);
+          saveWhatsAppPhotoFromFloatingChat(motoristaId.toString(), contactData.thumbnail);
         }
         
         return contactData;
@@ -709,9 +689,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               setContact(contactData);
               
               // Se temos uma foto do contato, salvar no banco de dados para motoristas
-              if (contactData.thumbnail && contactData.phone_number) {
+              if (contactData.thumbnail && motoristaId) {
                 console.log('💾 Salvando foto automaticamente do chat existente (thumbnail):', contactData.thumbnail);
-                saveWhatsAppPhotoFromFloatingChat(contactData.phone_number, contactData.thumbnail);
+                saveWhatsAppPhotoFromFloatingChat(motoristaId.toString(), contactData.thumbnail);
               }
               setActiveConversation({
                 id: existingConversation.id,
@@ -755,9 +735,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               setContact(contactData);
               
               // Se temos uma foto do contato, salvar no banco de dados para motoristas
-              if (contactData.thumbnail && contactData.phone_number) {
+              if (contactData.thumbnail && motoristaId) {
                 console.log('💾 Salvando foto automaticamente da nova conversa (thumbnail):', contactData.thumbnail);
-                saveWhatsAppPhotoFromFloatingChat(contactData.phone_number, contactData.thumbnail);
+                saveWhatsAppPhotoFromFloatingChat(motoristaId.toString(), contactData.thumbnail);
               }
               setActiveConversation({
                 id: conversationToUse.id,

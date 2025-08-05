@@ -596,8 +596,8 @@ const ContratacaoKanban = () => {
       return;
     }
     
-    // Usando a assinatura correta do startChat
-    startChat(motorista.telefone.toString());
+    // Usando a assinatura correta do startChat com motorista ID
+    startChat(motorista.telefone.toString(), motorista.nome, motorista.motorista_id);
   };
 
   const handleViewDocument = (motorista: MotoristaWithDetails) => {

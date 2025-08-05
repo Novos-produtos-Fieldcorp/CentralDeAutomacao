@@ -611,6 +611,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota removida - agora usamos diretamente o ID do motorista para salvar a foto
+
   // The WhatsApp photo capture is now handled automatically by FloatingChat
   // when a contact is loaded. This reduces complexity and avoids multiple API calls.
 
