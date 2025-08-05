@@ -510,13 +510,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/vagas/dashboard/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      // Return empty dashboard data for now - can be implemented later
-      res.json({
-        total: 0,
-        active: 0,
-        paused: 0,
-        completed: 0
-      });
+      
+      // Fetch all vagas for the company
+      const { data: vagas, error } = await supabase
+        .from("vaga")
+        .select("*")
+        .eq("company_id", companyId);
+
+      // Get status information separately
+      const { data: statusData } = await supabase
+        .from("st_vaga")
+        .select("id, status_vaga")
+        .eq("company_id", companyId);
+
+      // Create status lookup map
+      const statusMap = new Map();
+      statusData?.forEach(s => statusMap.set(s.id, s.status_vaga));
+
+      if (error) {
+        console.error("Error fetching vagas for dashboard:", error);
+        return res.status(500).json({ error: "Erro ao buscar dados do dashboard" });
+      }
+
+      // Calculate dashboard statistics
+      const now = new Date();
+      const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      const totalVagas = vagas?.length || 0;
+      
+      // Count vagas by status (assuming "Em Andamento" is active, others might be closed/paused)
+      const vagasAbertas = vagas?.filter(vaga => {
+        const status = statusMap.get(vaga.st_vaga_id);
+        return status === "Em Andamento" || status === "Ativa" || status === "Aberta";
+      }).length || 0;
+
+      const vagasFechadas = vagas?.filter(vaga => {
+        const status = statusMap.get(vaga.st_vaga_id);
+        return status === "Fechada" || status === "Finalizada" || status === "Concluída";
+      }).length || 0;
+
+      // Count vagas expiring in the next 7 days
+      const vagasVencendo = vagas?.filter(vaga => {
+        if (!vaga.dt_limite) return false;
+        const limitDate = new Date(vaga.dt_limite);
+        return limitDate >= now && limitDate <= sevenDaysFromNow;
+      }).length || 0;
+
+      const dashboardData = {
+        totalVagas,
+        vagasAbertas,
+        vagasFechadas,
+        vagasVencendo
+      };
+
+      console.log("Dashboard data calculated:", dashboardData);
+      res.json(dashboardData);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       res.status(500).json({ error: "Erro ao buscar dados do dashboard" });
