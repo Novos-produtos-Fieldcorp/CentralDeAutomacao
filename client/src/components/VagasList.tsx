@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown } from 'lucide-react';
+import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Vaga } from '@shared/schema';
 import { format } from 'date-fns';
@@ -20,6 +20,26 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusOptions, setStatusOptions] = useState<Array<{id: number, status_vaga: string}>>([]);
   const [companyId, setCompanyId] = useState<number | null>(null);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [clienteFilter, setClienteFilter] = useState<string[]>([]);
+  const [unidadeFilter, setUnidadeFilter] = useState<string[]>([]);
+  const [operacaoFilter, setOperacaoFilter] = useState<string[]>([]);
+  const [quantidadeFilter, setQuantidadeFilter] = useState<{min: number | null, max: number | null}>({min: null, max: null});
+  const [dateFilter, setDateFilter] = useState<{start: string, end: string}>({start: '', end: ''});
+  
+  // Dropdown states
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
+  const [showUnidadeDropdown, setShowUnidadeDropdown] = useState(false);
+  const [showOperacaoDropdown, setShowOperacaoDropdown] = useState(false);
+  
+  // Options for filters
+  const [clientes, setClientes] = useState<Array<{cliente_id: number, nome: string}>>([]);
+  const [unidades, setUnidades] = useState<Array<{id: number, unidade: string}>>([]);
+  const [operacoes, setOperacoes] = useState<Array<{id: number, operacao: string}>>([]);
 
   const fetchVagas = async () => {
     try {
@@ -36,10 +56,13 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
       const fetchedCompanyId = companyData.company_id;
       setCompanyId(fetchedCompanyId);
       
-      // Fetch vagas and status options in parallel
-      const [vagasResponse, statusResponse] = await Promise.all([
+      // Fetch vagas and all options in parallel
+      const [vagasResponse, statusResponse, clientesResponse, unidadesResponse, operacoesResponse] = await Promise.all([
         fetch(`/api/vagas/company/${fetchedCompanyId}`),
-        fetch(`/api/status-vagas/${fetchedCompanyId}`)
+        fetch(`/api/status-vagas/${fetchedCompanyId}`),
+        fetch(`/api/clientes/${fetchedCompanyId}`),
+        fetch(`/api/unidades/${fetchedCompanyId}`),
+        fetch(`/api/operacoes/${fetchedCompanyId}`)
       ]);
       
       if (vagasResponse.ok) {
@@ -55,6 +78,21 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
         setStatusOptions(statusData);
       }
       
+      if (clientesResponse.ok) {
+        const clientesData = await clientesResponse.json();
+        setClientes(clientesData);
+      }
+      
+      if (unidadesResponse.ok) {
+        const unidadesData = await unidadesResponse.json();
+        setUnidades(unidadesData);
+      }
+      
+      if (operacoesResponse.ok) {
+        const operacoesData = await operacoesResponse.json();
+        setOperacoes(operacoesData);
+      }
+      
     } catch (error) {
       console.error('Error fetching vagas:', error);
       setError('Erro ao carregar vagas');
@@ -68,6 +106,142 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
       fetchVagas();
     }
   }, [accountId]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showStatusDropdown && !(event.target as HTMLElement).closest('#status-dropdown')) {
+        setShowStatusDropdown(false);
+      }
+      if (showClienteDropdown && !(event.target as HTMLElement).closest('#cliente-dropdown')) {
+        setShowClienteDropdown(false);
+      }
+      if (showUnidadeDropdown && !(event.target as HTMLElement).closest('#unidade-dropdown')) {
+        setShowUnidadeDropdown(false);
+      }
+      if (showOperacaoDropdown && !(event.target as HTMLElement).closest('#operacao-dropdown')) {
+        setShowOperacaoDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStatusDropdown, showClienteDropdown, showUnidadeDropdown, showOperacaoDropdown]);
+
+  // Filter helper functions
+  const toggleFilterOption = (filterType: string, value: string) => {
+    switch (filterType) {
+      case 'status':
+        setStatusFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(item => item !== value)
+            : [...prev, value]
+        );
+        break;
+      case 'cliente':
+        setClienteFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(item => item !== value)
+            : [...prev, value]
+        );
+        break;
+      case 'unidade':
+        setUnidadeFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(item => item !== value)
+            : [...prev, value]
+        );
+        break;
+      case 'operacao':
+        setOperacaoFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(item => item !== value)
+            : [...prev, value]
+        );
+        break;
+    }
+  };
+
+  const clearFilter = (filterType: string) => {
+    switch (filterType) {
+      case 'status':
+        setStatusFilter([]);
+        break;
+      case 'cliente':
+        setClienteFilter([]);
+        break;
+      case 'unidade':
+        setUnidadeFilter([]);
+        break;
+      case 'operacao':
+        setOperacaoFilter([]);
+        break;
+      case 'quantidade':
+        setQuantidadeFilter({min: null, max: null});
+        break;
+      case 'data':
+        setDateFilter({start: '', end: ''});
+        break;
+    }
+  };
+
+  const getFilterButtonText = (filterType: string) => {
+    switch (filterType) {
+      case 'status':
+        return statusFilter.length > 0 ? `Status (${statusFilter.length})` : 'Filtrar por Status';
+      case 'cliente':
+        return clienteFilter.length > 0 ? `Cliente (${clienteFilter.length})` : 'Filtrar por Cliente';
+      case 'unidade':
+        return unidadeFilter.length > 0 ? `Unidade (${unidadeFilter.length})` : 'Filtrar por Unidade';
+      case 'operacao':
+        return operacaoFilter.length > 0 ? `Operação (${operacaoFilter.length})` : 'Filtrar por Operação';
+      default:
+        return 'Filtrar';
+    }
+  };
+
+  // Apply filters to vagas
+  const filteredVagas = vagas.filter((vaga) => {
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Search filter
+    const searchMatch = searchTerm === '' || 
+      vaga.nome.toLowerCase().includes(searchLower) ||
+      vaga.descricao.toLowerCase().includes(searchLower) ||
+      vaga.cliente_nome?.toLowerCase().includes(searchLower) ||
+      vaga.unidade_nome?.toLowerCase().includes(searchLower) ||
+      vaga.operacao_nome?.toLowerCase().includes(searchLower);
+    
+    // Status filter
+    const statusMatch = statusFilter.length === 0 || 
+      (vaga.st_vaga_id && statusFilter.includes(vaga.st_vaga_id.toString()));
+    
+    // Cliente filter
+    const clienteMatch = clienteFilter.length === 0 || 
+      (vaga.cliente_id && clienteFilter.includes(vaga.cliente_id.toString()));
+    
+    // Unidade filter
+    const unidadeMatch = unidadeFilter.length === 0 || 
+      (vaga.unidade_id && unidadeFilter.includes(vaga.unidade_id.toString()));
+    
+    // Operacao filter
+    const operacaoMatch = operacaoFilter.length === 0 || 
+      (vaga.operacao_id && operacaoFilter.includes(vaga.operacao_id.toString()));
+    
+    // Quantidade filter
+    const quantidadeMatch = (quantidadeFilter.min === null || vaga.quantidade >= quantidadeFilter.min) &&
+      (quantidadeFilter.max === null || vaga.quantidade <= quantidadeFilter.max);
+    
+    // Data filter (dt_limite)
+    const dataMatch = dateFilter.start === '' || dateFilter.end === '' || 
+      (vaga.dt_limite && 
+       new Date(vaga.dt_limite) >= new Date(dateFilter.start) && 
+       new Date(vaga.dt_limite) <= new Date(dateFilter.end));
+    
+    return searchMatch && statusMatch && clienteMatch && unidadeMatch && operacaoMatch && quantidadeMatch && dataMatch;
+  });
 
   const formatDate = (date: string | null) => {
     if (!date) return '-';
@@ -195,10 +369,335 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-      {vagas.length === 0 ? (
-        <div className="p-6 text-center py-12">
-          <Building className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
+    <div className="space-y-6">
+      {/* Filters Section */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Search */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Buscar por nome, descrição, cliente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+
+          {/* Status Filter */}
+          <div className="relative" id="status-dropdown">
+            <button
+              type="button"
+              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
+            >
+              <span>{getFilterButtonText('status')}</span>
+              <div className="flex items-center">
+                {statusFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('status');
+                    }}
+                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+            </button>
+            <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            {showStatusDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os status</span>
+                  <button 
+                    type="button" 
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setStatusFilter([]);
+                    }}
+                  >
+                    Limpar
+                  </button>
+                </div>
+                {statusOptions.map((status) => (
+                  <div key={status.id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`status-${status.id}`}
+                      checked={statusFilter.includes(status.id.toString())}
+                      onChange={() => toggleFilterOption('status', status.id.toString())}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`status-${status.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {status.status_vaga}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quantity Filters */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <input
+                type="number"
+                placeholder="Qtde Min"
+                value={quantidadeFilter.min || ''}
+                onChange={(e) => setQuantidadeFilter(prev => ({...prev, min: e.target.value ? Number(e.target.value) : null}))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <div className="flex-1">
+              <input
+                type="number"
+                placeholder="Qtde Max"
+                value={quantidadeFilter.max || ''}
+                onChange={(e) => setQuantidadeFilter(prev => ({...prev, max: e.target.value ? Number(e.target.value) : null}))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Second row of filters */}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Cliente Filter */}
+          <div className="relative" id="cliente-dropdown">
+            <button
+              type="button"
+              onClick={() => setShowClienteDropdown(!showClienteDropdown)}
+              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
+            >
+              <span>{getFilterButtonText('cliente')}</span>
+              <div className="flex items-center">
+                {clienteFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('cliente');
+                    }}
+                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+            </button>
+            <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            {showClienteDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os clientes</span>
+                  <button 
+                    type="button" 
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setClienteFilter([]);
+                    }}
+                  >
+                    Limpar
+                  </button>
+                </div>
+                {clientes.map((cliente) => (
+                  <div key={cliente.cliente_id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`cliente-${cliente.cliente_id}`}
+                      checked={clienteFilter.includes(cliente.cliente_id.toString())}
+                      onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`cliente-${cliente.cliente_id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {cliente.nome}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Unidade Filter */}
+          <div className="relative" id="unidade-dropdown">
+            <button
+              type="button"
+              onClick={() => setShowUnidadeDropdown(!showUnidadeDropdown)}
+              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
+            >
+              <span>{getFilterButtonText('unidade')}</span>
+              <div className="flex items-center">
+                {unidadeFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('unidade');
+                    }}
+                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showUnidadeDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+            </button>
+            <Building className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            {showUnidadeDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as unidades</span>
+                  <button 
+                    type="button" 
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setUnidadeFilter([]);
+                    }}
+                  >
+                    Limpar
+                  </button>
+                </div>
+                {unidades.map((unidade) => (
+                  <div key={unidade.id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`unidade-${unidade.id}`}
+                      checked={unidadeFilter.includes(unidade.id.toString())}
+                      onChange={() => toggleFilterOption('unidade', unidade.id.toString())}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`unidade-${unidade.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {unidade.unidade}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Operacao Filter */}
+          <div className="relative" id="operacao-dropdown">
+            <button
+              type="button"
+              onClick={() => setShowOperacaoDropdown(!showOperacaoDropdown)}
+              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
+            >
+              <span>{getFilterButtonText('operacao')}</span>
+              <div className="flex items-center">
+                {operacaoFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('operacao');
+                    }}
+                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showOperacaoDropdown ? 'transform rotate-180' : ''}`} />
+              </div>
+            </button>
+            <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            {showOperacaoDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
+                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as operações</span>
+                  <button 
+                    type="button" 
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOperacaoFilter([]);
+                    }}
+                  >
+                    Limpar
+                  </button>
+                </div>
+                {operacoes.map((operacao) => (
+                  <div key={operacao.id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`operacao-${operacao.id}`}
+                      checked={operacaoFilter.includes(operacao.id.toString())}
+                      onChange={() => toggleFilterOption('operacao', operacao.id.toString())}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor={`operacao-${operacao.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      {operacao.operacao}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Date Range Filter */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <input
+                type="date"
+                value={dateFilter.start}
+                onChange={(e) => setDateFilter(prev => ({...prev, start: e.target.value}))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                title="Data inicial"
+              />
+            </div>
+            <div className="flex-1">
+              <input
+                type="date"
+                value={dateFilter.end}
+                onChange={(e) => setDateFilter(prev => ({...prev, end: e.target.value}))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                title="Data final"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Clear all filters button */}
+        {(searchTerm || statusFilter.length > 0 || clienteFilter.length > 0 || unidadeFilter.length > 0 || operacaoFilter.length > 0 || quantidadeFilter.min !== null || quantidadeFilter.max !== null || dateFilter.start || dateFilter.end) && (
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter([]);
+                setClienteFilter([]);
+                setUnidadeFilter([]);
+                setOperacaoFilter([]);
+                setQuantidadeFilter({min: null, max: null});
+                setDateFilter({start: '', end: ''});
+              }}
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Limpar todos os filtros
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+        {filteredVagas.length === 0 ? (
+          <div className="p-6 text-center py-12">
+            <Building className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
             Nenhuma vaga encontrada
           </h3>
@@ -235,7 +734,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {vagas.map((vaga) => (
+              {filteredVagas.map((vaga) => (
                 <tr key={vaga.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
@@ -325,7 +824,8 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh }) => {
             </tbody>
           </table>
         </div>
-      )}
+        )}
+      </div>
       
       {/* Modal de Detalhes/Edição */}
       {selectedVaga && (
