@@ -1581,17 +1581,11 @@ const Contratados = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0">
-                            {motorista.funcao === 'Motorista' ? (
-                              <WhatsAppAvatar 
-                                photoUrl={motorista.foto_whatsapp}
-                                name={motorista.nome_motorista}
-                                size="md"
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                              </div>
-                            )}
+                            <WhatsAppAvatar 
+                              photoUrl={motorista.foto_whatsapp}
+                              name={motorista.nome_motorista}
+                              size="md"
+                            />
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
