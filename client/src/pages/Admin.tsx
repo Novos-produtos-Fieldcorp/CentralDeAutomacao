@@ -13,7 +13,7 @@ interface AccessControl {
   motorista_access: boolean;
   hodometro_acsess: boolean;
   resumo_access: boolean;
-  tags_access: boolean;
+  tags_access: boolean | null;
   st_company: boolean;
 }
 
@@ -79,11 +79,18 @@ const Admin = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('company')
-        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, tags_access, st_company')
+        .select('company_id, nome, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, tags_access, st_company')
         .order('company_id', { ascending: true });
 
       if (error) throw error;
-      setAccessControls(data || []);
+      
+      // Map nome to nome_company for compatibility
+      const mappedData = data?.map(company => ({
+        ...company,
+        nome_company: company.nome
+      }));
+
+      setAccessControls(mappedData || []);
     } catch (error) {
       console.error('Error fetching access controls:', error);
       toast.error('Erro ao carregar controles de acesso');
@@ -93,13 +100,23 @@ const Admin = () => {
   };
 
   const handleToggleAccess = (index: number, field: keyof AccessControl) => {
-    if (typeof accessControls[index][field] !== 'boolean') return;
-
     const updatedControls = [...accessControls];
-    updatedControls[index] = {
-      ...updatedControls[index],
-      [field]: !updatedControls[index][field]
-    };
+    const currentValue = updatedControls[index][field];
+    
+    // Handle null values and ensure we get a boolean result
+    if (field === 'tags_access') {
+      updatedControls[index] = {
+        ...updatedControls[index],
+        [field]: currentValue === true ? false : true
+      };
+    } else {
+      if (typeof currentValue !== 'boolean') return;
+      updatedControls[index] = {
+        ...updatedControls[index],
+        [field]: !currentValue
+      };
+    }
+    
     setAccessControls(updatedControls);
   };
 
@@ -168,7 +185,7 @@ const Admin = () => {
       const { data, error } = await supabase
         .from('company')
         .insert([{
-          nome_company: companyFormData.nome_company,
+          nome: companyFormData.nome_company,
           cnpj: companyFormData.cnpj.replace(/\D/g, ''),
           email: companyFormData.email,
           telefone: companyFormData.telefone.replace(/\D/g, ''),
@@ -397,7 +414,7 @@ const Admin = () => {
                         <button
                           onClick={() => handleToggleAccess(index, 'tags_access')}
                           className={`p-2 rounded-full ${
-                            control.tags_access
+                            control.tags_access === true
                               ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                               : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                           }`}
