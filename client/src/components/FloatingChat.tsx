@@ -36,23 +36,39 @@ export const getInboxes = (accountId: string) => {
 const saveWhatsAppPhotoFromFloatingChat = async (phoneNumber: string, photoUrl: string) => {
   try {
     // Buscar motorista pelo telefone no banco
-    const response = await fetch(`/api/motoristas/by-phone/${phoneNumber.replace(/\D/g, '')}`);
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    console.log(`🔍 Buscando motorista com telefone: ${cleanPhone}`);
+    
+    const response = await fetch(`/api/motoristas/by-phone/${cleanPhone}`);
+    console.log(`📡 Response status: ${response.status}`);
+    
     if (response.ok) {
       const motorista = await response.json();
+      console.log(`👤 Motorista encontrado:`, motorista);
+      
       if (motorista && motorista.motorista_id) {
         // Salvar a foto
-        await fetch(`/api/motoristas/${motorista.motorista_id}/whatsapp-photo`, {
+        const saveResponse = await fetch(`/api/motoristas/${motorista.motorista_id}/whatsapp-photo`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ foto_whatsapp: photoUrl }),
         });
-        console.log(`✅ Foto salva automaticamente para motorista ${motorista.motorista_id}: ${photoUrl}`);
+        
+        if (saveResponse.ok) {
+          console.log(`✅ Foto salva automaticamente para motorista ${motorista.motorista_id}: ${photoUrl}`);
+          // Dar um tempo para o banco processar e depois recarregar
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
       }
+    } else {
+      console.log(`❌ Motorista não encontrado para telefone ${cleanPhone}`);
     }
   } catch (error) {
-    console.log('Erro ao salvar foto automaticamente:', error);
+    console.log('❌ Erro ao salvar foto automaticamente:', error);
   }
 };
 
@@ -509,6 +525,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         
         // Se temos uma foto do contato, salvar no banco de dados para motoristas
         if (contactData.thumbnail && contactData.phone_number) {
+          console.log('💾 Salvando foto automaticamente do FloatingChat:', contactData.thumbnail);
           saveWhatsAppPhotoFromFloatingChat(contactData.phone_number, contactData.thumbnail);
         }
         

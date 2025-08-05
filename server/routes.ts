@@ -530,8 +530,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Searching motorista by phone: ${cleanPhone}`);
       
+      // Usar query direta para evitar problemas de schema
       const { data, error } = await supabase
-        .from('motorista')
+        .from('view_motoristas_completo')
         .select('motorista_id, nome_motorista, telefone')
         .eq('telefone', cleanPhone)
         .limit(1);
