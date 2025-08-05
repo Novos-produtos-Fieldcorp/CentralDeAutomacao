@@ -428,6 +428,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New route for vagas with joins - for table display
+  app.get("/api/vagas/company/:companyId", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      
+      // Fetch vagas
+      const { data: vagas, error: vagasError } = await supabase
+        .from("vaga")
+        .select("*")
+        .eq("company_id", companyId)
+        .order('created_at', { ascending: false });
+
+      if (vagasError) {
+        console.error("Error fetching vagas:", vagasError);
+        return res.status(500).json({ error: "Erro ao buscar vagas" });
+      }
+
+      if (!vagas || vagas.length === 0) {
+        return res.json([]);
+      }
+
+      // Get all related data in parallel
+      const [clientesData, unidadesData, operacoesData, statusData] = await Promise.all([
+        supabase.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
+        supabase.from("unidade").select("id, unidade").eq("company_id", companyId),
+        supabase.from("operacao").select("id, operacao").eq("company_id", companyId),
+        supabase.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
+      ]);
+
+      // Create lookup maps
+      const clientesMap = new Map();
+      clientesData.data?.forEach(c => clientesMap.set(c.cliente_id, c.nome));
+      
+      const unidadesMap = new Map();
+      unidadesData.data?.forEach(u => unidadesMap.set(u.id, u.unidade));
+      
+      const operacoesMap = new Map();
+      operacoesData.data?.forEach(o => operacoesMap.set(o.id, o.operacao));
+      
+      const statusMap = new Map();
+      statusData.data?.forEach(s => statusMap.set(s.id, s.status_vaga));
+
+      // Enrich vagas with related data
+      const enrichedVagas = vagas.map(vaga => ({
+        ...vaga,
+        cliente_nome: clientesMap.get(vaga.cliente_id) || null,
+        unidade_nome: unidadesMap.get(vaga.unidade_id) || null,
+        operacao_nome: operacoesMap.get(vaga.operacao_id) || null,
+        status_nome: statusMap.get(vaga.st_vaga_id) || null,
+      }));
+
+      console.log("Vagas with enriched data:", enrichedVagas.length, "items");
+      res.json(enrichedVagas);
+    } catch (error) {
+      console.error("Error fetching vagas:", error);
+      res.status(500).json({ error: "Erro ao buscar vagas" });
+    }
+  });
+
   app.get("/api/vagas/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
