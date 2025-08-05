@@ -26,20 +26,53 @@ export const saveWhatsAppPhoto = async (motoristaId: number, photoUrl: string): 
 };
 
 /**
- * Busca a foto do perfil do WhatsApp usando a API WiseApp
+ * Busca a foto do perfil do WhatsApp usando a mesma lógica do FloatingChat
  */
 export const fetchWhatsAppPhoto = async (phoneNumber: string): Promise<string | null> => {
   try {
-    const response = await apiRequest(`/api/wiseapp/contact-photo`, {
-      method: 'POST',
-      body: JSON.stringify({ phone_number: phoneNumber }),
+    const apiKey = localStorage.getItem('wiseapp_token');
+    const accountId = localStorage.getItem('account_id');
+    
+    if (!apiKey || !accountId) {
+      console.warn('API key or account ID not found');
+      return null;
+    }
+
+    console.log('Searching contact for phone:', phoneNumber);
+
+    // Usar fetch para buscar contatos (mesma abordagem do FloatingChat)
+    const searchUrl = `/api/api/v1/accounts/${accountId}/contacts?q=${encodeURIComponent(phoneNumber)}&sort=name&_t=${Date.now()}`;
+    
+    const response = await fetch(searchUrl, {
+      method: 'GET',
       headers: {
+        'api_access_token': apiKey,
         'Content-Type': 'application/json',
-      },
+        'Accept': 'application/json'
+      }
     });
 
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data = await response.json();
-    return data.photo_url || null;
+    
+    if (data && data.payload && data.payload.length > 0) {
+      const contact = data.payload[0];
+      console.log('Found contact:', contact);
+      
+      // Usar a mesma lógica do FloatingChat: priorizar avatar_url, depois thumbnail
+      const photoUrl = contact.avatar_url || contact.thumbnail;
+      
+      if (photoUrl && photoUrl.trim() !== '') {
+        console.log('Found contact photo URL:', photoUrl);
+        return photoUrl;
+      }
+    }
+    
+    console.log('No contact or photo found for phone:', phoneNumber);
+    return null;
   } catch (error) {
     console.error('Erro ao buscar foto do WhatsApp:', error);
     return null;
