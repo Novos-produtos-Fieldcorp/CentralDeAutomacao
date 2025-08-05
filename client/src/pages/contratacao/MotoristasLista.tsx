@@ -1907,6 +1907,7 @@ const MotoristasLista = () => {
         email={selectedMotorista?.email || undefined}
         telefone={selectedMotorista?.telefone ? String(selectedMotorista.telefone) : undefined}
         dt_nascimento={selectedMotorista?.dt_nascimento}
+        foto_whatsapp={selectedMotorista?.foto_whatsapp}
         endereco={endereco}
         st_cadastro={selectedMotorista?.st_cadastro}
       />

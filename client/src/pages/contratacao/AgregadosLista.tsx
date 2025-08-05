@@ -1908,6 +1908,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           email={selectedMotorista?.email || undefined}
           telefone={selectedMotorista?.telefone?.toString()}
           dt_nascimento={selectedMotorista?.dt_nascimento}
+          foto_whatsapp={selectedMotorista?.foto_whatsapp}
           endereco={endereco || undefined}
           st_cadastro={selectedMotorista?.st_cadastro || 'cadastrado'}
         />

@@ -1870,6 +1870,7 @@ const Contratados = () => {
         email={selectedMotorista?.email || undefined}
         telefone={selectedMotorista?.telefone?.toString()}
         dt_nascimento={selectedMotorista?.dt_nascimento}
+        foto_whatsapp={selectedMotorista?.foto_whatsapp}
         endereco={endereco}
         st_cadastro={selectedMotorista?.st_cadastro || 'cadastrado'}
       />
