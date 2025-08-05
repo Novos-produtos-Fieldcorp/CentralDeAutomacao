@@ -121,6 +121,7 @@ export class DatabaseStorage implements IStorage {
         data_cadastro: motorista.data_cadastro,
         cliente_id: motorista.cliente_id,
         conversation_id: motorista.conversation_id,
+        foto_whatsapp: motorista.foto_whatsapp,
         ativo: motorista.ativo,
         // Address fields
         id_end_motorista: end_motorista.id_end_motorista,
@@ -160,6 +161,7 @@ export class DatabaseStorage implements IStorage {
           data_cadastro: motorista.data_cadastro,
           cliente_id: motorista.cliente_id,
           conversation_id: motorista.conversation_id,
+          foto_whatsapp: motorista.foto_whatsapp,
           ativo: motorista.ativo,
           // Address fields
           id_end_motorista: end_motorista.id_end_motorista,
@@ -259,6 +261,7 @@ export class DatabaseStorage implements IStorage {
         data_cadastro: motorista.data_cadastro,
         cliente_id: motorista.cliente_id,
         conversation_id: motorista.conversation_id,
+        foto_whatsapp: motorista.foto_whatsapp,
         ativo: motorista.ativo,
         // Address fields
         id_end_motorista: end_motorista.id_end_motorista,

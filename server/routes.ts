@@ -621,7 +621,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Usar a API do WiseApp para buscar a foto do contato
-      const wiseappToken = req.headers['api_access_token'] || req.headers['authorization']?.replace('Bearer ', '');
+      const wiseappTokenRaw = req.headers['api_access_token'] || req.headers['authorization']?.replace('Bearer ', '');
+      const wiseappToken = Array.isArray(wiseappTokenRaw) ? wiseappTokenRaw[0] : wiseappTokenRaw;
       
       if (!wiseappToken) {
         return res.status(401).json({ error: "WiseApp token is required" });
