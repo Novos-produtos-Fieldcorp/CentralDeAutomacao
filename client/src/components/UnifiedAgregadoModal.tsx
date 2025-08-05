@@ -17,6 +17,7 @@ import DeleteConfirmationModal from './DeleteConfirmationModal';
 import GestaoRiscoTab from './GestaoRiscoTab';
 import ComentariosTab from './ComentariosTab';
 import EditVeiculoModal from './veiculos/EditVeiculoModal';
+import WhatsAppAvatar from './WhatsAppAvatar';
 
 interface UnifiedAgregadoModalProps {
   isOpen: boolean;
@@ -366,9 +367,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
               <div className="p-6">
                 <div className="flex justify-between items-start">
                   <div className="flex items-start gap-4">
-                    <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                      <Truck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                    </div>
+                    <WhatsAppAvatar 
+                      photoUrl={motorista?.foto_whatsapp}
+                      name={nome}
+                      size="lg"
+                    />
                     <div>
                       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                         {nome}
