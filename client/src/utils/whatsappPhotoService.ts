@@ -26,7 +26,7 @@ export const saveWhatsAppPhoto = async (motoristaId: number, photoUrl: string): 
 };
 
 /**
- * Busca a foto do perfil do WhatsApp usando a mesma lógica do FloatingChat
+ * Busca a foto do perfil do WhatsApp usando exatamente a mesma lógica do FloatingChat
  */
 export const fetchWhatsAppPhoto = async (phoneNumber: string): Promise<string | null> => {
   try {
@@ -40,11 +40,10 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string): Promise<string | 
 
     console.log('Searching contact for phone:', phoneNumber);
 
-    // Usar fetch para buscar contatos (mesma abordagem do FloatingChat)
-    const searchUrl = `/api/api/v1/accounts/${accountId}/contacts?q=${encodeURIComponent(phoneNumber)}&sort=name&_t=${Date.now()}`;
-    
-    const response = await fetch(searchUrl, {
-      method: 'GET',
+    // Usar axios igual ao FloatingChat para manter consistência
+    const axios = (await import('axios')).default;
+    const apiClient = axios.create({
+      baseURL: '/api',
       headers: {
         'api_access_token': apiKey,
         'Content-Type': 'application/json',
@@ -52,23 +51,59 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string): Promise<string | 
       }
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Formatar número igual ao FloatingChat
+    let formattedNumber = phoneNumber;
+    if (!formattedNumber.startsWith('+')) {
+      formattedNumber = `+55${phoneNumber}`;
+    }
+    const digitsOnly = formattedNumber.replace(/\D/g, '');
+
+    // Primeiro tentar busca por ID exato
+    try {
+      const searchResponse = await apiClient.get(`/api/v1/accounts/${accountId}/contacts/search`, {
+        params: {
+          q: digitsOnly
+        }
+      });
+      
+      if (searchResponse.data?.payload?.[0]) {
+        const contact = searchResponse.data.payload[0];
+        console.log('Found contact via search:', contact);
+        
+        // Buscar dados completos do contato igual ao FloatingChat
+        const contactResponse = await apiClient.get(`/api/v1/accounts/${accountId}/contacts/${contact.id}`);
+        
+        if (contactResponse.data) {
+          const photoUrl = contactResponse.data.avatar_url || contactResponse.data.thumbnail;
+          
+          if (photoUrl && photoUrl.trim() !== '') {
+            console.log('Found contact photo URL:', photoUrl);
+            return photoUrl;
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Erro na busca específica, tentando busca geral:', error);
     }
 
-    const data = await response.json();
-    
-    if (data && data.payload && data.payload.length > 0) {
-      const contact = data.payload[0];
-      console.log('Found contact:', contact);
+    // Se não encontrou, tentar busca geral como o FloatingChat
+    try {
+      const searchUrl = `/api/v1/accounts/${accountId}/contacts?q=${encodeURIComponent(phoneNumber)}&sort=name&_t=${Date.now()}`;
+      const response = await apiClient.get(searchUrl);
       
-      // Usar a mesma lógica do FloatingChat: priorizar avatar_url, depois thumbnail
-      const photoUrl = contact.avatar_url || contact.thumbnail;
-      
-      if (photoUrl && photoUrl.trim() !== '') {
-        console.log('Found contact photo URL:', photoUrl);
-        return photoUrl;
+      if (response.data && response.data.payload && response.data.payload.length > 0) {
+        const contact = response.data.payload[0];
+        console.log('Found contact via general search:', contact);
+        
+        const photoUrl = contact.avatar_url || contact.thumbnail;
+        
+        if (photoUrl && photoUrl.trim() !== '') {
+          console.log('Found contact photo URL:', photoUrl);
+          return photoUrl;
+        }
       }
+    } catch (error) {
+      console.log('Erro na busca geral:', error);
     }
     
     console.log('No contact or photo found for phone:', phoneNumber);

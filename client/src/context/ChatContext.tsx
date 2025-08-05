@@ -18,27 +18,30 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     
     // Buscar e salvar foto do WhatsApp se o motoristaId for fornecido
     if (motoristaId && phone) {
-      console.log(`Iniciando captura de foto para motorista ${motoristaId}, telefone: ${phone}`);
-      try {
-        const photoUrl = await fetchWhatsAppPhoto(phone);
-        console.log(`Resultado da busca de foto:`, photoUrl);
+      console.log(`🔍 Iniciando captura de foto para motorista ${motoristaId}, telefone: ${phone}`);
+      
+      // Executa a busca da foto em paralelo com a abertura do chat
+      fetchWhatsAppPhoto(phone).then(photoUrl => {
+        console.log(`📷 Resultado da busca de foto:`, photoUrl);
         
         if (photoUrl) {
-          const success = await saveWhatsAppPhoto(motoristaId, photoUrl);
-          if (success) {
-            console.log(`✅ Foto do WhatsApp salva com sucesso para motorista ${motoristaId}: ${photoUrl}`);
-            // Recarregar a página ou atualizar os dados para refletir a mudança
-            window.location.reload();
-          } else {
-            console.error(`❌ Falha ao salvar foto do WhatsApp para motorista ${motoristaId}`);
-          }
+          saveWhatsAppPhoto(motoristaId, photoUrl).then(success => {
+            if (success) {
+              console.log(`✅ Foto do WhatsApp salva com sucesso para motorista ${motoristaId}: ${photoUrl}`);
+              // Usar setTimeout para dar tempo ao servidor processar
+              setTimeout(() => {
+                window.location.reload();
+              }, 1000);
+            } else {
+              console.error(`❌ Falha ao salvar foto do WhatsApp para motorista ${motoristaId}`);
+            }
+          });
         } else {
           console.log(`ℹ️  Nenhuma foto encontrada para o telefone ${phone}`);
         }
-      } catch (error) {
+      }).catch(error => {
         console.warn('❌ Erro ao buscar/salvar foto do WhatsApp:', error);
-        // Não bloqueia a abertura do chat se falhar
-      }
+      });
     }
   };
 
