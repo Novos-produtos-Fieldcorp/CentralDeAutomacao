@@ -201,9 +201,9 @@ const Navbar = () => {
                                    }`} 
                       />
                     </div>
-                    <div className={`overflow-hidden transition-all duration-500 ease-in-out flex-1
-                                   ${isExpanded ? 'w-full opacity-100' : 'w-0 opacity-0'}`}>
-                      <span className={`transition-colors duration-500 ${active ? 'font-medium' : ''}`}>
+                    <div className={`overflow-hidden transition-all duration-500 ease-in-out flex-1 min-w-0
+                                   ${isExpanded ? 'max-w-full opacity-100 ml-3' : 'max-w-0 opacity-0 ml-0'}`}>
+                      <span className={`whitespace-nowrap transition-colors duration-500 ${active ? 'font-medium' : ''}`}>
                         {item.label}
                       </span>
                     </div>
@@ -219,9 +219,9 @@ const Navbar = () => {
                   <div className="flex items-center justify-center w-9 h-9">
                     <item.icon className="w-5 h-5 text-gray-400 dark:text-gray-600" />
                   </div>
-                  <div className={`overflow-hidden transition-all duration-500 ease-in-out flex-1
-                                 ${isExpanded ? 'w-full opacity-100' : 'w-0 opacity-0'}`}>
-                    <span className="text-gray-400 dark:text-gray-600">
+                  <div className={`overflow-hidden transition-all duration-500 ease-in-out flex-1 min-w-0
+                                 ${isExpanded ? 'max-w-full opacity-100 ml-3' : 'max-w-0 opacity-0 ml-0'}`}>
+                    <span className="whitespace-nowrap text-gray-400 dark:text-gray-600">
                       {item.label}
                     </span>
                   </div>
