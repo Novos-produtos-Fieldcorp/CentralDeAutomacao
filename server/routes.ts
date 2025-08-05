@@ -347,14 +347,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET routes for dropdowns
+  // GET routes for dropdowns using Supabase
   app.get("/api/clientes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const clientes = await db
-        .select()
-        .from(cliente)
-        .where(eq(cliente.company_id, Number(companyId)));
+      const { data: clientes, error } = await supabase
+        .from("cliente")
+        .select("*")
+        .eq("company_id", companyId);
+
+      if (error) {
+        console.error("Error fetching clientes:", error);
+        return res.status(500).json({ error: "Erro ao buscar clientes" });
+      }
+
       res.json(clientes);
     } catch (error) {
       console.error("Error fetching clientes:", error);
@@ -365,10 +371,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/unidades/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const unidades = await db
-        .select()
-        .from(unidade)
-        .where(eq(unidade.company_id, Number(companyId)));
+      const { data: unidades, error } = await supabase
+        .from("unidade")
+        .select("*")
+        .eq("company_id", companyId);
+
+      if (error) {
+        console.error("Error fetching unidades:", error);
+        return res.status(500).json({ error: "Erro ao buscar unidades" });
+      }
+
       res.json(unidades);
     } catch (error) {
       console.error("Error fetching unidades:", error);
@@ -379,10 +391,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/operacoes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const operacoes = await db
-        .select()
-        .from(operacao)
-        .where(eq(operacao.company_id, Number(companyId)));
+      const { data: operacoes, error } = await supabase
+        .from("operacao")
+        .select("*")
+        .eq("company_id", companyId);
+
+      if (error) {
+        console.error("Error fetching operacoes:", error);
+        return res.status(500).json({ error: "Erro ao buscar operações" });
+      }
+
       res.json(operacoes);
     } catch (error) {
       console.error("Error fetching operacoes:", error);
@@ -393,10 +411,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/status-vagas/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const statusVagas = await db
-        .select()
-        .from(st_vaga)
-        .where(eq(st_vaga.company_id, Number(companyId)));
+      const { data: statusVagas, error } = await supabase
+        .from("st_vaga")
+        .select("*")
+        .eq("company_id", companyId);
+
+      if (error) {
+        console.error("Error fetching status vagas:", error);
+        return res.status(500).json({ error: "Erro ao buscar status das vagas" });
+      }
+
       res.json(statusVagas);
     } catch (error) {
       console.error("Error fetching status vagas:", error);
@@ -407,10 +431,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/vagas/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const vagas = await db
-        .select()
-        .from(vaga)
-        .where(eq(vaga.company_id, Number(companyId)));
+      const { data: vagas, error } = await supabase
+        .from("vaga")
+        .select("*")
+        .eq("company_id", companyId);
+
+      if (error) {
+        console.error("Error fetching vagas:", error);
+        return res.status(500).json({ error: "Erro ao buscar vagas" });
+      }
+
       res.json(vagas);
     } catch (error) {
       console.error("Error fetching vagas:", error);
@@ -434,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Vagas API routes
+  // Vagas API routes using Supabase
   app.post("/api/vagas", async (req, res) => {
     try {
       const vagaData = req.body;
@@ -447,12 +477,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Convert dt_limite to proper timestamp
       if (vagaData.dt_limite) {
-        vagaData.dt_limite = new Date(vagaData.dt_limite);
+        vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
       }
 
-      const [newVaga] = await db
-        .insert(vaga)
-        .values({
+      const { data: newVaga, error } = await supabase
+        .from("vaga")
+        .insert({
           nome: vagaData.nome,
           descricao: vagaData.descricao,
           quantidade: Number(vagaData.quantidade),
@@ -466,7 +496,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cliente_id: vagaData.cliente_id ? Number(vagaData.cliente_id) : null,
           gr_id: vagaData.gr_id ? Number(vagaData.gr_id) : null,
         })
-        .returning();
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating vaga:", error);
+        return res.status(500).json({
+          error: "Erro ao criar vaga",
+          details: error.message,
+        });
+      }
 
       console.log("Vaga created successfully:", newVaga);
       res.status(201).json(newVaga);
@@ -479,18 +518,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // APIs para criar novas unidades, operações e status
+  // APIs para criar novas unidades, operações e status usando Supabase
   app.post("/api/unidades", async (req, res) => {
     try {
       const { unidade: unidadeNome, company_id } = req.body;
       
-      const [newUnidade] = await db
-        .insert(unidade)
-        .values({
+      const { data: newUnidade, error } = await supabase
+        .from("unidade")
+        .insert({
           unidade: unidadeNome,
           company_id: Number(company_id),
         })
-        .returning();
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating unidade:", error);
+        return res.status(500).json({ error: "Erro ao criar unidade" });
+      }
 
       res.status(201).json(newUnidade);
     } catch (error) {
@@ -503,13 +548,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { operacao: operacaoNome, company_id } = req.body;
       
-      const [newOperacao] = await db
-        .insert(operacao)
-        .values({
+      const { data: newOperacao, error } = await supabase
+        .from("operacao")
+        .insert({
           operacao: operacaoNome,
           company_id: Number(company_id),
         })
-        .returning();
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating operacao:", error);
+        return res.status(500).json({ error: "Erro ao criar operação" });
+      }
 
       res.status(201).json(newOperacao);
     } catch (error) {
@@ -522,13 +573,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { status_vaga, company_id } = req.body;
       
-      const [newStatus] = await db
-        .insert(st_vaga)
-        .values({
+      const { data: newStatus, error } = await supabase
+        .from("st_vaga")
+        .insert({
           status_vaga,
           company_id: Number(company_id),
         })
-        .returning();
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating status vaga:", error);
+        return res.status(500).json({ error: "Erro ao criar status" });
+      }
 
       res.status(201).json(newStatus);
     } catch (error) {
