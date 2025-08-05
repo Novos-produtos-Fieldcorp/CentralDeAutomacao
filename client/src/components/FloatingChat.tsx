@@ -539,7 +539,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           id: contactResponse.data.id,
           name: contactResponse.data.name,
           phone_number: contactResponse.data.phone_number,
-          thumbnail: contactResponse.data.avatar_url || contactResponse.data.thumbnail || '',
+          thumbnail: contactResponse.data.thumbnail || contactResponse.data.avatar_url || '',
           source_id: contactResponse.data.contact_inboxes?.[0]?.source_id || '',
           availability_status: contactResponse.data.availability_status || 'offline',
           last_seen_at: contactResponse.data.last_seen_at || '',
@@ -551,7 +551,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         
         // Se temos uma foto do contato, salvar no banco de dados para motoristas
         if (contactData.thumbnail && contactData.phone_number) {
-          console.log('💾 Salvando foto automaticamente do FloatingChat:', contactData.thumbnail);
+          console.log('💾 Salvando foto automaticamente do FloatingChat (thumbnail):', contactData.thumbnail);
           saveWhatsAppPhotoFromFloatingChat(contactData.phone_number, contactData.thumbnail);
         }
         
@@ -694,17 +694,25 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             }
             if (existingConversation) {
               // Se já existe conversa, abrir ela
-              setContact({
+              const contactData = {
                 id: contactToUse.id,
                 name: contactToUse.name || initialName || formattedNumber,
                 phone_number: contactToUse.phone_number,
-                thumbnail: contactToUse.thumbnail || '',
+                thumbnail: contactToUse.thumbnail || contactToUse.avatar_url || '',
                 source_id: contactToUse.contact_inboxes?.[0]?.source_id || '',
                 availability_status: contactToUse.availability_status || 'offline',
                 last_seen_at: contactToUse.last_seen_at || '',
                 email: contactToUse.email,
                 custom_attributes: contactToUse.custom_attributes || {}
-              });
+              };
+              
+              setContact(contactData);
+              
+              // Se temos uma foto do contato, salvar no banco de dados para motoristas
+              if (contactData.thumbnail && contactData.phone_number) {
+                console.log('💾 Salvando foto automaticamente do chat existente (thumbnail):', contactData.thumbnail);
+                saveWhatsAppPhotoFromFloatingChat(contactData.phone_number, contactData.thumbnail);
+              }
               setActiveConversation({
                 id: existingConversation.id,
                 messages: []
@@ -732,17 +740,25 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                 throw new Error('Não foi possível criar a conversa');
               }
               const conversationToUse = newConversationResponse.data;
-              setContact({
+              const contactData = {
                 id: contactToUse.id,
                 name: contactToUse.name || initialName || formattedNumber,
                 phone_number: contactToUse.phone_number,
-                thumbnail: contactToUse.thumbnail || '',
+                thumbnail: contactToUse.thumbnail || contactToUse.avatar_url || '',
                 source_id: contactToUse.contact_inboxes?.[0]?.source_id || '',
                 availability_status: contactToUse.availability_status || 'offline',
                 last_seen_at: contactToUse.last_seen_at || '',
                 email: contactToUse.email,
                 custom_attributes: contactToUse.custom_attributes || {}
-              });
+              };
+              
+              setContact(contactData);
+              
+              // Se temos uma foto do contato, salvar no banco de dados para motoristas
+              if (contactData.thumbnail && contactData.phone_number) {
+                console.log('💾 Salvando foto automaticamente da nova conversa (thumbnail):', contactData.thumbnail);
+                saveWhatsAppPhotoFromFloatingChat(contactData.phone_number, contactData.thumbnail);
+              }
               setActiveConversation({
                 id: conversationToUse.id,
                 messages: []
