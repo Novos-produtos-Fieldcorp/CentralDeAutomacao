@@ -32,6 +32,30 @@ export const getInboxes = (accountId: string) => {
   return apiClient.get(`/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`);
 };
 
+// Função para salvar a foto do WhatsApp de um motorista no banco
+const saveWhatsAppPhotoFromFloatingChat = async (phoneNumber: string, photoUrl: string) => {
+  try {
+    // Buscar motorista pelo telefone no banco
+    const response = await fetch(`/api/motoristas/by-phone/${phoneNumber.replace(/\D/g, '')}`);
+    if (response.ok) {
+      const motorista = await response.json();
+      if (motorista && motorista.motorista_id) {
+        // Salvar a foto
+        await fetch(`/api/motoristas/${motorista.motorista_id}/whatsapp-photo`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ foto_whatsapp: photoUrl }),
+        });
+        console.log(`✅ Foto salva automaticamente para motorista ${motorista.motorista_id}: ${photoUrl}`);
+      }
+    }
+  } catch (error) {
+    console.log('Erro ao salvar foto automaticamente:', error);
+  }
+};
+
 interface FloatingChatProps {
   initialPhone?: string;
   initialName?: string;
@@ -482,6 +506,12 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         };
 
         setContact(contactData);
+        
+        // Se temos uma foto do contato, salvar no banco de dados para motoristas
+        if (contactData.thumbnail && contactData.phone_number) {
+          saveWhatsAppPhotoFromFloatingChat(contactData.phone_number, contactData.thumbnail);
+        }
+        
         return contactData;
       }
     } catch (error) {

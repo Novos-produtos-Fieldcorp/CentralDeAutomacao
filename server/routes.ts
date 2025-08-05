@@ -522,6 +522,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rota para atualizar foto do WhatsApp do motorista
+  // Rota para buscar motorista por número de telefone
+  app.get("/api/motoristas/by-phone/:phone", async (req, res) => {
+    try {
+      const { phone } = req.params;
+      const cleanPhone = phone.replace(/\D/g, '');
+      
+      console.log(`Searching motorista by phone: ${cleanPhone}`);
+      
+      const { data, error } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome_motorista, telefone')
+        .eq('telefone', cleanPhone)
+        .limit(1);
+
+      if (error) {
+        console.error('Error searching motorista by phone:', error);
+        return res.status(500).json({ error: 'Failed to search motorista', details: error });
+      }
+
+      if (!data || data.length === 0) {
+        return res.status(404).json({ error: 'Motorista not found' });
+      }
+
+      res.json(data[0]);
+    } catch (error) {
+      console.error("Error searching motorista by phone:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.patch("/api/motoristas/:id/whatsapp-photo", async (req, res) => {
     try {
       const { id } = req.params;
