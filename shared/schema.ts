@@ -109,7 +109,11 @@ export const end_motorista = pgTable("end_motorista", {
 // Cliente table
 export const cliente = pgTable("cliente", {
   cliente_id: serial("cliente_id").primaryKey(),
-  nome_cliente: text("nome_cliente").notNull(),
+  nome: text("nome").notNull(),
+  cnpj: text("cnpj"),
+  st_cliente: boolean("st_cliente").default(true),
+  email: text("email"),
+  telefone: text("telefone"),
   company_id: integer("company_id").references(() => company.company_id),
   created_at: timestamp("created_at").defaultNow(),
 });
