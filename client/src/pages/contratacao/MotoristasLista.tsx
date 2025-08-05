@@ -331,7 +331,10 @@ const MotoristasLista = () => {
       setLoading(true);
       let query = supabase
       .from('vw_motoristas_completo')
-      .select('*')
+      .select(`
+        *,
+        motorista!inner(foto_whatsapp)
+      `)
       .eq('company_id', companyId);
       // Apply date filter
       if (dateFilter !== 'all') {
@@ -373,6 +376,7 @@ const MotoristasLista = () => {
       const motoristasMapeados = data?.map(motorista => ({
         ...motorista,
         nome: motorista.nome || motorista.nome_motorista || 'N/A', // Usa nome_motorista se nome não estiver disponível
+        foto_whatsapp: motorista.motorista?.foto_whatsapp || null, // Extract foto_whatsapp from the joined table
       }));
 
       // Agrupar ajudantes por motorista_id

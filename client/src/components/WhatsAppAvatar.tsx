@@ -26,6 +26,9 @@ export default function WhatsAppAvatar({
     lg: 24
   };
 
+  // Debug: log the photoUrl to see what we're receiving
+  console.log('WhatsAppAvatar - photoUrl:', photoUrl, 'name:', name);
+
   if (photoUrl) {
     return (
       <img
