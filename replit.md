@@ -33,10 +33,12 @@ Preferred communication style: Simple, everyday language.
 - **UI/UX**: Emphasis on a comprehensive, responsive component library with dark/light theme support, consistent design via custom CSS variables, and streamlined user interactions.
 - **Data Flow**: Custom React hooks and TanStack Query manage frontend-to-backend communication, ensuring company-filtered queries and data isolation.
 - **External Integrations**: Designed for modular integration with third-party services like Supabase and WiseApp through a proxy system for secure communication.
+- **WhatsApp Integration**: Seamless photo capture system using WiseApp API for contact search, with automatic photo storage in Supabase and real-time avatar updates across all driver management interfaces.
 - **Deployment**: Configured for Netlify, utilizing serverless functions and environment-based configurations for seamless development and production transitions, including iframe embedding support.
 - **Job Vacancy Management**: A dedicated module with its own data model and APIs, supporting inline creation of related entities (units, operations, statuses) and real-time dashboard statistics.
 - **Document Management**: Direct upload to Supabase Storage, with validation and automatic URL storage in the database for driver and vehicle owner documents.
-- **User Experience Enhancements**: Includes CPF API integration for automatic data population in forms and simplified context menus for improved usability.
+- **WhatsApp Photo Integration**: Automatic capture and display of WhatsApp profile photos for drivers, with real-time photo retrieval from WiseApp API and persistent storage in Supabase database.
+- **User Experience Enhancements**: Includes CPF API integration for automatic data population in forms, simplified context menus, and WhatsApp avatar display replacing default user icons across all driver tables.
 
 ## External Dependencies
 
