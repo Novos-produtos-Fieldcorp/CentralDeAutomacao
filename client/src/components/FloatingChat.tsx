@@ -39,7 +39,12 @@ const saveWhatsAppPhotoFromFloatingChat = async (phoneNumber: string, photoUrl: 
     const cleanPhone = phoneNumber.replace(/\D/g, '');
     console.log(`🔍 Buscando motorista com telefone: ${cleanPhone}`);
     
-    const response = await fetch(`/api/motoristas/by-phone/${cleanPhone}`);
+    const response = await fetch(`/api/motoristas/by-phone/${cleanPhone}`, {
+      headers: {
+        'account_id': '1',
+        'Content-Type': 'application/json'
+      }
+    });
     console.log(`📡 Response status: ${response.status}`);
     
     if (response.ok) {

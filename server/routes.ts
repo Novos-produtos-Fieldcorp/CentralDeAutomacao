@@ -526,20 +526,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/motoristas/by-phone/:phone", async (req, res) => {
     try {
       const { phone } = req.params;
-      const cleanPhone = phone.replace(/\D/g, '');
+      const cleanPhone = parseInt(phone.replace(/\D/g, ''));
       
       console.log(`Searching motorista by phone: ${cleanPhone}`);
       
-      // Usar query direta para evitar problemas de schema
-      const { data, error } = await supabase
-        .from('view_motoristas_completo')
-        .select('motorista_id, nome_motorista, telefone')
-        .eq('telefone', cleanPhone)
-        .limit(1);
-
-      if (error) {
-        console.error('Error searching motorista by phone:', error);
-        return res.status(500).json({ error: 'Failed to search motorista', details: error });
+      // Usar a API já existente de motoristas-list diretamente
+      const accountId = req.header('account_id') || '1';
+      
+      try {
+        // Buscar na lista completa de motoristas
+        const motoristasResponse = await fetch(`http://localhost:5000/api/motoristas-list?account_id=${accountId}`);
+        if (motoristasResponse.ok) {
+          const motoristas = await motoristasResponse.json();
+          const found = motoristas.find((m: any) => m.telefone && m.telefone.toString() === cleanPhone.toString());
+          
+          if (found) {
+            console.log(`✅ Motorista encontrado: ${found.nome_motorista} (${found.motorista_id})`);
+            return res.json({
+              motorista_id: found.motorista_id,
+              nome: found.nome_motorista,
+              telefone: found.telefone
+            });
+          }
+        }
+        
+        console.log(`❌ Motorista não encontrado para telefone: ${cleanPhone}`);
+        return res.status(404).json({ error: 'Motorista not found' });
+      } catch (searchError) {
+        console.error('Search failed:', searchError);
+        return res.status(500).json({ error: 'Failed to search motorista' });
       }
 
       if (!data || data.length === 0) {

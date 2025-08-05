@@ -222,6 +222,7 @@ export class DatabaseStorage implements IStorage {
       data_cadastro: row.data_cadastro,
       cliente_id: row.cliente_id,
       conversation_id: row.conversation_id,
+      foto_whatsapp: row.foto_whatsapp,
       ativo: row.ativo,
       endereco: row.id_end_motorista ? {
         id_end_motorista: row.id_end_motorista,
@@ -299,6 +300,7 @@ export class DatabaseStorage implements IStorage {
       data_cadastro: row.data_cadastro,
       cliente_id: row.cliente_id,
       conversation_id: row.conversation_id,
+      foto_whatsapp: row.foto_whatsapp,
       ativo: row.ativo,
       endereco: row.id_end_motorista ? {
         id_end_motorista: row.id_end_motorista,
