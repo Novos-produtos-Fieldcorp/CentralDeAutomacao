@@ -35,45 +35,66 @@ export const getInboxes = (accountId: string) => {
 // Função para salvar a foto do WhatsApp de um motorista no banco
 const saveWhatsAppPhotoFromFloatingChat = async (phoneNumber: string, photoUrl: string) => {
   try {
-    // Buscar motorista pelo telefone no banco
+    // Validar se temos dados válidos
+    if (!phoneNumber || !photoUrl) {
+      console.log('❌ Dados inválidos para salvamento de foto');
+      return;
+    }
+
+    // Verificar se a URL da foto é válida (não é placeholder)
+    if (photoUrl.includes('placeholder') || photoUrl.includes('default') || photoUrl.length < 10) {
+      console.log('❌ URL de foto inválida ou placeholder:', photoUrl);
+      return;
+    }
+
     const cleanPhone = phoneNumber.replace(/\D/g, '');
-    console.log(`🔍 Buscando motorista com telefone: ${cleanPhone}`);
+    console.log(`🎯 CAPTURA AUTOMÁTICA INICIADA - Telefone: ${cleanPhone}, Foto: ${photoUrl}`);
     
+    // Buscar motorista pelo telefone
     const response = await fetch(`/api/motoristas/by-phone/${cleanPhone}`, {
       headers: {
         'account_id': '1',
         'Content-Type': 'application/json'
       }
     });
-    console.log(`📡 Response status: ${response.status}`);
     
     if (response.ok) {
       const motorista = await response.json();
-      console.log(`👤 Motorista encontrado:`, motorista);
+      console.log(`✅ MOTORISTA ENCONTRADO: ${motorista.nome} (ID: ${motorista.motorista_id})`);
       
-      if (motorista && motorista.motorista_id) {
-        // Salvar a foto
-        const saveResponse = await fetch(`/api/motoristas/${motorista.motorista_id}/whatsapp-photo`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ foto_whatsapp: photoUrl }),
-        });
+      // Verificar se a foto já existe no banco
+      if (motorista.foto_whatsapp === photoUrl) {
+        console.log('📸 Foto já está atualizada no banco');
+        return;
+      }
+      
+      // Salvar a nova foto
+      const saveResponse = await fetch(`/api/motoristas/${motorista.motorista_id}/whatsapp-photo`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'account_id': '1'
+        },
+        body: JSON.stringify({ foto_whatsapp: photoUrl }),
+      });
+      
+      if (saveResponse.ok) {
+        console.log(`🎉 SUCESSO! Foto do WhatsApp capturada e salva para: ${motorista.nome}`);
+        console.log(`📱 Telefone: ${cleanPhone} | 📸 Nova foto no sistema`);
         
-        if (saveResponse.ok) {
-          console.log(`✅ Foto salva automaticamente para motorista ${motorista.motorista_id}: ${photoUrl}`);
-          // Dar um tempo para o banco processar e depois recarregar
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000);
-        }
+        // Recarregar a página para mostrar a nova foto
+        setTimeout(() => {
+          console.log('🔄 Recarregando página para mostrar a nova foto...');
+          window.location.reload();
+        }, 1500);
+      } else {
+        console.error('❌ Erro ao salvar foto no banco:', await saveResponse.text());
       }
     } else {
-      console.log(`❌ Motorista não encontrado para telefone ${cleanPhone}`);
+      console.log(`❌ Motorista não encontrado para telefone: ${cleanPhone}`);
     }
   } catch (error) {
-    console.log('❌ Erro ao salvar foto automaticamente:', error);
+    console.error('❌ Erro no processo de captura automática:', error);
   }
 };
 
