@@ -13,7 +13,7 @@ interface AccessControl {
   motorista_access: boolean;
   hodometro_acsess: boolean;
   resumo_access: boolean;
-  tags_access: boolean;
+  tags_access: boolean | null;
   st_company: boolean;
 }
 
@@ -83,6 +83,7 @@ const Admin = () => {
         .order('company_id', { ascending: true });
 
       if (error) throw error;
+
       setAccessControls(data || []);
     } catch (error) {
       console.error('Error fetching access controls:', error);
@@ -92,15 +93,45 @@ const Admin = () => {
     }
   };
 
-  const handleToggleAccess = (index: number, field: keyof AccessControl) => {
-    if (typeof accessControls[index][field] !== 'boolean') return;
+  const handleToggleAccess = async (index: number, field: keyof AccessControl) => {
+    const control = accessControls[index];
+    const currentValue = control[field];
+    
+    // Calculate new value: if null, set to true; if true, set to false; if false, set to true
+    let newValue;
+    if (field === 'tags_access') {
+      newValue = currentValue === true ? false : true;
+    } else {
+      if (typeof currentValue !== 'boolean') return;
+      newValue = !currentValue;
+    }
 
-    const updatedControls = [...accessControls];
-    updatedControls[index] = {
-      ...updatedControls[index],
-      [field]: !updatedControls[index][field]
-    };
-    setAccessControls(updatedControls);
+    try {
+      // Update in Supabase immediately
+      const { error } = await supabase
+        .from('company')
+        .update({ [field]: newValue })
+        .eq('company_id', control.company_id);
+
+      if (error) {
+        console.error(`Error updating ${field} for company ${control.company_id}:`, error);
+        toast.error(`Erro ao atualizar ${field}`);
+        return;
+      }
+
+      // Update local state only if Supabase update was successful
+      const updatedControls = [...accessControls];
+      updatedControls[index] = {
+        ...updatedControls[index],
+        [field]: newValue
+      };
+      setAccessControls(updatedControls);
+      
+      toast.success('Configuração atualizada com sucesso');
+    } catch (error) {
+      console.error(`Error toggling ${field}:`, error);
+      toast.error('Erro ao atualizar configuração');
+    }
   };
 
   const handleSaveChanges = async () => {
@@ -397,7 +428,7 @@ const Admin = () => {
                         <button
                           onClick={() => handleToggleAccess(index, 'tags_access')}
                           className={`p-2 rounded-full ${
-                            control.tags_access
+                            control.tags_access === true
                               ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                               : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                           }`}

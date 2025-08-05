@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardCheck, FileDown, Gauge, Store, Truck, Users, Lock, AlertTriangle, MessagesSquare } from 'lucide-react';
+import { ClipboardCheck, FileDown, Gauge, Store, Truck, Users, Lock, AlertTriangle, MessagesSquare, Tag } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import ImportExportModal from '../components/ImportExportModal';
@@ -180,6 +180,13 @@ const Dashboard = () => {
       description: "Configure resumos automáticos para seus grupos de WhatsApp",
       enabled: true,
       onClick: moduleAccess.resumos ? undefined : handleResumosClick
+    },
+    {
+      title: "Tags",
+      icon: Tag,
+      link: "/tags-admin",
+      description: "Gerencie tags para categorizar e organizar motoristas",
+      enabled: moduleAccess.tags
     }
   ];
 

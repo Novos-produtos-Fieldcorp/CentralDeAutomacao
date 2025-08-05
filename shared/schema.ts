@@ -5,7 +5,7 @@ import { relations } from "drizzle-orm";
 
 // Company table
 export const company = pgTable("company", {
-  nome: text("nome").notNull(),
+  nome_company: text("nome_company").notNull(),
   cnpj: text("cnpj"),
   telefone: text("telefone"),
   email: text("email"),
@@ -15,6 +15,7 @@ export const company = pgTable("company", {
   checklist_access: boolean("checklist_access").default(true),
   motorista_access: boolean("motorista_access").default(true),
   hodometro_acsess: boolean("hodometro_acsess").default(true),
+  resumo_access: boolean("resumo_access").default(false),
   tags_access: boolean("tags_access").default(true),
 
   created_at: timestamp("created_at").defaultNow(),

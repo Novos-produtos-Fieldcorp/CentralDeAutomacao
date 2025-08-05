@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { Gauge, ClipboardList, LayoutDashboard, Loader as Road, ChevronRight } from 'lucide-react';
+import { useModuleAccess } from '../hooks/useModuleAccess';
 import HodometrosDashboard from './hodometros/HodometrosDashboard';
 import HodometrosLista from './hodometros/HodometrosLista';
 import HodometrosRelatorio from './hodometros/HodometrosRelatorio';
 
 const Hodometros = () => {
   const location = useLocation();
+  const { moduleAccess, loading } = useModuleAccess();
   const navRef = useRef<HTMLDivElement>(null);
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
 
@@ -49,6 +51,18 @@ const Hodometros = () => {
   const isActive = (path: string) => {
     return location.pathname === path;
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500 dark:text-gray-400">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (!moduleAccess.hodometros) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="space-y-6">
