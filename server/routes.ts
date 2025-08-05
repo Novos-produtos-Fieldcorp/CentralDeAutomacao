@@ -581,7 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/motoristas/:id/whatsapp-photo", async (req, res) => {
+  app.put("/api/motoristas/:id/whatsapp-photo", async (req, res) => {
     try {
       const { id } = req.params;
       const { foto_whatsapp } = req.body;
@@ -611,58 +611,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Rota para buscar foto do contato no WiseApp
-  app.post("/api/wiseapp/contact-photo", async (req, res) => {
-    try {
-      const { phone_number } = req.body;
-      
-      if (!phone_number) {
-        return res.status(400).json({ error: "phone_number is required" });
-      }
-
-      // Usar a API do WiseApp para buscar a foto do contato
-      const wiseappTokenRaw = req.headers['api_access_token'] || req.headers['authorization']?.replace('Bearer ', '');
-      const wiseappToken = Array.isArray(wiseappTokenRaw) ? wiseappTokenRaw[0] : wiseappTokenRaw;
-      
-      if (!wiseappToken) {
-        return res.status(401).json({ error: "WiseApp token is required" });
-      }
-
-      // Formatar número de telefone
-      const formattedPhone = phone_number.toString().replace(/\D/g, '');
-      const phoneWithCountry = formattedPhone.startsWith('55') ? `+${formattedPhone}` : `+55${formattedPhone}`;
-
-      // Buscar contato na API do WiseApp
-      const wiseappResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/1/contacts/search?q=${phoneWithCountry}`, {
-        headers: {
-          'api_access_token': wiseappToken,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
-
-      if (!wiseappResponse.ok) {
-        return res.status(404).json({ error: "Contact not found" });
-      }
-
-      const wiseappData = await wiseappResponse.json();
-      const contact = wiseappData.payload?.[0];
-      
-      if (contact && contact.avatar) {
-        // Otimizar URL da foto para reduzir tamanho
-        const optimizedUrl = contact.avatar.includes('?') 
-          ? `${contact.avatar}&s=96` 
-          : `${contact.avatar}?s=96`;
-          
-        res.json({ photo_url: optimizedUrl });
-      } else {
-        res.status(404).json({ error: "Contact photo not found" });
-      }
-    } catch (error) {
-      console.error("Error fetching contact photo:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+  // The WhatsApp photo capture is now handled automatically by FloatingChat
+  // when a contact is loaded. This reduces complexity and avoids multiple API calls.
 
   const httpServer = createServer(app);
 

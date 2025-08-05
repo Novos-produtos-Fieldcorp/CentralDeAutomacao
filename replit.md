@@ -37,7 +37,7 @@ Preferred communication style: Simple, everyday language.
 - **Deployment**: Configured for Netlify, utilizing serverless functions and environment-based configurations for seamless development and production transitions, including iframe embedding support.
 - **Job Vacancy Management**: A dedicated module with its own data model and APIs, supporting inline creation of related entities (units, operations, statuses) and real-time dashboard statistics.
 - **Document Management**: Direct upload to Supabase Storage, with validation and automatic URL storage in the database for driver and vehicle owner documents.
-- **WhatsApp Photo Integration**: Automatic capture and display of WhatsApp profile photos for drivers, with real-time photo retrieval from WiseApp API and persistent storage in Supabase database.
+- **WhatsApp Photo Integration**: Automatic capture and display of WhatsApp profile photos for drivers, with seamless integration through FloatingChat component that automatically saves photos when contacts are loaded, eliminating the need for separate API calls and reducing system complexity.
 - **User Experience Enhancements**: Includes CPF API integration for automatic data population in forms, simplified context menus, and WhatsApp avatar display replacing default user icons across all driver tables.
 
 ## External Dependencies
