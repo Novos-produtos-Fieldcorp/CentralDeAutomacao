@@ -527,21 +527,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { foto_whatsapp } = req.body;
       
+      console.log(`Updating WhatsApp photo for motorista ${id}:`, foto_whatsapp);
+      
       if (!foto_whatsapp) {
         return res.status(400).json({ error: "foto_whatsapp is required" });
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('motorista')
         .update({ foto_whatsapp })
-        .eq('motorista_id', id);
+        .eq('motorista_id', id)
+        .select();
 
       if (error) {
         console.error('Error updating WhatsApp photo:', error);
-        return res.status(500).json({ error: 'Failed to update WhatsApp photo' });
+        return res.status(500).json({ error: 'Failed to update WhatsApp photo', details: error });
       }
 
-      res.json({ success: true });
+      console.log(`WhatsApp photo updated successfully for motorista ${id}:`, data);
+      res.json({ success: true, data });
     } catch (error) {
       console.error("Error updating WhatsApp photo:", error);
       res.status(500).json({ error: "Internal server error" });
