@@ -411,7 +411,7 @@ export const st_vaga = pgTable("st_vaga", {
   status_vaga: text("status_vaga"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at"),
-  company_id: bigint("company_id", { mode: "number" }).references(() => company.id),
+  company_id: bigint("company_id", { mode: "number" }).references(() => company.company_id),
 });
 
 export const operacao = pgTable("operacao", {
@@ -419,13 +419,13 @@ export const operacao = pgTable("operacao", {
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at"),
   operacao: text("operacao"),
-  company_id: bigint("company_id", { mode: "number" }).references(() => company.id),
+  company_id: bigint("company_id", { mode: "number" }).references(() => company.company_id),
 });
 
 export const unidade = pgTable("unidade", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedByDefaultAsIdentity(),
   unidade: text("unidade"),
-  company_id: bigint("company_id", { mode: "number" }).references(() => company.id),
+  company_id: bigint("company_id", { mode: "number" }).references(() => company.company_id),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at"),
 });
@@ -462,7 +462,7 @@ export const end_vaga = pgTable("end_vaga", {
 export const vagaRelations = relations(vaga, ({ one }) => ({
   company: one(company, {
     fields: [vaga.company_id],
-    references: [company.id],
+    references: [company.company_id],
   }),
   unidade: one(unidade, {
     fields: [vaga.unidade_id],
@@ -489,21 +489,21 @@ export const vagaRelations = relations(vaga, ({ one }) => ({
 export const unidadeRelations = relations(unidade, ({ one }) => ({
   company: one(company, {
     fields: [unidade.company_id],
-    references: [company.id],
+    references: [company.company_id],
   }),
 }));
 
 export const operacaoRelations = relations(operacao, ({ one }) => ({
   company: one(company, {
     fields: [operacao.company_id],
-    references: [company.id],
+    references: [company.company_id],
   }),
 }));
 
 export const stVagaRelations = relations(st_vaga, ({ one }) => ({
   company: one(company, {
     fields: [st_vaga.company_id],
-    references: [company.id],
+    references: [company.company_id],
   }),
 }));
 
@@ -548,6 +548,18 @@ export const insertStVagaSchema = createInsertSchema(st_vaga).omit({
 export const insertEndVagaSchema = createInsertSchema(end_vaga).omit({
   id: true,
   created_at: true,
+});
+
+// WiseApp Access table
+export const wiseapp_acesso = pgTable("wiseapp_acesso", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  attendant_name: text("attendant_name"),
+  company_id: integer("company_id").references(() => company.company_id),
+  id_conta_wiseapp: text("id_conta_wiseapp"),
+  access_token_wiseapp: text("access_token_wiseapp"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
 export interface MotoristaWithAddress extends Motorista {

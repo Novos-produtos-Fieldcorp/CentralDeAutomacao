@@ -275,6 +275,35 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     }
   };
 
+  const consultarCpfLocal = async (cpf: string) => {
+    if (!cpf || cpf.length !== 11) return;
+    
+    try {
+      const { consultarCpfApi } = await import('../utils/cpfService');
+      const data = await consultarCpfApi(cpf);
+      
+      const estadoId = estados.find(e => e.sigla_estado === data.estado)?.id_estado.toString() || '';
+      
+      setFormData(prev => ({
+        ...prev,
+        nome: data.nome || prev.nome,
+        telefone: data.telefone || prev.telefone,
+        logradouro: data.logradouro || prev.logradouro,
+        numero: data.numero || prev.numero,
+        complemento: data.complemento || prev.complemento,
+        bairro: data.bairro || prev.bairro,
+        cidade: data.cidade || prev.cidade,
+        estado: estadoId || prev.estado,
+        cep: data.cep || prev.cep
+      }));
+      
+      toast.success('Dados do CPF preenchidos!');
+    } catch (error) {
+      console.error('Erro ao consultar CPF:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao consultar CPF');
+    }
+  };
+
   const consultarCpfApi = async (cpf: string) => {
     if (!cpf || cpf.length !== 11) return;
     
@@ -671,7 +700,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                     onBlur={(e) => {
                       const cpf = e.target.value.replace(/\D/g, '');
                       if (cpf.length === 11) {
-                        consultarCpfApi(cpf);
+                        consultarCpfLocal(cpf);
                       }
                     }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"

@@ -12,6 +12,7 @@ interface Props {
 export default function WiseAppTokenModal({ open, onClose, onTokenSaved, companyId }: Props) {
   const [step, setStep] = useState<'email' | 'tutorial' | 'token'>('email');
   const [email, setEmail] = useState('');
+  const [attendantName, setAttendantName] = useState('');
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,8 +21,8 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     setLoading(true);
     setError('');
 
-    if (!email) {
-      setError('Email inválido.');
+    if (!email || !attendantName) {
+      setError('Email e nome do atendente são obrigatórios.');
       setLoading(false);
       return;
     }
@@ -58,7 +59,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
 
         const { error: insertError } = await supabase
           .from('wiseapp_acesso')
-          .insert([{ email, company_id: companyData.company_id, id_conta_wiseapp: accountId, access_token_wiseapp: null }]);
+          .insert([{ email, attendant_name: attendantName, company_id: companyData.company_id, id_conta_wiseapp: accountId, access_token_wiseapp: null }]);
 
         if (insertError) throw insertError;
 
@@ -85,7 +86,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     try {
       const { error: updateError } = await supabase
         .from('wiseapp_acesso')
-        .update({ access_token_wiseapp: token })
+        .update({ access_token_wiseapp: token, attendant_name: attendantName })
         .eq('email', email);
 
       if (updateError) throw updateError;
@@ -129,18 +130,34 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       </p>
     </div>
 
-    <div className="w-full max-w-sm space-y-2">
-      <label htmlFor="email" className="block text-left text-sm font-medium text-gray-700 dark:text-gray-300">
-        E-mail corporativo
-      </label>
-      <input
-        id="email"
-        type="email"
-        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:text-white"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="seuemail@empresa.com"
-      />
+    <div className="w-full max-w-sm space-y-4">
+      <div className="space-y-2">
+        <label htmlFor="email" className="block text-left text-sm font-medium text-gray-700 dark:text-gray-300">
+          E-mail corporativo
+        </label>
+        <input
+          id="email"
+          type="email"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:text-white"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="seuemail@empresa.com"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <label htmlFor="attendantName" className="block text-left text-sm font-medium text-gray-700 dark:text-gray-300">
+          Nome do Atendente
+        </label>
+        <input
+          id="attendantName"
+          type="text"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:text-white"
+          value={attendantName}
+          onChange={(e) => setAttendantName(e.target.value)}
+          placeholder="Seu nome completo"
+        />
+      </div>
     </div>
 
     {error && (

@@ -251,10 +251,6 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
       const { consultarCep } = await import('../utils/cepService');
       const data = await consultarCep(cep);
 
-      if (data.erro) {
-        throw new Error('CEP não encontrado');
-      }
-
       // Find estado_id based on UF
       const estado = estados.find(e => e.sigla_estado === data.uf);
 
@@ -283,6 +279,31 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
       }));
     } finally {
       setLoadingCep(false);
+    }
+  };
+
+  const consultarCpfLocal = async (cpf: string) => {
+    if (!cpf || cpf.length !== 11) return;
+    
+    try {
+      const { consultarCpfApi } = await import('../utils/cpfService');
+      const data = await consultarCpfApi(cpf);
+      
+      setFormData(prev => ({
+        ...prev,
+        nome: data.nome || prev.nome,
+        dt_nascimento: data.dt_nascimento || prev.dt_nascimento,
+        telefone: data.telefone || prev.telefone
+      }));
+      
+      if (data.cep) {
+        await consultarCepLocal(data.cep.replace(/\D/g, ''));
+      }
+      
+      toast.success('Dados do CPF preenchidos!');
+    } catch (error) {
+      console.error('Erro ao consultar CPF:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao consultar CPF');
     }
   };
 
