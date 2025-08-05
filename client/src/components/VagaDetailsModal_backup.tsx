@@ -149,19 +149,9 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
     setLoading(true);
     
     try {
-      // First get company_id from account_id
-      const companyRes = await fetch(`/api/company/by-account/${accountId}`);
-      if (!companyRes.ok) {
-        toast.error('Erro ao obter dados da empresa');
-        return;
-      }
-      
-      const companyData = await companyRes.json();
-      const companyId = companyData.company_id;
-
       const updateData = {
         ...formData,
-        company_id: companyId,
+        company_id: accountId,
         quantidade: Number(formData.quantidade),
         unidade_id: formData.unidade_id ? Number(formData.unidade_id) : null,
         operacao_id: formData.operacao_id ? Number(formData.operacao_id) : null,
@@ -219,34 +209,38 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             {isEditing ? 'Editar Vaga' : 'Detalhes da Vaga'}
           </h2>
-          <div className="flex items-center space-x-2">
+          <div className="flex space-x-2">
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                title="Editar vaga"
               >
-                <Edit2 className="w-5 h-5" />
+                <Edit2 size={20} />
               </button>
             )}
             <button
               onClick={onClose}
-              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             >
-              <X className="w-5 h-5" />
+              <X size={20} />
             </button>
           </div>
         </div>
 
+        {/* Content */}
         <div className="p-6 space-y-6">
           {isEditing ? (
-            <>
-              {/* Formulário de Edição */}
+            // Modo Edição - Estilo do modal de motoristas
+            <div className="space-y-6">
+              {/* Informações Básicas - Card Editável */}
               <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
                 <div className="px-4 py-5 sm:px-6">
                   <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
@@ -380,7 +374,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Unidade *
+                        Unidade
                       </dt>
                       <dd className="mt-1 sm:mt-0 sm:col-span-2">
                         <select
@@ -399,7 +393,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Operação *
+                        Operação
                       </dt>
                       <dd className="mt-1 sm:mt-0 sm:col-span-2">
                         <select
@@ -418,7 +412,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Status *
+                        Status
                       </dt>
                       <dd className="mt-1 sm:mt-0 sm:col-span-2">
                         <select
@@ -439,26 +433,27 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                 </div>
               </div>
 
-              {/* Botões de Ação */}
-              <div className="flex justify-end space-x-3">
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={loading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
                 >
-                  {loading ? 'Salvando...' : 'Salvar'}
+                  {loading ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
               </div>
-            </>
+            </div>
           ) : (
-            <>
-              {/* Visualização das Informações */}
+            // Modo Visualização - Estilo do modal de motoristas
+            <div className="space-y-6">
+              {/* Informações Básicas */}
               <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
                 <div className="px-4 py-5 sm:px-6">
                   <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
@@ -469,59 +464,54 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                     Detalhes completos da vaga de trabalho.
                   </p>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700">
-                  <dl>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        <User className="w-4 h-4 mr-2" />
+                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                  <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Nome da Vaga
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {currentVaga.nome}
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {currentVaga.nome || 'Não informado'}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Descrição
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {currentVaga.descricao}
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {currentVaga.descricao || 'Não informado'}
                       </dd>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        <Users className="w-4 h-4 mr-2" />
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Quantidade de Vagas
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {currentVaga.quantidade}
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {currentVaga.quantidade || 'Não informado'}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        <Clock className="w-4 h-4 mr-2" />
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Horário de Trabalho
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {currentVaga.horario}
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {currentVaga.horario || 'Não informado'}
                       </dd>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        <Calendar className="w-4 h-4 mr-2" />
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Dias de Trabalho
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
                         {getDiasTrabalhoFormatted()}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        <Calendar className="w-4 h-4 mr-2" />
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Data Limite
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {formatDate(currentVaga.dt_limite)}
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {formatDate(currentVaga.dt_limite?.toString() || null)}
                       </dd>
                     </div>
                   </dl>
@@ -536,52 +526,44 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                     Cliente e Unidade
                   </h3>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700">
-                  <dl>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        <Building className="w-4 h-4 mr-2" />
+                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                  <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Cliente
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {(currentVaga as any).cliente_nome || 'Não informado'}
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {(currentVaga as any).cliente_nome || (currentVaga.cliente_id ? `Cliente #${currentVaga.cliente_id}` : 'Não informado')}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        <MapPin className="w-4 h-4 mr-2" />
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Unidade
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {(currentVaga as any).unidade_nome || 'Não informado'}
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {(currentVaga as any).unidade_nome || (currentVaga.unidade_id ? `Unidade #${currentVaga.unidade_id}` : 'Não informado')}
                       </dd>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Operação
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {(currentVaga as any).operacao_nome || 'Não informado'}
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {(currentVaga as any).operacao_nome || (currentVaga.operacao_id ? `Operação #${currentVaga.operacao_id}` : 'Não informado')}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Status
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          (currentVaga as any).status_nome === 'Ativa' ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' :
-                          (currentVaga as any).status_nome === 'Em Andamento' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100' :
-                          'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
-                        }`}>
-                          {(currentVaga as any).status_nome || 'Não informado'}
-                        </span>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                        {(currentVaga as any).status_nome || 'Aberta'}
                       </dd>
                     </div>
                   </dl>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

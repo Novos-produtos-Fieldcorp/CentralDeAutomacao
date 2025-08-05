@@ -45,7 +45,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
                 {stat.title}
               </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stat.value.toLocaleString('pt-BR')}
+                {stat.value ? stat.value.toLocaleString('pt-BR') : '0'}
               </p>
               <p className={`text-sm ${getChangeColor(stat.changeType)}`}>
                 {stat.change}

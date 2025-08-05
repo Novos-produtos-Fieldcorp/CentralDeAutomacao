@@ -110,7 +110,11 @@ export const end_motorista = pgTable("end_motorista", {
 // Cliente table
 export const cliente = pgTable("cliente", {
   cliente_id: serial("cliente_id").primaryKey(),
-  nome_cliente: text("nome_cliente").notNull(),
+  nome: text("nome").notNull(),
+  cnpj: text("cnpj"),
+  st_cliente: boolean("st_cliente").default(true),
+  email: text("email"),
+  telefone: text("telefone"),
   company_id: integer("company_id").references(() => company.company_id),
   created_at: timestamp("created_at").defaultNow(),
 });
@@ -527,7 +531,17 @@ export const insertVagaSchema = createInsertSchema(vaga).omit({
   created_at: true,
   updated_at: true,
 }).extend({
-  dt_limite: z.string().optional(),
+  nome: z.string().min(1, "Nome da vaga é obrigatório"),
+  descricao: z.string().min(1, "Descrição é obrigatória"),
+  quantidade: z.string().min(1, "Quantidade é obrigatória"),
+  dias_trabalho: z.array(z.string()).min(1, "Selecione pelo menos um dia de trabalho"),
+  horario: z.string().min(1, "Horário é obrigatório"),
+  company_id: z.number().min(1, "ID da empresa é obrigatório"),
+  cliente_id: z.number().min(1, "Cliente é obrigatório"),
+  unidade_id: z.number().min(1, "Unidade é obrigatória"),
+  operacao_id: z.number().min(1, "Operação é obrigatória"),
+  st_vaga_id: z.number().min(1, "Status é obrigatório"),
+  dt_limite: z.string().optional(), // Único campo opcional
 });
 
 export const insertUnidadeSchema = createInsertSchema(unidade).omit({

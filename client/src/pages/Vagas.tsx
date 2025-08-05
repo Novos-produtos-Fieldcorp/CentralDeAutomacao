@@ -26,7 +26,18 @@ const Vagas: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch(`/api/vagas/dashboard/${accountId}`);
+      // First get company_id from account_id
+      const companyResponse = await fetch(`/api/company/by-account/${accountId}`);
+      if (!companyResponse.ok) {
+        console.error('Error fetching company data');
+        return;
+      }
+      
+      const companyData = await companyResponse.json();
+      const companyId = companyData.company_id;
+      
+      // Then fetch dashboard data using company_id
+      const response = await fetch(`/api/vagas/dashboard/${companyId}`);
       if (response.ok) {
         const data = await response.json();
         setDashboardData(data);
@@ -137,30 +148,105 @@ const Vagas: React.FC = () => {
                 <DashboardStats stats={dashboardStats} />
                 
                 {/* Recent Activity */}
-                <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                    Atividade Recente
-                  </h3>
-                  <div className="text-gray-500 dark:text-gray-400 text-center py-8">
-                    Nenhuma atividade recente
+                <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+                  <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      Resumo das Vagas
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Visualização geral do status das vagas
+                    </p>
+                  </div>
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Status Distribution */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                          Distribuição por Status
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Abertas</span>
+                            </div>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {dashboardData.vagasAbertas}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 bg-gray-500 rounded-full mr-3"></div>
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Fechadas</span>
+                            </div>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {dashboardData.vagasFechadas}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Vencendo</span>
+                            </div>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {dashboardData.vagasVencendo}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Quick Actions */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                          Ações Rápidas
+                        </h4>
+                        <div className="space-y-2">
+                          <Link
+                            to="/vagas/lista"
+                            className="block w-full px-4 py-2 text-sm text-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 border border-blue-200 hover:border-blue-300 dark:border-blue-700 dark:hover:border-blue-600 rounded-lg transition-colors"
+                          >
+                            Ver Todas as Vagas
+                          </Link>
+                          <button
+                            onClick={() => setShowAddModal(true)}
+                            className="block w-full px-4 py-2 text-sm text-center text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors"
+                          >
+                            Nova Vaga
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    {dashboardData.totalVagas > 0 && (
+                      <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Progress das Vagas
+                          </span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {Math.round((dashboardData.vagasFechadas / dashboardData.totalVagas) * 100)}% concluídas
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                          <div 
+                            className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                            style={{ 
+                              width: `${(dashboardData.vagasFechadas / dashboardData.totalVagas) * 100}%` 
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             } />
             <Route path="lista" element={
-              <div>
-                <div className="flex justify-end mb-6">
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                  >
-                    <Plus size={20} className="mr-2" />
-                    Adicionar Vaga
-                  </button>
-                </div>
-                
-                <VagasList onRefresh={fetchDashboardData} />
-              </div>
+              <VagasList 
+                onRefresh={fetchDashboardData} 
+                onAddClick={() => setShowAddModal(true)}
+              />
             } />
           </Routes>
         </div>

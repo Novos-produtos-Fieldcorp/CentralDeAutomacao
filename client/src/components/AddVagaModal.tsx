@@ -15,6 +15,7 @@ interface AddVagaModalProps {
 const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { accountId } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [companyId, setCompanyId] = useState<number | null>(null);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [operacoes, setOperacoes] = useState<Operacao[]>([]);
@@ -35,24 +36,37 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   } = useForm<InsertVaga>({
     resolver: zodResolver(insertVagaSchema),
     defaultValues: {
-      company_id: Number(accountId),
+      company_id: companyId || undefined,
     },
   });
 
-  // Fetch dropdown data
+  // Fetch company ID first, then dropdown data
   useEffect(() => {
     if (isOpen && accountId) {
-      fetchDropdownData();
+      fetchCompanyAndDropdownData();
     }
   }, [isOpen, accountId]);
 
-  const fetchDropdownData = async () => {
+  const fetchCompanyAndDropdownData = async () => {
     try {
+      // First get company_id from account_id
+      const companyRes = await fetch(`/api/company/by-account/${accountId}`);
+      if (!companyRes.ok) {
+        console.error('Failed to fetch company data');
+        return;
+      }
+      
+      const companyData = await companyRes.json();
+      const fetchedCompanyId = companyData.company_id;
+      setCompanyId(fetchedCompanyId);
+      setValue('company_id', fetchedCompanyId);
+
+      // Now fetch dropdown data using company_id
       const [clientesRes, unidadesRes, operacoesRes, statusRes] = await Promise.all([
-        fetch(`/api/clientes/${accountId}`),
-        fetch(`/api/unidades/${accountId}`),
-        fetch(`/api/operacoes/${accountId}`),
-        fetch(`/api/status-vagas/${accountId}`)
+        fetch(`/api/clientes/${fetchedCompanyId}`),
+        fetch(`/api/unidades/${fetchedCompanyId}`),
+        fetch(`/api/operacoes/${fetchedCompanyId}`),
+        fetch(`/api/status-vagas/${fetchedCompanyId}`)
       ]);
 
       if (clientesRes.ok) {
@@ -75,7 +89,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         setStatusVagas(statusData);
       }
     } catch (error) {
-      console.error('Error fetching dropdown data:', error);
+      console.error('Error fetching company and dropdown data:', error);
     }
   };
 
@@ -95,7 +109,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         body: JSON.stringify({
           ...data,
           dias_trabalho: diasSelecionados,
-          company_id: Number(accountId),
+          company_id: companyId,
         }),
       });
 
@@ -124,7 +138,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           unidade: newUnidadeName.trim(),
-          company_id: Number(accountId)
+          company_id: companyId
         })
       });
 
@@ -153,7 +167,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           operacao: newOperacaoName.trim(),
-          company_id: Number(accountId)
+          company_id: companyId
         })
       });
 
@@ -182,7 +196,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status_vaga: newStatusName.trim(),
-          company_id: Number(accountId)
+          company_id: companyId
         })
       });
 
@@ -265,7 +279,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Descrição
+              Descrição *
             </label>
             <textarea
               {...register('descricao')}
@@ -273,13 +287,16 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               placeholder="Descreva os requisitos e responsabilidades da vaga"
             />
+            {errors.descricao && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.descricao.message}</p>
+            )}
           </div>
 
           {/* Dropdowns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Cliente
+                Cliente *
               </label>
               <select
                 {...register('cliente_id', { setValueAs: (value) => value ? Number(value) : null })}
@@ -292,11 +309,14 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   </option>
                 ))}
               </select>
+              {errors.cliente_id && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.cliente_id.message}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Unidade
+                Unidade *
               </label>
               {showNewUnidadeInput ? (
                 <div className="flex gap-2">
@@ -346,13 +366,16 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   <option value="__new__">+ Adicionar nova unidade</option>
                 </select>
               )}
+              {errors.unidade_id && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.unidade_id.message}</p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Operação
+                Operação *
               </label>
               {showNewOperacaoInput ? (
                 <div className="flex gap-2">
@@ -402,11 +425,14 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   <option value="__new__">+ Adicionar nova operação</option>
                 </select>
               )}
+              {errors.operacao_id && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.operacao_id.message}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status
+                Status *
               </label>
               {showNewStatusInput ? (
                 <div className="flex gap-2">
@@ -456,6 +482,9 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   <option value="__new__">+ Adicionar novo status</option>
                 </select>
               )}
+              {errors.st_vaga_id && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.st_vaga_id.message}</p>
+              )}
             </div>
           </div>
 
@@ -463,7 +492,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Dias de Trabalho
+                Dias de Trabalho *
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
@@ -486,11 +515,14 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   </label>
                 ))}
               </div>
+              {errors.dias_trabalho && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.dias_trabalho.message}</p>
+              )}
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Horário
+                Horário *
               </label>
               <input
                 {...register('horario')}
@@ -498,6 +530,9 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Ex: 08:00 às 17:00"
               />
+              {errors.horario && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.horario.message}</p>
+              )}
             </div>
           </div>
 
