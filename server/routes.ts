@@ -347,6 +347,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Vagas API routes
+  app.post("/api/vagas", async (req, res) => {
+    try {
+      const vagaData = req.body;
+      console.log("Creating vaga with data:", vagaData);
+
+      // Convert dias_trabalho to array if it's a string
+      if (typeof vagaData.dias_trabalho === 'string') {
+        vagaData.dias_trabalho = vagaData.dias_trabalho.split(',').map((d: string) => d.trim());
+      }
+
+      // Convert dt_limite to proper timestamp
+      if (vagaData.dt_limite) {
+        vagaData.dt_limite = new Date(vagaData.dt_limite);
+      }
+
+      const [newVaga] = await db
+        .insert(vaga)
+        .values({
+          nome: vagaData.nome,
+          descricao: vagaData.descricao,
+          quantidade: Number(vagaData.quantidade),
+          dias_trabalho: vagaData.dias_trabalho,
+          horario: vagaData.horario,
+          dt_limite: vagaData.dt_limite,
+          company_id: Number(vagaData.company_id),
+          unidade_id: vagaData.unidade_id ? Number(vagaData.unidade_id) : null,
+          operacao_id: vagaData.operacao_id ? Number(vagaData.operacao_id) : null,
+          st_vaga_id: vagaData.st_vaga_id ? Number(vagaData.st_vaga_id) : null,
+          cliente_id: vagaData.cliente_id ? Number(vagaData.cliente_id) : null,
+          gr_id: vagaData.gr_id ? Number(vagaData.gr_id) : null,
+        })
+        .returning();
+
+      console.log("Vaga created successfully:", newVaga);
+      res.status(201).json(newVaga);
+    } catch (error) {
+      console.error("Error creating vaga:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
+  // APIs para criar novas unidades, operações e status
+  app.post("/api/unidades", async (req, res) => {
+    try {
+      const { unidade: unidadeNome, company_id } = req.body;
+      
+      const [newUnidade] = await db
+        .insert(unidade)
+        .values({
+          unidade: unidadeNome,
+          company_id: Number(company_id),
+        })
+        .returning();
+
+      res.status(201).json(newUnidade);
+    } catch (error) {
+      console.error("Error creating unidade:", error);
+      res.status(500).json({ error: "Erro ao criar unidade" });
+    }
+  });
+
+  app.post("/api/operacoes", async (req, res) => {
+    try {
+      const { operacao: operacaoNome, company_id } = req.body;
+      
+      const [newOperacao] = await db
+        .insert(operacao)
+        .values({
+          operacao: operacaoNome,
+          company_id: Number(company_id),
+        })
+        .returning();
+
+      res.status(201).json(newOperacao);
+    } catch (error) {
+      console.error("Error creating operacao:", error);
+      res.status(500).json({ error: "Erro ao criar operação" });
+    }
+  });
+
+  app.post("/api/status-vagas", async (req, res) => {
+    try {
+      const { status_vaga, company_id } = req.body;
+      
+      const [newStatus] = await db
+        .insert(st_vaga)
+        .values({
+          status_vaga,
+          company_id: Number(company_id),
+        })
+        .returning();
+
+      res.status(201).json(newStatus);
+    } catch (error) {
+      console.error("Error creating status vaga:", error);
+      res.status(500).json({ error: "Erro ao criar status" });
+    }
+  });
+
   // Tags API routes
   app.get("/api/tags", async (req, res) => {
     try {
