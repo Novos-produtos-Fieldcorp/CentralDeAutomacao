@@ -87,6 +87,27 @@ export class WiseAppService {
   }
 
   /**
+   * Buscar foto do perfil do contato no WhatsApp
+   */
+  async getContactProfilePhoto(phoneNumber: string): Promise<string | null> {
+    try {
+      const formattedPhone = this.formatPhoneNumber(phoneNumber);
+      const response = await this.api.get(`/api/v1/accounts/${this.config.accountId}/contacts/search`, {
+        params: { q: formattedPhone }
+      });
+      
+      if (response.data?.payload?.[0]?.avatar) {
+        return response.data.payload[0].avatar;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Erro ao buscar foto do contato:', error);
+      return null;
+    }
+  }
+
+  /**
    * Criar novo contato no WiseApp
    */
   async createContact(contactData: WiseAppContact): Promise<WiseAppContact | null> {

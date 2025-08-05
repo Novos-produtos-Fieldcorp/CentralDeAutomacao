@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Tag } from 'lucide-react';
+import WhatsAppAvatar from '../../components/WhatsAppAvatar';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database'; // Adicionando tipos necessários
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -41,6 +42,7 @@ export interface ViewContratado {
   treinamento?: boolean;
   cliente_id?: number | null;
   conversation_id?: string;
+  foto_whatsapp?: string | null;
   ativo?: boolean;
   nr_end?: number | null;
   ds_complemento_end?: string | null;
@@ -1578,11 +1580,17 @@ const Contratados = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                          <div className="flex-shrink-0">
                             {motorista.funcao === 'Motorista' ? (
-                              <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                              <WhatsAppAvatar 
+                                photoUrl={motorista.foto_whatsapp}
+                                name={motorista.nome_motorista}
+                                size="md"
+                              />
                             ) : (
-                              <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                              <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                              </div>
                             )}
                           </div>
                           <div className="ml-4">
@@ -1612,7 +1620,7 @@ const Contratados = () => {
                           </div>
                           {motorista.telefone && (
                             <button
-                              onClick={() => startChat(motorista.telefone?.toString() || '', motorista.nome_motorista || '')}
+                              onClick={() => startChat(motorista.telefone?.toString() || '', motorista.nome_motorista || '', motorista.motorista_id)}
                               className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
                               title="Iniciar chat"
                             >

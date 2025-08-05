@@ -44,6 +44,7 @@ export const motorista = pgTable("motorista", {
   data_cadastro: date("data_cadastro").defaultNow(),
   cliente_id: integer("cliente_id"),
   conversation_id: text("conversation_id"),
+  foto_whatsapp: text("foto_whatsapp"),
   ativo: boolean("ativo").default(true),
 });
 

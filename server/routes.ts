@@ -521,6 +521,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para atualizar foto do WhatsApp do motorista
+  app.patch("/api/motoristas/:id/whatsapp-photo", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { foto_whatsapp } = req.body;
+      
+      if (!foto_whatsapp) {
+        return res.status(400).json({ error: "foto_whatsapp is required" });
+      }
+
+      const { error } = await supabase
+        .from('motorista')
+        .update({ foto_whatsapp })
+        .eq('motorista_id', id);
+
+      if (error) {
+        console.error('Error updating WhatsApp photo:', error);
+        return res.status(500).json({ error: 'Failed to update WhatsApp photo' });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating WhatsApp photo:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Rota para buscar foto do contato no WiseApp
+  app.post("/api/wiseapp/contact-photo", async (req, res) => {
+    try {
+      const { phone_number } = req.body;
+      
+      if (!phone_number) {
+        return res.status(400).json({ error: "phone_number is required" });
+      }
+
+      // Usar a API do WiseApp para buscar a foto do contato
+      const wiseappToken = req.headers['api_access_token'] || req.headers['authorization']?.replace('Bearer ', '');
+      
+      if (!wiseappToken) {
+        return res.status(401).json({ error: "WiseApp token is required" });
+      }
+
+      // Formatar número de telefone
+      const formattedPhone = phone_number.toString().replace(/\D/g, '');
+      const phoneWithCountry = formattedPhone.startsWith('55') ? `+${formattedPhone}` : `+55${formattedPhone}`;
+
+      // Buscar contato na API do WiseApp
+      const wiseappResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/1/contacts/search?q=${phoneWithCountry}`, {
+        headers: {
+          'api_access_token': wiseappToken,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!wiseappResponse.ok) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      const wiseappData = await wiseappResponse.json();
+      const contact = wiseappData.payload?.[0];
+      
+      if (contact && contact.avatar) {
+        // Otimizar URL da foto para reduzir tamanho
+        const optimizedUrl = contact.avatar.includes('?') 
+          ? `${contact.avatar}&s=96` 
+          : `${contact.avatar}?s=96`;
+          
+        res.json({ photo_url: optimizedUrl });
+      } else {
+        res.status(404).json({ error: "Contact photo not found" });
+      }
+    } catch (error) {
+      console.error("Error fetching contact photo:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
