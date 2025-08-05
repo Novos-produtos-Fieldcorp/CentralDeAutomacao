@@ -90,6 +90,7 @@ type Contact = {
   name?: string;
   phone_number: string;
   thumbnail?: string;
+  avatar_url?: string;
   source_id?: string;
   status?: 'online' | 'offline';
   availability_status?: 'online' | 'offline';

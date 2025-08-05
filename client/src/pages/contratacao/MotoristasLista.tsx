@@ -126,6 +126,8 @@ export interface ViewMotorista extends Omit<ViewMotoristaBase, 'nome_motorista'>
   // Ajudante information
   nome_ajudante?: string;
   ajudantes?: string[]; // Add ajudantes property
+  // WhatsApp photo
+  foto_whatsapp?: string | null;
   // Adiciona propriedades opcionais para compatibilidade
   documento_motorista?: any[];
   veiculo?: any[];
