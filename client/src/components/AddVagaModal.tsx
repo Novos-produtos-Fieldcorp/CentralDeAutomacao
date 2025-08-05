@@ -15,6 +15,7 @@ interface AddVagaModalProps {
 const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { accountId } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [companyId, setCompanyId] = useState<number | null>(null);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [operacoes, setOperacoes] = useState<Operacao[]>([]);
@@ -35,24 +36,37 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   } = useForm<InsertVaga>({
     resolver: zodResolver(insertVagaSchema),
     defaultValues: {
-      company_id: Number(accountId),
+      company_id: companyId || undefined,
     },
   });
 
-  // Fetch dropdown data
+  // Fetch company ID first, then dropdown data
   useEffect(() => {
     if (isOpen && accountId) {
-      fetchDropdownData();
+      fetchCompanyAndDropdownData();
     }
   }, [isOpen, accountId]);
 
-  const fetchDropdownData = async () => {
+  const fetchCompanyAndDropdownData = async () => {
     try {
+      // First get company_id from account_id
+      const companyRes = await fetch(`/api/company/by-account/${accountId}`);
+      if (!companyRes.ok) {
+        console.error('Failed to fetch company data');
+        return;
+      }
+      
+      const companyData = await companyRes.json();
+      const fetchedCompanyId = companyData.company_id;
+      setCompanyId(fetchedCompanyId);
+      setValue('company_id', fetchedCompanyId);
+
+      // Now fetch dropdown data using company_id
       const [clientesRes, unidadesRes, operacoesRes, statusRes] = await Promise.all([
-        fetch(`/api/clientes/${accountId}`),
-        fetch(`/api/unidades/${accountId}`),
-        fetch(`/api/operacoes/${accountId}`),
-        fetch(`/api/status-vagas/${accountId}`)
+        fetch(`/api/clientes/${fetchedCompanyId}`),
+        fetch(`/api/unidades/${fetchedCompanyId}`),
+        fetch(`/api/operacoes/${fetchedCompanyId}`),
+        fetch(`/api/status-vagas/${fetchedCompanyId}`)
       ]);
 
       if (clientesRes.ok) {
@@ -75,7 +89,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         setStatusVagas(statusData);
       }
     } catch (error) {
-      console.error('Error fetching dropdown data:', error);
+      console.error('Error fetching company and dropdown data:', error);
     }
   };
 
@@ -95,7 +109,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         body: JSON.stringify({
           ...data,
           dias_trabalho: diasSelecionados,
-          company_id: Number(accountId),
+          company_id: companyId,
         }),
       });
 
@@ -124,7 +138,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           unidade: newUnidadeName.trim(),
-          company_id: Number(accountId)
+          company_id: companyId
         })
       });
 
@@ -153,7 +167,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           operacao: newOperacaoName.trim(),
-          company_id: Number(accountId)
+          company_id: companyId
         })
       });
 
@@ -182,7 +196,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status_vaga: newStatusName.trim(),
-          company_id: Number(accountId)
+          company_id: companyId
         })
       });
 
