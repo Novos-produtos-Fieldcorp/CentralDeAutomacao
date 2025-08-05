@@ -90,7 +90,7 @@ const Navbar = () => {
     { path: '/hodometros', icon: Gauge, label: 'Hodômetros', needsAccess: true, enabled: moduleAccess.hodometros },
     { path: '/clientes', icon: Store, label: 'Clientes', needsAccess: false, enabled: moduleAccess.clientes },
     { path: '/resumos-grupo', icon: MessagesSquare, label: 'Resumos em Grupo', needsAccess: true, enabled: moduleAccess.resumos },
-    { path: '/tags-admin', icon: Tags, label: 'Tags', needsAccess: false, enabled: true },
+    { path: '/tags-admin', icon: Tags, label: 'Tags', needsAccess: true, enabled: moduleAccess.tags },
   ];
 
   // Function to get company initials or abbreviation based on length
