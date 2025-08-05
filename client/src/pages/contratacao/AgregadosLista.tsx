@@ -503,32 +503,36 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         const uniqueCities = new Set<string>();
         const uniqueVehicleTypes = new Set<string>();
         
-        // Primeiro, vamos buscar os status ativos dos motoristas
+        // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
         const motoristaIds = data?.map(m => m.motorista_id) || [];
         let ativosStatus: Record<number, boolean> = {};
+        let fotosWhatsApp: Record<number, string | null> = {};
         
         if (motoristaIds.length > 0) {
           const { data: motoristas, error: motoristasError } = await supabase
             .from('motorista')
-            .select('motorista_id, ativo')
+            .select('motorista_id, ativo, foto_whatsapp')
             .in('motorista_id', motoristaIds);
             
           if (motoristasError) {
             console.error('Erro ao buscar status dos motoristas:', motoristasError);
           } else {
-            // Criar um mapa de motorista_id para status ativo
+            // Criar um mapa de motorista_id para status ativo e fotos
             motoristas?.forEach(m => {
               ativosStatus[m.motorista_id] = m.ativo === true;
+              fotosWhatsApp[m.motorista_id] = m.foto_whatsapp || null;
             });
           }
         }
         
-        // Processar os dados com os status ativos
+        // Processar os dados com os status ativos e fotos
         const processedData = data?.map(motorista => {
           const ativo = ativosStatus[motorista.motorista_id] === true;
+          const foto_whatsapp = fotosWhatsApp[motorista.motorista_id] || null;
           return {
             ...motorista,
-            ativo: ativo
+            ativo: ativo,
+            foto_whatsapp: foto_whatsapp
           };
         }) || [];
 

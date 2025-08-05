@@ -331,10 +331,7 @@ const MotoristasLista = () => {
       setLoading(true);
       let query = supabase
       .from('vw_motoristas_completo')
-      .select(`
-        *,
-        motorista!inner(foto_whatsapp)
-      `)
+      .select('*')
       .eq('company_id', companyId);
       // Apply date filter
       if (dateFilter !== 'all') {
@@ -372,12 +369,31 @@ const MotoristasLista = () => {
 
       if (error) throw error;
 
+      // Fetch foto_whatsapp separately for each motorista
+      const motoristasComFoto = await Promise.all(
+        (data || []).map(async (motorista) => {
+          let foto_whatsapp = null;
+          try {
+            const { data: motoristaData } = await supabase
+              .from('motorista')
+              .select('foto_whatsapp')
+              .eq('motorista_id', motorista.motorista_id)
+              .single();
+            foto_whatsapp = motoristaData?.foto_whatsapp || null;
+          } catch (error) {
+            console.warn(`Erro ao buscar foto para motorista ${motorista.motorista_id}:`, error);
+          }
+          
+          return {
+            ...motorista,
+            nome: motorista.nome || motorista.nome_motorista || 'N/A',
+            foto_whatsapp,
+          };
+        })
+      );
+
       // Mapear os dados para garantir a compatibilidade com a interface ViewMotorista
-      const motoristasMapeados = data?.map(motorista => ({
-        ...motorista,
-        nome: motorista.nome || motorista.nome_motorista || 'N/A', // Usa nome_motorista se nome não estiver disponível
-        foto_whatsapp: motorista.motorista?.foto_whatsapp || null, // Extract foto_whatsapp from the joined table
-      }));
+      const motoristasMapeados = motoristasComFoto;
 
       // Agrupar ajudantes por motorista_id
       const motoristasAgrupadosMap = new Map();
