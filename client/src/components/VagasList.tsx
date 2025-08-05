@@ -227,11 +227,11 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
     
     // Search filter
     const searchMatch = searchTerm === '' || 
-      vaga.nome.toLowerCase().includes(searchLower) ||
-      vaga.descricao.toLowerCase().includes(searchLower) ||
-      vaga.cliente_nome?.toLowerCase().includes(searchLower) ||
-      vaga.unidade_nome?.toLowerCase().includes(searchLower) ||
-      vaga.operacao_nome?.toLowerCase().includes(searchLower);
+      (vaga.nome || '').toLowerCase().includes(searchLower) ||
+      (vaga.descricao || '').toLowerCase().includes(searchLower) ||
+      ((vaga as any).cliente_nome || '').toLowerCase().includes(searchLower) ||
+      ((vaga as any).unidade_nome || '').toLowerCase().includes(searchLower) ||
+      ((vaga as any).operacao_nome || '').toLowerCase().includes(searchLower);
     
     // Status filter
     const statusMatch = statusFilter.length === 0 || 
@@ -250,8 +250,9 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
       (vaga.operacao_id && operacaoFilter.includes(vaga.operacao_id.toString()));
     
     // Quantidade filter
-    const quantidadeMatch = (quantidadeFilter.min === null || vaga.quantidade >= quantidadeFilter.min) &&
-      (quantidadeFilter.max === null || vaga.quantidade <= quantidadeFilter.max);
+    const vagaQuantidade = vaga.quantidade ? Number(vaga.quantidade) : 0;
+    const quantidadeMatch = (quantidadeFilter.min === null || vagaQuantidade >= quantidadeFilter.min) &&
+      (quantidadeFilter.max === null || vagaQuantidade <= quantidadeFilter.max);
     
     // Data filter (dt_limite)
     const dataMatch = dateFilter.start === '' || dateFilter.end === '' || 
@@ -450,180 +451,6 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
           {showAdvancedFilters && (
             <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Cliente Filter */}
-          <div className="relative" id="cliente-dropdown">
-            <button
-              type="button"
-              onClick={() => setShowClienteDropdown(!showClienteDropdown)}
-              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
-            >
-              <span>{getFilterButtonText('cliente')}</span>
-              <div className="flex items-center">
-                {clienteFilter.length > 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      clearFilter('cliente');
-                    }}
-                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
-              </div>
-            </button>
-            <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            {showClienteDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
-                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os clientes</span>
-                  <button 
-                    type="button" 
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setClienteFilter([]);
-                    }}
-                  >
-                    Limpar
-                  </button>
-                </div>
-                {clientes.map((cliente) => (
-                  <div key={cliente.cliente_id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`cliente-${cliente.cliente_id}`}
-                      checked={clienteFilter.includes(cliente.cliente_id.toString())}
-                      onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <label htmlFor={`cliente-${cliente.cliente_id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                      {cliente.nome}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Unidade Filter */}
-          <div className="relative" id="unidade-dropdown">
-            <button
-              type="button"
-              onClick={() => setShowUnidadeDropdown(!showUnidadeDropdown)}
-              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
-            >
-              <span>{getFilterButtonText('unidade')}</span>
-              <div className="flex items-center">
-                {unidadeFilter.length > 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      clearFilter('unidade');
-                    }}
-                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showUnidadeDropdown ? 'transform rotate-180' : ''}`} />
-              </div>
-            </button>
-            <Building className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            {showUnidadeDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
-                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as unidades</span>
-                  <button 
-                    type="button" 
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setUnidadeFilter([]);
-                    }}
-                  >
-                    Limpar
-                  </button>
-                </div>
-                {unidades.map((unidade) => (
-                  <div key={unidade.id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`unidade-${unidade.id}`}
-                      checked={unidadeFilter.includes(unidade.id.toString())}
-                      onChange={() => toggleFilterOption('unidade', unidade.id.toString())}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <label htmlFor={`unidade-${unidade.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                      {unidade.unidade}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Operacao Filter */}
-          <div className="relative" id="operacao-dropdown">
-            <button
-              type="button"
-              onClick={() => setShowOperacaoDropdown(!showOperacaoDropdown)}
-              className="w-full flex justify-between items-center pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left"
-            >
-              <span>{getFilterButtonText('operacao')}</span>
-              <div className="flex items-center">
-                {operacaoFilter.length > 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      clearFilter('operacao');
-                    }}
-                    className="mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showOperacaoDropdown ? 'transform rotate-180' : ''}`} />
-              </div>
-            </button>
-            <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            {showOperacaoDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-60 overflow-auto">
-                <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as operações</span>
-                  <button 
-                    type="button" 
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOperacaoFilter([]);
-                    }}
-                  >
-                    Limpar
-                  </button>
-                </div>
-                {operacoes.map((operacao) => (
-                  <div key={operacao.id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`operacao-${operacao.id}`}
-                      checked={operacaoFilter.includes(operacao.id.toString())}
-                      onChange={() => toggleFilterOption('operacao', operacao.id.toString())}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <label htmlFor={`operacao-${operacao.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                      {operacao.operacao}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
                 {/* Status Filter */}
                 <div className="relative" id="status-dropdown">
                   <button
@@ -634,9 +461,22 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                     <span className="truncate">{getFilterButtonText('status')}</span>
                     <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
                   </button>
-                  <Building className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+                  <Building className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   {showStatusDropdown && (
                     <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-auto">
+                      <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os status</span>
+                        <button 
+                          type="button" 
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStatusFilter([]);
+                          }}
+                        >
+                          Limpar
+                        </button>
+                      </div>
                       {statusOptions.map((status) => (
                         <div key={status.id} className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
                           <input
@@ -644,7 +484,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                             id={`status-${status.id}`}
                             checked={statusFilter.includes(status.id.toString())}
                             onChange={() => toggleFilterOption('status', status.id.toString())}
-                            className="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                             onClick={(e) => e.stopPropagation()}
                           />
                           <label htmlFor={`status-${status.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
@@ -666,8 +506,39 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                     <span className="truncate">{getFilterButtonText('cliente')}</span>
                     <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
                   </button>
-                  <Users className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-                  {/* Cliente dropdown content */}
+                  <Users className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  {showClienteDropdown && (
+                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-auto">
+                      <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os clientes</span>
+                        <button 
+                          type="button" 
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setClienteFilter([]);
+                          }}
+                        >
+                          Limpar
+                        </button>
+                      </div>
+                      {clientes.map((cliente) => (
+                        <div key={cliente.cliente_id} className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`cliente-${cliente.cliente_id}`}
+                            checked={clienteFilter.includes(cliente.cliente_id.toString())}
+                            onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <label htmlFor={`cliente-${cliente.cliente_id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                            {cliente.nome}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Unidade Filter */}
@@ -680,8 +551,39 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                     <span className="truncate">{getFilterButtonText('unidade')}</span>
                     <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showUnidadeDropdown ? 'transform rotate-180' : ''}`} />
                   </button>
-                  <Building className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-                  {/* Unidade dropdown content */}
+                  <Building className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  {showUnidadeDropdown && (
+                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-auto">
+                      <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as unidades</span>
+                        <button 
+                          type="button" 
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUnidadeFilter([]);
+                          }}
+                        >
+                          Limpar
+                        </button>
+                      </div>
+                      {unidades.map((unidade) => (
+                        <div key={unidade.id} className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`unidade-${unidade.id}`}
+                            checked={unidadeFilter.includes(unidade.id.toString())}
+                            onChange={() => toggleFilterOption('unidade', unidade.id.toString())}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <label htmlFor={`unidade-${unidade.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                            {unidade.unidade}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Operacao Filter */}
@@ -694,8 +596,39 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                     <span className="truncate">{getFilterButtonText('operacao')}</span>
                     <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showOperacaoDropdown ? 'transform rotate-180' : ''}`} />
                   </button>
-                  <MapPin className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-                  {/* Operacao dropdown content */}
+                  <MapPin className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  {showOperacaoDropdown && (
+                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-auto">
+                      <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as operações</span>
+                        <button 
+                          type="button" 
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOperacaoFilter([]);
+                          }}
+                        >
+                          Limpar
+                        </button>
+                      </div>
+                      {operacoes.map((operacao) => (
+                        <div key={operacao.id} className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`operacao-${operacao.id}`}
+                            checked={operacaoFilter.includes(operacao.id.toString())}
+                            onChange={() => toggleFilterOption('operacao', operacao.id.toString())}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <label htmlFor={`operacao-${operacao.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                            {operacao.operacao}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
