@@ -1,9 +1,24 @@
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useModuleAccess } from '../hooks/useModuleAccess';
 import { TagManager } from '../components/TagManager';
 
 const TagsAdmin = () => {
   const { companyId } = useAuth();
+  const { moduleAccess, loading } = useModuleAccess();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500 dark:text-gray-400">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (!moduleAccess.tags) {
+    return <Navigate to="/" replace />;
+  }
 
   if (!companyId) {
     return (

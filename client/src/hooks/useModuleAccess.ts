@@ -10,6 +10,7 @@ interface ModuleAccess {
   veiculos: boolean;
   clientes: boolean;
   resumos: boolean;
+  tags: boolean;
 }
 
 export const useModuleAccess = () => {
@@ -21,7 +22,8 @@ export const useModuleAccess = () => {
     hodometros: true,
     veiculos: true,
     clientes: true,
-    resumos: true
+    resumos: true,
+    tags: true
   });
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export const useModuleAccess = () => {
         // Use supabase directly to avoid circular dependency with useCompanyData
         const { data: company, error: companyError } = await supabase
           .from('company')
-          .select('checklist_access, motorista_access, hodometro_acsess, resumo_access')
+          .select('checklist_access, motorista_access, hodometro_acsess, resumo_access, tags_access')
           .eq('company_id', companyId)
           .maybeSingle();
 
@@ -50,7 +52,8 @@ export const useModuleAccess = () => {
             hodometros: true,
             veiculos: true,
             clientes: true,
-            resumos: true
+            resumos: true,
+            tags: true
           });
           return;
         }
@@ -62,7 +65,8 @@ export const useModuleAccess = () => {
             hodometros: company.hodometro_acsess || false, // Note the typo in the column name
             veiculos: true, // Always enabled
             clientes: true,  // Always enabled
-            resumos: company.resumo_access || false
+            resumos: company.resumo_access || false,
+            tags: company.tags_access || false
           });
         } else {
           // Default to all modules enabled if company data doesn't exist
@@ -72,7 +76,8 @@ export const useModuleAccess = () => {
             hodometros: true,
             veiculos: true,
             clientes: true,
-            resumos: true
+            resumos: true,
+            tags: true
           });
         }
       } catch (error) {
@@ -86,7 +91,8 @@ export const useModuleAccess = () => {
           hodometros: true,
           veiculos: true,
           clientes: true,
-          resumos: true
+          resumos: true,
+          tags: true
         });
       } finally {
         setLoading(false);
