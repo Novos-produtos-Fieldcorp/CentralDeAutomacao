@@ -19,6 +19,7 @@ import GestaoRiscoTab from './GestaoRiscoTab';
 import ComentariosTab from './ComentariosTab';
 import { MotoristaTagsManager } from './MotoristaTagsManager';
 import { toast } from 'sonner';
+import WhatsAppAvatar from './WhatsAppAvatar';
 
 interface UnifiedMotoristaModalProps {
   isOpen: boolean;
@@ -432,9 +433,11 @@ const UnifiedMotoristaModal = ({
             <div className="border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
               <div className="p-6 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                    <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                  </div>
+                  <WhatsAppAvatar 
+                    photoUrl={motorista?.foto_whatsapp}
+                    name={nome}
+                    size="lg"
+                  />
                   <div className="flex flex-col">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                       {nome}
