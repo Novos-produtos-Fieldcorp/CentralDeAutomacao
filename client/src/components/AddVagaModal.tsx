@@ -279,7 +279,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Descrição
+              Descrição *
             </label>
             <textarea
               {...register('descricao')}
@@ -287,13 +287,16 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               placeholder="Descreva os requisitos e responsabilidades da vaga"
             />
+            {errors.descricao && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.descricao.message}</p>
+            )}
           </div>
 
           {/* Dropdowns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Cliente
+                Cliente *
               </label>
               <select
                 {...register('cliente_id', { setValueAs: (value) => value ? Number(value) : null })}
@@ -306,11 +309,14 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   </option>
                 ))}
               </select>
+              {errors.cliente_id && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.cliente_id.message}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Unidade
+                Unidade *
               </label>
               {showNewUnidadeInput ? (
                 <div className="flex gap-2">
@@ -360,13 +366,16 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   <option value="__new__">+ Adicionar nova unidade</option>
                 </select>
               )}
+              {errors.unidade_id && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.unidade_id.message}</p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Operação
+                Operação *
               </label>
               {showNewOperacaoInput ? (
                 <div className="flex gap-2">
@@ -416,11 +425,14 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   <option value="__new__">+ Adicionar nova operação</option>
                 </select>
               )}
+              {errors.operacao_id && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.operacao_id.message}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status
+                Status *
               </label>
               {showNewStatusInput ? (
                 <div className="flex gap-2">
@@ -470,6 +482,9 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   <option value="__new__">+ Adicionar novo status</option>
                 </select>
               )}
+              {errors.st_vaga_id && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.st_vaga_id.message}</p>
+              )}
             </div>
           </div>
 
@@ -477,7 +492,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Dias de Trabalho
+                Dias de Trabalho *
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
@@ -500,11 +515,14 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   </label>
                 ))}
               </div>
+              {errors.dias_trabalho && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.dias_trabalho.message}</p>
+              )}
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Horário
+                Horário *
               </label>
               <input
                 {...register('horario')}
@@ -512,6 +530,9 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Ex: 08:00 às 17:00"
               />
+              {errors.horario && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.horario.message}</p>
+              )}
             </div>
           </div>
 
