@@ -1,5 +1,5 @@
-  import React, { useState, useEffect, useRef } from 'react';
-  import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag, Users, UserCheck, Shield, CheckCircle } from 'lucide-react';
   import WhatsAppAvatar from '../../components/WhatsAppAvatar';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
@@ -123,6 +123,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [stats, setStats] = useState({
+    cadastrados: 0,
+    qualificados: 0,
+    documentacao: 0,
+    contratados: 0
+  });
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
@@ -369,6 +376,17 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       fetchClientes();
       fetchTags();
     }, [dateFilter, customDateRange]);
+
+    // Calculate stats whenever contratados changes
+    useEffect(() => {
+      const newStats = {
+        cadastrados: contratados.filter(m => m.st_cadastro === 'cadastrado').length,
+        qualificados: contratados.filter(m => m.st_cadastro === 'qualificado').length,
+        documentacao: contratados.filter(m => m.st_cadastro === 'documentacao').length,
+        contratados: contratados.filter(m => m.st_cadastro === 'contratado').length
+      };
+      setStats(newStats);
+    }, [contratados]);
 
     useEffect(() => {
       // Close context menu when clicking anywhere
@@ -1343,17 +1361,26 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       {/* Tabela */}
       <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-900">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                <input
-                  type="checkbox"
-                  checked={selectedItems.size > 0 && selectedItems.size === paginatedData.length}
-                  onChange={handleSelectAll}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </th>
+        {filteredAgregados.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 dark:text-gray-400">
+              Nenhum agregado encontrado
+            </p>
+          </div>
+        ) : (
+          <div className="relative">
+            <div ref={tableContainerRef} className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-900">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.size > 0 && selectedItems.size === paginatedData.length}
+                        onChange={handleSelectAll}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Nome
               </th>
@@ -1607,25 +1634,20 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 className="mr-2 ml-2"
               />
             </div>
-
-            {filteredAgregados.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">
-                  Nenhum agregado encontrado
-                </p>
-              </div>
-            ) : (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={handlePageChange}
-                onPageSizeChange={handlePageSizeChange}
-              />
-            )}
           </div>
-        </div>
+        )}
+
+        {/* Pagination */}
+        {filteredAgregados.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        )}
 
         {/* Context Menu */}
         {contextMenu.visible && contextMenu.motorista && (
@@ -1875,4 +1897,4 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     );
   };
 
-  export default Contratados;
+export default Contratados;
