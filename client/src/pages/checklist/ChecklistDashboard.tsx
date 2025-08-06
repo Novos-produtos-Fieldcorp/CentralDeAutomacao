@@ -27,7 +27,7 @@ interface DashboardStats {
 }
 
 const ChecklistDashboard = () => {
-  const { query } = useCompanyData();
+  const { query, companyId } = useCompanyData();
   const [stats, setStats] = useState<DashboardStats>({
     totalChecklists: 0,
     totalMensal: 0,
@@ -41,12 +41,14 @@ const ChecklistDashboard = () => {
 
   useEffect(() => {
     // Only fetch when date range actually changes, not on pending changes
-    if (!pendingDateRange) {
+    if (!pendingDateRange && companyId) {
       fetchDashboardData();
     }
-  }, [dateRange, pendingDateRange]);
+  }, [dateRange, pendingDateRange, companyId]);
 
   const fetchDashboardData = async () => {
+    if (!companyId) return;
+    
     try {
       setLoading(true);
       
@@ -70,6 +72,7 @@ const ChecklistDashboard = () => {
           farol_veiculo!checklist_id(*),
           fluido_veiculo!checklist_id(*)
         `)
+        .eq('company_id', companyId)
         .gte('data', dateRange.startDate)
         .lte('data', dateRange.endDate)
         .order('data', { ascending: false });

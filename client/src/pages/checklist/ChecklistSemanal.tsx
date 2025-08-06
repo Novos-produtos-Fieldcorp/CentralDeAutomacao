@@ -19,7 +19,7 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 
 const ChecklistSemanal = () => {
-  const { query } = useCompanyData();
+  const { query, companyId } = useCompanyData();
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,10 +48,10 @@ const ChecklistSemanal = () => {
 
   useEffect(() => {
     // Only fetch when date range actually changes, not on pending changes
-    if (!pendingDateRange) {
+    if (!pendingDateRange && companyId) {
       fetchChecklists();
     }
-  }, [dateRange, pendingDateRange]);
+  }, [dateRange, pendingDateRange, companyId]);
 
   useEffect(() => {
     // Close context menu when clicking anywhere
@@ -68,6 +68,8 @@ const ChecklistSemanal = () => {
   }, [contextMenu.visible]);
 
   const fetchChecklists = async () => {
+    if (!companyId) return;
+    
     try {
       setLoading(true);
       let baseQuery = supabase.from('checklist')
@@ -85,6 +87,7 @@ const ChecklistSemanal = () => {
           tipo
         )
       `)
+        .eq('company_id', companyId)
         .eq('id_tipo_checklist', 2); // 2 = semanal
 
       // Add date range filter if dates are selected
