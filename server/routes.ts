@@ -68,6 +68,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
+  // Rota para buscar token WiseApp por company_id
+  app.get("/api/wiseapp-token/:companyId", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      console.log("Fetching WiseApp token for company_id:", companyId);
+      
+      const token = await storage.getWiseappToken(parseInt(companyId));
+      
+      if (!token) {
+        return res.status(404).json({ 
+          error: "Token WiseApp não encontrado",
+          message: "Configure o token WiseApp nas configurações da empresa" 
+        });
+      }
+      
+      res.json({ token });
+    } catch (error) {
+      console.error("Erro ao buscar token WiseApp:", error);
+      res.status(500).json({ 
+        error: "Erro interno do servidor", 
+        details: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
   // Rota para buscar empresa por account_id
   app.get("/api/company/by-account/:accountId", async (req, res) => {
     try {
