@@ -1012,13 +1012,15 @@ const MotoristasLista = () => {
               <div className="relative group" ref={statusDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
                   onClick={handleToggleStatusDropdown}
                 >
-                  <Filter className="h-4 w-4" />
-                  <span>
-                    {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    <span>
+                      {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
+                    </span>
+                  </div>
                   <ChevronDown className={`h-4 w-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
                 </button>
             
@@ -1071,13 +1073,15 @@ const MotoristasLista = () => {
               <div className="relative group" ref={cidadeDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
                   onClick={handleToggleCidadeDropdown}
                 >
-                  <MapPin className="h-4 w-4" />
-                  <span>
-                    {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    <span>
+                      {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
+                    </span>
+                  </div>
                   <ChevronDown className={`h-4 w-4 transition-transform ${showCidadeDropdown ? 'rotate-180' : ''}`} />
                 </button>
             
@@ -1128,18 +1132,20 @@ const MotoristasLista = () => {
               <div className="relative group" ref={clienteDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
                   onClick={handleToggleClienteDropdown}
                 >
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                  </svg>
-                  <span>
-                    {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <span>
+                      {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
+                    </span>
+                  </div>
                   <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
                 </button>
             
@@ -1209,13 +1215,15 @@ const MotoristasLista = () => {
               <div className="relative group" ref={ativoDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
                   onClick={handleToggleAtivoDropdown}
                 >
-                  <User className="h-4 w-4" />
-                  <span>
-                    {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>
+                      {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
+                    </span>
+                  </div>
                   <ChevronDown className={`h-4 w-4 transition-transform ${showAtivoDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 
@@ -1258,13 +1266,15 @@ const MotoristasLista = () => {
               <div className="relative group" ref={tagDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
                   onClick={handleToggleTagDropdown}
                 >
-                  <Tag className="h-4 w-4" />
-                  <span>
-                    {tagFilter.length === 0 ? 'Tags' : `Tags (${tagFilter.length})`}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    <span>
+                      {tagFilter.length === 0 ? 'Tags' : `Tags (${tagFilter.length})`}
+                    </span>
+                  </div>
                   <ChevronDown className={`h-4 w-4 transition-transform ${showTagDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showTagDropdown && (
@@ -1367,7 +1377,7 @@ const MotoristasLista = () => {
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9"
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 min-w-[120px]"
               >
                 <option value="all">Período</option>
                 <option value="today">Hoje</option>
@@ -1382,10 +1392,10 @@ const MotoristasLista = () => {
             {/* Botão Novo Motorista */}
             <button
               onClick={() => setIsNovoMotoristaModalOpen(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm h-9"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm h-9 min-w-[100px] justify-center"
             >
               <Plus className="w-4 h-4" />
-              Novo
+              <span>Novo</span>
             </button>
           </div>
         </div>
