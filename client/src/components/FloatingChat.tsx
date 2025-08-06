@@ -366,8 +366,46 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     const fetchInboxes = async () => {
       try {
         const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
-        const apiKey = localStorage.getItem('wiseapp_token');
-        if (!accountId || !apiKey) return;
+        if (!accountId) return;
+
+        // Buscar informações da empresa primeiro
+        let companyId = localStorage.getItem('company_id');
+        if (!companyId) {
+          const companyResponse = await fetch(`/api/company/by-account/${accountId}`);
+          if (!companyResponse.ok) {
+            throw new Error('Não foi possível buscar informações da empresa');
+          }
+          const companyData = await companyResponse.json();
+          companyId = companyData.company_id?.toString();
+          if (companyId) {
+            localStorage.setItem('company_id', companyId);
+          }
+        }
+
+        if (!companyId) {
+          throw new Error('Company ID não encontrado');
+        }
+
+        // Buscar token WiseApp do banco de dados
+        let apiKey = localStorage.getItem('wiseapp_token');
+        if (!apiKey) {
+          const tokenResponse = await fetch(`/api/wiseapp-token/${companyId}`);
+          if (tokenResponse.ok) {
+            const tokenData = await tokenResponse.json();
+            apiKey = tokenData.token;
+            if (apiKey) {
+              localStorage.setItem('wiseapp_token', apiKey);
+            }
+          } else if (tokenResponse.status === 404) {
+            setAuthError(true);
+            throw new Error('Token WiseApp não configurado para esta empresa. Configure nas configurações da empresa.');
+          }
+        }
+
+        if (!apiKey) {
+          setAuthError(true);
+          throw new Error('Token WiseApp não encontrado');
+        }
 
         // Chave para cache específica por conta
         const cacheKey = `chat_inboxes_${accountId}`;
@@ -446,7 +484,18 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          if (response.status === 401) {
+            // Limpar cache quando há erro de autenticação
+            localStorage.removeItem(cacheKey);
+            setAuthError(true);
+            throw new Error('Token de autenticação inválido ou expirado. Verifique suas credenciais.');
+          } else if (response.status === 403) {
+            throw new Error('Acesso negado. Verifique as permissões da sua conta.');
+          } else if (response.status === 404) {
+            throw new Error('Conta não encontrada. Verifique o ID da conta.');
+          } else {
+            throw new Error(`Erro na API ChatWoot (${response.status}). Tente novamente mais tarde.`);
+          }
         }
 
         const data = await response.json();
@@ -515,7 +564,23 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
       } catch (error) {
         console.error('Error fetching inboxes:', error);
-        setError('Erro ao carregar caixas de entrada');
+        
+        if (error instanceof Error) {
+          // Se é um erro de autenticação, mostrar mensagem específica
+          if (error.message.includes('401') || error.message.includes('autenticação')) {
+            setAuthError(true);
+            setError('Token WiseApp inválido ou expirado. Por favor, configure um token válido.');
+          } else if (error.message.includes('403')) {
+            setError('Acesso negado. Verifique as permissões da sua conta WiseApp.');
+          } else if (error.message.includes('404')) {
+            setError('Conta não encontrada. Verifique se o ID da conta está correto.');
+          } else {
+            setError('Erro ao carregar caixas de entrada. Tente novamente mais tarde.');
+          }
+        } else {
+          setError('Erro ao carregar caixas de entrada');
+        }
+        
         setAvailableInboxes([]);
       }
     };
@@ -924,7 +989,40 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         throw new Error('ID da conta é obrigatório');
       }
 
-      const apiKey = localStorage.getItem('wiseapp_token');
+      // Buscar informações da empresa primeiro
+      let companyId = localStorage.getItem('company_id');
+      if (!companyId) {
+        const companyResponse = await fetch(`/api/company/by-account/${accountId}`);
+        if (!companyResponse.ok) {
+          throw new Error('Não foi possível buscar informações da empresa');
+        }
+        const companyData = await companyResponse.json();
+        companyId = companyData.company_id?.toString();
+        if (companyId) {
+          localStorage.setItem('company_id', companyId);
+        }
+      }
+
+      if (!companyId) {
+        throw new Error('Company ID não encontrado');
+      }
+
+      // Buscar token WiseApp do banco de dados
+      let apiKey = localStorage.getItem('wiseapp_token');
+      if (!apiKey) {
+        const tokenResponse = await fetch(`/api/wiseapp-token/${companyId}`);
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          apiKey = tokenData.token;
+          if (apiKey) {
+            localStorage.setItem('wiseapp_token', apiKey);
+          }
+        } else if (tokenResponse.status === 404) {
+          setAuthError(true);
+          throw new Error('Token WiseApp não configurado para esta empresa. Configure nas configurações da empresa.');
+        }
+      }
+
       if (!apiKey) {
         setAuthError(true);
         throw new Error('Token WiseApp não encontrado');
