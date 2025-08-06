@@ -979,16 +979,16 @@ const MotoristasLista = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-end">
+        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
           {/* Campo de busca */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 max-w-md">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Buscar por nome, CPF, email ou telefone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm h-9"
               />
               <div className="absolute inset-y-0 left-3 flex items-center">
                 <Search className="h-4 w-4 text-gray-400" />
@@ -1006,13 +1006,13 @@ const MotoristasLista = () => {
           </div>
 
           {/* Filtros agrupados */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             {/* Status Filter */}
             <div className="relative">
               <div className="relative group" ref={statusDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
                   onClick={handleToggleStatusDropdown}
                 >
                   <Filter className="h-4 w-4" />
@@ -1071,7 +1071,7 @@ const MotoristasLista = () => {
               <div className="relative group" ref={cidadeDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
                   onClick={handleToggleCidadeDropdown}
                 >
                   <MapPin className="h-4 w-4" />
@@ -1128,7 +1128,7 @@ const MotoristasLista = () => {
               <div className="relative group" ref={clienteDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
                   onClick={handleToggleClienteDropdown}
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1209,7 +1209,7 @@ const MotoristasLista = () => {
               <div className="relative group" ref={ativoDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
                   onClick={handleToggleAtivoDropdown}
                 >
                   <User className="h-4 w-4" />
@@ -1258,7 +1258,7 @@ const MotoristasLista = () => {
               <div className="relative group" ref={tagDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
                   onClick={handleToggleTagDropdown}
                 >
                   <Tag className="h-4 w-4" />
@@ -1367,7 +1367,7 @@ const MotoristasLista = () => {
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8"
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9"
               >
                 <option value="all">Período</option>
                 <option value="today">Hoje</option>
@@ -1382,7 +1382,7 @@ const MotoristasLista = () => {
             {/* Botão Novo Motorista */}
             <button
               onClick={() => setIsNovoMotoristaModalOpen(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm h-9"
             >
               <Plus className="w-4 h-4" />
               Novo
