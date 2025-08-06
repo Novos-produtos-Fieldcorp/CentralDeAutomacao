@@ -32,6 +32,21 @@ export const getInboxes = (accountId: string) => {
   return apiClient.get(`/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`);
 };
 
+// Função para limpar cache de inboxes
+export const clearInboxCache = (accountId?: string) => {
+  if (accountId) {
+    localStorage.removeItem(`chat_inboxes_${accountId}`);
+  } else {
+    // Limpar todos os caches de inboxes
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('chat_inboxes_')) {
+        localStorage.removeItem(key);
+      }
+    });
+  }
+};
+
 // Função para salvar a foto do WhatsApp diretamente usando o ID do motorista
 const saveWhatsAppPhotoFromFloatingChat = async (motoristaId: string, photoUrl: string) => {
   try {
@@ -351,9 +366,112 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     const fetchInboxes = async () => {
       try {
         const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
-        const apiKey = localStorage.getItem('wiseapp_token');
-        if (!accountId || !apiKey) return;
+        if (!accountId) return;
 
+        // Buscar informações da empresa primeiro
+        let companyId = localStorage.getItem('company_id');
+        if (!companyId) {
+          const companyResponse = await fetch(`/api/company/by-account/${accountId}`);
+          if (!companyResponse.ok) {
+            throw new Error('Não foi possível buscar informações da empresa');
+          }
+          const companyData = await companyResponse.json();
+          companyId = companyData.company_id?.toString();
+          if (companyId) {
+            localStorage.setItem('company_id', companyId);
+          }
+        }
+
+        if (!companyId) {
+          throw new Error('Company ID não encontrado');
+        }
+
+        // Buscar token WiseApp do banco de dados
+        let apiKey = localStorage.getItem('wiseapp_token');
+        if (!apiKey) {
+          const tokenResponse = await fetch(`/api/wiseapp-token/${companyId}`);
+          if (tokenResponse.ok) {
+            const tokenData = await tokenResponse.json();
+            apiKey = tokenData.token;
+            if (apiKey) {
+              localStorage.setItem('wiseapp_token', apiKey);
+            }
+          } else if (tokenResponse.status === 404) {
+            setAuthError(true);
+            throw new Error('Token WiseApp não configurado para esta empresa. Configure nas configurações da empresa.');
+          }
+        }
+
+        if (!apiKey) {
+          setAuthError(true);
+          throw new Error('Token WiseApp não encontrado');
+        }
+
+        // Chave para cache específica por conta
+        const cacheKey = `chat_inboxes_${accountId}`;
+        
+        // Tentar carregar do cache primeiro
+        try {
+          const cachedInboxes = localStorage.getItem(cacheKey);
+          if (cachedInboxes) {
+            const parsedInboxes = JSON.parse(cachedInboxes);
+            const cacheTimestamp = parsedInboxes.timestamp;
+            const now = Date.now();
+            
+            // Cache válido por 1 hora (3600000 ms)
+            if (now - cacheTimestamp < 3600000) {
+              console.log('📦 Carregando inboxes do cache para account_id:', accountId);
+              const isInboxOpen = (inbox: any) => {
+                const now = new Date();
+                const dayOfWeek = now.getDay();
+                const currentHour = now.getHours();
+                const currentMinutes = now.getMinutes();
+                
+                // Se não houver horário de funcionamento definido, considerar como aberto
+                if (!inbox.working_hours || inbox.working_hours.length === 0) {
+                  return true;
+                }
+                
+                const workingHours = inbox.working_hours.find((wh: any) => wh.day_of_week === dayOfWeek);
+                
+                if (!workingHours) return false;
+                if (workingHours.closed_all_day) return false;
+                if (workingHours.open_all_day) return true;
+                
+                const openTime = workingHours.open_hour * 60 + workingHours.open_minutes;
+                const closeTime = workingHours.close_hour * 60 + workingHours.close_minutes;
+                const currentTime = currentHour * 60 + currentMinutes;
+                
+                return currentTime >= openTime && currentTime <= closeTime;
+              };
+
+              const cachedInboxesWithStatus = parsedInboxes.data.map((inbox: any) => ({
+                ...inbox,
+                isOpen: isInboxOpen(inbox)
+              }));
+
+              setAvailableInboxes(cachedInboxesWithStatus);
+              setInboxes(parsedInboxes.data);
+              
+              if (cachedInboxesWithStatus.length === 1) {
+                setSelectedInboxId(cachedInboxesWithStatus[0].id);
+              } else if (cachedInboxesWithStatus.length > 1) {
+                setShowInboxSelector(true);
+              }
+              
+              return; // Usar cache e não fazer requisição
+            } else {
+              console.log('⏰ Cache expirado, removendo...');
+              localStorage.removeItem(cacheKey);
+            }
+          }
+        } catch (cacheError) {
+          console.error('Erro ao ler cache:', cacheError);
+          localStorage.removeItem(cacheKey);
+        }
+
+        // Se não há cache válido, fazer requisição à API
+        console.log('🌐 Buscando inboxes da API para account_id:', accountId);
         const url = `/api/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
         
         const response = await fetch(url, {
@@ -366,7 +484,18 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          if (response.status === 401) {
+            // Limpar cache quando há erro de autenticação
+            localStorage.removeItem(cacheKey);
+            setAuthError(true);
+            throw new Error('Token de autenticação inválido ou expirado. Verifique suas credenciais.');
+          } else if (response.status === 403) {
+            throw new Error('Acesso negado. Verifique as permissões da sua conta.');
+          } else if (response.status === 404) {
+            throw new Error('Conta não encontrada. Verifique o ID da conta.');
+          } else {
+            throw new Error(`Erro na API ChatWoot (${response.status}). Tente novamente mais tarde.`);
+          }
         }
 
         const data = await response.json();
@@ -375,21 +504,83 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         console.log('Inbox payload:', data?.payload);
         
         if (data?.payload && Array.isArray(data.payload)) {
+          // Salvar no cache com timestamp
+          const cacheData = {
+            data: data.payload,
+            timestamp: Date.now(),
+            accountId: accountId
+          };
+          
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+            console.log('💾 Inboxes salvos no cache para future uso');
+          } catch (saveError) {
+            console.error('Erro ao salvar cache:', saveError);
+          }
+
+          const isInboxOpen = (inbox: any) => {
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const currentHour = now.getHours();
+            const currentMinutes = now.getMinutes();
+            
+            // Se não houver horário de funcionamento definido, considerar como aberto
+            if (!inbox.working_hours || inbox.working_hours.length === 0) {
+              return true;
+            }
+            
+            const workingHours = inbox.working_hours.find((wh: any) => wh.day_of_week === dayOfWeek);
+            
+            if (!workingHours) return false;
+            if (workingHours.closed_all_day) return false;
+            if (workingHours.open_all_day) return true;
+            
+            const openTime = workingHours.open_hour * 60 + workingHours.open_minutes;
+            const closeTime = workingHours.close_hour * 60 + workingHours.close_minutes;
+            const currentTime = currentHour * 60 + currentMinutes;
+            
+            return currentTime >= openTime && currentTime <= closeTime;
+          };
+
           const allInboxes = data.payload.map((inbox: any) => ({
             ...inbox,
-            isOpen: true // ou lógica de horário se quiser
+            isOpen: isInboxOpen(inbox)
           }));
+
           console.log('Processed inboxes:', allInboxes);
           setAvailableInboxes(allInboxes);
-          setShowInboxSelector(true);
-          setSelectedInboxId(null); // Não seleciona automaticamente
+          setInboxes(data.payload);
+          
+          // Se houver apenas um inbox, selecioná-lo automaticamente
+          if (allInboxes.length === 1) {
+            setSelectedInboxId(allInboxes[0].id);
+          } else if (allInboxes.length > 1) {
+            setShowInboxSelector(true);
+            setSelectedInboxId(null); // Não seleciona automaticamente
+          }
         } else {
           console.log('No payload found or payload is not an array');
           setAvailableInboxes([]);
         }
       } catch (error) {
         console.error('Error fetching inboxes:', error);
-        setError('Erro ao carregar caixas de entrada');
+        
+        if (error instanceof Error) {
+          // Se é um erro de autenticação, mostrar mensagem específica
+          if (error.message.includes('401') || error.message.includes('autenticação')) {
+            setAuthError(true);
+            setError('Token WiseApp inválido ou expirado. Por favor, configure um token válido.');
+          } else if (error.message.includes('403')) {
+            setError('Acesso negado. Verifique as permissões da sua conta WiseApp.');
+          } else if (error.message.includes('404')) {
+            setError('Conta não encontrada. Verifique se o ID da conta está correto.');
+          } else {
+            setError('Erro ao carregar caixas de entrada. Tente novamente mais tarde.');
+          }
+        } else {
+          setError('Erro ao carregar caixas de entrada');
+        }
+        
         setAvailableInboxes([]);
       }
     };
@@ -425,78 +616,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     }
   };
 
-  const fetchInboxes = async (accountId: string, apiKey: string) => {
-    try {
-      const url = `/api/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'api_access_token': apiKey,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data?.payload) {
-        setInboxes(data.payload);
-        
-        const isInboxOpen = (inbox: any) => {
-          const now = new Date();
-          const dayOfWeek = now.getDay();
-          const currentHour = now.getHours();
-          const currentMinutes = now.getMinutes();
-          
-          // Se não houver horário de funcionamento definido, considerar como aberto
-          if (!inbox.working_hours || inbox.working_hours.length === 0) {
-            return true;
-          }
-          
-          const workingHours = inbox.working_hours.find((wh: any) => wh.day_of_week === dayOfWeek);
-          
-          if (!workingHours) return false;
-          if (workingHours.closed_all_day) return false;
-          if (workingHours.open_all_day) return true;
-          
-          const openTime = workingHours.open_hour * 60 + workingHours.open_minutes;
-          const closeTime = workingHours.close_hour * 60 + workingHours.close_minutes;
-          const currentTime = currentHour * 60 + currentMinutes;
-          
-          return currentTime >= openTime && currentTime <= closeTime;
-        };
-
-        const allInboxes = data.payload.map((inbox: any) => ({
-          ...inbox,
-          isOpen: isInboxOpen(inbox)
-        }));
-
-        setAvailableInboxes(allInboxes);
-
-        // Se houver apenas um inbox, selecioná-lo automaticamente
-        if (allInboxes.length === 1) {
-          setSelectedInboxId(allInboxes[0].id);
-          return allInboxes[0].id;
-        }
-
-        // Se houver múltiplos inboxes, mostrar o seletor
-        if (allInboxes.length > 1) {
-          setShowInboxSelector(true);
-          return null;
-        }
-
-        return null;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error fetching inboxes:', error);
-      return null;
-    }
-  };
 
   const loadContactInfo = async (contactId: number) => {
     try {
@@ -869,15 +989,47 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         throw new Error('ID da conta é obrigatório');
       }
 
-      const apiKey = localStorage.getItem('wiseapp_token');
+      // Buscar informações da empresa primeiro
+      let companyId = localStorage.getItem('company_id');
+      if (!companyId) {
+        const companyResponse = await fetch(`/api/company/by-account/${accountId}`);
+        if (!companyResponse.ok) {
+          throw new Error('Não foi possível buscar informações da empresa');
+        }
+        const companyData = await companyResponse.json();
+        companyId = companyData.company_id?.toString();
+        if (companyId) {
+          localStorage.setItem('company_id', companyId);
+        }
+      }
+
+      if (!companyId) {
+        throw new Error('Company ID não encontrado');
+      }
+
+      // Buscar token WiseApp do banco de dados
+      let apiKey = localStorage.getItem('wiseapp_token');
+      if (!apiKey) {
+        const tokenResponse = await fetch(`/api/wiseapp-token/${companyId}`);
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          apiKey = tokenData.token;
+          if (apiKey) {
+            localStorage.setItem('wiseapp_token', apiKey);
+          }
+        } else if (tokenResponse.status === 404) {
+          setAuthError(true);
+          throw new Error('Token WiseApp não configurado para esta empresa. Configure nas configurações da empresa.');
+        }
+      }
+
       if (!apiKey) {
         setAuthError(true);
         throw new Error('Token WiseApp não encontrado');
       }
 
       // Carregar inboxes e mostrar o seletor
-      await fetchInboxes(accountId, apiKey);
-      setShowInboxSelector(true);
+      // As inboxes serão carregadas automaticamente pelo useEffect quando showChat for true
       setLoading(false);
     } catch (error) {
       console.error('Error in userInChat:', error);

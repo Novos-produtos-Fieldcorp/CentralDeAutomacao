@@ -5,6 +5,7 @@ import type { Motorista, MotoristaWithAddress, Veiculo } from '../types/database
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { formatCEP } from '../utils/format';
+import WhatsAppAvatar from './WhatsAppAvatar';
 
 interface EditMotoristaModalProps {
   isOpen: boolean;
@@ -580,9 +581,21 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Editar {motorista.funcao}
-          </h2>
+          <div className="flex items-center gap-4">
+            <WhatsAppAvatar 
+              photoUrl={motorista?.foto_whatsapp}
+              name={motorista.nome}
+              size="md"
+            />
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Editar {motorista.funcao}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {motorista.nome}
+              </p>
+            </div>
+          </div>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"

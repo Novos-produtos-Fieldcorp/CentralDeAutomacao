@@ -73,6 +73,7 @@ export interface Motorista {
   nome_pai?: string | null;
   nome_mae?: string | null;
   foto_cnh?: string | null;
+  foto_whatsapp?: string | null;
   comentario?: string | null;
 }
 

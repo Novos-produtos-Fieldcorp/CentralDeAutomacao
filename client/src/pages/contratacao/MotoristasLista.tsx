@@ -46,7 +46,8 @@ const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
     company_id: viewMotorista.company_id || 0,
     data_cadastro: viewMotorista.data_cadastro || '',
     cliente_id: viewMotorista.cliente_id || 0,
-    ativo: viewMotorista.ativo || false
+    ativo: viewMotorista.ativo || false,
+    foto_whatsapp: viewMotorista.foto_whatsapp || null
   };
 
   const motoristaWithAddress: MotoristaWithAddress = {
@@ -1907,6 +1908,7 @@ const MotoristasLista = () => {
         email={selectedMotorista?.email || undefined}
         telefone={selectedMotorista?.telefone ? String(selectedMotorista.telefone) : undefined}
         dt_nascimento={selectedMotorista?.dt_nascimento}
+        foto_whatsapp={selectedMotorista?.foto_whatsapp}
         endereco={endereco}
         st_cadastro={selectedMotorista?.st_cadastro}
       />
