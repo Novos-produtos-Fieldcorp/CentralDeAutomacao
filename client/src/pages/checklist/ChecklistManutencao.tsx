@@ -42,7 +42,7 @@ interface StatusItem {
 }
 
 const ChecklistManutencao = () => {
-  const { query } = useCompanyData();
+  const { query, companyId } = useCompanyData();
   const [alerts, setAlerts] = useState<MaintenanceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedAlert, setExpandedAlert] = useState<AlertDetails | null>(null);
@@ -67,7 +67,7 @@ const ChecklistManutencao = () => {
     if (statusItems.length > 0 && !pendingDateRange) {
       fetchMaintenanceAlerts();
     }
-  }, [dateRange, statusItems, pendingDateRange]);
+  }, [dateRange, statusItems, pendingDateRange, companyId]);
 
   const fetchStatusItems = async () => {
     try {
@@ -85,6 +85,8 @@ const ChecklistManutencao = () => {
   };
 
   const fetchMaintenanceAlerts = async () => {
+    if (!companyId) return;
+    
     try {
       setLoading(true);
       
@@ -109,6 +111,7 @@ const ChecklistManutencao = () => {
           farol_veiculo!checklist_id(*),
           fluido_veiculo!checklist_id(*)
         `)
+        .eq('company_id', companyId)
         .gte('data', dateRange.startDate)
         .lte('data', dateRange.endDate)
         .order('data', { ascending: false });
