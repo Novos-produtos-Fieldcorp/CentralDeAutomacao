@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag, Users, UserCheck, Shield, CheckCircle } from 'lucide-react';
+  import React, { useState, useEffect, useRef } from 'react';
+  import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag } from 'lucide-react';
   import WhatsAppAvatar from '../../components/WhatsAppAvatar';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
@@ -123,13 +123,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [stats, setStats] = useState({
-    cadastrados: 0,
-    qualificados: 0,
-    documentacao: 0,
-    contratados: 0
-  });
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
@@ -376,17 +369,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       fetchClientes();
       fetchTags();
     }, [dateFilter, customDateRange]);
-
-    // Calculate stats whenever contratados changes
-    useEffect(() => {
-      const newStats = {
-        cadastrados: contratados.filter(m => m.st_cadastro === 'cadastrado').length,
-        qualificados: contratados.filter(m => m.st_cadastro === 'qualificado').length,
-        documentacao: contratados.filter(m => m.st_cadastro === 'documentacao').length,
-        contratados: contratados.filter(m => m.st_cadastro === 'contratado').length
-      };
-      setStats(newStats);
-    }, [contratados]);
 
     useEffect(() => {
       // Close context menu when clicking anywhere
@@ -724,7 +706,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       setSelectedItems(newSelectedItems);
       
       // Update selectAll state
-      setSelectAll(newSelectedItems.size === filteredAgregados.length);
+      setSelectAll(newSelectedItems.size === filteredContratados.length);
     };
     
     // Funções para manipular filtros de múltipla seleção
@@ -819,7 +801,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (selectAll) {
         setSelectedItems(new Set());
       } else {
-        setSelectedItems(new Set(filteredAgregados.map(m => m.motorista_id || 0)));
+        setSelectedItems(new Set(filteredContratados.map(m => m.motorista_id || 0)));
       }
       setSelectAll(!selectAll);
     };
@@ -1000,7 +982,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       return motorista.nome_cidade ?? '';
     };
 
-    const filteredAgregados = contratados.filter((motorista): boolean => {
+    const filteredContratados = contratados.filter((motorista): boolean => {
       const searchLower = searchTerm.toLowerCase();
       
       // Lógica para filtro de status (multiseleção)
@@ -1078,7 +1060,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       handlePageChange,
       handlePageSizeChange
     } = usePagination({
-      data: filteredAgregados,
+      data: filteredContratados,
       initialPageSize: 10
     });
 
@@ -1153,50 +1135,54 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           </div>
         </div>
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
-          {/* Campo de busca */}
-          <div className="flex-1 min-w-0 max-w-md">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Buscar por nome, CPF, email ou telefone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm h-9"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
-              <div className="absolute inset-y-0 left-3 flex items-center">
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               {searchTerm && (
                 <button
-                  type="button"
                   onClick={() => setSearchTerm('')}
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
-                  <X className="h-4 w-4" />
+                  <X size={16} />
                 </button>
               )}
             </div>
-          </div>
 
-          {/* Filtros agrupados */}
-          <div className="flex flex-wrap gap-2 items-center">
-            {/* Status Filter */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
-              >
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  <span>
-                    {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
+            <div className="relative" id="status-dropdown">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                  className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
+                >
+                  <span className="truncate">
+                    {getFilterButtonText('status')}
                   </span>
-                </div>
-                <ChevronDown className={`h-4 w-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
-              </button>
+                  <div className="absolute inset-y-0 right-2 flex items-center">
+                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
+                  </div>
+                </button>
+                <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                {statusFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('status');
+                    }}
+                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
               {showStatusDropdown && (
                 <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
                   <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
@@ -1240,177 +1226,404 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               )}
             </div>
 
-            {/* Ativo Filter */}
             <div className="relative">
               <select
                 value={ativoFilter}
                 onChange={(e) => setAtivoFilter(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 min-w-[120px]"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
               >
-                <option value="">Ativo</option>
-                <option value="active">Ativo (Sim)</option>
-                <option value="inactive">Ativo (Não)</option>
+                <option value="">Todos (Ativos/Inativos)</option>
+                <option value="active">Somente Ativos</option>
+                <option value="inactive">Somente Inativos</option>
               </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            </div>
-
-            {/* Botão Novo Agregado */}
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm h-9 min-w-[100px] justify-center"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Novo</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <Users className="h-8 w-8 text-blue-600" />
-            </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Total Agregados
-                </dt>
-                <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                  {filteredAgregados.length}
-                </dd>
-              </dl>
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </div>
           </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <UserCheck className="h-8 w-8 text-green-600" />
-            </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Cadastrados
-                </dt>
-                <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                  {stats.cadastrados}
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <Shield className="h-8 w-8 text-yellow-600" />
-            </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Qualificados
-                </dt>
-                <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                  {stats.qualificados}
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <FileText className="h-8 w-8 text-orange-600" />
-            </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Documentação
-                </dt>
-                <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                  {stats.documentacao}
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Contratados
-                </dt>
-                <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                  {stats.contratados}
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabela */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {filteredAgregados.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500 dark:text-gray-400">
-              Nenhum agregado encontrado
-            </p>
-          </div>
-        ) : (
-          <div className="relative">
-            <div ref={tableContainerRef} className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative" id="cliente-dropdown">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowClienteDropdown(!showClienteDropdown)}
+                  className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
+                >
+                  <span className="truncate">
+                    {getFilterButtonText('cliente')}
+                  </span>
+                  <div className="absolute inset-y-0 right-2 flex items-center">
+                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
+                  </div>
+                </button>
+                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                {clienteFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('cliente');
+                    }}
+                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              {showClienteDropdown && (
+                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                  <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os clientes</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setClienteFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id="cliente-sem_cliente"
+                      checked={clienteFilter.includes('sem_cliente')}
+                      onChange={() => toggleFilterOption('cliente', 'sem_cliente')}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor="cliente-sem_cliente" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      Sem cliente
+                    </label>
+                  </div>
+                  {clientes.map(cliente => (
+                    <div key={cliente.cliente_id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
                       <input
                         type="checkbox"
-                        checked={selectedItems.size > 0 && selectedItems.size === paginatedData.length}
-                        onChange={handleSelectAll}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        id={`cliente-${cliente.cliente_id}`}
+                        checked={clienteFilter.includes(cliente.cliente_id.toString())}
+                        onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        onClick={(e) => e.stopPropagation()}
                       />
-                    </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Nome
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                CPF
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Status
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Cliente
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Cidade
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Telefone
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Cadastro
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Tags
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      <label htmlFor={`cliente-${cliente.cliente_id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        {cliente.nome}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="relative" id="cidade-dropdown">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
+                  className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
+                >
+                  <span className="truncate">
+                    {getFilterButtonText('cidade')}
+                  </span>
+                  <div className="absolute inset-y-0 right-2 flex items-center">
+                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
+                  </div>
+                </button>
+                <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                {cidadeFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('cidade');
+                    }}
+                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              {showCidadeDropdown && (
+                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                  <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as cidades</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCidadeFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  {cidades
+                    .filter((cidade): cidade is string => cidade != null)
+                    .map((cidade, index) => (
+                      <div key={index} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                        <input
+                          type="checkbox"
+                          id={`cidade-${index}`}
+                          checked={cidadeFilter.includes(cidade)}
+                          onChange={() => toggleFilterOption('cidade', cidade)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <label htmlFor={`cidade-${index}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                          {cidade}
+                        </label>
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
+            </div>
+
+            <div className="relative" id="tipo-veiculo-dropdown">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
+                  className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
+                >
+                  <span className="truncate">
+                    {getFilterButtonText('tipoVeiculo')}
+                  </span>
+                  <div className="absolute inset-y-0 right-2 flex items-center">
+                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showTipoVeiculoDropdown ? 'transform rotate-180' : ''}`} />
+                  </div>
+                </button>
+                <Truck className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                {tipoVeiculoFilter.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFilter('tipoVeiculo');
+                    }}
+                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              {showTipoVeiculoDropdown && (
+                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                  <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os tipos de veículo</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTipoVeiculoFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                    <input
+                      type="checkbox"
+                      id="tipo-veiculo-sem_veiculo"
+                      checked={tipoVeiculoFilter.includes('sem_veiculo')}
+                      onChange={() => toggleFilterOption('tipoVeiculo', 'sem_veiculo')}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label htmlFor="tipo-veiculo-sem_veiculo" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      Sem veículo
+                    </label>
+                  </div>
+                  {tiposVeiculo.map((tipo, index) => (
+                    <div key={index} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`tipo-veiculo-${index}`}
+                        checked={tipoVeiculoFilter.includes(tipo)}
+                        onChange={() => toggleFilterOption('tipoVeiculo', tipo)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <label htmlFor={`tipo-veiculo-${index}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        {tipo}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="relative" id="tags-dropdown">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowTagsDropdown(!showTagsDropdown)}
+                  className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
+                >
+                  <span className="truncate">Tags visíveis</span>
+                  <div className="absolute inset-y-0 right-2 flex items-center">
+                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showTagsDropdown ? 'transform rotate-180' : ''}`} />
+                  </div>
+                </button>
+                <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                {visibleTags.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setVisibleTags([]);
+                    }}
+                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              {showTagsDropdown && (
+                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                  <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Tags para ocultar</span>
+                    <button 
+                      type="button" 
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setVisibleTags([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  {tags.map(tag => (
+                    <div key={tag.id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`tag-visible-${tag.id}`}
+                        checked={visibleTags.includes(tag.id.toString())}
+                        onChange={() => {
+                          const tagId = tag.id.toString();
+                          setVisibleTags(prev => 
+                            prev.includes(tagId) 
+                              ? prev.filter(id => id !== tagId)
+                              : [...prev, tagId]
+                          );
+                        }}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <label htmlFor={`tag-visible-${tag.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300 flex items-center">
+                        <span
+                          className="inline-block w-3 h-3 rounded-full mr-2"
+                          style={{ backgroundColor: tag.cor }}
+                        />
+                        {tag.nome}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none truncate"
+              >
+                <option value="all">Todos os períodos</option>
+                <option value="today">Hoje</option>
+                <option value="2days">Últimos 2 dias</option>
+                <option value="15days">Últimos 15 dias</option>
+                <option value="30days">Último mês</option>
+                <option value="custom">Personalizado</option>
+              </select>
+              <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
+              aria-label="Novo Agregado"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
+
+          {dateFilter === 'custom' && (
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Data inicial
+                </label>
+                <input
+                  type="date"
+                  value={customDateRange.startDate}
+                  onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Data final
+                </label>
+                <input
+                  type="date"
+                  value={customDateRange.endDate}
+                  onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
+          <div className="overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={selectAll}
+                  onChange={handleSelectAll}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {selectedItems.size > 0 ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}` : 'Selecionar todos'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <div ref={tableContainerRef} className="overflow-x-auto w-full">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead>
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800"></th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Nome</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Tags</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {paginatedData.map((motorista, index) => (
                       <tr 
                         key={`agregado-${motorista.motorista_id || ''}-${motorista.cpf || ''}-${index}`}
@@ -1635,19 +1848,24 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               />
             </div>
           </div>
-        )}
-
-        {/* Pagination */}
-        {filteredAgregados.length > 0 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalItems={totalItems}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
-        )}
+          
+          {filteredContratados.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 dark:text-gray-400">
+                Nenhum contratado encontrado
+              </p>
+            </div>
+          ) : (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          )}
+        </div>
 
         {/* Context Menu */}
         {contextMenu.visible && contextMenu.motorista && (
@@ -1897,4 +2115,4 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     );
   };
 
-export default Contratados;
+  export default Contratados;
