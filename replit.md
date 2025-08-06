@@ -39,6 +39,7 @@ Preferred communication style: Simple, everyday language.
 - **Document Management**: Direct upload to Supabase Storage, with validation and automatic URL storage in the database for driver and vehicle owner documents.
 - **WhatsApp Photo Integration**: Automatic capture and display of WhatsApp profile photos for drivers, with seamless integration through FloatingChat component that automatically saves photos when contacts are loaded, eliminating the need for separate API calls and reducing system complexity.
 - **User Experience Enhancements**: Includes CPF API integration for automatic data population in forms, simplified context menus, and WhatsApp avatar display replacing default user icons across all driver tables.
+- **ChatWoot Inbox Caching**: Implemented localStorage caching for ChatWoot API inboxes (chat.wiseapp360.com) with 1-hour expiration to ensure reliable functionality in Netlify deployment. Cache is account-specific and includes automatic expiration handling.
 
 ## External Dependencies
 
