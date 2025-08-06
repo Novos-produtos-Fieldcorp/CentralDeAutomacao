@@ -32,18 +32,19 @@ export const getInboxes = (accountId: string) => {
   return apiClient.get(`/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`);
 };
 
-// Função para limpar cache de inboxes
-export const clearInboxCache = (accountId?: string) => {
-  if (accountId) {
-    localStorage.removeItem(`chat_inboxes_${accountId}`);
+// Função para limpar cache de inboxes otimizada
+export const clearInboxCache = (companyId?: string, accountId?: string) => {
+  const keys = Object.keys(localStorage).filter(key => 
+    key.startsWith('chatwoot_inboxes_') || key.startsWith('chat_inboxes_')
+  );
+  
+  if (companyId && accountId) {
+    const specificKey = `chatwoot_inboxes_${companyId}_${accountId}`;
+    localStorage.removeItem(specificKey);
+    console.log('Cache limpo para company:', companyId, 'account:', accountId);
   } else {
-    // Limpar todos os caches de inboxes
-    const keys = Object.keys(localStorage);
-    keys.forEach(key => {
-      if (key.startsWith('chat_inboxes_')) {
-        localStorage.removeItem(key);
-      }
-    });
+    keys.forEach(key => localStorage.removeItem(key));
+    console.log('Todos os caches de inbox limpos:', keys.length);
   }
 };
 
@@ -161,6 +162,18 @@ interface FileWithPreview {
   preview: string;
   type: 'image' | 'file';
 }
+
+// Funções utilitárias para gerenciamento de cache
+const getCacheKey = (companyId: string, accountId: string) => 
+  `chatwoot_inboxes_${companyId}_${accountId}`;
+
+const validateCacheData = (data: any): boolean => {
+  return data && 
+         data.payload && 
+         Array.isArray(data.payload) && 
+         data._cache_metadata && 
+         typeof data._cache_metadata.expires_at === 'number';
+};
 
 const FloatingChat: React.FC<FloatingChatProps> = ({
   initialPhone,
@@ -407,33 +420,49 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           throw new Error('Token WiseApp não encontrado');
         }
 
-        // Chave para cache específica por conta
-        const cacheKey = `chat_inboxes_${accountId}`;
+        // Cache otimizado com chave específica para company_id + account_id
+        const cacheKey = `chatwoot_inboxes_${companyId}_${accountId}`;
         
-        // Tentar carregar do cache primeiro
-        try {
-          const cachedInboxes = localStorage.getItem(cacheKey);
-          if (cachedInboxes) {
-            const parsedInboxes = JSON.parse(cachedInboxes);
-            const cacheTimestamp = parsedInboxes.timestamp;
+        // Verificar cache primeiro - validar se não expirou
+        const checkCache = () => {
+          try {
+            const cachedData = localStorage.getItem(cacheKey);
+            if (!cachedData) return null;
+            
+            const parsed = JSON.parse(cachedData);
             const now = Date.now();
             
-            // Cache válido por 1 hora (3600000 ms)
-            if (now - cacheTimestamp < 3600000) {
-              console.log('📦 Carregando inboxes do cache para account_id:', accountId);
-              const isInboxOpen = (inbox: any) => {
-                const now = new Date();
-                const dayOfWeek = now.getDay();
-                const currentHour = now.getHours();
-                const currentMinutes = now.getMinutes();
-                
-                // Se não houver horário de funcionamento definido, considerar como aberto
-                if (!inbox.working_hours || inbox.working_hours.length === 0) {
-                  return true;
-                }
+            // Verificar se o cache ainda é válido usando metadados
+            if (parsed._cache_metadata && now < parsed._cache_metadata.expires_at) {
+              console.log('📦 Cache válido encontrado para company:', companyId, 'account:', accountId);
+              return parsed;
+            } else {
+              console.log('⏰ Cache expirado, removendo...');
+              localStorage.removeItem(cacheKey);
+              return null;
+            }
+          } catch (error) {
+            console.error('Erro ao ler cache:', error);
+            localStorage.removeItem(cacheKey);
+            return null;
+          }
+        };
+
+        // Tentar usar cache primeiro
+        const cachedData = checkCache();
+        if (cachedData && cachedData.payload) {
+          const processInboxes = (inboxes: any[]) => {
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const currentHour = now.getHours();
+            const currentMinutes = now.getMinutes();
+            
+            return inboxes.map((inbox: any) => ({
+              ...inbox,
+              isOpen: (() => {
+                if (!inbox.working_hours || inbox.working_hours.length === 0) return true;
                 
                 const workingHours = inbox.working_hours.find((wh: any) => wh.day_of_week === dayOfWeek);
-                
                 if (!workingHours) return false;
                 if (workingHours.closed_all_day) return false;
                 if (workingHours.open_all_day) return true;
@@ -443,79 +472,63 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                 const currentTime = currentHour * 60 + currentMinutes;
                 
                 return currentTime >= openTime && currentTime <= closeTime;
-              };
+              })()
+            }));
+          };
 
-              const cachedInboxesWithStatus = parsedInboxes.data.map((inbox: any) => ({
-                ...inbox,
-                isOpen: isInboxOpen(inbox)
-              }));
-
-              setAvailableInboxes(cachedInboxesWithStatus);
-              setInboxes(parsedInboxes.data);
-              
-              if (cachedInboxesWithStatus.length === 1) {
-                setSelectedInboxId(cachedInboxesWithStatus[0].id);
-              } else if (cachedInboxesWithStatus.length > 1) {
-                setShowInboxSelector(true);
-              }
-              
-              return; // Usar cache e não fazer requisição
-            } else {
-              console.log('⏰ Cache expirado, removendo...');
-              localStorage.removeItem(cacheKey);
-            }
+          const processedInboxes = processInboxes(cachedData.payload);
+          setAvailableInboxes(processedInboxes);
+          setInboxes(cachedData.payload);
+          
+          // Auto-selecionar inbox se apenas um disponível
+          if (processedInboxes.length === 1) {
+            setSelectedInboxId(processedInboxes[0].id);
+          } else if (processedInboxes.length > 1) {
+            setShowInboxSelector(true);
           }
-        } catch (cacheError) {
-          console.error('Erro ao ler cache:', cacheError);
-          localStorage.removeItem(cacheKey);
+          
+          return; // Usar dados do cache
         }
 
-        // Se não há cache válido, fazer requisição à API
-        console.log('🌐 Buscando inboxes da API para account_id:', accountId);
-        const url = `/api/api/v1/accounts/${accountId}/inboxes?_t=${Date.now()}`;
-        
-        const response = await fetch(url, {
+        // Se não há cache válido, usar nova API otimizada
+        console.log('🌐 Buscando inboxes via API otimizada para company:', companyId);
+        const response = await fetch(`/api/chatwoot/inboxes/${companyId}?account_id=${accountId}`, {
           method: 'GET',
           headers: {
-            'api_access_token': apiKey,
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
           }
         });
 
         if (!response.ok) {
+          // Limpar caches em caso de erro
+          localStorage.removeItem(cacheKey);
+          localStorage.removeItem('wiseapp_token');
+          
           if (response.status === 401) {
-            // Limpar cache quando há erro de autenticação
-            localStorage.removeItem(cacheKey);
             setAuthError(true);
-            throw new Error('Token de autenticação inválido ou expirado. Verifique suas credenciais.');
+            throw new Error('Token de autenticação inválido ou expirado');
           } else if (response.status === 403) {
-            throw new Error('Acesso negado. Verifique as permissões da sua conta.');
+            throw new Error('Account ID não autorizado para esta empresa');
           } else if (response.status === 404) {
-            throw new Error('Conta não encontrada. Verifique o ID da conta.');
+            setAuthError(true);
+            throw new Error('Token WiseApp não configurado ou conta não encontrada');
           } else {
-            throw new Error(`Erro na API ChatWoot (${response.status}). Tente novamente mais tarde.`);
+            throw new Error(`Erro na API ChatWoot: ${response.status}`);
           }
         }
 
         const data = await response.json();
-        
-        console.log('Inbox response:', data);
-        console.log('Inbox payload:', data?.payload);
+        console.log('✅ Inboxes recebidos:', data?.payload?.length || 0, 'caixas');
         
         if (data?.payload && Array.isArray(data.payload)) {
-          // Salvar no cache com timestamp
-          const cacheData = {
-            data: data.payload,
-            timestamp: Date.now(),
-            accountId: accountId
-          };
-          
+          // Salvar no cache usando formato com metadados de expiração
           try {
-            localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-            console.log('💾 Inboxes salvos no cache para future uso');
+            localStorage.setItem(cacheKey, JSON.stringify(data));
+            console.log('💾 Cache atualizado com', data.payload.length, 'inboxes');
           } catch (saveError) {
-            console.error('Erro ao salvar cache:', saveError);
+            console.warn('Erro ao salvar cache (storage cheio?):', saveError);
           }
 
           const isInboxOpen = (inbox: any) => {
