@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {Send, Loader2, AlertCircle, WifiOff, X, Mic, Paperclip, Minus, Square, MessageSquare, File, ArrowLeft } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import InboxSelector from './InboxSelector';
 
 const baseURL = import.meta.env.VITE_CHAT_API_URL || '/api'; // Usar a URL do ambiente ou proxy local para evitar CORS
 
@@ -217,6 +218,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
 
   const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
+  const companyId = searchParams.get('company_id') || localStorage.getItem('company_id') || '1';
   const apiKey = localStorage.getItem('wiseapp_token');
 
   // Usar o apiClient configurado acima
@@ -490,8 +492,30 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           return; // Usar dados do cache
         }
 
-        // Se não há cache válido, usar nova API otimizada
+        // Se não há cache válido, usar nova API otimizada ou fallback
         console.log('🌐 Buscando inboxes via API otimizada para company:', companyId);
+        
+        try {
+          const response = await fetch(`/api/chatwoot/inboxes/${companyId}?account_id=${accountId}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
+          });
+
+          if (!response.ok) {
+            console.log('⚠️ API falhou, usando fallback do InboxSelector');
+            setShowInboxSelector(true);
+            return;
+          }
+        } catch (apiError) {
+          console.log('📦 Erro na API, delegando para InboxSelector:', apiError);
+          setShowInboxSelector(true);
+          return;
+        }
+
         const response = await fetch(`/api/chatwoot/inboxes/${companyId}?account_id=${accountId}`, {
           method: 'GET',
           headers: {
@@ -500,24 +524,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             'Cache-Control': 'no-cache'
           }
         });
-
-        if (!response.ok) {
-          // Limpar caches em caso de erro
-          localStorage.removeItem(cacheKey);
-          localStorage.removeItem('wiseapp_token');
-          
-          if (response.status === 401) {
-            setAuthError(true);
-            throw new Error('Token de autenticação inválido ou expirado');
-          } else if (response.status === 403) {
-            throw new Error('Account ID não autorizado para esta empresa');
-          } else if (response.status === 404) {
-            setAuthError(true);
-            throw new Error('Token WiseApp não configurado ou conta não encontrada');
-          } else {
-            throw new Error(`Erro na API ChatWoot: ${response.status}`);
-          }
-        }
 
         const data = await response.json();
         console.log('✅ Inboxes recebidos:', data?.payload?.length || 0, 'caixas');
@@ -2042,6 +2048,19 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       >
         <MessageSquare className="w-6 h-6 text-white" />
       </button>
+
+      {/* InboxSelector Component */}
+      <InboxSelector
+        isOpen={showInboxSelector}
+        onClose={() => setShowInboxSelector(false)}
+        onSelectInbox={(inboxId) => {
+          setSelectedInboxId(inboxId);
+          setShowInboxSelector(false);
+          console.log('📮 Inbox selecionado via InboxSelector:', inboxId);
+        }}
+        accountId={accountId || ''}
+        companyId={companyId}
+      />
     </div>
   );
 };

@@ -978,15 +978,16 @@ const MotoristasLista = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="relative">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        {/* Primeira linha: Campo de busca */}
+        <div className="mb-6">
+          <div className="relative max-w-md">
             <input
               type="text"
               placeholder="Buscar por nome, CPF, email ou telefone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
             />
             <div className="absolute inset-y-0 left-3 flex items-center">
               <Search className="h-4 w-4 text-gray-400" />
@@ -1001,8 +1002,13 @@ const MotoristasLista = () => {
               </button>
             )}
           </div>
+        </div>
 
-          <div className="relative group" ref={statusDropdownRef}>
+        {/* Segunda linha: Filtros principais */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="relative">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+            <div className="relative group" ref={statusDropdownRef}>
             <button
               type="button"
               id="status-dropdown-button"
@@ -1068,9 +1074,12 @@ const MotoristasLista = () => {
                 </div>
               </div>
             )}
+            </div>
           </div>
 
-          <div className="relative group" ref={cidadeDropdownRef}>
+          <div className="relative">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Cidade</label>
+            <div className="relative group" ref={cidadeDropdownRef}>
             <button
               type="button"
               id="cidade-dropdown-button"
@@ -1134,11 +1143,12 @@ const MotoristasLista = () => {
                 </div>
               </div>
             )}
+            </div>
           </div>
-        </div>
-        
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative group" ref={clienteDropdownRef}>
+
+          <div className="relative">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente</label>
+            <div className="relative group" ref={clienteDropdownRef}>
             <button
               type="button"
               id="cliente-dropdown-button"
@@ -1241,9 +1251,12 @@ const MotoristasLista = () => {
                 </div>
               </div>
             )}
+            </div>
           </div>
-          
-          <div className="relative group" ref={ativoDropdownRef}>
+
+          <div className="relative">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status Ativo</label>
+            <div className="relative group" ref={ativoDropdownRef}>
             <button
               type="button"
               id="ativo-dropdown-button"
@@ -1301,9 +1314,15 @@ const MotoristasLista = () => {
                 </div>
               </div>
             )}
+            </div>
           </div>
-
-          <div className="relative group" ref={tagDropdownRef}>
+        </div>
+        
+        {/* Terceira linha: Tags e Período */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="relative">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tags</label>
+            <div className="relative group" ref={tagDropdownRef}>
             <button
               type="button"
               id="tag-dropdown-button"
@@ -1429,9 +1448,12 @@ const MotoristasLista = () => {
                 </div>
               </div>
             )}
+            </div>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Período e Ações</label>
+            <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <select
                 value={dateFilter}
@@ -1460,6 +1482,7 @@ const MotoristasLista = () => {
             >
               <Plus className="w-5 h-5" />
             </button>
+            </div>
           </div>
         </div>
 
