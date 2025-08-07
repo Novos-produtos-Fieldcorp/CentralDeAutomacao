@@ -998,18 +998,8 @@ const MotoristasLista = () => {
       </div>
 
       <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 p-6 rounded-xl shadow-lg border border-gray-200/70 dark:border-gray-700/70 backdrop-blur-sm">
-        {/* Header com contador e ações */}
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Motoristas</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {filteredMotoristas.length} de {motoristas.length} motoristas
-              </p>
-            </div>
-          </div>
-          
+        {/* Ações */}
+        <div className="flex justify-end items-center mb-4">
           <div className="flex items-center gap-2">
             {/* Contador de filtros ativos */}
             {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
