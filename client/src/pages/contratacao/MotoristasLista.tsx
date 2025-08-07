@@ -1191,7 +1191,7 @@ const MotoristasLista = () => {
             </div>
 
             {/* Cliente Filter */}
-            <div className="relative">
+            <div className="relative z-[50]">
               <div className="relative group" ref={clienteDropdownRef}>
                 <button
                   type="button"
@@ -1276,7 +1276,7 @@ const MotoristasLista = () => {
 
 
             {/* Tags Filter */}
-            <div className="relative">
+            <div className="relative z-[50]">
               <div className="relative group" ref={tagDropdownRef}>
                 <button
                   type="button"
@@ -1387,7 +1387,7 @@ const MotoristasLista = () => {
             </div>
 
             {/* Status Ativo Filter */}
-            <div className="relative">
+            <div className="relative z-[50]">
               <div className="relative group" ref={ativoDropdownRef}>
                 <button
                   type="button"
@@ -1438,7 +1438,7 @@ const MotoristasLista = () => {
             </div>
 
             {/* Período Filter */}
-            <div className="relative">
+            <div className="relative z-[50]">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                 <Calendar className="h-4 w-4 text-gray-400" />
               </div>

@@ -1311,7 +1311,7 @@ const Contratados = () => {
 
 
             {/* Cliente Filter */}
-            <div className="relative">
+            <div className="relative z-[50]">
               <div className="relative group">
                 <button
                   type="button"
@@ -1380,7 +1380,7 @@ const Contratados = () => {
             </div>
 
             {/* Cidade Filter */}
-            <div className="relative">
+            <div className="relative z-[50]">
               <div className="relative group">
                 <button
                   type="button"
@@ -1433,7 +1433,7 @@ const Contratados = () => {
             </div>
 
             {/* Tipo Veículo Filter */}
-            <div className="relative">
+            <div className="relative z-[50]">
               <div className="relative group">
                 <button
                   type="button"
@@ -1498,7 +1498,7 @@ const Contratados = () => {
             </div>
 
             {/* Status Ativo Filter */}
-            <div className="relative">
+            <div className="relative z-[50]">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                 <CheckCircle className="h-4 w-4 text-gray-400" />
               </div>
@@ -1515,7 +1515,7 @@ const Contratados = () => {
             </div>
 
             {/* Date Filter */}
-            <div className="relative">
+            <div className="relative z-[50]">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                 <Calendar className="h-4 w-4 text-gray-400" />
               </div>
