@@ -1247,7 +1247,7 @@ const Contratados = () => {
         <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
           <div className="flex flex-wrap gap-2">
             {/* Status Filter */}
-            <div className="relative z-[100]">
+            <div className="relative" style={{ zIndex: 10000 }}>
               <div className="relative group">
                 <button
                   type="button"
@@ -1264,7 +1264,7 @@ const Contratados = () => {
                 </button>
 
                 {showStatusDropdown && (
-                  <div className="absolute z-[999999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div className="absolute top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto" style={{ zIndex: 99999 }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
@@ -1311,7 +1311,7 @@ const Contratados = () => {
 
 
             {/* Cliente Filter */}
-            <div className="relative z-[99]">
+            <div className="relative" style={{ zIndex: 9999 }}>
               <div className="relative group">
                 <button
                   type="button"
@@ -1332,7 +1332,7 @@ const Contratados = () => {
                   <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showClienteDropdown && (
-                  <div className="absolute z-[999999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div className="absolute top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto" style={{ zIndex: 99999 }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
@@ -1380,7 +1380,7 @@ const Contratados = () => {
             </div>
 
             {/* Cidade Filter */}
-            <div className="relative z-[98]">
+            <div className="relative" style={{ zIndex: 9998 }}>
               <div className="relative group">
                 <button
                   type="button"
@@ -1397,7 +1397,7 @@ const Contratados = () => {
                 </button>
 
                 {showCidadeDropdown && (
-                  <div className="absolute z-[999999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                  <div className="absolute top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto" style={{ zIndex: 99999 }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
@@ -1433,7 +1433,7 @@ const Contratados = () => {
             </div>
 
             {/* Tipo Veículo Filter */}
-            <div className="relative z-[97]">
+            <div className="relative" style={{ zIndex: 9997 }}>
               <div className="relative group">
                 <button
                   type="button"
@@ -1450,7 +1450,7 @@ const Contratados = () => {
                 </button>
 
                 {showTipoVeiculoDropdown && (
-                  <div className="absolute z-[999999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div className="absolute top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto" style={{ zIndex: 99999 }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tipos</span>
@@ -1498,7 +1498,7 @@ const Contratados = () => {
             </div>
 
             {/* Status Ativo Filter */}
-            <div className="relative z-[96]">
+            <div className="relative" style={{ zIndex: 9996 }}>
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                 <CheckCircle className="h-4 w-4 text-gray-400" />
               </div>
@@ -1506,6 +1506,7 @@ const Contratados = () => {
                 value={ativoFilter}
                 onChange={(e) => setAtivoFilter(e.target.value)}
                 className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 appearance-none pr-8 h-9 w-[140px]"
+                style={{ zIndex: 99999 }}
               >
                 <option value="">Ativo</option>
                 <option value="active">Ativo (Sim)</option>
@@ -1515,7 +1516,7 @@ const Contratados = () => {
             </div>
 
             {/* Date Filter */}
-            <div className="relative z-[95]">
+            <div className="relative" style={{ zIndex: 9995 }}>
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                 <Calendar className="h-4 w-4 text-gray-400" />
               </div>
@@ -1523,6 +1524,7 @@ const Contratados = () => {
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
                 className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 appearance-none pr-8 h-9 w-[140px]"
+                style={{ zIndex: 99999 }}
               >
                 <option value="all">Período</option>
                 <option value="today">Hoje</option>
