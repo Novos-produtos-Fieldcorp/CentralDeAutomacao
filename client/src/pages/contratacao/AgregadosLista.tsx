@@ -1232,11 +1232,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         position: 'fixed',
                         top: '160px',
                         left: '20px',
-                        zIndex: 999999999,
+                        zIndex: 2147483647,
                         background: 'white',
                         border: '1px solid #e5e7eb',
                         borderRadius: '6px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        isolation: 'isolate'
                       }}
                     >
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -1312,11 +1313,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         position: 'fixed',
                         top: '160px',
                         left: '130px',
-                        zIndex: 999999999,
+                        zIndex: 2147483647,
                         background: 'white',
                         border: '1px solid #e5e7eb',
                         borderRadius: '6px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        isolation: 'isolate'
                       }}
                     >
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -1389,11 +1391,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         position: 'fixed',
                         top: '160px',
                         left: '240px',
-                        zIndex: 999999999,
+                        zIndex: 2147483647,
                         background: 'white',
                         border: '1px solid #e5e7eb',
                         borderRadius: '6px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        isolation: 'isolate'
                       }}
                     >
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -1457,11 +1460,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         position: 'fixed',
                         top: '160px',
                         left: '350px',
-                        zIndex: 999999999,
+                        zIndex: 2147483647,
                         background: 'white',
                         border: '1px solid #e5e7eb',
                         borderRadius: '6px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        isolation: 'isolate'
                       }}
                     >
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -1534,11 +1538,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         position: 'fixed',
                         top: '160px',
                         left: '460px',
-                        zIndex: 999999999,
+                        zIndex: 2147483647,
                         background: 'white',
                         border: '1px solid #e5e7eb',
                         borderRadius: '6px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        isolation: 'isolate'
                       }}
                     >
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
