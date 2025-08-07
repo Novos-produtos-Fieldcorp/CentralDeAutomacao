@@ -1226,7 +1226,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </button>
 
                   {showStatusDropdown && (
-                    <div className="absolute z-50 mt-1 w-64 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                    <div className="absolute z-[9999] bottom-full mb-1 w-64 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
@@ -1306,7 +1306,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showClienteDropdown && (
-                    <div className="absolute z-50 mt-1 w-64 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                    <div className="absolute z-[9999] bottom-full mb-1 w-64 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
@@ -1371,7 +1371,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </button>
 
                   {showCidadeDropdown && (
-                    <div className="absolute z-50 mt-1 w-64 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                    <div className="absolute z-[9999] bottom-full mb-1 w-64 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
@@ -1427,7 +1427,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </button>
 
                   {showTipoVeiculoDropdown && (
-                    <div className="absolute z-50 mt-1 w-64 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                    <div className="absolute z-[9999] bottom-full mb-1 w-64 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tipos</span>
