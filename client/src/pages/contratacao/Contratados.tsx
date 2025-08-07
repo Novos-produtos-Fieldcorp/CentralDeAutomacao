@@ -1247,7 +1247,7 @@ const Contratados = () => {
         <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
           <div className="flex flex-wrap gap-2">
             {/* Status Filter */}
-            <div className="relative" style={{ zIndex: 10000 }}>
+            <div className="multiselect-container">
               <div className="relative group">
                 <button
                   type="button"
@@ -1264,7 +1264,7 @@ const Contratados = () => {
                 </button>
 
                 {showStatusDropdown && (
-                  <div className="absolute top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto" style={{ zIndex: 99999 }}>
+                  <div className="multiselect-dropdown top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
@@ -1311,7 +1311,7 @@ const Contratados = () => {
 
 
             {/* Cliente Filter */}
-            <div className="relative" style={{ zIndex: 9999 }}>
+            <div className="multiselect-container">
               <div className="relative group">
                 <button
                   type="button"
@@ -1332,7 +1332,7 @@ const Contratados = () => {
                   <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showClienteDropdown && (
-                  <div className="absolute top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto" style={{ zIndex: 99999 }}>
+                  <div className="multiselect-dropdown top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
@@ -1380,7 +1380,7 @@ const Contratados = () => {
             </div>
 
             {/* Cidade Filter */}
-            <div className="relative" style={{ zIndex: 9998 }}>
+            <div className="multiselect-container">
               <div className="relative group">
                 <button
                   type="button"
@@ -1397,7 +1397,7 @@ const Contratados = () => {
                 </button>
 
                 {showCidadeDropdown && (
-                  <div className="absolute top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto" style={{ zIndex: 99999 }}>
+                  <div className="multiselect-dropdown top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
@@ -1433,7 +1433,7 @@ const Contratados = () => {
             </div>
 
             {/* Tipo Veículo Filter */}
-            <div className="relative" style={{ zIndex: 9997 }}>
+            <div className="multiselect-container">
               <div className="relative group">
                 <button
                   type="button"
@@ -1450,7 +1450,7 @@ const Contratados = () => {
                 </button>
 
                 {showTipoVeiculoDropdown && (
-                  <div className="absolute top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto" style={{ zIndex: 99999 }}>
+                  <div className="multiselect-dropdown top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tipos</span>

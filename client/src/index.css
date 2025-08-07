@@ -186,6 +186,30 @@
   .dark input[type="checkbox"]:checked {
     @apply bg-blue-600 border-blue-600;
   }
+  
+  /* Fix para dropdowns de multisseleção ficarem acima de todos os elementos */
+  .multiselect-dropdown {
+    z-index: 999999 !important;
+    position: absolute !important;
+  }
+  
+  /* Container dos filtros de multisseleção */
+  .multiselect-container {
+    z-index: 99999 !important;
+    position: relative !important;
+  }
+  
+  /* Garantir que dropdowns apareçam acima de tabelas e headers */
+  .dropdown-overlay {
+    z-index: 999999 !important;
+    position: fixed !important;
+    background: white !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  }
+  
+  .dark .dropdown-overlay {
+    background: rgb(55, 65, 81) !important;
+  }
 }
 
 @layer components {
