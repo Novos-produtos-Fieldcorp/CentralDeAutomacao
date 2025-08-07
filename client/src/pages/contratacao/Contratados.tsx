@@ -1308,19 +1308,7 @@ const Contratados = () => {
               </div>
             </div>
 
-            {/* Status Ativo Filter */}
-            <div className="relative">
-              <select
-                value={ativoFilter}
-                onChange={(e) => setAtivoFilter(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[100px]"
-              >
-                <option value="">Ativo</option>
-                <option value="active">Ativo (Sim)</option>
-                <option value="inactive">Ativo (Não)</option>
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            </div>
+
 
             {/* Cliente Filter */}
             <div className="relative">
@@ -1507,6 +1495,20 @@ const Contratados = () => {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Status Ativo Filter */}
+            <div className="relative">
+              <select
+                value={ativoFilter}
+                onChange={(e) => setAtivoFilter(e.target.value)}
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[100px]"
+              >
+                <option value="">Ativo</option>
+                <option value="active">Ativo (Sim)</option>
+                <option value="inactive">Ativo (Não)</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
 
             {/* Date Filter */}

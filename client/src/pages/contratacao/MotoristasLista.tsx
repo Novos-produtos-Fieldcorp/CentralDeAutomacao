@@ -456,7 +456,7 @@ const MotoristasLista = () => {
       }
     } catch (error) {
       // Silenciar erro para não quebrar a UI - tags são opcionais
-      if (error.name !== 'AbortError') {
+      if (error instanceof Error && error.name !== 'AbortError') {
         console.warn(`Tags não disponíveis para motorista ${motoristaId}`);
       }
     }
@@ -1273,56 +1273,7 @@ const MotoristasLista = () => {
               </div>
             </div>
 
-            {/* Status Ativo Filter */}
-            <div className="relative">
-              <div className="relative group" ref={ativoDropdownRef}>
-                <button
-                  type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
-                  onClick={handleToggleAtivoDropdown}
-                >
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    <span>
-                      {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
-                    </span>
-                  </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showAtivoDropdown ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {showAtivoDropdown && (
-                  <div className="absolute z-[99999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
-                    <div 
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                      onClick={() => {
-                        setAtivoFilter('');
-                        setShowAtivoDropdown(false);
-                      }}
-                    >
-                      Todos
-                    </div>
-                    <div 
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                      onClick={() => {
-                        setAtivoFilter('ativo');
-                        setShowAtivoDropdown(false);
-                      }}
-                    >
-                      Somente Ativos
-                    </div>
-                    <div 
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                      onClick={() => {
-                        setAtivoFilter('inativo');
-                        setShowAtivoDropdown(false);
-                      }}
-                    >
-                      Somente Inativos
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+
 
             {/* Tags Filter */}
             <div className="relative">
@@ -1429,6 +1380,57 @@ const MotoristasLista = () => {
                           </label>
                         ))}
                       </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Status Ativo Filter */}
+            <div className="relative">
+              <div className="relative group" ref={ativoDropdownRef}>
+                <button
+                  type="button"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                  onClick={handleToggleAtivoDropdown}
+                >
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>
+                      {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
+                    </span>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showAtivoDropdown ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {showAtivoDropdown && (
+                  <div className="absolute z-[99999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Todos
+                    </div>
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('ativo');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Somente Ativos
+                    </div>
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('inativo');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Somente Inativos
                     </div>
                   </div>
                 )}
