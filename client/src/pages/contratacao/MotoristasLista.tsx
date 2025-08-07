@@ -980,10 +980,10 @@ const MotoristasLista = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="space-y-4">
-          {/* Campo de busca em cima */}
-          <div className="w-full">
-            <div className="relative w-full max-w-lg lg:max-w-xl">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Campo de busca */}
+          <div className="flex-1 lg:flex-none lg:w-96">
+            <div className="relative w-full">
               <input
                 type="text"
                 placeholder="Buscar por nome, CPF, email ou telefone..."
@@ -1006,8 +1006,8 @@ const MotoristasLista = () => {
             </div>
           </div>
 
-          {/* Filtros agrupados abaixo */}
-          <div className="flex flex-wrap gap-2 items-center justify-start">
+          {/* Filtros agrupados */}
+          <div className="flex flex-wrap gap-2 items-center justify-start lg:justify-end flex-1">
             {/* Status Filter */}
             <div className="relative">
               <div className="relative group" ref={statusDropdownRef}>
@@ -1400,7 +1400,6 @@ const MotoristasLista = () => {
             </button>
           </div>
         </div>
-      </div>
 
         {dateFilter === 'custom' && (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1428,6 +1427,7 @@ const MotoristasLista = () => {
             </div>
           </div>
         )}
+      </div>
 
       {/* WiseApp Bulk Sync Panel */}
       <WiseAppBulkSyncPanel className="mb-6" />
