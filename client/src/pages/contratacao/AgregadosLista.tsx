@@ -1139,7 +1139,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           <div className="space-y-4">
             {/* Campo de busca em cima */}
             <div className="w-full">
-              <div className="relative max-w-md">
+              <div className="relative w-full max-w-lg lg:max-w-xl">
                 <input
                   type="text"
                   placeholder="Buscar por nome, CPF, email ou telefone..."
