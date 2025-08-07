@@ -1139,7 +1139,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           {/* Header com contador e ações */}
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-2 h-8 bg-gradient-to-b from-green-500 to-green-600 rounded-full"></div>
+              <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Agregados</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1152,7 +1152,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               {/* Contador de filtros ativos */}
               {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
                 ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all') && (
-                <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs">
+                <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
                   <Filter className="w-3 h-3" />
                   <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
                 </div>
@@ -1184,14 +1184,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           <div className="mb-4">
             <div className="relative group">
               <div className="absolute inset-y-0 left-4 flex items-center">
-                <Search className="h-5 w-5 text-gray-400 group-focus-within:text-green-500 transition-colors" />
+                <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
               </div>
               <input
                 type="text"
                 placeholder="Buscar por nome, CPF, email ou telefone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-12 py-3.5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 shadow-sm group-focus-within:shadow-md"
+                className="w-full pl-12 pr-12 py-3.5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm group-focus-within:shadow-md"
               />
               {searchTerm && (
                 <button
@@ -1206,10 +1206,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           </div>
 
           {/* Filtros modernos */}
-          <div className="filters-container flex flex-wrap gap-3 items-center justify-between mb-4">
-            <div className="filter-area flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
+            <div className="flex flex-wrap gap-2">
               {/* Status Filter */}
-              <div className="multiselect-container">
+              <div className="relative" style={{ zIndex: 10000 }}>
                 <div className="relative group">
                   <button
                     type="button"
@@ -1226,20 +1226,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </button>
 
                   {showStatusDropdown && (
-                    <div 
-                      className="multiselect-dropdown w-64 py-1 max-h-64 overflow-y-auto"
-                      style={{
-                        position: 'fixed',
-                        top: '160px',
-                        left: '20px',
-                        zIndex: 2147483647,
-                        background: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '6px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                        isolation: 'isolate'
-                      }}
-                    >
+                    <div className="absolute top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto" style={{ zIndex: 99999 }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
@@ -1286,7 +1273,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
 
               {/* Cliente Filter */}
-              <div className="multiselect-container">
+              <div className="relative" style={{ zIndex: 9999 }}>
                 <div className="relative group">
                   <button
                     type="button"
@@ -1307,20 +1294,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showClienteDropdown && (
-                    <div 
-                      className="multiselect-dropdown w-64 py-1 max-h-64 overflow-y-auto"
-                      style={{
-                        position: 'fixed',
-                        top: '160px',
-                        left: '130px',
-                        zIndex: 2147483647,
-                        background: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '6px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                        isolation: 'isolate'
-                      }}
-                    >
+                    <div className="absolute top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto" style={{ zIndex: 99999 }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
@@ -1368,7 +1342,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Cidade Filter */}
-              <div className="multiselect-container">
+              <div className="relative" style={{ zIndex: 9998 }}>
                 <div className="relative group">
                   <button
                     type="button"
@@ -1385,20 +1359,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </button>
 
                   {showCidadeDropdown && (
-                    <div 
-                      className="multiselect-dropdown w-64 py-1 max-h-48 overflow-y-auto"
-                      style={{
-                        position: 'fixed',
-                        top: '160px',
-                        left: '240px',
-                        zIndex: 2147483647,
-                        background: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '6px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                        isolation: 'isolate'
-                      }}
-                    >
+                    <div className="absolute top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto" style={{ zIndex: 99999 }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
@@ -1437,7 +1398,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Tipo Veículo Filter */}
-              <div className="multiselect-container">
+              <div className="relative" style={{ zIndex: 9997 }}>
                 <div className="relative group">
                   <button
                     type="button"
@@ -1454,20 +1415,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </button>
 
                   {showTipoVeiculoDropdown && (
-                    <div 
-                      className="multiselect-dropdown w-64 py-1 max-h-64 overflow-y-auto"
-                      style={{
-                        position: 'fixed',
-                        top: '160px',
-                        left: '350px',
-                        zIndex: 2147483647,
-                        background: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '6px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                        isolation: 'isolate'
-                      }}
-                    >
+                    <div className="absolute top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto" style={{ zIndex: 99999 }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tipos</span>
@@ -1515,7 +1463,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Tags Filter */}
-              <div className="multiselect-container">
+              <div className="relative" style={{ zIndex: 9996 }}>
                 <div className="relative group">
                   <button
                     type="button"
@@ -1532,20 +1480,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </button>
 
                   {showTagsDropdown && (
-                    <div 
-                      className="multiselect-dropdown w-80 py-1 max-h-96 overflow-y-auto"
-                      style={{
-                        position: 'fixed',
-                        top: '160px',
-                        left: '460px',
-                        zIndex: 2147483647,
-                        background: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '6px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                        isolation: 'isolate'
-                      }}
-                    >
+                    <div className="absolute top-full mt-1 w-80 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-96 overflow-y-auto" style={{ zIndex: 99999 }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Tags para ocultar</span>

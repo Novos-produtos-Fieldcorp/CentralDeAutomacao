@@ -186,48 +186,6 @@
   .dark input[type="checkbox"]:checked {
     @apply bg-blue-600 border-blue-600;
   }
-  
-  /* Fix para dropdowns de multisseleção ficarem acima de todos os elementos */
-  .multiselect-dropdown {
-    z-index: 2147483647 !important;
-    position: fixed !important;
-    background: white !important;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
-    border: 1px solid #e5e7eb !important;
-    border-radius: 6px !important;
-  }
-  
-  .dark .multiselect-dropdown {
-    background: rgb(55, 65, 81) !important;
-    border-color: rgb(75, 85, 99) !important;
-  }
-  
-  /* Sobrepor completamente qualquer elemento da página */
-  .multiselect-dropdown * {
-    z-index: inherit !important;
-  }
-  
-  /* Container dos filtros de multisseleção */
-  .multiselect-container {
-    z-index: 2147483646 !important;
-    position: relative !important;
-  }
-  
-  /* Reset completo de z-index para outros elementos */
-  .card, .bg-white, .bg-gray-50, .border, 
-  table, thead, tbody, tr, th, td, div, span, button:not(.multiselect-container button) {
-    z-index: auto !important;
-  }
-  
-  /* Garantir que nada interfira com os dropdowns */
-  body * {
-    position: relative;
-  }
-  
-  .multiselect-dropdown {
-    position: fixed !important;
-    z-index: 2147483647 !important;
-  }
 }
 
 @layer components {
