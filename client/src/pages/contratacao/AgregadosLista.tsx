@@ -1,5 +1,5 @@
   import React, { useState, useEffect, useRef } from 'react';
-  import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag } from 'lucide-react';
+  import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag, CheckCircle, Calendar } from 'lucide-react';
   import WhatsAppAvatar from '../../components/WhatsAppAvatar';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
@@ -1135,431 +1135,445 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
+        <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 p-6 rounded-xl shadow-lg border border-gray-200/70 dark:border-gray-700/70 backdrop-blur-sm">
+          {/* Header com contador e ações */}
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-8 bg-gradient-to-b from-green-500 to-green-600 rounded-full"></div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Agregados</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {filteredContratados.length} de {contratados.length} agregados
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Contador de filtros ativos */}
+              {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
+                ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all') && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs">
+                  <Filter className="w-3 h-3" />
+                  <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
+                </div>
+              )}
+              
+              {/* Botão limpar filtros */}
+              {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
+                ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
+                <button
+                  onClick={() => {
+                    setStatusFilter([]);
+                    setCidadeFilter([]);
+                    setClienteFilter([]);
+                    setAtivoFilter('');
+                    setTipoVeiculoFilter([]);
+                    setDateFilter('all');
+                    setSearchTerm('');
+                  }}
+                  className="flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Limpar
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Campo de busca inteligente */}
+          <div className="mb-4">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-4 flex items-center">
+                <Search className="h-5 w-5 text-gray-400 group-focus-within:text-green-500 transition-colors" />
+              </div>
               <input
                 type="text"
                 placeholder="Buscar por nome, CPF, email ou telefone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full pl-12 pr-12 py-3.5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 shadow-sm group-focus-within:shadow-md"
               />
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               {searchTerm && (
                 <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-
-            <div className="relative" id="status-dropdown">
-              <div className="relative">
-                <button
                   type="button"
-                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                  className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 >
-                  <span className="truncate">
-                    {getFilterButtonText('status')}
-                  </span>
-                  <div className="absolute inset-y-0 right-2 flex items-center">
-                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
-                  </div>
+                  <X className="h-5 w-5" />
                 </button>
-                <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                {statusFilter.length > 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      clearFilter('status');
-                    }}
-                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-              {showStatusDropdown && (
-                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
-                  <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os status</span>
-                    <button 
-                      type="button" 
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setStatusFilter([]);
-                      }}
-                    >
-                      Limpar
-                    </button>
-                  </div>
-                  {[
-                    { value: 'cadastrado', label: 'Cadastrado' },
-                    { value: 'qualificado', label: 'Qualificado' },
-                    { value: 'documentacao', label: 'Documentação' },
-                    { value: 'gestao_risco', label: 'Gestão de Risco' },
-                    { value: 'contrato_enviado', label: 'Contrato Enviado' },
-                    { value: 'contratado', label: 'Contratado' },
-                    { value: 'repescagem', label: 'Repescagem' },
-                    { value: 'rejeitado', label: 'Rejeitado' }
-                  ].map(({ value, label }) => (
-                    <div key={value} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                      <input
-                        type="checkbox"
-                        id={`status-${value}`}
-                        checked={statusFilter.includes(value)}
-                        onChange={() => toggleFilterOption('status', value)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <label htmlFor={`status-${value}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                        {label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
               )}
-            </div>
-
-            <div className="relative">
-              <select
-                value={ativoFilter}
-                onChange={(e) => setAtivoFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
-              >
-                <option value="">Todos (Ativos/Inativos)</option>
-                <option value="active">Somente Ativos</option>
-                <option value="inactive">Somente Inativos</option>
-              </select>
-              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </div>
           </div>
-          
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative" id="cliente-dropdown">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowClienteDropdown(!showClienteDropdown)}
-                  className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
-                >
-                  <span className="truncate">
-                    {getFilterButtonText('cliente')}
-                  </span>
-                  <div className="absolute inset-y-0 right-2 flex items-center">
-                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
-                  </div>
-                </button>
-                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-                {clienteFilter.length > 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      clearFilter('cliente');
-                    }}
-                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-              {showClienteDropdown && (
-                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
-                  <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os clientes</span>
-                    <button 
-                      type="button" 
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setClienteFilter([]);
-                      }}
-                    >
-                      Limpar
-                    </button>
-                  </div>
-                  <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                    <input
-                      type="checkbox"
-                      id="cliente-sem_cliente"
-                      checked={clienteFilter.includes('sem_cliente')}
-                      onChange={() => toggleFilterOption('cliente', 'sem_cliente')}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <label htmlFor="cliente-sem_cliente" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                      Sem cliente
-                    </label>
-                  </div>
-                  {clientes.map(cliente => (
-                    <div key={cliente.cliente_id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                      <input
-                        type="checkbox"
-                        id={`cliente-${cliente.cliente_id}`}
-                        checked={clienteFilter.includes(cliente.cliente_id.toString())}
-                        onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <label htmlFor={`cliente-${cliente.cliente_id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                        {cliente.nome}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            <div className="relative" id="cidade-dropdown">
+          {/* Filtros modernos */}
+          <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
+            <div className="flex flex-wrap gap-2">
+              {/* Status Filter */}
               <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
-                  className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
-                >
-                  <span className="truncate">
-                    {getFilterButtonText('cidade')}
-                  </span>
-                  <div className="absolute inset-y-0 right-2 flex items-center">
-                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showCidadeDropdown ? 'transform rotate-180' : ''}`} />
-                  </div>
-                </button>
-                <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                {cidadeFilter.length > 0 && (
+                <div className="relative group">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      clearFilter('cidade');
-                    }}
-                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
+                    type="button"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
                   >
-                    <X size={14} />
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
+                      <span>
+                        {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
+                      </span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
                   </button>
-                )}
+
+                  {showStatusDropdown && (
+                    <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
+                          <button 
+                            type="button" 
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setStatusFilter([]);
+                            }}
+                          >
+                            Limpar
+                          </button>
+                        </div>
+                      </div>
+                      {[
+                        { value: 'cadastrado', label: 'Cadastrado' },
+                        { value: 'qualificado', label: 'Qualificado' },
+                        { value: 'documentacao', label: 'Documentação' },
+                        { value: 'gestao_risco', label: 'Gestão de Risco' },
+                        { value: 'contrato_enviado', label: 'Contrato Enviado' },
+                        { value: 'contratado', label: 'Contratado' },
+                        { value: 'repescagem', label: 'Repescagem' },
+                        { value: 'rejeitado', label: 'Rejeitado' }
+                      ].map(({ value, label }) => (
+                        <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                              checked={statusFilter.includes(value)}
+                              onChange={() => toggleFilterOption('status', value)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-200">{label}</span>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-              {showCidadeDropdown && (
-                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
-                  <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as cidades</span>
-                    <button 
-                      type="button" 
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCidadeFilter([]);
-                      }}
-                    >
-                      Limpar
-                    </button>
-                  </div>
-                  {cidades
-                    .filter((cidade): cidade is string => cidade != null)
-                    .map((cidade, index) => (
-                      <div key={index} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                        <input
-                          type="checkbox"
-                          id={`cidade-${index}`}
-                          checked={cidadeFilter.includes(cidade)}
-                          onChange={() => toggleFilterOption('cidade', cidade)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <label htmlFor={`cidade-${index}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                          {cidade}
+
+
+
+              {/* Cliente Filter */}
+              <div className="relative">
+                <div className="relative group">
+                  <button
+                    type="button"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                    onClick={() => setShowClienteDropdown(!showClienteDropdown)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                      </svg>
+                      <span>
+                        {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
+                      </span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showClienteDropdown && (
+                    <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
+                          <button 
+                            type="button" 
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setClienteFilter([]);
+                            }}
+                          >
+                            Limpar
+                          </button>
+                        </div>
+                      </div>
+                      <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                            checked={clienteFilter.includes('sem_cliente')}
+                            onChange={() => toggleFilterOption('cliente', 'sem_cliente')}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-200">Sem cliente</span>
                         </label>
                       </div>
-                    ))
-                  }
-                </div>
-              )}
-            </div>
-
-            <div className="relative" id="tipo-veiculo-dropdown">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
-                  className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
-                >
-                  <span className="truncate">
-                    {getFilterButtonText('tipoVeiculo')}
-                  </span>
-                  <div className="absolute inset-y-0 right-2 flex items-center">
-                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showTipoVeiculoDropdown ? 'transform rotate-180' : ''}`} />
-                  </div>
-                </button>
-                <Truck className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                {tipoVeiculoFilter.length > 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      clearFilter('tipoVeiculo');
-                    }}
-                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-              {showTipoVeiculoDropdown && (
-                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
-                  <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os tipos de veículo</span>
-                    <button 
-                      type="button" 
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTipoVeiculoFilter([]);
-                      }}
-                    >
-                      Limpar
-                    </button>
-                  </div>
-                  <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                    <input
-                      type="checkbox"
-                      id="tipo-veiculo-sem_veiculo"
-                      checked={tipoVeiculoFilter.includes('sem_veiculo')}
-                      onChange={() => toggleFilterOption('tipoVeiculo', 'sem_veiculo')}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <label htmlFor="tipo-veiculo-sem_veiculo" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                      Sem veículo
-                    </label>
-                  </div>
-                  {tiposVeiculo.map((tipo, index) => (
-                    <div key={index} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                      <input
-                        type="checkbox"
-                        id={`tipo-veiculo-${index}`}
-                        checked={tipoVeiculoFilter.includes(tipo)}
-                        onChange={() => toggleFilterOption('tipoVeiculo', tipo)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <label htmlFor={`tipo-veiculo-${index}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                        {tipo}
-                      </label>
+                      {clientes.map(cliente => (
+                        <div key={cliente.cliente_id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                              checked={clienteFilter.includes(cliente.cliente_id.toString())}
+                              onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-200">{cliente.nome}</span>
+                          </label>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-            </div>
-
-            <div className="relative" id="tags-dropdown">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowTagsDropdown(!showTagsDropdown)}
-                  className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
-                >
-                  <span className="truncate">Tags visíveis</span>
-                  <div className="absolute inset-y-0 right-2 flex items-center">
-                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showTagsDropdown ? 'transform rotate-180' : ''}`} />
-                  </div>
-                </button>
-                <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                {visibleTags.length > 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setVisibleTags([]);
-                    }}
-                    className="absolute right-9 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10 p-1"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
               </div>
-              {showTagsDropdown && (
-                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
-                  <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Tags para ocultar</span>
-                    <button 
-                      type="button" 
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setVisibleTags([]);
-                      }}
-                    >
-                      Limpar
-                    </button>
-                  </div>
-                  {tags.map(tag => (
-                    <div key={tag.id} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                      <input
-                        type="checkbox"
-                        id={`tag-visible-${tag.id}`}
-                        checked={visibleTags.includes(tag.id.toString())}
-                        onChange={() => {
-                          const tagId = tag.id.toString();
-                          setVisibleTags(prev => 
-                            prev.includes(tagId) 
-                              ? prev.filter(id => id !== tagId)
-                              : [...prev, tagId]
-                          );
-                        }}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <label htmlFor={`tag-visible-${tag.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300 flex items-center">
-                        <span
-                          className="inline-block w-3 h-3 rounded-full mr-2"
-                          style={{ backgroundColor: tag.cor }}
-                        />
-                        {tag.nome}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
 
-          <div className="mt-4 flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none truncate"
-              >
-                <option value="all">Todos os períodos</option>
-                <option value="today">Hoje</option>
-                <option value="2days">Últimos 2 dias</option>
-                <option value="15days">Últimos 15 dias</option>
-                <option value="30days">Último mês</option>
-                <option value="custom">Personalizado</option>
-              </select>
-              <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
-              <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              {/* Cidade Filter */}
+              <div className="relative">
+                <div className="relative group">
+                  <button
+                    type="button"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                    onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>
+                        {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
+                      </span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showCidadeDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showCidadeDropdown && (
+                    <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
+                          <button 
+                            type="button" 
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCidadeFilter([]);
+                            }}
+                          >
+                            Limpar
+                          </button>
+                        </div>
+                      </div>
+                      {cidades
+                        .filter((cidade): cidade is string => cidade != null)
+                        .map((cidade) => (
+                          <div key={cidade} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                                checked={cidadeFilter.includes(cidade)}
+                                onChange={() => toggleFilterOption('cidade', cidade)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-200">{cidade}</span>
+                            </label>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tipo Veículo Filter */}
+              <div className="relative">
+                <div className="relative group">
+                  <button
+                    type="button"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                    onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-4 w-4" />
+                      <span>
+                        {tipoVeiculoFilter.length === 0 ? 'Veículo' : `Veículo (${tipoVeiculoFilter.length})`}
+                      </span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showTipoVeiculoDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showTipoVeiculoDropdown && (
+                    <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tipos</span>
+                          <button 
+                            type="button" 
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTipoVeiculoFilter([]);
+                            }}
+                          >
+                            Limpar
+                          </button>
+                        </div>
+                      </div>
+                      <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                            checked={tipoVeiculoFilter.includes('sem_veiculo')}
+                            onChange={() => toggleFilterOption('tipoVeiculo', 'sem_veiculo')}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-200">Sem veículo</span>
+                        </label>
+                      </div>
+                      {tiposVeiculo.map((tipo) => (
+                        <div key={tipo} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                              checked={tipoVeiculoFilter.includes(tipo)}
+                              onChange={() => toggleFilterOption('tipoVeiculo', tipo)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-200">{tipo}</span>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tags Filter */}
+              <div className="relative">
+                <div className="relative group">
+                  <button
+                    type="button"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                    onClick={() => setShowTagsDropdown(!showTagsDropdown)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      <span>
+                        {visibleTags.length === 0 ? 'Tags' : `Tags (${visibleTags.length})`}
+                      </span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showTagsDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showTagsDropdown && (
+                    <div className="absolute z-[99999] top-full mt-1 w-80 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-96 overflow-y-auto">
+                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Tags para ocultar</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setVisibleTags([]);
+                            }}
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            Mostrar todas
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-1 px-3 py-2">
+                        {tags.map((tag) => (
+                          <label key={tag.id} className="flex items-center cursor-pointer py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-600 rounded">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                              checked={visibleTags.includes(tag.id.toString())}
+                              onChange={() => {
+                                const tagId = tag.id.toString();
+                                setVisibleTags(prev => 
+                                  prev.includes(tagId) 
+                                    ? prev.filter(id => id !== tagId)
+                                    : [...prev, tagId]
+                                );
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span
+                              className="inline-block w-3 h-3 rounded-full mr-2"
+                              style={{ backgroundColor: tag.cor }}
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-200">{tag.nome}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Status Ativo Filter */}
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
+                  <CheckCircle className="h-4 w-4 text-gray-400" />
+                </div>
+                <select
+                  value={ativoFilter}
+                  onChange={(e) => setAtivoFilter(e.target.value)}
+                  className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[140px]"
+                >
+                  <option value="">Ativo</option>
+                  <option value="active">Ativo (Sim)</option>
+                  <option value="inactive">Ativo (Não)</option>
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
+
+              {/* Período Filter */}
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                </div>
+                <select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[140px]"
+                >
+                  <option value="all">Período</option>
+                  <option value="today">Hoje</option>
+                  <option value="2days">2 dias</option>
+                  <option value="15days">15 dias</option>
+                  <option value="30days">30 dias</option>
+                  <option value="custom">Personalizado</option>
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
+
             </div>
+            
+            {/* Botão Novo Agregado */}
             <button
               onClick={() => setShowAddModal(true)}
-              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
-              aria-label="Novo Agregado"
+              className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
+              <span>Novo Agregado</span>
             </button>
           </div>
+        </div>
 
           {dateFilter === 'custom' && (
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1587,9 +1601,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
             </div>
           )}
-        </div>
 
-        <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
+        <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
           <div className="overflow-hidden">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
               <div className="flex items-center">
@@ -1605,7 +1618,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
             </div>
             
-            <div className="relative">
+            <div>
               <div ref={tableContainerRef} className="overflow-x-auto w-full">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead>

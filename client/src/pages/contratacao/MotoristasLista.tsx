@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, ArrowLeftRight, AlertTriangle, XCircle, Tag } from 'lucide-react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, ArrowLeftRight, AlertTriangle, XCircle, Tag, CheckCircle, Calendar } from 'lucide-react';
 import WhatsAppAvatar from '../../components/WhatsAppAvatar';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista } from '../../types/database';
@@ -249,6 +249,7 @@ const MotoristasLista = () => {
   const [endereco] = useState<any | null>(null);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [isNovoMotoristaModalOpen, setIsNovoMotoristaModalOpen] = useState(false);
 
   // Role change modal state
   const [roleChangeModal, setRoleChangeModal] = useState<{
@@ -426,10 +427,10 @@ const MotoristasLista = () => {
 
       setMotoristas(motoristasAgrupados || []);
       
-      // Buscar tags para cada motorista
-      if (motoristasAgrupados && motoristasAgrupados.length > 0) {
-        await fetchAllMotoristaTags(motoristasAgrupados);
-      }
+      // Desabilitado temporariamente devido a problemas de conectividade
+      // if (motoristasAgrupados && motoristasAgrupados.length > 0) {
+      //   await fetchAllMotoristaTags(motoristasAgrupados);
+      // }
     } catch (error) {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
@@ -440,24 +441,42 @@ const MotoristasLista = () => {
 
   const fetchMotoristaTags = async (motoristaId: number) => {
     try {
-      const response = await fetch(`/api/motoristas/${motoristaId}/tags`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+      
+      const response = await fetch(`/api/motoristas/${motoristaId}/tags`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         const tagsData = await response.json();
         setMotoristaTags(prev => ({ ...prev, [motoristaId]: tagsData }));
       }
     } catch (error) {
-      console.error('Erro ao buscar tags do motorista:', error);
+      // Silenciar erro para não quebrar a UI - tags são opcionais
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.warn(`Tags não disponíveis para motorista ${motoristaId}`);
+      }
     }
   };
 
   const fetchAllMotoristaTags = async (motoristas: ViewMotorista[]) => {
-    const promises = motoristas.map(motorista => {
-      if (motorista.motorista_id) {
-        return fetchMotoristaTags(motorista.motorista_id);
-      }
-      return Promise.resolve();
-    });
-    await Promise.all(promises);
+    try {
+      const promises = motoristas.map(motorista => {
+        if (motorista.motorista_id) {
+          return fetchMotoristaTags(motorista.motorista_id).catch(() => {
+            // Ignorar falhas individuais para não quebrar o Promise.all
+            return Promise.resolve();
+          });
+        }
+        return Promise.resolve();
+      });
+      await Promise.allSettled(promises); // Usar allSettled ao invés de all
+    } catch (error) {
+      console.warn('Erro ao carregar tags dos motoristas:', error);
+    }
   };
 
   // Cores padrão para os clientes (apenas fundo, sem borda)
@@ -876,7 +895,7 @@ const MotoristasLista = () => {
     
     // Lógica para filtro de tags (multiseleção)
     let tagMatch = true;
-    if (tagFilter.length > 0) {
+    if (Array.isArray(tagFilter) && tagFilter.length > 0) {
       const motoristaTagsList = motoristaTags[motorista.motorista_id] || [];
       const motoristaTagIds = motoristaTagsList.map((tag: any) => tag.id.toString());
       tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
@@ -978,41 +997,85 @@ const MotoristasLista = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
-          {/* Campo de busca */}
-          <div className="flex-1 min-w-0 max-w-md">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Buscar por nome, CPF, email ou telefone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm h-9"
-              />
-              <div className="absolute inset-y-0 left-3 flex items-center">
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm('')}
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+      <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 p-6 rounded-xl shadow-lg border border-gray-200/70 dark:border-gray-700/70 backdrop-blur-sm">
+        {/* Header com contador e ações */}
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Motoristas</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {filteredMotoristas.length} de {motoristas.length} motoristas
+              </p>
             </div>
           </div>
+          
+          <div className="flex items-center gap-2">
+            {/* Contador de filtros ativos */}
+            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
+              ativoFilter !== '' || tagFilter.length > 0 || dateFilter !== 'all') && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
+                <Filter className="w-3 h-3" />
+                <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tagFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
+              </div>
+            )}
+            
+            {/* Botão limpar filtros */}
+            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
+              ativoFilter !== '' || tagFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
+              <button
+                onClick={() => {
+                  setStatusFilter([]);
+                  setCidadeFilter([]);
+                  setClienteFilter([]);
+                  setAtivoFilter('');
+                  setTagFilter([]);
+                  setDateFilter('all');
+                  setSearchTerm('');
+                }}
+                className="flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Limpar
+              </button>
+            )}
+          </div>
+        </div>
 
-          {/* Filtros agrupados */}
-          <div className="flex flex-wrap gap-2 items-center">
+        {/* Campo de busca inteligente */}
+        <div className="mb-4">
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-4 flex items-center">
+              <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar por nome, CPF, email ou telefone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-12 py-3.5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm group-focus-within:shadow-md"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Filtros modernos */}
+        <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
+          <div className="flex flex-wrap gap-2">
             {/* Status Filter */}
             <div className="relative">
               <div className="relative group" ref={statusDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
                   onClick={handleToggleStatusDropdown}
                 >
                   <div className="flex items-center gap-2">
@@ -1025,7 +1088,7 @@ const MotoristasLista = () => {
                 </button>
             
               {showStatusDropdown && (
-                <div className="absolute z-50 mt-1 w-64 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
@@ -1073,7 +1136,7 @@ const MotoristasLista = () => {
               <div className="relative group" ref={cidadeDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
                   onClick={handleToggleCidadeDropdown}
                 >
                   <div className="flex items-center gap-2">
@@ -1086,7 +1149,7 @@ const MotoristasLista = () => {
                 </button>
             
               {showCidadeDropdown && (
-                <div className="absolute z-50 mt-1 w-64 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
@@ -1132,7 +1195,7 @@ const MotoristasLista = () => {
               <div className="relative group" ref={clienteDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
                   onClick={handleToggleClienteDropdown}
                 >
                   <div className="flex items-center gap-2">
@@ -1150,7 +1213,7 @@ const MotoristasLista = () => {
                 </button>
             
               {showClienteDropdown && (
-                <div className="absolute z-50 mt-1 w-64 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
@@ -1210,63 +1273,14 @@ const MotoristasLista = () => {
               </div>
             </div>
 
-            {/* Status Ativo Filter */}
-            <div className="relative">
-              <div className="relative group" ref={ativoDropdownRef}>
-                <button
-                  type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
-                  onClick={handleToggleAtivoDropdown}
-                >
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    <span>
-                      {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
-                    </span>
-                  </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showAtivoDropdown ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {showAtivoDropdown && (
-                  <div className="absolute z-50 mt-1 w-48 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600">
-                    <div 
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                      onClick={() => {
-                        setAtivoFilter('');
-                        setShowAtivoDropdown(false);
-                      }}
-                    >
-                      Todos
-                    </div>
-                    <div 
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                      onClick={() => {
-                        setAtivoFilter('ativo');
-                        setShowAtivoDropdown(false);
-                      }}
-                    >
-                      Somente Ativos
-                    </div>
-                    <div 
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                      onClick={() => {
-                        setAtivoFilter('inativo');
-                        setShowAtivoDropdown(false);
-                      }}
-                    >
-                      Somente Inativos
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+
 
             {/* Tags Filter */}
             <div className="relative">
               <div className="relative group" ref={tagDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
                   onClick={handleToggleTagDropdown}
                 >
                   <div className="flex items-center gap-2">
@@ -1278,7 +1292,7 @@ const MotoristasLista = () => {
                   <ChevronDown className={`h-4 w-4 transition-transform ${showTagDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showTagDropdown && (
-                  <div className="absolute z-50 mt-1 w-80 bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-96 overflow-y-auto">
+                  <div className="absolute z-[99999] top-full mt-1 w-80 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-96 overflow-y-auto">
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Filtros de Tags</span>
@@ -1372,12 +1386,66 @@ const MotoristasLista = () => {
               </div>
             </div>
 
+            {/* Status Ativo Filter */}
+            <div className="relative">
+              <div className="relative group" ref={ativoDropdownRef}>
+                <button
+                  type="button"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                  onClick={handleToggleAtivoDropdown}
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>
+                      {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
+                    </span>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showAtivoDropdown ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {showAtivoDropdown && (
+                  <div className="absolute z-[99999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Todos
+                    </div>
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('ativo');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Somente Ativos
+                    </div>
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('inativo');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Somente Inativos
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Período Filter */}
             <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
+                <Calendar className="h-4 w-4 text-gray-400" />
+              </div>
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 min-w-[120px]"
+                className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[140px]"
               >
                 <option value="all">Período</option>
                 <option value="today">Hoje</option>
@@ -1389,15 +1457,16 @@ const MotoristasLista = () => {
               <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
 
-            {/* Botão Novo Motorista */}
-            <button
-              onClick={() => setIsNovoMotoristaModalOpen(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm h-9 min-w-[100px] justify-center"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Novo</span>
-            </button>
           </div>
+          
+          {/* Botão Novo Motorista */}
+          <button
+            onClick={() => setIsNovoMotoristaModalOpen(true)}
+            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Novo Motorista</span>
+          </button>
         </div>
 
         {dateFilter === 'custom' && (
@@ -1943,6 +2012,12 @@ const MotoristasLista = () => {
             return motorista?.telefone ? String(motorista.telefone) : '';
           })
           .filter(Boolean)}
+      />
+
+      <AddMotoristaModal
+        isOpen={isNovoMotoristaModalOpen}
+        onClose={() => setIsNovoMotoristaModalOpen(false)}
+        onSuccess={fetchMotoristas}
       />
     </div>
   );
