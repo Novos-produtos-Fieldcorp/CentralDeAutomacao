@@ -1149,7 +1149,7 @@ const MotoristasLista = () => {
                 </button>
             
               {showCidadeDropdown && (
-                <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
