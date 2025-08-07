@@ -1,6 +1,6 @@
 // src/pages/contratacao/ContratacaoKanban.tsx
-import React, { useState, useEffect } from 'react';
-import { Search, FilePen, MessageCircle, Filter, X, User, ChevronLeft, ChevronRight, Truck, Phone, MapPin } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, FilePen, MessageCircle, Filter, X, User, ChevronLeft, ChevronRight, Truck, Phone, MapPin, ChevronDown, Tag } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
@@ -57,6 +57,32 @@ const ContratacaoKanban = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedMotorista, setSelectedMotorista] = useState<MotoristaWithDetails | null>(null);
+  
+  // Advanced filters states
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
+  const [clienteFilter, setClienteFilter] = useState<string[]>([]);
+  const [ativoFilter, setAtivoFilter] = useState('');
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  
+  // Dropdown states
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
+  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
+  const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
+  const [showTagsDropdown, setShowTagsDropdown] = useState(false);
+  
+  // Data for dropdowns
+  const [cidades, setCidades] = useState<Array<{nome_cidade: string}>>([]);
+  const [clientes, setClientes] = useState<Array<{cliente_id: number, nome: string}>>([]);
+  const [tags, setTags] = useState<Array<{id: number, nome: string}>>([]);
+  
+  // Refs for dropdown positioning
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const cidadeDropdownRef = useRef<HTMLDivElement>(null);
+  const clienteDropdownRef = useRef<HTMLDivElement>(null);
+  const ativoDropdownRef = useRef<HTMLDivElement>(null);
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
   
   // Estados para os modais
   const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
@@ -660,6 +686,94 @@ const ContratacaoKanban = () => {
     })));
   };
 
+  // Advanced filter functions
+  const fetchCidades = async () => {
+    if (!companyId) return;
+    try {
+      const { data, error } = await supabase
+        .from('end_motorista')
+        .select('nome_cidade')
+        .eq('company_id', companyId)
+        .not('nome_cidade', 'is', null)
+        .order('nome_cidade');
+
+      if (error) throw error;
+      const uniqueCidades = Array.from(new Set(data.map(item => item.nome_cidade))).map(nome_cidade => ({ nome_cidade }));
+      setCidades(uniqueCidades);
+    } catch (error) {
+      console.error('Erro ao carregar cidades:', error);
+    }
+  };
+
+  const fetchClientes = async () => {
+    if (!companyId) return;
+    try {
+      const { data, error } = await supabase
+        .from('cliente')
+        .select('cliente_id, nome')
+        .eq('company_id', companyId)
+        .eq('ativo', true)
+        .order('nome');
+
+      if (error) throw error;
+      setClientes(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar clientes:', error);
+    }
+  };
+
+  // Load filter data on mount
+  useEffect(() => {
+    if (companyId) {
+      fetchCidades();
+      fetchClientes();
+      // fetchTags(); // Temporarily disabled
+    }
+  }, [companyId]);
+
+  // Dropdown control functions
+  const handleToggleStatusDropdown = () => setShowStatusDropdown(!showStatusDropdown);
+  const handleToggleCidadeDropdown = () => setShowCidadeDropdown(!showCidadeDropdown);
+  const handleToggleClienteDropdown = () => setShowClienteDropdown(!showClienteDropdown);
+  const handleToggleAtivoDropdown = () => setShowAtivoDropdown(!showAtivoDropdown);
+  const handleToggleTagDropdown = () => setShowTagsDropdown(!showTagsDropdown);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setShowStatusDropdown(false);
+      }
+      if (cidadeDropdownRef.current && !cidadeDropdownRef.current.contains(event.target as Node)) {
+        setShowCidadeDropdown(false);
+      }
+      if (clienteDropdownRef.current && !clienteDropdownRef.current.contains(event.target as Node)) {
+        setShowClienteDropdown(false);
+      }
+      if (ativoDropdownRef.current && !ativoDropdownRef.current.contains(event.target as Node)) {
+        setShowAtivoDropdown(false);
+      }
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
+        setShowTagsDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Clear all filters function
+  const clearAllFilters = () => {
+    setStatusFilter([]);
+    setCidadeFilter([]);
+    setClienteFilter([]);
+    setAtivoFilter('');
+    setTagFilter([]);
+    setFuncaoFilter('todos');
+    setSearchTerm('');
+    setDebouncedSearchTerm('');
+  };
+
   if (loading) {
     return (
       <LoadingSpinner />
@@ -695,74 +809,326 @@ const ContratacaoKanban = () => {
 
   return (
     <div className="space-y-4 h-[calc(100vh-12rem)]">
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <Filter size={20} className="text-gray-400" />
-            <div className="flex gap-2">
-              {filterButtons.map(button => (
-                <button
-                  key={button.value}
-                  onClick={() => setFuncaoFilter(button.value as 'todos' | 'Motorista' | 'Agregado')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    funcaoFilter === button.value
-                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {button.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          {/* Search input */}
-          <div className="relative w-full md:w-auto md:flex-1 max-w-md">
+      {/* Modern Search and Filter Section */}
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-lg border border-purple-200 dark:border-gray-600">
+        {/* Search Bar */}
+        <div className="p-6 border-b border-purple-200 dark:border-gray-600">
+          <div className="relative max-w-2xl">
             <input
               type="text"
-              placeholder="Buscar por nome ou CPF..."
+              placeholder="🔍 Buscar por nome, CPF, telefone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100"
+              className="w-full pl-12 pr-12 py-3 text-base bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-purple-300 dark:border-gray-500 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-gray-900 dark:text-gray-100 transition-all duration-300 shadow-sm"
             />
             {isSearching ? (
-              <div className="absolute left-3 top-2.5">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+              <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-500 border-t-transparent"></div>
               </div>
             ) : (
-              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             )}
             {searchTerm && (
               <button
                 onClick={clearSearch}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
-                <X size={16} />
+                <X size={20} />
               </button>
             )}
           </div>
-          
-          {/* Items per page selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              Itens por coluna:
-            </span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-              className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            >
-              <option value={100}>100</option>
-              <option value={200}>200</option>
-              <option value={500}>500</option>
-              <option value={1000}>1000</option>
-              <option value={2000}>2000</option>
-              <option value={3000}>3000</option>
-              <option value={5000}>5000</option>
-              <option value={7000}>7000</option>
-            </select>
+        </div>
+
+        {/* Advanced Filters */}
+        <div className="px-6 py-4">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Function Filter - Keep existing functionality */}
+            <div className="flex items-center gap-2">
+              <Filter size={18} className="text-gray-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo:</span>
+              <div className="flex gap-2">
+                {filterButtons.map(button => (
+                  <button
+                    key={button.value}
+                    onClick={() => setFuncaoFilter(button.value as 'todos' | 'Motorista' | 'Agregado')}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      funcaoFilter === button.value
+                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 shadow-sm'
+                        : 'bg-white/60 text-gray-600 hover:bg-white hover:shadow-sm dark:bg-gray-700/60 dark:text-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {button.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Status Filter */}
+            <div className="relative" ref={statusDropdownRef}>
+              <button
+                type="button"
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[120px] justify-between"
+                onClick={handleToggleStatusDropdown}
+              >
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>
+                    {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
+                  </span>
+                </div>
+                <ChevronDown className={`h-4 w-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showStatusDropdown && (
+                <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setStatusFilter([]);
+                        }}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Limpar
+                      </button>
+                    </div>
+                  </div>
+                  {columns.map(column => (
+                    <div key={column.id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                          checked={statusFilter.includes(column.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setStatusFilter([...statusFilter, column.id]);
+                            } else {
+                              setStatusFilter(statusFilter.filter(id => id !== column.id));
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{column.title}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Cidade Filter */}
+            <div className="relative" ref={cidadeDropdownRef}>
+              <button
+                type="button"
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[110px] justify-between"
+                onClick={handleToggleCidadeDropdown}
+              >
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  <span>
+                    {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
+                  </span>
+                </div>
+                <ChevronDown className={`h-4 w-4 transition-transform ${showCidadeDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showCidadeDropdown && (
+                <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCidadeFilter([]);
+                        }}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Limpar
+                      </button>
+                    </div>
+                  </div>
+                  {cidades.map(cidade => (
+                    <div key={cidade.nome_cidade} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                          checked={cidadeFilter.includes(cidade.nome_cidade)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCidadeFilter([...cidadeFilter, cidade.nome_cidade]);
+                            } else {
+                              setCidadeFilter(cidadeFilter.filter(c => c !== cidade.nome_cidade));
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{cidade.nome_cidade}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Cliente Filter */}
+            <div className="relative" ref={clienteDropdownRef}>
+              <button
+                type="button"
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[110px] justify-between"
+                onClick={handleToggleClienteDropdown}
+              >
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>
+                    {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
+                  </span>
+                </div>
+                <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              {showClienteDropdown && (
+                <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setClienteFilter([]);
+                        }}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Limpar
+                      </button>
+                    </div>
+                  </div>
+                  <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                        checked={clienteFilter.includes('0')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setClienteFilter([...clienteFilter, '0']);
+                          } else {
+                            setClienteFilter(clienteFilter.filter(id => id !== '0'));
+                          }
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-200">Sem cliente</span>
+                    </label>
+                  </div>
+                  {clientes.map(cliente => (
+                    <div key={cliente.cliente_id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                          checked={clienteFilter.includes(cliente.cliente_id.toString())}
+                          onChange={(e) => {
+                            const clienteId = cliente.cliente_id.toString();
+                            if (e.target.checked) {
+                              setClienteFilter([...clienteFilter, clienteId]);
+                            } else {
+                              setClienteFilter(clienteFilter.filter(id => id !== clienteId));
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{cliente.nome}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Status Ativo Filter */}
+            <div className="relative" ref={ativoDropdownRef}>
+              <button
+                type="button"
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                onClick={handleToggleAtivoDropdown}
+              >
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>
+                    {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
+                  </span>
+                </div>
+                <ChevronDown className={`h-4 w-4 transition-transform ${showAtivoDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showAtivoDropdown && (
+                <div className="absolute z-[99999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
+                  <div 
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-purple-50 dark:bg-purple-900/30' : ''}`}
+                    onClick={() => {
+                      setAtivoFilter('');
+                      setShowAtivoDropdown(false);
+                    }}
+                  >
+                    Todos
+                  </div>
+                  <div 
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-purple-50 dark:bg-purple-900/30' : ''}`}
+                    onClick={() => {
+                      setAtivoFilter('ativo');
+                      setShowAtivoDropdown(false);
+                    }}
+                  >
+                    Somente Ativos
+                  </div>
+                  <div 
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-purple-50 dark:bg-purple-900/30' : ''}`}
+                    onClick={() => {
+                      setAtivoFilter('inativo');
+                      setShowAtivoDropdown(false);
+                    }}
+                  >
+                    Somente Inativos
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Items per page selector */}
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Itens por coluna:
+              </span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={500}>500</option>
+                <option value={1000}>1000</option>
+                <option value={2000}>2000</option>
+                <option value={3000}>3000</option>
+                <option value={5000}>5000</option>
+                <option value={7000}>7000</option>
+              </select>
+            </div>
+
+            {/* Clear all filters button */}
+            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || ativoFilter || funcaoFilter !== 'todos' || searchTerm) && (
+              <button
+                onClick={clearAllFilters}
+                className="px-3 py-2 text-sm bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50 rounded-md transition-colors flex items-center gap-2"
+              >
+                <X size={16} />
+                Limpar Filtros
+              </button>
+            )}
           </div>
         </div>
       </div>
