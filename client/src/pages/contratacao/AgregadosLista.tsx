@@ -1243,7 +1243,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                     onClick={() => toggleDropdown('status')}
                   >
                     <div className="flex items-center gap-2">
@@ -1252,7 +1252,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
                       </span>
                     </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showStatusDropdown && (
@@ -1315,7 +1314,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                     onClick={() => toggleDropdown('cliente')}
                   >
                     <div className="flex items-center gap-2">
@@ -1329,7 +1328,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
                       </span>
                     </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showClienteDropdown && (
                     <div 
@@ -1392,7 +1390,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                     onClick={() => toggleDropdown('cidade')}
                   >
                     <div className="flex items-center gap-2">
@@ -1401,7 +1399,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
                       </span>
                     </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showCidadeDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showCidadeDropdown && (
@@ -1456,7 +1453,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                     onClick={() => toggleDropdown('tipoVeiculo')}
                   >
                     <div className="flex items-center gap-2">
@@ -1465,7 +1462,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         {tipoVeiculoFilter.length === 0 ? 'Veículo' : `Veículo (${tipoVeiculoFilter.length})`}
                       </span>
                     </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showTipoVeiculoDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showTipoVeiculoDropdown && (
@@ -1529,7 +1525,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                     onClick={() => toggleDropdown('tags')}
                   >
                     <div className="flex items-center gap-2">
@@ -1538,7 +1534,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         {visibleTags.length === 0 ? 'Tags' : `Tags (${visibleTags.length})`}
                       </span>
                     </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showTagsDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showTagsDropdown && (
@@ -1609,7 +1604,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   <option value="active">Ativo (Sim)</option>
                   <option value="inactive">Ativo (Não)</option>
                 </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               </div>
 
               {/* Período Filter */}
@@ -1629,7 +1623,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   <option value="30days">30 dias</option>
                   <option value="custom">Personalizado</option>
                 </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               </div>
 
             </div>

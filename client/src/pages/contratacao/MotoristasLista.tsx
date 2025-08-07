@@ -1075,7 +1075,7 @@ const MotoristasLista = () => {
               <div className="relative group" ref={statusDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                   onClick={handleToggleStatusDropdown}
                 >
                   <div className="flex items-center gap-2">
@@ -1084,7 +1084,7 @@ const MotoristasLista = () => {
                       {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
                     </span>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
+
                 </button>
             
               {showStatusDropdown && (
@@ -1144,7 +1144,7 @@ const MotoristasLista = () => {
               <div className="relative group" ref={cidadeDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                   onClick={handleToggleCidadeDropdown}
                 >
                   <div className="flex items-center gap-2">
@@ -1153,7 +1153,7 @@ const MotoristasLista = () => {
                       {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
                     </span>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showCidadeDropdown ? 'rotate-180' : ''}`} />
+
                 </button>
             
               {showCidadeDropdown && (
@@ -1211,7 +1211,7 @@ const MotoristasLista = () => {
               <div className="relative group" ref={clienteDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                   onClick={handleToggleClienteDropdown}
                 >
                   <div className="flex items-center gap-2">
@@ -1225,7 +1225,7 @@ const MotoristasLista = () => {
                       {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
                     </span>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
+
                 </button>
             
               {showClienteDropdown && (
@@ -1304,7 +1304,7 @@ const MotoristasLista = () => {
               <div className="relative group" ref={tagDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                   onClick={handleToggleTagDropdown}
                 >
                   <div className="flex items-center gap-2">
@@ -1313,7 +1313,7 @@ const MotoristasLista = () => {
                       {tagFilter.length === 0 ? 'Tags' : `Tags (${tagFilter.length})`}
                     </span>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showTagDropdown ? 'rotate-180' : ''}`} />
+
                 </button>
                 {showTagDropdown && (
                   <div 
@@ -1423,7 +1423,7 @@ const MotoristasLista = () => {
               <div className="relative group" ref={ativoDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                   onClick={handleToggleAtivoDropdown}
                 >
                   <div className="flex items-center gap-2">
@@ -1432,7 +1432,6 @@ const MotoristasLista = () => {
                       {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
                     </span>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showAtivoDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {showAtivoDropdown && (
@@ -1486,7 +1485,6 @@ const MotoristasLista = () => {
                 <option value="30days">30 dias</option>
                 <option value="custom">Personalizado</option>
               </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
 
           </div>
