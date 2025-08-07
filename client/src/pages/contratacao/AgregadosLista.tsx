@@ -162,6 +162,36 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
     const [endereco, setEndereco] = useState<EnderecoState | null>(null);
     
+    // Função para controlar que apenas um dropdown fique aberto
+    const closeAllDropdowns = () => {
+      setShowStatusDropdown(false);
+      setShowClienteDropdown(false);
+      setShowCidadeDropdown(false);
+      setShowTipoVeiculoDropdown(false);
+      setShowTagsDropdown(false);
+    };
+
+    const toggleDropdown = (dropdownType: string) => {
+      closeAllDropdowns();
+      switch(dropdownType) {
+        case 'status':
+          setShowStatusDropdown(true);
+          break;
+        case 'cliente':
+          setShowClienteDropdown(true);
+          break;
+        case 'cidade':
+          setShowCidadeDropdown(true);
+          break;
+        case 'tipoVeiculo':
+          setShowTipoVeiculoDropdown(true);
+          break;
+        case 'tags':
+          setShowTagsDropdown(true);
+          break;
+      }
+    };
+    
     // Atualiza o endereco quando o selectedMotorista mudar
     useEffect(() => {
       if (selectedMotorista) {
@@ -1209,12 +1239,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
             <div className="flex flex-wrap gap-2">
               {/* Status Filter */}
-              <div className="relative z-[50]">
+              <div className="relative" style={{ position: 'relative' }}>
                 <div className="relative group">
                   <button
                     type="button"
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
-                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                    onClick={() => toggleDropdown('status')}
                   >
                     <div className="flex items-center gap-2">
                       <Filter className="h-4 w-4" />
@@ -1226,9 +1256,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </button>
 
                   {showStatusDropdown && (
-                    <div className="absolute z-[999999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-2xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto" style={{ 
-                      zIndex: 999999999
-                    }}>
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-2xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64"
+                      style={{ 
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        marginTop: '4px',
+                        zIndex: 999999
+                      }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
@@ -1275,12 +1311,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
 
               {/* Cliente Filter */}
-              <div className="relative z-[40]">
+              <div className="relative" style={{ position: 'relative' }}>
                 <div className="relative group">
                   <button
                     type="button"
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
-                    onClick={() => setShowClienteDropdown(!showClienteDropdown)}
+                    onClick={() => toggleDropdown('cliente')}
                   >
                     <div className="flex items-center gap-2">
                       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1296,7 +1332,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showClienteDropdown && (
-                    <div className="absolute z-[999999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64"
+                      style={{ 
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        marginTop: '4px',
+                        zIndex: 999999
+                      }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
@@ -1344,12 +1388,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Cidade Filter */}
-              <div className="relative" style={{ zIndex: 9998 }}>
+              <div className="relative" style={{ position: 'relative' }}>
                 <div className="relative group">
                   <button
                     type="button"
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
-                    onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
+                    onClick={() => toggleDropdown('cidade')}
                   >
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
@@ -1361,7 +1405,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </button>
 
                   {showCidadeDropdown && (
-                    <div className="absolute z-[999999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64"
+                      style={{ 
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        marginTop: '4px',
+                        zIndex: 999999
+                      }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
@@ -1400,12 +1452,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Tipo Veículo Filter */}
-              <div className="relative" style={{ zIndex: 9997 }}>
+              <div className="relative" style={{ position: 'relative' }}>
                 <div className="relative group">
                   <button
                     type="button"
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
-                    onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
+                    onClick={() => toggleDropdown('tipoVeiculo')}
                   >
                     <div className="flex items-center gap-2">
                       <Truck className="h-4 w-4" />
@@ -1417,7 +1469,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </button>
 
                   {showTipoVeiculoDropdown && (
-                    <div className="absolute z-[999999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64"
+                      style={{ 
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        marginTop: '4px',
+                        zIndex: 999999
+                      }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tipos</span>
@@ -1465,12 +1525,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Tags Filter */}
-              <div className="relative" style={{ zIndex: 9996 }}>
+              <div className="relative" style={{ position: 'relative' }}>
                 <div className="relative group">
                   <button
                     type="button"
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
-                    onClick={() => setShowTagsDropdown(!showTagsDropdown)}
+                    onClick={() => toggleDropdown('tags')}
                   >
                     <div className="flex items-center gap-2">
                       <Tag className="h-4 w-4" />
@@ -1482,7 +1542,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </button>
 
                   {showTagsDropdown && (
-                    <div className="absolute z-[999999] top-full mt-1 w-80 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-96 overflow-y-auto">
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-96 overflow-y-auto w-80"
+                      style={{ 
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        marginTop: '4px',
+                        zIndex: 999999
+                      }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Tags para ocultar</span>
@@ -1604,7 +1672,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             </div>
           )}
 
-        <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative z-[1]">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
           <div className="overflow-visible">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
               <div className="flex items-center">
@@ -1620,8 +1688,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
             </div>
             
-            <div style={{ overflow: 'visible' }}>
-              <div ref={tableContainerRef} className="w-full" style={{ overflow: 'visible' }}>
+            <div className="overflow-x-auto">
+              <div ref={tableContainerRef} className="w-full">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead>
                     <tr>
