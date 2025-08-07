@@ -129,10 +129,7 @@ interface WiseAppBulkSyncPanelProps {
 export function WiseAppBulkSyncPanel({ className }: WiseAppBulkSyncPanelProps) {
   const { 
     syncAllMotoristas, 
-    validateWiseAppConfig, 
-    isBulkSyncing, 
-    isValidating, 
-    configValid 
+    isBulkSyncing
   } = useWiseAppSync();
 
   return (
@@ -146,25 +143,8 @@ export function WiseAppBulkSyncPanel({ className }: WiseAppBulkSyncPanelProps) {
 
       <div className="flex flex-col sm:flex-row gap-3">
         <button
-          onClick={validateWiseAppConfig}
-          disabled={isValidating}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isValidating ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <CheckCircle className={`h-4 w-4 ${
-              configValid === true ? 'text-green-600' : 
-              configValid === false ? 'text-red-600' : 
-              'text-gray-600'
-            }`} />
-          )}
-          {isValidating ? 'Validando...' : 'Validar Configuração'}
-        </button>
-
-        <button
           onClick={syncAllMotoristas}
-          disabled={isBulkSyncing || configValid === false}
+          disabled={isBulkSyncing}
           className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isBulkSyncing ? (
@@ -176,17 +156,7 @@ export function WiseAppBulkSyncPanel({ className }: WiseAppBulkSyncPanelProps) {
         </button>
       </div>
 
-      {configValid === false && (
-        <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-          ⚠️ Configuração do WiseApp inválida. Verifique as credenciais.
-        </div>
-      )}
 
-      {configValid === true && (
-        <div className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-          ✓ Configuração do WiseApp válida e pronta para uso.
-        </div>
-      )}
     </div>
   );
 }
