@@ -1533,7 +1533,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <select
                   value={ativoFilter}
                   onChange={(e) => setAtivoFilter(e.target.value)}
-                  className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[120px]"
+                  className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[140px]"
                 >
                   <option value="">Ativo</option>
                   <option value="active">Ativo (Sim)</option>
@@ -1550,7 +1550,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <select
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[120px]"
+                  className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[140px]"
                 >
                   <option value="all">Período</option>
                   <option value="today">Hoje</option>
