@@ -1143,31 +1143,31 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Agregados</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {filteredAgregados.length} de {agregados.length} agregados
+                  {filteredContratados.length} de {contratados.length} agregados
                 </p>
               </div>
             </div>
             
             <div className="flex items-center gap-2">
               {/* Contador de filtros ativos */}
-              {(statusFilter !== 'all' || cidadeFilter !== 'all' || clienteFilter !== 'all' || 
-                ativoFilter !== 'all' || tagFilter !== 'all' || dateFilter !== 'all') && (
+              {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
+                ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all') && (
                 <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs">
                   <Filter className="w-3 h-3" />
-                  <span>{[statusFilter, cidadeFilter, clienteFilter, ativoFilter, tagFilter, dateFilter].filter(f => f !== 'all').length}</span>
+                  <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
                 </div>
               )}
               
               {/* Botão limpar filtros */}
-              {(statusFilter !== 'all' || cidadeFilter !== 'all' || clienteFilter !== 'all' || 
-                ativoFilter !== 'all' || tagFilter !== 'all' || dateFilter !== 'all' || searchTerm) && (
+              {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
+                ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
                 <button
                   onClick={() => {
-                    setStatusFilter('all');
-                    setCidadeFilter('all');
-                    setClienteFilter('all');
-                    setAtivoFilter('all');
-                    setTagFilter('all');
+                    setStatusFilter([]);
+                    setCidadeFilter([]);
+                    setClienteFilter([]);
+                    setAtivoFilter('');
+                    setTipoVeiculoFilter([]);
                     setDateFilter('all');
                     setSearchTerm('');
                   }}

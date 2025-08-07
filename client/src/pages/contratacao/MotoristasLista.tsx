@@ -994,24 +994,24 @@ const MotoristasLista = () => {
           
           <div className="flex items-center gap-2">
             {/* Contador de filtros ativos */}
-            {(statusFilter.length > 0 || cidadeFilter !== 'all' || clienteFilter !== 'all' || 
-              ativoFilter !== 'all' || tagFilter !== 'all' || dateFilter !== 'all') && (
+            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
+              ativoFilter !== '' || tagFilter.length > 0 || dateFilter !== 'all') && (
               <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
                 <Filter className="w-3 h-3" />
-                <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter !== 'all' ? 1 : 0, clienteFilter !== 'all' ? 1 : 0, ativoFilter !== 'all' ? 1 : 0, tagFilter !== 'all' ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
+                <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tagFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
               </div>
             )}
             
             {/* Botão limpar filtros */}
-            {(statusFilter.length > 0 || cidadeFilter !== 'all' || clienteFilter !== 'all' || 
-              ativoFilter !== 'all' || tagFilter !== 'all' || dateFilter !== 'all' || searchTerm) && (
+            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
+              ativoFilter !== '' || tagFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
               <button
                 onClick={() => {
                   setStatusFilter([]);
-                  setCidadeFilter('all');
-                  setClienteFilter('all');
-                  setAtivoFilter('all');
-                  setTagFilter('all');
+                  setCidadeFilter([]);
+                  setClienteFilter([]);
+                  setAtivoFilter('');
+                  setTagFilter([]);
                   setDateFilter('all');
                   setSearchTerm('');
                 }}
