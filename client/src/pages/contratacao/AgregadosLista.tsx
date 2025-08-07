@@ -1569,7 +1569,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             {/* Botão Novo Agregado */}
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
             >
               <Plus className="w-4 h-4" />
               <span>Novo Agregado</span>
