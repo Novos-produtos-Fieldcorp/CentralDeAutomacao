@@ -1,5 +1,5 @@
   import React, { useState, useEffect, useRef } from 'react';
-  import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag, CheckCircle, Calendar } from 'lucide-react';
+  import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag, CheckCircle, Calendar, RefreshCw } from 'lucide-react';
   import WhatsAppAvatar from '../../components/WhatsAppAvatar';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
@@ -22,6 +22,7 @@
   import ContextMenu from '../../components/ContextMenu';
   import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
   import { TableDropdown } from '../../components/TableDropdown';
+  import { useWiseAppSync } from '../../hooks/useWiseAppSync';
 
 interface AgregadosListaProps {
   onSuccess?: () => void;
@@ -117,6 +118,7 @@ const STATUS_OPTIONS = [
 const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
+  const { syncMotorista, syncAllMotoristas, isSyncing, isBulkSyncing } = useWiseAppSync();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1566,14 +1568,31 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
             </div>
             
-            {/* Botão Novo Agregado */}
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Novo Agregado</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Botões de Sincronização WiseApp */}
+              <button
+                onClick={() => syncAllMotoristas()}
+                disabled={isBulkSyncing || filteredContratados.length === 0}
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
+                title="Sincronizar todos os agregados com WiseApp"
+              >
+                {isBulkSyncing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+                <span>Sync WiseApp</span>
+              </button>
+              
+              {/* Botão Novo Agregado */}
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Novo Agregado</span>
+              </button>
+            </div>
           </div>
         </div>
 
