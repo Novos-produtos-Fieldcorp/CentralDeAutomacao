@@ -1136,10 +1136,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
-            {/* Campo de busca */}
-            <div className="flex-1 min-w-0 max-w-sm">
-              <div className="relative">
+          <div className="space-y-4">
+            {/* Campo de busca em cima */}
+            <div className="w-full">
+              <div className="relative max-w-md">
                 <input
                   type="text"
                   placeholder="Buscar por nome, CPF, email ou telefone..."
@@ -1162,8 +1162,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
             </div>
 
-            {/* Filtros agrupados */}
-            <div className="flex flex-wrap gap-2 items-center justify-start lg:justify-end flex-1">
+            {/* Filtros agrupados abaixo */}
+            <div className="flex flex-wrap gap-2 items-center justify-start">
               {/* Status Filter */}
               <div className="relative">
                 <div className="relative group">
@@ -1520,6 +1520,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </button>
             </div>
           </div>
+        </div>
 
           {dateFilter === 'custom' && (
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1547,7 +1548,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
             </div>
           )}
-        </div>
 
         <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
           <div className="overflow-hidden">
