@@ -1138,7 +1138,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
             {/* Campo de busca */}
-            <div className="flex-1 min-w-0 max-w-md">
+            <div className="flex-1 min-w-0 max-w-sm">
               <div className="relative">
                 <input
                   type="text"
@@ -1163,13 +1163,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             </div>
 
             {/* Filtros agrupados */}
-            <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex flex-wrap gap-2 items-center justify-start lg:justify-end flex-1">
               {/* Status Filter */}
               <div className="relative">
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
                     onClick={() => setShowStatusDropdown(!showStatusDropdown)}
                   >
                     <div className="flex items-center gap-2">
@@ -1231,7 +1231,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <select
                   value={ativoFilter}
                   onChange={(e) => setAtivoFilter(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 min-w-[120px]"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[100px]"
                 >
                   <option value="">Ativo</option>
                   <option value="active">Ativo (Sim)</option>
@@ -1245,7 +1245,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
                     onClick={() => setShowClienteDropdown(!showClienteDropdown)}
                   >
                     <div className="flex items-center gap-2">
@@ -1314,7 +1314,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
                     onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
                   >
                     <div className="flex items-center gap-2">
@@ -1370,7 +1370,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
                     onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
                   >
                     <div className="flex items-center gap-2">
@@ -1435,7 +1435,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 min-w-[120px] justify-between"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
                     onClick={() => setShowTagsDropdown(!showTagsDropdown)}
                   >
                     <div className="flex items-center gap-2">
@@ -1498,7 +1498,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <select
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 min-w-[120px]"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[100px]"
                 >
                   <option value="all">Período</option>
                   <option value="today">Hoje</option>
@@ -1513,7 +1513,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               {/* Botão Novo Agregado */}
               <button
                 onClick={() => setShowAddModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm h-9 min-w-[100px] justify-center"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm h-9 w-[80px] justify-center"
               >
                 <Plus className="w-4 h-4" />
                 <span>Novo</span>
