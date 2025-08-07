@@ -427,10 +427,10 @@ const MotoristasLista = () => {
 
       setMotoristas(motoristasAgrupados || []);
       
-      // Buscar tags para cada motorista
-      if (motoristasAgrupados && motoristasAgrupados.length > 0) {
-        await fetchAllMotoristaTags(motoristasAgrupados);
-      }
+      // Desabilitado temporariamente devido a problemas de conectividade
+      // if (motoristasAgrupados && motoristasAgrupados.length > 0) {
+      //   await fetchAllMotoristaTags(motoristasAgrupados);
+      // }
     } catch (error) {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
@@ -441,24 +441,42 @@ const MotoristasLista = () => {
 
   const fetchMotoristaTags = async (motoristaId: number) => {
     try {
-      const response = await fetch(`/api/motoristas/${motoristaId}/tags`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+      
+      const response = await fetch(`/api/motoristas/${motoristaId}/tags`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         const tagsData = await response.json();
         setMotoristaTags(prev => ({ ...prev, [motoristaId]: tagsData }));
       }
     } catch (error) {
-      console.error('Erro ao buscar tags do motorista:', error);
+      // Silenciar erro para não quebrar a UI - tags são opcionais
+      if (error.name !== 'AbortError') {
+        console.warn(`Tags não disponíveis para motorista ${motoristaId}`);
+      }
     }
   };
 
   const fetchAllMotoristaTags = async (motoristas: ViewMotorista[]) => {
-    const promises = motoristas.map(motorista => {
-      if (motorista.motorista_id) {
-        return fetchMotoristaTags(motorista.motorista_id);
-      }
-      return Promise.resolve();
-    });
-    await Promise.all(promises);
+    try {
+      const promises = motoristas.map(motorista => {
+        if (motorista.motorista_id) {
+          return fetchMotoristaTags(motorista.motorista_id).catch(() => {
+            // Ignorar falhas individuais para não quebrar o Promise.all
+            return Promise.resolve();
+          });
+        }
+        return Promise.resolve();
+      });
+      await Promise.allSettled(promises); // Usar allSettled ao invés de all
+    } catch (error) {
+      console.warn('Erro ao carregar tags dos motoristas:', error);
+    }
   };
 
   // Cores padrão para os clientes (apenas fundo, sem borda)
