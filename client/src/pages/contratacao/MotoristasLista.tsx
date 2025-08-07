@@ -877,7 +877,7 @@ const MotoristasLista = () => {
     
     // Lógica para filtro de tags (multiseleção)
     let tagMatch = true;
-    if (tagFilter.length > 0) {
+    if (Array.isArray(tagFilter) && tagFilter.length > 0) {
       const motoristaTagsList = motoristaTags[motorista.motorista_id] || [];
       const motoristaTagIds = motoristaTagsList.map((tag: any) => tag.id.toString());
       tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
