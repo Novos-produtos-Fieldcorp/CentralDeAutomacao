@@ -1257,12 +1257,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
                   {showStatusDropdown && (
                     <div 
-                      className="bg-white dark:bg-gray-700 shadow-2xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64"
+                      className="bg-white dark:bg-gray-700 shadow-2xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
                       style={{ 
                         position: 'absolute',
-                        top: '100%',
+                        bottom: '100%',
                         left: 0,
-                        marginTop: '4px',
+                        marginBottom: '4px',
                         zIndex: 999999
                       }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -1333,12 +1333,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </button>
                   {showClienteDropdown && (
                     <div 
-                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64"
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
                       style={{ 
                         position: 'absolute',
-                        top: '100%',
+                        bottom: '100%',
                         left: 0,
-                        marginTop: '4px',
+                        marginBottom: '4px',
                         zIndex: 999999
                       }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -1406,12 +1406,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
                   {showCidadeDropdown && (
                     <div 
-                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64"
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
                       style={{ 
                         position: 'absolute',
-                        top: '100%',
+                        bottom: '100%',
                         left: 0,
-                        marginTop: '4px',
+                        marginBottom: '4px',
                         zIndex: 999999
                       }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -1470,12 +1470,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
                   {showTipoVeiculoDropdown && (
                     <div 
-                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64"
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
                       style={{ 
                         position: 'absolute',
-                        top: '100%',
+                        bottom: '100%',
                         left: 0,
-                        marginTop: '4px',
+                        marginBottom: '4px',
                         zIndex: 999999
                       }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -1543,12 +1543,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
                   {showTagsDropdown && (
                     <div 
-                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-96 overflow-y-auto w-80"
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-96 overflow-y-auto w-80 animate-in slide-in-from-bottom-2 fade-in duration-200"
                       style={{ 
                         position: 'absolute',
-                        top: '100%',
+                        bottom: '100%',
                         left: 0,
-                        marginTop: '4px',
+                        marginBottom: '4px',
                         zIndex: 999999
                       }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">

@@ -1264,7 +1264,15 @@ const Contratados = () => {
                 </button>
 
                 {showStatusDropdown && (
-                  <div className="absolute z-[999999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div 
+                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      marginBottom: '4px',
+                      zIndex: 999999
+                    }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
@@ -1332,7 +1340,15 @@ const Contratados = () => {
                   <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showClienteDropdown && (
-                  <div className="absolute z-[999999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div 
+                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      marginBottom: '4px',
+                      zIndex: 999999
+                    }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
@@ -1397,7 +1413,15 @@ const Contratados = () => {
                 </button>
 
                 {showCidadeDropdown && (
-                  <div className="absolute z-[999999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                  <div 
+                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      marginBottom: '4px',
+                      zIndex: 999999
+                    }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
@@ -1450,7 +1474,15 @@ const Contratados = () => {
                 </button>
 
                 {showTipoVeiculoDropdown && (
-                  <div className="absolute z-[999999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div 
+                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      marginBottom: '4px',
+                      zIndex: 999999
+                    }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tipos</span>
