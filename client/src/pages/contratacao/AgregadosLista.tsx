@@ -1273,7 +1273,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
 
               {/* Cliente Filter */}
-              <div className="relative">
+              <div className="relative z-[50]">
                 <div className="relative group">
                   <button
                     type="button"
@@ -1342,7 +1342,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Cidade Filter */}
-              <div className="relative">
+              <div className="relative z-[50]">
                 <div className="relative group">
                   <button
                     type="button"
@@ -1398,7 +1398,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Tipo Veículo Filter */}
-              <div className="relative">
+              <div className="relative z-[50]">
                 <div className="relative group">
                   <button
                     type="button"
@@ -1463,7 +1463,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Tags Filter */}
-              <div className="relative">
+              <div className="relative z-[50]">
                 <div className="relative group">
                   <button
                     type="button"
@@ -1526,7 +1526,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Status Ativo Filter */}
-              <div className="relative">
+              <div className="relative z-[50]">
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                   <CheckCircle className="h-4 w-4 text-gray-400" />
                 </div>
@@ -1543,7 +1543,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Período Filter */}
-              <div className="relative">
+              <div className="relative z-[50]">
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                   <Calendar className="h-4 w-4 text-gray-400" />
                 </div>
@@ -1602,7 +1602,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             </div>
           )}
 
-        <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+        <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative z-[10]">
           <div className="overflow-hidden">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
               <div className="flex items-center">

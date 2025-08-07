@@ -1565,7 +1565,7 @@ const Contratados = () => {
         )}
       </div>
 
-      <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
+      <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative z-[10]">
         <div className="overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
             <div className="flex items-center">
