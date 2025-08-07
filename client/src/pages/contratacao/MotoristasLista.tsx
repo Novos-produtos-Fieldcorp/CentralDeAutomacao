@@ -1132,7 +1132,7 @@ const MotoristasLista = () => {
             </div>
 
             {/* Cidade Filter */}
-            <div className="relative">
+            <div className="relative z-[50]">
               <div className="relative group" ref={cidadeDropdownRef}>
                 <button
                   type="button"
@@ -1498,7 +1498,7 @@ const MotoristasLista = () => {
       </div>
 
       {/* WiseApp Bulk Sync Panel */}
-      <WiseAppBulkSyncPanel className="mb-6" />
+      <WiseAppBulkSyncPanel className="mb-6 relative z-[1]" />
 
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative z-[10]">
         <div className="overflow-hidden">
