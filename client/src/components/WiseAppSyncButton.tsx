@@ -33,8 +33,8 @@ export function WiseAppSyncButton({
   const isLoading = variant === 'individual' ? isSyncing : isBulkSyncing;
   
   const buttonText = variant === 'individual' 
-    ? 'Capturar Foto WhatsApp' 
-    : 'Capturar Fotos de Todos';
+    ? 'Sincronizar Contato' 
+    : 'Sincronizar Todos';
 
   const icon = variant === 'individual' ? MessageSquare : Users;
   const Icon = icon;
@@ -63,7 +63,7 @@ export function WiseAppSyncButton({
       {showLabel && (
         <span className="hidden sm:inline">
           {isLoading 
-            ? (variant === 'individual' ? 'Capturando...' : 'Capturando fotos...') 
+            ? (variant === 'individual' ? 'Sincronizando...' : 'Sincronizando...') 
             : buttonText
           }
         </span>
@@ -90,19 +90,19 @@ export function WiseAppSyncStatus({
       icon: CheckCircle,
       color: 'text-green-600 dark:text-green-400',
       bgColor: 'bg-green-50 dark:bg-green-900/20',
-      label: 'Foto capturada'
+      label: 'Sincronizado'
     },
     failed: {
       icon: XCircle,
       color: 'text-red-600 dark:text-red-400', 
       bgColor: 'bg-red-50 dark:bg-red-900/20',
-      label: 'Falha na captura'
+      label: 'Falha na sincronização'
     },
     pending: {
       icon: Loader2,
       color: 'text-yellow-600 dark:text-yellow-400',
       bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
-      label: 'Aguardando captura'
+      label: 'Aguardando sincronização'
     }
   };
 
@@ -112,7 +112,7 @@ export function WiseAppSyncStatus({
   return (
     <div 
       className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${config.bgColor}`}
-      title={`Status da captura de foto WhatsApp${lastSyncAt ? `\nÚltima captura: ${new Date(lastSyncAt).toLocaleString('pt-BR')}` : ''}`}
+      title={`Status da sincronização de contato${lastSyncAt ? `\nÚltima sincronização: ${new Date(lastSyncAt).toLocaleString('pt-BR')}` : ''}`}
     >
       <Icon 
         className={`h-3 w-3 ${config.color} ${syncStatus === 'pending' ? 'animate-spin' : ''}`} 
@@ -135,9 +135,9 @@ export function WiseAppBulkSyncPanel({ className }: WiseAppBulkSyncPanelProps) {
   return (
     <div className={`border rounded-lg p-4 space-y-4 ${className}`}>
       <div>
-        <h3 className="text-lg font-semibold">Captura de Fotos do WhatsApp</h3>
+        <h3 className="text-lg font-semibold">Sincronização de Contatos</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Salve automaticamente as fotos de perfil do WhatsApp de todos os motoristas, agregados e contratados
+          Sincronize os contatos e fotos do WhatsApp de motoristas e agregados com o WiseApp
         </p>
       </div>
 
@@ -152,7 +152,7 @@ export function WiseAppBulkSyncPanel({ className }: WiseAppBulkSyncPanelProps) {
           ) : (
             <Users className="h-4 w-4" />
           )}
-          {isBulkSyncing ? 'Capturando fotos...' : 'Capturar Fotos de Todos'}
+          {isBulkSyncing ? 'Sincronizando...' : 'Sincronizar Todos'}
         </button>
       </div>
 
