@@ -1176,7 +1176,7 @@ const Contratados = () => {
         {/* Header com contador e ações */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-2 h-8 bg-gradient-to-b from-yellow-500 to-yellow-600 rounded-full"></div>
+            <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Contratados</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1189,7 +1189,7 @@ const Contratados = () => {
             {/* Contador de filtros ativos */}
             {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
               ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all') && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-full text-xs">
+              <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
                 <Filter className="w-3 h-3" />
                 <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
               </div>
@@ -1222,14 +1222,14 @@ const Contratados = () => {
         <div className="mb-4">
           <div className="relative group">
             <div className="absolute inset-y-0 left-4 flex items-center">
-              <Search className="h-5 w-5 text-gray-400 group-focus-within:text-yellow-500 transition-colors" />
+              <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
             </div>
             <input
               type="text"
               placeholder="Buscar por nome, CPF, email ou telefone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-12 py-3.5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200 shadow-sm group-focus-within:shadow-md"
+              className="w-full pl-12 pr-12 py-3.5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm group-focus-within:shadow-md"
             />
             {searchTerm && (
               <button
@@ -1244,14 +1244,14 @@ const Contratados = () => {
         </div>
 
         {/* Filtros modernos */}
-        <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
+        <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
           <div className="flex flex-wrap gap-2">
             {/* Status Filter */}
-            <div className="relative">
+            <div className="relative z-[50]">
               <div className="relative group">
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                   onClick={() => setShowStatusDropdown(!showStatusDropdown)}
                 >
                   <div className="flex items-center gap-2">
@@ -1260,11 +1260,19 @@ const Contratados = () => {
                       {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
                     </span>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
+
                 </button>
 
                 {showStatusDropdown && (
-                  <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div 
+                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      marginBottom: '4px',
+                      zIndex: 999999
+                    }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
@@ -1311,11 +1319,11 @@ const Contratados = () => {
 
 
             {/* Cliente Filter */}
-            <div className="relative">
+            <div className="relative z-[40]">
               <div className="relative group">
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                   onClick={() => setShowClienteDropdown(!showClienteDropdown)}
                 >
                   <div className="flex items-center gap-2">
@@ -1329,10 +1337,18 @@ const Contratados = () => {
                       {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
                     </span>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
+
                 </button>
                 {showClienteDropdown && (
-                  <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div 
+                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      marginBottom: '4px',
+                      zIndex: 999999
+                    }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
@@ -1380,11 +1396,11 @@ const Contratados = () => {
             </div>
 
             {/* Cidade Filter */}
-            <div className="relative">
+            <div className="relative z-[35]">
               <div className="relative group">
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                   onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
                 >
                   <div className="flex items-center gap-2">
@@ -1393,11 +1409,19 @@ const Contratados = () => {
                       {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
                     </span>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showCidadeDropdown ? 'rotate-180' : ''}`} />
+
                 </button>
 
                 {showCidadeDropdown && (
-                  <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div 
+                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      marginBottom: '4px',
+                      zIndex: 999999
+                    }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
@@ -1433,11 +1457,11 @@ const Contratados = () => {
             </div>
 
             {/* Tipo Veículo Filter */}
-            <div className="relative">
+            <div className="relative z-[25]">
               <div className="relative group">
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
                   onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
                 >
                   <div className="flex items-center gap-2">
@@ -1446,11 +1470,19 @@ const Contratados = () => {
                       {tipoVeiculoFilter.length === 0 ? 'Veículo' : `Veículo (${tipoVeiculoFilter.length})`}
                     </span>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showTipoVeiculoDropdown ? 'rotate-180' : ''}`} />
+
                 </button>
 
                 {showTipoVeiculoDropdown && (
-                  <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  <div 
+                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      marginBottom: '4px',
+                      zIndex: 999999
+                    }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tipos</span>
@@ -1498,31 +1530,30 @@ const Contratados = () => {
             </div>
 
             {/* Status Ativo Filter */}
-            <div className="relative">
+            <div className="relative z-[20]">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                 <CheckCircle className="h-4 w-4 text-gray-400" />
               </div>
               <select
                 value={ativoFilter}
                 onChange={(e) => setAtivoFilter(e.target.value)}
-                className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 appearance-none pr-8 h-9 w-[140px]"
+                className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[110px]"
               >
                 <option value="">Ativo</option>
                 <option value="active">Ativo (Sim)</option>
                 <option value="inactive">Ativo (Não)</option>
               </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
 
             {/* Date Filter */}
-            <div className="relative">
+            <div className="relative z-[10]">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                 <Calendar className="h-4 w-4 text-gray-400" />
               </div>
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 appearance-none pr-8 h-9 w-[140px]"
+                className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[120px]"
               >
                 <option value="all">Período</option>
                 <option value="today">Hoje</option>
@@ -1531,7 +1562,6 @@ const Contratados = () => {
                 <option value="30days">30 dias</option>
                 <option value="custom">Personalizado</option>
               </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
         </div>
@@ -1565,8 +1595,8 @@ const Contratados = () => {
         )}
       </div>
 
-      <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
-        <div className="overflow-hidden">
+      <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative z-[1]">
+        <div className="overflow-visible">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
             <div className="flex items-center">
               <input
@@ -1581,8 +1611,8 @@ const Contratados = () => {
             </div>
           </div>
           
-          <div className="relative">
-            <div ref={tableContainerRef} className="overflow-x-auto w-full">
+          <div className="relative" style={{ overflow: 'visible' }}>
+            <div ref={tableContainerRef} className="w-full" style={{ overflow: 'visible' }}>
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>

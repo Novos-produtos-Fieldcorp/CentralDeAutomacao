@@ -162,6 +162,36 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
     const [endereco, setEndereco] = useState<EnderecoState | null>(null);
     
+    // Função para controlar que apenas um dropdown fique aberto
+    const closeAllDropdowns = () => {
+      setShowStatusDropdown(false);
+      setShowClienteDropdown(false);
+      setShowCidadeDropdown(false);
+      setShowTipoVeiculoDropdown(false);
+      setShowTagsDropdown(false);
+    };
+
+    const toggleDropdown = (dropdownType: string) => {
+      closeAllDropdowns();
+      switch(dropdownType) {
+        case 'status':
+          setShowStatusDropdown(true);
+          break;
+        case 'cliente':
+          setShowClienteDropdown(true);
+          break;
+        case 'cidade':
+          setShowCidadeDropdown(true);
+          break;
+        case 'tipoVeiculo':
+          setShowTipoVeiculoDropdown(true);
+          break;
+        case 'tags':
+          setShowTagsDropdown(true);
+          break;
+      }
+    };
+    
     // Atualiza o endereco quando o selectedMotorista mudar
     useEffect(() => {
       if (selectedMotorista) {
@@ -496,7 +526,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         if (error) throw error;
 
         // Log para debug dos valores de funcao
-        console.log('Valores de funcao encontrados:', [...new Set(data?.map(item => item.funcao))]);
+        console.log('Valores de funcao encontrados:', Array.from(new Set(data?.map(item => item.funcao))));
         console.log('Dados completos:', data);
 
         // Extract unique cities from contratados - only include non-null/undefined city names
@@ -809,7 +839,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const handleBulkDelete = async () => {
       try {
         // Delete all selected items
-        for (const id of selectedItems) {
+        for (const id of Array.from(selectedItems)) {
           const { error } = await query('motorista')
             .delete()
             .eq('motorista_id', id);
@@ -1139,7 +1169,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           {/* Header com contador e ações */}
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-2 h-8 bg-gradient-to-b from-green-500 to-green-600 rounded-full"></div>
+              <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Agregados</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1152,7 +1182,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               {/* Contador de filtros ativos */}
               {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
                 ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all') && (
-                <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs">
+                <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
                   <Filter className="w-3 h-3" />
                   <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
                 </div>
@@ -1184,14 +1214,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           <div className="mb-4">
             <div className="relative group">
               <div className="absolute inset-y-0 left-4 flex items-center">
-                <Search className="h-5 w-5 text-gray-400 group-focus-within:text-green-500 transition-colors" />
+                <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
               </div>
               <input
                 type="text"
                 placeholder="Buscar por nome, CPF, email ou telefone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-12 py-3.5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 shadow-sm group-focus-within:shadow-md"
+                className="w-full pl-12 pr-12 py-3.5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm group-focus-within:shadow-md"
               />
               {searchTerm && (
                 <button
@@ -1206,15 +1236,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           </div>
 
           {/* Filtros modernos */}
-          <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
+          <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
             <div className="flex flex-wrap gap-2">
               {/* Status Filter */}
-              <div className="relative">
+              <div className="relative" style={{ position: 'relative' }}>
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
-                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                    onClick={() => toggleDropdown('status')}
                   >
                     <div className="flex items-center gap-2">
                       <Filter className="h-4 w-4" />
@@ -1222,11 +1252,18 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
                       </span>
                     </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showStatusDropdown && (
-                    <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-2xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                      style={{ 
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: 0,
+                        marginBottom: '4px',
+                        zIndex: 999999
+                      }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
@@ -1273,12 +1310,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
 
               {/* Cliente Filter */}
-              <div className="relative">
+              <div className="relative" style={{ position: 'relative' }}>
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
-                    onClick={() => setShowClienteDropdown(!showClienteDropdown)}
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                    onClick={() => toggleDropdown('cliente')}
                   >
                     <div className="flex items-center gap-2">
                       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1291,10 +1328,17 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
                       </span>
                     </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showClienteDropdown && (
-                    <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                      style={{ 
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: 0,
+                        marginBottom: '4px',
+                        zIndex: 999999
+                      }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
@@ -1342,12 +1386,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Cidade Filter */}
-              <div className="relative">
+              <div className="relative" style={{ position: 'relative' }}>
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
-                    onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                    onClick={() => toggleDropdown('cidade')}
                   >
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
@@ -1355,11 +1399,18 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
                       </span>
                     </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showCidadeDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showCidadeDropdown && (
-                    <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                      style={{ 
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: 0,
+                        marginBottom: '4px',
+                        zIndex: 999999
+                      }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
@@ -1398,12 +1449,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Tipo Veículo Filter */}
-              <div className="relative">
+              <div className="relative" style={{ position: 'relative' }}>
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
-                    onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                    onClick={() => toggleDropdown('tipoVeiculo')}
                   >
                     <div className="flex items-center gap-2">
                       <Truck className="h-4 w-4" />
@@ -1411,11 +1462,18 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         {tipoVeiculoFilter.length === 0 ? 'Veículo' : `Veículo (${tipoVeiculoFilter.length})`}
                       </span>
                     </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showTipoVeiculoDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showTipoVeiculoDropdown && (
-                    <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                      style={{ 
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: 0,
+                        marginBottom: '4px',
+                        zIndex: 999999
+                      }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tipos</span>
@@ -1463,12 +1521,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Tags Filter */}
-              <div className="relative">
+              <div className="relative" style={{ position: 'relative' }}>
                 <div className="relative group">
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
-                    onClick={() => setShowTagsDropdown(!showTagsDropdown)}
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                    onClick={() => toggleDropdown('tags')}
                   >
                     <div className="flex items-center gap-2">
                       <Tag className="h-4 w-4" />
@@ -1476,11 +1534,18 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         {visibleTags.length === 0 ? 'Tags' : `Tags (${visibleTags.length})`}
                       </span>
                     </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showTagsDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showTagsDropdown && (
-                    <div className="absolute z-[99999] top-full mt-1 w-80 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-96 overflow-y-auto">
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-96 overflow-y-auto w-80 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                      style={{ 
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: 0,
+                        marginBottom: '4px',
+                        zIndex: 999999
+                      }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Tags para ocultar</span>
@@ -1526,31 +1591,30 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Status Ativo Filter */}
-              <div className="relative">
+              <div className="relative z-[30]">
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                   <CheckCircle className="h-4 w-4 text-gray-400" />
                 </div>
                 <select
                   value={ativoFilter}
                   onChange={(e) => setAtivoFilter(e.target.value)}
-                  className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[140px]"
+                  className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[110px]"
                 >
                   <option value="">Ativo</option>
                   <option value="active">Ativo (Sim)</option>
                   <option value="inactive">Ativo (Não)</option>
                 </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               </div>
 
               {/* Período Filter */}
-              <div className="relative">
+              <div className="relative z-[20]">
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                   <Calendar className="h-4 w-4 text-gray-400" />
                 </div>
                 <select
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 h-9 w-[140px]"
+                  className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[120px]"
                 >
                   <option value="all">Período</option>
                   <option value="today">Hoje</option>
@@ -1559,7 +1623,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   <option value="30days">30 dias</option>
                   <option value="custom">Personalizado</option>
                 </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               </div>
 
             </div>
@@ -1567,7 +1630,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             {/* Botão Novo Agregado */}
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
             >
               <Plus className="w-4 h-4" />
               <span>Novo Agregado</span>
@@ -1602,8 +1665,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             </div>
           )}
 
-        <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
+          <div className="overflow-visible">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
               <div className="flex items-center">
                 <input
@@ -1618,8 +1681,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
             </div>
             
-            <div>
-              <div ref={tableContainerRef} className="overflow-x-auto w-full">
+            <div className="overflow-x-auto">
+              <div ref={tableContainerRef} className="w-full">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead>
                     <tr>
@@ -1779,8 +1842,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-wrap gap-1">
-                            {motoristaTags[motorista.motorista_id]?.filter((tag: any) => !visibleTags.includes(tag.id.toString())).length > 0 ? (
-                              motoristaTags[motorista.motorista_id]
+                            {motoristaTags[motorista.motorista_id || 0]?.filter((tag: any) => !visibleTags.includes(tag.id.toString())).length > 0 ? (
+                              motoristaTags[motorista.motorista_id || 0]
                                 .filter((tag: any) => !visibleTags.includes(tag.id.toString()))
                                 .map((tag: any) => (
                                 <span
