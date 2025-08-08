@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Loader2, Camera, Upload } from 'lucide-react';
+import { X, Loader2, Camera, Upload, Eye, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCEP } from '../utils/format';
@@ -25,6 +25,12 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     cnh: false,
     rg: false,
     comprovante: false
+  });
+  
+  const [previewModal, setPreviewModal] = useState<{isOpen: boolean, url: string, title: string}>({
+    isOpen: false,
+    url: '',
+    title: ''
   });
   
   const [formData, setFormData] = useState({
@@ -331,6 +337,22 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
       console.error('Erro ao consultar CPF:', error);
       toast.error(error instanceof Error ? error.message : 'Erro ao consultar CPF');
     }
+  };
+
+  const openPreview = (url: string, title: string) => {
+    setPreviewModal({ isOpen: true, url, title });
+  };
+
+  const closePreview = () => {
+    setPreviewModal({ isOpen: false, url: '', title: '' });
+  };
+
+  const isImageFile = (url: string) => {
+    return url.toLowerCase().match(/\.(jpeg|jpg|png|gif)$/);
+  };
+
+  const isPDFFile = (url: string) => {
+    return url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('pdf');
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'foto_cnh' | 'foto_rg' | 'comprovante_residencia') => {
@@ -879,11 +901,21 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                         </div>
                       )}
                       {formData.foto_cnh && !uploading.cnh && (
-                        <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
-                          <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          Documento enviado
+                        <div className="ml-4 flex items-center gap-2">
+                          <div className="flex items-center text-sm text-green-600 dark:text-green-400">
+                            <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Documento enviado
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openPreview(formData.foto_cnh, 'Foto da CNH')}
+                            className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                            Ver
+                          </button>
                         </div>
                       )}
                     </div>
@@ -986,11 +1018,21 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                         </div>
                       )}
                       {formData.foto_rg && !uploading.rg && (
-                        <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
-                          <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          Documento enviado
+                        <div className="ml-4 flex items-center gap-2">
+                          <div className="flex items-center text-sm text-green-600 dark:text-green-400">
+                            <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Documento enviado
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openPreview(formData.foto_rg, 'Foto do RG')}
+                            className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                            Ver
+                          </button>
                         </div>
                       )}
                     </div>
@@ -1162,11 +1204,21 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                       </div>
                     )}
                     {formData.comprovante_residencia && !uploading.comprovante && (
-                      <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
-                        <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Documento enviado
+                      <div className="ml-4 flex items-center gap-2">
+                        <div className="flex items-center text-sm text-green-600 dark:text-green-400">
+                          <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          Documento enviado
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => openPreview(formData.comprovante_residencia, 'Comprovante de Residência')}
+                          className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Ver
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1204,6 +1256,58 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
           </form>
         )}
       </div>
+
+      {/* Document Preview Modal */}
+      {previewModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl max-h-[90vh] w-full overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {previewModal.title}
+              </h3>
+              <button
+                onClick={closePreview}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
+              {isImageFile(previewModal.url) ? (
+                <img
+                  src={previewModal.url}
+                  alt={previewModal.title}
+                  className="max-w-full h-auto mx-auto rounded-lg shadow-md"
+                  style={{ maxHeight: 'calc(90vh - 200px)' }}
+                />
+              ) : isPDFFile(previewModal.url) ? (
+                <div className="w-full h-full min-h-[600px]">
+                  <iframe
+                    src={previewModal.url}
+                    className="w-full h-full min-h-[600px] border-0"
+                    title={previewModal.title}
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+                  <FileText className="w-16 h-16 mb-4" />
+                  <p className="text-lg mb-2">Visualização não disponível</p>
+                  <p className="text-sm">Este tipo de arquivo não pode ser visualizado diretamente.</p>
+                  <a
+                    href={previewModal.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Abrir em nova aba
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
