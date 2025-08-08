@@ -3,6 +3,7 @@ import { MessageSquare, Send, Loader2, User } from 'lucide-react';
 import { supabase, testSupabaseConnection } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -18,6 +19,7 @@ interface Comentario {
   id_motorista: number | null;
   id_atendente: number | null;
   comentario: string | null;
+  atendente_nome?: string | null;
 }
 
 const ComentariosTab: React.FC<ComentariosTabProps> = ({
@@ -29,6 +31,7 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const { accountId } = useAuth();
+  const { attendantId } = useWiseAppAccess();
 
   useEffect(() => {
     let isMounted = true;
@@ -67,7 +70,36 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
         throw new Error(`Erro ao buscar comentários: ${error.message}`);
       }
       
-      setComentarios(data || []);
+      if (data && data.length > 0) {
+        // Get unique user IDs from comments
+        const userIds = Array.from(new Set(data.map(c => c.id_atendente).filter(id => id !== null)));
+        
+        // Fetch attendant names for those IDs from wiseapp_acesso
+        let attendantMap: Record<number, string> = {};
+        if (userIds.length > 0) {
+          const { data: attendants } = await supabase
+            .from('wiseapp_acesso')
+            .select('wiseapp_acesso_id, nome')
+            .in('wiseapp_acesso_id', userIds);
+            
+          if (attendants) {
+            attendantMap = attendants.reduce((acc, attendant) => {
+              acc[attendant.wiseapp_acesso_id] = attendant.nome || 'Atendente';
+              return acc;
+            }, {} as Record<number, string>);
+          }
+        }
+        
+        // Transform data to include atendente_nome
+        const comentariosWithNames = data.map(comment => ({
+          ...comment,
+          atendente_nome: comment.id_atendente ? attendantMap[comment.id_atendente] || null : null
+        }));
+        
+        setComentarios(comentariosWithNames);
+      } else {
+        setComentarios([]);
+      }
       
       // If onUpdateSuccess is provided, call it to update the comment count in the parent component
       if (onUpdateSuccess) {
@@ -104,7 +136,7 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
         .from('comentario')
         .insert([{
           id_motorista: motorista_id,
-          id_atendente: accountId ? parseInt(accountId) : null,
+          id_atendente: attendantId,
           comentario: comentario.trim()
         }])
         .select();
@@ -215,6 +247,11 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                       {formatDate(comentario.updated_at || comentario.created_at)}
+                      {comentario.atendente_nome && (
+                        <span className="ml-2 text-blue-600 dark:text-blue-400 font-medium">
+                          {comentario.atendente_nome}
+                        </span>
+                      )}
                     </p>
                     <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                       {comentario.comentario}

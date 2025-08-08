@@ -30,7 +30,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     try {
       const { data: existing, error: selectError } = await supabase
         .from('wiseapp_acesso')
-        .select('*')
+        .select('wiseapp_acesso_id, email, nome, access_token_wiseapp')
         .eq('email', email)
         .single();
 
@@ -39,6 +39,8 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       if (existing) {
         if (existing.access_token_wiseapp) {
           localStorage.setItem('wiseapp_token', existing.access_token_wiseapp);
+          localStorage.setItem('attendant_id', existing.wiseapp_acesso_id.toString());
+          localStorage.setItem('attendant_name', existing.nome || '');
           onTokenSaved(existing.access_token_wiseapp);
           onClose();
         } else {
@@ -59,7 +61,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
 
         const { error: insertError } = await supabase
           .from('wiseapp_acesso')
-          .insert([{ email, attendant_name: attendantName, company_id: companyData.company_id, id_conta_wiseapp: accountId, access_token_wiseapp: null }]);
+          .insert([{ email, nome: attendantName, company_id: companyData.company_id, id_conta_wiseapp: accountId, access_token_wiseapp: null }]);
 
         if (insertError) throw insertError;
 
@@ -86,12 +88,23 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     try {
       const { error: updateError } = await supabase
         .from('wiseapp_acesso')
-        .update({ access_token_wiseapp: token, attendant_name: attendantName })
+        .update({ access_token_wiseapp: token, nome: attendantName })
         .eq('email', email);
 
       if (updateError) throw updateError;
 
+      // Buscar os dados atualizados para obter o ID
+      const { data: updatedAccess } = await supabase
+        .from('wiseapp_acesso')
+        .select('wiseapp_acesso_id, nome')
+        .eq('email', email)
+        .single();
+
       localStorage.setItem('wiseapp_token', token);
+      if (updatedAccess) {
+        localStorage.setItem('attendant_id', updatedAccess.wiseapp_acesso_id.toString());
+        localStorage.setItem('attendant_name', updatedAccess.nome || '');
+      }
       onTokenSaved(token);
       onClose();
     } catch (err) {
