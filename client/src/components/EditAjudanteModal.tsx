@@ -27,10 +27,10 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     comprovante: false
   });
   
-  const [previewModal, setPreviewModal] = useState<{isOpen: boolean, url: string, title: string}>({
-    isOpen: false,
-    url: '',
-    title: ''
+  const [showPreview, setShowPreview] = useState<{[key: string]: boolean}>({
+    foto_cnh: false,
+    foto_rg: false,
+    comprovante_residencia: false
   });
   
   const [formData, setFormData] = useState({
@@ -339,12 +339,8 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     }
   };
 
-  const openPreview = (url: string, title: string) => {
-    setPreviewModal({ isOpen: true, url, title });
-  };
-
-  const closePreview = () => {
-    setPreviewModal({ isOpen: false, url: '', title: '' });
+  const togglePreview = (field: string) => {
+    setShowPreview(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
   const isImageFile = (url: string) => {
@@ -910,15 +906,58 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                           </div>
                           <button
                             type="button"
-                            onClick={() => openPreview(formData.foto_cnh, 'Foto da CNH')}
+                            onClick={() => togglePreview('foto_cnh')}
                             className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
                           >
                             <Eye className="w-4 h-4" />
-                            Ver
+                            {showPreview.foto_cnh ? 'Ocultar' : 'Ver'}
                           </button>
                         </div>
                       )}
                     </div>
+                    
+                    {/* Inline CNH Preview */}
+                    {formData.foto_cnh && showPreview.foto_cnh && (
+                      <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-start mb-3">
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Foto da CNH</h4>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={formData.foto_cnh}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              Abrir em nova aba
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => togglePreview('foto_cnh')}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        {isImageFile(formData.foto_cnh) ? (
+                          <img
+                            src={formData.foto_cnh}
+                            alt="Foto da CNH"
+                            className="max-w-full h-auto max-h-64 rounded-md mx-auto block"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-32 bg-gray-100 dark:bg-gray-700 rounded-md">
+                            <div className="text-center">
+                              <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              <p className="text-sm text-gray-500 dark:text-gray-400">PDF Document</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1027,15 +1066,58 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                           </div>
                           <button
                             type="button"
-                            onClick={() => openPreview(formData.foto_rg, 'Foto do RG')}
+                            onClick={() => togglePreview('foto_rg')}
                             className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
                           >
                             <Eye className="w-4 h-4" />
-                            Ver
+                            {showPreview.foto_rg ? 'Ocultar' : 'Ver'}
                           </button>
                         </div>
                       )}
                     </div>
+                    
+                    {/* Inline RG Preview */}
+                    {formData.foto_rg && showPreview.foto_rg && (
+                      <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-start mb-3">
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Foto do RG</h4>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={formData.foto_rg}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              Abrir em nova aba
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => togglePreview('foto_rg')}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        {isImageFile(formData.foto_rg) ? (
+                          <img
+                            src={formData.foto_rg}
+                            alt="Foto do RG"
+                            className="max-w-full h-auto max-h-64 rounded-md mx-auto block"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-32 bg-gray-100 dark:bg-gray-700 rounded-md">
+                            <div className="text-center">
+                              <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              <p className="text-sm text-gray-500 dark:text-gray-400">PDF Document</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1213,15 +1295,58 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                         </div>
                         <button
                           type="button"
-                          onClick={() => openPreview(formData.comprovante_residencia, 'Comprovante de Residência')}
+                          onClick={() => togglePreview('comprovante_residencia')}
                           className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
                         >
                           <Eye className="w-4 h-4" />
-                          Ver
+                          {showPreview.comprovante_residencia ? 'Ocultar' : 'Ver'}
                         </button>
                       </div>
                     )}
                   </div>
+                  
+                  {/* Inline Address Proof Preview */}
+                  {formData.comprovante_residencia && showPreview.comprovante_residencia && (
+                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Comprovante de Residência</h4>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={formData.comprovante_residencia}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            Abrir em nova aba
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => togglePreview('comprovante_residencia')}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      {isImageFile(formData.comprovante_residencia) ? (
+                        <img
+                          src={formData.comprovante_residencia}
+                          alt="Comprovante de Residência"
+                          className="max-w-full h-auto max-h-64 rounded-md mx-auto block"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-32 bg-gray-100 dark:bg-gray-700 rounded-md">
+                          <div className="text-center">
+                            <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500 dark:text-gray-400">PDF Document</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1257,57 +1382,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
         )}
       </div>
 
-      {/* Document Preview Modal */}
-      {previewModal.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl max-h-[90vh] w-full overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {previewModal.title}
-              </h3>
-              <button
-                onClick={closePreview}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
-              {isImageFile(previewModal.url) ? (
-                <img
-                  src={previewModal.url}
-                  alt={previewModal.title}
-                  className="max-w-full h-auto mx-auto rounded-lg shadow-md"
-                  style={{ maxHeight: 'calc(90vh - 200px)' }}
-                />
-              ) : isPDFFile(previewModal.url) ? (
-                <div className="w-full h-full min-h-[600px]">
-                  <iframe
-                    src={previewModal.url}
-                    className="w-full h-full min-h-[600px] border-0"
-                    title={previewModal.title}
-                  />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
-                  <FileText className="w-16 h-16 mb-4" />
-                  <p className="text-lg mb-2">Visualização não disponível</p>
-                  <p className="text-sm">Este tipo de arquivo não pode ser visualizado diretamente.</p>
-                  <a
-                    href={previewModal.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Abrir em nova aba
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
