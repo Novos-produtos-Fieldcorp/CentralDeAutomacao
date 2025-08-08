@@ -18,6 +18,7 @@ interface Comentario {
   id_motorista: number | null;
   id_atendente: number | null;
   comentario: string | null;
+  atendente_nome?: string | null;
 }
 
 const ComentariosTab: React.FC<ComentariosTabProps> = ({
@@ -67,7 +68,36 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
         throw new Error(`Erro ao buscar comentários: ${error.message}`);
       }
       
-      setComentarios(data || []);
+      if (data && data.length > 0) {
+        // Get unique user IDs from comments
+        const userIds = Array.from(new Set(data.map(c => c.id_atendente).filter(id => id !== null)));
+        
+        // Fetch user names for those IDs
+        let userMap: Record<number, string> = {};
+        if (userIds.length > 0) {
+          const { data: users } = await supabase
+            .from('users')
+            .select('id, username')
+            .in('id', userIds);
+            
+          if (users) {
+            userMap = users.reduce((acc, user) => {
+              acc[user.id] = user.username;
+              return acc;
+            }, {} as Record<number, string>);
+          }
+        }
+        
+        // Transform data to include atendente_nome
+        const comentariosWithNames = data.map(comment => ({
+          ...comment,
+          atendente_nome: comment.id_atendente ? userMap[comment.id_atendente] || null : null
+        }));
+        
+        setComentarios(comentariosWithNames);
+      } else {
+        setComentarios([]);
+      }
       
       // If onUpdateSuccess is provided, call it to update the comment count in the parent component
       if (onUpdateSuccess) {
@@ -215,6 +245,11 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                       {formatDate(comentario.updated_at || comentario.created_at)}
+                      {comentario.atendente_nome && (
+                        <span className="ml-2 text-blue-600 dark:text-blue-400 font-medium">
+                          {comentario.atendente_nome}
+                        </span>
+                      )}
                     </p>
                     <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                       {comentario.comentario}
