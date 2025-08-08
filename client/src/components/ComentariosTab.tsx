@@ -3,6 +3,7 @@ import { MessageSquare, Send, Loader2, User } from 'lucide-react';
 import { supabase, testSupabaseConnection } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -30,6 +31,7 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const { accountId } = useAuth();
+  const { attendantId } = useWiseAppAccess();
 
   useEffect(() => {
     let isMounted = true;
@@ -72,17 +74,17 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
         // Get unique user IDs from comments
         const userIds = Array.from(new Set(data.map(c => c.id_atendente).filter(id => id !== null)));
         
-        // Fetch user names for those IDs
-        let userMap: Record<number, string> = {};
+        // Fetch attendant names for those IDs from wiseapp_acesso
+        let attendantMap: Record<number, string> = {};
         if (userIds.length > 0) {
-          const { data: users } = await supabase
-            .from('users')
-            .select('id, username')
+          const { data: attendants } = await supabase
+            .from('wiseapp_acesso')
+            .select('id, attendant_name')
             .in('id', userIds);
             
-          if (users) {
-            userMap = users.reduce((acc, user) => {
-              acc[user.id] = user.username;
+          if (attendants) {
+            attendantMap = attendants.reduce((acc, attendant) => {
+              acc[attendant.id] = attendant.attendant_name || 'Atendente';
               return acc;
             }, {} as Record<number, string>);
           }
@@ -91,7 +93,7 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
         // Transform data to include atendente_nome
         const comentariosWithNames = data.map(comment => ({
           ...comment,
-          atendente_nome: comment.id_atendente ? userMap[comment.id_atendente] || null : null
+          atendente_nome: comment.id_atendente ? attendantMap[comment.id_atendente] || null : null
         }));
         
         setComentarios(comentariosWithNames);
@@ -134,7 +136,7 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
         .from('comentario')
         .insert([{
           id_motorista: motorista_id,
-          id_atendente: accountId ? parseInt(accountId) : null,
+          id_atendente: attendantId,
           comentario: comentario.trim()
         }])
         .select();

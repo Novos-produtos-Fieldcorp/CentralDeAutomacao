@@ -30,7 +30,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     try {
       const { data: existing, error: selectError } = await supabase
         .from('wiseapp_acesso')
-        .select('*')
+        .select('id, email, attendant_name, access_token_wiseapp')
         .eq('email', email)
         .single();
 
@@ -39,6 +39,8 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       if (existing) {
         if (existing.access_token_wiseapp) {
           localStorage.setItem('wiseapp_token', existing.access_token_wiseapp);
+          localStorage.setItem('attendant_id', existing.id.toString());
+          localStorage.setItem('attendant_name', existing.attendant_name || '');
           onTokenSaved(existing.access_token_wiseapp);
           onClose();
         } else {
@@ -91,7 +93,18 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
 
       if (updateError) throw updateError;
 
+      // Buscar os dados atualizados para obter o ID
+      const { data: updatedAccess } = await supabase
+        .from('wiseapp_acesso')
+        .select('id, attendant_name')
+        .eq('email', email)
+        .single();
+
       localStorage.setItem('wiseapp_token', token);
+      if (updatedAccess) {
+        localStorage.setItem('attendant_id', updatedAccess.id.toString());
+        localStorage.setItem('attendant_name', updatedAccess.attendant_name || '');
+      }
       onTokenSaved(token);
       onClose();
     } catch (err) {

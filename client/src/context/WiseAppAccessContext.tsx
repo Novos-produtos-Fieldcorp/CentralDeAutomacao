@@ -6,18 +6,24 @@ import { useSearchParams } from 'react-router-dom';
 interface WiseAppAccessContextType {
   token: string | null;
   companyId: number | null;
+  attendantId: number | null;
+  attendantName: string | null;
   isLoading: boolean;
 }
 
 const WiseAppAccessContext = createContext<WiseAppAccessContextType>({
   token: null,
   companyId: null,
+  attendantId: null,
+  attendantName: null,
   isLoading: true,
 });
 
 export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<number | null>(null);
+  const [attendantId, setAttendantId] = useState<number | null>(null);
+  const [attendantName, setAttendantName] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [searchParams] = useSearchParams();
@@ -26,8 +32,13 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
     const verificarAcesso = async () => {
       // Check if token exists in localStorage
       const storedToken = localStorage.getItem('wiseapp_token');
-      if (storedToken) {
+      const storedAttendantId = localStorage.getItem('attendant_id');
+      const storedAttendantName = localStorage.getItem('attendant_name');
+      
+      if (storedToken && storedAttendantId) {
         setToken(storedToken);
+        setAttendantId(parseInt(storedAttendantId));
+        setAttendantName(storedAttendantName);
         setIsLoading(false);
         return;
       }
@@ -61,7 +72,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
           // Check if there's a token for this company
           const { data: access, error: accessError } = await supabase
             .from('wiseapp_acesso')
-            .select('access_token_wiseapp')
+            .select('id, access_token_wiseapp, attendant_name')
             .eq('company_id', company.company_id)
             .maybeSingle();
 
@@ -71,7 +82,11 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
 
           if (access && access.access_token_wiseapp) {
             setToken(access.access_token_wiseapp);
+            setAttendantId(access.id);
+            setAttendantName(access.attendant_name);
             localStorage.setItem('wiseapp_token', access.access_token_wiseapp);
+            localStorage.setItem('attendant_id', access.id.toString());
+            localStorage.setItem('attendant_name', access.attendant_name || '');
           } else {
             // No token found, show modal
             setShowModal(true);
@@ -88,7 +103,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
   }, [searchParams]);
 
   return (
-    <WiseAppAccessContext.Provider value={{ token, companyId, isLoading }}>
+    <WiseAppAccessContext.Provider value={{ token, companyId, attendantId, attendantName, isLoading }}>
       {children}
       <WiseAppTokenModal
         open={showModal}
