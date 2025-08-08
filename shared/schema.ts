@@ -578,6 +578,90 @@ export const wiseapp_acesso = pgTable("wiseapp_acesso", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
+// Gestão de Risco tables
+export const gr_empresa = pgTable("gr_empresa", {
+  id: serial("id").primaryKey(),
+  nome: text("nome").notNull(),
+  company_id: integer("company_id").references(() => company.company_id),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const gr_status = pgTable("gr_status", {
+  id: serial("id").primaryKey(),
+  status: text("status").notNull(),
+  company_id: integer("company_id").references(() => company.company_id),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const gr_motorista = pgTable("gr_motorista", {
+  id: serial("id").primaryKey(),
+  motorista_id: integer("motorista_id").references(() => motorista.motorista_id).notNull(),
+  empresa_id: integer("empresa_id").references(() => gr_empresa.id).notNull(),
+  status_id: integer("status_id").references(() => gr_status.id).notNull(),
+  motivo: text("motivo"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Relations for Gestão de Risco tables
+export const grEmpresaRelations = relations(gr_empresa, ({ one }) => ({
+  company: one(company, {
+    fields: [gr_empresa.company_id],
+    references: [company.company_id],
+  }),
+}));
+
+export const grStatusRelations = relations(gr_status, ({ one }) => ({
+  company: one(company, {
+    fields: [gr_status.company_id],
+    references: [company.company_id],
+  }),
+}));
+
+export const grMotoristaRelations = relations(gr_motorista, ({ one }) => ({
+  motorista: one(motorista, {
+    fields: [gr_motorista.motorista_id],
+    references: [motorista.motorista_id],
+  }),
+  empresa: one(gr_empresa, {
+    fields: [gr_motorista.empresa_id],
+    references: [gr_empresa.id],
+  }),
+  status: one(gr_status, {
+    fields: [gr_motorista.status_id],
+    references: [gr_status.id],
+  }),
+}));
+
+// Insert schemas for Gestão de Risco tables
+export const insertGrEmpresaSchema = createInsertSchema(gr_empresa).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const insertGrStatusSchema = createInsertSchema(gr_status).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const insertGrMotoristaSchema = createInsertSchema(gr_motorista).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+// Types for Gestão de Risco
+export type GrEmpresa = typeof gr_empresa.$inferSelect;
+export type InsertGrEmpresa = z.infer<typeof insertGrEmpresaSchema>;
+export type GrStatus = typeof gr_status.$inferSelect;
+export type InsertGrStatus = z.infer<typeof insertGrStatusSchema>;
+export type GrMotorista = typeof gr_motorista.$inferSelect;
+export type InsertGrMotorista = z.infer<typeof insertGrMotoristaSchema>;
+
 export interface MotoristaWithAddress extends Motorista {
   endereco?: {
     id_end_motorista: number;
