@@ -72,7 +72,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
           // Check if there's a token for this company
           const { data: access, error: accessError } = await supabase
             .from('wiseapp_acesso')
-            .select('id, access_token_wiseapp, attendant_name')
+            .select('wiseapp_acesso_id, access_token_wiseapp, nome')
             .eq('company_id', company.company_id)
             .maybeSingle();
 
@@ -82,11 +82,11 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
 
           if (access && access.access_token_wiseapp) {
             setToken(access.access_token_wiseapp);
-            setAttendantId(access.id);
-            setAttendantName(access.attendant_name);
+            setAttendantId(access.wiseapp_acesso_id);
+            setAttendantName(access.nome);
             localStorage.setItem('wiseapp_token', access.access_token_wiseapp);
-            localStorage.setItem('attendant_id', access.id.toString());
-            localStorage.setItem('attendant_name', access.attendant_name || '');
+            localStorage.setItem('attendant_id', access.wiseapp_acesso_id.toString());
+            localStorage.setItem('attendant_name', access.nome || '');
           } else {
             // No token found, show modal
             setShowModal(true);

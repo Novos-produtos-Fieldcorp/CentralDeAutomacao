@@ -79,12 +79,12 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
         if (userIds.length > 0) {
           const { data: attendants } = await supabase
             .from('wiseapp_acesso')
-            .select('id, attendant_name')
-            .in('id', userIds);
+            .select('wiseapp_acesso_id, nome')
+            .in('wiseapp_acesso_id', userIds);
             
           if (attendants) {
             attendantMap = attendants.reduce((acc, attendant) => {
-              acc[attendant.id] = attendant.attendant_name || 'Atendente';
+              acc[attendant.wiseapp_acesso_id] = attendant.nome || 'Atendente';
               return acc;
             }, {} as Record<number, string>);
           }
