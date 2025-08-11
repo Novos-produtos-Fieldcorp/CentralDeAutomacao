@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Loader2, Plus, FilePen, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, Loader2, Plus, FilePen, CheckCircle2, XCircle, Filter, ChevronDown } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Checklist } from '../../types/database';
 
@@ -23,8 +23,10 @@ const ChecklistMensal = () => {
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'ativo' | 'inativo'>('all');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -55,10 +57,15 @@ const ChecklistMensal = () => {
   }, [dateRange, pendingDateRange, companyId]);
 
   useEffect(() => {
-    // Close context menu when clicking anywhere
-    const handleClick = () => {
+    // Close context menu and dropdowns when clicking anywhere
+    const handleClick = (event: MouseEvent) => {
       if (contextMenu.visible) {
         setContextMenu({ ...contextMenu, visible: false });
+      }
+      
+      // Close status dropdown if clicking outside
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setShowStatusDropdown(false);
       }
     };
 
@@ -217,6 +224,14 @@ const ChecklistMensal = () => {
     });
   };
 
+  const toggleStatusFilter = (status: string) => {
+    setStatusFilter(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status) 
+        : [...prev, status]
+    );
+  };
+
   const filteredChecklists = checklists.filter(checklist => {
     const searchString = searchTerm.toLowerCase();
     const matchesSearch = (
@@ -225,9 +240,9 @@ const ChecklistMensal = () => {
       checklist.veiculo?.placa.toLowerCase().includes(searchString)
     );
     
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'ativo' && checklist.status) ||
-      (statusFilter === 'inativo' && !checklist.status);
+    const matchesStatus = statusFilter.length === 0 || 
+      (statusFilter.includes('ativo') && checklist.status) ||
+      (statusFilter.includes('inativo') && !checklist.status);
     
     return matchesSearch && matchesStatus;
   });
@@ -257,33 +272,16 @@ const ChecklistMensal = () => {
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row justify-between gap-4">
-            {/* Search and Status Filter */}
-            <div className="flex flex-col sm:flex-row gap-4 flex-1">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  placeholder="Buscar por motorista, CPF ou placa..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 transition-all"
-                />
-                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                  Status:
-                </label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'ativo' | 'inativo')}
-                  className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 transition-all min-w-[120px]"
-                >
-                  <option value="all">Todos</option>
-                  <option value="ativo">Ativo</option>
-                  <option value="inativo">Inativo</option>
-                </select>
-              </div>
+            {/* Search */}
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Buscar por motorista, CPF ou placa..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 transition-all"
+              />
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             </div>
 
             {/* Export and New Checklist */}
@@ -312,6 +310,63 @@ const ChecklistMensal = () => {
                 <Plus className="w-5 h-5" />
                 Novo Checklist
               </button>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-3 items-center justify-between">
+            <div className="flex flex-wrap gap-2">
+              {/* Status Filter */}
+              <div className="relative" ref={statusDropdownRef}>
+                <button
+                  type="button"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                >
+                  <Filter className="h-4 w-4" />
+                  <span>
+                    {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
+                  </span>
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+
+                {showStatusDropdown && (
+                  <div 
+                    className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 min-w-[180px] z-50"
+                  >
+                    <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
+                        <button 
+                          type="button" 
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStatusFilter([]);
+                          }}
+                        >
+                          Limpar
+                        </button>
+                      </div>
+                    </div>
+                    {['ativo', 'inativo'].map((status) => (
+                      <div key={status} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={statusFilter.includes(status)}
+                            onChange={() => toggleStatusFilter(status)}
+                            className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-200 capitalize">
+                            {status}
+                          </span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
