@@ -1145,7 +1145,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                           transition-colors flex items-center gap-2"
                 >
                   <MessageCircle className="w-5 h-5" />
-                  Enviar Mensagem
+                  Enviar Campanha
                 </button>
                 <button
                   onClick={() => setIsBulkDeleteModalOpen(true)}
