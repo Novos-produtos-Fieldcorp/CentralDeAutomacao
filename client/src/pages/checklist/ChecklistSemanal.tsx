@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Loader2, Plus, CheckCircle2, XCircle, FilePen, Filter, ChevronDown, Download, X } from 'lucide-react';
+import { Search, Loader2, Plus, CheckCircle2, XCircle, FilePen, Filter, ChevronDown, Download, X, Calendar } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Checklist } from '../../types/database';
 import * as XLSX from 'xlsx';
@@ -26,6 +26,7 @@ const ChecklistSemanal = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -68,6 +69,9 @@ const ChecklistSemanal = () => {
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
         setShowStatusDropdown(false);
       }
+      
+      // Close period dropdown
+      setShowPeriodDropdown(false);
     };
 
     document.addEventListener('click', handleClick);
@@ -399,6 +403,62 @@ const ChecklistSemanal = () => {
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-200 capitalize">{status}</span>
                       </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Período Filter */}
+            <div className="relative z-[40]">
+              <button
+                type="button"
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+                onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
+              >
+                <Calendar className="h-4 w-4" />
+                <span>
+                  {periodType === 'all' ? 'Período' : 
+                   periodType === '1day' ? 'Hoje' :
+                   periodType === '15days' ? '15 dias' :
+                   periodType === '30days' ? '30 dias' :
+                   periodType === 'custom' ? 'Personalizado' : 'Período'}
+                </span>
+                <ChevronDown className="h-4 w-4" />
+              </button>
+
+              {showPeriodDropdown && (
+                <div 
+                  className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                  style={{ 
+                    position: 'absolute',
+                    bottom: '100%',
+                    left: 0,
+                    marginBottom: '4px',
+                    zIndex: 999999
+                  }}
+                >
+                  <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar período</span>
+                  </div>
+                  {[
+                    { value: 'all', label: 'Todos os períodos' },
+                    { value: '1day', label: 'Hoje' },
+                    { value: '15days', label: 'Últimos 15 dias' },
+                    { value: '30days', label: 'Últimos 30 dias' },
+                    { value: 'custom', label: 'Período personalizado' }
+                  ].map(({ value, label }) => (
+                    <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <button
+                        type="button"
+                        className="w-full text-left text-sm text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
+                        onClick={() => {
+                          updatePeriod(value as any);
+                          setShowPeriodDropdown(false);
+                        }}
+                      >
+                        {label}
+                      </button>
                     </div>
                   ))}
                 </div>
