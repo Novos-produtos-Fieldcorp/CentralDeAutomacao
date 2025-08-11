@@ -354,7 +354,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
     <div className="fixed inset-0 z-50">
       {/* Overlay */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      
       {/* Modal Container */}
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
@@ -1099,7 +1098,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                         {ajudantes.map((ajudante) => (
                           <div key={ajudante.id_ajudante} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                             {/* Header com nome e ações */}
-                            <div className="bg-gray-50 dark:bg-gray-750 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="dark:bg-gray-750 px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-[#1f2937]">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center">
                                   <div className="flex-shrink-0 h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -1343,7 +1342,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
           </div>
         </div>
       </div>
-
       {/* Modals */}
       {isEditModalOpen && (
         <EditMotoristaModal
@@ -1357,7 +1355,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
           }}
         />
       )}
-
       <AddAjudanteModal
         isOpen={isAddAjudanteModalOpen}
         onClose={() => setIsAddAjudanteModalOpen(false)}
@@ -1368,7 +1365,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
           onSuccess?.();
         }}
       />
-
       {isEditAjudanteModalOpen && selectedAjudante && (
         <EditAjudanteModal
           isOpen={isEditAjudanteModalOpen}
@@ -1380,7 +1376,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
           onSuccess={handleAjudanteUpdated}
         />
       )}
-      
       {veiculo && (
         <EditVeiculoModal
           isOpen={isEditVeiculoModalOpen}
@@ -1392,7 +1387,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
           }}
         />
       )}
-
       {isDeleteAjudanteModalOpen && selectedAjudante && (
         <DeleteConfirmationModal
           isOpen={isDeleteAjudanteModalOpen}
@@ -1405,7 +1399,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
           message={`Tem certeza que deseja excluir o ajudante "${selectedAjudante.nome}"? Esta ação não pode ser desfeita.`}
         />
       )}
-
       {/* Full-screen document viewer */}
       {activeDocument && (
         <div 
