@@ -11,7 +11,6 @@ import DeleteChecklistModal from '../../components/checklist/DeleteChecklistModa
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useDateRange } from '../../hooks/useDateRange';
-import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -468,15 +467,7 @@ const ChecklistMensal = () => {
           </div>
         </div>
 
-        {/* Period Selector */}
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <PeriodSelector
-            periodType={periodType}
-            dateRange={dateRange}
-            onPeriodChange={updatePeriod}
-            onDateRangeChange={setDateRange}
-          />
-        </div>
+
       </div>
 
       {/* Table */}
