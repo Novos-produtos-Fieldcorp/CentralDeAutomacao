@@ -29,6 +29,7 @@ const ChecklistSemanal = () => {
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const periodDropdownRef = useRef<HTMLDivElement>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -70,8 +71,10 @@ const ChecklistSemanal = () => {
         setShowStatusDropdown(false);
       }
       
-      // Close period dropdown
-      setShowPeriodDropdown(false);
+      // Close period dropdown if clicking outside
+      if (periodDropdownRef.current && !periodDropdownRef.current.contains(event.target as Node)) {
+        setShowPeriodDropdown(false);
+      }
     };
 
     document.addEventListener('click', handleClick);
@@ -410,7 +413,7 @@ const ChecklistSemanal = () => {
             </div>
 
             {/* Período Filter */}
-            <div className="relative z-[40]">
+            <div className="relative z-[40]" ref={periodDropdownRef}>
               <button
                 type="button"
                 className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
