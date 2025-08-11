@@ -1095,8 +1095,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   </div>
                   
                   {ajudantes.length > 0 ? (
-                    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                      <div className="space-y-6">
+                    <div className="space-y-6">
                         {ajudantes.map((ajudante) => (
                           <div key={ajudante.id_ajudante} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                             {/* Header com nome e ações */}
@@ -1297,7 +1296,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             </div>
                           </div>
                         ))}
-                      </div>
                     </div>
                   ) : (
                     <div className="text-center py-12">
