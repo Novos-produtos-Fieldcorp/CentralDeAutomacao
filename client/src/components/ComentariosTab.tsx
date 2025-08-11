@@ -122,10 +122,6 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
       return;
     }
     
-    // Debug: Log the current attendant ID
-    console.log('Debug - Salvando comentário com attendantId:', attendantId);
-    console.log('Debug - localStorage attendant_id:', localStorage.getItem('attendant_id'));
-    
     // Get attendantId from localStorage if context value is null
     const currentAttendantId = attendantId || parseInt(localStorage.getItem('attendant_id') || '0');
     
@@ -142,12 +138,6 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
       if (!isConnected) {
         throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão com a internet.');
       }
-      
-      console.log('Debug - Inserindo comentário com dados:', {
-        id_motorista: motorista_id,
-        id_atendente: currentAttendantId,
-        comentario: comentario.trim()
-      });
       
       // Always create a new comment
       const { data, error } = await supabase

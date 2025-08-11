@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Loader2, Camera, Upload } from 'lucide-react';
+import { X, Loader2, Camera, Upload, Eye, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCEP } from '../utils/format';
@@ -25,6 +25,12 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     cnh: false,
     rg: false,
     comprovante: false
+  });
+  
+  const [showPreview, setShowPreview] = useState<{[key: string]: boolean}>({
+    foto_cnh: false,
+    foto_rg: false,
+    comprovante_residencia: false
   });
   
   const [formData, setFormData] = useState({
@@ -331,6 +337,18 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
       console.error('Erro ao consultar CPF:', error);
       toast.error(error instanceof Error ? error.message : 'Erro ao consultar CPF');
     }
+  };
+
+  const togglePreview = (field: string) => {
+    setShowPreview(prev => ({ ...prev, [field]: !prev[field] }));
+  };
+
+  const isImageFile = (url: string) => {
+    return url.toLowerCase().match(/\.(jpeg|jpg|png|gif)$/);
+  };
+
+  const isPDFFile = (url: string) => {
+    return url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('pdf');
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'foto_cnh' | 'foto_rg' | 'comprovante_residencia') => {
@@ -879,14 +897,67 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                         </div>
                       )}
                       {formData.foto_cnh && !uploading.cnh && (
-                        <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
-                          <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          Documento enviado
+                        <div className="ml-4 flex items-center gap-2">
+                          <div className="flex items-center text-sm text-green-600 dark:text-green-400">
+                            <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Documento enviado
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => togglePreview('foto_cnh')}
+                            className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                            {showPreview.foto_cnh ? 'Ocultar' : 'Ver'}
+                          </button>
                         </div>
                       )}
                     </div>
+                    
+                    {/* Inline CNH Preview */}
+                    {formData.foto_cnh && showPreview.foto_cnh && (
+                      <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-start mb-3">
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Foto da CNH</h4>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={formData.foto_cnh}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              Abrir em nova aba
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => togglePreview('foto_cnh')}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        {isImageFile(formData.foto_cnh) ? (
+                          <img
+                            src={formData.foto_cnh}
+                            alt="Foto da CNH"
+                            className="max-w-full h-auto max-h-64 rounded-md mx-auto block"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-32 bg-gray-100 dark:bg-gray-700 rounded-md">
+                            <div className="text-center">
+                              <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              <p className="text-sm text-gray-500 dark:text-gray-400">PDF Document</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -986,14 +1057,67 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                         </div>
                       )}
                       {formData.foto_rg && !uploading.rg && (
-                        <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
-                          <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          Documento enviado
+                        <div className="ml-4 flex items-center gap-2">
+                          <div className="flex items-center text-sm text-green-600 dark:text-green-400">
+                            <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Documento enviado
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => togglePreview('foto_rg')}
+                            className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                            {showPreview.foto_rg ? 'Ocultar' : 'Ver'}
+                          </button>
                         </div>
                       )}
                     </div>
+                    
+                    {/* Inline RG Preview */}
+                    {formData.foto_rg && showPreview.foto_rg && (
+                      <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-start mb-3">
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Foto do RG</h4>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={formData.foto_rg}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              Abrir em nova aba
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => togglePreview('foto_rg')}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        {isImageFile(formData.foto_rg) ? (
+                          <img
+                            src={formData.foto_rg}
+                            alt="Foto do RG"
+                            className="max-w-full h-auto max-h-64 rounded-md mx-auto block"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-32 bg-gray-100 dark:bg-gray-700 rounded-md">
+                            <div className="text-center">
+                              <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              <p className="text-sm text-gray-500 dark:text-gray-400">PDF Document</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1162,14 +1286,67 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                       </div>
                     )}
                     {formData.comprovante_residencia && !uploading.comprovante && (
-                      <div className="ml-4 flex items-center text-sm text-green-600 dark:text-green-400">
-                        <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Documento enviado
+                      <div className="ml-4 flex items-center gap-2">
+                        <div className="flex items-center text-sm text-green-600 dark:text-green-400">
+                          <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          Documento enviado
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => togglePreview('comprovante_residencia')}
+                          className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                          {showPreview.comprovante_residencia ? 'Ocultar' : 'Ver'}
+                        </button>
                       </div>
                     )}
                   </div>
+                  
+                  {/* Inline Address Proof Preview */}
+                  {formData.comprovante_residencia && showPreview.comprovante_residencia && (
+                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Comprovante de Residência</h4>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={formData.comprovante_residencia}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            Abrir em nova aba
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => togglePreview('comprovante_residencia')}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      {isImageFile(formData.comprovante_residencia) ? (
+                        <img
+                          src={formData.comprovante_residencia}
+                          alt="Comprovante de Residência"
+                          className="max-w-full h-auto max-h-64 rounded-md mx-auto block"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-32 bg-gray-100 dark:bg-gray-700 rounded-md">
+                          <div className="text-center">
+                            <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500 dark:text-gray-400">PDF Document</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1204,6 +1381,8 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
           </form>
         )}
       </div>
+
+
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, AlertTriangle, Check, X, Loader2, ShieldAlert } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 interface GestaoRisco {
   id: number;
@@ -44,6 +45,7 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
   motorista_id,
   onUpdateSuccess
 }) => {
+  const { companyId } = useAuth();
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,30 +98,32 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
   };
 
   useEffect(() => {
-    fetchGestoesRisco();
-  }, [motorista_id]);
-
-  useEffect(() => {
-    fetchGestoesRisco();
-  }, [motorista_id]);
+    if (companyId) {
+      fetchGestoesRisco();
+    }
+  }, [motorista_id, companyId]);
 
   const fetchGestoesRisco = async () => {
+    if (!companyId) return;
+    
     try {
       setLoading(true);
       
-      // Fetch empresas
+      // Fetch empresas filtered by company_id
       const { data: empresasData, error: empresasError } = await supabase
         .from('gr_empresa')
         .select('*')
+        .eq('company_id', companyId)
         .order('nome');
       
       if (empresasError) throw empresasError;
       setEmpresas(empresasData || []);
       
-      // Fetch statuses
+      // Fetch statuses filtered by company_id
       const { data: statusesData, error: statusesError } = await supabase
         .from('gr_status')
         .select('*')
+        .eq('company_id', companyId)
         .order('status');
       
       if (statusesError) throw statusesError;
@@ -154,12 +158,20 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
       return;
     }
     
+    if (!companyId) {
+      toast.error('ID da empresa não encontrado');
+      return;
+    }
+    
     try {
       setCreatingEmpresa(true);
       
       const { data, error } = await supabase
         .from('gr_empresa')
-        .insert({ nome: newEmpresaNome.trim() })
+        .insert({ 
+          nome: newEmpresaNome.trim(),
+          company_id: companyId 
+        })
         .select()
         .single();
       
@@ -183,12 +195,20 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
       return;
     }
     
+    if (!companyId) {
+      toast.error('ID da empresa não encontrado');
+      return;
+    }
+    
     try {
       setCreatingStatus(true);
       
       const { data, error } = await supabase
         .from('gr_status')
-        .insert({ status: newStatusNome.trim() })
+        .insert({ 
+          status: newStatusNome.trim(),
+          company_id: companyId 
+        })
         .select()
         .single();
       
