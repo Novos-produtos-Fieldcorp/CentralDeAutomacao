@@ -23,6 +23,7 @@ const ChecklistMensal = () => {
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'ativo' | 'inativo'>('all');
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -218,11 +219,17 @@ const ChecklistMensal = () => {
 
   const filteredChecklists = checklists.filter(checklist => {
     const searchString = searchTerm.toLowerCase();
-    return (
+    const matchesSearch = (
       checklist.motorista?.nome.toLowerCase().includes(searchString) ||
       checklist.motorista?.cpf?.includes(searchString) ||
       checklist.veiculo?.placa.toLowerCase().includes(searchString)
     );
+    
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'ativo' && checklist.status) ||
+      (statusFilter === 'inativo' && !checklist.status);
+    
+    return matchesSearch && matchesStatus;
   });
 
   const {
@@ -250,17 +257,34 @@ const ChecklistMensal = () => {
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row justify-between gap-4">
-            {/* Search */}
-            <div className="relative w-full md:w-96 flex-1">
-  <input
-    type="text"
-    placeholder="Buscar por motorista, CPF ou placa..."
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 transition-all"
-  />
-  <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-</div>
+            {/* Search and Status Filter */}
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="Buscar por motorista, CPF ou placa..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 transition-all"
+                />
+                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                  Status:
+                </label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'ativo' | 'inativo')}
+                  className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 transition-all min-w-[120px]"
+                >
+                  <option value="all">Todos</option>
+                  <option value="ativo">Ativo</option>
+                  <option value="inativo">Inativo</option>
+                </select>
+              </div>
+            </div>
 
             {/* Export and New Checklist */}
             <div className="flex gap-2">
