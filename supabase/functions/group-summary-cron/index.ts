@@ -50,11 +50,11 @@ Deno.serve(async (req)=>{
         console.log(`Processing group: ${grupo.nome_grupo} (ID: ${grupo.id})`);
         // Apenas envie os dados do grupo diretamente
         await sendWebhook(grupo); // Chame sendWebhook passando apenas o objeto grupo
-        await recordDelivery(grupo, 'success', 'Webhook sent successfully.');
+        await recordDelivery(grupo, 'success', 'Webhook sent successfully.', currentUtcTime);
         console.log(`Successfully processed group: ${grupo.nome_grupo}`);
       } catch (groupProcessError) {
         console.error(`Error processing group ${grupo.nome_grupo}:`, groupProcessError);
-        await recordDelivery(grupo, 'failed', `Failed to send webhook: ${groupProcessError.message}`);
+        await recordDelivery(grupo, 'failed', `Failed to send webhook: ${groupProcessError.message}`, currentUtcTime);
       }
     }
     return new Response('Group summary processing complete.', {
@@ -105,12 +105,14 @@ async function recordDelivery(grupo, status, message, utcExecutionTime) {
 }
 // Function to send webhook with the specified group data
 async function sendWebhook(grupo) {
-  // Prepare the webhook payload with ONLY the fields you need
+  // Prepare the webhook payload with required fields including company_id and group_id
   const webhookData = {
     "nome_do_grupo": grupo.nome_grupo,
-    "url_do_grupo": grupo.url_grupo
+    "url_do_grupo": grupo.url_grupo,
+    "company_id": grupo.company_id,
+    "group_id": grupo.id
   };
-  console.log('Sending webhook data (nome_grupo and url_grupo only):', JSON.stringify(webhookData, null, 2));
+  console.log('Sending webhook data (nome_grupo, url_grupo, company_id, and group_id):', JSON.stringify(webhookData, null, 2));
   const response = await fetch(WEBHOOK_URL, {
     method: 'POST',
     headers: {
