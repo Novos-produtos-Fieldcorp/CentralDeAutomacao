@@ -663,6 +663,7 @@ const Clientes = () => {
                                                 </td>
                                             </tr>
                                             
+                                            
                                             {/* Address Dropdown */}
                                             {cliente.isExpanded && (
                                                 <tr className="bg-gray-50 dark:bg-gray-700/30">
