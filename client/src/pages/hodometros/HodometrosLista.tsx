@@ -713,9 +713,10 @@ const HodometrosLista = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredVehicleData.map((vehicle) => (
-                <React.Fragment key={`vehicle-${vehicle.veiculo_id}`}>
+              {filteredVehicleData.flatMap((vehicle) => {
+                const rows = [
                   <tr 
+                    key={`vehicle-main-${vehicle.veiculo_id}`}
                     className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
                       vehicle.expanded ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                     }`}
@@ -771,10 +772,12 @@ const HodometrosLista = () => {
                       </div>
                     </td>
                   </tr>
-                  
-                  {/* Expanded vehicle details */}
-                  {vehicle.expanded && (
-                    <tr className="bg-gray-50 dark:bg-[#252A3B]">
+
+                ];
+                
+                if (vehicle.expanded) {
+                  rows.push(
+                    <tr key={`vehicle-expanded-${vehicle.veiculo_id}`} className="bg-gray-50 dark:bg-[#252A3B]">
                       <td colSpan={5} className="px-6 py-4">
                         <div className="space-y-4">
                           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -886,9 +889,11 @@ const HodometrosLista = () => {
                         </div>
                       </td>
                     </tr>
-                  )}
-                </React.Fragment>
-              ))}
+                  );
+                }
+                
+                return rows;
+              })}
               {filteredVehicleData.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
