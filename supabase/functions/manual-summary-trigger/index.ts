@@ -80,15 +80,13 @@ Deno.serve(async (req) => {
 
     // Send webhook with just the required fields
     try {
-      // Prepare the webhook payload with required fields including company_id and group_id
+      // Prepare the webhook payload with ONLY the fields needed
       const webhookData = {
         "nome_do_grupo": grupo.nome_grupo,
-        "url_do_grupo": grupo.url_grupo,
-        "company_id": grupo.company_id,
-        "group_id": grupo.id
+        "url_do_grupo": grupo.url_grupo
       };
       
-      console.log('Sending webhook data (nome_grupo, url_grupo, company_id, and group_id):', JSON.stringify(webhookData, null, 2));
+      console.log('Sending webhook data:', JSON.stringify(webhookData, null, 2));
       
       // Send the webhook
       const response = await fetch(WEBHOOK_URL, {
@@ -135,6 +133,16 @@ Deno.serve(async (req) => {
     }
   } catch (error) {
     console.error('Error in group summary trigger:', error);
+    
+    // If we have a group_id in the request, record the failure
+    try {
+      const { group_id, company_id } = await req.json();
+      if (group_id && company_id) {
+        await recordDelivery(group_id, company_id, false, error.message);
+      }
+    } catch (recordError) {
+      console.error('Error recording delivery failure:', recordError);
+    }
     
     return new Response(
       JSON.stringify({
