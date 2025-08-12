@@ -289,27 +289,29 @@ const ChecklistManutencao = () => {
 
   return (
     <div className="space-y-6">
-      {/* Period Selector */}
-      <div className="bg-white dark:bg-[#1f2937] p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <PeriodSelector
-          periodType={periodType}
-          dateRange={dateRange}
-          pendingDateRange={pendingDateRange}
-          onPeriodChange={updatePeriod}
-          onDateRangeChange={setDateRange}
-          onApplyCustomRange={() => {
-            if (applyPendingDateRange()) {
-              fetchMaintenanceAlerts();
-            }
-          }}
-        />
-      </div>
-
       <div className="bg-white dark:bg-[#1f2937] rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Truck className="text-blue-500" />
-          Veículos que Precisam de Atenção
-        </h2>
+        {/* Period Selector */}
+        <div className="mb-6">
+          <PeriodSelector
+            periodType={periodType}
+            dateRange={dateRange}
+            pendingDateRange={pendingDateRange}
+            onPeriodChange={updatePeriod}
+            onDateRangeChange={setDateRange}
+            onApplyCustomRange={() => {
+              if (applyPendingDateRange()) {
+                fetchMaintenanceAlerts();
+              }
+            }}
+          />
+        </div>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <Truck className="text-blue-500" />
+            Veículos que Precisam de Atenção
+          </h2>
+        </div>
 
         <div className="space-y-4">
           {alerts.length === 0 ? (
