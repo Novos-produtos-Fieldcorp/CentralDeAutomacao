@@ -86,7 +86,7 @@ const ChecklistMensal = () => {
     if (!companyId) return;
     
     try {
-      setLoading(true);
+      // Removed setLoading(true) to make period updates instant
       let baseQuery = supabase.from('checklist')
       .select(`
         *,
@@ -132,8 +132,6 @@ const ChecklistMensal = () => {
     } catch (error) {
       console.error('Error fetching checklists:', error);
       toast.error('Erro ao carregar checklists');
-    } finally {
-      setLoading(false);
     }
   };
 
