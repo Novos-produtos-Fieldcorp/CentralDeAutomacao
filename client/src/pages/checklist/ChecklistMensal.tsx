@@ -683,17 +683,6 @@ const ChecklistMensal = () => {
                 setIsDetailsModalOpen(true);
               },
               color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
-            },
-            {
-              icon: contextMenu.checklist.status ? <XCircle size={16} /> : <CheckCircle2 size={16} />,
-              label: contextMenu.checklist.status ? 'Marcar como não verificado' : 'Marcar como verificado',
-              onClick: () => {
-                const syntheticEvent = {
-                  stopPropagation: () => {}
-                } as unknown as React.MouseEvent;
-                handleToggleStatus(syntheticEvent, contextMenu.checklist!);
-              },
-              color: contextMenu.checklist.status ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
             }
           ]}
         />
