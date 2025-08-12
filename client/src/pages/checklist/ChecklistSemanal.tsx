@@ -395,13 +395,20 @@ const ChecklistSemanal = () => {
                   </div>
                   {['ativo', 'inativo'].map((status) => (
                     <div key={status} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <label className="flex items-center cursor-pointer">
+                      <label 
+                        className="flex items-center cursor-pointer"
+                        onClick={() => {
+                          toggleStatusFilter(status);
+                          setShowStatusDropdown(false);
+                        }}
+                      >
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                           checked={statusFilter.includes(status)}
-                          onChange={() => toggleStatusFilter(status)}
+                          onChange={() => {}}
                           onClick={(e) => e.stopPropagation()}
+                          readOnly
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-200 capitalize">{status}</span>
                       </label>
