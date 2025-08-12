@@ -418,12 +418,12 @@ const HodometrosRelatorio = () => {
 
           {showPeriodDropdown && (
             <div 
-              className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+              className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-top-2 fade-in duration-200"
               style={{ 
                 position: 'absolute',
-                bottom: '100%',
+                top: '100%',
                 left: 0,
-                marginBottom: '4px',
+                marginTop: '4px',
                 zIndex: 999999
               }}
             >
