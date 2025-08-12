@@ -827,14 +827,14 @@ const HodometrosLista = () => {
                                           Bateria: {reading.bateria}
                                         </div>
                                       ) : (
-                                        <>
+                                        <div>
                                           <div className="text-sm text-gray-900 dark:text-white">
                                             Lido: {formatNumber(reading.hod_lido)}
                                           </div>
                                           <div className="text-xs text-gray-500 dark:text-gray-400">
                                             Informado: {formatNumber(reading.hod_informado)}
                                           </div>
-                                        </>
+                                        </div>
                                       )}
                                     </td>
                                     <td className="px-4 py-2 whitespace-nowrap text-right">
