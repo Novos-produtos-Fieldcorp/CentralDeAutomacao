@@ -622,7 +622,7 @@ const ChecklistMensal = () => {
                           } ${updatingStatus === checklist.checklist_id ? 'opacity-50 cursor-not-allowed' : ''}`}
                           role="switch"
                           aria-checked={checklist.status}
-                          title={checklist.status ? "Marcar como não verificado" : "Marcar como verificado"}
+                          title="Mudar status"
                         >
                           <span
                             className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${

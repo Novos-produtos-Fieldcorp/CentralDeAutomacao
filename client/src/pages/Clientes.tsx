@@ -571,9 +571,9 @@ const Clientes = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    {paginatedData.map((cliente) => (
-                                        <React.Fragment key={cliente.cliente_id}>
+                                    {paginatedData.flatMap((cliente) => [
                                             <tr
+                                                key={`cliente-${cliente.cliente_id}`}
                                                 className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-opacity duration-200 cursor-pointer ${
                                                     selectedItems.has(cliente.cliente_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                                                 }
@@ -636,6 +636,7 @@ const Clientes = () => {
                                                         } ${updatingStatus === cliente.cliente_id ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                         role="switch"
                                                         aria-checked={cliente.st_cliente}
+                                                        title="Mudar status"
                                                     >
                                                         <span
                                                             className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
@@ -662,9 +663,11 @@ const Clientes = () => {
                                                 </td>
                                             </tr>
                                             
-                                            {/* Address Dropdown */}
-                                            {cliente.isExpanded && (
-                                                <tr className="bg-gray-50 dark:bg-gray-700/30">
+                                            
+                                            ,
+                                            // Address Dropdown
+                                            ...(cliente.isExpanded ? [
+                                                <tr key={`address-${cliente.cliente_id}`} className="bg-gray-50 dark:bg-gray-700/30">
                                                     <td colSpan={7} className="px-6 py-4">
                                                         <div className="flex items-start gap-3">
                                                             <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
@@ -698,9 +701,8 @@ const Clientes = () => {
                                                         </div>
                                                     </td>
                                                 </tr>
-                                            )}
-                                        </React.Fragment>
-                                    ))}
+                                            ] : [])
+                                        ])}
                                 </tbody>
                             </table>
                         </div>
