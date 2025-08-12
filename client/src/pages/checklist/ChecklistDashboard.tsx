@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, Truck, FileText, Award, CheckCircle2, XCircle, 
-  Calendar, MapPin, BarChart2, TrendingUp, AlertTriangle 
+  Calendar, MapPin, BarChart2, TrendingUp, AlertTriangle, ChevronDown 
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useDateRange } from '../../hooks/useDateRange';
-import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 interface DashboardStats {
@@ -38,6 +37,8 @@ const ChecklistDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('all', true);
+  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  const periodDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Only fetch when date range actually changes, not on pending changes
@@ -45,6 +46,22 @@ const ChecklistDashboard = () => {
       fetchDashboardData();
     }
   }, [dateRange, pendingDateRange, companyId]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (periodDropdownRef.current && !periodDropdownRef.current.contains(event.target as Node)) {
+        setShowPeriodDropdown(false);
+      }
+    };
+
+    if (showPeriodDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showPeriodDropdown]);
 
   const fetchDashboardData = async () => {
     if (!companyId) return;
@@ -199,20 +216,95 @@ const ChecklistDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Period Selector */}
+      {/* Period Filter */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <PeriodSelector
-          periodType={periodType}
-          dateRange={dateRange}
-          pendingDateRange={pendingDateRange}
-          onPeriodChange={updatePeriod}
-          onDateRangeChange={setDateRange}
-          onApplyCustomRange={() => {
-            if (applyPendingDateRange()) {
-              fetchDashboardData();
-            }
-          }}
-        />
+        <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
+          <div className="flex flex-wrap gap-2">
+            {/* Período Filter */}
+            <div className="relative z-[40]" ref={periodDropdownRef}>
+              <button
+                type="button"
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+                onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
+              >
+                <Calendar className="h-4 w-4" />
+                <span>
+                  {periodType === 'all' ? 'Período' : 
+                   periodType === '1day' ? 'Hoje' :
+                   periodType === '15days' ? '15 dias' :
+                   periodType === '30days' ? '30 dias' :
+                   periodType === 'custom' ? 'Personalizado' : 'Período'}
+                </span>
+                <ChevronDown className="h-4 w-4" />
+              </button>
+
+              {showPeriodDropdown && (
+                <div 
+                  className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                  style={{ 
+                    position: 'absolute',
+                    bottom: '100%',
+                    left: 0,
+                    marginBottom: '4px',
+                    zIndex: 999999
+                  }}
+                >
+                  <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar período</span>
+                  </div>
+                  {[
+                    { value: 'all', label: 'Todos os períodos' },
+                    { value: '1day', label: 'Hoje' },
+                    { value: '15days', label: 'Últimos 15 dias' },
+                    { value: '30days', label: 'Últimos 30 dias' },
+                    { value: 'custom', label: 'Período personalizado' }
+                  ].map(({ value, label }) => (
+                    <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <button
+                        type="button"
+                        className="w-full text-left text-sm text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
+                        onClick={() => {
+                          updatePeriod(value as any);
+                          setShowPeriodDropdown(false);
+                        }}
+                      >
+                        {label}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Custom Date Range */}
+        {periodType === 'custom' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data inicial
+              </label>
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data final
+              </label>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Top Stats */}
