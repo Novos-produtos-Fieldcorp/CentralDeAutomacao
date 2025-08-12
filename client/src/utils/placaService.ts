@@ -1,16 +1,24 @@
-// Placa Service - API for vehicle license plate information
-interface PlacaApiResponse {
-  // Based on common Brazilian vehicle API responses
-  placa?: string;
-  modelo?: string;
-  marca?: string;
-  ano?: string;
-  cor?: string;
-  combustivel?: string;
-  categoria?: string;
-  situacao?: string;
-  uf?: string;
-  municipio?: string;
+// Placa Service - API for vehicle license plate information using FIPE API
+interface FipeApiResponse {
+  data: {
+    veiculo: {
+      placa: string;
+      marca_modelo: string;
+      ano: string;
+      cor: string;
+      combustivel: string;
+      uf: string;
+      municipio: string;
+      chassi: string;
+      situacao_do_chassi?: string;
+      tipo_carroceria?: string;
+    };
+    fipes?: Array<{
+      codigo: string;
+      marca_modelo: string;
+      valor: number;
+    }>;
+  };
 }
 
 interface PlacaData {
@@ -38,12 +46,18 @@ export const consultarPlacaApi = async (placa: string): Promise<PlacaData> => {
   }
 
   try {
-    // Using a placeholder API endpoint - this would need to be configured with a real service
-    const response = await fetch(`/api/placa/${placaLimpa}`);
+    // Using FIPE API for vehicle plate consultation
+    const response = await fetch(`https://placas.fipeapi.com.br/placas/${placaLimpa}?key=e8f29d24d6680c3ea04acd04aecc3de8`);
 
     if (!response.ok) {
       if (response.status === 404) {
         throw new Error('Placa não encontrada na base de dados');
+      }
+      if (response.status === 401) {
+        throw new Error('⚠️ Erro de autenticação na API de placas. Verifique a chave da API.');
+      }
+      if (response.status === 429) {
+        throw new Error('⚠️ Limite de consultas da API excedido. Tente novamente mais tarde.');
       }
       if (response.status === 503) {
         throw new Error('⚠️ Consulta de placa temporariamente indisponível. Preencha os dados manualmente.');
@@ -51,30 +65,41 @@ export const consultarPlacaApi = async (placa: string): Promise<PlacaData> => {
       throw new Error('Erro ao consultar dados da placa');
     }
 
-    const data: PlacaApiResponse = await response.json();
+    const response_data: FipeApiResponse = await response.json();
+    const veiculo = response_data.data?.veiculo;
+
+    if (!veiculo) {
+      throw new Error('Dados do veículo não encontrados');
+    }
+
+    // Extract marca and modelo from marca_modelo field
+    const marcaModelo = veiculo.marca_modelo || '';
+    const [marca, ...modeloParts] = marcaModelo.split('/');
+    const modelo = modeloParts.join('/').trim();
 
     return {
-      placa: data.placa || placaLimpa,
-      modelo: data.modelo || '',
-      marca: data.marca || '',
-      ano: data.ano || '',
-      cor: data.cor || '',
-      combustivel: data.combustivel || '',
-      categoria: data.categoria || '',
-      uf: data.uf || '',
-      municipio: data.municipio || ''
+      placa: veiculo.placa || placaLimpa,
+      modelo: modelo || '',
+      marca: marca?.trim() || '',
+      ano: veiculo.ano || '',
+      cor: veiculo.cor || '',
+      combustivel: veiculo.combustivel || '',
+      categoria: veiculo.tipo_carroceria || '',
+      uf: veiculo.uf || '',
+      municipio: veiculo.municipio || ''
     };
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Erro de conexão. Verifique sua internet e tente novamente.');
+      throw new Error('⚠️ Erro de conexão com a API de placas. Verifique sua internet e tente novamente.');
     }
     
     // If already a treated error message, keep it
-    if (error instanceof Error && error.message.includes('⚠️')) {
+    if (error instanceof Error && (error.message.includes('⚠️') || error.message.includes('Dados do veículo não encontrados'))) {
       throw error;
     }
     
-    throw error;
+    // Generic error for unexpected issues
+    throw new Error('⚠️ Erro inesperado ao consultar placa. Tente novamente.');
   }
 };
 
