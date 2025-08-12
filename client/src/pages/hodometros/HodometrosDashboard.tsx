@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   BarChart2, Calendar, TrendingUp, Truck, Users, 
   AlertTriangle, Activity, FileText, Camera, X, Eye,
-  Gauge, AlertCircle, FileBarChart
+  Gauge, AlertCircle, FileBarChart, ChevronDown
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
-import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
 import { useAuth } from '../../context/AuthContext';
@@ -100,6 +99,8 @@ const HodometrosDashboard = () => {
   const [todayReadings, setTodayReadings] = useState(0);
   const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('30days', true);
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
+  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  const periodDropdownRef = useRef<HTMLDivElement>(null);
   
   // Inconsistencies table state
   const [hodometros, setHodometros] = useState<HodometroReading[]>([]);
@@ -118,6 +119,22 @@ const HodometrosDashboard = () => {
       fetchInconsistencies();
     }
   }, [dateRange, pendingDateRange]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (periodDropdownRef.current && !periodDropdownRef.current.contains(event.target as Node)) {
+        setShowPeriodDropdown(false);
+      }
+    };
+
+    if (showPeriodDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showPeriodDropdown]);
 
   // Enhanced error handling function
   const handleSupabaseError = (error: any, operation: string) => {
@@ -304,7 +321,7 @@ const HodometrosDashboard = () => {
       let totalKilometers = 0;
       
       // Process daily vehicle data to calculate mileage
-      for (const [key, data] of dailyVehicleDataMap.entries()) {
+      for (const [key, data] of Array.from(dailyVehicleDataMap.entries())) {
         const [date, vehicleId] = key.split('_');
         let kmRodadoNoDia = 0;
         
@@ -536,7 +553,14 @@ const HodometrosDashboard = () => {
       
       if (error) throw error;
       
-      setHodometros(data || []);
+      // Format the data to handle array structures from Supabase joins
+      const formattedData = (data || []).map((item: any) => ({
+        ...item,
+        motorista: Array.isArray(item.motorista) ? item.motorista[0] : item.motorista,
+        veiculo: Array.isArray(item.veiculo) ? item.veiculo[0] : item.veiculo
+      })) as HodometroReading[];
+      
+      setHodometros(formattedData);
       setTotalInconsistencies(count || 0);
     } catch (error) {
       handleSupabaseError(error, 'carregar inconsistências');
@@ -621,23 +645,92 @@ const HodometrosDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Period Selector */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <PeriodSelector
-          periodType={periodType}
-          dateRange={dateRange}
-          pendingDateRange={pendingDateRange}
-          onPeriodChange={updatePeriod}
-          onDateRangeChange={setDateRange}
-          onApplyCustomRange={() => {
-            if (applyPendingDateRange()) {
-              fetchData();
-              fetchTodayReadings();
-              fetchInconsistencies();
-            }
-          }}
-        />
+      {/* Period Filter */}
+      <div className="flex flex-wrap gap-3 items-center mb-6">
+        {/* Período Filter */}
+        <div className="relative z-[40]" ref={periodDropdownRef}>
+          <button
+            type="button"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+            onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
+          >
+            <Calendar className="h-4 w-4" />
+            <span>
+              {periodType === 'all' ? 'Período' : 
+               periodType === '1day' ? 'Hoje' :
+               periodType === '15days' ? '15 dias' :
+               periodType === '30days' ? '30 dias' :
+               periodType === 'custom' ? 'Personalizado' : 'Período'}
+            </span>
+            <ChevronDown className="h-4 w-4" />
+          </button>
+
+          {showPeriodDropdown && (
+            <div 
+              className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-top-2 fade-in duration-200"
+              style={{ 
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                marginTop: '4px',
+                zIndex: 999999
+              }}
+            >
+              <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar período</span>
+              </div>
+              {[
+                { value: 'all', label: 'Todos os períodos' },
+                { value: '1day', label: 'Hoje' },
+                { value: '15days', label: 'Últimos 15 dias' },
+                { value: '30days', label: 'Últimos 30 dias' },
+                { value: 'custom', label: 'Período personalizado' }
+              ].map(({ value, label }) => (
+                <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                  <button
+                    type="button"
+                    className="w-full text-left text-sm text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
+                    onClick={() => {
+                      updatePeriod(value as any);
+                      setShowPeriodDropdown(false);
+                    }}
+                  >
+                    {label}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Custom Date Range */}
+      {periodType === 'custom' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Data inicial
+            </label>
+            <input
+              type="date"
+              value={dateRange.startDate}
+              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Data final
+            </label>
+            <input
+              type="date"
+              value={dateRange.endDate}
+              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

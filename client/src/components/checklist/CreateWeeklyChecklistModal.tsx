@@ -148,7 +148,7 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
         motorista_id: parseInt(formData.motorista_id),
         veiculo_id: parseInt(formData.veiculo_id),
         company_id: companyId,
-        status: false // Default to false for new checklists
+        status: true // Default to true (active) for new checklists
       };
 
       const { data: newChecklist, error: checklistError } = await supabase

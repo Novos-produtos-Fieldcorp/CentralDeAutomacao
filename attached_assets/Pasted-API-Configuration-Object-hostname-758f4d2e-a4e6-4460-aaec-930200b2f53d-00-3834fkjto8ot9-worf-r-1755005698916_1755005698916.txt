@@ -1,0 +1,65 @@
+API Configuration: 
+Object {hostname: "758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev", isNetlify: false, isProduction: false, API_BASE_URL: "/api"}
+Fetching company data from: /api/company/by-account/6
+Auth successful - account_id: 6 company_id: 1 company: undefined
+Fetching company data from: /api/company/by-account/6
+Auth successful - account_id: 6 company_id: 1 company: undefined
+Fetching company data from: /api/company/by-account/6
+Auth successful - account_id: 6 company_id: 1 company: undefined
+Fetching company data from: /api/company/by-account/6
+Auth successful - account_id: 6 company_id: 1 company: undefined
+Warning: Invalid prop &#x60;data-replit-metadata&#x60; supplied to &#x60;React.Fragment&#x60;. React.Fragment can only have &#x60;key&#x60; and &#x60;children&#x60; props.
+    at CreateMonthlyChecklistModal (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/components/checklist/CreateMonthlyChecklistModal.tsx:23:40)
+    at div
+    at ChecklistMensal (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/pages/checklist/ChecklistMensal.tsx:37:32)
+    at RenderedRoute (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:5455:26)
+    at Routes (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:6188:3)
+    at div
+    at div
+    at div
+    at Checklist (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/pages/Checklist.tsx:28:20)
+    at RenderedRoute (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:5455:26)
+    at Routes (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:6188:3)
+    at div
+    at main
+    at div
+    at ProtectedRoute (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/App.tsx?v=o7b5bWMQPUwdzJXdQzumN:44:27)
+    at RenderedRoute (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:5455:26)
+    at Routes (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:6188:3)
+    at ChatProvider (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/context/ChatContext.tsx:21:32)
+    at AuthProvider (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/context/AuthContext.tsx:32:32)
+    at Router (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:6131:13)
+    at BrowserRouter (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:9149:3)
+    at ChecklistProvider (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/context/ChecklistContext.tsx:68:37)
+    at ThemeProvider (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/context/ThemeContext.tsx:20:33)
+    at QueryClientProvider (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=9714fa10:2805:3)
+    at App
+at CreateMonthlyChecklistModal (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/components/checklist/CreateMonthlyChecklistModal.tsx:23:40)
+at div
+at ChecklistMensal (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/pages/checklist/ChecklistMensal.tsx:37:32)
+at RenderedRoute (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:5455:26)
+at Routes (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:6188:3)
+at div
+at div
+at div
+at Checklist (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/pages/Checklist.tsx:28:20)
+at RenderedRoute (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:5455:26)
+at Routes (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:6188:3)
+at div
+at main
+at div
+at ProtectedRoute (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/App.tsx?v=o7b5bWMQPUwdzJXdQzumN:44:27)
+at RenderedRoute (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:5455:26)
+at Routes (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:6188:3)
+at ChatProvider (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/context/ChatContext.tsx:21:32)
+at AuthProvider (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/context/AuthContext.tsx:32:32)
+at Router (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:6131:13)
+at BrowserRouter (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=9714fa10:9149:3)
+at ChecklistProvider (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/context/ChecklistContext.tsx:68:37)
+at ThemeProvider (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/src/context/ThemeContext.tsx:20:33)
+at QueryClientProvider (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=9714fa10:2805:3)
+at App
+at t.value (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://758f4d2e-a4e6-4460-aaec-930200b2f53d-00-3834fkjto8ot9.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400

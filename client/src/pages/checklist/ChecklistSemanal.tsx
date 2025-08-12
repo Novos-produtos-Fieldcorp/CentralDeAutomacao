@@ -395,13 +395,20 @@ const ChecklistSemanal = () => {
                   </div>
                   {['ativo', 'inativo'].map((status) => (
                     <div key={status} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <label className="flex items-center cursor-pointer">
+                      <label 
+                        className="flex items-center cursor-pointer"
+                        onClick={() => {
+                          toggleStatusFilter(status);
+                          setShowStatusDropdown(false);
+                        }}
+                      >
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                           checked={statusFilter.includes(status)}
-                          onChange={() => toggleStatusFilter(status)}
+                          onChange={() => {}}
                           onClick={(e) => e.stopPropagation()}
+                          readOnly
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-200 capitalize">{status}</span>
                       </label>
@@ -467,9 +474,44 @@ const ChecklistSemanal = () => {
               )}
             </div>
           </div>
+          
+          {/* Add Checklist Button */}
+          <button
+            onClick={() => setIsNewModalOpen(true)}
+            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Novo Checklist</span>
+          </button>
         </div>
 
-
+        {/* Custom Date Range */}
+        {periodType === 'custom' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data inicial
+              </label>
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data final
+              </label>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -507,7 +549,7 @@ const ChecklistSemanal = () => {
                     key={checklist.checklist_id} 
                     className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                       selectedItems.has(checklist.checklist_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                    }`}
+                    } ${!checklist.status ? 'opacity-50' : ''}`}
                     onContextMenu={(e) => handleContextMenu(e, checklist)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -643,17 +685,6 @@ const ChecklistSemanal = () => {
                 setIsDetailsModalOpen(true);
               },
               color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors'
-            },
-            {
-              icon: contextMenu.checklist.status ? <XCircle size={16} /> : <CheckCircle2 size={16} />,
-              label: contextMenu.checklist.status ? 'Marcar como não verificado' : 'Marcar como verificado',
-              onClick: () => {
-                const syntheticEvent = {
-                  stopPropagation: () => {}
-                } as unknown as React.MouseEvent;
-                handleToggleStatus(syntheticEvent, contextMenu.checklist!);
-              },
-              color: contextMenu.checklist.status ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
             }
           ]}
         />

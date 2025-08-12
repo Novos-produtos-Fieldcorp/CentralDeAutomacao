@@ -100,19 +100,7 @@ export const ChecklistSection: React.FC<ChecklistSectionProps> = ({
           );
         })}
         
-        {/* Render special text field at the end if it exists */}
-        {specialTextKey && items[specialTextKey] && (
-          <div className="md:col-span-2">
-            <div className="p-3 bg-white dark:bg-gray-700/50 rounded-xl shadow-sm">
-              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                {specialTextLabel || specialTextKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {items[specialTextKey]}
-              </div>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );
