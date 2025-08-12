@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, BarChart2, Download, X, Calendar, User, Truck, ChevronDown, ChevronUp, Eye, Clock, Camera } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
-import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import { useDateRange } from '../../hooks/useDateRange';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -63,6 +62,8 @@ const HodometrosLista = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleData | null>(null);
   const [showChartModal, setShowChartModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  const periodDropdownRef = useRef<HTMLDivElement>(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
@@ -371,6 +372,22 @@ const HodometrosLista = () => {
     }
   }, [fetchVehicleData, pendingDateRange]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (periodDropdownRef.current && !periodDropdownRef.current.contains(event.target as Node)) {
+        setShowPeriodDropdown(false);
+      }
+    };
+
+    if (showPeriodDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showPeriodDropdown]);
+
   const handleViewChart = (vehicle: VehicleData) => {
     setSelectedVehicle(vehicle);
     setShowChartModal(true);
@@ -559,56 +576,122 @@ const HodometrosLista = () => {
   return (
     <div className="space-y-6">
       {/* Filters Section */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          {/* Search */}
-          <div className="relative flex-grow w-full md:w-auto">
-            <input
-              type="text"
-              placeholder="Buscar por placa, marca, modelo ou motorista..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
-                       dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
-                       focus:border-blue-500 text-gray-900 dark:text-gray-100"
-            />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-          </div>
+      <div className="flex flex-wrap gap-3 items-center mb-6">
+        {/* Search */}
+        <div className="relative flex-grow min-w-64">
+          <input
+            type="text"
+            placeholder="Buscar por placa, marca, modelo ou motorista..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
+                     dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 
+                     focus:border-blue-500 text-gray-900 dark:text-gray-100"
+          />
+          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+        </div>
 
-          {/* Period Selector */}
-          <div className="w-full md:w-48">
-            <PeriodSelector
-              periodType={periodType}
-              dateRange={dateRange}
-              pendingDateRange={pendingDateRange}
-              onPeriodChange={updatePeriod}
-              onDateRangeChange={setDateRange}
-              onApplyCustomRange={() => {
-                if (applyPendingDateRange()) {
-                  fetchVehicleData();
-                }
+        {/* Período Filter */}
+        <div className="relative z-[40]" ref={periodDropdownRef}>
+          <button
+            type="button"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+            onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
+          >
+            <Calendar className="h-4 w-4" />
+            <span>
+              {periodType === 'all' ? 'Período' : 
+               periodType === '1day' ? 'Hoje' :
+               periodType === '15days' ? '15 dias' :
+               periodType === '30days' ? '30 dias' :
+               periodType === 'custom' ? 'Personalizado' : 'Período'}
+            </span>
+            <ChevronDown className="h-4 w-4" />
+          </button>
+
+          {showPeriodDropdown && (
+            <div 
+              className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+              style={{ 
+                position: 'absolute',
+                bottom: '100%',
+                left: 0,
+                marginBottom: '4px',
+                zIndex: 999999
               }}
-            />
-          </div>
-
-          {/* Export Button */}
-          <div className="relative group">
-            <button
-              onClick={exportToExcel}
-              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                       transition-colors flex items-center justify-center"
-              disabled={filteredVehicleData.length === 0}
-              aria-label="Exportar Excel"
             >
-              <Download className="w-5 h-5" />
-            </button>
-            <div className="opacity-0 group-hover:opacity-100 absolute right-0 top-full mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
-              Exportar Excel
+              <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar período</span>
+              </div>
+              {[
+                { value: 'all', label: 'Todos os períodos' },
+                { value: '1day', label: 'Hoje' },
+                { value: '15days', label: 'Últimos 15 dias' },
+                { value: '30days', label: 'Últimos 30 dias' },
+                { value: 'custom', label: 'Período personalizado' }
+              ].map(({ value, label }) => (
+                <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                  <button
+                    type="button"
+                    className="w-full text-left text-sm text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
+                    onClick={() => {
+                      updatePeriod(value as any);
+                      setShowPeriodDropdown(false);
+                    }}
+                  >
+                    {label}
+                  </button>
+                </div>
+              ))}
             </div>
+          )}
+        </div>
+
+        {/* Export Button */}
+        <div className="relative group">
+          <button
+            onClick={exportToExcel}
+            className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                     transition-colors flex items-center justify-center"
+            disabled={filteredVehicleData.length === 0}
+            aria-label="Exportar Excel"
+          >
+            <Download className="w-5 h-5" />
+          </button>
+          <div className="opacity-0 group-hover:opacity-100 absolute right-0 top-full mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
+            Exportar Excel
           </div>
         </div>
       </div>
+
+      {/* Custom Date Range */}
+      {periodType === 'custom' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Data inicial
+            </label>
+            <input
+              type="date"
+              value={dateRange.startDate}
+              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Data final
+            </label>
+            <input
+              type="date"
+              value={dateRange.endDate}
+              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Vehicle Mileage Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
