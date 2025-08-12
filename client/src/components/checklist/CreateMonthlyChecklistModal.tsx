@@ -229,7 +229,7 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
         id_tipo_checklist: 1, // Monthly
         motorista_id: parseInt(formData.motorista_id),
         veiculo_id: parseInt(formData.veiculo_id),
-        status: false, // Default to false for new checklists
+        status: true, // Default to true (active) for new checklists
         company_id: companyId
       };
 
