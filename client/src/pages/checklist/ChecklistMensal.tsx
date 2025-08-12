@@ -547,7 +547,7 @@ const ChecklistMensal = () => {
                     key={checklist.checklist_id} 
                     className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                       selectedItems.has(checklist.checklist_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                    }`}
+                    } ${!checklist.status ? 'opacity-50' : ''}`}
                     onContextMenu={(e) => handleContextMenu(e, checklist)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
