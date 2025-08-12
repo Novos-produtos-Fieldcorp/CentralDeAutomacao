@@ -135,14 +135,12 @@ const HodometrosRelatorio = () => {
         return;
       }
 
-      // Format the readings
-      const formattedReadings = data.map(reading => ({
+      // Format the readings - handle the case where veiculo and motorista might be arrays from Supabase joins
+      const formattedReadings = data.map((reading: any) => ({
         ...reading,
-        veiculo: {
-          ...reading.veiculo,
-          placa: reading.veiculo?.placa?.toUpperCase() || ''
-        }
-      }));
+        veiculo: Array.isArray(reading.veiculo) ? reading.veiculo[0] : reading.veiculo,
+        motorista: Array.isArray(reading.motorista) ? reading.motorista[0] : reading.motorista
+      })) as HodometroReading[];
 
       setReadings(formattedReadings);
     } catch (error) {

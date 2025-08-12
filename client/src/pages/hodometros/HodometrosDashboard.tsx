@@ -321,7 +321,7 @@ const HodometrosDashboard = () => {
       let totalKilometers = 0;
       
       // Process daily vehicle data to calculate mileage
-      for (const [key, data] of dailyVehicleDataMap.entries()) {
+      for (const [key, data] of Array.from(dailyVehicleDataMap.entries())) {
         const [date, vehicleId] = key.split('_');
         let kmRodadoNoDia = 0;
         
@@ -553,7 +553,14 @@ const HodometrosDashboard = () => {
       
       if (error) throw error;
       
-      setHodometros(data || []);
+      // Format the data to handle array structures from Supabase joins
+      const formattedData = (data || []).map((item: any) => ({
+        ...item,
+        motorista: Array.isArray(item.motorista) ? item.motorista[0] : item.motorista,
+        veiculo: Array.isArray(item.veiculo) ? item.veiculo[0] : item.veiculo
+      })) as HodometroReading[];
+      
+      setHodometros(formattedData);
       setTotalInconsistencies(count || 0);
     } catch (error) {
       handleSupabaseError(error, 'carregar inconsistências');

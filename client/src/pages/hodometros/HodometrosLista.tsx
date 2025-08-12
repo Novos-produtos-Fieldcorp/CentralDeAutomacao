@@ -213,14 +213,20 @@ const HodometrosLista = () => {
           lastReadingTrip: null,
           vehicleType,
           motorista_id: hodometro.motorista_id,
-          motorista_nome: hodometro.motorista?.nome || 'Desconhecido',
+          motorista_nome: (Array.isArray(hodometro.motorista) ? hodometro.motorista[0]?.nome : hodometro.motorista?.nome) || 'Desconhecido',
           veiculo_id: hodometro.veiculo_id,
-          veiculo_placa: hodometro.veiculo?.placa || null,
+          veiculo_placa: (Array.isArray(hodometro.veiculo) ? hodometro.veiculo[0]?.placa : hodometro.veiculo?.placa) || null,
           readings: []
         };
         
-        // Add reading to the collection
-        dailyVehicleEntry.readings.push(hodometro);
+        // Add reading to the collection - ensure proper type casting
+        const formattedHodometro = {
+          ...hodometro,
+          motorista: Array.isArray(hodometro.motorista) ? hodometro.motorista[0] : hodometro.motorista,
+          veiculo: Array.isArray(hodometro.veiculo) ? hodometro.veiculo[0] : hodometro.veiculo
+        } as HodometroReading;
+        
+        dailyVehicleEntry.readings.push(formattedHodometro);
         
         // Update first and last readings
         if (isOdometerReading) {
@@ -243,7 +249,7 @@ const HodometrosLista = () => {
       });
       
       // Second pass: calculate daily kilometers and build vehicle data
-      for (const [key, dailyData] of dailyVehicleReadingsMap.entries()) {
+      for (const [key, dailyData] of Array.from(dailyVehicleReadingsMap.entries())) {
         const [date, vehicleIdStr] = key.split('_');
         const vehicleId = parseInt(vehicleIdStr);
         
@@ -297,8 +303,8 @@ const HodometrosLista = () => {
           vehicleData.motoristas.set(dailyData.motorista_id, motoristaData);
         }
         
-        // Add readings to vehicle data
-        vehicleData.readings.push(...dailyData.readings);
+        // Add readings to vehicle data - ensure proper array handling
+        vehicleData.readings = vehicleData.readings.concat(dailyData.readings);
         
         // Update vehicle data
         vehicleMap.set(vehicleId, vehicleData);
