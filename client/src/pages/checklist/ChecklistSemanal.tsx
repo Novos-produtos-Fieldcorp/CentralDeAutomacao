@@ -86,27 +86,54 @@ const ChecklistSemanal = () => {
     if (!companyId) return;
     
     try {
-      // Use backend API instead of direct Supabase connection
-      let url = `/api/checklist?company_id=${companyId}&tipo=2`; // 2 = semanal
-      
+      setLoading(true);
+      let baseQuery = supabase.from('checklist')
+      .select(`
+        *,
+        motorista:motorista_id (
+          motorista_id,
+          nome,
+          cpf
+        ),
+        veiculo:veiculo_id (
+          veiculo_id,
+          placa,
+          marca,
+          tipo
+        )
+      `)
+        .eq('company_id', companyId)
+        .eq('id_tipo_checklist', 2); // 2 = semanal
+
       // Add date range filter if dates are selected
       if (dateRange.startDate) {
-        url += `&start_date=${dateRange.startDate}`;
+        baseQuery = baseQuery.gte('data', dateRange.startDate);
       }
       if (dateRange.endDate) {
-        url += `&end_date=${dateRange.endDate}`;
+        baseQuery = baseQuery.lte('data', dateRange.endDate);
       }
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setChecklists(data || []);
+      const { data, error } = await baseQuery
+        .order('data', { ascending: false })
+        .order('hora', { ascending: false });
+
+      if (error) throw error;
+
+      // Convert vehicle plates to uppercase
+      const formattedData = data?.map(checklist => ({
+        ...checklist,
+        veiculo: checklist.veiculo ? {
+          ...checklist.veiculo,
+          placa: checklist.veiculo.placa.toUpperCase()
+        } : null
+      })) || [];
+
+      setChecklists(formattedData);
     } catch (error) {
       console.error('Error fetching checklists:', error);
       toast.error('Erro ao carregar checklists');
+    } finally {
+      setLoading(false);
     }
   };
 
