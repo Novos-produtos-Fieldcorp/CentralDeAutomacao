@@ -714,7 +714,7 @@ const HodometrosLista = () => {
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredVehicleData.map((vehicle) => (
-                <React.Fragment key={vehicle.veiculo_id}>
+                <React.Fragment key={`vehicle-${vehicle.veiculo_id}`}>
                   <tr 
                     className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
                       vehicle.expanded ? 'bg-blue-50 dark:bg-blue-900/20' : ''
