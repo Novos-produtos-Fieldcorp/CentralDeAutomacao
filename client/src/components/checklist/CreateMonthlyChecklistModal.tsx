@@ -388,7 +388,7 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
           {/* Progress Steps */}
           <div className="flex items-center justify-between mb-8">
             {[1, 2, 3].map((step, index) => (
-              <React.Fragment key={step}>
+              <div key={step} className="flex items-center">
                 <div 
                   className={`flex items-center justify-center w-10 h-10 rounded-full border-2 
                             ${currentStep >= step 
@@ -402,7 +402,7 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
                     currentStep > step ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
                   }`} />
                 )}
-              </React.Fragment>
+              </div>
             ))}
           </div>
 
