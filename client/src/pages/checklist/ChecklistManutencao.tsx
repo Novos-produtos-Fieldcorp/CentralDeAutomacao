@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Truck, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, PenTool as Tool, Calendar, FileText, User } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
-import PeriodSelector from '../../components/hodometros/PeriodSelector';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 interface MaintenanceItem {
@@ -48,6 +47,24 @@ const ChecklistManutencao = () => {
   const [expandedAlert, setExpandedAlert] = useState<AlertDetails | null>(null);
   const [statusItems, setStatusItems] = useState<StatusItem[]>([]);
   const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('all', true);
+  
+  // Dropdown states
+  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  const periodDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (periodDropdownRef.current && !periodDropdownRef.current.contains(event.target as Node)) {
+        setShowPeriodDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Format date from YYYY-MM-DD to DD/MM/YYYY
   const formatDate = (dateStr: string) => {
@@ -194,8 +211,8 @@ const ChecklistManutencao = () => {
                   data_checklist: checklist.data,
                   tipo_checklist: checklist.id_tipo_checklist === 1 ? 'Mensal' : 'Semanal',
                   motorista: {
-                    nome: checklist.motorista?.nome || '',
-                    cpf: checklist.motorista?.cpf || ''
+                    nome: Array.isArray(checklist.motorista) ? checklist.motorista[0]?.nome || '' : checklist.motorista?.nome || '',
+                    cpf: Array.isArray(checklist.motorista) ? checklist.motorista[0]?.cpf || '' : checklist.motorista?.cpf || ''
                   }
                 });
               }
@@ -205,7 +222,7 @@ const ChecklistManutencao = () => {
           if (issues.length > 0) {
             // Group issues by vehicle
             const existingItem = maintenanceItems.find(
-              item => item.veiculo.placa === checklist.veiculo?.placa
+              item => item.veiculo.placa === (Array.isArray(checklist.veiculo) ? checklist.veiculo[0]?.placa : checklist.veiculo?.placa)
             );
 
             if (existingItem) {
@@ -220,9 +237,9 @@ const ChecklistManutencao = () => {
               maintenanceItems.push({
                 id: itemId++,
                 veiculo: {
-                  placa: checklist.veiculo?.placa.toUpperCase() || '',
-                  marca: checklist.veiculo?.marca || '',
-                  tipo: checklist.veiculo?.tipo || ''
+                  placa: (Array.isArray(checklist.veiculo) ? checklist.veiculo[0]?.placa : checklist.veiculo?.placa)?.toUpperCase() || '',
+                  marca: Array.isArray(checklist.veiculo) ? checklist.veiculo[0]?.marca || '' : checklist.veiculo?.marca || '',
+                  tipo: Array.isArray(checklist.veiculo) ? checklist.veiculo[0]?.tipo || '' : checklist.veiculo?.tipo || ''
                 },
                 tipo: issues.some(i => ['Fluidos', 'Componentes'].includes(i.categoria)) 
                   ? 'corretiva' 
@@ -289,22 +306,94 @@ const ChecklistManutencao = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-[#1f2937] rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
-        {/* Period Selector */}
-        <div className="mb-6">
-          <PeriodSelector
-            periodType={periodType}
-            dateRange={dateRange}
-            pendingDateRange={pendingDateRange}
-            onPeriodChange={updatePeriod}
-            onDateRangeChange={setDateRange}
-            onApplyCustomRange={() => {
-              if (applyPendingDateRange()) {
-                fetchMaintenanceAlerts();
-              }
-            }}
-          />
+      {/* Period Filter */}
+      <div className="flex flex-wrap gap-3 items-center mb-6">
+        {/* Período Filter */}
+        <div className="relative z-[40]" ref={periodDropdownRef}>
+          <button
+            type="button"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+            onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
+          >
+            <Calendar className="h-4 w-4" />
+            <span>
+              {periodType === 'all' ? 'Período' : 
+               periodType === '1day' ? 'Hoje' :
+               periodType === '15days' ? '15 dias' :
+               periodType === '30days' ? '30 dias' :
+               periodType === 'custom' ? 'Personalizado' : 'Período'}
+            </span>
+            <ChevronDown className="h-4 w-4" />
+          </button>
+
+          {showPeriodDropdown && (
+            <div 
+              className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-top-2 fade-in duration-200"
+              style={{ 
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                marginTop: '4px',
+                zIndex: 999999
+              }}
+            >
+              <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar período</span>
+              </div>
+              {[
+                { value: 'all', label: 'Todos os períodos' },
+                { value: '1day', label: 'Hoje' },
+                { value: '15days', label: 'Últimos 15 dias' },
+                { value: '30days', label: 'Últimos 30 dias' },
+                { value: 'custom', label: 'Período personalizado' }
+              ].map(({ value, label }) => (
+                <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                  <button
+                    type="button"
+                    className="w-full text-left text-sm text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
+                    onClick={() => {
+                      updatePeriod(value as any);
+                      setShowPeriodDropdown(false);
+                    }}
+                  >
+                    {label}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Custom Date Range */}
+      {periodType === 'custom' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Data inicial
+            </label>
+            <input
+              type="date"
+              value={dateRange.startDate}
+              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Data final
+            </label>
+            <input
+              type="date"
+              value={dateRange.endDate}
+              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white dark:bg-[#1f2937] rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
