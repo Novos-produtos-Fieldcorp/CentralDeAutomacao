@@ -28,7 +28,123 @@ export const handler = async (event, context) => {
 
     console.log('Netlify Function - Path:', path, 'Method:', method);
 
-    // Proxy WiseApp API
+    // Rota específica para inboxes com validação de company_id e token
+    if (path.match(/^\/chatwoot\/inboxes\/(\d+)$/)) {
+      const companyId = path.match(/^\/chatwoot\/inboxes\/(\d+)$/)[1];
+      const account_id = queryParams.account_id;
+
+      console.log(`Netlify: Fetching inboxes for company_id: ${companyId}, account_id: ${account_id}`);
+
+      // Buscar token WiseApp para esta empresa
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('company_id', parseInt(companyId))
+        .limit(1);
+
+      if (tokenError || !tokenData || tokenData.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ 
+            error: "Token WiseApp não configurado para esta empresa" 
+          })
+        };
+      }
+
+      const token = tokenData[0].access_token_wiseapp;
+
+      // Buscar dados da empresa para validar account_id
+      const { data: companies, error: companyError } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
+        .eq('company_id', parseInt(companyId))
+        .eq('id_conta_wiseapp', account_id)
+        .limit(1);
+
+      if (companyError || !companies || companies.length === 0) {
+        return {
+          statusCode: 403,
+          headers,
+          body: JSON.stringify({ 
+            error: "Account ID não corresponde à empresa especificada" 
+          })
+        };
+      }
+
+      // Fazer requisição para o ChatWoot
+      const targetUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/inboxes`;
+
+      console.log(`Netlify: Making request to ChatWoot: ${targetUrl}`);
+
+      const response = await fetch(targetUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          return {
+            statusCode: 401,
+            headers,
+            body: JSON.stringify({ 
+              error: "Token de autenticação inválido ou expirado" 
+            })
+          };
+        } else if (response.status === 403) {
+          return {
+            statusCode: 403,
+            headers,
+            body: JSON.stringify({ 
+              error: "Acesso negado. Verifique as permissões da conta" 
+            })
+          };
+        } else if (response.status === 404) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ 
+              error: "Conta não encontrada no ChatWoot" 
+            })
+          };
+        }
+        
+        console.error(`Netlify: ChatWoot API error: ${response.status}`);
+        return {
+          statusCode: response.status,
+          headers,
+          body: JSON.stringify({ 
+            error: `ChatWoot API error: ${response.status}` 
+          })
+        };
+      }
+
+      const data = await response.json();
+      
+      // Adicionar metadados para cache
+      const responseData = {
+        ...data,
+        _cache_metadata: {
+          company_id: parseInt(companyId),
+          account_id: account_id,
+          timestamp: Date.now(),
+          expires_at: Date.now() + (60 * 60 * 1000) // 1 hora
+        }
+      };
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(responseData)
+      };
+    }
+
+    // Proxy WiseApp API (fallback para outras rotas)
     if (path.includes('/api/v1/')) {
       const apiPath = path.substring(path.indexOf('/api/v1/'));
       const wiseAppUrl = `https://chat.wiseapp360.com${apiPath}`;
@@ -61,6 +177,35 @@ export const handler = async (event, context) => {
         statusCode: response.status,
         headers,
         body: data
+      };
+    }
+
+    // Rota para buscar token WiseApp por company_id
+    if (path.match(/^\/wiseapp-token\/(\d+)$/)) {
+      const companyId = path.match(/^\/wiseapp-token\/(\d+)$/)[1];
+      console.log("Netlify: Fetching WiseApp token for company_id:", companyId);
+      
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('company_id', parseInt(companyId))
+        .limit(1);
+      
+      if (tokenError || !tokenData || tokenData.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ 
+            error: "Token WiseApp não encontrado",
+            message: "Configure o token WiseApp nas configurações da empresa" 
+          })
+        };
+      }
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ token: tokenData[0].access_token_wiseapp })
       };
     }
 
