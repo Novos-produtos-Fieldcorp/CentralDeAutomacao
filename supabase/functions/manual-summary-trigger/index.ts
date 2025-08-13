@@ -80,13 +80,15 @@ Deno.serve(async (req) => {
 
     // Send webhook with just the required fields
     try {
-      // Prepare the webhook payload with ONLY the fields needed
+      // Prepare the webhook payload with required fields including company_id and group_id
       const webhookData = {
         "nome_do_grupo": grupo.nome_grupo,
-        "url_do_grupo": grupo.url_grupo
+        "url_do_grupo": grupo.url_grupo,
+        "company_id": grupo.company_id,
+        "group_id": grupo.id
       };
       
-      console.log('Sending webhook data:', JSON.stringify(webhookData, null, 2));
+      console.log('Sending webhook data (nome_grupo, url_grupo, company_id, and group_id):', JSON.stringify(webhookData, null, 2));
       
       // Send the webhook
       const response = await fetch(WEBHOOK_URL, {
