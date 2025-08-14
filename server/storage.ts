@@ -14,7 +14,7 @@ import {
   estado,
   tags,
   motorista_tags,
-  wiseapp_acesso,
+
   type User, 
   type InsertUser,
   type Motorista,
@@ -75,8 +75,7 @@ export interface IStorage {
   // Motorista Tags methods
   getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]>;
   
-  // WiseApp access methods
-  getWiseappToken(companyId: number): Promise<string | null>;
+
   addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag>;
   removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean>;
 }
@@ -484,21 +483,7 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  // WiseApp access methods
-  async getWiseappToken(companyId: number): Promise<string | null> {
-    try {
-      const [wiseappAccess] = await db
-        .select({ access_token_wiseapp: wiseapp_acesso.access_token_wiseapp })
-        .from(wiseapp_acesso)
-        .where(eq(wiseapp_acesso.company_id, companyId))
-        .limit(1);
-      
-      return wiseappAccess?.access_token_wiseapp || null;
-    } catch (error) {
-      console.error('Error fetching WiseApp token:', error);
-      return null;
-    }
-  }
+
 }
 
 export const storage = new DatabaseStorage();
