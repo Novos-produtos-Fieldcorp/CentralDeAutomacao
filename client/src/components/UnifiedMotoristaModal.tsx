@@ -1133,6 +1133,7 @@ const UnifiedMotoristaModal = ({
           motorista={motorista}
           onUpdate={() => {
             setIsEditModalOpen(false);
+            fetchMotoristaDetails();
             onSuccess?.();
           }}
         />
