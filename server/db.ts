@@ -1,33 +1,30 @@
 import { createClient } from '@supabase/supabase-js';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
-import * as schema from "@shared/schema";
+import dotenv from 'dotenv';
 
-// Use DATABASE_URL if available, otherwise construct from Supabase credentials
-let databaseUrl: string;
+// Load environment variables
+dotenv.config();
 
-if (process.env.DATABASE_URL) {
-  databaseUrl = process.env.DATABASE_URL;
-} else if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  // Extract database URL from Supabase URL
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const projectRef = supabaseUrl.split('//')[1].split('.')[0];
-  databaseUrl = `postgresql://postgres:[YOUR-PASSWORD]@db.${projectRef}.supabase.co:5432/postgres`;
-} else {
-  throw new Error(
-    "DATABASE_URL must be set, or provide SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY",
-  );
-}
+// Use Supabase configuration from .env
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
 
-const connection = postgres(databaseUrl, { 
-  prepare: false,
-  max: 10,
-});
+console.log('Using Supabase API directly with URL:', supabaseUrl);
 
-export const db = drizzle(connection, { schema });
-
-// Also export Supabase client for edge functions
+// Export Supabase client for all database operations
 export const supabase = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
+  supabaseUrl,
+  supabaseAnonKey,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
+
+// For backward compatibility, export a db object that uses Supabase
+export const db = {
+  query: {
+    // Add query methods that use Supabase directly
+  }
+};

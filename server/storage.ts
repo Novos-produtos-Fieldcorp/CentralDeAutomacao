@@ -34,7 +34,7 @@ import {
   type MotoristaTag,
   type InsertMotoristaTag
 } from "@shared/schema";
-import { db } from "./db";
+import { db, supabase } from "./db";
 import { eq, and, desc, like, or, count, sql } from "drizzle-orm";
 
 export interface IStorage {
@@ -487,13 +487,19 @@ export class DatabaseStorage implements IStorage {
   // WiseApp access methods
   async getWiseappToken(companyId: number): Promise<string | null> {
     try {
-      const [wiseappAccess] = await db
-        .select({ access_token_wiseapp: wiseapp_acesso.access_token_wiseapp })
-        .from(wiseapp_acesso)
-        .where(eq(wiseapp_acesso.company_id, companyId))
-        .limit(1);
+      const { data, error } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('company_id', companyId)
+        .limit(1)
+        .single();
       
-      return wiseappAccess?.access_token_wiseapp || null;
+      if (error) {
+        console.error('Error fetching WiseApp token:', error);
+        return null;
+      }
+      
+      return data?.access_token_wiseapp || null;
     } catch (error) {
       console.error('Error fetching WiseApp token:', error);
       return null;
