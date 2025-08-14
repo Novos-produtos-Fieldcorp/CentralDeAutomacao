@@ -19,30 +19,7 @@ interface InboxSelectorProps {
   companyId: string;
 }
 
-// Dados de exemplo para fallback quando a API não funciona
-const FALLBACK_INBOXES: Inbox[] = [
-  {
-    id: 1,
-    name: "WhatsApp Suporte",
-    channel_type: "Channel::Whatsapp",
-    phone_number: "+5511999999999",
-    isOpen: true
-  },
-  {
-    id: 2,
-    name: "WhatsApp Vendas",
-    channel_type: "Channel::Whatsapp", 
-    phone_number: "+5511888888888",
-    isOpen: true
-  },
-  {
-    id: 3,
-    name: "Site Corporativo",
-    channel_type: "Channel::WebWidget",
-    website_url: "https://empresa.com.br",
-    isOpen: true
-  }
-];
+// Removed fallback inboxes - system now only uses real ChatWoot API data
 
 const InboxSelector: React.FC<InboxSelectorProps> = ({
   isOpen,
@@ -90,13 +67,17 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
           throw new Error('Dados de inboxes inválidos');
         }
       } else {
-        console.log('⚠️ API falhou, usando dados de fallback');
-        throw new Error(`API Error: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          throw new Error('Token de autenticação inválido ou expirado. Contate o administrador para atualizar as credenciais do WiseApp.');
+        } else {
+          throw new Error(errorData.error || `Erro na API: ${response.status}`);
+        }
       }
-    } catch (err) {
-      console.log('📦 Usando inboxes de fallback devido ao erro:', err);
-      setError('Usando configuração padrão de inboxes');
-      setInboxes(FALLBACK_INBOXES);
+    } catch (err: any) {
+      console.error('Erro ao carregar inboxes:', err);
+      setError(err.message || 'Erro ao carregar caixas de entrada');
+      setInboxes([]);
     } finally {
       setLoading(false);
     }
@@ -135,8 +116,18 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
 
         <div className="p-4">
           {error && (
-            <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">{error}</p>
+            <div className={`mb-4 p-3 rounded-lg ${
+              error.includes('Token de autenticação') 
+                ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700' 
+                : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700'
+            }`}>
+              <p className={`text-sm ${
+                error.includes('Token de autenticação')
+                  ? 'text-red-800 dark:text-red-200'
+                  : 'text-yellow-800 dark:text-yellow-200'
+              }`}>
+                {error}
+              </p>
             </div>
           )}
 
@@ -185,8 +176,13 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
             <div className="text-center py-8">
               <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600 dark:text-gray-400">
-                Nenhuma caixa de entrada disponível
+                {error ? 'Não foi possível carregar as caixas de entrada' : 'Nenhuma caixa de entrada disponível'}
               </p>
+              {error && error.includes('Token de autenticação') && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Verifique as credenciais do WiseApp no banco de dados
+                </p>
+              )}
             </div>
           )}
         </div>
