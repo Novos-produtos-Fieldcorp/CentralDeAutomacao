@@ -1861,58 +1861,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               </div>
             </div>
 
-            {/* Inbox Selector Modal */}
-            {showInboxSelector && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      Selecione uma Caixa de Entrada
-                    </h3>
-                    <button
-                      onClick={() => setShowInboxSelector(false)}
-                      className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                      aria-label="Fechar"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-                  <div className="space-y-3">
-                    {availableInboxes.map((inbox) => (
-                      <button
-                        key={inbox.id}
-                        onClick={() => handleInboxSelection(inbox.id)}
-                        className="w-full p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-gray-900 dark:text-white">
-                            {inbox.name}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            {inbox.isOpen ? (
-                              <span className="text-green-600 dark:text-green-400 text-sm flex items-center gap-1">
-                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                                Aberto
-                              </span>
-                            ) : (
-                              <span className="text-red-600 dark:text-red-400 text-sm flex items-center gap-1">
-                                <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                Fechado
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {!inbox.isOpen && inbox.working_hours && inbox.working_hours.length > 0 && (
-                          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Horário de funcionamento: {formatWorkingHours(inbox.working_hours)}
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+
 
             {/* Messages */}
             <div 
