@@ -74,10 +74,11 @@ export interface IStorage {
 
   // Motorista Tags methods
   getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]>;
-  
-
   addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag>;
   removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean>;
+
+  // WiseApp methods
+  getWiseappToken(companyId: number): Promise<string | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -483,7 +484,13 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-
+  // WiseApp token method - placeholder that returns null for now
+  async getWiseappToken(companyId: number): Promise<string | null> {
+    // For now, return null to trigger fallback behavior
+    // This can be implemented later with actual token storage
+    console.log(`WiseApp token requested for company ${companyId} - returning null for fallback behavior`);
+    return null;
+  }
 }
 
 export const storage = new DatabaseStorage();
