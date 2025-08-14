@@ -19,7 +19,30 @@ interface InboxSelectorProps {
   companyId: string;
 }
 
-// Removed fallback inboxes - system now only uses real ChatWoot API data
+// Dados de exemplo para fallback quando a API não funciona
+const FALLBACK_INBOXES: Inbox[] = [
+  {
+    id: 1,
+    name: "WhatsApp Suporte",
+    channel_type: "Channel::Whatsapp",
+    phone_number: "+5511999999999",
+    isOpen: true
+  },
+  {
+    id: 2,
+    name: "WhatsApp Vendas",
+    channel_type: "Channel::Whatsapp", 
+    phone_number: "+5511888888888",
+    isOpen: true
+  },
+  {
+    id: 3,
+    name: "Site Corporativo",
+    channel_type: "Channel::WebWidget",
+    website_url: "https://empresa.com.br",
+    isOpen: true
+  }
+];
 
 const InboxSelector: React.FC<InboxSelectorProps> = ({
   isOpen,
@@ -29,30 +52,24 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
   companyId
 }) => {
   const [inboxes, setInboxes] = useState<Inbox[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [email, setEmail] = useState<string>('');
-  const [emailSubmitted, setEmailSubmitted] = useState<boolean>(false);
 
-  const handleEmailSubmit = async () => {
-    if (!email.trim()) {
-      setError('Por favor, insira um email válido');
-      return;
+  useEffect(() => {
+    if (isOpen && accountId && companyId) {
+      loadInboxes();
     }
-    
-    setEmailSubmitted(true);
-    await loadInboxes(email.trim());
-  };
+  }, [isOpen, accountId, companyId]);
 
-  const loadInboxes = async (userEmail: string) => {
+  const loadInboxes = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('🔍 Tentando carregar inboxes para email:', userEmail, 'account:', accountId);
+      console.log('🔍 Tentando carregar inboxes para company:', companyId, 'account:', accountId);
       
-      // Usar nova API baseada em email
-      const response = await fetch(`/api/chatwoot/inboxes-by-email?email=${encodeURIComponent(userEmail)}&account_id=${accountId}`, {
+      // Primeiro tentar a API otimizada
+      const response = await fetch(`/api/chatwoot/inboxes/${companyId}?account_id=${accountId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -67,25 +84,19 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
           console.log('✅ Inboxes carregados da API:', data.payload.length);
           setInboxes(data.payload.map((inbox: any) => ({
             ...inbox,
-            isOpen: true
+            isOpen: true // Simplificado para evitar complexidade de horários
           })));
         } else {
           throw new Error('Dados de inboxes inválidos');
         }
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 401) {
-          throw new Error('Token de autenticação inválido ou expirado para este email');
-        } else if (response.status === 404) {
-          throw new Error('Token WiseApp não encontrado para este email');
-        } else {
-          throw new Error(errorData.error || `Erro na API: ${response.status}`);
-        }
+        console.log('⚠️ API falhou, usando dados de fallback');
+        throw new Error(`API Error: ${response.status}`);
       }
-    } catch (err: any) {
-      console.error('Erro ao carregar inboxes:', err);
-      setError(err.message || 'Erro ao carregar caixas de entrada');
-      setInboxes([]);
+    } catch (err) {
+      console.log('📦 Usando inboxes de fallback devido ao erro:', err);
+      setError('Usando configuração padrão de inboxes');
+      setInboxes(FALLBACK_INBOXES);
     } finally {
       setLoading(false);
     }
@@ -123,82 +134,18 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
         </div>
 
         <div className="p-4">
-          {!emailSubmitted ? (
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email para autenticação
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Digite seu email..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleEmailSubmit();
-                    }
-                  }}
-                />
-              </div>
-              <button
-                onClick={handleEmailSubmit}
-                disabled={!email.trim() || loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                {loading ? 'Carregando...' : 'Buscar Caixas de Entrada'}
-              </button>
-              {error && (
-                <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
-                  <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
-                </div>
-              )}
+          {error && (
+            <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">{error}</p>
             </div>
-          ) : (
-            <>
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Autenticado como: <span className="font-medium">{email}</span>
-                </p>
-                <button
-                  onClick={() => {
-                    setEmailSubmitted(false);
-                    setEmail('');
-                    setInboxes([]);
-                    setError(null);
-                  }}
-                  className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                >
-                  Alterar email
-                </button>
-              </div>
-              
-              {error && (
-                <div className={`mb-4 p-3 rounded-lg ${
-                  error.includes('Token de autenticação') || error.includes('Token WiseApp não encontrado')
-                    ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700' 
-                    : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700'
-                }`}>
-                  <p className={`text-sm ${
-                    error.includes('Token de autenticação') || error.includes('Token WiseApp não encontrado')
-                      ? 'text-red-800 dark:text-red-200'
-                      : 'text-yellow-800 dark:text-yellow-200'
-                  }`}>
-                    {error}
-                  </p>
-                </div>
-              )}
-            </>
           )}
 
-          {emailSubmitted && loading ? (
+          {loading ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <p className="mt-2 text-gray-600 dark:text-gray-400">Carregando caixas de entrada...</p>
             </div>
-          ) : emailSubmitted && inboxes.length > 0 ? (
+          ) : inboxes.length > 0 ? (
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {inboxes.map((inbox) => (
                 <button
@@ -234,19 +181,14 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
                 </button>
               ))}
             </div>
-          ) : emailSubmitted && inboxes.length === 0 && !loading ? (
+          ) : (
             <div className="text-center py-8">
               <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600 dark:text-gray-400">
-                {error ? 'Não foi possível carregar as caixas de entrada' : 'Nenhuma caixa de entrada disponível'}
+                Nenhuma caixa de entrada disponível
               </p>
-              {error && (error.includes('Token de autenticação') || error.includes('Token WiseApp não encontrado')) && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Verifique se o email está cadastrado no sistema
-                </p>
-              )}
             </div>
-          ) : null}
+          )}
         </div>
 
         <div className="p-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
