@@ -77,6 +77,7 @@ export interface IStorage {
   
   // WiseApp access methods
   getWiseappToken(companyId: number): Promise<string | null>;
+  getWiseappTokenByEmail(email: string): Promise<string | null>;
   addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag>;
   removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean>;
 }
@@ -502,6 +503,27 @@ export class DatabaseStorage implements IStorage {
       return data?.access_token_wiseapp || null;
     } catch (error) {
       console.error('Error fetching WiseApp token:', error);
+      return null;
+    }
+  }
+
+  async getWiseappTokenByEmail(email: string): Promise<string | null> {
+    try {
+      const { data, error } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('email', email)
+        .limit(1)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching WiseApp token by email:', error);
+        return null;
+      }
+      
+      return data?.access_token_wiseapp || null;
+    } catch (error) {
+      console.error('Error fetching WiseApp token by email:', error);
       return null;
     }
   }

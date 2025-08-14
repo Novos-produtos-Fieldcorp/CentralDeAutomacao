@@ -94,6 +94,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Nova rota específica para buscar inboxes com cache otimizado por company_id
+  // New route: Get inboxes using email-based token lookup
+  app.get("/api/chatwoot/inboxes-by-email", async (req, res) => {
+    try {
+      const { email, account_id } = req.query;
+      
+      if (!email) {
+        return res.status(400).json({ 
+          error: "Email é obrigatório" 
+        });
+      }
+      
+      console.log(`Fetching inboxes for email: ${email}, account_id: ${account_id}`);
+
+      // Buscar token WiseApp para este email
+      const token = await storage.getWiseappTokenByEmail(email as string);
+      
+      if (!token) {
+        return res.status(404).json({ 
+          error: "Token WiseApp não encontrado para este email" 
+        });
+      }
+
+      // Fazer requisição para o ChatWoot
+      const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
+      const targetUrl = `${wiseappApiUrl}/api/v1/accounts/${account_id}/inboxes`;
+
+      console.log(`Making request to ChatWoot: ${targetUrl} with email-based token`);
+
+      const response = await fetch(targetUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          return res.status(401).json({ 
+            error: "Token de autenticação inválido ou expirado para este email" 
+          });
+        } else if (response.status === 403) {
+          return res.status(403).json({ 
+            error: "Acesso negado. Verifique as permissões da conta" 
+          });
+        } else if (response.status === 404) {
+          return res.status(404).json({ 
+            error: "Conta não encontrada no ChatWoot" 
+          });
+        }
+        
+        throw new Error(`ChatWoot API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Adicionar metadados para cache
+      const responseData = {
+        ...data,
+        _cache_metadata: {
+          email: email,
+          account_id: account_id,
+          timestamp: Date.now(),
+          expires_at: Date.now() + (60 * 60 * 1000) // 1 hora
+        }
+      };
+
+      res.json(responseData);
+    } catch (error) {
+      console.error("Error fetching inboxes by email:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor ao buscar caixas de entrada",
+        details: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  });
+
   app.get("/api/chatwoot/inboxes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
