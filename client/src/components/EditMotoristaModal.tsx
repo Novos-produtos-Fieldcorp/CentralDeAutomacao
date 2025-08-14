@@ -91,7 +91,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     if (motorista && motorista.motorista_id) {
       // Use nome_motorista if available (from the view), otherwise fall back to nome
       setFormData({
-        nome: motorista.nome || '',
+        nome: motorista.nome_motorista || motorista.nome || '',
         cpf: motorista.cpf || '',
         email: motorista.email || '',
         telefone: motorista.telefone?.toString() || '',

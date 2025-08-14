@@ -551,12 +551,8 @@ const AddAjudanteModal = ({ isOpen, onClose, motorista_id, onSuccess }: AddAjuda
                     type="text"
                     name="nr_registro"
                     value={formData.nr_registro}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      setFormData(prev => ({ ...prev, nr_registro: value }));
-                    }}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nr_registro: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    placeholder="Apenas números"
                   />
                 </div>
                 
