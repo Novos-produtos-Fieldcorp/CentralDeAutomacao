@@ -159,6 +159,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  // Rota simplificada para inboxes - retorna 404 para ativar fallback
+  app.get("/api/chatwoot/inboxes/:companyId", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const { account_id } = req.query;
+      
+      console.log(`Inboxes request for company_id: ${companyId}, account_id: ${account_id} - using fallback mode`);
+      
+      // Sempre retorna 404 para ativar o sistema de fallback no frontend
+      res.status(404).json({
+        error: "API indisponível - usando chat com dados de fallback",
+        company_id: parseInt(companyId),
+        account_id: account_id
+      });
+    } catch (error) {
+      console.error("Error in fallback inbox route:", error);
+      res.status(404).json({
+        error: "API indisponível - usando chat com dados de fallback"
+      });
+    }
+  });
+
 
   // Proxy para consulta de CEP com múltiplas APIs de fallback
   app.get("/api/cep/:cep", async (req, res) => {
