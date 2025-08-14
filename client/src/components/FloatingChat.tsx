@@ -506,13 +506,14 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           });
 
           if (!response.ok) {
-            console.log('⚠️ API falhou, usando fallback do InboxSelector');
-            setShowInboxSelector(true);
+            const errorText = await response.text();
+            console.error('⚠️ API falhou:', response.status, errorText);
+            setError(`Erro ao acessar chat.wiseapp360.com: ${response.status} - ${errorText}`);
             return;
           }
         } catch (apiError) {
-          console.log('📦 Erro na API, delegando para InboxSelector:', apiError);
-          setShowInboxSelector(true);
+          console.error('📦 Erro na API chat.wiseapp360.com:', apiError);
+          setError('Não foi possível conectar com chat.wiseapp360.com. Verifique sua conexão e configuração do token WiseApp.');
           return;
         }
 
