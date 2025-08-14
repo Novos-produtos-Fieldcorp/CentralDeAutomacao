@@ -9,8 +9,6 @@ import { formatCPF } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import MileageChartModal from '../../components/hodometros/MileageChartModal';
-import Pagination from '../../components/Pagination';
-import { usePagination } from '../../hooks/usePagination';
 import * as XLSX from 'xlsx';
 
 interface HodometroReading {
@@ -358,19 +356,6 @@ const HodometrosRelatorio = () => {
     return matchesSearch && matchesVehicleType;
   });
 
-  const {
-    currentPage,
-    pageSize,
-    totalPages,
-    totalItems,
-    paginatedData: paginatedReadings,
-    handlePageChange,
-    handlePageSizeChange
-  } = usePagination({
-    data: filteredReadings,
-    initialPageSize: 25
-  });
-
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -563,7 +548,7 @@ const HodometrosRelatorio = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {paginatedReadings.map((reading) => {
+              {filteredReadings.map((reading) => {
                 const isElectric = reading.bateria !== null && reading.bateria !== undefined;
                 
                 return (
@@ -663,12 +648,10 @@ const HodometrosRelatorio = () => {
                   </tr>
                 );
               })}
-              {paginatedReadings.length === 0 && (
+              {filteredReadings.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    {filteredReadings.length === 0 
-                      ? "Nenhuma leitura encontrada para o período selecionado" 
-                      : "Carregando..."}
+                    Nenhuma leitura encontrada para o período selecionado
                   </td>
                 </tr>
               )}
@@ -676,18 +659,6 @@ const HodometrosRelatorio = () => {
           </table>
         </div>
       </div>
-
-      {/* Pagination */}
-      {filteredReadings.length > 0 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          totalItems={totalItems}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
-        />
-      )}
 
       {/* Photo Modal */}
       {showPhotoModal && selectedPhoto && (
