@@ -127,7 +127,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
-  const [showTagsDropdown, setShowTagsDropdown] = useState(false);
+
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -168,7 +168,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       setShowClienteDropdown(false);
       setShowCidadeDropdown(false);
       setShowTipoVeiculoDropdown(false);
-      setShowTagsDropdown(false);
     };
 
     const toggleDropdown = (dropdownType: string) => {
@@ -186,9 +185,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         case 'tipoVeiculo':
           setShowTipoVeiculoDropdown(true);
           break;
-        case 'tags':
-          setShowTagsDropdown(true);
-          break;
+
       }
     };
     
@@ -250,10 +247,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const [cidades, setCidades] = useState<string[]>([]);
     const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
     const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
-    const [tags, setTags] = useState<any[]>([]);
-    const [tagFilter, setTagFilter] = useState<string[]>([]);
-    const [visibleTags, setVisibleTags] = useState<string[]>([]);
-    const [motoristaTags, setMotoristaTags] = useState<{[key: number]: any[]}>({});
+
     const tableContainerRef = useRef<HTMLDivElement>(null);
     
 
@@ -273,16 +267,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         if (showTipoVeiculoDropdown && !(event.target as HTMLElement).closest('#tipo-veiculo-dropdown')) {
           setShowTipoVeiculoDropdown(false);
         }
-        if (showTagsDropdown && !(event.target as HTMLElement).closest('#tags-dropdown')) {
-          setShowTagsDropdown(false);
-        }
+
       };
 
       document.addEventListener('mousedown', handleClickOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
       };
-    }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown, showTagsDropdown]);
+    }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown]);
     
     const [contextMenu, setContextMenu] = useState<{
       visible: boolean;
@@ -397,7 +389,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     useEffect(() => {
       fetchContratados();
       fetchClientes();
-      fetchTags();
     }, [dateFilter, customDateRange]);
 
     useEffect(() => {
@@ -604,11 +595,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
 
         setContratados(agregadosAgrupados);
-        
-        // Buscar tags para cada motorista
-        if (agregadosAgrupados && agregadosAgrupados.length > 0) {
-          await fetchAllMotoristaTags(agregadosAgrupados);
-        }
       } catch (error) {
         console.error('Error fetching contratados:', error);
         toast.error('Erro ao carregar contratados');
@@ -617,38 +603,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     };
 
-    const fetchTags = async () => {
-      try {
-        const response = await fetch(`/api/tags?company_id=${companyId}`);
-        if (!response.ok) throw new Error('Erro ao buscar tags');
-        const data = await response.json();
-        setTags(data);
-      } catch (error) {
-        console.error('Error fetching tags:', error);
-      }
-    };
 
-    const fetchMotoristaTags = async (motoristaId: number) => {
-      try {
-        const response = await fetch(`/api/motoristas/${motoristaId}/tags`);
-        if (response.ok) {
-          const tagsData = await response.json();
-          setMotoristaTags(prev => ({ ...prev, [motoristaId]: tagsData }));
-        }
-      } catch (error) {
-        console.error('Erro ao buscar tags do motorista:', error);
-      }
-    };
-
-    const fetchAllMotoristaTags = async (contratados: ViewContratado[]) => {
-      const promises = contratados.map(contratado => {
-        if (contratado.motorista_id) {
-          return fetchMotoristaTags(contratado.motorista_id);
-        }
-        return Promise.resolve();
-      });
-      await Promise.all(promises);
-    };
 
     // Cores padrão para os clientes (apenas fundo, sem borda)
     const defaultClientColors = [
@@ -1510,75 +1465,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 </div>
               </div>
 
-              {/* Tags Filter */}
-              <div className="relative" style={{ position: 'relative' }}>
-                <div className="relative group">
-                  <button
-                    type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                    onClick={() => toggleDropdown('tags')}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Tag className="h-4 w-4" />
-                      <span>
-                        {visibleTags.length === 0 ? 'Tags' : `Tags (${visibleTags.length})`}
-                      </span>
-                    </div>
-                  </button>
 
-                  {showTagsDropdown && (
-                    <div 
-                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-96 overflow-y-auto w-80 animate-in slide-in-from-bottom-2 fade-in duration-200"
-                      style={{ 
-                        position: 'absolute',
-                        bottom: '100%',
-                        left: 0,
-                        marginBottom: '4px',
-                        zIndex: 999999
-                      }}>
-                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Tags para ocultar</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setVisibleTags([]);
-                            }}
-                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                          >
-                            Mostrar todas
-                          </button>
-                        </div>
-                      </div>
-                      <div className="space-y-1 px-3 py-2">
-                        {tags.map((tag) => (
-                          <label key={tag.id} className="flex items-center cursor-pointer py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-600 rounded">
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                              checked={visibleTags.includes(tag.id.toString())}
-                              onChange={() => {
-                                const tagId = tag.id.toString();
-                                setVisibleTags(prev => 
-                                  prev.includes(tagId) 
-                                    ? prev.filter(id => id !== tagId)
-                                    : [...prev, tagId]
-                                );
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <span
-                              className="inline-block w-3 h-3 rounded-full mr-2"
-                              style={{ backgroundColor: tag.cor }}
-                            />
-                            <span className="text-sm text-gray-700 dark:text-gray-200">{tag.nome}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
 
               {/* Status Ativo Filter */}
               <div className="relative z-[30]">
@@ -1833,27 +1720,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex flex-wrap gap-1">
-                            {motoristaTags[motorista.motorista_id || 0]?.filter((tag: any) => !visibleTags.includes(tag.id.toString())).length > 0 ? (
-                              motoristaTags[motorista.motorista_id || 0]
-                                .filter((tag: any) => !visibleTags.includes(tag.id.toString()))
-                                .map((tag: any) => (
-                                <span
-                                  key={tag.id}
-                                  className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
-                                  style={{
-                                    backgroundColor: tag.cor + '30',
-                                    color: tag.cor,
-                                    border: `1px solid ${tag.cor}50`
-                                  }}
-                                >
-                                  {tag.nome}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-sm text-gray-500 dark:text-gray-400">-</span>
-                            )}
-                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 dark:text-white">
