@@ -41,6 +41,10 @@ Preferred communication style: Simple, everyday language.
 - **User Experience Enhancements**: Includes CPF API integration for automatic data population in forms, simplified context menus, and WhatsApp avatar display replacing default user icons across all driver tables.
 - **ChatWoot Inbox Caching**: Implemented localStorage caching for ChatWoot API inboxes (chat.wiseapp360.com) with 1-hour expiration to ensure reliable functionality in Netlify deployment. Cache is account-specific and includes automatic expiration handling.
 - **Automatic WiseApp Token Management**: System now automatically retrieves WiseApp tokens from the database (`wiseapp_acesso` table) using company_id, eliminating the need for manual token configuration. Includes comprehensive error handling for authentication failures and missing tokens.
+- **Enhanced Form Validation**: Improved CNH validation to accept numbers only, with real-time input sanitization and proper error handling across all driver registration forms.
+- **Pagination System**: Added comprehensive pagination to HodometrosLista page with configurable page sizes (10, 25, 50, 100) using reusable pagination hooks and components for optimal data viewing.
+- **License Plate API Integration**: Real-time vehicle data consultation using FIPE API (placas.fipeapi.com.br) with automatic form filling for vehicle registration. Includes validation for both old and Mercosul license plate formats, proper error handling, and seamless integration in AddVeiculoModal and EditVeiculoModal components.
+- **Enhanced Routes System**: Comprehensive backend routes with real WiseApp API integration, multiple CEP APIs with intelligent fallback system (ViaCEP, BrasilAPI, PostMon, RepublicaVirtual), complete CRUD operations for all entities, job vacancy management, and proxy services for external APIs. Includes timeout handling and robust error management across all services.
 
 ## External Dependencies
 

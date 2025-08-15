@@ -1566,6 +1566,8 @@ const MotoristasLista = () => {
                       key={`motorista-${motorista.motorista_id}-${motorista.cpf || ''}-${index}`}
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                         selectedItems.has(motorista.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                      } ${
+                        !motorista.ativo ? 'opacity-50 bg-gray-100/50 dark:bg-gray-900/50' : ''
                       }`}
                       onContextMenu={(e) => handleContextMenu(e, motorista)}
                     >

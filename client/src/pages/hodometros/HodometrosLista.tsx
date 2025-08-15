@@ -4,8 +4,10 @@ import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
+import { usePagination } from '../../hooks/usePagination';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import Pagination from '../../components/Pagination';
 import * as XLSX from 'xlsx';
 import MileageChartModal from '../../components/hodometros/MileageChartModal';
 import { formatCPF } from '../../utils/format';
@@ -32,6 +34,12 @@ interface HodometroReading {
     motorista_id: number;
     nome: string;
     cpf: string;
+  };
+  veiculo: {
+    veiculo_id: number;
+    placa: string;
+    marca: string;
+    tipo: string;
   };
 }
 
@@ -206,6 +214,14 @@ const HodometrosLista = () => {
         }
         
         // Get or create daily vehicle entry
+        const motoristaNome = Array.isArray(hodometro.motorista) 
+          ? (hodometro.motorista?.[0] as any)?.nome || 'Desconhecido'
+          : (hodometro.motorista as any)?.nome || 'Desconhecido';
+        
+        const veiculoPlaca = Array.isArray(hodometro.veiculo) 
+          ? (hodometro.veiculo[0] as any)?.placa || null
+          : (hodometro.veiculo as any)?.placa || null;
+
         const dailyVehicleEntry = dailyVehicleReadingsMap.get(uniqueKey) || {
           firstReadingKm: null,
           lastReadingKm: null,
@@ -213,18 +229,22 @@ const HodometrosLista = () => {
           lastReadingTrip: null,
           vehicleType,
           motorista_id: hodometro.motorista_id,
-          motorista_nome: (Array.isArray(hodometro.motorista) ? hodometro.motorista[0]?.nome : hodometro.motorista?.nome) || 'Desconhecido',
+          motorista_nome: motoristaNome,
           veiculo_id: hodometro.veiculo_id,
-          veiculo_placa: (Array.isArray(hodometro.veiculo) ? hodometro.veiculo[0]?.placa : hodometro.veiculo?.placa) || null,
-          readings: []
+          veiculo_placa: veiculoPlaca,
+          readings: [] as HodometroReading[]
         };
         
         // Add reading to the collection - ensure proper type casting
-        const formattedHodometro = {
+        const formattedHodometro: HodometroReading = {
           ...hodometro,
-          motorista: Array.isArray(hodometro.motorista) ? hodometro.motorista[0] : hodometro.motorista,
-          veiculo: Array.isArray(hodometro.veiculo) ? hodometro.veiculo[0] : hodometro.veiculo
-        } as HodometroReading;
+          motorista: Array.isArray(hodometro.motorista) 
+            ? (hodometro.motorista[0] as any) 
+            : (hodometro.motorista as any),
+          veiculo: Array.isArray(hodometro.veiculo) 
+            ? (hodometro.veiculo[0] as any)
+            : (hodometro.veiculo as any)
+        };
         
         dailyVehicleEntry.readings.push(formattedHodometro);
         
@@ -281,7 +301,7 @@ const HodometrosLista = () => {
           dailyData: new Map<string, number>(),
           daysWithReadings: new Set<string>(),
           motoristas: new Map<number, { nome: string; km: number }>(),
-          readings: []
+          readings: [] as HodometroReading[]
         };
         
         // Add km to total
@@ -304,7 +324,7 @@ const HodometrosLista = () => {
         }
         
         // Add readings to vehicle data - ensure proper array handling
-        vehicleData.readings = vehicleData.readings.concat(dailyData.readings);
+        vehicleData.readings = [...vehicleData.readings, ...dailyData.readings];
         
         // Update vehicle data
         vehicleMap.set(vehicleId, vehicleData);
@@ -553,6 +573,19 @@ const HodometrosLista = () => {
     );
   });
 
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    paginatedData: paginatedVehicleData,
+    handlePageChange,
+    handlePageSizeChange
+  } = usePagination({
+    data: filteredVehicleData,
+    initialPageSize: 10
+  });
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -713,7 +746,7 @@ const HodometrosLista = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredVehicleData.flatMap((vehicle) => {
+              {paginatedVehicleData.flatMap((vehicle) => {
                 const rows = [
                   <tr 
                     key={`vehicle-main-${vehicle.veiculo_id}`}
@@ -904,6 +937,18 @@ const HodometrosLista = () => {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination */}
+        {filteredVehicleData.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        )}
       </div>
 
       {/* Chart Modal */}

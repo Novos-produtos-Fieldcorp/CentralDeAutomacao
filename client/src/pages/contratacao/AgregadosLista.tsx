@@ -605,17 +605,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         setContratados(agregadosAgrupados);
         
-        // Buscar tags para cada motorista - apenas se tags_access estiver habilitado
+        // Buscar tags para cada motorista
         if (agregadosAgrupados && agregadosAgrupados.length > 0) {
-          // Check if tags are enabled for this company
-          const companyResponse = await fetch(`/api/company/by-account/${companyId}`);
-          if (companyResponse.ok) {
-            const companyData = await companyResponse.json();
-            // Only fetch tags if tags_access is true and there are reasonable number of records
-            if (companyData.tags_access && agregadosAgrupados.length < 500) {
-              await fetchAllMotoristaTags(agregadosAgrupados);
-            }
-          }
+          await fetchAllMotoristaTags(agregadosAgrupados);
         }
       } catch (error) {
         console.error('Error fetching contratados:', error);
@@ -1703,6 +1695,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         key={`agregado-${motorista.motorista_id || ''}-${motorista.cpf || ''}-${index}`}
                         className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                           selectedItems.has(motorista.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        } ${
+                          motorista.ativo === false ? 'opacity-50 bg-gray-100/50 dark:bg-gray-900/50' : ''
                         }`}
                         onContextMenu={(e) => handleContextMenu(e, motorista)}
                       >
