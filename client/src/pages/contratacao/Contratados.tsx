@@ -112,6 +112,12 @@ const Contratados = () => {
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [documento] = useState<DocumentoMotorista | null>(null);
+  
+  // Pagination state
+  const [currentDataPage, setCurrentDataPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(100);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [endereco, setEndereco] = useState<{
     logradouro?: {
       logradouro?: string;
@@ -310,91 +316,105 @@ const Contratados = () => {
     };
   }, [contextMenu.visible]);
 
-  const fetchContratados = async () => {
+  const fetchContratados = async (page: number = 0, append: boolean = false) => {
     try {
-      setLoading(true);
-      // Buscar apenas os contratados (st_cadastro = 'contratado')
+      if (!append) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      
+      // Get total count first for pagination
+      let countQuery = supabase
+        .from('vw_contratados_completo')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('st_cadastro', 'contratado');
+
+      // Apply date filter to count query
+      if (dateFilter !== 'all') {
+        const today = new Date();
+        let startDate = new Date();
+        
+        if (dateFilter === 'today') {
+          startDate = new Date(today.setHours(0, 0, 0, 0));
+          countQuery = countQuery.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+          countQuery = countQuery.lte('data_cadastro', new Date().toISOString().split('T')[0]);
+        } else if (dateFilter === '2days') {
+          startDate.setDate(today.getDate() - 2);
+          countQuery = countQuery.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+        } else if (dateFilter === '15days') {
+          startDate.setDate(today.getDate() - 15);
+          countQuery = countQuery.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+        } else if (dateFilter === '30days') {
+          startDate.setDate(today.getDate() - 30);
+          countQuery = countQuery.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+        } else if (dateFilter === 'custom' && customDateRange.startDate && customDateRange.endDate) {
+          countQuery = countQuery.gte('data_cadastro', customDateRange.startDate);
+          countQuery = countQuery.lte('data_cadastro', customDateRange.endDate);
+        }
+      }
+
+      const { count, error: countError } = await countQuery;
+      if (countError) throw countError;
+      
+      if (!append) {
+        setTotalCount(count || 0);
+      }
+
+      // Buscar apenas os contratados com paginação
       let query = supabase
         .from('vw_contratados_completo')
         .select('*')
         .eq('company_id', companyId)
         .eq('st_cadastro', 'contratado');
 
-      // Apply date filter
+      // Apply date filter to data query
       if (dateFilter !== 'all') {
         const today = new Date();
         let startDate = new Date();
         
         if (dateFilter === 'today') {
-          // Today only
           startDate = new Date(today.setHours(0, 0, 0, 0));
           query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
           query = query.lte('data_cadastro', new Date().toISOString().split('T')[0]);
         } else if (dateFilter === '2days') {
-          // Last 2 days
           startDate.setDate(today.getDate() - 2);
           query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
         } else if (dateFilter === '15days') {
-          // Last 15 days
           startDate.setDate(today.getDate() - 15);
           query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
         } else if (dateFilter === '30days') {
-          // Last 30 days
           startDate.setDate(today.getDate() - 30);
           query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
         } else if (dateFilter === 'custom' && customDateRange.startDate && customDateRange.endDate) {
-          // Custom date range
           query = query.gte('data_cadastro', customDateRange.startDate);
           query = query.lte('data_cadastro', customDateRange.endDate);
         }
       }
 
-      // Order by data_cadastro (newest first)
-      query = query.order('data_cadastro', { ascending: false });
+      // Add pagination
+      query = query
+        .order('data_cadastro', { ascending: false })
+        .range(page * itemsPerPage, (page + 1) * itemsPerPage - 1);
 
       const { data, error } = await query;
 
       if (error) throw error;
 
-      // Log the data to check the ativo field
-      console.log('Fetched contratados:', data);
-
       // Extract unique cities from contratados
       const uniqueCities = new Set<string>();
       const uniqueVehicleTypes = new Set<string>();
       
-      // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
-      const motoristaIds = data?.map(m => m.motorista_id) || [];
-      let ativosStatus: Record<number, boolean> = {};
-      let fotosWhatsApp: Record<number, string | null> = {};
-      
-      if (motoristaIds.length > 0) {
-        const { data: motoristas, error: motoristasError } = await supabase
-          .from('motorista')
-          .select('motorista_id, ativo, foto_whatsapp')
-          .in('motorista_id', motoristaIds);
-          
-        if (motoristasError) {
-          console.error('Erro ao buscar status dos motoristas:', motoristasError);
-        } else {
-          // Criar um mapa de motorista_id para status ativo e fotos
-          motoristas?.forEach(m => {
-            ativosStatus[m.motorista_id] = m.ativo === true;
-            fotosWhatsApp[m.motorista_id] = m.foto_whatsapp || null;
-          });
-        }
-      }
-      
-      // Processar os dados com os status ativos e fotos
-      const processedData = data?.map(motorista => {
-        const ativo = ativosStatus[motorista.motorista_id] === true;
-        const foto_whatsapp = fotosWhatsApp[motorista.motorista_id] || null;
-        return {
-          ...motorista,
-          ativo: ativo,
-          foto_whatsapp: foto_whatsapp
-        };
-      }) || [];
+      // Use data directly from the view - no additional queries needed
+      // The view should already contain ativo and foto_whatsapp fields
+      const processedData = data?.map(motorista => ({
+        ...motorista,
+        // Ensure ativo field is properly set (fallback to true if undefined)
+        ativo: motorista.ativo !== false, // This will be true unless explicitly false
+        // Use foto_whatsapp from the view directly
+        foto_whatsapp: motorista.foto_whatsapp || null
+      })) || [];
 
       // Agrupar ajudantes por motorista_id
       const contratadosAgrupadosMap = new Map();
@@ -412,8 +432,6 @@ const Contratados = () => {
         }
       });
       const contratadosAgrupados = Array.from(contratadosAgrupadosMap.values());
-
-      console.log('Dados processados:', JSON.parse(JSON.stringify(contratadosAgrupados)));
       
       processedData.forEach(motorista => {
         if (motorista.nome_cidade) {
@@ -430,15 +448,34 @@ const Contratados = () => {
         }
       });
       
-      setCidades(Array.from(uniqueCities).sort());
-      setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
-
-      setContratados(contratadosAgrupados);
+      if (!append) {
+        setCidades(Array.from(uniqueCities).sort());
+        setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
+        setContratados(contratadosAgrupados);
+        setCurrentDataPage(0);
+      } else {
+        // Merge cities and vehicle types
+        setCidades(prev => Array.from(new Set([...prev, ...Array.from(uniqueCities)])).sort());
+        setTiposVeiculo(prev => Array.from(new Set([...prev, ...Array.from(uniqueVehicleTypes)])).sort());
+        setContratados(prev => [...prev, ...contratadosAgrupados]);
+        setCurrentDataPage(page);
+      }
+      
     } catch (error) {
       console.error('Error fetching contratados:', error);
       toast.error('Erro ao carregar contratados');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const loadMoreContratados = () => {
+    const nextPage = currentDataPage + 1;
+    const maxPage = Math.ceil(totalCount / itemsPerPage) - 1;
+    
+    if (nextPage <= maxPage && !loadingMore) {
+      fetchContratados(nextPage, true);
     }
   };
 
@@ -1871,14 +1908,43 @@ const Contratados = () => {
             </p>
           </div>
         ) : (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalItems={totalItems}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
+          <div className="space-y-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+            
+            {/* Load More Button for Large Datasets */}
+            {totalCount > contratados.length && (
+              <div className="flex justify-center py-4">
+                <button
+                  onClick={loadMoreContratados}
+                  disabled={loadingMore}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Carregando mais...
+                    </>
+                  ) : (
+                    <>
+                      Carregar mais registros ({contratados.length} de {totalCount})
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+            
+            {/* Data Info */}
+            <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+              Exibindo {contratados.length} de {totalCount} registros
+            </div>
+          </div>
         )}
       </div>
 

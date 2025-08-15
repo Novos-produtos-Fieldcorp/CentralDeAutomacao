@@ -605,9 +605,17 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         setContratados(agregadosAgrupados);
         
-        // Buscar tags para cada motorista
+        // Buscar tags para cada motorista - apenas se tags_access estiver habilitado
         if (agregadosAgrupados && agregadosAgrupados.length > 0) {
-          await fetchAllMotoristaTags(agregadosAgrupados);
+          // Check if tags are enabled for this company
+          const companyResponse = await fetch(`/api/company/by-account/${companyId}`);
+          if (companyResponse.ok) {
+            const companyData = await companyResponse.json();
+            // Only fetch tags if tags_access is true and there are reasonable number of records
+            if (companyData.tags_access && agregadosAgrupados.length < 500) {
+              await fetchAllMotoristaTags(agregadosAgrupados);
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching contratados:', error);
