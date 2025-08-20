@@ -530,19 +530,41 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         let fotosWhatsApp: Record<number, string | null> = {};
         
         if (motoristaIds.length > 0) {
-          const { data: motoristas, error: motoristasError } = await supabase
-            .from('motorista')
-            .select('motorista_id, ativo, foto_whatsapp')
-            .in('motorista_id', motoristaIds);
+          try {
+            // Dividir em chunks para evitar URLs muito longas
+            const chunkSize = 100; // Limite seguro para evitar URLs muito longas
+            const chunks = [];
+            for (let i = 0; i < motoristaIds.length; i += chunkSize) {
+              chunks.push(motoristaIds.slice(i, i + chunkSize));
+            }
             
-          if (motoristasError) {
-            console.error('Erro ao buscar status dos motoristas:', motoristasError);
-          } else {
+            // Buscar dados em chunks
+            const allMotoristas = [];
+            for (const chunk of chunks) {
+              const { data: motoristas, error: motoristasError } = await supabase
+                .from('motorista')
+                .select('motorista_id, ativo, foto_whatsapp')
+                .in('motorista_id', chunk);
+                
+              if (motoristasError) {
+                console.error('Erro ao buscar status dos motoristas (chunk):', motoristasError);
+                continue; // Continue com o próximo chunk
+              }
+              
+              if (motoristas) {
+                allMotoristas.push(...motoristas);
+              }
+            }
+            
             // Criar um mapa de motorista_id para status ativo e fotos
-            motoristas?.forEach(m => {
+            allMotoristas.forEach(m => {
               ativosStatus[m.motorista_id] = m.ativo === true;
               fotosWhatsApp[m.motorista_id] = m.foto_whatsapp || null;
             });
+            
+          } catch (error) {
+            console.error('Erro ao buscar status dos motoristas:', error);
+            // Continue sem os dados de status se houver erro
           }
         }
         
