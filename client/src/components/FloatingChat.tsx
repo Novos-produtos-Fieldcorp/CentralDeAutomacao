@@ -18,9 +18,9 @@ const apiClient = axios.create({
 });
 
 // Adicionar interceptor para incluir o token em todas as requisições
-apiClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use((config: any) => {
   // Usar API key das variáveis de ambiente primeiro
-  const apiKey = import.meta.env.VITE_CHAT_API_KEY || localStorage.getItem('wiseapp_token');
+  const apiKey = localStorage.getItem('wiseapp_token');
   if (apiKey) {
     config.headers['api_access_token'] = apiKey;
     config.headers['Authorization'] = `Bearer ${apiKey}`;
@@ -492,30 +492,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           return; // Usar dados do cache
         }
 
-        // Se não há cache válido, usar nova API otimizada ou fallback
+        // Se não há cache válido, usar nova API otimizada
         console.log('🌐 Buscando inboxes via API otimizada para company:', companyId);
         
-        try {
-          const response = await fetch(`/api/chatwoot/inboxes/${companyId}?account_id=${accountId}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Cache-Control': 'no-cache'
-            }
-          });
-
-          if (!response.ok) {
-            console.log('⚠️ API falhou, usando fallback do InboxSelector');
-            setShowInboxSelector(true);
-            return;
-          }
-        } catch (apiError) {
-          console.log('📦 Erro na API, delegando para InboxSelector:', apiError);
-          setShowInboxSelector(true);
-          return;
-        }
-
         const response = await fetch(`/api/chatwoot/inboxes/${companyId}?account_id=${accountId}`, {
           method: 'GET',
           headers: {
@@ -524,6 +503,22 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             'Cache-Control': 'no-cache'
           }
         });
+
+        if (!response.ok) {
+          console.log('❌ API falhou com status:', response.status);
+          if (response.status === 401) {
+            setAuthError(true);
+            setError('Token WiseApp inválido ou expirado. Por favor, configure um token válido.');
+          } else if (response.status === 403) {
+            setError('Acesso negado. Verifique as permissões da sua conta WiseApp.');
+          } else if (response.status === 404) {
+            setError('Conta não encontrada. Verifique se o ID da conta está correto.');
+          } else {
+            setError(`Erro na API: ${response.status}. Tente novamente mais tarde.`);
+          }
+          setAvailableInboxes([]);
+          return;
+        }
 
         const data = await response.json();
         console.log('✅ Inboxes recebidos:', data?.payload?.length || 0, 'caixas');
@@ -580,6 +575,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         } else {
           console.log('No payload found or payload is not an array');
           setAvailableInboxes([]);
+          setError('Dados de inboxes inválidos recebidos da API');
         }
       } catch (error) {
         console.error('Error fetching inboxes:', error);

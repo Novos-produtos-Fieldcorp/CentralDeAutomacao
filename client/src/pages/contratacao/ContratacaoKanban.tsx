@@ -1,6 +1,6 @@
 // src/pages/contratacao/ContratacaoKanban.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, FilePen, MessageCircle, Filter, X, User, ChevronLeft, ChevronRight, Truck, Phone, MapPin, ChevronDown, Tag } from 'lucide-react';
+import { Search, FilePen, MessageCircle, Filter, X, User, ChevronLeft, ChevronRight, Truck, Phone, MapPin, ChevronDown, Tag, RefreshCw } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
+import { WiseAppSyncButton } from '../../components/WiseAppSyncButton';
 
 interface MotoristaWithDetails extends Omit<Motorista, 'nome'> {
   end_motorista?: {
@@ -813,29 +814,40 @@ const ContratacaoKanban = () => {
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-lg border border-purple-200 dark:border-gray-600">
         {/* Search Bar */}
         <div className="p-6 border-b border-purple-200 dark:border-gray-600">
-          <div className="relative max-w-2xl">
-            <input
-              type="text"
-              placeholder="🔍 Buscar por nome, CPF, telefone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-12 py-3 text-base bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-purple-300 dark:border-gray-500 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-gray-900 dark:text-gray-100 transition-all duration-300 shadow-sm"
-            />
-            {isSearching ? (
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-500 border-t-transparent"></div>
-              </div>
-            ) : (
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            )}
-            {searchTerm && (
-              <button
-                onClick={clearSearch}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            )}
+          <div className="flex items-center justify-between">
+            <div className="relative max-w-2xl flex-1">
+              <input
+                type="text"
+                placeholder="🔍 Buscar por nome, CPF, telefone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-12 py-3 text-base bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-purple-300 dark:border-gray-500 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-gray-900 dark:text-gray-100 transition-all duration-300 shadow-sm"
+              />
+              {isSearching ? (
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-500 border-t-transparent"></div>
+                </div>
+              ) : (
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              )}
+              {searchTerm && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              )}
+            </div>
+            
+            {/* Botão de sincronização menor no lado direito */}
+            <div className="ml-4">
+              <WiseAppSyncButton 
+                variant="bulk" 
+                size="sm" 
+                showLabel={false}
+              />
+            </div>
           </div>
         </div>
 

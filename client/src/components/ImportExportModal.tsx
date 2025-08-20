@@ -363,20 +363,21 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
           throw new Error('Erro ao cadastrar motorista: nenhum dado retornado');
         }
 
+        // Insert address if all required fields are filled
         if (driver.Logradouro && driver.Cidade && driver.Estado) {
           try {
-            const stateAbbreviation = getStateAbbreviation(driver.Estado);
-            
+            // First, find the estado_id based on sigla_estado
             const { data: estadoData, error: estadoError } = await supabase
               .from('estado')
               .select('id_estado')
-              .eq('sigla_estado', stateAbbreviation)
+              .eq('sigla_estado', driver.Estado)
               .single();
-
+              
             if (estadoError) {
-              throw new Error(`Estado "${driver.Estado}" não encontrado. Use a sigla do estado (ex: SP, RJ).`);
+              throw new Error(`Estado "${driver.Estado}" não encontrado.`);
             }
             
+            // Check if cidade exists
             let cidadeId: number;
             const { data: cidade, error: cidadeError } = await supabase
               .from('cidade')
@@ -388,10 +389,11 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
             if (cidadeError && cidadeError.code !== 'PGRST116') {
               throw cidadeError;
             }
-
+            
             if (cidade) {
               cidadeId = cidade.id_cidade;
             } else {
+              // Create cidade if it doesn't exist
               const { data: newCidade, error: newCidadeError } = await supabase
                 .from('cidade')
                 .insert({
