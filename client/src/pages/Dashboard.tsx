@@ -5,9 +5,6 @@ import type { LucideIcon } from 'lucide-react';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import ImportExportModal from '../components/ImportExportModal';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { useWiseAppAccess } from '../hooks/useWiseAppAccess';
-import WiseAppTokenModal from '../components/WiseAppTokenModal';
-import { toast } from 'react-hot-toast';
 
 interface MenuItem {
   title: string;
@@ -119,15 +116,7 @@ const Dashboard = () => {
   const [isImportExportModalOpen, setIsImportExportModalOpen] = useState(false);
 
 
-  const { isLoading: tokenLoading, token, companyId } = useWiseAppAccess();
-  const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
-
-  useEffect(() => {
-    // For Netlify compatibility, check token from context instead of localStorage
-    if (!token && !isTokenModalOpen && !tokenLoading) {
-      setIsTokenModalOpen(true);
-    }
-  }, [token, isTokenModalOpen, tokenLoading]);
+  // Token management is now handled by WiseAppAccessContext
   
   if (loading) {
     return <LoadingSpinner />;
@@ -225,22 +214,6 @@ const Dashboard = () => {
       <ImportExportModal 
         isOpen={isImportExportModalOpen}
         onClose={() => setIsImportExportModalOpen(false)}
-      />
-
-      <WiseAppTokenModal
-        open={isTokenModalOpen}
-        onClose={() => setIsTokenModalOpen(false)}
-        onTokenSaved={(token) => {
-          try {
-            localStorage.setItem('wiseapp_token', token);
-            setIsTokenModalOpen(false);
-            toast.success('Token configurado com sucesso!');
-          } catch (error) {
-            console.error('Error saving token:', error);
-            toast.error('Erro ao salvar token. Por favor, tente novamente.');
-          }
-        }}
-        companyId={companyId}
       />
 
 
