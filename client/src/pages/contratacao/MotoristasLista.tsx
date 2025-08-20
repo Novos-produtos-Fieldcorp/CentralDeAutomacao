@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, ArrowLeftRight, AlertTriangle, XCircle, Tag, CheckCircle, Calendar } from 'lucide-react';
+import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, ArrowLeftRight, AlertTriangle, XCircle, Tag, CheckCircle, Calendar, Users } from 'lucide-react';
 import WhatsAppAvatar from '../../components/WhatsAppAvatar';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista } from '../../types/database';
@@ -22,7 +22,7 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
-import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
+import { useWiseAppSync } from '../../hooks/useWiseAppSync';
 
 // Função auxiliar para converter ViewMotorista para Motorista
 const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
@@ -138,6 +138,7 @@ export interface ViewMotorista extends Omit<ViewMotoristaBase, 'nome_motorista'>
 const MotoristasLista = () => {
   const { companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
+  const { syncAllMotoristas, isBulkSyncing } = useWiseAppSync();
   const [motoristas, setMotoristas] = useState<ViewMotorista[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1479,14 +1480,32 @@ const MotoristasLista = () => {
 
           </div>
           
-          {/* Botão Novo Motorista */}
-          <button
-            onClick={() => setIsNovoMotoristaModalOpen(true)}
-            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Novo Motorista</span>
-          </button>
+          <div className="flex gap-3">
+            {/* Botão Sincronizar Todos */}
+            <button
+              onClick={syncAllMotoristas}
+              disabled={isBulkSyncing}
+              className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isBulkSyncing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Users className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">
+                {isBulkSyncing ? 'Sincronizando...' : 'Sincronizar Todos'}
+              </span>
+            </button>
+            
+            {/* Botão Novo Motorista */}
+            <button
+              onClick={() => setIsNovoMotoristaModalOpen(true)}
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Novo Motorista</span>
+            </button>
+          </div>
         </div>
 
         {dateFilter === 'custom' && (
@@ -1517,8 +1536,7 @@ const MotoristasLista = () => {
         )}
       </div>
 
-      {/* WiseApp Bulk Sync Panel */}
-      <WiseAppBulkSyncPanel className="mb-6" />
+
 
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative z-[10]">
         <div className="overflow-hidden">

@@ -417,10 +417,17 @@ export class DatabaseStorage implements IStorage {
 
   // Tags methods
   async getTags(companyId: number): Promise<Tag[]> {
-    return await db
-      .select()
-      .from(tags)
-      .where(eq(tags.company_id, companyId));
+    const { data, error } = await supabase
+      .from('tags')
+      .select('*')
+      .eq('company_id', companyId);
+    
+    if (error) {
+      console.error('Error fetching tags:', error);
+      return [];
+    }
+    
+    return data || [];
   }
 
   async createTag(insertTag: InsertTag): Promise<Tag> {
