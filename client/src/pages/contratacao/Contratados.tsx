@@ -1182,50 +1182,6 @@ const Contratados = () => {
       </div>
 
       <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 p-6 rounded-xl shadow-lg border border-gray-200/70 dark:border-gray-700/70 backdrop-blur-sm">
-        {/* Header com contador e ações */}
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Contratados</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {filteredContratados.length} de {contratados.length} contratados
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {/* Contador de filtros ativos */}
-            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
-              ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all') && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
-                <Filter className="w-3 h-3" />
-                <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
-              </div>
-            )}
-            
-            {/* Botão limpar filtros */}
-            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
-              ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
-              <button
-                onClick={() => {
-                  setStatusFilter([]);
-                  setCidadeFilter([]);
-                  setClienteFilter([]);
-                  setAtivoFilter('');
-                  setTipoVeiculoFilter([]);
-                  setDateFilter('all');
-                  setSearchTerm('');
-                  setCustomDateRange({ startDate: '', endDate: '' });
-                }}
-                className="flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-              >
-                <X className="w-3 h-3" />
-                Limpar
-              </button>
-            )}
-          </div>
-        </div>
 
         {/* Campo de busca inteligente */}
         <div className="mb-4">
