@@ -28,12 +28,22 @@ export const saveWhatsAppPhoto = async (motoristaId: number, photoUrl: string): 
 /**
  * Busca a foto do perfil do WhatsApp usando exatamente a mesma lógica do FloatingChat
  */
-export const fetchWhatsAppPhoto = async (phoneNumber: string): Promise<string | null> => {
+export const fetchWhatsAppPhoto = async (phoneNumber: string, apiKey?: string, accountId?: string): Promise<string | null> => {
   try {
-    const apiKey = localStorage.getItem('wiseapp_token');
-    const accountId = localStorage.getItem('account_id');
+    // For Netlify compatibility, use provided parameters or fallback to localStorage only in dev environment
+    let token = apiKey;
+    let account = accountId;
     
-    if (!apiKey || !accountId) {
+    if (!token || !account) {
+      try {
+        token = token || localStorage?.getItem('wiseapp_token') || undefined;
+        account = account || localStorage?.getItem('account_id') || undefined;
+      } catch {
+        // Silently handle localStorage errors in serverless environments
+      }
+    }
+    
+    if (!token || !account) {
       console.warn('API key or account ID not found');
       return null;
     }
@@ -45,7 +55,7 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string): Promise<string | 
     const apiClient = axios.create({
       baseURL: '/api',
       headers: {
-        'api_access_token': apiKey,
+        'api_access_token': token,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       }
@@ -60,7 +70,7 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string): Promise<string | 
 
     // Primeiro tentar busca por ID exato
     try {
-      const searchResponse = await apiClient.get(`/api/v1/accounts/${accountId}/contacts/search`, {
+      const searchResponse = await apiClient.get(`/api/v1/accounts/${account}/contacts/search`, {
         params: {
           q: digitsOnly
         }

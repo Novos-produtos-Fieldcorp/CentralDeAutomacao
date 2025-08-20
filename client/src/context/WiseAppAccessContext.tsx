@@ -30,22 +30,14 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     const verificarAcesso = async () => {
-      // Check if token exists in localStorage
-      const storedToken = localStorage.getItem('wiseapp_token');
-      const storedAttendantId = localStorage.getItem('attendant_id');
-      const storedAttendantName = localStorage.getItem('attendant_name');
-      
-      if (storedToken && storedAttendantId) {
-        setToken(storedToken);
-        setAttendantId(parseInt(storedAttendantId));
-        setAttendantName(storedAttendantName);
-        setIsLoading(false);
-        return;
-      }
-
       let accountId = searchParams.get('account_id')?.trim();
       if (!accountId) {
-        accountId = localStorage.getItem('account_id') ?? '123456'; // Default for migration
+        // Default for migration - try to get from localStorage if available (for dev environment)
+        try {
+          accountId = localStorage?.getItem('account_id') ?? '123456';
+        } catch {
+          accountId = '123456'; // Fallback for serverless environments
+        }
       }
       if (!accountId) {
         setIsLoading(false);
@@ -84,9 +76,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
             setToken(access.access_token_wiseapp);
             setAttendantId(access.wiseapp_acesso_id);
             setAttendantName(access.nome);
-            localStorage.setItem('wiseapp_token', access.access_token_wiseapp);
-            localStorage.setItem('attendant_id', access.wiseapp_acesso_id.toString());
-            localStorage.setItem('attendant_name', access.nome || '');
+            // Remove localStorage dependency for Netlify compatibility
           } else {
             // No token found, show modal
             setShowModal(true);

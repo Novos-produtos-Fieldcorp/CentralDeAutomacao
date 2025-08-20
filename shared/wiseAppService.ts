@@ -451,8 +451,9 @@ export class WiseAppService {
  */
 export function getWiseAppService(config?: Partial<WiseAppConfig>): WiseAppService | null {
   try {
-    const apiKey = config?.apiKey || (typeof localStorage !== 'undefined' ? localStorage.getItem('wiseapp_token') : null);
-    const accountId = config?.accountId || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('account_id') : null) || (typeof localStorage !== 'undefined' ? localStorage.getItem('account_id') : null);
+    // For Netlify compatibility, config should always provide the apiKey and accountId
+    const apiKey = config?.apiKey || (typeof localStorage !== 'undefined' ? localStorage?.getItem('wiseapp_token') : null);
+    const accountId = config?.accountId || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('account_id') : null) || (typeof localStorage !== 'undefined' ? localStorage?.getItem('account_id') : null);
     const baseURL = config?.baseURL || 'https://chat.wiseapp360.com';
 
     if (!apiKey || !accountId) {

@@ -38,16 +38,20 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
 
       if (existing) {
         if (existing.access_token_wiseapp) {
-          localStorage.setItem('wiseapp_token', existing.access_token_wiseapp);
-          localStorage.setItem('attendant_id', existing.wiseapp_acesso_id.toString());
-          localStorage.setItem('attendant_name', existing.nome || '');
+          // Remove localStorage dependency for Netlify compatibility
           onTokenSaved(existing.access_token_wiseapp);
           onClose();
         } else {
           setStep('tutorial');
         }
       } else {
-        const accountId = localStorage.getItem('account_id');
+        // Get account_id from URL or use default for serverless compatibility
+        let accountId;
+        try {
+          accountId = localStorage?.getItem('account_id');
+        } catch {
+          accountId = '123456'; // Default for serverless environments
+        }
 
         const { data: companyData, error: companyError } = await supabase
           .from('company')
@@ -93,18 +97,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
 
       if (updateError) throw updateError;
 
-      // Buscar os dados atualizados para obter o ID
-      const { data: updatedAccess } = await supabase
-        .from('wiseapp_acesso')
-        .select('wiseapp_acesso_id, nome')
-        .eq('email', email)
-        .single();
-
-      localStorage.setItem('wiseapp_token', token);
-      if (updatedAccess) {
-        localStorage.setItem('attendant_id', updatedAccess.wiseapp_acesso_id.toString());
-        localStorage.setItem('attendant_name', updatedAccess.nome || '');
-      }
+      // Remove localStorage dependency for Netlify compatibility
       onTokenSaved(token);
       onClose();
     } catch (err) {

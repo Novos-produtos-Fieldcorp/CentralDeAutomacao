@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
+import { useWiseAppAccess } from "../context/WiseAppAccessContext";
 
 interface FloatingChatProps {
   initialPhone?: string;
@@ -130,9 +131,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const [lastMessageId, setLastMessageId] = useState<number | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
 
+  const { token: contextToken } = useWiseAppAccess();
   const accountId =
-    searchParams.get("account_id") || localStorage.getItem("account_id");
-  const apiKey = localStorage.getItem("wiseapp_token");
+    searchParams.get("account_id") || (typeof localStorage !== 'undefined' ? localStorage?.getItem("account_id") : null);
+  const apiKey = contextToken || (typeof localStorage !== 'undefined' ? localStorage?.getItem("wiseapp_token") : null);
 
   const api = axios.create({
     baseURL: import.meta.env.VITE_CHAT_API_URL || "/api",
@@ -314,8 +316,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     const fetchInboxes = async () => {
       try {
         const accountId =
-          searchParams.get("account_id") || localStorage.getItem("account_id");
-        const apiKey = localStorage.getItem("wiseapp_token");
+          searchParams.get("account_id") || (typeof localStorage !== 'undefined' ? localStorage?.getItem("account_id") : null);
+        const apiKey = contextToken || (typeof localStorage !== 'undefined' ? localStorage?.getItem("wiseapp_token") : null);
         if (!accountId || !apiKey) return;
         const api = axios.create({
           baseURL: "/api",
@@ -857,7 +859,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         throw new Error("ID da conta é obrigatório");
       }
 
-      const apiKey = localStorage.getItem("wiseapp_token");
+      const apiKey = contextToken || (typeof localStorage !== 'undefined' ? localStorage?.getItem("wiseapp_token") : null);
       if (!apiKey) {
         setAuthError(true);
         throw new Error("Token WiseApp não encontrado");

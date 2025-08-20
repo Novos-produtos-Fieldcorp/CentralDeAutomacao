@@ -123,11 +123,11 @@ const Dashboard = () => {
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('wiseapp_token');
-    if (!storedToken && !token && !isTokenModalOpen) {
+    // For Netlify compatibility, check token from context instead of localStorage
+    if (!token && !isTokenModalOpen && !tokenLoading) {
       setIsTokenModalOpen(true);
     }
-  }, [token, isTokenModalOpen]);
+  }, [token, isTokenModalOpen, tokenLoading]);
   
   if (loading) {
     return <LoadingSpinner />;
