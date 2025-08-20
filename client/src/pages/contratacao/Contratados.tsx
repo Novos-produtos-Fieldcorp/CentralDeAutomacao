@@ -369,19 +369,33 @@ const Contratados = () => {
       let fotosWhatsApp: Record<number, string | null> = {};
       
       if (motoristaIds.length > 0) {
-        const { data: motoristas, error: motoristasError } = await supabase
-          .from('motorista')
-          .select('motorista_id, ativo, foto_whatsapp')
-          .in('motorista_id', motoristaIds);
-          
-        if (motoristasError) {
-          console.error('Erro ao buscar status dos motoristas:', motoristasError);
-        } else {
-          // Criar um mapa de motorista_id para status ativo e fotos
-          motoristas?.forEach(m => {
-            ativosStatus[m.motorista_id] = m.ativo === true;
-            fotosWhatsApp[m.motorista_id] = m.foto_whatsapp || null;
-          });
+        // Break into chunks to avoid URL length limits
+        const chunkSize = 100;
+        const chunks = [];
+        for (let i = 0; i < motoristaIds.length; i += chunkSize) {
+          chunks.push(motoristaIds.slice(i, i + chunkSize));
+        }
+
+        // Process each chunk and collect results
+        for (const chunk of chunks) {
+          try {
+            const { data: motoristas, error: motoristasError } = await supabase
+              .from('motorista')
+              .select('motorista_id, ativo, foto_whatsapp')
+              .in('motorista_id', chunk);
+              
+            if (motoristasError) {
+              console.error('Erro ao buscar status dos motoristas:', motoristasError);
+            } else {
+              // Criar um mapa de motorista_id para status ativo e fotos
+              motoristas?.forEach(m => {
+                ativosStatus[m.motorista_id] = m.ativo === true;
+                fotosWhatsApp[m.motorista_id] = m.foto_whatsapp || null;
+              });
+            }
+          } catch (chunkError) {
+            console.error('Erro ao processar chunk de motoristas:', chunkError);
+          }
         }
       }
       
