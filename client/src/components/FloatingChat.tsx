@@ -218,7 +218,37 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
 
   const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
-  const companyId = searchParams.get('company_id') || localStorage.getItem('company_id') || '1';
+  const [companyId, setCompanyId] = useState<string>('');
+
+  // Initialize companyId when component mounts or accountId changes
+  useEffect(() => {
+    const initializeCompanyId = async () => {
+      if (!accountId) return;
+      
+      let currentCompanyId = localStorage.getItem('company_id');
+      
+      if (!currentCompanyId) {
+        try {
+          const companyResponse = await fetch(`/api/company/by-account/${accountId}`);
+          if (companyResponse.ok) {
+            const companyData = await companyResponse.json();
+            currentCompanyId = companyData.company_id?.toString();
+            if (currentCompanyId) {
+              localStorage.setItem('company_id', currentCompanyId);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching company:', error);
+        }
+      }
+      
+      if (currentCompanyId) {
+        setCompanyId(currentCompanyId);
+      }
+    };
+    
+    initializeCompanyId();
+  }, [accountId]);
   const apiKey = localStorage.getItem('wiseapp_token');
 
   // Usar o apiClient configurado acima
@@ -383,28 +413,15 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         const accountId = searchParams.get('account_id') || localStorage.getItem('account_id');
         if (!accountId) return;
 
-        // Buscar informações da empresa primeiro
-        let companyId = localStorage.getItem('company_id');
         if (!companyId) {
-          const companyResponse = await fetch(`/api/company/by-account/${accountId}`);
-          if (!companyResponse.ok) {
-            throw new Error('Não foi possível buscar informações da empresa');
-          }
-          const companyData = await companyResponse.json();
-          companyId = companyData.company_id?.toString();
-          if (companyId) {
-            localStorage.setItem('company_id', companyId);
-          }
-        }
-
-        if (!companyId) {
-          throw new Error('Company ID não encontrado');
+          console.log('Company ID não disponível ainda');
+          return;
         }
 
         // Buscar token WiseApp do banco de dados
         let apiKey = localStorage.getItem('wiseapp_token');
         if (!apiKey) {
-          const tokenResponse = await fetch(`/api/wiseapp-token/${companyId}`);
+          const tokenResponse = await fetch(`/api/wiseapp-token/${currentCompanyId}`);
           if (tokenResponse.ok) {
             const tokenData = await tokenResponse.json();
             apiKey = tokenData.token;
@@ -603,8 +620,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         setAvailableInboxes([]);
       }
     };
-    if (showChat) fetchInboxes();
-  }, [showChat]);
+    if (showChat && companyId) fetchInboxes();
+  }, [showChat, companyId]);
 
   const handleError = (error: unknown) => {
     console.error('Error:', error);
@@ -1008,28 +1025,29 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         throw new Error('ID da conta é obrigatório');
       }
 
-      // Buscar informações da empresa primeiro
-      let companyId = localStorage.getItem('company_id');
-      if (!companyId) {
+      // Usar companyId do estado, ou buscar se não disponível
+      let currentCompanyId = companyId;
+      if (!currentCompanyId) {
         const companyResponse = await fetch(`/api/company/by-account/${accountId}`);
         if (!companyResponse.ok) {
           throw new Error('Não foi possível buscar informações da empresa');
         }
         const companyData = await companyResponse.json();
-        companyId = companyData.company_id?.toString();
-        if (companyId) {
-          localStorage.setItem('company_id', companyId);
+        currentCompanyId = companyData.company_id?.toString();
+        if (currentCompanyId) {
+          localStorage.setItem('company_id', currentCompanyId);
+          setCompanyId(currentCompanyId);
         }
       }
 
-      if (!companyId) {
+      if (!currentCompanyId) {
         throw new Error('Company ID não encontrado');
       }
 
       // Buscar token WiseApp do banco de dados
       let apiKey = localStorage.getItem('wiseapp_token');
       if (!apiKey) {
-        const tokenResponse = await fetch(`/api/wiseapp-token/${companyId}`);
+        const tokenResponse = await fetch(`/api/wiseapp-token/${currentCompanyId}`);
         if (tokenResponse.ok) {
           const tokenData = await tokenResponse.json();
           apiKey = tokenData.token;
