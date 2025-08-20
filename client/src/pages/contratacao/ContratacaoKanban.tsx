@@ -1,18 +1,33 @@
 // src/pages/contratacao/ContratacaoKanban.tsx
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, FilePen, MessageCircle, Filter, X, User, ChevronLeft, ChevronRight, Truck, Phone, MapPin, ChevronDown, Tag, RefreshCw } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { useCompanyData } from '../../hooks/useCompanyData';
-import { useAuth } from '../../context/AuthContext';
-import type { Motorista, Veiculo } from '../../types/database';
-import { useFloatingChat } from '../../hooks/useFloatingChat';
-import toast from 'react-hot-toast';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
-import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
-import { WiseAppSyncButton } from '../../components/WiseAppSyncButton';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Search,
+  FilePen,
+  MessageCircle,
+  Filter,
+  X,
+  User,
+  ChevronLeft,
+  ChevronRight,
+  Truck,
+  Phone,
+  MapPin,
+  ChevronDown,
+  Tag,
+  RefreshCw,
+} from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { useCompanyData } from "../../hooks/useCompanyData";
+import { useAuth } from "../../context/AuthContext";
+import type { Motorista, Veiculo } from "../../types/database";
+import { useFloatingChat } from "../../hooks/useFloatingChat";
+import toast from "react-hot-toast";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import UnifiedAgregadoModal from "../../components/UnifiedAgregadoModal";
+import UnifiedMotoristaModal from "../../components/UnifiedMotoristaModal";
+import { WiseAppSyncButton } from "../../components/WiseAppSyncButton";
 
-interface MotoristaWithDetails extends Omit<Motorista, 'nome'> {
+interface MotoristaWithDetails extends Omit<Motorista, "nome"> {
   end_motorista?: {
     id_end_motorista?: number;
     cidade?: string | null;
@@ -50,134 +65,141 @@ const ContratacaoKanban = () => {
   const { startChat } = useFloatingChat();
   // Usando o hook de autenticação
   useAuth(); // Apenas para garantir que o usuário está autenticado
-  
+
   const [loading, setLoading] = useState(true);
-  const [funcaoFilter, setFuncaoFilter] = useState<'todos' | 'Motorista' | 'Agregado'>('todos');
+  const [funcaoFilter, setFuncaoFilter] = useState<
+    "todos" | "Motorista" | "Agregado"
+  >("todos");
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [selectedMotorista, setSelectedMotorista] = useState<MotoristaWithDetails | null>(null);
-  
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [selectedMotorista, setSelectedMotorista] =
+    useState<MotoristaWithDetails | null>(null);
+
   // Advanced filters states
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
   const [clienteFilter, setClienteFilter] = useState<string[]>([]);
-  const [ativoFilter, setAtivoFilter] = useState('');
+  const [ativoFilter, setAtivoFilter] = useState("");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
-  
+
   // Dropdown states
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
   const [showTagsDropdown, setShowTagsDropdown] = useState(false);
-  
+
   // Data for dropdowns
-  const [cidades, setCidades] = useState<Array<{nome_cidade: string}>>([]);
-  const [clientes, setClientes] = useState<Array<{cliente_id: number, nome: string}>>([]);
-  const [tags, setTags] = useState<Array<{id: number, nome: string}>>([]);
-  
+  const [cidades, setCidades] = useState<Array<{ nome_cidade: string }>>([]);
+  const [clientes, setClientes] = useState<
+    Array<{ cliente_id: number; nome: string }>
+  >([]);
+  const [tags, setTags] = useState<Array<{ id: number; nome: string }>>([]);
+
   // Refs for dropdown positioning
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
   const ativoDropdownRef = useRef<HTMLDivElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
-  
+
   // Estados para os modais
-  const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
-  const [isUnifiedMotoristaModalOpen, setIsUnifiedMotoristaModalOpen] = useState(false);
+  const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] =
+    useState(false);
+  const [isUnifiedMotoristaModalOpen, setIsUnifiedMotoristaModalOpen] =
+    useState(false);
 
   const [columns, setColumns] = useState<KanbanColumn[]>([
-    { 
-      id: 'cadastrado', 
-      title: 'Cadastrado', 
-      color: 'bg-blue-50/80 dark:bg-blue-900/20',
-      borderColor: 'border-blue-100 dark:border-blue-800/30',
+    {
+      id: "cadastrado",
+      title: "Cadastrado",
+      color: "bg-blue-50/80 dark:bg-blue-900/20",
+      borderColor: "border-blue-100 dark:border-blue-800/30",
       motoristas: [],
       totalCount: 0,
       currentPage: 1,
       totalPages: 1,
-      loading: false
+      loading: false,
     },
-    { 
-      id: 'qualificado', 
-      title: 'Qualificado', 
-      color: 'bg-purple-50/80 dark:bg-purple-900/20',
-      borderColor: 'border-purple-100 dark:border-purple-800/30',
+    {
+      id: "qualificado",
+      title: "Qualificado",
+      color: "bg-purple-50/80 dark:bg-purple-900/20",
+      borderColor: "border-purple-100 dark:border-purple-800/30",
       motoristas: [],
       totalCount: 0,
       currentPage: 1,
       totalPages: 1,
-      loading: false
+      loading: false,
     },
-    { 
-      id: 'documentacao', 
-      title: 'Documentação', 
-      color: 'bg-yellow-50/80 dark:bg-yellow-900/20',
-      borderColor: 'border-yellow-100 dark:border-yellow-800/30',
+    {
+      id: "documentacao",
+      title: "Documentação",
+      color: "bg-yellow-50/80 dark:bg-yellow-900/20",
+      borderColor: "border-yellow-100 dark:border-yellow-800/30",
       motoristas: [],
       totalCount: 0,
       currentPage: 1,
       totalPages: 1,
-      loading: false
+      loading: false,
     },
-    { 
-      id: 'gestao_risco', 
-      title: 'Gestão de Risco', 
-      color: 'bg-pink-50/80 dark:bg-pink-900/30',
-      borderColor: 'border-pink-100 dark:border-pink-800/40',
+    {
+      id: "gestao_risco",
+      title: "Gestão de Risco",
+      color: "bg-pink-50/80 dark:bg-pink-900/30",
+      borderColor: "border-pink-100 dark:border-pink-800/40",
       motoristas: [],
       totalCount: 0,
       currentPage: 1,
       totalPages: 1,
-      loading: false
+      loading: false,
     },
-    { 
-      id: 'contrato_enviado', 
-      title: 'Contrato Enviado', 
-      color: 'bg-indigo-50/80 dark:bg-indigo-900/20',
-      borderColor: 'border-indigo-100 dark:border-indigo-800/30',
+    {
+      id: "contrato_enviado",
+      title: "Contrato Enviado",
+      color: "bg-indigo-50/80 dark:bg-indigo-900/20",
+      borderColor: "border-indigo-100 dark:border-indigo-800/30",
       motoristas: [],
       totalCount: 0,
       currentPage: 1,
       totalPages: 1,
-      loading: false
+      loading: false,
     },
-    { 
-      id: 'contratado', 
-      title: 'Contratado', 
-      color: 'bg-green-50/80 dark:bg-green-900/20',
-      borderColor: 'border-green-100 dark:border-green-800/30',
+    {
+      id: "contratado",
+      title: "Contratado",
+      color: "bg-green-50/80 dark:bg-green-900/20",
+      borderColor: "border-green-100 dark:border-green-800/30",
       motoristas: [],
       totalCount: 0,
       currentPage: 1,
       totalPages: 1,
-      loading: false
+      loading: false,
     },
-    { 
-      id: 'repescagem', 
-      title: 'Repescagem', 
-      color: 'bg-orange-50/80 dark:bg-orange-900/20',
-      borderColor: 'border-orange-100 dark:border-orange-800/30',
+    {
+      id: "repescagem",
+      title: "Repescagem",
+      color: "bg-orange-50/80 dark:bg-orange-900/20",
+      borderColor: "border-orange-100 dark:border-orange-800/30",
       motoristas: [],
       totalCount: 0,
       currentPage: 1,
       totalPages: 1,
-      loading: false
+      loading: false,
     },
-    { 
-      id: 'rejeitado', 
-      title: 'Rejeitado', 
-      color: 'bg-red-50/80 dark:bg-red-900/20',
-      borderColor: 'border-red-100 dark:border-red-800/30',
+    {
+      id: "rejeitado",
+      title: "Rejeitado",
+      color: "bg-red-50/80 dark:bg-red-900/20",
+      borderColor: "border-red-100 dark:border-red-800/30",
       motoristas: [],
       totalCount: 0,
       currentPage: 1,
       totalPages: 1,
-      loading: false
-    }
+      loading: false,
+    },
   ]);
 
   // Debounce search term with a longer delay
@@ -200,22 +222,26 @@ const ContratacaoKanban = () => {
     // Initial load of all columns
     const loadAllColumns = async () => {
       if (!companyId) return; // Add guard clause
-      
+
       setLoading(true);
       try {
         // First, get counts for all statuses
-        await Promise.all(columns.map(column => fetchColumnCount(column.id, companyId)));
-        
+        await Promise.all(
+          columns.map((column) => fetchColumnCount(column.id, companyId)),
+        );
+
         // Then load first page of data for each column
-        await Promise.all(columns.map(column => fetchColumnData(column.id, 1)));
+        await Promise.all(
+          columns.map((column) => fetchColumnData(column.id, 1)),
+        );
       } catch (error) {
-        console.error('Error loading kanban data:', error);
-        toast.error('Erro ao carregar dados do kanban');
+        console.error("Error loading kanban data:", error);
+        toast.error("Erro ao carregar dados do kanban");
       } finally {
         setLoading(false);
       }
     };
-    
+
     if (companyId) {
       loadAllColumns();
     }
@@ -225,69 +251,81 @@ const ContratacaoKanban = () => {
     try {
       // Get all motoristas with this status
       const { data, error } = await supabase
-        .from('motorista')
-        .select('motorista_id')
-        .eq('st_cadastro', status)
-        .eq('company_id', companyId);
+        .from("motorista")
+        .select("motorista_id")
+        .eq("st_cadastro", status)
+        .eq("company_id", companyId);
 
       if (error) throw error;
 
       // Filter the data based on function and search term
       let filteredData = data || [];
-      
+
       // Apply function filter if not 'todos'
-      if (funcaoFilter !== 'todos') {
+      if (funcaoFilter !== "todos") {
         // We need to get the full data to filter by function
         const { data: fullData } = await supabase
-          .from('motorista')
-          .select('motorista_id, funcao')
-          .eq('st_cadastro', status)
-          .eq('company_id', companyId);
-          
+          .from("motorista")
+          .select("motorista_id, funcao")
+          .eq("st_cadastro", status)
+          .eq("company_id", companyId);
+
         if (fullData) {
           const matchingIds = fullData
-            .filter(m => m.funcao === funcaoFilter)
-            .map(m => m.motorista_id);
-          
-          filteredData = filteredData.filter(m => matchingIds.includes(m.motorista_id));
+            .filter((m) => m.funcao === funcaoFilter)
+            .map((m) => m.motorista_id);
+
+          filteredData = filteredData.filter((m) =>
+            matchingIds.includes(m.motorista_id),
+          );
         }
       }
-      
+
       // Apply search filter if provided
       if (debouncedSearchTerm) {
         // We need to get the full data to search by name or CPF
         const { data: fullData } = await supabase
-          .from('motorista')
-          .select('motorista_id, nome, cpf')
-          .eq('st_cadastro', status)
-          .eq('company_id', companyId);
-          
+          .from("motorista")
+          .select("motorista_id, nome, cpf")
+          .eq("st_cadastro", status)
+          .eq("company_id", companyId);
+
         if (fullData) {
           const searchLower = debouncedSearchTerm.toLowerCase();
-          const matchingIds = fullData.filter(m => 
-            (m.nome?.toLowerCase().includes(searchLower) || 
-            m.cpf?.includes(searchLower))
-          ).map(m => m.motorista_id);
-          
-          filteredData = filteredData.filter(m => matchingIds.includes(m.motorista_id));
+          const matchingIds = fullData
+            .filter(
+              (m) =>
+                m.nome?.toLowerCase().includes(searchLower) ||
+                m.cpf?.includes(searchLower),
+            )
+            .map((m) => m.motorista_id);
+
+          filteredData = filteredData.filter((m) =>
+            matchingIds.includes(m.motorista_id),
+          );
         }
       }
-      
+
       const totalCount = filteredData.length;
 
       // Update the column with the count
-      setColumns(prev => prev.map(col => {
-        if (col.id === status) {
-          // Ensure we calculate total pages correctly
-          const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage || 1));
-          return {
-            ...col,
-            totalCount: totalCount,
-            totalPages: totalPages,
-          };
-        }
-        return col;
-      }));
+      setColumns((prev) =>
+        prev.map((col) => {
+          if (col.id === status) {
+            // Ensure we calculate total pages correctly
+            const totalPages = Math.max(
+              1,
+              Math.ceil(totalCount / itemsPerPage || 1),
+            );
+            return {
+              ...col,
+              totalCount: totalCount,
+              totalPages: totalPages,
+            };
+          }
+          return col;
+        }),
+      );
 
       return totalCount;
     } catch (error) {
@@ -299,26 +337,27 @@ const ContratacaoKanban = () => {
 
   const fetchColumnData = async (status: string, page: number) => {
     if (!companyId) return;
-    
+
     // Find the column
-    const column = columns.find(col => col.id === status);
+    const column = columns.find((col) => col.id === status);
     if (!column) return;
-    
+
     // Update loading state for this column
-    setColumns(prev => prev.map(col => 
-      col.id === status ? { ...col, loading: true } : col
-    ));
-    
+    setColumns((prev) =>
+      prev.map((col) => (col.id === status ? { ...col, loading: true } : col)),
+    );
+
     try {
-      console.log('Buscando dados para status:', status);
+      console.log("Buscando dados para status:", status);
       // Calculate pagination parameters
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
-      
+
       // Build the query with filters using the complete view
       let query = supabase
-        .from('vw_motoristas_completo')
-        .select(`
+        .from("vw_motoristas_completo")
+        .select(
+          `
           motorista_id,
           nome_motorista as nome,
           funcao,
@@ -342,76 +381,92 @@ const ContratacaoKanban = () => {
           ds_complemento_end,
           nome_bairro,
           nr_cep
-        `)
-        .eq('st_cadastro', status)
-        .eq('company_id', companyId);
+        `,
+        )
+        .eq("st_cadastro", status)
+        .eq("company_id", companyId);
 
       // Apply function filter if not 'todos'
-      if (funcaoFilter !== 'todos') {
+      if (funcaoFilter !== "todos") {
         // FIX: Use eq instead of or for filtering by function
-        query = query.eq('funcao', funcaoFilter);
+        query = query.eq("funcao", funcaoFilter);
       }
-      
+
       // Apply search filter if provided
       if (debouncedSearchTerm) {
-        query = query.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
+        query = query.or(
+          `nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`,
+        );
       }
-      
+
       // Apply sorting by data_cadastro (newest first)
-      query = query.order('data_cadastro', { ascending: false });
-      
+      query = query.order("data_cadastro", { ascending: false });
+
       // Apply pagination
       query = query.range(from, to);
-      
+
       // Primeiro, buscar apenas os dados básicos dos motoristas
-      console.log('Executando query para motoristas...');
-      
+      console.log("Executando query para motoristas...");
+
       // First, get data from vw_motoristas_completo
       let motoristasData: any[] = [];
-      
+
       try {
-        const { data: motoristasData1, error: error1 } = await query.select('*');
-        
+        const { data: motoristasData1, error: error1 } =
+          await query.select("*");
+
         if (error1) {
-          console.error('Erro na consulta de motoristas (vw_motoristas_completo):', error1);
+          console.error(
+            "Erro na consulta de motoristas (vw_motoristas_completo):",
+            error1,
+          );
           throw error1;
         }
-        
+
         motoristasData = motoristasData1 || [];
-        
+
         // If we're looking for agregados or all, also check vw_agregados_completo
-        if (funcaoFilter === 'Agregado' || funcaoFilter === 'todos') {
+        if (funcaoFilter === "Agregado" || funcaoFilter === "todos") {
           let agregadosQuery = supabase
-            .from('vw_agregados_completo')
-            .select('*')
-            .eq('st_cadastro', status)
-            .eq('company_id', companyId);
-            
+            .from("vw_agregados_completo")
+            .select("*")
+            .eq("st_cadastro", status)
+            .eq("company_id", companyId);
+
           // Always filter for Agregado in this view
-          agregadosQuery = agregadosQuery.eq('funcao', 'Agregado');
-          
+          agregadosQuery = agregadosQuery.eq("funcao", "Agregado");
+
           // Apply search filter if provided
           if (debouncedSearchTerm) {
             agregadosQuery = agregadosQuery.or(
-              `nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`
+              `nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`,
             );
           }
-          
+
           // Apply sorting by data_cadastro (newest first)
-          agregadosQuery = agregadosQuery.order('data_cadastro', { ascending: false });
-          
+          agregadosQuery = agregadosQuery.order("data_cadastro", {
+            ascending: false,
+          });
+
           // Apply pagination
           agregadosQuery = agregadosQuery.range(from, to);
-          
+
           const { data: agregadosData, error: error2 } = await agregadosQuery;
-          
+
           if (error2) {
-            console.error('Erro na consulta de agregados (vw_agregados_completo):', error2);
+            console.error(
+              "Erro na consulta de agregados (vw_agregados_completo):",
+              error2,
+            );
             // Don't throw here, we still have motoristas data
           } else if (agregadosData && agregadosData.length > 0) {
             // Merge the results, ensuring we don't have duplicates
-            const existingIds = new Set(motoristasData.map(m => m.motorista_id));
-            const newAgregados = agregadosData.filter((a: any) => !existingIds.has(a.motorista_id));
+            const existingIds = new Set(
+              motoristasData.map((m) => m.motorista_id),
+            );
+            const newAgregados = agregadosData.filter(
+              (a: any) => !existingIds.has(a.motorista_id),
+            );
             motoristasData = [...motoristasData, ...newAgregados];
           }
         }
@@ -422,33 +477,42 @@ const ContratacaoKanban = () => {
           hint?: string;
           code?: string;
         };
-        console.error('Erro ao buscar dados:', {
+        console.error("Erro ao buscar dados:", {
           message: error.message,
           details: error.details,
           hint: error.hint,
-          code: error.code
+          code: error.code,
         });
         throw error;
       }
-      
-      console.log('Dados de motoristas recebidos para', status, ':', motoristasData);
-      
+
+      console.log(
+        "Dados de motoristas recebidos para",
+        status,
+        ":",
+        motoristasData,
+      );
+
       if (!motoristasData || motoristasData.length === 0) {
-        console.warn('Nenhum motorista encontrado para o status:', status);
+        console.warn("Nenhum motorista encontrado para o status:", status);
         // Atualizar a coluna com array vazio
-        setColumns(prev => prev.map(col => 
-          col.id === status 
-            ? { ...col, motoristas: [], loading: false, totalCount: 0 } 
-            : col
-        ));
+        setColumns((prev) =>
+          prev.map((col) =>
+            col.id === status
+              ? { ...col, motoristas: [], loading: false, totalCount: 0 }
+              : col,
+          ),
+        );
         return;
       }
-      
+
       // Já temos todos os dados necessários da view, incluindo endereços
       const motoristasComEndereco = motoristasData.map((motorista: any) => {
         // Extrair o primeiro nome para exibição
-        const primeiroNome = motorista.nome_motorista ? motorista.nome_motorista.split(' ')[0] : '';
-        
+        const primeiroNome = motorista.nome_motorista
+          ? motorista.nome_motorista.split(" ")[0]
+          : "";
+
         return {
           ...motorista,
           nome: motorista.nome_motorista, // Garantir que o nome está mapeado corretamente
@@ -465,126 +529,149 @@ const ContratacaoKanban = () => {
             cidade: motorista.nome_cidade,
             estado: motorista.nome_estado,
             sigla_estado: motorista.sigla_estado,
-            nr_cep: motorista.nr_cep
+            nr_cep: motorista.nr_cep,
           },
-          primeiroNome // Adicionando o primeiro nome para exibição
+          primeiroNome, // Adicionando o primeiro nome para exibição
         };
       });
-      
-      console.log('Motoristas com endereços:', motoristasComEndereco);
-      
+
+      console.log("Motoristas com endereços:", motoristasComEndereco);
+
       // Buscar clientes em uma consulta separada
-      const clienteIds = [...new Set(motoristasComEndereco
-        .filter((m: any) => m.cliente_id)
-        .map((m: any) => m.cliente_id)
-      )];
-      
-      console.log('Buscando clientes com IDs:', clienteIds);
-      
+      const clienteIds = [
+        ...new Set(
+          motoristasComEndereco
+            .filter((m: any) => m.cliente_id)
+            .map((m: any) => m.cliente_id),
+        ),
+      ];
+
+      console.log("Buscando clientes com IDs:", clienteIds);
+
       let clientesData: any[] = [];
       if (clienteIds.length > 0) {
         const { data: clientes, error: clientesError } = await supabase
-          .from('cliente')
-          .select('cliente_id, nome')
-          .in('cliente_id', clienteIds);
-          
+          .from("cliente")
+          .select("cliente_id, nome")
+          .in("cliente_id", clienteIds);
+
         if (clientesError) {
-          console.error('Erro ao buscar clientes:', clientesError);
+          console.error("Erro ao buscar clientes:", clientesError);
         } else {
           clientesData = clientes || [];
-          console.log('Clientes encontrados:', clientesData);
+          console.log("Clientes encontrados:", clientesData);
         }
       }
-      
+
       // Criar um mapa de cliente_id para nome do cliente
-      const clienteMap = clientesData.reduce((acc: Record<number, string>, cliente: any) => {
-        acc[cliente.cliente_id] = cliente.nome;
-        return acc;
-      }, {});
-      
+      const clienteMap = clientesData.reduce(
+        (acc: Record<number, string>, cliente: any) => {
+          acc[cliente.cliente_id] = cliente.nome;
+          return acc;
+        },
+        {},
+      );
+
       // Buscar veículos e montar dados finais
       const motoristasWithVehicles = await Promise.all(
         motoristasComEndereco.map(async (motorista: any) => {
           const { data: veiculoData } = await supabase
-            .from('veiculo')
-            .select('*')
-            .eq('motorista_id', motorista.motorista_id)
+            .from("veiculo")
+            .select("*")
+            .eq("motorista_id", motorista.motorista_id)
             .limit(1)
             .maybeSingle();
 
           // Encontrar o nome do cliente usando o mapa
-          const nomeCliente = motorista.cliente_id ? clienteMap[motorista.cliente_id] : null;
-          
+          const nomeCliente = motorista.cliente_id
+            ? clienteMap[motorista.cliente_id]
+            : null;
+
           return {
             ...motorista,
-            veiculo: veiculoData ? [{
-              veiculo_id: veiculoData.veiculo_id,
-              placa: veiculoData.placa,
-              status_veiculo: veiculoData.status_veiculo,
-              marca: veiculoData.marca,
-              modelo: veiculoData.modelo,
-              tipologia: veiculoData.tipologia,
-              ano: veiculoData.ano,
-              combustivel: veiculoData.combustivel,
-              peso: veiculoData.peso,
-              cubagem: veiculoData.cubagem,
-              possui_rastreador: veiculoData.possui_rastreador,
-              marca_rastreador: veiculoData.marca_rastreador,
-              motorista_id: veiculoData.motorista_id,
-              cor: veiculoData.cor,
-              tipo: veiculoData.tipo,
-              company_id: veiculoData.company_id
-            }] : [],
+            veiculo: veiculoData
+              ? [
+                  {
+                    veiculo_id: veiculoData.veiculo_id,
+                    placa: veiculoData.placa,
+                    status_veiculo: veiculoData.status_veiculo,
+                    marca: veiculoData.marca,
+                    modelo: veiculoData.modelo,
+                    tipologia: veiculoData.tipologia,
+                    ano: veiculoData.ano,
+                    combustivel: veiculoData.combustivel,
+                    peso: veiculoData.peso,
+                    cubagem: veiculoData.cubagem,
+                    possui_rastreador: veiculoData.possui_rastreador,
+                    marca_rastreador: veiculoData.marca_rastreador,
+                    motorista_id: veiculoData.motorista_id,
+                    cor: veiculoData.cor,
+                    tipo: veiculoData.tipo,
+                    company_id: veiculoData.company_id,
+                  },
+                ]
+              : [],
             nome_cidade: motorista.end_motorista?.[0]?.cidade || null,
             sigla_estado: motorista.end_motorista?.[0]?.sigla_estado || null,
-            nome_cliente: nomeCliente || null
+            nome_cliente: nomeCliente || null,
           };
-        })
+        }),
       );
-      
-      console.log('Motoristas com veículos:', motoristasWithVehicles);
-      
+
+      console.log("Motoristas com veículos:", motoristasWithVehicles);
+
       // Update the column data
-      console.log('Atualizando coluna', status, 'com', motoristasWithVehicles.length, 'itens');
-      setColumns((prev: any[]) => prev.map((col: any) => {
-        if (col.id === status) {
-          return {
-            ...col,
-            motoristas: motoristasWithVehicles,
-            totalCount: motoristasWithVehicles.length, // Atualiza a contagem total
-            currentPage: page,
-            loading: false
-          };
-        }
-        return col;
-      }));
+      console.log(
+        "Atualizando coluna",
+        status,
+        "com",
+        motoristasWithVehicles.length,
+        "itens",
+      );
+      setColumns((prev: any[]) =>
+        prev.map((col: any) => {
+          if (col.id === status) {
+            return {
+              ...col,
+              motoristas: motoristasWithVehicles,
+              totalCount: motoristasWithVehicles.length, // Atualiza a contagem total
+              currentPage: page,
+              loading: false,
+            };
+          }
+          return col;
+        }),
+      );
     } catch (error) {
       console.error(`Error fetching data for ${status}:`, error);
       toast.error(`Erro ao carregar dados para ${status}`);
-      
+
       // Reset loading state on error
-      setColumns(prev => prev.map(col => 
-        col.id === status ? { ...col, loading: false } : col
-      ));
+      setColumns((prev) =>
+        prev.map((col) =>
+          col.id === status ? { ...col, loading: false } : col,
+        ),
+      );
     }
   };
 
   const handleSearch = async () => {
     if (!companyId) return;
-    
+
     try {
       setIsSearching(true);
-      
+
       // Refresh counts and data for all columns with the search term
       // First update all counts
-      await Promise.all(columns.map(column => fetchColumnCount(column.id, companyId)));
-      
+      await Promise.all(
+        columns.map((column) => fetchColumnCount(column.id, companyId)),
+      );
+
       // Then fetch data for all columns
-      await Promise.all(columns.map(column => fetchColumnData(column.id, 1)));
-      
+      await Promise.all(columns.map((column) => fetchColumnData(column.id, 1)));
     } catch (error) {
-      console.error('Error searching:', error);
-      toast.error('Erro ao buscar dados');
+      console.error("Error searching:", error);
+      toast.error("Erro ao buscar dados");
     } finally {
       setIsSearching(false);
     }
@@ -592,26 +679,25 @@ const ContratacaoKanban = () => {
 
   const clearSearch = async () => {
     if (!companyId) return;
-    
-    setSearchTerm('');
-    setDebouncedSearchTerm('');
+
+    setSearchTerm("");
+    setDebouncedSearchTerm("");
     try {
       setIsSearching(true);
-      
+
       // Refresh counts and data for all columns without the search term
       // First update all counts
       for (const column of columns) {
         await fetchColumnCount(column.id, companyId);
       }
-      
+
       // Then fetch data for all columns
       for (const column of columns) {
         await fetchColumnData(column.id, 1);
       }
-      
     } catch (error) {
-      console.error('Error clearing search:', error);
-      toast.error('Erro ao limpar busca');
+      console.error("Error clearing search:", error);
+      toast.error("Erro ao limpar busca");
     } finally {
       setIsSearching(false);
     }
@@ -619,57 +705,69 @@ const ContratacaoKanban = () => {
 
   const handleStartChat = (motorista: MotoristaWithDetails) => {
     if (!motorista?.telefone) {
-      toast.error('Número de telefone não disponível para este motorista');
+      toast.error("Número de telefone não disponível para este motorista");
       return;
     }
-    
+
     // Usando a assinatura correta do startChat com motorista ID
-    startChat(motorista.telefone.toString(), motorista.nome, motorista.motorista_id);
+    startChat(
+      motorista.telefone.toString(),
+      motorista.nome,
+      motorista.motorista_id,
+    );
   };
 
   const handleViewDocument = (motorista: MotoristaWithDetails) => {
     if (!motorista) return;
-    
+
     // Usando o motorista diretamente, já que a interface já está correta
     setSelectedMotorista(motorista);
-    
-    if (motorista.funcao === 'Agregado') {
+
+    if (motorista.funcao === "Agregado") {
       setIsUnifiedAgregadoModalOpen(true);
     } else {
       setIsUnifiedMotoristaModalOpen(true);
     }
   };
 
-  const updateStatus = async (motorista_id: number, newStatus: string, oldStatus: string) => {
+  const updateStatus = async (
+    motorista_id: number,
+    newStatus: string,
+    oldStatus: string,
+  ) => {
     if (!companyId) return; // Add guard clause
-    
+
     try {
       const { error } = await supabase
-        .from('motorista')
+        .from("motorista")
         .update({ st_cadastro: newStatus })
-        .eq('motorista_id', motorista_id);
+        .eq("motorista_id", motorista_id);
 
       if (error) throw error;
-      
+
       // Remove from current column
-      setColumns(prev => prev.map(col => {
-        if (col.id === oldStatus) {
-          return {
-            ...col,
-            motoristas: col.motoristas.filter(m => m.motorista_id !== motorista_id),
-            totalCount: Math.max(0, col.totalCount - 1)
-          };
-        }
-        return col;
-      }));
-      
+      setColumns((prev) =>
+        prev.map((col) => {
+          if (col.id === oldStatus) {
+            return {
+              ...col,
+              motoristas: col.motoristas.filter(
+                (m) => m.motorista_id !== motorista_id,
+              ),
+              totalCount: Math.max(0, col.totalCount - 1),
+            };
+          }
+          return col;
+        }),
+      );
+
       // Update count and refresh data for the new column
       await fetchColumnCount(newStatus, companyId);
       await fetchColumnData(newStatus, 1);
-      
-      toast.success('Status atualizado com sucesso');
+
+      toast.success("Status atualizado com sucesso");
     } catch (err) {
-      toast.error('Erro ao atualizar status');
+      toast.error("Erro ao atualizar status");
     }
   };
 
@@ -679,12 +777,14 @@ const ContratacaoKanban = () => {
 
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     setItemsPerPage(newItemsPerPage);
-    
+
     // Reset all columns to page 1 and reload data
-    setColumns(prev => prev.map(col => ({
-      ...col,
-      currentPage: 1
-    })));
+    setColumns((prev) =>
+      prev.map((col) => ({
+        ...col,
+        currentPage: 1,
+      })),
+    );
   };
 
   // Advanced filter functions
@@ -692,17 +792,19 @@ const ContratacaoKanban = () => {
     if (!companyId) return;
     try {
       const { data, error } = await supabase
-        .from('end_motorista')
-        .select('nome_cidade')
-        .eq('company_id', companyId)
-        .not('nome_cidade', 'is', null)
-        .order('nome_cidade');
+        .from("end_motorista")
+        .select("nome_cidade")
+        .eq("company_id", companyId)
+        .not("nome_cidade", "is", null)
+        .order("nome_cidade");
 
       if (error) throw error;
-      const uniqueCidades = Array.from(new Set(data.map(item => item.nome_cidade))).map(nome_cidade => ({ nome_cidade }));
+      const uniqueCidades = Array.from(
+        new Set(data.map((item) => item.nome_cidade)),
+      ).map((nome_cidade) => ({ nome_cidade }));
       setCidades(uniqueCidades);
     } catch (error) {
-      console.error('Erro ao carregar cidades:', error);
+      console.error("Erro ao carregar cidades:", error);
     }
   };
 
@@ -710,16 +812,16 @@ const ContratacaoKanban = () => {
     if (!companyId) return;
     try {
       const { data, error } = await supabase
-        .from('cliente')
-        .select('cliente_id, nome')
-        .eq('company_id', companyId)
-        .eq('ativo', true)
-        .order('nome');
+        .from("cliente")
+        .select("cliente_id, nome")
+        .eq("company_id", companyId)
+        .eq("ativo", true)
+        .order("nome");
 
       if (error) throw error;
       setClientes(data || []);
     } catch (error) {
-      console.error('Erro ao carregar clientes:', error);
+      console.error("Erro ao carregar clientes:", error);
     }
   };
 
@@ -733,34 +835,53 @@ const ContratacaoKanban = () => {
   }, [companyId]);
 
   // Dropdown control functions
-  const handleToggleStatusDropdown = () => setShowStatusDropdown(!showStatusDropdown);
-  const handleToggleCidadeDropdown = () => setShowCidadeDropdown(!showCidadeDropdown);
-  const handleToggleClienteDropdown = () => setShowClienteDropdown(!showClienteDropdown);
-  const handleToggleAtivoDropdown = () => setShowAtivoDropdown(!showAtivoDropdown);
+  const handleToggleStatusDropdown = () =>
+    setShowStatusDropdown(!showStatusDropdown);
+  const handleToggleCidadeDropdown = () =>
+    setShowCidadeDropdown(!showCidadeDropdown);
+  const handleToggleClienteDropdown = () =>
+    setShowClienteDropdown(!showClienteDropdown);
+  const handleToggleAtivoDropdown = () =>
+    setShowAtivoDropdown(!showAtivoDropdown);
   const handleToggleTagDropdown = () => setShowTagsDropdown(!showTagsDropdown);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+      if (
+        statusDropdownRef.current &&
+        !statusDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowStatusDropdown(false);
       }
-      if (cidadeDropdownRef.current && !cidadeDropdownRef.current.contains(event.target as Node)) {
+      if (
+        cidadeDropdownRef.current &&
+        !cidadeDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowCidadeDropdown(false);
       }
-      if (clienteDropdownRef.current && !clienteDropdownRef.current.contains(event.target as Node)) {
+      if (
+        clienteDropdownRef.current &&
+        !clienteDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowClienteDropdown(false);
       }
-      if (ativoDropdownRef.current && !ativoDropdownRef.current.contains(event.target as Node)) {
+      if (
+        ativoDropdownRef.current &&
+        !ativoDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowAtivoDropdown(false);
       }
-      if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
+      if (
+        tagDropdownRef.current &&
+        !tagDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowTagsDropdown(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Clear all filters function
@@ -768,22 +889,24 @@ const ContratacaoKanban = () => {
     setStatusFilter([]);
     setCidadeFilter([]);
     setClienteFilter([]);
-    setAtivoFilter('');
+    setAtivoFilter("");
     setTagFilter([]);
-    setFuncaoFilter('todos');
-    setSearchTerm('');
-    setDebouncedSearchTerm('');
+    setFuncaoFilter("todos");
+    setSearchTerm("");
+    setDebouncedSearchTerm("");
   };
 
   if (loading) {
-    return (
-      <LoadingSpinner />
-    );
+    return <LoadingSpinner />;
   }
 
-  const onDragStart = (e: React.DragEvent, motorista_id: number, currentStatus: string) => {
-    e.dataTransfer.setData('motorista_id', motorista_id.toString());
-    e.dataTransfer.setData('current_status', currentStatus);
+  const onDragStart = (
+    e: React.DragEvent,
+    motorista_id: number,
+    currentStatus: string,
+  ) => {
+    e.dataTransfer.setData("motorista_id", motorista_id.toString());
+    e.dataTransfer.setData("current_status", currentStatus);
   };
 
   const onDragOver = (e: React.DragEvent) => {
@@ -792,20 +915,18 @@ const ContratacaoKanban = () => {
 
   const onDrop = async (e: React.DragEvent, status: string) => {
     e.preventDefault();
-    const motorista_id = Number(e.dataTransfer.getData('motorista_id'));
-    const currentStatus = e.dataTransfer.getData('current_status');
-    
+    const motorista_id = Number(e.dataTransfer.getData("motorista_id"));
+    const currentStatus = e.dataTransfer.getData("current_status");
+
     if (status !== currentStatus) {
       await updateStatus(motorista_id, status, currentStatus);
     }
   };
 
-
-
   const filterButtons = [
-    { value: 'todos', label: 'Todos' },
-    { value: 'Motorista', label: 'Motoristas' },
-    { value: 'Agregado', label: 'Agregados' }
+    { value: "todos", label: "Todos" },
+    { value: "Motorista", label: "Motoristas" },
+    { value: "Agregado", label: "Agregados" },
   ];
 
   return (
@@ -818,7 +939,7 @@ const ContratacaoKanban = () => {
             <div className="relative max-w-2xl flex-1">
               <input
                 type="text"
-                placeholder="🔍 Buscar por nome, CPF, telefone..."
+                placeholder="Buscar por nome, CPF, telefone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-12 pr-12 py-3 text-base bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-purple-300 dark:border-gray-500 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-gray-900 dark:text-gray-100 transition-all duration-300 shadow-sm"
@@ -839,14 +960,10 @@ const ContratacaoKanban = () => {
                 </button>
               )}
             </div>
-            
+
             {/* Botão de sincronização menor no lado direito */}
             <div className="ml-4">
-              <WiseAppSyncButton 
-                variant="bulk" 
-                size="sm" 
-                showLabel={false}
-              />
+              <WiseAppSyncButton variant="bulk" size="sm" showLabel={false} />
             </div>
           </div>
         </div>
@@ -857,16 +974,22 @@ const ContratacaoKanban = () => {
             {/* Function Filter - Keep existing functionality */}
             <div className="flex items-center gap-2">
               <Filter size={18} className="text-gray-500" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo:</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Tipo:
+              </span>
               <div className="flex gap-2">
-                {filterButtons.map(button => (
+                {filterButtons.map((button) => (
                   <button
                     key={button.value}
-                    onClick={() => setFuncaoFilter(button.value as 'todos' | 'Motorista' | 'Agregado')}
+                    onClick={() =>
+                      setFuncaoFilter(
+                        button.value as "todos" | "Motorista" | "Agregado",
+                      )
+                    }
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                       funcaoFilter === button.value
-                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 shadow-sm'
-                        : 'bg-white/60 text-gray-600 hover:bg-white hover:shadow-sm dark:bg-gray-700/60 dark:text-gray-300 dark:hover:bg-gray-600'
+                        ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 shadow-sm"
+                        : "bg-white/60 text-gray-600 hover:bg-white hover:shadow-sm dark:bg-gray-700/60 dark:text-gray-300 dark:hover:bg-gray-600"
                     }`}
                   >
                     {button.label}
@@ -885,17 +1008,23 @@ const ContratacaoKanban = () => {
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   <span>
-                    {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
+                    {statusFilter.length === 0
+                      ? "Status"
+                      : `Status (${statusFilter.length})`}
                   </span>
                 </div>
-                <ChevronDown className={`h-4 w-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${showStatusDropdown ? "rotate-180" : ""}`}
+                />
               </button>
 
               {showStatusDropdown && (
                 <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Selecionar status
+                      </span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -907,8 +1036,11 @@ const ContratacaoKanban = () => {
                       </button>
                     </div>
                   </div>
-                  {columns.map(column => (
-                    <div key={column.id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                  {columns.map((column) => (
+                    <div
+                      key={column.id}
+                      className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
                       <label className="flex items-center cursor-pointer">
                         <input
                           type="checkbox"
@@ -918,12 +1050,16 @@ const ContratacaoKanban = () => {
                             if (e.target.checked) {
                               setStatusFilter([...statusFilter, column.id]);
                             } else {
-                              setStatusFilter(statusFilter.filter(id => id !== column.id));
+                              setStatusFilter(
+                                statusFilter.filter((id) => id !== column.id),
+                              );
                             }
                           }}
                           onClick={(e) => e.stopPropagation()}
                         />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{column.title}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                          {column.title}
+                        </span>
                       </label>
                     </div>
                   ))}
@@ -941,17 +1077,23 @@ const ContratacaoKanban = () => {
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
                   <span>
-                    {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
+                    {cidadeFilter.length === 0
+                      ? "Cidade"
+                      : `Cidade (${cidadeFilter.length})`}
                   </span>
                 </div>
-                <ChevronDown className={`h-4 w-4 transition-transform ${showCidadeDropdown ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${showCidadeDropdown ? "rotate-180" : ""}`}
+                />
               </button>
 
               {showCidadeDropdown && (
                 <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Selecionar cidades
+                      </span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -963,8 +1105,11 @@ const ContratacaoKanban = () => {
                       </button>
                     </div>
                   </div>
-                  {cidades.map(cidade => (
-                    <div key={cidade.nome_cidade} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                  {cidades.map((cidade) => (
+                    <div
+                      key={cidade.nome_cidade}
+                      className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
                       <label className="flex items-center cursor-pointer">
                         <input
                           type="checkbox"
@@ -972,14 +1117,23 @@ const ContratacaoKanban = () => {
                           checked={cidadeFilter.includes(cidade.nome_cidade)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setCidadeFilter([...cidadeFilter, cidade.nome_cidade]);
+                              setCidadeFilter([
+                                ...cidadeFilter,
+                                cidade.nome_cidade,
+                              ]);
                             } else {
-                              setCidadeFilter(cidadeFilter.filter(c => c !== cidade.nome_cidade));
+                              setCidadeFilter(
+                                cidadeFilter.filter(
+                                  (c) => c !== cidade.nome_cidade,
+                                ),
+                              );
                             }
                           }}
                           onClick={(e) => e.stopPropagation()}
                         />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{cidade.nome_cidade}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                          {cidade.nome_cidade}
+                        </span>
                       </label>
                     </div>
                   ))}
@@ -997,16 +1151,22 @@ const ContratacaoKanban = () => {
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   <span>
-                    {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
+                    {clienteFilter.length === 0
+                      ? "Cliente"
+                      : `Cliente (${clienteFilter.length})`}
                   </span>
                 </div>
-                <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${showClienteDropdown ? "rotate-180" : ""}`}
+                />
               </button>
               {showClienteDropdown && (
                 <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Selecionar clientes
+                      </span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1023,37 +1183,50 @@ const ContratacaoKanban = () => {
                       <input
                         type="checkbox"
                         className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                        checked={clienteFilter.includes('0')}
+                        checked={clienteFilter.includes("0")}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setClienteFilter([...clienteFilter, '0']);
+                            setClienteFilter([...clienteFilter, "0"]);
                           } else {
-                            setClienteFilter(clienteFilter.filter(id => id !== '0'));
+                            setClienteFilter(
+                              clienteFilter.filter((id) => id !== "0"),
+                            );
                           }
                         }}
                         onClick={(e) => e.stopPropagation()}
                       />
-                      <span className="text-sm text-gray-700 dark:text-gray-200">Sem cliente</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-200">
+                        Sem cliente
+                      </span>
                     </label>
                   </div>
-                  {clientes.map(cliente => (
-                    <div key={cliente.cliente_id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                  {clientes.map((cliente) => (
+                    <div
+                      key={cliente.cliente_id}
+                      className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
                       <label className="flex items-center cursor-pointer">
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                          checked={clienteFilter.includes(cliente.cliente_id.toString())}
+                          checked={clienteFilter.includes(
+                            cliente.cliente_id.toString(),
+                          )}
                           onChange={(e) => {
                             const clienteId = cliente.cliente_id.toString();
                             if (e.target.checked) {
                               setClienteFilter([...clienteFilter, clienteId]);
                             } else {
-                              setClienteFilter(clienteFilter.filter(id => id !== clienteId));
+                              setClienteFilter(
+                                clienteFilter.filter((id) => id !== clienteId),
+                              );
                             }
                           }}
                           onClick={(e) => e.stopPropagation()}
                         />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{cliente.nome}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                          {cliente.nome}
+                        </span>
                       </label>
                     </div>
                   ))}
@@ -1071,36 +1244,42 @@ const ContratacaoKanban = () => {
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   <span>
-                    {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
+                    {!ativoFilter
+                      ? "Ativo"
+                      : ativoFilter === "ativo"
+                        ? "Ativo (Sim)"
+                        : "Ativo (Não)"}
                   </span>
                 </div>
-                <ChevronDown className={`h-4 w-4 transition-transform ${showAtivoDropdown ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${showAtivoDropdown ? "rotate-180" : ""}`}
+                />
               </button>
-              
+
               {showAtivoDropdown && (
                 <div className="absolute z-[99999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
-                  <div 
-                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-purple-50 dark:bg-purple-900/30' : ''}`}
+                  <div
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? "bg-purple-50 dark:bg-purple-900/30" : ""}`}
                     onClick={() => {
-                      setAtivoFilter('');
+                      setAtivoFilter("");
                       setShowAtivoDropdown(false);
                     }}
                   >
                     Todos
                   </div>
-                  <div 
-                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-purple-50 dark:bg-purple-900/30' : ''}`}
+                  <div
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === "ativo" ? "bg-purple-50 dark:bg-purple-900/30" : ""}`}
                     onClick={() => {
-                      setAtivoFilter('ativo');
+                      setAtivoFilter("ativo");
                       setShowAtivoDropdown(false);
                     }}
                   >
                     Somente Ativos
                   </div>
-                  <div 
-                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-purple-50 dark:bg-purple-900/30' : ''}`}
+                  <div
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === "inativo" ? "bg-purple-50 dark:bg-purple-900/30" : ""}`}
                     onClick={() => {
-                      setAtivoFilter('inativo');
+                      setAtivoFilter("inativo");
                       setShowAtivoDropdown(false);
                     }}
                   >
@@ -1117,7 +1296,9 @@ const ContratacaoKanban = () => {
               </span>
               <select
                 value={itemsPerPage}
-                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                onChange={(e) =>
+                  handleItemsPerPageChange(Number(e.target.value))
+                }
                 className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value={100}>100</option>
@@ -1132,7 +1313,12 @@ const ContratacaoKanban = () => {
             </div>
 
             {/* Clear all filters button */}
-            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || ativoFilter || funcaoFilter !== 'todos' || searchTerm) && (
+            {(statusFilter.length > 0 ||
+              cidadeFilter.length > 0 ||
+              clienteFilter.length > 0 ||
+              ativoFilter ||
+              funcaoFilter !== "todos" ||
+              searchTerm) && (
               <button
                 onClick={clearAllFilters}
                 className="px-3 py-2 text-sm bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50 rounded-md transition-colors flex items-center gap-2"
@@ -1154,9 +1340,13 @@ const ContratacaoKanban = () => {
               onDragOver={onDragOver}
               onDrop={(e) => onDrop(e, column.id)}
             >
-              <div className={`rounded-t-lg ${column.color} p-4 border-x border-t ${column.borderColor} sticky top-0 z-10`}>
+              <div
+                className={`rounded-t-lg ${column.color} p-4 border-x border-t ${column.borderColor} sticky top-0 z-10`}
+              >
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">{column.title}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                    {column.title}
+                  </h3>
                   <div className="flex items-center">
                     <span className="text-sm font-medium px-2.5 py-0.5 rounded-full bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
                       {column.totalCount}
@@ -1170,7 +1360,9 @@ const ContratacaoKanban = () => {
                 </div>
               </div>
 
-              <div className={`flex-1 ${column.color} overflow-y-auto custom-scrollbar border-x ${column.borderColor} rounded-b-lg kanban-column`}>
+              <div
+                className={`flex-1 ${column.color} overflow-y-auto custom-scrollbar border-x ${column.borderColor} rounded-b-lg kanban-column`}
+              >
                 {column.loading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -1180,7 +1372,9 @@ const ContratacaoKanban = () => {
                     <div className="p-3 space-y-3 kanban-column-content">
                       {column.motoristas.length === 0 ? (
                         <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
-                          {searchTerm ? 'Nenhum resultado encontrado' : 'Nenhum item nesta coluna'}
+                          {searchTerm
+                            ? "Nenhum resultado encontrado"
+                            : "Nenhum item nesta coluna"}
                         </div>
                       ) : (
                         column.motoristas.map((motorista, index) => (
@@ -1188,30 +1382,41 @@ const ContratacaoKanban = () => {
                             key={`${motorista.motorista_id}-${motorista.st_cadastro}-${index}`}
                             className="group bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-move hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 flex flex-col"
                             draggable
-                            onDragStart={(e) => onDragStart(e, motorista.motorista_id, column.id)}
+                            onDragStart={(e) =>
+                              onDragStart(e, motorista.motorista_id, column.id)
+                            }
                           >
                             {/* Cabeçalho com nome e função */}
                             <div className="mb-2">
                               <div className="flex items-start gap-2">
-                                <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                                  motorista.funcao === 'Agregado' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-blue-100 dark:bg-blue-900/30'
-                                }`}>
-                                  {motorista.funcao === 'Agregado' ? (
+                                <div
+                                  className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                                    motorista.funcao === "Agregado"
+                                      ? "bg-green-100 dark:bg-green-900/30"
+                                      : "bg-blue-100 dark:bg-blue-900/30"
+                                  }`}
+                                >
+                                  {motorista.funcao === "Agregado" ? (
                                     <Truck className="h-4 w-4 text-green-600 dark:text-green-400" />
                                   ) : (
                                     <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                   )}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" title={motorista.nome || ''}>
+                                  <h4
+                                    className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
+                                    title={motorista.nome || ""}
+                                  >
                                     {motorista.nome}
                                   </h4>
                                   <div className="mt-1">
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                      motorista.funcao === 'Agregado' 
-                                        ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200' 
-                                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200'
-                                    }`}>
+                                    <span
+                                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                        motorista.funcao === "Agregado"
+                                          ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200"
+                                          : "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200"
+                                      }`}
+                                    >
                                       {motorista.funcao}
                                     </span>
                                   </div>
@@ -1223,18 +1428,25 @@ const ContratacaoKanban = () => {
                             <div className="space-y-2 mt-1">
                               {motorista.end_motorista?.cidade && (
                                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-300">
-                                  <MapPin size={12} className="mr-1.5 text-gray-400 flex-shrink-0" />
+                                  <MapPin
+                                    size={12}
+                                    className="mr-1.5 text-gray-400 flex-shrink-0"
+                                  />
                                   <span className="truncate">
-                                    {motorista.end_motorista.cidade} - {motorista.end_motorista.sigla_estado}
+                                    {motorista.end_motorista.cidade} -{" "}
+                                    {motorista.end_motorista.sigla_estado}
                                   </span>
                                 </div>
                               )}
 
                               {motorista.telefone && (
                                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-300">
-                                  <Phone size={12} className="mr-1.5 text-gray-400 flex-shrink-0" />
-                                  <a 
-                                    href={`tel:${motorista.telefone}`} 
+                                  <Phone
+                                    size={12}
+                                    className="mr-1.5 text-gray-400 flex-shrink-0"
+                                  />
+                                  <a
+                                    href={`tel:${motorista.telefone}`}
                                     className="hover:text-blue-500 hover:underline truncate"
                                     onClick={(e) => e.stopPropagation()}
                                     title={`Ligar para ${motorista.telefone}`}
@@ -1244,14 +1456,20 @@ const ContratacaoKanban = () => {
                                 </div>
                               )}
 
-                              {motorista.funcao === 'Agregado' && motorista.veiculo?.[0] && (
-                                <div className="flex items-center text-xs text-gray-600 dark:text-gray-300">
-                                  <Truck size={12} className="mr-1.5 text-gray-400 flex-shrink-0" />
-                                  <span className="truncate">
-                                    {motorista.veiculo[0].placa} - {motorista.veiculo[0].marca} {motorista.veiculo[0].modelo}
-                                  </span>
-                                </div>
-                              )}
+                              {motorista.funcao === "Agregado" &&
+                                motorista.veiculo?.[0] && (
+                                  <div className="flex items-center text-xs text-gray-600 dark:text-gray-300">
+                                    <Truck
+                                      size={12}
+                                      className="mr-1.5 text-gray-400 flex-shrink-0"
+                                    />
+                                    <span className="truncate">
+                                      {motorista.veiculo[0].placa} -{" "}
+                                      {motorista.veiculo[0].marca}{" "}
+                                      {motorista.veiculo[0].modelo}
+                                    </span>
+                                  </div>
+                                )}
 
                               {motorista.nome_cliente && (
                                 <div className="pt-1">
@@ -1265,7 +1483,12 @@ const ContratacaoKanban = () => {
                             {/* Botões de ação */}
                             <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
                               <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Data de cadastro: {motorista.data_cadastro ? new Date(motorista.data_cadastro).toLocaleDateString('pt-BR') : 'N/A'}
+                                Data de cadastro:{" "}
+                                {motorista.data_cadastro
+                                  ? new Date(
+                                      motorista.data_cadastro,
+                                    ).toLocaleDateString("pt-BR")
+                                  : "N/A"}
                               </div>
                               <div className="flex items-center gap-1">
                                 {motorista.telefone && (
@@ -1277,7 +1500,10 @@ const ContratacaoKanban = () => {
                                     className="p-1 text-gray-400 hover:text-blue-500 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                                     title="Iniciar chat"
                                   >
-                                    <MessageCircle size={14} className="text-green-500" />
+                                    <MessageCircle
+                                      size={14}
+                                      className="text-green-500"
+                                    />
                                   </button>
                                 )}
                                 <button
@@ -1288,7 +1514,10 @@ const ContratacaoKanban = () => {
                                   className="p-1 text-gray-400 hover:text-blue-500 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                                   title="Ver documentos"
                                 >
-                                  <FilePen size={14} className="text-blue-500" />
+                                  <FilePen
+                                    size={14}
+                                    className="text-blue-500"
+                                  />
                                 </button>
                               </div>
                             </div>
@@ -1296,25 +1525,38 @@ const ContratacaoKanban = () => {
                         ))
                       )}
                     </div>
-                    
+
                     {/* Pagination controls for each column */}
                     {column.totalPages > 1 && (
                       <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50">
                         <div className="flex items-center justify-between">
                           <button
-                            onClick={() => handlePageChange(column.id, Math.max(1, column.currentPage - 1))}
+                            onClick={() =>
+                              handlePageChange(
+                                column.id,
+                                Math.max(1, column.currentPage - 1),
+                              )
+                            }
                             disabled={column.currentPage === 1}
                             className="p-1 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <ChevronLeft size={16} />
                           </button>
-                          
+
                           <span className="text-xs text-gray-500 dark:text-gray-400">
                             {column.currentPage} / {column.totalPages}
                           </span>
-                          
+
                           <button
-                            onClick={() => handlePageChange(column.id, Math.min(column.totalPages, column.currentPage + 1))}
+                            onClick={() =>
+                              handlePageChange(
+                                column.id,
+                                Math.min(
+                                  column.totalPages,
+                                  column.currentPage + 1,
+                                ),
+                              )
+                            }
                             disabled={column.currentPage === column.totalPages}
                             className="p-1 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -1331,14 +1573,14 @@ const ContratacaoKanban = () => {
         </div>
       </div>
 
-{/* Unified Agregado Modal */}
+      {/* Unified Agregado Modal */}
       <UnifiedAgregadoModal
         isOpen={isUnifiedAgregadoModalOpen}
         onClose={() => setIsUnifiedAgregadoModalOpen(false)}
         motorista={selectedMotorista!}
         onSuccess={() => {
           // Atualizar a lista após alguma alteração
-          columns.forEach(column => {
+          columns.forEach((column) => {
             fetchColumnData(column.id, column.currentPage);
           });
         }}
@@ -1351,7 +1593,7 @@ const ContratacaoKanban = () => {
         motorista={selectedMotorista!}
         onSuccess={() => {
           // Atualizar a lista após alguma alteração
-          columns.forEach(column => {
+          columns.forEach((column) => {
             fetchColumnData(column.id, column.currentPage);
           });
         }}
