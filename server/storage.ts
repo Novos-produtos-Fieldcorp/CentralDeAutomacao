@@ -14,6 +14,7 @@ import {
   estado,
   tags,
   motorista_tags,
+  wiseapp_acesso,
 
   type User, 
   type InsertUser,
@@ -484,12 +485,27 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  // WiseApp token method - placeholder that returns null for now
+  // WiseApp token method - queries wiseapp_acesso table
   async getWiseappToken(companyId: number): Promise<string | null> {
-    // For now, return null to trigger fallback behavior
-    // This can be implemented later with actual token storage
-    console.log(`WiseApp token requested for company ${companyId} - returning null for fallback behavior`);
-    return null;
+    console.log(`Fetching WiseApp token for company ${companyId}`);
+    try {
+      const [token] = await db
+        .select({ access_token_wiseapp: wiseapp_acesso.access_token_wiseapp })
+        .from(wiseapp_acesso)
+        .where(eq(wiseapp_acesso.company_id, companyId))
+        .limit(1);
+      
+      if (token?.access_token_wiseapp) {
+        console.log(`Found WiseApp token for company ${companyId}`);
+        return token.access_token_wiseapp;
+      } else {
+        console.log(`No WiseApp token found for company ${companyId}`);
+        return null;
+      }
+    } catch (error) {
+      console.error(`Error fetching WiseApp token for company ${companyId}:`, error);
+      return null;
+    }
   }
 }
 

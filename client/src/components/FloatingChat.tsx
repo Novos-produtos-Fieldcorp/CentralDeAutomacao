@@ -249,7 +249,6 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     
     initializeCompanyId();
   }, [accountId]);
-  const apiKey = localStorage.getItem('wiseapp_token');
 
   // Usar o apiClient configurado acima
 
@@ -421,7 +420,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         // Buscar token WiseApp do banco de dados
         let apiKey = localStorage.getItem('wiseapp_token');
         if (!apiKey) {
-          const tokenResponse = await fetch(`/api/wiseapp-token/${currentCompanyId}`);
+          const tokenResponse = await fetch(`/api/wiseapp-token/${companyId}`);
           if (tokenResponse.ok) {
             const tokenData = await tokenResponse.json();
             apiKey = tokenData.token;
