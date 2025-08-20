@@ -72,12 +72,16 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
             console.error('Error fetching access token:', accessError);
           }
 
+          console.log('WiseApp access check:', { access, hasToken: !!access?.access_token_wiseapp });
+          
           if (access && access.access_token_wiseapp) {
+            console.log('Token found in database, setting token');
             setToken(access.access_token_wiseapp);
             setAttendantId(access.wiseapp_acesso_id);
             setAttendantName(access.nome);
             // Remove localStorage dependency for Netlify compatibility
           } else {
+            console.log('No token found, showing modal');
             // No token found, show modal
             setShowModal(true);
           }
@@ -91,6 +95,8 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
 
     verificarAcesso();
   }, [searchParams]);
+
+  console.log('WiseAppAccessProvider render:', { showModal, isLoading, token, companyId });
 
   return (
     <WiseAppAccessContext.Provider value={{ token, companyId, attendantId, attendantName, isLoading }}>
