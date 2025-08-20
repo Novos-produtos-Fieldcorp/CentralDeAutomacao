@@ -1262,7 +1262,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                               type="checkbox"
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                               checked={statusFilter.includes(value)}
-                              onChange={() => toggleFilterOption('status', value)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setStatusFilter([...statusFilter, value]);
+                                } else {
+                                  setStatusFilter(statusFilter.filter(s => s !== value));
+                                }
+                              }}
                               onClick={(e) => e.stopPropagation()}
                             />
                             <span className="text-sm text-gray-700 dark:text-gray-200">{label}</span>
@@ -1327,7 +1333,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             type="checkbox"
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                             checked={clienteFilter.includes('sem_cliente')}
-                            onChange={() => toggleFilterOption('cliente', 'sem_cliente')}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setClienteFilter([...clienteFilter, 'sem_cliente']);
+                              } else {
+                                setClienteFilter(clienteFilter.filter(id => id !== 'sem_cliente'));
+                              }
+                            }}
                             onClick={(e) => e.stopPropagation()}
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-200">Sem cliente</span>
@@ -1340,7 +1352,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                               type="checkbox"
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                               checked={clienteFilter.includes(cliente.cliente_id.toString())}
-                              onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
+                              onChange={(e) => {
+                                const clienteId = cliente.cliente_id.toString();
+                                if (e.target.checked) {
+                                  setClienteFilter([...clienteFilter, clienteId]);
+                                } else {
+                                  setClienteFilter(clienteFilter.filter(id => id !== clienteId));
+                                }
+                              }}
                               onClick={(e) => e.stopPropagation()}
                             />
                             <span className="text-sm text-gray-700 dark:text-gray-200">{cliente.nome}</span>
@@ -1402,7 +1421,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                 type="checkbox"
                                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                                 checked={cidadeFilter.includes(cidade)}
-                                onChange={() => toggleFilterOption('cidade', cidade)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setCidadeFilter([...cidadeFilter, cidade]);
+                                  } else {
+                                    setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
+                                  }
+                                }}
                                 onClick={(e) => e.stopPropagation()}
                               />
                               <span className="text-sm text-gray-700 dark:text-gray-200">{cidade}</span>
@@ -1462,7 +1487,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             type="checkbox"
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                             checked={tipoVeiculoFilter.includes('sem_veiculo')}
-                            onChange={() => toggleFilterOption('tipoVeiculo', 'sem_veiculo')}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setTipoVeiculoFilter([...tipoVeiculoFilter, 'sem_veiculo']);
+                              } else {
+                                setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== 'sem_veiculo'));
+                              }
+                            }}
                             onClick={(e) => e.stopPropagation()}
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-200">Sem veículo</span>
@@ -1475,7 +1506,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                               type="checkbox"
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                               checked={tipoVeiculoFilter.includes(tipo)}
-                              onChange={() => toggleFilterOption('tipoVeiculo', tipo)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setTipoVeiculoFilter([...tipoVeiculoFilter, tipo]);
+                                } else {
+                                  setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== tipo));
+                                }
+                              }}
                               onClick={(e) => e.stopPropagation()}
                             />
                             <span className="text-sm text-gray-700 dark:text-gray-200">{tipo}</span>
