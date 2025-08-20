@@ -1517,8 +1517,8 @@ const MotoristasLista = () => {
         )}
       </div>
 
-      {/* WiseApp Bulk Sync Panel */}
-      <WiseAppBulkSyncPanel className="mb-6" />
+      {/* WiseApp Bulk Sync Panel - now positioned fixed in top right */}
+      <WiseAppBulkSyncPanel />
 
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative z-[10]">
         <div className="overflow-hidden">

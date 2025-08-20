@@ -133,30 +133,24 @@ export function WiseAppBulkSyncPanel({ className }: WiseAppBulkSyncPanelProps) {
   } = useWiseAppSync();
 
   return (
-    <div className={`border rounded-lg p-4 space-y-4 ${className}`}>
-      <div>
-        <h3 className="text-lg font-semibold">Sincronização de Contatos</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Sincronize os contatos e fotos do WhatsApp de motoristas e agregados com o WiseApp
-        </p>
+    <div className={`fixed top-4 right-4 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 max-w-xs ${className}`}>
+      <div className="mb-2">
+        <h4 className="text-sm font-medium text-gray-900 dark:text-white">Sync Contatos</h4>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          onClick={syncAllMotoristas}
-          disabled={isBulkSyncing}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isBulkSyncing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Users className="h-4 w-4" />
-          )}
-          {isBulkSyncing ? 'Sincronizando...' : 'Sincronizar Todos'}
-        </button>
-      </div>
-
-
+      <button
+        onClick={syncAllMotoristas}
+        disabled={isBulkSyncing}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full justify-center"
+        title="Sincronizar contatos e fotos do WhatsApp de motoristas e agregados com o WiseApp"
+      >
+        {isBulkSyncing ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : (
+          <Users className="h-3 w-3" />
+        )}
+        {isBulkSyncing ? 'Sincronizando...' : 'Sincronizar Todos'}
+      </button>
     </div>
   );
 }
