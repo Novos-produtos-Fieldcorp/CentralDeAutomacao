@@ -12,6 +12,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ChecklistProvider } from "./context/ChecklistContext";
 import { ChatProvider } from "./context/ChatContext";
+import { WiseAppAccessProvider } from "./context/WiseAppAccessContext";
 import Navbar from "./components/Navbar";
 import Version from "./components/Version";
 import Dashboard from "./pages/Dashboard";
@@ -51,8 +52,9 @@ function App() {
         <ChecklistProvider>
           <Router>
             <AuthProvider>
-              <ChatProvider>
-                <Routes>
+              <WiseAppAccessProvider>
+                <ChatProvider>
+                  <Routes>
                   <Route path="/unauthorized" element={<Unauthorized />} />
                   <Route path="/admin" element={<Admin />} />
                   <Route
@@ -110,9 +112,10 @@ function App() {
                   />
                 </Routes>
               </ChatProvider>
-            </AuthProvider>
-          </Router>
-        </ChecklistProvider>
+            </WiseAppAccessProvider>
+          </AuthProvider>
+        </Router>
+      </ChecklistProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
