@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, MessageCircle, Clock, CheckCircle } from 'lucide-react';
+import { X, MessageCircle, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface Inbox {
   id: number;
@@ -19,31 +19,6 @@ interface InboxSelectorProps {
   companyId: string;
 }
 
-// Dados de exemplo para fallback quando a API não funciona
-const FALLBACK_INBOXES: Inbox[] = [
-  {
-    id: 1,
-    name: "WhatsApp Suporte",
-    channel_type: "Channel::Whatsapp",
-    phone_number: "+5511999999999",
-    isOpen: true
-  },
-  {
-    id: 2,
-    name: "WhatsApp Vendas",
-    channel_type: "Channel::Whatsapp", 
-    phone_number: "+5511888888888",
-    isOpen: true
-  },
-  {
-    id: 3,
-    name: "Site Corporativo",
-    channel_type: "Channel::WebWidget",
-    website_url: "https://empresa.com.br",
-    isOpen: true
-  }
-];
-
 const InboxSelector: React.FC<InboxSelectorProps> = ({
   isOpen,
   onClose,
@@ -54,6 +29,8 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
   const [inboxes, setInboxes] = useState<Inbox[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
 
   useEffect(() => {
     if (isOpen && accountId && companyId) {
@@ -68,7 +45,7 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
     try {
       console.log('🔍 Tentando carregar inboxes para company:', companyId, 'account:', accountId);
       
-      // Primeiro tentar a API otimizada
+      // Tentar a API otimizada
       const response = await fetch(`/api/chatwoot/inboxes/${companyId}?account_id=${accountId}`, {
         method: 'GET',
         headers: {
@@ -86,20 +63,46 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
             ...inbox,
             isOpen: true // Simplificado para evitar complexidade de horários
           })));
+          setRetryCount(0); // Reset retry count on success
         } else {
           throw new Error('Dados de inboxes inválidos');
         }
       } else {
-        console.log('⚠️ API falhou, usando dados de fallback');
-        throw new Error(`API Error: ${response.status}`);
+        const errorMessage = `Erro na API: ${response.status}`;
+        if (response.status === 401) {
+          throw new Error('Token de acesso inválido ou expirado');
+        } else if (response.status === 403) {
+          throw new Error('Acesso negado. Verifique as permissões');
+        } else if (response.status === 404) {
+          throw new Error('Conta não encontrada');
+        } else {
+          throw new Error(errorMessage);
+        }
       }
     } catch (err) {
-      console.log('📦 Usando inboxes de fallback devido ao erro:', err);
-      setError('Usando configuração padrão de inboxes');
-      setInboxes(FALLBACK_INBOXES);
+      console.error('❌ Erro ao carregar inboxes:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      
+      if (retryCount < maxRetries) {
+        setRetryCount(prev => prev + 1);
+        setError(`Tentativa ${retryCount + 1} de ${maxRetries}: ${errorMessage}. Tentando novamente...`);
+        
+        // Retry after 2 seconds
+        setTimeout(() => {
+          loadInboxes();
+        }, 2000);
+      } else {
+        setError(`Falha ao carregar caixas de entrada após ${maxRetries} tentativas. ${errorMessage}`);
+        setInboxes([]); // Não usar dados fictícios
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRetry = () => {
+    setRetryCount(0);
+    loadInboxes();
   };
 
   const getChannelIcon = (channelType: string) => {
@@ -135,15 +138,28 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
 
         <div className="p-4">
           {error && (
-            <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">{error}</p>
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+              </div>
+              {retryCount >= maxRetries && (
+                <button
+                  onClick={handleRetry}
+                  className="mt-2 px-3 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-800 dark:hover:bg-red-700 text-red-800 dark:text-red-200 text-xs rounded transition-colors"
+                >
+                  Tentar Novamente
+                </button>
+              )}
             </div>
           )}
 
           {loading ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">Carregando caixas de entrada...</p>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">
+                {retryCount > 0 ? `Tentativa ${retryCount + 1} de ${maxRetries}...` : 'Carregando caixas de entrada...'}
+              </p>
             </div>
           ) : inboxes.length > 0 ? (
             <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -187,6 +203,14 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
               <p className="text-gray-600 dark:text-gray-400">
                 Nenhuma caixa de entrada disponível
               </p>
+              {error && (
+                <button
+                  onClick={handleRetry}
+                  className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                >
+                  Tentar Novamente
+                </button>
+              )}
             </div>
           )}
         </div>

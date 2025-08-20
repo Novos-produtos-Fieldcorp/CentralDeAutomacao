@@ -246,49 +246,42 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
         throw new Error(`Erro ao cadastrar veículo: ${veiculoError.message}`);
       }
 
-      // Insert address if all required fields are filled
-      if (formData.logradouro && formData.cidade && formData.estado) {
+      // If address is provided, save it
+      if (formData.cep && motorista) {
         try {
-          // First, find the estado_id based on sigla_estado
-          const { data: estadoData, error: estadoError } = await supabase
-            .from('estado')
-            .select('id_estado')
-            .eq('sigla_estado', formData.estado)
-            .single();
-            
-          if (estadoError) {
-            throw new Error(`Estado "${formData.estado}" não encontrado.`);
-          }
-          
-          // Check if cidade exists
+          // First, find or create the cidade based on estado and cidade name
           let cidadeId: number;
-          const { data: cidade, error: cidadeError } = await supabase
-            .from('cidade')
-            .select('id_cidade')
-            .eq('cidade', formData.cidade)
-            .eq('id_estado', estadoData.id_estado)
-            .maybeSingle();
-
-          if (cidadeError && cidadeError.code !== 'PGRST116') {
-            throw cidadeError;
-          }
-
-          if (cidade) {
-            cidadeId = cidade.id_cidade;
-          } else {
-            // Create cidade if it doesn't exist
-            const { data: newCidade, error: newCidadeError } = await supabase
+          if (formData.estado && formData.cidade) {
+            const { data: cidade, error: cidadeError } = await supabase
               .from('cidade')
-              .insert({
-                cidade: formData.cidade,
-                id_estado: estadoData.id_estado
-              })
-              .select()
-              .single();
+              .select('id_cidade')
+              .eq('cidade', formData.cidade)
+              .eq('id_estado', parseInt(formData.estado))
+              .maybeSingle();
 
-            if (newCidadeError) throw newCidadeError;
-            if (!newCidade) throw new Error('Erro ao criar cidade');
-            cidadeId = newCidade.id_cidade;
+            if (cidadeError && cidadeError.code !== 'PGRST116') {
+              throw cidadeError;
+            }
+            
+            if (cidade) {
+              cidadeId = cidade.id_cidade;
+            } else {
+              // Create cidade if it doesn't exist
+              const { data: newCidade, error: newCidadeError } = await supabase
+                .from('cidade')
+                .insert({
+                  cidade: formData.cidade,
+                  id_estado: parseInt(formData.estado)
+                })
+                .select()
+                .single();
+
+              if (newCidadeError) throw newCidadeError;
+              if (!newCidade) throw new Error('Erro ao criar cidade');
+              cidadeId = newCidade.id_cidade;
+            }
+          } else {
+            throw new Error('Estado e cidade são obrigatórios para cadastrar endereço');
           }
 
           // Check if bairro exists

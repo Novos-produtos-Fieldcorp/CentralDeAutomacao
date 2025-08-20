@@ -168,7 +168,16 @@ const Contratados = () => {
   const [showTagsDropdown, setShowTagsDropdown] = useState(false);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   
-
+  // Add missing refs for dropdowns
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const clienteDropdownRef = useRef<HTMLDivElement>(null);
+  const cidadeDropdownRef = useRef<HTMLDivElement>(null);
+  const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
+  const ativoDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Add missing state variables
+  const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
+  const [showDateFilter, setShowDateFilter] = useState(false);
 
   // Efeito para fechar dropdowns ao clicar fora deles
   useEffect(() => {
@@ -1247,8 +1256,8 @@ const Contratados = () => {
         <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
           <div className="flex flex-wrap gap-2">
             {/* Status Filter */}
-            <div className="relative z-[50]">
-              <div className="relative group">
+            <div className="relative">
+              <div className="relative group" ref={statusDropdownRef}>
                 <button
                   type="button"
                   className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
@@ -1260,7 +1269,6 @@ const Contratados = () => {
                       {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
                     </span>
                   </div>
-
                 </button>
 
                 {showStatusDropdown && (
@@ -1316,11 +1324,9 @@ const Contratados = () => {
               </div>
             </div>
 
-
-
             {/* Cliente Filter */}
             <div className="relative z-[40]">
-              <div className="relative group">
+              <div className="relative group" ref={clienteDropdownRef}>
                 <button
                   type="button"
                   className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
@@ -1337,7 +1343,6 @@ const Contratados = () => {
                       {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
                     </span>
                   </div>
-
                 </button>
                 {showClienteDropdown && (
                   <div 
@@ -1397,7 +1402,7 @@ const Contratados = () => {
 
             {/* Cidade Filter */}
             <div className="relative z-[35]">
-              <div className="relative group">
+              <div className="relative group" ref={cidadeDropdownRef}>
                 <button
                   type="button"
                   className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
@@ -1409,12 +1414,10 @@ const Contratados = () => {
                       {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
                     </span>
                   </div>
-
                 </button>
-
                 {showCidadeDropdown && (
                   <div 
-                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
                     style={{ 
                       position: 'absolute',
                       bottom: '100%',
@@ -1437,8 +1440,8 @@ const Contratados = () => {
                         </button>
                       </div>
                     </div>
-                    {cidades.map((cidade, index) => (
-                      <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                    {cidades.map(cidade => (
+                      <div key={cidade} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                         <label className="flex items-center cursor-pointer">
                           <input
                             type="checkbox"
@@ -1457,8 +1460,8 @@ const Contratados = () => {
             </div>
 
             {/* Tipo Veículo Filter */}
-            <div className="relative z-[25]">
-              <div className="relative group">
+            <div className="relative z-[30]">
+              <div className="relative group" ref={tipoVeiculoDropdownRef}>
                 <button
                   type="button"
                   className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
@@ -1467,12 +1470,10 @@ const Contratados = () => {
                   <div className="flex items-center gap-2">
                     <Truck className="h-4 w-4" />
                     <span>
-                      {tipoVeiculoFilter.length === 0 ? 'Veículo' : `Veículo (${tipoVeiculoFilter.length})`}
+                      {tipoVeiculoFilter.length === 0 ? 'Tipo Veículo' : `Tipo Veículo (${tipoVeiculoFilter.length})`}
                     </span>
                   </div>
-
                 </button>
-
                 {showTipoVeiculoDropdown && (
                   <div 
                     className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
@@ -1485,7 +1486,7 @@ const Contratados = () => {
                     }}>
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tipos</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tipos de veículo</span>
                         <button 
                           type="button" 
                           className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
@@ -1510,8 +1511,8 @@ const Contratados = () => {
                         <span className="text-sm text-gray-700 dark:text-gray-200">Sem veículo</span>
                       </label>
                     </div>
-                    {tiposVeiculo.map((tipo, index) => (
-                      <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                    {tiposVeiculo.map(tipo => (
+                      <div key={tipo} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                         <label className="flex items-center cursor-pointer">
                           <input
                             type="checkbox"
@@ -1529,39 +1530,187 @@ const Contratados = () => {
               </div>
             </div>
 
-            {/* Status Ativo Filter */}
-            <div className="relative z-[20]">
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
-                <CheckCircle className="h-4 w-4 text-gray-400" />
+            {/* Ativo Filter */}
+            <div className="relative z-[25]">
+              <div className="relative group" ref={ativoDropdownRef}>
+                <button
+                  type="button"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                  onClick={() => setShowAtivoDropdown(!showAtivoDropdown)}
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>
+                      {ativoFilter === '' ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
+                    </span>
+                  </div>
+                </button>
+                {showAtivoDropdown && (
+                  <div 
+                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      marginBottom: '4px',
+                      zIndex: 999999
+                    }}>
+                    <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status ativo</span>
+                        <button 
+                          type="button" 
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAtivoFilter('');
+                          }}
+                        >
+                          Limpar
+                        </button>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="ativo"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                          checked={ativoFilter === 'ativo'}
+                          onChange={() => setAtivoFilter('ativo')}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">Ativo</span>
+                      </label>
+                    </div>
+                    <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="ativo"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                          checked={ativoFilter === 'inativo'}
+                          onChange={() => setAtivoFilter('inativo')}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">Inativo</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
-              <select
-                value={ativoFilter}
-                onChange={(e) => setAtivoFilter(e.target.value)}
-                className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[110px]"
-              >
-                <option value="">Ativo</option>
-                <option value="active">Ativo (Sim)</option>
-                <option value="inactive">Ativo (Não)</option>
-              </select>
             </div>
 
             {/* Date Filter */}
-            <div className="relative z-[10]">
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
-                <Calendar className="h-4 w-4 text-gray-400" />
+            <div className="relative">
+              <div className="relative group">
+                <button
+                  type="button"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                  onClick={() => setShowDateFilter(!showDateFilter)}
+                >
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      {dateFilter === 'all' ? 'Data' : dateFilter === 'today' ? 'Hoje' : dateFilter === '2days' ? '2 dias' : dateFilter === '15days' ? '15 dias' : dateFilter === '30days' ? '30 dias' : dateFilter === 'custom' ? 'Personalizado' : 'Data'}
+                    </span>
+                  </div>
+                </button>
+
+                {showDateFilter && (
+                  <div 
+                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      marginBottom: '4px',
+                      zIndex: 999999
+                    }}>
+                    <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar período</span>
+                        <button 
+                          type="button" 
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDateFilter('all');
+                            setCustomDateRange({ startDate: '', endDate: '' });
+                          }}
+                        >
+                          Limpar
+                        </button>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="date"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                          checked={dateFilter === 'today'}
+                          onChange={() => setDateFilter('today')}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">Hoje</span>
+                      </label>
+                    </div>
+                    <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="date"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                          checked={dateFilter === '2days'}
+                          onChange={() => setDateFilter('2days')}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">Últimos 2 dias</span>
+                      </label>
+                    </div>
+                    <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="date"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                          checked={dateFilter === '15days'}
+                          onChange={() => setDateFilter('15days')}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">Últimos 15 dias</span>
+                      </label>
+                    </div>
+                    <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="date"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                          checked={dateFilter === '30days'}
+                          onChange={() => setDateFilter('30days')}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">Últimos 30 dias</span>
+                      </label>
+                    </div>
+                    <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="date"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                          checked={dateFilter === 'custom'}
+                          onChange={() => setDateFilter('custom')}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">Personalizado</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[120px]"
-              >
-                <option value="all">Período</option>
-                <option value="today">Hoje</option>
-                <option value="2days">2 dias</option>
-                <option value="15days">15 dias</option>
-                <option value="30days">30 dias</option>
-                <option value="custom">Personalizado</option>
-              </select>
             </div>
           </div>
         </div>

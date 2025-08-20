@@ -175,13 +175,48 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
       // If address is provided, save it
       if (formData.cep && motorista) {
         try {
+          // First, find or create the cidade based on estado and cidade name
+          let cidadeId: number;
+          if (formData.estado && formData.cidade) {
+            const { data: cidade, error: cidadeError } = await supabase
+              .from('cidade')
+              .select('id_cidade')
+              .eq('cidade', formData.cidade)
+              .eq('id_estado', parseInt(formData.estado))
+              .maybeSingle();
+
+            if (cidadeError && cidadeError.code !== 'PGRST116') {
+              throw cidadeError;
+            }
+            
+            if (cidade) {
+              cidadeId = cidade.id_cidade;
+            } else {
+              // Create cidade if it doesn't exist
+              const { data: newCidade, error: newCidadeError } = await supabase
+                .from('cidade')
+                .insert({
+                  cidade: formData.cidade,
+                  id_estado: parseInt(formData.estado)
+                })
+                .select()
+                .single();
+
+              if (newCidadeError) throw newCidadeError;
+              if (!newCidade) throw new Error('Erro ao criar cidade');
+              cidadeId = newCidade.id_cidade;
+            }
+          } else {
+            throw new Error('Estado e cidade são obrigatórios para cadastrar endereço');
+          }
+
           // Check if bairro exists
           let bairroId: number;
           const { data: bairro, error: bairroError } = await supabase
             .from('bairro')
             .select('id_bairro')
             .eq('bairro', formData.bairro)
-            .eq('id_cidade', 1) // You might need to adjust this
+            .eq('id_cidade', cidadeId)
             .maybeSingle();
 
           if (bairroError && bairroError.code !== 'PGRST116') {
@@ -196,7 +231,7 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
               .from('bairro')
               .insert({
                 bairro: formData.bairro,
-                id_cidade: 1 // You might need to adjust this
+                id_cidade: cidadeId
               })
               .select()
               .single();
