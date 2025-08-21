@@ -26,10 +26,17 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
   const [attendantName, setAttendantName] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCheckedToken, setHasCheckedToken] = useState(false);
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const verificarAcesso = async () => {
+      // Don't check again if we already checked in this session
+      if (hasCheckedToken) {
+        setIsLoading(false);
+        return;
+      }
+
       let accountId = searchParams.get('account_id')?.trim();
       if (!accountId) {
         // Default for migration - try to get from localStorage if available (for dev environment)
@@ -41,6 +48,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       }
       if (!accountId) {
         setIsLoading(false);
+        setHasCheckedToken(true);
         return;
       }
 
@@ -77,7 +85,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
             setAttendantId(access.wiseapp_acesso_id);
             setAttendantName(access.nome);
           } else {
-            // No token found, show modal
+            // No token found, show modal only if not shown before in this session
             setShowModal(true);
           }
         }
@@ -85,6 +93,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
         console.error('Error verifying access:', error);
       } finally {
         setIsLoading(false);
+        setHasCheckedToken(true);
       }
     };
 
@@ -100,6 +109,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
         onTokenSaved={(newToken) => {
           setToken(newToken);
           setShowModal(false);
+          setHasCheckedToken(true);
         }}
         companyId={companyId}
       />
