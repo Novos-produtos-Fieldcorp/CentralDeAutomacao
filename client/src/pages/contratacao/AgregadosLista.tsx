@@ -1211,7 +1211,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   <button
                     type="button"
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                    onClick={() => toggleDropdown('status')}
+                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
                   >
                     <div className="flex items-center gap-2">
                       <Filter className="h-4 w-4" />
@@ -1293,7 +1293,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   <button
                     type="button"
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                    onClick={() => toggleDropdown('cliente')}
+                    onClick={() => setShowClienteDropdown(!showClienteDropdown)}
                   >
                     <div className="flex items-center gap-2">
                       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1382,7 +1382,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   <button
                     type="button"
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                    onClick={() => toggleDropdown('cidade')}
+                    onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
                   >
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
@@ -1456,7 +1456,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   <button
                     type="button"
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                    onClick={() => toggleDropdown('tipoVeiculo')}
+                    onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
                   >
                     <div className="flex items-center gap-2">
                       <Truck className="h-4 w-4" />
