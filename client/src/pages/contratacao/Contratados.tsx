@@ -101,6 +101,11 @@ const Contratados = () => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
+  
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const cidadeDropdownRef = useRef<HTMLDivElement>(null);
+  const clienteDropdownRef = useRef<HTMLDivElement>(null);
+  const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -173,16 +178,18 @@ const Contratados = () => {
   // Efeito para fechar dropdowns ao clicar fora deles
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showStatusDropdown && !(event.target as HTMLElement).closest('#status-dropdown')) {
+      const target = event.target as HTMLElement;
+      
+      if (showStatusDropdown && statusDropdownRef.current && !statusDropdownRef.current.contains(target)) {
         setShowStatusDropdown(false);
       }
-      if (showClienteDropdown && !(event.target as HTMLElement).closest('#cliente-dropdown')) {
+      if (showClienteDropdown && clienteDropdownRef.current && !clienteDropdownRef.current.contains(target)) {
         setShowClienteDropdown(false);
       }
-      if (showCidadeDropdown && !(event.target as HTMLElement).closest('#cidade-dropdown')) {
+      if (showCidadeDropdown && cidadeDropdownRef.current && !cidadeDropdownRef.current.contains(target)) {
         setShowCidadeDropdown(false);
       }
-      if (showTipoVeiculoDropdown && !(event.target as HTMLElement).closest('#tipo-veiculo-dropdown')) {
+      if (showTipoVeiculoDropdown && tipoVeiculoDropdownRef.current && !tipoVeiculoDropdownRef.current.contains(target)) {
         setShowTipoVeiculoDropdown(false);
       }
       if (showTagsDropdown && !(event.target as HTMLElement).closest('#tags-dropdown')) {
@@ -1262,7 +1269,7 @@ const Contratados = () => {
           <div className="flex flex-wrap gap-2">
             {/* Status Filter */}
             <div className="relative z-[50]">
-              <div className="relative group">
+              <div className="relative group" ref={statusDropdownRef}>
                 <button
                   type="button"
                   className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
@@ -1319,15 +1326,10 @@ const Contratados = () => {
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                             checked={statusFilter.includes(value)}
                             onChange={(e) => {
-                              console.log('Contratados Status filter onChange - value:', value, 'checked:', e.target.checked, 'current statusFilter:', statusFilter);
                               if (e.target.checked) {
-                                const newFilter = [...statusFilter, value];
-                                console.log('Setting new status filter:', newFilter);
-                                setStatusFilter(newFilter);
+                                setStatusFilter([...statusFilter, value]);
                               } else {
-                                const newFilter = statusFilter.filter(s => s !== value);
-                                console.log('Removing from status filter:', newFilter);
-                                setStatusFilter(newFilter);
+                                setStatusFilter(statusFilter.filter(s => s !== value));
                               }
                             }}
                             onClick={(e) => e.stopPropagation()}
@@ -1345,7 +1347,7 @@ const Contratados = () => {
 
             {/* Cliente Filter */}
             <div className="relative z-[40]">
-              <div className="relative group">
+              <div className="relative group" ref={clienteDropdownRef}>
                 <button
                   type="button"
                   className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
@@ -1435,7 +1437,7 @@ const Contratados = () => {
 
             {/* Cidade Filter */}
             <div className="relative z-[35]">
-              <div className="relative group">
+              <div className="relative group" ref={cidadeDropdownRef}>
                 <button
                   type="button"
                   className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
@@ -1483,15 +1485,10 @@ const Contratados = () => {
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                             checked={cidadeFilter.includes(cidade)}
                             onChange={(e) => {
-                              console.log('Contratados Cidade filter onChange - cidade:', cidade, 'checked:', e.target.checked, 'current cidadeFilter:', cidadeFilter);
                               if (e.target.checked) {
-                                const newFilter = [...cidadeFilter, cidade];
-                                console.log('Setting new cidade filter:', newFilter);
-                                setCidadeFilter(newFilter);
+                                setCidadeFilter([...cidadeFilter, cidade]);
                               } else {
-                                const newFilter = cidadeFilter.filter(c => c !== cidade);
-                                console.log('Removing from cidade filter:', newFilter);
-                                setCidadeFilter(newFilter);
+                                setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
                               }
                             }}
                             onClick={(e) => e.stopPropagation()}
@@ -1507,7 +1504,7 @@ const Contratados = () => {
 
             {/* Tipo Veículo Filter */}
             <div className="relative z-[25]">
-              <div className="relative group">
+              <div className="relative group" ref={tipoVeiculoDropdownRef}>
                 <button
                   type="button"
                   className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
