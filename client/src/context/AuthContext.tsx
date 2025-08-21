@@ -23,9 +23,18 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [companyId, setCompanyId] = useState<number>();
-  const [accountId, setAccountId] = useState<string>();
+  // Initialize with values from localStorage if available
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    const saved = localStorage.getItem('isAuthenticated');
+    return saved === 'true';
+  });
+  const [companyId, setCompanyId] = useState<number>(() => {
+    const saved = localStorage.getItem('companyId');
+    return saved ? parseInt(saved) : undefined;
+  });
+  const [accountId, setAccountId] = useState<string>(() => {
+    return localStorage.getItem('account_id') || undefined;
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -58,6 +67,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         setAccountId(currentAccountId);
 
+        // Check if we already have valid cached data
+        const cachedAuth = localStorage.getItem('isAuthenticated') === 'true';
+        const cachedCompanyId = localStorage.getItem('companyId');
+        const cachedAccountId = localStorage.getItem('account_id');
+        
+        // If we have cached auth data and the account_id matches, use it
+        if (cachedAuth && cachedCompanyId && cachedAccountId === currentAccountId) {
+          setIsAuthenticated(true);
+          setCompanyId(parseInt(cachedCompanyId));
+          console.log('Using cached auth - account_id:', currentAccountId, 'company_id:', cachedCompanyId);
+          setIsLoading(false);
+          return;
+        }
+
         try {
           // Buscar a empresa real baseada no account_id usando URL dinâmica
           const apiUrl = createApiUrl(`company/by-account/${currentAccountId}`);
@@ -66,11 +89,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           if (response.ok) {
             const companyData = await response.json();
+            
+            // Update state and cache
             setIsAuthenticated(true);
             setCompanyId(companyData.company_id);
+            
+            // Save to localStorage for persistence
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('companyId', companyData.company_id.toString());
+            localStorage.setItem('companyName', companyData.nome_company || '');
+            
             console.log('Auth successful - account_id:', currentAccountId, 'company_id:', companyData.company_id, 'company:', companyData.nome_company);
           } else {
             console.warn('Company not found for account_id:', currentAccountId, 'Status:', response.status);
+            
+            // Clear cached data
+            localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('companyId');
+            localStorage.removeItem('companyName');
+            
             setIsAuthenticated(false);
             navigate('/unauthorized');
           }
@@ -80,14 +117,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (currentAccountId === '6') {
             setIsAuthenticated(true);
             setCompanyId(1);
+            
+            // Save fallback to localStorage
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('companyId', '1');
           } else {
+            // Clear cached data on failure
+            localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('companyId');
+            localStorage.removeItem('companyName');
+            
             setIsAuthenticated(false);
             navigate('/unauthorized');
           }
         }
       } catch (error) {
         console.error('Auth check failed:', error);
+        
+        // Clear all cached data
         localStorage.removeItem('account_id');
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('companyId');
+        localStorage.removeItem('companyName');
+        
         setAccountId(undefined);
         setIsAuthenticated(false);
         navigate('/unauthorized');
