@@ -650,13 +650,21 @@ const ContratacaoKanban = () => {
 
       if (error) throw error;
       
-      // Refresh all data to ensure consistency
       console.log(`Status updated: motorista ${motorista_id} from ${oldStatus} to ${newStatus}`);
       
-      // Reload all columns to ensure the moved item appears correctly
+      // Reset the destination column to page 1 to ensure the moved item is visible
+      setColumns(prev => prev.map(col => {
+        if (col.id === newStatus) {
+          return { ...col, currentPage: 1 };
+        }
+        return col;
+      }));
+      
+      // Reload all columns with correct pages
       for (const column of columns) {
+        const pageToLoad = column.id === newStatus ? 1 : column.currentPage;
         await fetchColumnCount(column.id, companyId);
-        await fetchColumnData(column.id, column.currentPage);
+        await fetchColumnData(column.id, pageToLoad);
       }
       
       toast.success('Status atualizado com sucesso');

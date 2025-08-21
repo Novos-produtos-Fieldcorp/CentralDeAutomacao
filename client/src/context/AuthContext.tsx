@@ -28,11 +28,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('isAuthenticated');
     return saved === 'true';
   });
-  const [companyId, setCompanyId] = useState<number>(() => {
+  const [companyId, setCompanyId] = useState<number | undefined>(() => {
     const saved = localStorage.getItem('companyId');
     return saved ? parseInt(saved) : undefined;
   });
-  const [accountId, setAccountId] = useState<string>(() => {
+  const [accountId, setAccountId] = useState<string | undefined>(() => {
     return localStorage.getItem('account_id') || undefined;
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('companyId');
         localStorage.removeItem('companyName');
         
-        setAccountId(undefined);
+        setAccountId(undefined as string | undefined);
         setIsAuthenticated(false);
         navigate('/unauthorized');
       } finally {
