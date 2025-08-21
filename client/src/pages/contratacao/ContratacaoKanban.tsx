@@ -650,24 +650,18 @@ const ContratacaoKanban = () => {
 
       if (error) throw error;
       
-      // Remove from current column
-      setColumns(prev => prev.map(col => {
-        if (col.id === oldStatus) {
-          return {
-            ...col,
-            motoristas: col.motoristas.filter(m => m.motorista_id !== motorista_id),
-            totalCount: Math.max(0, col.totalCount - 1)
-          };
-        }
-        return col;
-      }));
+      // Refresh all data to ensure consistency
+      console.log(`Status updated: motorista ${motorista_id} from ${oldStatus} to ${newStatus}`);
       
-      // Update count and refresh data for the new column
-      await fetchColumnCount(newStatus, companyId);
-      await fetchColumnData(newStatus, 1);
+      // Reload all columns to ensure the moved item appears correctly
+      for (const column of columns) {
+        await fetchColumnCount(column.id, companyId);
+        await fetchColumnData(column.id, column.currentPage);
+      }
       
       toast.success('Status atualizado com sucesso');
     } catch (err) {
+      console.error('Error updating status:', err);
       toast.error('Erro ao atualizar status');
     }
   };
@@ -1133,12 +1127,14 @@ const ContratacaoKanban = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex">
-        <div className="flex-1 flex gap-4 overflow-x-auto pb-6">
+      {/* Kanban Board Container */}
+      <div className="flex-1 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex gap-4 overflow-x-auto overflow-y-hidden h-full"
+             style={{ minHeight: 'calc(100vh - 25rem)' }}>
           {columns.map((column) => (
             <div
               key={column.id}
-              className="flex-shrink-0 w-[340px] flex flex-col h-[calc(100vh-20rem)]"
+              className="flex-shrink-0 w-[340px] flex flex-col h-full max-h-full"
               onDragOver={onDragOver}
               onDrop={(e) => onDrop(e, column.id)}
             >
@@ -1158,14 +1154,14 @@ const ContratacaoKanban = () => {
                 </div>
               </div>
 
-              <div className={`flex-1 ${column.color} overflow-y-auto custom-scrollbar border-x ${column.borderColor} rounded-b-lg kanban-column`}>
+              <div className={`flex-1 ${column.color} overflow-y-auto custom-scrollbar border-x border-b ${column.borderColor} rounded-b-lg kanban-column`}>
                 {column.loading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                   </div>
                 ) : (
                   <>
-                    <div className="p-3 space-y-3 kanban-column-content">
+                    <div className="p-3 space-y-3 kanban-column-content min-h-0">
                       {column.motoristas.length === 0 ? (
                         <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
                           {searchTerm ? 'Nenhum resultado encontrado' : 'Nenhum item nesta coluna'}
