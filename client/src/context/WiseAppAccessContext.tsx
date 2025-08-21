@@ -20,14 +20,102 @@ const WiseAppAccessContext = createContext<WiseAppAccessContextType>({
 });
 
 export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode }) => {
-  const [token, setToken] = useState<string | null>(null);
-  const [companyId, setCompanyId] = useState<number | null>(null);
-  const [attendantId, setAttendantId] = useState<number | null>(null);
-  const [attendantName, setAttendantName] = useState<string | null>(null);
+  // Initialize from localStorage if available
+  const [token, setToken] = useState<string | null>(() => {
+    try {
+      const cached = localStorage.getItem('wiseapp_token_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const isExpired = Date.now() > parsed.expiresAt;
+        if (!isExpired) {
+          return parsed.token;
+        }
+      }
+    } catch (error) {
+      console.log('Error loading cached token:', error);
+    }
+    return null;
+  });
+  
+  const [companyId, setCompanyId] = useState<number | null>(() => {
+    try {
+      const cached = localStorage.getItem('wiseapp_company_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const isExpired = Date.now() > parsed.expiresAt;
+        if (!isExpired) {
+          return parsed.companyId;
+        }
+      }
+    } catch (error) {
+      console.log('Error loading cached company:', error);
+    }
+    return null;
+  });
+  
+  const [attendantId, setAttendantId] = useState<number | null>(() => {
+    try {
+      const cached = localStorage.getItem('wiseapp_attendant_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const isExpired = Date.now() > parsed.expiresAt;
+        if (!isExpired) {
+          return parsed.attendantId;
+        }
+      }
+    } catch (error) {
+      console.log('Error loading cached attendant:', error);
+    }
+    return null;
+  });
+  
+  const [attendantName, setAttendantName] = useState<string | null>(() => {
+    try {
+      const cached = localStorage.getItem('wiseapp_attendant_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const isExpired = Date.now() > parsed.expiresAt;
+        if (!isExpired) {
+          return parsed.attendantName;
+        }
+      }
+    } catch (error) {
+      console.log('Error loading cached attendant name:', error);
+    }
+    return null;
+  });
+  
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasCheckedToken, setHasCheckedToken] = useState(false);
   const [searchParams] = useSearchParams();
+
+  // Helper function to cache data with expiration
+  const cacheData = (key: string, data: any, expirationHours: number = 2) => {
+    try {
+      const cache = {
+        ...data,
+        expiresAt: Date.now() + (expirationHours * 60 * 60 * 1000) // 2 hours default
+      };
+      localStorage.setItem(key, JSON.stringify(cache));
+    } catch (error) {
+      console.error('Error caching data:', error);
+    }
+  };
+
+  // Helper function to update token and cache
+  const updateToken = (newToken: string, newAttendantId: number, newAttendantName: string) => {
+    setToken(newToken);
+    setAttendantId(newAttendantId);
+    setAttendantName(newAttendantName);
+    
+    // Cache the token and attendant info
+    cacheData('wiseapp_token_cache', { token: newToken });
+    cacheData('wiseapp_attendant_cache', { 
+      attendantId: newAttendantId, 
+      attendantName: newAttendantName 
+    });
+  };
 
   useEffect(() => {
     const verificarAcesso = async () => {
@@ -53,40 +141,76 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       }
 
       try {
-        // Get company ID from account ID
-        const { data: company, error: companyError } = await supabase
-          .from('company')
-          .select('company_id')
-          .eq('id_conta_wiseapp', accountId)
-          .single();
-
-        if (companyError) {
-          console.error('Error fetching company:', companyError);
-          setIsLoading(false);
-          return;
+        // Check if we have valid cached data first
+        const cachedToken = localStorage.getItem('wiseapp_token_cache');
+        const cachedCompany = localStorage.getItem('wiseapp_company_cache');
+        const cachedAttendant = localStorage.getItem('wiseapp_attendant_cache');
+        
+        let useCache = false;
+        
+        if (cachedToken && cachedCompany && cachedAttendant) {
+          try {
+            const tokenData = JSON.parse(cachedToken);
+            const companyData = JSON.parse(cachedCompany);
+            const attendantData = JSON.parse(cachedAttendant);
+            
+            const isTokenValid = Date.now() < tokenData.expiresAt;
+            const isCompanyValid = Date.now() < companyData.expiresAt;
+            const isAttendantValid = Date.now() < attendantData.expiresAt;
+            
+            if (isTokenValid && isCompanyValid && isAttendantValid) {
+              console.log('Using cached WiseApp token and data');
+              setToken(tokenData.token);
+              setCompanyId(companyData.companyId);
+              setAttendantId(attendantData.attendantId);
+              setAttendantName(attendantData.attendantName);
+              useCache = true;
+            }
+          } catch (cacheError) {
+            console.log('Error reading cache, will fetch fresh data:', cacheError);
+          }
         }
-
-        if (company) {
-          setCompanyId(company.company_id);
+        
+        if (!useCache) {
+          console.log('Fetching fresh WiseApp token from database');
           
-          // Check if there's a token for this company
-          const { data: access, error: accessError } = await supabase
-            .from('wiseapp_acesso')
-            .select('wiseapp_acesso_id, access_token_wiseapp, nome')
-            .eq('company_id', company.company_id)
-            .maybeSingle();
+          // Get company ID from account ID
+          const { data: company, error: companyError } = await supabase
+            .from('company')
+            .select('company_id')
+            .eq('id_conta_wiseapp', accountId)
+            .single();
 
-          if (accessError && accessError.code !== 'PGRST116') {
-            console.error('Error fetching access token:', accessError);
+          if (companyError) {
+            console.error('Error fetching company:', companyError);
+            setIsLoading(false);
+            return;
           }
 
-          if (access && access.access_token_wiseapp) {
-            setToken(access.access_token_wiseapp);
-            setAttendantId(access.wiseapp_acesso_id);
-            setAttendantName(access.nome);
-          } else {
-            // No token found, show modal only if not shown before in this session
-            setShowModal(true);
+          if (company) {
+            setCompanyId(company.company_id);
+            
+            // Cache company data
+            cacheData('wiseapp_company_cache', { companyId: company.company_id });
+            
+            // Check if there's a token for this company
+            const { data: access, error: accessError } = await supabase
+              .from('wiseapp_acesso')
+              .select('wiseapp_acesso_id, access_token_wiseapp, nome')
+              .eq('company_id', company.company_id)
+              .maybeSingle();
+
+            if (accessError && accessError.code !== 'PGRST116') {
+              console.error('Error fetching access token:', accessError);
+            }
+
+            if (access && access.access_token_wiseapp) {
+              updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome);
+              console.log('WiseApp token fetched and cached successfully');
+            } else {
+              // No token found, show modal only if not shown before in this session
+              setShowModal(true);
+            }
           }
         }
       } catch (error) {
@@ -106,8 +230,8 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       <WiseAppTokenModal
         open={showModal}
         onClose={() => setShowModal(false)}
-        onTokenSaved={(newToken) => {
-          setToken(newToken);
+        onTokenSaved={(newToken, attendantId, attendantName) => {
+          updateToken(newToken, attendantId || 0, attendantName || 'Atendente');
           setShowModal(false);
           setHasCheckedToken(true);
         }}
