@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { getCurrentDate, formatCEP } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
+import { saveUserEmail, getUserEmail } from '../utils/cookies';
 
 interface AddAgregadoModalProps {
   isOpen: boolean;
@@ -21,7 +22,7 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
   const [formData, setFormData] = useState({
     cpf: '',
     nome: '',
-    email: '',
+    email: getUserEmail() || '', // Load email from cookies
     telefone: '',
     dt_nascimento: '',
     genero: '',

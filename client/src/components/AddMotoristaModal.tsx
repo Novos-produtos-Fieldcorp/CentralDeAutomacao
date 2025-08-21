@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { getCurrentDate, formatCEP } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
+import { saveUserEmail, getUserEmail } from '../utils/cookies';
 
 interface AddMotoristaModalProps {
   isOpen: boolean;
@@ -20,7 +21,7 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
   const [formData, setFormData] = useState({
     cpf: '',
     nome: '',
-    email: '',
+    email: getUserEmail() || '', // Load email from cookies
     telefone: '',
     dt_nascimento: '',
     genero: '',
@@ -171,6 +172,11 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
         .single();
 
       if (motoristaError) throw motoristaError;
+
+      // Save email to cookies for future use
+      if (formData.email) {
+        saveUserEmail(formData.email);
+      }
 
       // If address is provided, save it
       if (formData.cep && motorista) {

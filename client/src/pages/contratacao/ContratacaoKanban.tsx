@@ -623,7 +623,7 @@ const ContratacaoKanban = () => {
     }
     
     // Usando a assinatura correta do startChat com motorista ID
-    startChat(motorista.telefone.toString(), motorista.nome, motorista.motorista_id);
+    startChat(motorista.telefone?.toString() ?? '', motorista.nome, motorista.motorista_id);
   };
 
   const handleViewDocument = (motorista: MotoristaWithDetails) => {
@@ -652,20 +652,23 @@ const ContratacaoKanban = () => {
       
       console.log(`Status updated: motorista ${motorista_id} from ${oldStatus} to ${newStatus}`);
       
-      // Reset the destination column to page 1 to ensure the moved item is visible
-      setColumns(prev => prev.map(col => {
-        if (col.id === newStatus) {
-          return { ...col, currentPage: 1 };
+      // Force reload with a small delay to ensure database consistency
+      setTimeout(async () => {
+        // Reset the destination column to page 1 to ensure the moved item is visible
+        setColumns(prev => prev.map(col => {
+          if (col.id === newStatus) {
+            return { ...col, currentPage: 1 };
+          }
+          return col;
+        }));
+        
+        // Reload all columns
+        for (const column of columns) {
+          const pageToLoad = column.id === newStatus ? 1 : column.currentPage;
+          await fetchColumnCount(column.id, companyId);
+          await fetchColumnData(column.id, pageToLoad);
         }
-        return col;
-      }));
-      
-      // Reload all columns with correct pages
-      for (const column of columns) {
-        const pageToLoad = column.id === newStatus ? 1 : column.currentPage;
-        await fetchColumnCount(column.id, companyId);
-        await fetchColumnData(column.id, pageToLoad);
-      }
+      }, 100);
       
       toast.success('Status atualizado com sucesso');
     } catch (err) {
@@ -1327,7 +1330,7 @@ const ContratacaoKanban = () => {
       <UnifiedAgregadoModal
         isOpen={isUnifiedAgregadoModalOpen}
         onClose={() => setIsUnifiedAgregadoModalOpen(false)}
-        motorista={selectedMotorista!}
+        motorista={selectedMotorista as any}
         onSuccess={() => {
           // Atualizar a lista após alguma alteração
           columns.forEach(column => {
@@ -1340,7 +1343,7 @@ const ContratacaoKanban = () => {
       <UnifiedMotoristaModal
         isOpen={isUnifiedMotoristaModalOpen}
         onClose={() => setIsUnifiedMotoristaModalOpen(false)}
-        motorista={selectedMotorista!}
+        motorista={selectedMotorista as any}
         onSuccess={() => {
           // Atualizar a lista após alguma alteração
           columns.forEach(column => {
