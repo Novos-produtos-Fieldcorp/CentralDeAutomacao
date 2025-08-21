@@ -22,7 +22,7 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
   const [formData, setFormData] = useState({
     cpf: '',
     nome: '',
-    email: getUserEmail() || '', // Load email from cookies
+    email: '',
     telefone: '',
     dt_nascimento: '',
     genero: '',
@@ -53,6 +53,11 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
   useEffect(() => {
     if (isOpen) {
       fetchEstados();
+      // Load email from cookies when modal opens
+      const savedEmail = getUserEmail();
+      if (savedEmail) {
+        setFormData(prev => ({ ...prev, email: savedEmail }));
+      }
     }
   }, [isOpen]);
 

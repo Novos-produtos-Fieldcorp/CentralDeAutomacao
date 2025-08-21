@@ -21,7 +21,7 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
   const [formData, setFormData] = useState({
     cpf: '',
     nome: '',
-    email: getUserEmail() || '', // Load email from cookies
+    email: '',
     telefone: '',
     dt_nascimento: '',
     genero: '',
@@ -40,6 +40,11 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
   useEffect(() => {
     if (isOpen) {
       fetchEstados();
+      // Load email from cookies when modal opens
+      const savedEmail = getUserEmail();
+      if (savedEmail) {
+        setFormData(prev => ({ ...prev, email: savedEmail }));
+      }
     }
   }, [isOpen]);
 
