@@ -792,21 +792,15 @@ const Contratados = () => {
         
       if (error) throw error;
       
-      // If the new status is not 'contratado', remove from the list
-      if (newStatus !== 'contratado') {
-        setContratados(prev => prev.filter(m => m.motorista_id !== motorista.motorista_id));
-        toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}. Motorista removido da lista.`);
-      } else {
-        // Update the local state
-        setContratados(prev => 
-          prev.map(m => 
-            m.motorista_id === motorista.motorista_id 
-              ? { ...m, st_cadastro: newStatus } 
-              : m
-          )
-        );
-        toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
-      }
+      // Update the local state
+      setContratados(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { ...m, st_cadastro: newStatus } 
+            : m
+        )
+      );
+      toast.success('Status atualizado com sucesso');
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('Erro ao atualizar status');
