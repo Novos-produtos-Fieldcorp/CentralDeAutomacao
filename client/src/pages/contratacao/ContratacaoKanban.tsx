@@ -643,6 +643,8 @@ const ContratacaoKanban = () => {
     if (!companyId) return; // Add guard clause
     
     try {
+      console.log(`Updating status: motorista ${motorista_id} from ${oldStatus} to ${newStatus}`);
+      
       const { error } = await supabase
         .from('motorista')
         .update({ st_cadastro: newStatus })
@@ -650,27 +652,47 @@ const ContratacaoKanban = () => {
 
       if (error) throw error;
       
-      console.log(`Status updated: motorista ${motorista_id} from ${oldStatus} to ${newStatus}`);
+      console.log(`Status successfully updated in database`);
       
-      // Force reload with a small delay to ensure database consistency
-      setTimeout(async () => {
-        // Reset the destination column to page 1 to ensure the moved item is visible
-        setColumns(prev => prev.map(col => {
-          if (col.id === newStatus) {
-            return { ...col, currentPage: 1 };
-          }
-          return col;
-        }));
+      // Show success message
+      toast.success('Status atualizado com sucesso');
+      
+      // Force complete reload after database update
+      const reloadData = async () => {
+        console.log('Starting complete reload of all columns...');
         
-        // Reload all columns
+        // Clear all column data first
+        setColumns(prev => prev.map(col => ({
+          ...col,
+          currentPage: col.id === newStatus ? 1 : col.currentPage,
+          motoristas: [],
+          loading: true
+        })));
+        
+        // Wait a moment for UI update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Reload each column sequentially
         for (const column of columns) {
           const pageToLoad = column.id === newStatus ? 1 : column.currentPage;
+          
+          console.log(`Reloading column ${column.id}, page ${pageToLoad}`);
+          
+          // Reload count and data
           await fetchColumnCount(column.id, companyId);
+          await new Promise(resolve => setTimeout(resolve, 100));
           await fetchColumnData(column.id, pageToLoad);
+          
+          // Small delay between columns
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
-      }, 100);
+        
+        console.log('All columns successfully reloaded');
+      };
       
-      toast.success('Status atualizado com sucesso');
+      // Execute reload with delay to ensure database consistency
+      setTimeout(reloadData, 200);
+      
     } catch (err) {
       console.error('Error updating status:', err);
       toast.error('Erro ao atualizar status');
