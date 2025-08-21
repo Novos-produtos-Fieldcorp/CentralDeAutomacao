@@ -1319,10 +1319,15 @@ const Contratados = () => {
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                             checked={statusFilter.includes(value)}
                             onChange={(e) => {
+                              console.log('Contratados Status filter onChange - value:', value, 'checked:', e.target.checked, 'current statusFilter:', statusFilter);
                               if (e.target.checked) {
-                                setStatusFilter([...statusFilter, value]);
+                                const newFilter = [...statusFilter, value];
+                                console.log('Setting new status filter:', newFilter);
+                                setStatusFilter(newFilter);
                               } else {
-                                setStatusFilter(statusFilter.filter(s => s !== value));
+                                const newFilter = statusFilter.filter(s => s !== value);
+                                console.log('Removing from status filter:', newFilter);
+                                setStatusFilter(newFilter);
                               }
                             }}
                             onClick={(e) => e.stopPropagation()}
@@ -1478,10 +1483,15 @@ const Contratados = () => {
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                             checked={cidadeFilter.includes(cidade)}
                             onChange={(e) => {
+                              console.log('Contratados Cidade filter onChange - cidade:', cidade, 'checked:', e.target.checked, 'current cidadeFilter:', cidadeFilter);
                               if (e.target.checked) {
-                                setCidadeFilter([...cidadeFilter, cidade]);
+                                const newFilter = [...cidadeFilter, cidade];
+                                console.log('Setting new cidade filter:', newFilter);
+                                setCidadeFilter(newFilter);
                               } else {
-                                setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
+                                const newFilter = cidadeFilter.filter(c => c !== cidade);
+                                console.log('Removing from cidade filter:', newFilter);
+                                setCidadeFilter(newFilter);
                               }
                             }}
                             onClick={(e) => e.stopPropagation()}
