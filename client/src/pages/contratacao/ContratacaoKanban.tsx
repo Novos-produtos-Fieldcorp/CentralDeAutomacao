@@ -640,10 +640,10 @@ const ContratacaoKanban = () => {
   };
 
   const updateStatus = async (motorista_id: number, newStatus: string, oldStatus: string) => {
-    if (!companyId) return; // Add guard clause
+    if (!companyId) return;
     
     try {
-      console.log(`Updating status: motorista ${motorista_id} from ${oldStatus} to ${newStatus}`);
+      console.log(`[STATUS UPDATE] Starting: motorista ${motorista_id} from ${oldStatus} to ${newStatus}`);
       
       const { error } = await supabase
         .from('motorista')
@@ -652,49 +652,45 @@ const ContratacaoKanban = () => {
 
       if (error) throw error;
       
-      console.log(`Status successfully updated in database`);
+      console.log(`[STATUS UPDATE] Database updated successfully`);
       
-      // Show success message
+      // Show success immediately
       toast.success('Status atualizado com sucesso');
       
-      // Force complete reload after database update
-      const reloadData = async () => {
-        console.log('Starting complete reload of all columns...');
+      // Simple approach: reload the entire page data
+      const reloadAllData = async () => {
+        console.log(`[STATUS UPDATE] Starting complete data reload...`);
         
-        // Clear all column data first
+        // Set all columns to loading
         setColumns(prev => prev.map(col => ({
           ...col,
-          currentPage: col.id === newStatus ? 1 : col.currentPage,
-          motoristas: [],
-          loading: true
+          loading: true,
+          motoristas: [] // Clear current data
         })));
         
-        // Wait a moment for UI update
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for database consistency
+        await new Promise(resolve => setTimeout(resolve, 300));
         
-        // Reload each column sequentially
-        for (const column of columns) {
-          const pageToLoad = column.id === newStatus ? 1 : column.currentPage;
-          
-          console.log(`Reloading column ${column.id}, page ${pageToLoad}`);
-          
-          // Reload count and data
-          await fetchColumnCount(column.id, companyId);
-          await new Promise(resolve => setTimeout(resolve, 100));
-          await fetchColumnData(column.id, pageToLoad);
-          
-          // Small delay between columns
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
+        // Reload initial data completely
+        await Promise.all([
+          loadInitialData(),
+          new Promise(resolve => setTimeout(resolve, 100))
+        ]);
         
-        console.log('All columns successfully reloaded');
+        // Ensure the destination column is on page 1
+        setColumns(prev => prev.map(col => ({
+          ...col,
+          currentPage: col.id === newStatus ? 1 : col.currentPage
+        })));
+        
+        console.log(`[STATUS UPDATE] Complete reload finished`);
       };
       
-      // Execute reload with delay to ensure database consistency
-      setTimeout(reloadData, 200);
+      // Execute with slight delay
+      setTimeout(reloadAllData, 100);
       
     } catch (err) {
-      console.error('Error updating status:', err);
+      console.error('[STATUS UPDATE] Error:', err);
       toast.error('Erro ao atualizar status');
     }
   };
