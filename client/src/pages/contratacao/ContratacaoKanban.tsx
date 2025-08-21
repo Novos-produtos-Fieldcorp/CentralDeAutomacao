@@ -309,45 +309,23 @@ const ContratacaoKanban = () => {
     ));
     
     try {
-      console.log('Buscando dados para status:', status);
+      console.log(`[FETCH] Buscando dados para status: ${status}, funcao: ${funcaoFilter}, page: ${page}`);
+      
       // Calculate pagination parameters
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
       
-      // Build the query with filters using the complete view
+      let motoristasData: any[] = [];
+      
+      // Start with vw_motoristas_completo
       let query = supabase
         .from('vw_motoristas_completo')
-        .select(`
-          motorista_id,
-          nome_motorista as nome,
-          funcao,
-          st_cadastro,
-          telefone,
-          email,
-          data_cadastro,
-          cpf,
-          dt_nascimento,
-          genero,
-          origem_usuario,
-          autorizacao_lgpd,
-          company_id,
-          cliente_id,
-          ativo,
-          nome_cidade,
-          nome_estado,
-          sigla_estado,
-          logradouro,
-          nr_end,
-          ds_complemento_end,
-          nome_bairro,
-          nr_cep
-        `)
+        .select('*')
         .eq('st_cadastro', status)
         .eq('company_id', companyId);
 
       // Apply function filter if not 'todos'
       if (funcaoFilter !== 'todos') {
-        // FIX: Use eq instead of or for filtering by function
         query = query.eq('funcao', funcaoFilter);
       }
       
@@ -362,79 +340,49 @@ const ContratacaoKanban = () => {
       // Apply pagination
       query = query.range(from, to);
       
-      // Primeiro, buscar apenas os dados básicos dos motoristas
-      console.log('Executando query para motoristas...');
+      console.log(`[FETCH] Executando query na view vw_motoristas_completo...`);
       
-      // First, get data from vw_motoristas_completo
-      let motoristasData: any[] = [];
+      const { data: motoristasData1, error: error1 } = await query;
       
-      try {
-        const { data: motoristasData1, error: error1 } = await query.select('*');
-        
-        if (error1) {
-          console.error('Erro na consulta de motoristas (vw_motoristas_completo):', error1);
-          throw error1;
-        }
-        
-        motoristasData = motoristasData1 || [];
-        
-        // If we're looking for agregados or all, also check vw_agregados_completo
-        if (funcaoFilter === 'Agregado' || funcaoFilter === 'todos') {
-          let agregadosQuery = supabase
-            .from('vw_agregados_completo')
-            .select('*')
-            .eq('st_cadastro', status)
-            .eq('company_id', companyId);
-            
-          // Always filter for Agregado in this view
-          agregadosQuery = agregadosQuery.eq('funcao', 'Agregado');
-          
-          // Apply search filter if provided
-          if (debouncedSearchTerm) {
-            agregadosQuery = agregadosQuery.or(
-              `nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`
-            );
-          }
-          
-          // Apply sorting by data_cadastro (newest first)
-          agregadosQuery = agregadosQuery.order('data_cadastro', { ascending: false });
-          
-          // Apply pagination
-          agregadosQuery = agregadosQuery.range(from, to);
-          
-          const { data: agregadosData, error: error2 } = await agregadosQuery;
-          
-          if (error2) {
-            console.error('Erro na consulta de agregados (vw_agregados_completo):', error2);
-            // Don't throw here, we still have motoristas data
-          } else if (agregadosData && agregadosData.length > 0) {
-            // Merge the results, ensuring we don't have duplicates
-            const existingIds = new Set(motoristasData.map(m => m.motorista_id));
-            const newAgregados = agregadosData.filter((a: any) => !existingIds.has(a.motorista_id));
-            motoristasData = [...motoristasData, ...newAgregados];
-          }
-        }
-      } catch (err) {
-        const error = err as {
-          message: string;
-          details?: string;
-          hint?: string;
-          code?: string;
-        };
-        console.error('Erro ao buscar dados:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        throw error;
+      if (error1) {
+        console.error('[FETCH] Erro na view vw_motoristas_completo:', error1);
+        throw error1;
       }
       
-      console.log('Dados de motoristas recebidos para', status, ':', motoristasData);
+      motoristasData = motoristasData1 || [];
+      
+      // Para agregados, também buscar na vw_agregados_completo
+      if (funcaoFilter === 'Agregado' || funcaoFilter === 'todos') {
+        console.log(`[FETCH] Buscando também na view vw_agregados_completo...`);
+        
+        let agregadosQuery = supabase
+          .from('vw_agregados_completo')
+          .select('*')
+          .eq('st_cadastro', status)
+          .eq('company_id', companyId)
+          .eq('funcao', 'Agregado');
+          
+        if (debouncedSearchTerm) {
+          agregadosQuery = agregadosQuery.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
+        }
+        
+        agregadosQuery = agregadosQuery.order('data_cadastro', { ascending: false });
+        agregadosQuery = agregadosQuery.range(from, to);
+        
+        const { data: agregadosData, error: error2 } = await agregadosQuery;
+        
+        if (!error2 && agregadosData && agregadosData.length > 0) {
+          // Merge results, avoiding duplicates
+          const existingIds = new Set(motoristasData.map(m => m.motorista_id));
+          const newAgregados = agregadosData.filter((a: any) => !existingIds.has(a.motorista_id));
+          motoristasData = [...motoristasData, ...newAgregados];
+        }
+      }
+      
+      console.log(`[FETCH] Total de registros obtidos das views:`, motoristasData.length);
       
       if (!motoristasData || motoristasData.length === 0) {
-        console.warn('Nenhum motorista encontrado para o status:', status);
-        // Atualizar a coluna com array vazio
+        console.warn(`[FETCH] Nenhum registro encontrado para o status: ${status}`);
         setColumns(prev => prev.map(col => 
           col.id === status 
             ? { ...col, motoristas: [], loading: false, totalCount: 0 } 
@@ -443,129 +391,46 @@ const ContratacaoKanban = () => {
         return;
       }
       
-      // Já temos todos os dados necessários da view, incluindo endereços
-      const motoristasComEndereco = motoristasData.map((motorista: any) => {
-        // Extrair o primeiro nome para exibição
-        const primeiroNome = motorista.nome_motorista ? motorista.nome_motorista.split(' ')[0] : '';
-        
-        return {
-          ...motorista,
-          nome: motorista.nome_motorista, // Garantir que o nome está mapeado corretamente
-          // Mapeando os campos da view para os nomes esperados pelo componente
-          cidade: motorista.nome_cidade,
-          estado: motorista.nome_estado,
-          sigla_estado: motorista.sigla_estado,
-          bairro: motorista.nome_bairro,
-          end_motorista: {
-            logradouro: motorista.logradouro,
-            nr_end: motorista.nr_end,
-            ds_complemento_end: motorista.ds_complemento_end,
-            bairro: motorista.nome_bairro,
-            cidade: motorista.nome_cidade,
-            estado: motorista.nome_estado,
-            sigla_estado: motorista.sigla_estado,
-            nr_cep: motorista.nr_cep
-          },
-          primeiroNome // Adicionando o primeiro nome para exibição
-        };
-      });
-      
-      console.log('Motoristas com endereços:', motoristasComEndereco);
-      
-      // Buscar clientes em uma consulta separada
-      const clienteIds = [...new Set(motoristasComEndereco
-        .filter((m: any) => m.cliente_id)
-        .map((m: any) => m.cliente_id)
-      )];
-      
-      console.log('Buscando clientes com IDs:', clienteIds);
-      
-      let clientesData: any[] = [];
-      if (clienteIds.length > 0) {
-        const { data: clientes, error: clientesError } = await supabase
-          .from('cliente')
-          .select('cliente_id, nome')
-          .in('cliente_id', clienteIds);
-          
-        if (clientesError) {
-          console.error('Erro ao buscar clientes:', clientesError);
-        } else {
-          clientesData = clientes || [];
-          console.log('Clientes encontrados:', clientesData);
-        }
-      }
-      
-      // Criar um mapa de cliente_id para nome do cliente
-      const clienteMap = clientesData.reduce((acc: Record<number, string>, cliente: any) => {
-        acc[cliente.cliente_id] = cliente.nome;
-        return acc;
-      }, {});
-      
-      // Buscar veículos e montar dados finais
-      const motoristasWithVehicles = await Promise.all(
-        motoristasComEndereco.map(async (motorista: any) => {
-          const { data: veiculoData } = await supabase
-            .from('veiculo')
-            .select('*')
-            .eq('motorista_id', motorista.motorista_id)
-            .limit(1)
-            .maybeSingle();
-
-          // Encontrar o nome do cliente usando o mapa
-          const nomeCliente = motorista.cliente_id ? clienteMap[motorista.cliente_id] : null;
-          
-          return {
-            ...motorista,
-            veiculo: veiculoData ? [{
-              veiculo_id: veiculoData.veiculo_id,
-              placa: veiculoData.placa,
-              status_veiculo: veiculoData.status_veiculo,
-              marca: veiculoData.marca,
-              modelo: veiculoData.modelo,
-              tipologia: veiculoData.tipologia,
-              ano: veiculoData.ano,
-              combustivel: veiculoData.combustivel,
-              peso: veiculoData.peso,
-              cubagem: veiculoData.cubagem,
-              possui_rastreador: veiculoData.possui_rastreador,
-              marca_rastreador: veiculoData.marca_rastreador,
-              motorista_id: veiculoData.motorista_id,
-              cor: veiculoData.cor,
-              tipo: veiculoData.tipo,
-              company_id: veiculoData.company_id
-            }] : [],
-            nome_cidade: motorista.end_motorista?.[0]?.cidade || null,
-            sigla_estado: motorista.end_motorista?.[0]?.sigla_estado || null,
-            nome_cliente: nomeCliente || null
-          };
-        })
-      );
-      
-      console.log('Motoristas com veículos:', motoristasWithVehicles);
-      
-      // Update the column data
-      console.log('Atualizando coluna', status, 'com', motoristasWithVehicles.length, 'itens');
-      setColumns((prev: any[]) => prev.map((col: any) => {
-        if (col.id === status) {
-          return {
-            ...col,
-            motoristas: motoristasWithVehicles,
-            totalCount: motoristasWithVehicles.length, // Atualiza a contagem total
-            currentPage: page,
-            loading: false
-          };
-        }
-        return col;
+      // Map to expected format
+      const motoristasFormatted = motoristasData.map((motorista: any) => ({
+        ...motorista,
+        nome: motorista.nome_motorista || motorista.nome,
+        primeiro_nome: motorista.nome_motorista ? motorista.nome_motorista.split(' ')[0] : ''
       }));
-    } catch (error) {
-      console.error(`Error fetching data for ${status}:`, error);
-      toast.error(`Erro ao carregar dados para ${status}`);
       
-      // Reset loading state on error
+      console.log(`[FETCH] Atualizando coluna ${status} com ${motoristasFormatted.length} registros`);
+      
+      // Update column with new data
       setColumns(prev => prev.map(col => 
-        col.id === status ? { ...col, loading: false } : col
+        col.id === status 
+          ? { 
+              ...col, 
+              motoristas: motoristasFormatted, 
+              loading: false, 
+              currentPage: page 
+            } 
+          : col
       ));
-    }
+      
+    } catch (err) {
+        const error = err as {
+          message: string;
+          details?: string;
+          hint?: string;
+          code?: string;
+        };
+        console.error('[FETCH] Erro ao buscar dados:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        setColumns(prev => prev.map(col => 
+          col.id === status 
+            ? { ...col, motoristas: [], loading: false, totalCount: 0 } 
+            : col
+        ));
+      }
   };
 
   const handleSearch = async () => {
@@ -671,11 +536,12 @@ const ContratacaoKanban = () => {
         // Wait for database consistency
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        // Reload initial data completely
-        await Promise.all([
-          loadInitialData(),
-          new Promise(resolve => setTimeout(resolve, 100))
-        ]);
+        // Reload all column data completely
+        for (const column of columns) {
+          await fetchColumnCount(column.id, companyId);
+          await fetchColumnData(column.id, column.currentPage);
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
         
         // Ensure the destination column is on page 1
         setColumns(prev => prev.map(col => ({
