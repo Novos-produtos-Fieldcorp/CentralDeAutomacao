@@ -140,7 +140,7 @@ const ResumosGrupo = () => {
             )
           `)
           .eq('company_id', companyId)
-          .order('data_envio', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(100);
         
         if (fallbackError) throw fallbackError;
@@ -894,9 +894,23 @@ const ResumosGrupo = () => {
                           <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                               {(() => {
-                                const utcDate = new Date(envio.data_envio + 'Z');
-                                const brasiliaDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
-                                return format(brasiliaDate, 'dd/MM HH:mm');
+                                const timestampField = envio.created_at || envio.data_envio;
+                                const utcDate = parseISO(timestampField);
+                                
+                                // Extrair diretamente os valores de data/hora em UTC e ajustar manualmente
+                                const day = String(utcDate.getUTCDate()).padStart(2, '0');
+                                const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+                                let hours = utcDate.getUTCHours() - 3; // Converter para BRT
+                                
+                                // Tratar casos de mudança de dia
+                                if (hours < 0) {
+                                  hours += 24;
+                                }
+                                
+                                const minutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
+                                const hoursStr = String(hours).padStart(2, '0');
+                                
+                                return `${day}/${month} ${hoursStr}:${minutes}`;
                               })()}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white max-w-[120px]">
@@ -1242,9 +1256,24 @@ const ResumosGrupo = () => {
                 </h3>
                 <p className="text-gray-700 dark:text-gray-300">
                   {(() => {
-                    const utcDate = new Date(selectedEnvio.data_envio + 'Z');
-                    const brasiliaDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
-                    return format(brasiliaDate, 'dd/MM/yyyy HH:mm:ss');
+                    const timestampField = selectedEnvio.created_at || selectedEnvio.data_envio;
+                    const utcDate = parseISO(timestampField);
+                    
+                    // Extrair valores UTC e converter manualmente para BRT
+                    const day = String(utcDate.getUTCDate()).padStart(2, '0');
+                    const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+                    const year = utcDate.getUTCFullYear();
+                    let hours = utcDate.getUTCHours() - 3; // Converter para BRT
+                    
+                    if (hours < 0) {
+                      hours += 24;
+                    }
+                    
+                    const minutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
+                    const seconds = String(utcDate.getUTCSeconds()).padStart(2, '0');
+                    const hoursStr = String(hours).padStart(2, '0');
+                    
+                    return `${day}/${month}/${year} ${hoursStr}:${minutes}:${seconds}`;
                   })()}
                 </p>
               </div>
