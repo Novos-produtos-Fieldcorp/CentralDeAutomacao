@@ -27,6 +27,7 @@ interface EnvioResumo {
   data_envio: string;
   status: boolean;
   mensagem: string;
+  resumo_grupo?: string;
   grupo?: {
     nome_grupo: string;
   };
@@ -878,6 +879,9 @@ const ResumosGrupo = () => {
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Mensagem
                           </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Resumo Enviado
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -910,6 +914,18 @@ const ResumosGrupo = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                               {envio.mensagem}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-md">
+                              {envio.resumo_grupo ? (
+                                <div className="truncate" title={envio.resumo_grupo}>
+                                  {envio.resumo_grupo.length > 100 
+                                    ? `${envio.resumo_grupo.substring(0, 100)}...` 
+                                    : envio.resumo_grupo
+                                  }
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic">Sem resumo</span>
+                              )}
                             </td>
                           </tr>
                         ))}
