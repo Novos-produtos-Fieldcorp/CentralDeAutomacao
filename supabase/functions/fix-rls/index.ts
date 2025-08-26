@@ -17,27 +17,53 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Execute SQL to disable RLS and drop policies on envio_resumo table
-    const { data, error } = await supabase.rpc('sql', {
-      query: `
+    // Execute SQL to create function and disable RLS
+    const { data, error } = await supabase.rpc('exec_sql', {
+      sql: `
         -- Disable RLS on envio_resumo table
         ALTER TABLE public.envio_resumo DISABLE ROW LEVEL SECURITY;
         
-        -- Drop any existing policies that might be filtering records
-        DO $$
-        BEGIN
-          -- Drop all known policy variations
-          PERFORM pg_advisory_lock(12345);
-          
-          -- Get all policies for envio_resumo table and drop them
-          FOR r IN SELECT policyname FROM pg_policies WHERE tablename = 'envio_resumo' AND schemaname = 'public' LOOP
-            EXECUTE 'DROP POLICY IF EXISTS "' || r.policyname || '" ON public.envio_resumo';
-          END LOOP;
-          
-          PERFORM pg_advisory_unlock(12345);
-        END $$;
+        -- Create function to get all envio_resumo records bypassing RLS
+        CREATE OR REPLACE FUNCTION get_envio_resumo_all(p_company_id integer)
+        RETURNS TABLE (
+          id integer,
+          grupo_id integer,
+          company_id integer,
+          data_envio timestamptz,
+          status boolean,
+          mensagem text,
+          created_at timestamptz,
+          horario_execucao_utc text,
+          resumo_grupo text,
+          grupo_nome text
+        )
+        SECURITY DEFINER
+        SET search_path = public
+        LANGUAGE sql
+        AS $$
+          SELECT 
+            er.id,
+            er.grupo_id,
+            er.company_id,
+            er.data_envio,
+            er.status,
+            er.mensagem,
+            er.created_at,
+            er.horario_execucao_utc,
+            er.resumo_grupo,
+            gr.nome_grupo as grupo_nome
+          FROM public.envio_resumo er
+          LEFT JOIN public.grupo_resumo gr ON er.grupo_id = gr.id
+          WHERE er.company_id = p_company_id
+          ORDER BY er.data_envio DESC
+          LIMIT 100;
+        $$;
         
-        SELECT 'RLS disabled and policies dropped for envio_resumo' as result;
+        -- Grant permissions
+        GRANT EXECUTE ON FUNCTION get_envio_resumo_all(integer) TO authenticated;
+        GRANT EXECUTE ON FUNCTION get_envio_resumo_all(integer) TO anon;
+        
+        SELECT 'Function created and RLS disabled' as result;
       `
     })
 
@@ -49,7 +75,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    return new Response(JSON.stringify({ success: true, data }), {
+    return new Response(JSON.stringify({ success: true, message: 'RLS fix applied successfully', data }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
