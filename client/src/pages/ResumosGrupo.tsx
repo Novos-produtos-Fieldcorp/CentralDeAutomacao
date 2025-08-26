@@ -119,6 +119,8 @@ const ResumosGrupo = () => {
   const fetchAllEnvios = async () => {
     try {
       setLoadingAllEnvios(true);
+      console.log('Fetching all envios for company_id:', companyId);
+      
       const { data, error } = await supabase
         .from('envio_resumo')
         .select(`
@@ -131,7 +133,18 @@ const ResumosGrupo = () => {
         .order('data_envio', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Raw data from envio_resumo:', data);
+      console.log('Number of records found:', data?.length || 0);
+      console.log('Records by status:', {
+        true: data?.filter(r => r.status === true).length || 0,
+        false: data?.filter(r => r.status === false).length || 0
+      });
+      
       setAllEnvios(data || []);
     } catch (error) {
       console.error('Error fetching all envios:', error);
