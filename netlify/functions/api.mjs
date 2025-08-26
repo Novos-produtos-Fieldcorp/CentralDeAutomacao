@@ -83,7 +83,8 @@ export const handler = async (event, context) => {
           'api_access_token': token,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
         }
       });
 

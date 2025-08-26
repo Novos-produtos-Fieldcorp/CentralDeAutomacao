@@ -30,11 +30,9 @@
   for = "/api/*"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
-    X-Frame-Options = "ALLOWALL"
     Content-Security-Policy = "frame-ancestors *;"
 
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "ALLOWALL"
     Content-Security-Policy = "frame-ancestors *;"
