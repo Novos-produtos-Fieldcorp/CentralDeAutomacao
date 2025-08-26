@@ -894,7 +894,7 @@ const ResumosGrupo = () => {
                           <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                               {(() => {
-                                const utcDate = new Date(envio.data_envio + 'Z');
+                                const utcDate = new Date(envio.data_envio);
                                 const brasiliaDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
                                 return format(brasiliaDate, 'dd/MM HH:mm');
                               })()}
@@ -1242,7 +1242,7 @@ const ResumosGrupo = () => {
                 </h3>
                 <p className="text-gray-700 dark:text-gray-300">
                   {(() => {
-                    const utcDate = new Date(selectedEnvio.data_envio + 'Z');
+                    const utcDate = new Date(selectedEnvio.data_envio);
                     const brasiliaDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
                     return format(brasiliaDate, 'dd/MM/yyyy HH:mm:ss');
                   })()}
