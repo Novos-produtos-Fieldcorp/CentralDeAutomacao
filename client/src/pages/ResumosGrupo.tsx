@@ -895,9 +895,14 @@ const ResumosGrupo = () => {
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                               {(() => {
                                 const timestampField = envio.created_at || envio.data_envio;
+                                console.log('Timestamp:', timestampField);
                                 const utcDate = parseISO(timestampField);
+                                console.log('UTC:', utcDate.toISOString());
                                 const brtDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
-                                return format(brtDate, 'dd/MM HH:mm');
+                                console.log('BRT:', brtDate.toISOString());
+                                const formatted = format(brtDate, 'dd/MM HH:mm');
+                                console.log('Formatted:', formatted);
+                                return formatted;
                               })()}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white max-w-[120px]">
