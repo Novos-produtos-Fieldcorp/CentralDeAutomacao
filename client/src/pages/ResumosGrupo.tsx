@@ -893,7 +893,12 @@ const ResumosGrupo = () => {
                         {allEnvios.map((envio) => (
                           <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
-                              {format(new Date(envio.data_envio), 'dd/MM HH:mm')}
+                              {(() => {
+                                const utcDate = new Date(envio.data_envio);
+                                // Subtrair 3 horas para converter UTC para Brasília (UTC-3)
+                                const brasiliaDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
+                                return format(brasiliaDate, 'dd/MM HH:mm');
+                              })()}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white max-w-[120px]">
                               <div className="truncate" title={envio.grupo?.nome_grupo || 'Grupo desconhecido'}>
@@ -1237,7 +1242,12 @@ const ResumosGrupo = () => {
                   Data e Hora do Envio
                 </h3>
                 <p className="text-gray-700 dark:text-gray-300">
-                  {format(new Date(selectedEnvio.data_envio), 'dd/MM/yyyy HH:mm:ss')}
+                  {(() => {
+                    const utcDate = new Date(selectedEnvio.data_envio);
+                    // Subtrair 3 horas para converter UTC para Brasília (UTC-3)
+                    const brasiliaDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
+                    return format(brasiliaDate, 'dd/MM/yyyy HH:mm:ss');
+                  })()}
                 </p>
               </div>
 
