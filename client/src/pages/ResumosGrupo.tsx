@@ -120,36 +120,36 @@ const ResumosGrupo = () => {
     try {
       setLoadingAllEnvios(true);
       
-      // Try to call our fix-rls edge function first
-      try {
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-rls`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-        });
-        if (response.ok) {
-          console.log('RLS fix applied successfully');
-        }
-      } catch (fixError) {
-        console.log('RLS fix not available, continuing...');
-      }
-      
-      const { data, error } = await supabase
-        .from('envio_resumo')
-        .select(`
-          *,
-          grupo:grupo_id (
-            nome_grupo
-          )
-        `)
-        .eq('company_id', companyId)
-        .order('data_envio', { ascending: false })
-        .limit(100);
+      // Try different approach: use raw SQL query to bypass RLS
+      const { data, error } = await supabase.rpc('get_envio_resumo_all', {
+        p_company_id: companyId
+      });
 
-      if (error) throw error;
-      setAllEnvios(data || []);
+      if (error) {
+        // Fallback to regular query if function doesn't exist
+        console.log('Using fallback query');
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('envio_resumo')
+          .select(`
+            *,
+            grupo:grupo_id (
+              nome_grupo
+            )
+          `)
+          .eq('company_id', companyId)
+          .order('data_envio', { ascending: false })
+          .limit(100);
+        
+        if (fallbackError) throw fallbackError;
+        setAllEnvios(fallbackData || []);
+      } else {
+        // Process the raw data from the SQL function
+        const processedData = (data || []).map((item: any) => ({
+          ...item,
+          grupo: item.grupo_nome ? { nome_grupo: item.grupo_nome } : null
+        }));
+        setAllEnvios(processedData);
+      }
     } catch (error) {
       console.error('Error fetching all envios:', error);
       toast.error('Erro ao carregar histórico de envios');
