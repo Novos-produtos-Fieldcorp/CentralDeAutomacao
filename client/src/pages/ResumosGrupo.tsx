@@ -895,14 +895,22 @@ const ResumosGrupo = () => {
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                               {(() => {
                                 const timestampField = envio.created_at || envio.data_envio;
-                                console.log('Timestamp:', timestampField);
                                 const utcDate = parseISO(timestampField);
-                                console.log('UTC:', utcDate.toISOString());
-                                const brtDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
-                                console.log('BRT:', brtDate.toISOString());
-                                const formatted = format(brtDate, 'dd/MM HH:mm');
-                                console.log('Formatted:', formatted);
-                                return formatted;
+                                
+                                // Extrair diretamente os valores de data/hora em UTC e ajustar manualmente
+                                const day = String(utcDate.getUTCDate()).padStart(2, '0');
+                                const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+                                let hours = utcDate.getUTCHours() - 3; // Converter para BRT
+                                
+                                // Tratar casos de mudança de dia
+                                if (hours < 0) {
+                                  hours += 24;
+                                }
+                                
+                                const minutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
+                                const hoursStr = String(hours).padStart(2, '0');
+                                
+                                return `${day}/${month} ${hoursStr}:${minutes}`;
                               })()}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white max-w-[120px]">
@@ -1250,8 +1258,22 @@ const ResumosGrupo = () => {
                   {(() => {
                     const timestampField = selectedEnvio.created_at || selectedEnvio.data_envio;
                     const utcDate = parseISO(timestampField);
-                    const brtDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
-                    return format(brtDate, 'dd/MM/yyyy HH:mm:ss');
+                    
+                    // Extrair valores UTC e converter manualmente para BRT
+                    const day = String(utcDate.getUTCDate()).padStart(2, '0');
+                    const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+                    const year = utcDate.getUTCFullYear();
+                    let hours = utcDate.getUTCHours() - 3; // Converter para BRT
+                    
+                    if (hours < 0) {
+                      hours += 24;
+                    }
+                    
+                    const minutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
+                    const seconds = String(utcDate.getUTCSeconds()).padStart(2, '0');
+                    const hoursStr = String(hours).padStart(2, '0');
+                    
+                    return `${day}/${month}/${year} ${hoursStr}:${minutes}:${seconds}`;
                   })()}
                 </p>
               </div>
