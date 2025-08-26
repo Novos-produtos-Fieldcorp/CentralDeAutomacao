@@ -121,6 +121,19 @@ const ResumosGrupo = () => {
       setLoadingAllEnvios(true);
       console.log('Fetching all envios for company_id:', companyId);
       
+      // First try a simple query to see all records
+      const { data: allData, error: allError } = await supabase
+        .from('envio_resumo')
+        .select('*')
+        .eq('company_id', companyId);
+      
+      console.log('Simple query - all records:', allData?.length || 0);
+      console.log('Simple query - status breakdown:', {
+        true: allData?.filter(r => r.status === true).length || 0,
+        false: allData?.filter(r => r.status === false).length || 0
+      });
+      
+      // Now try the original query with join
       const { data, error } = await supabase
         .from('envio_resumo')
         .select(`
@@ -138,11 +151,29 @@ const ResumosGrupo = () => {
         throw error;
       }
       
-      console.log('Raw data from envio_resumo:', data);
-      console.log('Number of records found:', data?.length || 0);
-      console.log('Records by status:', {
+      console.log('Query with join - records found:', data?.length || 0);
+      console.log('Query with join - status breakdown:', {
         true: data?.filter(r => r.status === true).length || 0,
         false: data?.filter(r => r.status === false).length || 0
+      });
+      
+      // Let's also try without any filters to see if RLS is the issue
+      const { data: noFilterData, error: noFilterError } = await supabase
+        .from('envio_resumo')
+        .select(`
+          *,
+          grupo:grupo_id (
+            nome_grupo
+          )
+        `)
+        .order('data_envio', { ascending: false })
+        .limit(200);
+        
+      console.log('No filter query - total records:', noFilterData?.length || 0);
+      console.log('No filter query - company breakdown:', {
+        company1: noFilterData?.filter(r => r.company_id === 1).length || 0,
+        company2: noFilterData?.filter(r => r.company_id === 2).length || 0,
+        others: noFilterData?.filter(r => r.company_id !== 1 && r.company_id !== 2).length || 0
       });
       
       setAllEnvios(data || []);
