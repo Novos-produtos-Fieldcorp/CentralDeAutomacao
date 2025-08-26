@@ -894,8 +894,16 @@ const ResumosGrupo = () => {
                           <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                               {(() => {
+                                // Debug: vamos ver o que está vindo do banco
+                                console.log('Raw data_envio:', envio.data_envio);
+                                
                                 const utcDate = parseISO(envio.data_envio);
+                                console.log('UTC Date:', utcDate.toISOString());
+                                
+                                // Se o horário UTC é 22:03 e queremos mostrar 19:03, subtraímos 3 horas
                                 const brtDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
+                                console.log('BRT Date:', brtDate.toISOString());
+                                
                                 return format(brtDate, 'dd/MM HH:mm');
                               })()}
                             </td>
