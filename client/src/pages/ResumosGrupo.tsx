@@ -119,21 +119,23 @@ const ResumosGrupo = () => {
   const fetchAllEnvios = async () => {
     try {
       setLoadingAllEnvios(true);
-      console.log('Fetching all envios for company_id:', companyId);
       
-      // First try a simple query to see all records
-      const { data: allData, error: allError } = await supabase
-        .from('envio_resumo')
-        .select('*')
-        .eq('company_id', companyId);
+      // Try to call our fix-rls edge function first
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-rls`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+        });
+        if (response.ok) {
+          console.log('RLS fix applied successfully');
+        }
+      } catch (fixError) {
+        console.log('RLS fix not available, continuing...');
+      }
       
-      console.log('Simple query - all records:', allData?.length || 0);
-      console.log('Simple query - status breakdown:', {
-        true: allData?.filter(r => r.status === true).length || 0,
-        false: allData?.filter(r => r.status === false).length || 0
-      });
-      
-      // Now try the original query with join
       const { data, error } = await supabase
         .from('envio_resumo')
         .select(`
@@ -146,36 +148,7 @@ const ResumosGrupo = () => {
         .order('data_envio', { ascending: false })
         .limit(100);
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-      
-      console.log('Query with join - records found:', data?.length || 0);
-      console.log('Query with join - status breakdown:', {
-        true: data?.filter(r => r.status === true).length || 0,
-        false: data?.filter(r => r.status === false).length || 0
-      });
-      
-      // Let's also try without any filters to see if RLS is the issue
-      const { data: noFilterData, error: noFilterError } = await supabase
-        .from('envio_resumo')
-        .select(`
-          *,
-          grupo:grupo_id (
-            nome_grupo
-          )
-        `)
-        .order('data_envio', { ascending: false })
-        .limit(200);
-        
-      console.log('No filter query - total records:', noFilterData?.length || 0);
-      console.log('No filter query - company breakdown:', {
-        company1: noFilterData?.filter(r => r.company_id === 1).length || 0,
-        company2: noFilterData?.filter(r => r.company_id === 2).length || 0,
-        others: noFilterData?.filter(r => r.company_id !== 1 && r.company_id !== 2).length || 0
-      });
-      
+      if (error) throw error;
       setAllEnvios(data || []);
     } catch (error) {
       console.error('Error fetching all envios:', error);
