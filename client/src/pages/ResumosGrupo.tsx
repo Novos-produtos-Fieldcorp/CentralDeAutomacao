@@ -27,6 +27,7 @@ interface EnvioResumo {
   data_envio: string;
   status: boolean;
   mensagem: string;
+  resumo_grupo?: string;
   grupo?: {
     nome_grupo: string;
   };
@@ -59,6 +60,8 @@ const ResumosGrupo = () => {
   const [sendingManualSummary, setSendingManualSummary] = useState<Record<number, boolean>>({});
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
   const [activeTab, setActiveTab] = useState<'groups' | 'history'>('groups');
+  const [selectedEnvio, setSelectedEnvio] = useState<EnvioResumo | null>(null);
+  const [isEnvioModalOpen, setIsEnvioModalOpen] = useState(false);
 
   useEffect(() => {
     fetchGrupos();
@@ -119,20 +122,37 @@ const ResumosGrupo = () => {
   const fetchAllEnvios = async () => {
     try {
       setLoadingAllEnvios(true);
-      const { data, error } = await supabase
-        .from('envio_resumo')
-        .select(`
-          *,
-          grupo:grupo_id (
-            nome_grupo
-          )
-        `)
-        .eq('company_id', companyId)
-        .order('data_envio', { ascending: false })
-        .limit(100);
+      
+      // Try different approach: use raw SQL query to bypass RLS
+      const { data, error } = await supabase.rpc('get_envio_resumo_all', {
+        p_company_id: companyId
+      });
 
-      if (error) throw error;
-      setAllEnvios(data || []);
+      if (error) {
+        // Fallback to regular query if function doesn't exist
+        console.log('Using fallback query');
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('envio_resumo')
+          .select(`
+            *,
+            grupo:grupo_id (
+              nome_grupo
+            )
+          `)
+          .eq('company_id', companyId)
+          .order('data_envio', { ascending: false })
+          .limit(100);
+        
+        if (fallbackError) throw fallbackError;
+        setAllEnvios(fallbackData || []);
+      } else {
+        // Process the raw data from the SQL function
+        const processedData = (data || []).map((item: any) => ({
+          ...item,
+          grupo: item.grupo_nome ? { nome_grupo: item.grupo_nome } : null
+        }));
+        setAllEnvios(processedData);
+      }
     } catch (error) {
       console.error('Error fetching all envios:', error);
       toast.error('Erro ao carregar histórico de envios');
@@ -849,50 +869,76 @@ const ResumosGrupo = () => {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                       <thead className="bg-gray-50 dark:bg-gray-800">
                         <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Data/Hora
                           </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Grupo
                           </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Status
                           </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Mensagem
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Resumo
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Ações
                           </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {allEnvios.map((envio) => (
                           <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                              {formatDateTime(envio.data_envio)}
+                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                              {(() => {
+                                const utcDate = new Date(envio.data_envio + 'Z');
+                                const brasiliaDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
+                                return format(brasiliaDate, 'dd/MM HH:mm');
+                              })()}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                              {envio.grupo?.nome_grupo || 'Grupo desconhecido'}
+                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white max-w-[120px]">
+                              <div className="truncate" title={envio.grupo?.nome_grupo || 'Grupo desconhecido'}>
+                                {envio.grupo?.nome_grupo || 'Desconhecido'}
+                              </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                envio.status 
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
-                                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-                              }`}>
-                                {envio.status ? (
-                                  <>
-                                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                                    Sucesso
-                                  </>
-                                ) : (
-                                  <>
-                                    <XCircle className="w-3.5 h-3.5 mr-1" />
-                                    Falha
-                                  </>
-                                )}
-                              </span>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              {envio.status ? (
+                                <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400" />
+                              ) : (
+                                <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
+                              )}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                              {envio.mensagem}
+                            <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 max-w-[150px]">
+                              <div className="truncate" title={envio.mensagem}>
+                                {envio.mensagem}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 max-w-[150px]">
+                              {envio.resumo_grupo ? (
+                                <div className="truncate" title={envio.resumo_grupo}>
+                                  {envio.resumo_grupo.length > 50 
+                                    ? `${envio.resumo_grupo.substring(0, 50)}...` 
+                                    : envio.resumo_grupo
+                                  }
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic">-</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              <button
+                                onClick={() => {
+                                  setSelectedEnvio(envio);
+                                  setIsEnvioModalOpen(true);
+                                }}
+                                className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-xs font-medium"
+                                title="Ver detalhes"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -1171,6 +1217,102 @@ const ResumosGrupo = () => {
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
                 Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Envio Details Modal */}
+      {isEnvioModalOpen && selectedEnvio && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <FileText className="text-blue-500" size={24} />
+                Detalhes do Envio
+              </h2>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Data e Hora */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-blue-500" />
+                  Data e Hora do Envio
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300">
+                  {(() => {
+                    const utcDate = new Date(selectedEnvio.data_envio + 'Z');
+                    const brasiliaDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
+                    return format(brasiliaDate, 'dd/MM/yyyy HH:mm:ss');
+                  })()}
+                </p>
+              </div>
+
+              {/* Grupo */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-green-500" />
+                  Grupo
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300">
+                  {selectedEnvio.grupo?.nome_grupo || 'Grupo desconhecido'}
+                </p>
+              </div>
+
+              {/* Status */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                  {selectedEnvio.status ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-red-500" />
+                  )}
+                  Status do Envio
+                </h3>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedEnvio.status 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' 
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                  }`}>
+                    {selectedEnvio.status ? 'Sucesso' : 'Falha'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Mensagem */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-orange-500" />
+                  Mensagem de Resposta
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                  {selectedEnvio.mensagem}
+                </p>
+              </div>
+
+              {/* Resumo Enviado */}
+              {selectedEnvio.resumo_grupo && (
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-purple-500" />
+                    Resumo Enviado
+                  </h3>
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-4 rounded-lg">
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
+                      {selectedEnvio.resumo_grupo}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setIsEnvioModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+              >
+                Fechar
               </button>
             </div>
           </div>
