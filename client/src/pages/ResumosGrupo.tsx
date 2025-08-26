@@ -893,7 +893,7 @@ const ResumosGrupo = () => {
                         {allEnvios.map((envio) => (
                           <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
-                              {format(parseISO(envio.data_envio), 'dd/MM HH:mm')}
+                              {format(new Date(envio.data_envio + 'Z'), 'dd/MM HH:mm')}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white max-w-[120px]">
                               <div className="truncate" title={envio.grupo?.nome_grupo || 'Grupo desconhecido'}>
@@ -1237,7 +1237,7 @@ const ResumosGrupo = () => {
                   Data e Hora do Envio
                 </h3>
                 <p className="text-gray-700 dark:text-gray-300">
-                  {formatDateTime(selectedEnvio.data_envio)}
+                  {format(new Date(selectedEnvio.data_envio + 'Z'), 'dd/MM/yyyy HH:mm:ss')}
                 </p>
               </div>
 
