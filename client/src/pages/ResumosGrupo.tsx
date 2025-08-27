@@ -1439,9 +1439,18 @@ const ResumosGrupo = () => {
                     <li>Configurações da caixa de entrada</li>
                   </ol>
                 </div>
-                <p>
-                  Localize o campo <strong>URL do webhook</strong>.
-                </p>
+                <div>
+                  <p className="mb-3">
+                    Localize o campo <strong>URL do webhook</strong>:
+                  </p>
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-3">
+                    <img 
+                      src="/attached_assets/WhatsApp Image 2025-08-27 at 09.23.59_1756297551444.jpeg"
+                      alt="Tela mostrando o campo URL do webhook"
+                      className="max-w-full h-auto rounded border"
+                    />
+                  </div>
+                </div>
                 <p>
                   Copie o link do webhook e cole no campo <strong>URL da caixa de entrada</strong>.
                 </p>
