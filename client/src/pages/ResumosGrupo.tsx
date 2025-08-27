@@ -162,6 +162,22 @@ const ResumosGrupo = () => {
   };
 
   const handleAddGrupo = async () => {
+    // Validar campos obrigatórios
+    if (!formData.nome_grupo.trim()) {
+      toast.error('Nome do grupo é obrigatório');
+      return;
+    }
+    
+    if (!formData.url_grupo.trim()) {
+      toast.error('URL do grupo é obrigatória');
+      return;
+    }
+    
+    if (!formData.horario) {
+      toast.error('Horário é obrigatório');
+      return;
+    }
+
     try {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
@@ -196,6 +212,22 @@ const ResumosGrupo = () => {
 
   const handleEditGrupo = async () => {
     if (!selectedGrupo) return;
+
+    // Validar campos obrigatórios
+    if (!formData.nome_grupo.trim()) {
+      toast.error('Nome do grupo é obrigatório');
+      return;
+    }
+    
+    if (!formData.url_grupo.trim()) {
+      toast.error('URL do grupo é obrigatória');
+      return;
+    }
+    
+    if (!formData.horario) {
+      toast.error('Horário é obrigatório');
+      return;
+    }
 
     try {
       // Convert Brasilia time to UTC for storage in the database
@@ -1077,7 +1109,12 @@ const ResumosGrupo = () => {
               </button>
               <button
                 onClick={handleAddGrupo}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500"
+                disabled={!formData.nome_grupo.trim() || !formData.url_grupo.trim() || !formData.horario}
+                className={`px-4 py-2 text-sm font-medium border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  !formData.nome_grupo.trim() || !formData.url_grupo.trim() || !formData.horario
+                    ? 'text-gray-400 bg-gray-300 cursor-not-allowed dark:bg-gray-600 dark:text-gray-500'
+                    : 'text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 dark:hover:bg-blue-500'
+                }`}
               >
                 Salvar
               </button>
@@ -1190,7 +1227,12 @@ const ResumosGrupo = () => {
               </button>
               <button
                 onClick={handleEditGrupo}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500"
+                disabled={!formData.nome_grupo.trim() || !formData.url_grupo.trim() || !formData.horario}
+                className={`px-4 py-2 text-sm font-medium border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  !formData.nome_grupo.trim() || !formData.url_grupo.trim() || !formData.horario
+                    ? 'text-gray-400 bg-gray-300 cursor-not-allowed dark:bg-gray-600 dark:text-gray-500'
+                    : 'text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 dark:hover:bg-blue-500'
+                }`}
               >
                 Salvar
               </button>
