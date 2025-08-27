@@ -318,12 +318,20 @@ const ResumosGrupo = () => {
       // Use the hardcoded token for authorization
       const authToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
       
+      // Use the correct Supabase URL for edge functions
+      const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+      const requestUrl = `${supabaseUrl}/functions/v1/manual-summary-trigger`;
+      
+      console.log('Making request to:', requestUrl);
+      console.log('Request payload:', { group_id: grupo.id, company_id: companyId });
+      
       // Call the manual-summary-trigger edge function
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-summary-trigger`, {
+      const response = await fetch(requestUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`,
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           group_id: grupo.id,
@@ -331,15 +339,35 @@ const ResumosGrupo = () => {
         })
       });
       
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      // Always read the response as text first to debug
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to trigger manual summary: ${response.status} - ${errorText}`);
+        console.error('Error response:', responseText);
+        throw new Error(`Failed to trigger manual summary: ${response.status} - ${responseText}`);
       }
       
-      const result = await response.json();
+      // Try to parse as JSON
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse JSON:', parseError);
+        console.error('Response text:', responseText);
+        throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`);
+      }
+      
       console.log('Manual summary result:', result);
       
-      toast.success('Resumo enviado com sucesso');
+      if (result.success) {
+        toast.success('Automação iniciada com sucesso');
+      } else {
+        throw new Error(result.error || 'Unknown error occurred');
+      }
       
       // Refresh the delivery history
       fetchEnvios(grupo.id);
