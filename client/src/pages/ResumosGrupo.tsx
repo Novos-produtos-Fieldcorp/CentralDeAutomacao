@@ -364,7 +364,7 @@ const ResumosGrupo = () => {
       console.log('Manual summary result:', result);
       
       if (result.success) {
-        toast.success('Resumo enviado com sucesso');
+        toast.success('Automação iniciada com sucesso');
       } else {
         throw new Error(result.error || 'Unknown error occurred');
       }
