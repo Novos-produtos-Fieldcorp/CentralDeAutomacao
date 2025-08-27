@@ -1039,7 +1039,7 @@ const ResumosGrupo = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  URL do Grupo *
+                  URL da Caixa de Entrada *
                 </label>
                 <input
                   type="url"
@@ -1161,7 +1161,7 @@ const ResumosGrupo = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  URL do Grupo *
+                  URL da Caixa de Entrada *
                 </label>
                 <input
                   type="url"
