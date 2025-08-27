@@ -6,10 +6,11 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, subHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TimeDebugModal from '../components/TimeDebugModal';
 import { convertBrasiliaToUTC, convertUTCToBrasilia } from '../utils/time';
+import Pagination from '../components/Pagination';
 
 interface GrupoResumo {
   id: number;
@@ -26,6 +27,7 @@ interface EnvioResumo {
   id: number;
   grupo_id: number;
   data_envio: string;
+  created_at?: string;
   status: boolean;
   mensagem: string;
   resumo_grupo?: string;
@@ -64,6 +66,11 @@ const ResumosGrupo = () => {
   const [activeTab, setActiveTab] = useState<'groups' | 'history'>('groups');
   const [selectedEnvio, setSelectedEnvio] = useState<EnvioResumo | null>(null);
   const [isEnvioModalOpen, setIsEnvioModalOpen] = useState(false);
+  const [dateFilter, setDateFilter] = useState({ from: '', to: '' });
+  const [filteredEnvios, setFilteredEnvios] = useState<EnvioResumo[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [paginatedEnvios, setPaginatedEnvios] = useState<EnvioResumo[]>([]);
 
   useEffect(() => {
     fetchGrupos();
@@ -74,6 +81,44 @@ const ResumosGrupo = () => {
       fetchAllEnvios();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    // Filter envios based on date range
+    if (!allEnvios.length) {
+      setFilteredEnvios([]);
+      return;
+    }
+
+    let filtered = [...allEnvios];
+
+    if (dateFilter.from) {
+      const fromDate = new Date(dateFilter.from + 'T00:00:00');
+      filtered = filtered.filter(envio => {
+        const timestamp = envio.created_at || envio.data_envio;
+        const envioDate = new Date(timestamp);
+        return envioDate >= fromDate;
+      });
+    }
+
+    if (dateFilter.to) {
+      const toDate = new Date(dateFilter.to + 'T23:59:59');
+      filtered = filtered.filter(envio => {
+        const timestamp = envio.created_at || envio.data_envio;
+        const envioDate = new Date(timestamp);
+        return envioDate <= toDate;
+      });
+    }
+
+    setFilteredEnvios(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [allEnvios, dateFilter]);
+
+  useEffect(() => {
+    // Paginate filtered envios
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    setPaginatedEnvios(filteredEnvios.slice(startIndex, endIndex));
+  }, [filteredEnvios, currentPage, pageSize]);
 
   const fetchGrupos = async () => {
     try {
@@ -922,111 +967,158 @@ const ResumosGrupo = () => {
                   Histórico de Envios
                 </h2>
                 
+                {/* Date Filter */}
+                <div className="mb-4 flex flex-wrap gap-4 items-center">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtrar por data:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600 dark:text-gray-400">De:</label>
+                    <input
+                      type="date"
+                      value={dateFilter.from}
+                      onChange={(e) => setDateFilter(prev => ({ ...prev, from: e.target.value }))}
+                      className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600 dark:text-gray-400">Até:</label>
+                    <input
+                      type="date"
+                      value={dateFilter.to}
+                      onChange={(e) => setDateFilter(prev => ({ ...prev, to: e.target.value }))}
+                      className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  {(dateFilter.from || dateFilter.to) && (
+                    <button
+                      onClick={() => setDateFilter({ from: '', to: '' })}
+                      className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
+                </div>
+                
                 {loadingAllEnvios ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
                   </div>
-                ) : allEnvios.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                      <thead className="bg-gray-50 dark:bg-gray-800">
-                        <tr>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Data/Hora
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Grupo
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Mensagem
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Resumo
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Ações
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {allEnvios.map((envio) => (
-                          <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
-                              {(() => {
-                                const timestampField = envio.created_at || envio.data_envio;
-                                const utcDate = parseISO(timestampField);
-                                
-                                // Extrair diretamente os valores de data/hora em UTC e ajustar manualmente
-                                const day = String(utcDate.getUTCDate()).padStart(2, '0');
-                                const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
-                                let hours = utcDate.getUTCHours() - 3; // Converter para BRT
-                                
-                                // Tratar casos de mudança de dia
-                                if (hours < 0) {
-                                  hours += 24;
-                                }
-                                
-                                const minutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
-                                const hoursStr = String(hours).padStart(2, '0');
-                                
-                                return `${day}/${month} ${hoursStr}:${minutes}`;
-                              })()}
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white max-w-[120px]">
-                              <div className="truncate" title={envio.grupo?.nome_grupo || 'Grupo desconhecido'}>
-                                {envio.grupo?.nome_grupo || 'Desconhecido'}
-                              </div>
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap">
-                              {envio.status ? (
-                                <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400" />
-                              ) : (
-                                <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
-                              )}
-                            </td>
-                            <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 max-w-[150px]">
-                              <div className="truncate" title={envio.mensagem}>
-                                {envio.mensagem}
-                              </div>
-                            </td>
-                            <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 max-w-[150px]">
-                              {envio.resumo_grupo ? (
-                                <div className="truncate" title={envio.resumo_grupo}>
-                                  {envio.resumo_grupo.length > 50 
-                                    ? `${envio.resumo_grupo.substring(0, 50)}...` 
-                                    : envio.resumo_grupo
-                                  }
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 italic">-</span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap">
-                              <button
-                                onClick={() => {
-                                  setSelectedEnvio(envio);
-                                  setIsEnvioModalOpen(true);
-                                }}
-                                className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-xs font-medium"
-                                title="Ver detalhes"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            </td>
+                ) : filteredEnvios.length > 0 ? (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-800">
+                          <tr>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Data/Hora
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Grupo
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Mensagem
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Resumo
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Ações
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                          {paginatedEnvios.map((envio) => (
+                            <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                              <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                                {(() => {
+                                  // Use created_at que já tem o timezone correto
+                                  const timestamp = envio.created_at || envio.data_envio;
+                                  const date = new Date(timestamp);
+                                  return format(date, 'dd/MM HH:mm', { locale: ptBR });
+                                })()}
+                              </td>
+                              <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white max-w-[120px]">
+                                <div className="truncate" title={envio.grupo?.nome_grupo || 'Grupo desconhecido'}>
+                                  {envio.grupo?.nome_grupo || 'Desconhecido'}
+                                </div>
+                              </td>
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                {envio.status ? (
+                                  <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400" />
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 max-w-[150px]">
+                                <div className="truncate" title={envio.mensagem}>
+                                  {envio.mensagem}
+                                </div>
+                              </td>
+                              <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 max-w-[150px]">
+                                {envio.resumo_grupo ? (
+                                  <div className="truncate" title={envio.resumo_grupo}>
+                                    {envio.resumo_grupo.length > 50 
+                                      ? `${envio.resumo_grupo.substring(0, 50)}...` 
+                                      : envio.resumo_grupo
+                                    }
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400 italic">-</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                <button
+                                  onClick={() => {
+                                    setSelectedEnvio(envio);
+                                    setIsEnvioModalOpen(true);
+                                  }}
+                                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-xs font-medium"
+                                  title="Ver detalhes"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    {/* Pagination */}
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={Math.ceil(filteredEnvios.length / pageSize)}
+                      totalItems={filteredEnvios.length}
+                      pageSize={pageSize}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(newSize) => {
+                        setPageSize(newSize);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </>
                 ) : (
                   <div className="text-center py-8">
                     <History className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500 dark:text-gray-400">
-                      Nenhum histórico de envio encontrado
+                      {(dateFilter.from || dateFilter.to) 
+                        ? 'Nenhum envio encontrado para o período selecionado' 
+                        : 'Nenhum histórico de envio encontrado'
+                      }
                     </p>
+                    {(dateFilter.from || dateFilter.to) && (
+                      <button
+                        onClick={() => setDateFilter({ from: '', to: '' })}
+                        className="mt-2 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+                      >
+                        Limpar filtros para ver todos os envios
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -1354,24 +1446,10 @@ const ResumosGrupo = () => {
                 </h3>
                 <p className="text-gray-700 dark:text-gray-300">
                   {(() => {
-                    const timestampField = selectedEnvio.created_at || selectedEnvio.data_envio;
-                    const utcDate = parseISO(timestampField);
-                    
-                    // Extrair valores UTC e converter manualmente para BRT
-                    const day = String(utcDate.getUTCDate()).padStart(2, '0');
-                    const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
-                    const year = utcDate.getUTCFullYear();
-                    let hours = utcDate.getUTCHours() - 3; // Converter para BRT
-                    
-                    if (hours < 0) {
-                      hours += 24;
-                    }
-                    
-                    const minutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
-                    const seconds = String(utcDate.getUTCSeconds()).padStart(2, '0');
-                    const hoursStr = String(hours).padStart(2, '0');
-                    
-                    return `${day}/${month}/${year} ${hoursStr}:${minutes}:${seconds}`;
+                    // Use created_at que já tem o timezone correto
+                    const timestamp = selectedEnvio.created_at || selectedEnvio.data_envio;
+                    const date = new Date(timestamp);
+                    return format(date, 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
                   })()}
                 </p>
               </div>
