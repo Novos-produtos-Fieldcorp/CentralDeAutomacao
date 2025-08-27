@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube } from 'lucide-react';
+import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube, Info } from 'lucide-react';
+import webhookImage from '@assets/WhatsApp Image 2025-08-27 at 09.23.59_1756297551444.jpeg';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -43,6 +44,7 @@ const ResumosGrupo = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [isTimeDebugModalOpen, setIsTimeDebugModalOpen] = useState(false);
   const [selectedGrupo, setSelectedGrupo] = useState<GrupoResumo | null>(null);
   const [formData, setFormData] = useState({
@@ -162,6 +164,22 @@ const ResumosGrupo = () => {
   };
 
   const handleAddGrupo = async () => {
+    // Validar campos obrigatórios
+    if (!formData.nome_grupo.trim()) {
+      toast.error('Nome do grupo é obrigatório');
+      return;
+    }
+    
+    if (!formData.url_grupo.trim()) {
+      toast.error('URL do grupo é obrigatória');
+      return;
+    }
+    
+    if (!formData.horario) {
+      toast.error('Horário é obrigatório');
+      return;
+    }
+
     try {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
@@ -196,6 +214,22 @@ const ResumosGrupo = () => {
 
   const handleEditGrupo = async () => {
     if (!selectedGrupo) return;
+
+    // Validar campos obrigatórios
+    if (!formData.nome_grupo.trim()) {
+      toast.error('Nome do grupo é obrigatório');
+      return;
+    }
+    
+    if (!formData.url_grupo.trim()) {
+      toast.error('URL do grupo é obrigatória');
+      return;
+    }
+    
+    if (!formData.horario) {
+      toast.error('Horário é obrigatório');
+      return;
+    }
 
     try {
       // Convert Brasilia time to UTC for storage in the database
@@ -984,8 +1018,17 @@ const ResumosGrupo = () => {
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nome do Grupo *
+                  <div className="relative group">
+                    <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                      <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-1.5 px-2 shadow-lg whitespace-nowrap">
+                        Nome deve ser igual ao WhatsApp
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                      </div>
+                    </div>
+                  </div>
                 </label>
                 <input
                   type="text"
@@ -997,9 +1040,18 @@ const ResumosGrupo = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  URL do Grupo *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    URL da Caixa de Entrada *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsHelpModalOpen(true)}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
+                  >
+                    Onde encontro a URL?
+                  </button>
+                </div>
                 <input
                   type="url"
                   value={formData.url_grupo}
@@ -1097,8 +1149,17 @@ const ResumosGrupo = () => {
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nome do Grupo *
+                  <div className="relative group">
+                    <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                      <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-1.5 px-2 shadow-lg whitespace-nowrap">
+                        Nome deve ser igual ao WhatsApp
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                      </div>
+                    </div>
+                  </div>
                 </label>
                 <input
                   type="text"
@@ -1110,9 +1171,18 @@ const ResumosGrupo = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  URL do Grupo *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    URL da Caixa de Entrada *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsHelpModalOpen(true)}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
+                  >
+                    Onde encontro a URL?
+                  </button>
+                </div>
                 <input
                   type="url"
                   value={formData.url_grupo}
@@ -1342,6 +1412,57 @@ const ResumosGrupo = () => {
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
               >
                 Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Help Modal */}
+      {isHelpModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Como consigo a URL da caixa de entrada?
+              </h2>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                <p>
+                  Certifique-se de que o número de telefone conectado ao WiseApp está no grupo que será resumido.
+                </p>
+                <div>
+                  <p className="mb-2">Acesse as configurações da caixa de entrada:</p>
+                  <ol className="list-decimal list-inside ml-4 space-y-1">
+                    <li>Vá para Configurações</li>
+                    <li>Caixa de entrada</li>
+                    <li>Configurações da caixa de entrada</li>
+                  </ol>
+                </div>
+                <div>
+                  <p className="mb-3">
+                    Localize o campo <strong>URL do webhook</strong>:
+                  </p>
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-3">
+                    <img 
+                      src={webhookImage}
+                      alt="Tela mostrando o campo URL do webhook"
+                      className="max-w-full h-auto rounded border"
+                    />
+                  </div>
+                </div>
+                <p>
+                  Copie o link do webhook e cole no campo <strong>URL da caixa de entrada</strong>.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setIsHelpModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500"
+              >
+                Entendido
               </button>
             </div>
           </div>
