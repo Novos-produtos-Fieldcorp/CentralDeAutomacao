@@ -64,6 +64,8 @@ const ResumosGrupo = () => {
   const [activeTab, setActiveTab] = useState<'groups' | 'history'>('groups');
   const [selectedEnvio, setSelectedEnvio] = useState<EnvioResumo | null>(null);
   const [isEnvioModalOpen, setIsEnvioModalOpen] = useState(false);
+  const [dateFilter, setDateFilter] = useState({ from: '', to: '' });
+  const [filteredEnvios, setFilteredEnvios] = useState<EnvioResumo[]>([]);
 
   useEffect(() => {
     fetchGrupos();
@@ -74,6 +76,34 @@ const ResumosGrupo = () => {
       fetchAllEnvios();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    // Filter envios based on date range
+    if (!allEnvios.length) {
+      setFilteredEnvios([]);
+      return;
+    }
+
+    let filtered = [...allEnvios];
+
+    if (dateFilter.from) {
+      const fromDate = new Date(dateFilter.from + 'T00:00:00');
+      filtered = filtered.filter(envio => {
+        const envioDate = new Date(envio.created_at || envio.data_envio);
+        return envioDate >= fromDate;
+      });
+    }
+
+    if (dateFilter.to) {
+      const toDate = new Date(dateFilter.to + 'T23:59:59');
+      filtered = filtered.filter(envio => {
+        const envioDate = new Date(envio.created_at || envio.data_envio);
+        return envioDate <= toDate;
+      });
+    }
+
+    setFilteredEnvios(filtered);
+  }, [allEnvios, dateFilter]);
 
   const fetchGrupos = async () => {
     try {
@@ -922,11 +952,45 @@ const ResumosGrupo = () => {
                   Histórico de Envios
                 </h2>
                 
+                {/* Date Filter */}
+                <div className="mb-4 flex flex-wrap gap-4 items-center">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtrar por data:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600 dark:text-gray-400">De:</label>
+                    <input
+                      type="date"
+                      value={dateFilter.from}
+                      onChange={(e) => setDateFilter(prev => ({ ...prev, from: e.target.value }))}
+                      className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600 dark:text-gray-400">Até:</label>
+                    <input
+                      type="date"
+                      value={dateFilter.to}
+                      onChange={(e) => setDateFilter(prev => ({ ...prev, to: e.target.value }))}
+                      className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  {(dateFilter.from || dateFilter.to) && (
+                    <button
+                      onClick={() => setDateFilter({ from: '', to: '' })}
+                      className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
+                </div>
+                
                 {loadingAllEnvios ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
                   </div>
-                ) : allEnvios.length > 0 ? (
+                ) : filteredEnvios.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                       <thead className="bg-gray-50 dark:bg-gray-800">
@@ -952,7 +1016,7 @@ const ResumosGrupo = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {allEnvios.map((envio) => (
+                        {filteredEnvios.map((envio) => (
                           <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                               {(() => {
@@ -1025,8 +1089,19 @@ const ResumosGrupo = () => {
                   <div className="text-center py-8">
                     <History className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500 dark:text-gray-400">
-                      Nenhum histórico de envio encontrado
+                      {(dateFilter.from || dateFilter.to) 
+                        ? 'Nenhum envio encontrado para o período selecionado' 
+                        : 'Nenhum histórico de envio encontrado'
+                      }
                     </p>
+                    {(dateFilter.from || dateFilter.to) && (
+                      <button
+                        onClick={() => setDateFilter({ from: '', to: '' })}
+                        className="mt-2 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+                      >
+                        Limpar filtros para ver todos os envios
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
