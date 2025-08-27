@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube } from 'lucide-react';
+import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube, Info } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -1016,8 +1016,17 @@ const ResumosGrupo = () => {
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nome do Grupo *
+                  <div className="relative group">
+                    <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
+                      <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-2 px-3 whitespace-nowrap shadow-lg">
+                        O nome do grupo precisa ser exatamente como está no whatsapp
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                      </div>
+                    </div>
+                  </div>
                 </label>
                 <input
                   type="text"
@@ -1129,8 +1138,17 @@ const ResumosGrupo = () => {
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nome do Grupo *
+                  <div className="relative group">
+                    <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
+                      <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-2 px-3 whitespace-nowrap shadow-lg">
+                        O nome do grupo precisa ser exatamente como está no whatsapp
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                      </div>
+                    </div>
+                  </div>
                 </label>
                 <input
                   type="text"
