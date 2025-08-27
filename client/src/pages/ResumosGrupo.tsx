@@ -27,6 +27,7 @@ interface EnvioResumo {
   id: number;
   grupo_id: number;
   data_envio: string;
+  created_at?: string;
   status: boolean;
   mensagem: string;
   resumo_grupo?: string;
@@ -93,7 +94,8 @@ const ResumosGrupo = () => {
     if (dateFilter.from) {
       const fromDate = new Date(dateFilter.from + 'T00:00:00');
       filtered = filtered.filter(envio => {
-        const envioDate = new Date(envio.data_envio);
+        const timestamp = envio.created_at || envio.data_envio;
+        const envioDate = new Date(timestamp);
         return envioDate >= fromDate;
       });
     }
@@ -101,7 +103,8 @@ const ResumosGrupo = () => {
     if (dateFilter.to) {
       const toDate = new Date(dateFilter.to + 'T23:59:59');
       filtered = filtered.filter(envio => {
-        const envioDate = new Date(envio.data_envio);
+        const timestamp = envio.created_at || envio.data_envio;
+        const envioDate = new Date(timestamp);
         return envioDate <= toDate;
       });
     }
@@ -184,7 +187,7 @@ const ResumosGrupo = () => {
             )
           `)
           .eq('company_id', companyId)
-          .order('data_envio', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(100);
         
         if (fallbackError) throw fallbackError;
@@ -1033,10 +1036,10 @@ const ResumosGrupo = () => {
                             <tr key={envio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                               <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                                 {(() => {
-                                  const utcDate = parseISO(envio.data_envio);
-                                  // Subtrair 3 horas para converter UTC para Brasília
-                                  const brasiliaDate = new Date(utcDate.getTime() - (3 * 60 * 60 * 1000));
-                                  return format(brasiliaDate, 'dd/MM HH:mm', { locale: ptBR });
+                                  // Use created_at que já tem o timezone correto
+                                  const timestamp = envio.created_at || envio.data_envio;
+                                  const date = new Date(timestamp);
+                                  return format(date, 'dd/MM HH:mm', { locale: ptBR });
                                 })()}
                               </td>
                               <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white max-w-[120px]">
@@ -1443,10 +1446,10 @@ const ResumosGrupo = () => {
                 </h3>
                 <p className="text-gray-700 dark:text-gray-300">
                   {(() => {
-                    const utcDate = parseISO(selectedEnvio.data_envio);
-                    // Subtrair 3 horas para converter UTC para Brasília
-                    const brasiliaDate = new Date(utcDate.getTime() - (3 * 60 * 60 * 1000));
-                    return format(brasiliaDate, 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
+                    // Use created_at que já tem o timezone correto
+                    const timestamp = selectedEnvio.created_at || selectedEnvio.data_envio;
+                    const date = new Date(timestamp);
+                    return format(date, 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
                   })()}
                 </p>
               </div>
