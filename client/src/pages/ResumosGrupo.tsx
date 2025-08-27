@@ -1429,13 +1429,21 @@ const ResumosGrupo = () => {
             <div className="p-6">
               <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                 <p>
-                  Para isso, você deve ter certeza que o número de telefone que está conectado no WiseApp esteja no grupo que será feito o resumo.
+                  Certifique-se de que o número de telefone conectado ao WiseApp está no grupo que será resumido.
+                </p>
+                <div>
+                  <p className="mb-2">Acesse as configurações da caixa de entrada:</p>
+                  <ol className="list-decimal list-inside ml-4 space-y-1">
+                    <li>Vá para Configurações</li>
+                    <li>Caixa de entrada</li>
+                    <li>Configurações da caixa de entrada</li>
+                  </ol>
+                </div>
+                <p>
+                  Localize o campo <strong>URL do webhook</strong>.
                 </p>
                 <p>
-                  Após isso, vá para as configurações da caixa de entrada e você verá o campo: <strong>URL do webhook</strong>.
-                </p>
-                <p>
-                  Copie e cole no campo <strong>URL da caixa de entrada</strong>.
+                  Copie o link do webhook e cole no campo <strong>URL da caixa de entrada</strong>.
                 </p>
               </div>
             </div>
