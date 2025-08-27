@@ -52,8 +52,8 @@ Deno.serve(async (req) => {
       const errorMessage = `Error fetching group: ${error.message}`;
       console.error(errorMessage);
       
-      // Record the error in the database
-      await recordDelivery(group_id, company_id, false, errorMessage);
+      // Record the error in the database - DISABLED per user request
+      // await recordDelivery(group_id, company_id, false, errorMessage);
       
       throw new Error(errorMessage);
     }
@@ -62,8 +62,8 @@ Deno.serve(async (req) => {
       const errorMessage = `Group with ID ${group_id} not found`;
       console.error(errorMessage);
       
-      // Record the error in the database
-      await recordDelivery(group_id, company_id, false, errorMessage);
+      // Record the error in the database - DISABLED per user request
+      // await recordDelivery(group_id, company_id, false, errorMessage);
       
       throw new Error(errorMessage);
     }
@@ -72,8 +72,8 @@ Deno.serve(async (req) => {
       const errorMessage = `Group with ID ${group_id} is inactive`;
       console.error(errorMessage);
       
-      // Record the error in the database
-      await recordDelivery(group_id, company_id, false, errorMessage);
+      // Record the error in the database - DISABLED per user request
+      // await recordDelivery(group_id, company_id, false, errorMessage);
       
       throw new Error(errorMessage);
     }
@@ -105,8 +105,8 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to send webhook: ${response.status} - ${errorText}`);
       }
       
-      // Record successful delivery
-      await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso');
+      // Record successful delivery - DISABLED per user request
+      // await recordDelivery(grupo.id, grupo.company_id, true, 'Resumo enviado com sucesso');
       
       return new Response(
         JSON.stringify({
@@ -126,23 +126,23 @@ Deno.serve(async (req) => {
       const errorMessage = `Error sending webhook: ${webhookError.message}`;
       console.error(errorMessage);
       
-      // Record the webhook error in the database
-      await recordDelivery(grupo.id, grupo.company_id, false, errorMessage);
+      // Record the webhook error in the database - DISABLED per user request
+      // await recordDelivery(grupo.id, grupo.company_id, false, errorMessage);
       
       throw new Error(errorMessage);
     }
   } catch (error) {
     console.error('Error in group summary trigger:', error);
     
-    // If we have a group_id in the request, record the failure
-    try {
-      const { group_id, company_id } = await req.json();
-      if (group_id && company_id) {
-        await recordDelivery(group_id, company_id, false, error.message);
-      }
-    } catch (recordError) {
-      console.error('Error recording delivery failure:', recordError);
-    }
+    // If we have a group_id in the request, record the failure - DISABLED per user request
+    // try {
+    //   const { group_id, company_id } = await req.json();
+    //   if (group_id && company_id) {
+    //     await recordDelivery(group_id, company_id, false, error.message);
+    //   }
+    // } catch (recordError) {
+    //   console.error('Error recording delivery failure:', recordError);
+    // }
     
     return new Response(
       JSON.stringify({
