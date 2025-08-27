@@ -1020,10 +1020,10 @@ const ResumosGrupo = () => {
                   Nome do Grupo *
                   <div className="relative group">
                     <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
-                    <div className="absolute top-full left-0 mt-1 hidden group-hover:block z-50">
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-50">
                       <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-2 px-3 shadow-lg max-w-xs">
                         O nome do grupo precisa ser exatamente como está no whatsapp
-                        <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900 dark:border-b-gray-700"></div>
+                        <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
                       </div>
                     </div>
                   </div>
@@ -1142,10 +1142,10 @@ const ResumosGrupo = () => {
                   Nome do Grupo *
                   <div className="relative group">
                     <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
-                    <div className="absolute top-full left-0 mt-1 hidden group-hover:block z-50">
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-50">
                       <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-2 px-3 shadow-lg max-w-xs">
                         O nome do grupo precisa ser exatamente como está no whatsapp
-                        <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900 dark:border-b-gray-700"></div>
+                        <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
                       </div>
                     </div>
                   </div>
