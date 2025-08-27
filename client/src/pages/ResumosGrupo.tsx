@@ -1020,10 +1020,10 @@ const ResumosGrupo = () => {
                   Nome do Grupo *
                   <div className="relative group">
                     <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
-                    <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-50">
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
                       <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-1.5 px-2 shadow-lg whitespace-nowrap">
                         Nome deve ser igual ao WhatsApp
-                        <div className="absolute top-full right-2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
                       </div>
                     </div>
                   </div>
@@ -1142,10 +1142,10 @@ const ResumosGrupo = () => {
                   Nome do Grupo *
                   <div className="relative group">
                     <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
-                    <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-50">
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
                       <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-1.5 px-2 shadow-lg whitespace-nowrap">
                         Nome deve ser igual ao WhatsApp
-                        <div className="absolute top-full right-2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
                       </div>
                     </div>
                   </div>
