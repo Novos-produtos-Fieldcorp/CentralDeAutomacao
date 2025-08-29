@@ -8,12 +8,14 @@ import toast from "react-hot-toast";
 interface TagFormData {
   nome: string;
   cor: string;
+  limite_max_associados?: number;
 }
 
 interface Tag {
   id: number;
   nome: string;
   cor: string;
+  limite_max_associados?: number;
   company_id: number;
   created_at: string;
   updated_at: string;
@@ -29,6 +31,7 @@ export function TagManager({ companyId }: TagManagerProps) {
   const [formData, setFormData] = useState<TagFormData>({
     nome: "",
     cor: "#3B82F6",
+    limite_max_associados: undefined,
   });
   const [isSyncingWiseApp, setIsSyncingWiseApp] = useState(false);
   const queryClient = useQueryClient();
@@ -107,7 +110,7 @@ export function TagManager({ companyId }: TagManagerProps) {
   });
 
   const resetForm = () => {
-    setFormData({ nome: "", cor: "#3B82F6" });
+    setFormData({ nome: "", cor: "#3B82F6", limite_max_associados: undefined });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -126,7 +129,11 @@ export function TagManager({ companyId }: TagManagerProps) {
 
   const handleEdit = (tag: Tag) => {
     setEditingTag(tag);
-    setFormData({ nome: tag.nome, cor: tag.cor });
+    setFormData({ 
+      nome: tag.nome, 
+      cor: tag.cor, 
+      limite_max_associados: tag.limite_max_associados || undefined 
+    });
     setIsModalOpen(true);
   };
 
@@ -269,6 +276,26 @@ export function TagManager({ companyId }: TagManagerProps) {
                     className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Limite Máximo de Associados
+                </label>
+                <input
+                  type="number"
+                  value={formData.limite_max_associados || ''}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    limite_max_associados: e.target.value ? parseInt(e.target.value) : undefined 
+                  })}
+                  placeholder="Ex: 10 (deixe vazio para ilimitado)"
+                  min="1"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Deixe vazio para permitir associados ilimitados
+                </p>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">

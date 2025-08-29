@@ -55,6 +55,7 @@ export const tags = pgTable("tags", {
   id: serial("id").primaryKey(),
   nome: text("nome").notNull(),
   cor: text("cor").default("#3B82F6"), // Default blue color
+  limite_max_associados: integer("limite_max_associados"), // Maximum associates limit
   company_id: integer("company_id").references(() => company.company_id),
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
