@@ -1385,6 +1385,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota específica para buscar labels do WiseApp
+  app.get("/api/wiseapp/:companyId/labels", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      console.log(`Fetching WiseApp labels for company ${companyId}`);
+      
+      // Buscar token da empresa
+      const token = await storage.getWiseappToken(parseInt(companyId));
+      if (!token) {
+        return res.status(401).json({ 
+          error: "Token WiseApp não configurado para esta empresa" 
+        });
+      }
+
+      // Buscar account_id da empresa
+      const company = await storage.getCompanyById(parseInt(companyId));
+      if (!company?.id_conta_wiseapp) {
+        return res.status(400).json({ 
+          error: "Account ID não configurado para esta empresa" 
+        });
+      }
+
+      const account_id = company.id_conta_wiseapp;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`;
+      
+      console.log(`Fetching labels from: ${wiseAppUrl}`);
+
+      const response = await fetch(wiseAppUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`WiseApp API responded with ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Transformar formato dos labels do WiseApp para nosso formato
+      const labels = data.payload?.map((label: any) => ({
+        id: label.id,
+        name: label.title,
+        color: label.color,
+        description: label.description
+      })) || [];
+
+      res.json(labels);
+
+    } catch (error) {
+      console.error("Erro ao buscar labels do WiseApp:", error);
+      res.status(500).json({
+        error: "Erro ao buscar labels do WiseApp",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
   app.post("/api/wiseapp/validate-config", async (req, res) => {
     try {
       const companyId = req.headers['company-id'] || '1';

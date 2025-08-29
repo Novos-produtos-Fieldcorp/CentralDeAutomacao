@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Edit, X, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
-// Note: Importing WiseApp service for tag synchronization
-// import { getWiseAppService } from "../../../shared/wiseAppService";
+import { useAuth } from "@/context/AuthContext";
 
 interface TagFormData {
   nome: string;
@@ -35,6 +34,7 @@ export function TagManager({ companyId }: TagManagerProps) {
   });
   const [isSyncingWiseApp, setIsSyncingWiseApp] = useState(false);
   const queryClient = useQueryClient();
+  const { accountId } = useAuth();
 
   // Query para buscar tags
   const { data: tags = [], isLoading } = useQuery<Tag[]>({
@@ -155,13 +155,63 @@ export function TagManager({ companyId }: TagManagerProps) {
     
     setIsSyncingWiseApp(true);
     try {
-      // Implementação de sincronização será feita em versão futura
-      toast('Funcionalidade de sincronização com WiseApp em desenvolvimento.', {
-        icon: 'ℹ️'
-      });
+      if (!accountId) {
+        toast.error('ID da conta não encontrado');
+        return;
+      }
+
+      // Buscar tags do WiseApp
+      const response = await fetch(`/api/wiseapp/${companyId}/labels`);
+      if (!response.ok) {
+        throw new Error('Erro ao buscar tags do WiseApp');
+      }
+
+      const wiseAppTags = await response.json();
       
-      // Simulação de sucesso por enquanto
-      queryClient.invalidateQueries({ queryKey: ['/api/tags', companyId] });
+      if (!wiseAppTags || wiseAppTags.length === 0) {
+        toast('Nenhuma tag encontrada no WiseApp.', {
+          icon: 'ℹ️'
+        });
+        return;
+      }
+
+      // Sincronizar tags locais
+      let synced = 0;
+      for (const wiseTag of wiseAppTags) {
+        try {
+          // Verificar se a tag já existe pelo nome
+          const existingTagResponse = await fetch(`/api/tags?company_id=${companyId}&nome=${encodeURIComponent(wiseTag.name)}`);
+          const existingTags = await existingTagResponse.json();
+          
+          if (existingTags.length === 0) {
+            // Criar nova tag
+            const createResponse = await fetch('/api/tags', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                nome: wiseTag.name,
+                cor: wiseTag.color || '#3B82F6',
+                company_id: companyId,
+              }),
+            });
+            
+            if (createResponse.ok) {
+              synced++;
+            }
+          }
+        } catch (error) {
+          console.error(`Erro ao sincronizar tag ${wiseTag.name}:`, error);
+        }
+      }
+
+      if (synced > 0) {
+        toast.success(`${synced} tag(s) sincronizada(s) do WiseApp!`);
+        queryClient.invalidateQueries({ queryKey: ['/api/tags', companyId] });
+      } else {
+        toast('Todas as tags já estavam sincronizadas.', {
+          icon: 'ℹ️'
+        });
+      }
     } catch (error) {
       console.error('Erro ao sincronizar tags do WiseApp:', error);
       toast.error('Erro ao sincronizar tags do WiseApp');
