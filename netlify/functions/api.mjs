@@ -36,7 +36,7 @@ export const handler = async (event, context) => {
     const body = event.body ? JSON.parse(event.body) : null;
     const queryParams = event.queryStringParameters || {};
 
-    console.log('Netlify Function - Path:', path, 'Method:', method);
+    console.log('Netlify Function - Path:', path, 'Method:', method, 'QueryParams:', queryParams);
 
     // Rota específica para inboxes com validação de company_id e token
     if (path.match(/^\/chatwoot\/inboxes\/(\d+)$/)) {
@@ -859,22 +859,44 @@ export const handler = async (event, context) => {
 
     // Rota GET /tags para buscar tags por company_id
     if (path === '/tags' && method === 'GET') {
+      console.log('=== TAGS ROUTE DEBUG START ===');
+      console.log('Raw queryParams:', queryParams);
+      
       let companyId = queryParams.company_id;
       const accountId = queryParams.account_id;
       
+      console.log('Initial values - companyId:', companyId, 'accountId:', accountId);
+      
       // Se não tem company_id mas tem account_id, fazer o mapeamento
       if (!companyId && accountId) {
-        const { data: companies } = await supabase
-          .from('company')
-          .select('company_id')
-          .eq('id_conta_wiseapp', accountId);
-        
-        if (companies && companies.length > 0) {
-          companyId = companies[0].company_id;
+        console.log('Mapping account_id to company_id...');
+        try {
+          const { data: companies, error: companyError } = await supabase
+            .from('company')
+            .select('company_id')
+            .eq('id_conta_wiseapp', accountId);
+          
+          console.log('Company mapping result:', { data: companies, error: companyError });
+          
+          if (companies && companies.length > 0) {
+            companyId = companies[0].company_id;
+            console.log('Mapped companyId:', companyId);
+          }
+        } catch (mappingError) {
+          console.error('Error mapping account_id to company_id:', mappingError);
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+              error: "Erro ao mapear account_id para company_id",
+              details: mappingError.message 
+            })
+          };
         }
       }
       
       if (!companyId) {
+        console.log('No companyId found, returning 400');
         return {
           statusCode: 400,
           headers,
@@ -882,7 +904,7 @@ export const handler = async (event, context) => {
         };
       }
       
-      console.log(`Netlify: Fetching tags for company_id: ${companyId}, account_id: ${accountId}`);
+      console.log(`Final companyId: ${companyId}`);
       
       try {
         console.log('Executing Supabase query for tags...');
@@ -892,19 +914,27 @@ export const handler = async (event, context) => {
           .eq('company_id', parseInt(companyId))
           .order('nome');
         
-        console.log('Supabase tags query result:', { data: tags, error });
+        console.log('Supabase tags query result:', { 
+          dataLength: tags?.length, 
+          error: error,
+          firstTag: tags?.[0] 
+        });
         
         if (error) {
-          console.error('Error fetching tags:', error);
+          console.error('Supabase error details:', error);
           return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
-              error: "Erro interno do servidor",
-              details: error.message 
+              error: "Erro na consulta Supabase",
+              details: error.message,
+              code: error.code 
             })
           };
         }
+        
+        console.log('Returning success with', tags?.length || 0, 'tags');
+        console.log('=== TAGS ROUTE DEBUG END ===');
         
         return {
           statusCode: 200,
@@ -913,13 +943,14 @@ export const handler = async (event, context) => {
         };
         
       } catch (error) {
-        console.error('Error in tags route:', error);
+        console.error('Critical error in tags route:', error);
         console.error('Error stack:', error.stack);
+        console.log('=== TAGS ROUTE DEBUG END (ERROR) ===');
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({ 
-            error: "Erro interno do servidor",
+            error: "Erro crítico",
             details: error instanceof Error ? error.message : "Erro desconhecido",
             stack: error.stack
           })
