@@ -1,22 +1,42 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Configuração do Supabase
+// Configuração do Supabase - Debug version
+console.log('🔧 NETLIFY INIT: Starting Supabase initialization...');
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
 
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  db: { schema: "public" },
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false,
-  },
-  global: {
-    headers: {
-      Authorization: `Bearer ${supabaseKey}`,
-    },
-  },
+console.log('🔧 NETLIFY INIT: Supabase config:', {
+  url: supabaseUrl,
+  hasKey: !!supabaseKey,
+  keyLength: supabaseKey?.length,
+  env: {
+    NODE_ENV: process.env.NODE_ENV,
+    NETLIFY: process.env.NETLIFY,
+    CONTEXT: process.env.CONTEXT
+  }
 });
+
+let supabase;
+try {
+  console.log('🔧 NETLIFY INIT: Creating Supabase client...');
+  supabase = createClient(supabaseUrl, supabaseKey, {
+    db: { schema: "public" },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+    global: {
+      headers: {
+        Authorization: `Bearer ${supabaseKey}`,
+      },
+    },
+  });
+  console.log('✅ NETLIFY INIT: Supabase client created successfully');
+} catch (error) {
+  console.error('❌ NETLIFY INIT: Failed to create Supabase client:', error);
+  throw error;
+}
 
 export const handler = async (event, context) => {
   const headers = {
@@ -48,6 +68,50 @@ export const handler = async (event, context) => {
       NODE_ENV: process.env.NODE_ENV
     });
     console.log('=== NETLIFY FUNCTION DEBUG END ===');
+
+    // Rota de teste simples para verificar se a função está funcionando
+    if (path === '/test' && method === 'GET') {
+      console.log('🧪 NETLIFY TEST: Route accessed successfully');
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ 
+          message: "Netlify function is working!",
+          timestamp: new Date().toISOString(),
+          path: path,
+          method: method,
+          queryParams: queryParams
+        })
+      };
+    }
+
+    // Rota de teste sem Supabase para verificar se o problema é com o banco
+    if (path === '/tags-simple' && method === 'GET') {
+      console.log('🏷️  NETLIFY TAGS-SIMPLE: Route accessed');
+      
+      const companyId = queryParams.company_id;
+      
+      if (!companyId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: "company_id é obrigatório" })
+        };
+      }
+      
+      // Retornar dados mock sem usar Supabase
+      const mockTags = [
+        { id: 1, nome: "Tag Test 1", cor: "#FF0000", company_id: parseInt(companyId) },
+        { id: 2, nome: "Tag Test 2", cor: "#00FF00", company_id: parseInt(companyId) }
+      ];
+      
+      console.log('✅ NETLIFY TAGS-SIMPLE: Returning mock tags');
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(mockTags)
+      };
+    }
 
     // Rota GET /tags para buscar tags por company_id - Implementação simplificada
     if (path === '/tags' && method === 'GET') {
