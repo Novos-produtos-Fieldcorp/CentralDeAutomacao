@@ -4,7 +4,6 @@ import { Plus, Trash2, Edit, X, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
-import { createApiUrl } from "@/lib/api-config";
 
 interface TagFormData {
   nome: string;
@@ -43,7 +42,7 @@ export function TagManager({ companyId }: TagManagerProps) {
   const { data: tags = [], isLoading } = useQuery<Tag[]>({
     queryKey: ['/api/tags', companyId],
     queryFn: async () => {
-      const response = await fetch(createApiUrl(`tags?company_id=${companyId}`));
+      const response = await fetch(`/api/tags?company_id=${companyId}`);
       if (!response.ok) throw new Error('Erro ao buscar tags');
       return response.json();
     },
@@ -52,7 +51,7 @@ export function TagManager({ companyId }: TagManagerProps) {
   // Mutation para criar tag
   const createTagMutation = useMutation({
     mutationFn: async (data: TagFormData) => {
-      const response = await fetch(createApiUrl('tags'), {
+      const response = await fetch('/api/tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, company_id: companyId }),
@@ -74,7 +73,7 @@ export function TagManager({ companyId }: TagManagerProps) {
   // Mutation para atualizar tag
   const updateTagMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: TagFormData }) => {
-      const response = await fetch(createApiUrl(`tags/${id}`), {
+      const response = await fetch(`/api/tags/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -97,7 +96,7 @@ export function TagManager({ companyId }: TagManagerProps) {
   // Mutation para deletar tag
   const deleteTagMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(createApiUrl(`tags/${id}`), {
+      const response = await fetch(`/api/tags/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Erro ao deletar tag');
@@ -170,7 +169,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       }
 
       // Buscar tags do WiseApp
-      const response = await fetch(createApiUrl(`wiseapp/${companyId}/labels`), {
+      const response = await fetch(`/api/wiseapp/${companyId}/labels`, {
         headers: {
           'wiseapp-token': wiseAppToken,
           'wiseapp-account-id': accountId
@@ -191,7 +190,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       }
 
       // Buscar tags existentes
-      const existingTagsResponse = await fetch(createApiUrl(`tags?company_id=${companyId}`));
+      const existingTagsResponse = await fetch(`/api/tags?company_id=${companyId}`);
       const existingTags = await existingTagsResponse.json();
       const existingTagNames = new Set(existingTags.map((tag: Tag) => tag.nome.toLowerCase()));
 
@@ -202,7 +201,7 @@ export function TagManager({ companyId }: TagManagerProps) {
           // Verificar se a tag já existe pelo nome (case-insensitive)
           if (!existingTagNames.has(wiseTag.name.toLowerCase())) {
             // Criar nova tag
-            const createResponse = await fetch(createApiUrl('tags'), {
+            const createResponse = await fetch('/api/tags', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

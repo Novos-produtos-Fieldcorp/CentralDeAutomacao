@@ -1,5 +1,3 @@
-import { createApiUrl } from '../lib/api-config';
-
 export interface ViaCepResponse {
   cep: string;
   logradouro: string;
@@ -26,7 +24,7 @@ export const consultarCep = async (cep: string): Promise<ViaCepResponse> => {
   }
 
   try {
-    const response = await fetch(createApiUrl(`cep/${cepLimpo}`));
+    const response = await fetch(`/api/cep/${cepLimpo}`);
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -67,7 +65,7 @@ export const consultarCep = async (cep: string): Promise<ViaCepResponse> => {
  */
 export const verificarDisponibilidadeCep = async (): Promise<{ disponivel: boolean; mensagem: string }> => {
   try {
-    const response = await fetch(createApiUrl('cep/01310100'));
+    const response = await fetch('/api/cep/01310100');
     if (response.ok) {
       return { disponivel: true, mensagem: 'Consulta de CEP disponível' };
     } else if (response.status === 404) {

@@ -320,6 +320,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         const apiKey = contextToken || (typeof localStorage !== 'undefined' ? localStorage?.getItem("wiseapp_token") : null);
         if (!accountId || !apiKey) return;
         const api = axios.create({
+          baseURL: "/api",
           headers: {
             api_access_token: apiKey,
             "Content-Type": "application/json",
@@ -389,6 +390,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const fetchInboxes = async (accountId: string, apiKey: string) => {
     try {
       const api = axios.create({
+        baseURL: "/api",
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",
@@ -459,6 +461,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const loadContactInfo = async (contactId: number) => {
     try {
       const api = axios.create({
+        baseURL: "/api",
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",
@@ -498,6 +501,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const loadAllContactConversations = async (contactId: number) => {
     try {
       const api = axios.create({
+        baseURL: "/api",
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",
@@ -570,6 +574,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       }
 
       const api = axios.create({
+        baseURL: "/api",
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",
@@ -753,6 +758,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   ) => {
     try {
       const api = axios.create({
+        baseURL: "/api",
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",

@@ -23,8 +23,6 @@ import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createApiUrl } from '../../lib/api-config';
-import { useAuth } from '../../context/AuthContext';
 
 // Interface para a view de contratados
 export interface ViewContratado {
@@ -95,8 +93,7 @@ const STATUS_OPTIONS = [
 const Contratados = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const { token: wiseAppToken } = useWiseAppAccess();
-  const { accountId } = useAuth();
+  const { wiseAppToken, accountId } = useWiseAppAccess();
   const queryClient = useQueryClient();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
@@ -790,7 +787,7 @@ const Contratados = () => {
     setIsApplyingTag(true);
     try {
       // Primeiro, buscar o contato no WiseApp pelo telefone
-      const searchResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/search?phone=${selectedMotorista.telefone}`), {
+      const searchResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${selectedMotorista.telefone}`, {
         headers: {
           'wiseapp-token': wiseAppToken || '',
           'wiseapp-account-id': accountId || ''
@@ -811,7 +808,7 @@ const Contratados = () => {
       const contact = contacts[0]; // Pegar o primeiro contato encontrado
 
       // Aplicar a tag ao contato
-      const applyResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contact.id}/labels`), {
+      const applyResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
