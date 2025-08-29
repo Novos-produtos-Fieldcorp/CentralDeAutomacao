@@ -1391,23 +1391,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       console.log(`Fetching WiseApp labels for company ${companyId}`);
       
-      // Buscar token da empresa
-      const token = await storage.getWiseappToken(parseInt(companyId));
+      // Buscar token do header (enviado pelo frontend)
+      let token = req.headers['wiseapp-token'] as string;
+      
+      // Se não veio pelo header, tentar buscar do banco
+      if (!token) {
+        token = await storage.getWiseappToken(parseInt(companyId));
+      }
+      
       if (!token) {
         return res.status(401).json({ 
           error: "Token WiseApp não configurado para esta empresa" 
         });
       }
 
-      // Buscar account_id da empresa
-      const company = await storage.getCompanyById(parseInt(companyId));
-      if (!company?.id_conta_wiseapp) {
+      // Buscar account_id do header (enviado pelo frontend) ou da empresa
+      let account_id = req.headers['wiseapp-account-id'] as string;
+      
+      if (!account_id) {
+        const company = await storage.getCompanyById(parseInt(companyId));
+        account_id = company?.id_conta_wiseapp;
+      }
+      
+      if (!account_id) {
         return res.status(400).json({ 
           error: "Account ID não configurado para esta empresa" 
         });
       }
-
-      const account_id = company.id_conta_wiseapp;
       const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`;
       
       console.log(`Fetching labels from: ${wiseAppUrl}`);

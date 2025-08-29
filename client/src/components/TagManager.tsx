@@ -160,8 +160,33 @@ export function TagManager({ companyId }: TagManagerProps) {
         return;
       }
 
+      // Buscar token do localStorage
+      const cachedToken = localStorage.getItem('wiseapp_token_cache');
+      if (!cachedToken) {
+        toast.error('Token WiseApp não encontrado. Configure o token primeiro.');
+        return;
+      }
+
+      let tokenData;
+      try {
+        tokenData = JSON.parse(cachedToken);
+        const isExpired = Date.now() > tokenData.expiresAt;
+        if (isExpired) {
+          toast.error('Token WiseApp expirado. Configure um novo token.');
+          return;
+        }
+      } catch (error) {
+        toast.error('Erro ao ler token do WiseApp.');
+        return;
+      }
+
       // Buscar tags do WiseApp
-      const response = await fetch(`/api/wiseapp/${companyId}/labels`);
+      const response = await fetch(`/api/wiseapp/${companyId}/labels`, {
+        headers: {
+          'wiseapp-token': tokenData.token,
+          'wiseapp-account-id': accountId
+        }
+      });
       if (!response.ok) {
         throw new Error('Erro ao buscar tags do WiseApp');
       }
