@@ -17,7 +17,7 @@ app.use((req, res, next) => {
   // Headers CORS para permitir acesso direto à API do WiseApp
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, api_access_token, Cache-Control, Pragma, Expires');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, api_access_token, Cache-Control, Pragma, Expires, wiseapp-token, wiseapp-account-id');
   res.setHeader('Access-Control-Allow-Credentials', 'false');
   
   // Responder a requisições OPTIONS (preflight)

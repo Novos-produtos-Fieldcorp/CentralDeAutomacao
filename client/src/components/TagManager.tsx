@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Edit, X, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
+import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
 
 interface TagFormData {
   nome: string;
@@ -35,6 +36,7 @@ export function TagManager({ companyId }: TagManagerProps) {
   const [isSyncingWiseApp, setIsSyncingWiseApp] = useState(false);
   const queryClient = useQueryClient();
   const { accountId } = useAuth();
+  const { token: wiseAppToken } = useWiseAppAccess();
 
   // Query para buscar tags
   const { data: tags = [], isLoading } = useQuery<Tag[]>({
@@ -160,30 +162,16 @@ export function TagManager({ companyId }: TagManagerProps) {
         return;
       }
 
-      // Buscar token do localStorage
-      const cachedToken = localStorage.getItem('wiseapp_token_cache');
-      if (!cachedToken) {
+      // Verificar se temos token WiseApp
+      if (!wiseAppToken) {
         toast.error('Token WiseApp não encontrado. Configure o token primeiro.');
-        return;
-      }
-
-      let tokenData;
-      try {
-        tokenData = JSON.parse(cachedToken);
-        const isExpired = Date.now() > tokenData.expiresAt;
-        if (isExpired) {
-          toast.error('Token WiseApp expirado. Configure um novo token.');
-          return;
-        }
-      } catch (error) {
-        toast.error('Erro ao ler token do WiseApp.');
         return;
       }
 
       // Buscar tags do WiseApp
       const response = await fetch(`/api/wiseapp/${companyId}/labels`, {
         headers: {
-          'wiseapp-token': tokenData.token,
+          'wiseapp-token': wiseAppToken,
           'wiseapp-account-id': accountId
         }
       });

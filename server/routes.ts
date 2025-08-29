@@ -1390,28 +1390,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { companyId } = req.params;
       console.log(`Fetching WiseApp labels for company ${companyId}`);
+      console.log('Request headers:', req.headers);
       
       // Buscar token do header (enviado pelo frontend)
-      let token = req.headers['wiseapp-token'] as string;
-      
-      // Se não veio pelo header, tentar buscar do banco
-      if (!token) {
-        token = await storage.getWiseappToken(parseInt(companyId));
-      }
+      const token = req.headers['wiseapp-token'] as string;
+      console.log('Token from header:', token ? 'Found' : 'Not found');
       
       if (!token) {
+        console.log('No token found in header');
         return res.status(401).json({ 
           error: "Token WiseApp não configurado para esta empresa" 
         });
       }
 
-      // Buscar account_id do header (enviado pelo frontend) ou da empresa
-      let account_id = req.headers['wiseapp-account-id'] as string;
-      
-      if (!account_id) {
-        const company = await storage.getCompanyById(parseInt(companyId));
-        account_id = company?.id_conta_wiseapp;
-      }
+      // Buscar account_id do header (enviado pelo frontend) 
+      const account_id = req.headers['wiseapp-account-id'] as string;
+      console.log('Account ID from header:', account_id ? 'Found' : 'Not found');
       
       if (!account_id) {
         return res.status(400).json({ 
