@@ -38,140 +38,59 @@ export const handler = async (event, context) => {
 
     console.log('Netlify Function - Path:', path, 'Method:', method, 'QueryParams:', queryParams);
 
-    // Rota GET /tags para buscar tags por company_id
+    // Rota GET /tags para buscar tags por company_id - Implementação simplificada
     if (path === '/tags' && method === 'GET') {
+      console.log('NETLIFY TAGS: Starting route with params:', queryParams);
+      
+      const companyId = queryParams.company_id;
+      
+      if (!companyId) {
+        console.log('NETLIFY TAGS: Missing company_id');
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: "company_id é obrigatório" })
+        };
+      }
+      
       try {
-        console.log('=== TAGS ROUTE DEBUG START ===');
-        console.log('Environment check:', {
-          supabaseUrl: !!supabaseUrl,
-          supabaseKey: !!supabaseKey,
-          nodeEnv: process.env.NODE_ENV
-        });
+        console.log('NETLIFY TAGS: Querying Supabase for company_id:', companyId);
         
-        let companyId = queryParams.company_id;
-        const accountId = queryParams.account_id;
-        
-        console.log('Query parameters:', { companyId, accountId });
-        
-        // Validação básica
-        if (!companyId && !accountId) {
-          console.log('Missing required parameters');
-          return {
-            statusCode: 400,
-            headers,
-            body: JSON.stringify({ 
-              error: "company_id ou account_id é obrigatório",
-              received: { companyId, accountId }
-            })
-          };
-        }
-        
-        // Se não tem company_id mas tem account_id, fazer o mapeamento
-        if (!companyId && accountId) {
-          console.log('Attempting account_id mapping...');
-          try {
-            const mappingResult = await supabase
-              .from('company')
-              .select('company_id')
-              .eq('id_conta_wiseapp', accountId)
-              .limit(1);
-            
-            console.log('Mapping query result:', mappingResult);
-            
-            if (mappingResult.error) {
-              console.error('Mapping error:', mappingResult.error);
-              return {
-                statusCode: 500,
-                headers,
-                body: JSON.stringify({ 
-                  error: "Erro no mapeamento account_id",
-                  details: mappingResult.error.message
-                })
-              };
-            }
-            
-            if (mappingResult.data && mappingResult.data.length > 0) {
-              companyId = mappingResult.data[0].company_id;
-              console.log('Successfully mapped to companyId:', companyId);
-            } else {
-              console.log('No company found for account_id:', accountId);
-              return {
-                statusCode: 404,
-                headers,
-                body: JSON.stringify({ 
-                  error: "Empresa não encontrada para account_id",
-                  accountId 
-                })
-              };
-            }
-          } catch (mappingError) {
-            console.error('Exception during mapping:', mappingError);
-            return {
-              statusCode: 500,
-              headers,
-              body: JSON.stringify({ 
-                error: "Exceção no mapeamento",
-                details: mappingError.message
-              })
-            };
-          }
-        }
-        
-        // Agora buscar as tags
-        console.log('Querying tags for companyId:', companyId);
-        
-        const tagsResult = await supabase
+        // Busca simples igual ao storage.getTags()
+        const { data: tags, error } = await supabase
           .from('tags')
           .select('*')
-          .eq('company_id', parseInt(companyId))
-          .order('nome');
+          .eq('company_id', parseInt(companyId));
         
-        console.log('Tags query completed:', {
-          error: !!tagsResult.error,
-          dataLength: tagsResult.data?.length,
-          errorDetails: tagsResult.error
-        });
+        console.log('NETLIFY TAGS: Query result - error:', !!error, 'data length:', tags?.length);
         
-        if (tagsResult.error) {
-          console.error('Tags query error:', tagsResult.error);
+        if (error) {
+          console.error('NETLIFY TAGS: Supabase error:', error);
           return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
-              error: "Erro na consulta de tags",
-              details: tagsResult.error.message,
-              code: tagsResult.error.code
+              error: "Erro ao buscar tags",
+              details: error.message
             })
           };
         }
         
-        const tags = tagsResult.data || [];
-        console.log(`Success: Returning ${tags.length} tags`);
-        console.log('=== TAGS ROUTE DEBUG END ===');
-        
+        console.log('NETLIFY TAGS: Returning', tags?.length || 0, 'tags');
         return {
           statusCode: 200,
           headers,
-          body: JSON.stringify(tags)
+          body: JSON.stringify(tags || [])
         };
         
-      } catch (globalError) {
-        console.error('GLOBAL ERROR in tags route:', globalError);
-        console.error('Error type:', typeof globalError);
-        console.error('Error name:', globalError?.name);
-        console.error('Error message:', globalError?.message);
-        console.error('Error stack:', globalError?.stack);
-        console.log('=== TAGS ROUTE DEBUG END (GLOBAL ERROR) ===');
-        
+      } catch (error) {
+        console.error('NETLIFY TAGS: Exception:', error);
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({ 
-            error: "Erro global na rota tags",
-            type: typeof globalError,
-            name: globalError?.name,
-            message: globalError?.message,
-            details: globalError instanceof Error ? globalError.message : String(globalError)
+            error: "Erro interno",
+            details: error.message
           })
         };
       }
