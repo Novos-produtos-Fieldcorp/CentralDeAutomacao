@@ -291,7 +291,7 @@ const EditVeiculoModal = ({ isOpen, onClose, veiculo, onUpdate, isEmpresa = fals
               />
             </div>
 
-            {!isEmpresa && (
+            {isEmpresa && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Motorista *

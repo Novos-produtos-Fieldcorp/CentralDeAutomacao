@@ -374,8 +374,24 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
           if (enderecoError) throw enderecoError;
         } catch (error) {
           console.error('Erro ao cadastrar endereço:', error);
+          let errorMessage = 'Erro ao cadastrar endereço, mas o cadastro foi realizado';
+          
+          if (error instanceof Error) {
+            if (error.message.includes('Estado')) {
+              errorMessage = `Estado "${formData.estado}" não encontrado. Verifique a sigla do estado.`;
+            } else if (error.message.includes('cidade')) {
+              errorMessage = `Erro ao criar cidade "${formData.cidade}". Verifique os dados.`;
+            } else if (error.message.includes('bairro')) {
+              errorMessage = `Erro ao criar bairro "${formData.bairro}". Verifique os dados.`;
+            } else if (error.message.includes('logradouro')) {
+              errorMessage = `Erro ao criar logradouro "${formData.logradouro}". Verifique os dados.`;
+            } else if (error.message.includes('end_motorista')) {
+              errorMessage = 'Erro ao salvar endereço final. Verifique todos os campos.';
+            }
+          }
+          
           // Don't throw here, as address is optional
-          toast.error('Erro ao cadastrar endereço, mas o cadastro foi realizado');
+          toast.error(errorMessage);
         }
       }
 

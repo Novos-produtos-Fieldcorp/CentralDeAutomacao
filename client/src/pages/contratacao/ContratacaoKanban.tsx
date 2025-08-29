@@ -372,10 +372,20 @@ const ContratacaoKanban = () => {
         const { data: agregadosData, error: error2 } = await agregadosQuery;
         
         if (!error2 && agregadosData && agregadosData.length > 0) {
-          // Merge results, avoiding duplicates
+          // Merge results, avoiding duplicates with better deduplication
           const existingIds = new Set(motoristasData.map(m => m.motorista_id));
           const newAgregados = agregadosData.filter((a: any) => !existingIds.has(a.motorista_id));
           motoristasData = [...motoristasData, ...newAgregados];
+          
+          // Additional deduplication by removing any duplicates that might exist
+          const uniqueRecords = new Map();
+          motoristasData.forEach(record => {
+            const key = record.motorista_id;
+            if (!uniqueRecords.has(key)) {
+              uniqueRecords.set(key, record);
+            }
+          });
+          motoristasData = Array.from(uniqueRecords.values());
         }
       }
       
@@ -488,7 +498,7 @@ const ContratacaoKanban = () => {
     }
     
     // Usando a assinatura correta do startChat com motorista ID
-    startChat(motorista.telefone?.toString() ?? '', motorista.nome, motorista.motorista_id);
+    startChat(motorista.telefone?.toString() || '', motorista.nome || '', motorista.motorista_id);
   };
 
   const handleViewDocument = (motorista: MotoristaWithDetails) => {

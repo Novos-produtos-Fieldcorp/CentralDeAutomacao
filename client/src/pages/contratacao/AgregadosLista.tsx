@@ -671,7 +671,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const handleViewDocument = async (motorista: ViewContratado) => {
       try {
         setSelectedMotorista(motorista);
-        setIsUnifiedAgregadoModalOpen(true);
+        setIsDocumentViewerOpen(true);
       } catch (error) {
         console.error('Error opening agregado details:', error);
         toast.error('Erro ao abrir detalhes do agregado');
