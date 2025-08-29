@@ -849,15 +849,30 @@ export const handler = async (event, context) => {
 
     // Rota GET /tags para buscar tags por company_id
     if (path === '/tags' && method === 'GET') {
-      const companyId = queryParams.company_id;
+      let companyId = queryParams.company_id;
+      const accountId = queryParams.account_id;
+      
+      // Se não tem company_id mas tem account_id, fazer o mapeamento
+      if (!companyId && accountId) {
+        const { data: companies } = await supabase
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', accountId);
+        
+        if (companies && companies.length > 0) {
+          companyId = companies[0].company_id;
+        }
+      }
       
       if (!companyId) {
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: "company_id é obrigatório" })
+          body: JSON.stringify({ error: "company_id ou account_id é obrigatório" })
         };
       }
+      
+      console.log(`Netlify: Fetching tags for company_id: ${companyId}, account_id: ${accountId}`);
       
       try {
         const { data: tags, error } = await supabase
