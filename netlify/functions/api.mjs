@@ -875,11 +875,14 @@ export const handler = async (event, context) => {
       console.log(`Netlify: Fetching tags for company_id: ${companyId}, account_id: ${accountId}`);
       
       try {
+        console.log('Executing Supabase query for tags...');
         const { data: tags, error } = await supabase
           .from('tags')
           .select('*')
           .eq('company_id', parseInt(companyId))
           .order('nome');
+        
+        console.log('Supabase tags query result:', { data: tags, error });
         
         if (error) {
           console.error('Error fetching tags:', error);
@@ -901,12 +904,14 @@ export const handler = async (event, context) => {
         
       } catch (error) {
         console.error('Error in tags route:', error);
+        console.error('Error stack:', error.stack);
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({ 
             error: "Erro interno do servidor",
-            details: error instanceof Error ? error.message : "Erro desconhecido"
+            details: error instanceof Error ? error.message : "Erro desconhecido",
+            stack: error.stack
           })
         };
       }
