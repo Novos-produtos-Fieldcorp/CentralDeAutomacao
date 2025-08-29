@@ -847,6 +847,56 @@ export const handler = async (event, context) => {
       }
     }
 
+    // Rota GET /tags para buscar tags por company_id
+    if (path === '/tags' && method === 'GET') {
+      const companyId = queryParams.company_id;
+      
+      if (!companyId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: "company_id é obrigatório" })
+        };
+      }
+      
+      try {
+        const { data: tags, error } = await supabase
+          .from('tags')
+          .select('*')
+          .eq('company_id', parseInt(companyId))
+          .order('nome');
+        
+        if (error) {
+          console.error('Error fetching tags:', error);
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+              error: "Erro interno do servidor",
+              details: error.message 
+            })
+          };
+        }
+        
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(tags || [])
+        };
+        
+      } catch (error) {
+        console.error('Error in tags route:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ 
+            error: "Erro interno do servidor",
+            details: error instanceof Error ? error.message : "Erro desconhecido"
+          })
+        };
+      }
+    }
+
     // Rota para sincronização de tags com WiseApp
     if (path === '/tags/sync-wiseapp' && method === 'POST') {
       const companyId = body?.companyId || event.headers['company-id'] || '1';
