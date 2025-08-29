@@ -42,11 +42,15 @@ export const handler = async (event, context) => {
     if (path === '/tags' && method === 'GET') {
       console.log('=== TAGS ROUTE DEBUG START ===');
       console.log('Raw queryParams:', queryParams);
+      console.log('Event body:', event.body);
+      console.log('Event headers:', JSON.stringify(event.headers, null, 2));
       
       let companyId = queryParams.company_id;
       const accountId = queryParams.account_id;
       
       console.log('Initial values - companyId:', companyId, 'accountId:', accountId);
+      console.log('Supabase URL:', supabaseUrl);
+      console.log('Supabase Key exists:', !!supabaseKey);
       
       // Se não tem company_id mas tem account_id, fazer o mapeamento
       if (!companyId && accountId) {
@@ -89,6 +93,8 @@ export const handler = async (event, context) => {
       
       try {
         console.log('Executing Supabase query for tags...');
+        console.log('About to query with company_id:', parseInt(companyId));
+        
         const { data: tags, error } = await supabase
           .from('tags')
           .select('*')
@@ -97,8 +103,11 @@ export const handler = async (event, context) => {
         
         console.log('Supabase tags query result:', { 
           dataLength: tags?.length, 
-          error: error,
-          firstTag: tags?.[0] 
+          error: error ? JSON.stringify(error) : null,
+          firstTag: tags?.[0],
+          errorCode: error?.code,
+          errorMessage: error?.message,
+          errorDetails: error?.details
         });
         
         if (error) {
@@ -134,6 +143,85 @@ export const handler = async (event, context) => {
             error: "Erro crítico",
             details: error instanceof Error ? error.message : "Erro desconhecido",
             stack: error.stack
+          })
+        };
+      }
+    }
+
+    // Rota para buscar todas as labels de uma empresa (simulado via contatos)
+    if (path.match(/^\/wiseapp\/(\d+)\/labels$/) && method === 'GET') {
+      const matches = path.match(/^\/wiseapp\/(\d+)\/labels$/);
+      const companyId = matches[1];
+      
+      console.log(`Netlify: Getting all labels for company ${companyId}`);
+      
+      // Buscar dados da empresa
+      const { data: companies, error: companyError } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
+        .eq('company_id', parseInt(companyId))
+        .limit(1);
+      
+      if (companyError || !companies || companies.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: "Empresa não encontrada" })
+        };
+      }
+      
+      const accountId = companies[0].id_conta_wiseapp;
+      
+      // Buscar token WiseApp
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('company_id', parseInt(companyId))
+        .limit(1);
+      
+      if (tokenError || !tokenData || tokenData.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: "Token WiseApp não configurado" })
+        };
+      }
+      
+      const token = tokenData[0].access_token_wiseapp;
+      
+      try {
+        // Como ChatWoot não tem endpoint global para labels, 
+        // vamos buscar labels das tags locais e retornar no formato ChatWoot
+        const { data: localTags } = await supabase
+          .from('tags')
+          .select('*')
+          .eq('company_id', parseInt(companyId))
+          .order('nome');
+        
+        // Converter tags locais para formato ChatWoot
+        const labelsResponse = (localTags || []).map(tag => ({
+          id: tag.id,
+          name: tag.nome,
+          color: tag.cor,
+          description: tag.nome
+        }));
+        
+        console.log(`Returning ${labelsResponse.length} labels for company ${companyId}`);
+        
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(labelsResponse)
+        };
+        
+      } catch (error) {
+        console.error('Error getting company labels:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            error: 'Erro ao buscar labels da empresa',
+            details: error.message
           })
         };
       }
