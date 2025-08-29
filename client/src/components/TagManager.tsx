@@ -180,6 +180,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       }
 
       const wiseAppTags = await response.json();
+      console.log('WiseApp tags found:', wiseAppTags);
       
       if (!wiseAppTags || wiseAppTags.length === 0) {
         toast('Nenhuma tag encontrada no WiseApp.', {
@@ -188,15 +189,17 @@ export function TagManager({ companyId }: TagManagerProps) {
         return;
       }
 
+      // Buscar tags existentes
+      const existingTagsResponse = await fetch(`/api/tags?company_id=${companyId}`);
+      const existingTags = await existingTagsResponse.json();
+      const existingTagNames = new Set(existingTags.map((tag: Tag) => tag.nome.toLowerCase()));
+
       // Sincronizar tags locais
       let synced = 0;
       for (const wiseTag of wiseAppTags) {
         try {
-          // Verificar se a tag já existe pelo nome
-          const existingTagResponse = await fetch(`/api/tags?company_id=${companyId}&nome=${encodeURIComponent(wiseTag.name)}`);
-          const existingTags = await existingTagResponse.json();
-          
-          if (existingTags.length === 0) {
+          // Verificar se a tag já existe pelo nome (case-insensitive)
+          if (!existingTagNames.has(wiseTag.name.toLowerCase())) {
             // Criar nova tag
             const createResponse = await fetch('/api/tags', {
               method: 'POST',
@@ -210,6 +213,9 @@ export function TagManager({ companyId }: TagManagerProps) {
             
             if (createResponse.ok) {
               synced++;
+              console.log(`Tag sincronizada: ${wiseTag.name}`);
+            } else {
+              console.error(`Erro ao criar tag ${wiseTag.name}:`, await createResponse.text());
             }
           }
         } catch (error) {
