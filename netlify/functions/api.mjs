@@ -152,18 +152,50 @@ export const handler = async (event, context) => {
       const queryString = new URLSearchParams(queryParams).toString();
       const fullUrl = queryString ? `${wiseAppUrl}?${queryString}` : wiseAppUrl;
       
+      // Extrair account_id da URL para buscar o token correto
+      const accountMatch = apiPath.match(/\/accounts\/(\d+)\//);
+      let token = null;
+      
+      if (accountMatch) {
+        const accountId = accountMatch[1];
+        
+        // Buscar company_id baseado no account_id
+        const { data: companies } = await supabase
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', accountId)
+          .limit(1);
+        
+        if (companies && companies.length > 0) {
+          // Buscar token WiseApp para esta empresa
+          const { data: tokenData } = await supabase
+            .from('wiseapp_acesso')
+            .select('access_token_wiseapp')
+            .eq('company_id', companies[0].company_id)
+            .limit(1);
+          
+          if (tokenData && tokenData.length > 0) {
+            token = tokenData[0].access_token_wiseapp;
+          }
+        }
+      }
+      
       // Configurar headers para WiseApp
       const wiseAppHeaders = {
         'Content-Type': 'application/json'
       };
       
-      // Usar API key das variáveis de ambiente ou das headers
-      const apiKey = process.env.VITE_CHAT_API_KEY || event.headers['x-api-key'] || event.headers.authorization;
-      if (apiKey) {
-        wiseAppHeaders['Authorization'] = apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`;
+      // Usar token do banco de dados ou fallback para headers/env
+      if (token) {
+        wiseAppHeaders['api_access_token'] = token;
+      } else {
+        const apiKey = process.env.VITE_CHAT_API_KEY || event.headers['x-api-key'] || event.headers.authorization || event.headers['api_access_token'];
+        if (apiKey) {
+          wiseAppHeaders['api_access_token'] = apiKey;
+        }
       }
       
-      console.log('Proxying to WiseApp:', fullUrl, 'Headers:', Object.keys(wiseAppHeaders));
+      console.log('Proxying to WiseApp:', fullUrl, 'Has token:', !!wiseAppHeaders['api_access_token']);
       
       const response = await fetch(fullUrl, {
         method: method,
@@ -629,6 +661,90 @@ export const handler = async (event, context) => {
           statusCode: 500,
           headers,
           body: JSON.stringify({ error: 'Proxy request failed', details: error.message })
+        };
+      }
+    }
+
+    // Rota para buscar labels do WiseApp
+    if (path.match(/^\/wiseapp\/(\d+)\/labels$/) && method === 'GET') {
+      const companyId = path.match(/^\/wiseapp\/(\d+)\/labels$/)[1];
+      
+      console.log(`Netlify: Fetching WiseApp labels for company ${companyId}`);
+      
+      // Buscar token WiseApp
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('company_id', parseInt(companyId))
+        .limit(1);
+      
+      if (tokenError || !tokenData || tokenData.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ 
+            error: "Token WiseApp não configurado para esta empresa" 
+          })
+        };
+      }
+      
+      const token = tokenData[0].access_token_wiseapp;
+      
+      // Buscar account_id da empresa
+      const { data: companies, error: companyError } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
+        .eq('company_id', parseInt(companyId))
+        .limit(1);
+      
+      if (companyError || !companies || companies.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ 
+            error: "Empresa não encontrada" 
+          })
+        };
+      }
+      
+      const accountId = companies[0].id_conta_wiseapp;
+      
+      try {
+        // Buscar labels do WiseApp
+        const labelsResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+          headers: {
+            'api_access_token': token,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!labelsResponse.ok) {
+          return {
+            statusCode: labelsResponse.status,
+            headers,
+            body: JSON.stringify({
+              error: `WiseApp API error: ${labelsResponse.status}`,
+              message: "Erro ao buscar labels do WiseApp"
+            })
+          };
+        }
+        
+        const labels = await labelsResponse.json();
+        
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(labels)
+        };
+        
+      } catch (error) {
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            error: 'Erro ao buscar labels do WiseApp',
+            details: error.message
+          })
         };
       }
     }
