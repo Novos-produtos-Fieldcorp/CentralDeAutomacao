@@ -40,109 +40,138 @@ export const handler = async (event, context) => {
 
     // Rota GET /tags para buscar tags por company_id
     if (path === '/tags' && method === 'GET') {
-      console.log('=== TAGS ROUTE DEBUG START ===');
-      console.log('Raw queryParams:', queryParams);
-      console.log('Event body:', event.body);
-      console.log('Event headers:', JSON.stringify(event.headers, null, 2));
-      
-      let companyId = queryParams.company_id;
-      const accountId = queryParams.account_id;
-      
-      console.log('Initial values - companyId:', companyId, 'accountId:', accountId);
-      console.log('Supabase URL:', supabaseUrl);
-      console.log('Supabase Key exists:', !!supabaseKey);
-      
-      // Se não tem company_id mas tem account_id, fazer o mapeamento
-      if (!companyId && accountId) {
-        console.log('Mapping account_id to company_id...');
-        try {
-          const { data: companies, error: companyError } = await supabase
-            .from('company')
-            .select('company_id')
-            .eq('id_conta_wiseapp', accountId);
-          
-          console.log('Company mapping result:', { data: companies, error: companyError });
-          
-          if (companies && companies.length > 0) {
-            companyId = companies[0].company_id;
-            console.log('Mapped companyId:', companyId);
-          }
-        } catch (mappingError) {
-          console.error('Error mapping account_id to company_id:', mappingError);
+      try {
+        console.log('=== TAGS ROUTE DEBUG START ===');
+        console.log('Environment check:', {
+          supabaseUrl: !!supabaseUrl,
+          supabaseKey: !!supabaseKey,
+          nodeEnv: process.env.NODE_ENV
+        });
+        
+        let companyId = queryParams.company_id;
+        const accountId = queryParams.account_id;
+        
+        console.log('Query parameters:', { companyId, accountId });
+        
+        // Validação básica
+        if (!companyId && !accountId) {
+          console.log('Missing required parameters');
           return {
-            statusCode: 500,
+            statusCode: 400,
             headers,
             body: JSON.stringify({ 
-              error: "Erro ao mapear account_id para company_id",
-              details: mappingError.message 
+              error: "company_id ou account_id é obrigatório",
+              received: { companyId, accountId }
             })
           };
         }
-      }
-      
-      if (!companyId) {
-        console.log('No companyId found, returning 400');
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: "company_id ou account_id é obrigatório" })
-        };
-      }
-      
-      console.log(`Final companyId: ${companyId}`);
-      
-      try {
-        console.log('Executing Supabase query for tags...');
-        console.log('About to query with company_id:', parseInt(companyId));
         
-        const { data: tags, error } = await supabase
+        // Se não tem company_id mas tem account_id, fazer o mapeamento
+        if (!companyId && accountId) {
+          console.log('Attempting account_id mapping...');
+          try {
+            const mappingResult = await supabase
+              .from('company')
+              .select('company_id')
+              .eq('id_conta_wiseapp', accountId)
+              .limit(1);
+            
+            console.log('Mapping query result:', mappingResult);
+            
+            if (mappingResult.error) {
+              console.error('Mapping error:', mappingResult.error);
+              return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({ 
+                  error: "Erro no mapeamento account_id",
+                  details: mappingResult.error.message
+                })
+              };
+            }
+            
+            if (mappingResult.data && mappingResult.data.length > 0) {
+              companyId = mappingResult.data[0].company_id;
+              console.log('Successfully mapped to companyId:', companyId);
+            } else {
+              console.log('No company found for account_id:', accountId);
+              return {
+                statusCode: 404,
+                headers,
+                body: JSON.stringify({ 
+                  error: "Empresa não encontrada para account_id",
+                  accountId 
+                })
+              };
+            }
+          } catch (mappingError) {
+            console.error('Exception during mapping:', mappingError);
+            return {
+              statusCode: 500,
+              headers,
+              body: JSON.stringify({ 
+                error: "Exceção no mapeamento",
+                details: mappingError.message
+              })
+            };
+          }
+        }
+        
+        // Agora buscar as tags
+        console.log('Querying tags for companyId:', companyId);
+        
+        const tagsResult = await supabase
           .from('tags')
           .select('*')
           .eq('company_id', parseInt(companyId))
           .order('nome');
         
-        console.log('Supabase tags query result:', { 
-          dataLength: tags?.length, 
-          error: error ? JSON.stringify(error) : null,
-          firstTag: tags?.[0],
-          errorCode: error?.code,
-          errorMessage: error?.message,
-          errorDetails: error?.details
+        console.log('Tags query completed:', {
+          error: !!tagsResult.error,
+          dataLength: tagsResult.data?.length,
+          errorDetails: tagsResult.error
         });
         
-        if (error) {
-          console.error('Supabase error details:', error);
+        if (tagsResult.error) {
+          console.error('Tags query error:', tagsResult.error);
           return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
-              error: "Erro na consulta Supabase",
-              details: error.message,
-              code: error.code 
+              error: "Erro na consulta de tags",
+              details: tagsResult.error.message,
+              code: tagsResult.error.code
             })
           };
         }
         
-        console.log('Returning success with', tags?.length || 0, 'tags');
+        const tags = tagsResult.data || [];
+        console.log(`Success: Returning ${tags.length} tags`);
         console.log('=== TAGS ROUTE DEBUG END ===');
         
         return {
           statusCode: 200,
           headers,
-          body: JSON.stringify(tags || [])
+          body: JSON.stringify(tags)
         };
         
-      } catch (error) {
-        console.error('Critical error in tags route:', error);
-        console.error('Error stack:', error.stack);
-        console.log('=== TAGS ROUTE DEBUG END (ERROR) ===');
+      } catch (globalError) {
+        console.error('GLOBAL ERROR in tags route:', globalError);
+        console.error('Error type:', typeof globalError);
+        console.error('Error name:', globalError?.name);
+        console.error('Error message:', globalError?.message);
+        console.error('Error stack:', globalError?.stack);
+        console.log('=== TAGS ROUTE DEBUG END (GLOBAL ERROR) ===');
+        
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({ 
-            error: "Erro crítico",
-            details: error instanceof Error ? error.message : "Erro desconhecido",
-            stack: error.stack
+            error: "Erro global na rota tags",
+            type: typeof globalError,
+            name: globalError?.name,
+            message: globalError?.message,
+            details: globalError instanceof Error ? globalError.message : String(globalError)
           })
         };
       }
