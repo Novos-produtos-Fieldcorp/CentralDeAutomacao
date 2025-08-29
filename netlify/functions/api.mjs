@@ -11,7 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 export const handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, api_access_token, company-id',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Content-Type': 'application/json'
   };
@@ -189,11 +189,15 @@ export const handler = async (event, context) => {
       if (token) {
         wiseAppHeaders['api_access_token'] = token;
       } else {
-        const apiKey = process.env.VITE_CHAT_API_KEY || event.headers['x-api-key'] || event.headers.authorization || event.headers['api_access_token'];
+        const apiKey = event.headers['api_access_token'] || event.headers['authorization'] || process.env.VITE_CHAT_API_KEY;
         if (apiKey) {
           wiseAppHeaders['api_access_token'] = apiKey;
         }
       }
+      
+      console.log('Token found from DB:', !!token);
+      console.log('Token from headers:', !!event.headers['api_access_token']);
+      console.log('Final token being used:', !!wiseAppHeaders['api_access_token']);
       
       console.log('Proxying to WiseApp:', fullUrl, 'Has token:', !!wiseAppHeaders['api_access_token']);
       
