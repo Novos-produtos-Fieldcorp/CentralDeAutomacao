@@ -665,11 +665,30 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Rota para buscar labels do WiseApp
+    // Rota para buscar labels do ChatWoot (compatível com frontend)
     if (path.match(/^\/wiseapp\/(\d+)\/labels$/) && method === 'GET') {
       const companyId = path.match(/^\/wiseapp\/(\d+)\/labels$/)[1];
       
-      console.log(`Netlify: Fetching WiseApp labels for company ${companyId}`);
+      console.log(`Netlify: Fetching ChatWoot labels for company ${companyId}`);
+      
+      // Buscar dados da empresa e token
+      const { data: companies, error: companyError } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
+        .eq('company_id', parseInt(companyId))
+        .limit(1);
+      
+      if (companyError || !companies || companies.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ 
+            error: "Empresa não encontrada" 
+          })
+        };
+      }
+      
+      const accountId = companies[0].id_conta_wiseapp;
       
       // Buscar token WiseApp
       const { data: tokenData, error: tokenError } = await supabase
@@ -690,7 +709,54 @@ export const handler = async (event, context) => {
       
       const token = tokenData[0].access_token_wiseapp;
       
-      // Buscar account_id da empresa
+      try {
+        // Buscar labels do ChatWoot API
+        const labelsResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+          headers: {
+            'api_access_token': token,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!labelsResponse.ok) {
+          return {
+            statusCode: labelsResponse.status,
+            headers,
+            body: JSON.stringify({
+              error: `ChatWoot API error: ${labelsResponse.status}`,
+              message: "Erro ao buscar labels do ChatWoot"
+            })
+          };
+        }
+        
+        const labels = await labelsResponse.json();
+        
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(labels)
+        };
+        
+      } catch (error) {
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            error: 'Erro ao buscar labels do ChatWoot',
+            details: error.message
+          })
+        };
+      }
+    }
+
+    // Rota para gerenciar labels de contatos específicos
+    if (path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/)) {
+      const companyId = path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/)[1];
+      const contactId = path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/)[2];
+      
+      console.log(`Netlify: Managing contact labels for company ${companyId}, contact ${contactId}`);
+      
+      // Buscar dados da empresa e token
       const { data: companies, error: companyError } = await supabase
         .from('company')
         .select('id_conta_wiseapp')
@@ -709,32 +775,60 @@ export const handler = async (event, context) => {
       
       const accountId = companies[0].id_conta_wiseapp;
       
+      // Buscar token WiseApp
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('company_id', parseInt(companyId))
+        .limit(1);
+      
+      if (tokenError || !tokenData || tokenData.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ 
+            error: "Token WiseApp não configurado para esta empresa" 
+          })
+        };
+      }
+      
+      const token = tokenData[0].access_token_wiseapp;
+      
       try {
-        // Buscar labels do WiseApp
-        const labelsResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+        // Fazer requisição para ChatWoot API
+        const targetUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
+        
+        const requestOptions = {
+          method: method,
           headers: {
             'api_access_token': token,
             'Content-Type': 'application/json'
           }
-        });
+        };
         
-        if (!labelsResponse.ok) {
+        if (method === 'POST' && body) {
+          requestOptions.body = JSON.stringify(body);
+        }
+        
+        const response = await fetch(targetUrl, requestOptions);
+        
+        if (!response.ok) {
           return {
-            statusCode: labelsResponse.status,
+            statusCode: response.status,
             headers,
             body: JSON.stringify({
-              error: `WiseApp API error: ${labelsResponse.status}`,
-              message: "Erro ao buscar labels do WiseApp"
+              error: `ChatWoot API error: ${response.status}`,
+              message: "Erro ao gerenciar labels do contato"
             })
           };
         }
         
-        const labels = await labelsResponse.json();
+        const responseData = await response.json();
         
         return {
           statusCode: 200,
           headers,
-          body: JSON.stringify(labels)
+          body: JSON.stringify(responseData)
         };
         
       } catch (error) {
@@ -742,7 +836,7 @@ export const handler = async (event, context) => {
           statusCode: 500,
           headers,
           body: JSON.stringify({
-            error: 'Erro ao buscar labels do WiseApp',
+            error: 'Erro ao gerenciar labels do contato',
             details: error.message
           })
         };
