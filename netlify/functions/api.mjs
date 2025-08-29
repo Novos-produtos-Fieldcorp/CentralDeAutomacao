@@ -21,7 +21,7 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 export const handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, api_access_token, company-id',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, api_access_token, company-id, wiseapp-token, wiseapp-account-id',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Content-Type': 'application/json'
   };
@@ -36,61 +36,128 @@ export const handler = async (event, context) => {
     const body = event.body ? JSON.parse(event.body) : null;
     const queryParams = event.queryStringParameters || {};
 
-    console.log('Netlify Function - Path:', path, 'Method:', method, 'QueryParams:', queryParams);
+    // Logs detalhados para debug
+    console.log('=== NETLIFY FUNCTION DEBUG START ===');
+    console.log('Path:', path, 'Method:', method);
+    console.log('Query Params:', JSON.stringify(queryParams, null, 2));
+    console.log('Headers:', JSON.stringify(event.headers, null, 2));
+    console.log('Body:', body);
+    console.log('Environment checks:', {
+      SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
+      SUPABASE_KEY: !!process.env.VITE_SUPABASE_ANON_KEY,
+      NODE_ENV: process.env.NODE_ENV
+    });
+    console.log('=== NETLIFY FUNCTION DEBUG END ===');
 
     // Rota GET /tags para buscar tags por company_id - Implementação simplificada
     if (path === '/tags' && method === 'GET') {
-      console.log('NETLIFY TAGS: Starting route with params:', queryParams);
+      console.log('🏷️  NETLIFY TAGS: Starting route');
+      console.log('🏷️  Query params received:', JSON.stringify(queryParams, null, 2));
       
       const companyId = queryParams.company_id;
       
       if (!companyId) {
-        console.log('NETLIFY TAGS: Missing company_id');
+        console.log('❌ NETLIFY TAGS: Missing company_id parameter');
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: "company_id é obrigatório" })
+          body: JSON.stringify({ 
+            error: "company_id é obrigatório",
+            received_params: queryParams
+          })
         };
       }
       
       try {
-        console.log('NETLIFY TAGS: Querying Supabase for company_id:', companyId);
+        console.log('🔍 NETLIFY TAGS: Attempting Supabase connection...');
+        console.log('🔍 NETLIFY TAGS: Company ID to query:', companyId, 'Type:', typeof companyId);
+        console.log('🔍 NETLIFY TAGS: Supabase config check:', {
+          url: supabaseUrl,
+          hasKey: !!supabaseKey,
+          keyLength: supabaseKey?.length
+        });
         
-        // Busca simples igual ao storage.getTags()
+        // Test Supabase connection first
+        console.log('🔍 NETLIFY TAGS: Testing Supabase connection...');
+        const { data: testQuery, error: connectionError } = await supabase
+          .from('tags')
+          .select('count')
+          .limit(1);
+        
+        if (connectionError) {
+          console.error('❌ NETLIFY TAGS: Supabase connection failed:', connectionError);
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+              error: "Falha na conexão com banco de dados",
+              details: connectionError.message,
+              supabase_error: connectionError
+            })
+          };
+        }
+        
+        console.log('✅ NETLIFY TAGS: Supabase connection successful');
+        
+        // Now do the actual query
+        console.log('🔍 NETLIFY TAGS: Executing tags query...');
         const { data: tags, error } = await supabase
           .from('tags')
           .select('*')
           .eq('company_id', parseInt(companyId));
         
-        console.log('NETLIFY TAGS: Query result - error:', !!error, 'data length:', tags?.length);
+        console.log('🔍 NETLIFY TAGS: Raw query result:', {
+          hasError: !!error,
+          dataExists: !!tags,
+          dataLength: tags?.length,
+          firstTag: tags?.[0],
+          error: error
+        });
         
         if (error) {
-          console.error('NETLIFY TAGS: Supabase error:', error);
+          console.error('❌ NETLIFY TAGS: Query error:', JSON.stringify(error, null, 2));
           return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
-              error: "Erro ao buscar tags",
-              details: error.message
+              error: "Erro na consulta de tags",
+              details: error.message,
+              supabase_error: error,
+              query_params: { company_id: companyId }
             })
           };
         }
         
-        console.log('NETLIFY TAGS: Returning', tags?.length || 0, 'tags');
+        const result = tags || [];
+        console.log('✅ NETLIFY TAGS: Success! Returning', result.length, 'tags');
+        console.log('✅ NETLIFY TAGS: Sample tags:', result.slice(0, 2));
+        
         return {
           statusCode: 200,
           headers,
-          body: JSON.stringify(tags || [])
+          body: JSON.stringify(result)
         };
         
       } catch (error) {
-        console.error('NETLIFY TAGS: Exception:', error);
+        console.error('💥 NETLIFY TAGS: Unexpected exception:', error);
+        console.error('💥 NETLIFY TAGS: Error stack:', error.stack);
+        console.error('💥 NETLIFY TAGS: Error name:', error.name);
+        console.error('💥 NETLIFY TAGS: Error message:', error.message);
+        
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({ 
-            error: "Erro interno",
-            details: error.message
+            error: "Erro interno não tratado",
+            type: error.name,
+            message: error.message,
+            stack: error.stack?.split('\n').slice(0, 5), // Primeiras 5 linhas do stack
+            context: {
+              companyId,
+              queryParams,
+              hasSupabaseUrl: !!supabaseUrl,
+              hasSupabaseKey: !!supabaseKey
+            }
           })
         };
       }
