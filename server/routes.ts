@@ -1450,6 +1450,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Aplicar tag a um contato no WiseApp
+  app.post("/api/wiseapp/:companyId/contacts/:contactId/labels", async (req, res) => {
+    try {
+      const { companyId, contactId } = req.params;
+      const { tagId } = req.body;
+      
+      console.log(`Applying tag ${tagId} to contact ${contactId} for company ${companyId}`);
+      
+      // Buscar token do header
+      const token = req.headers['wiseapp-token'] as string;
+      if (!token) {
+        return res.status(401).json({ 
+          error: "Token WiseApp não encontrado" 
+        });
+      }
+
+      // Buscar account_id do header
+      const account_id = req.headers['wiseapp-account-id'] as string;
+      if (!account_id) {
+        return res.status(400).json({ 
+          error: "Account ID não encontrado" 
+        });
+      }
+
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
+      
+      const response = await fetch(wiseAppUrl, {
+        method: 'POST',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          labels: [parseInt(tagId)]
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`WiseApp API responded with ${response.status}`);
+      }
+
+      res.json({ success: true });
+
+    } catch (error) {
+      console.error("Erro ao aplicar tag ao contato:", error);
+      res.status(500).json({
+        error: "Erro ao aplicar tag ao contato",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
+  // Remover tag de um contato no WiseApp
+  app.delete("/api/wiseapp/:companyId/contacts/:contactId/labels/:tagId", async (req, res) => {
+    try {
+      const { companyId, contactId, tagId } = req.params;
+      
+      console.log(`Removing tag ${tagId} from contact ${contactId} for company ${companyId}`);
+      
+      // Buscar token do header
+      const token = req.headers['wiseapp-token'] as string;
+      if (!token) {
+        return res.status(401).json({ 
+          error: "Token WiseApp não encontrado" 
+        });
+      }
+
+      // Buscar account_id do header
+      const account_id = req.headers['wiseapp-account-id'] as string;
+      if (!account_id) {
+        return res.status(400).json({ 
+          error: "Account ID não encontrado" 
+        });
+      }
+
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels/${tagId}`;
+      
+      const response = await fetch(wiseAppUrl, {
+        method: 'DELETE',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`WiseApp API responded with ${response.status}`);
+      }
+
+      res.json({ success: true });
+
+    } catch (error) {
+      console.error("Erro ao remover tag do contato:", error);
+      res.status(500).json({
+        error: "Erro ao remover tag do contato",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
+  // Buscar contato no WiseApp por telefone
+  app.get("/api/wiseapp/:companyId/contacts/search", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const { phone } = req.query;
+      
+      if (!phone) {
+        return res.status(400).json({ error: "Telefone é obrigatório" });
+      }
+
+      console.log(`Searching contact by phone ${phone} for company ${companyId}`);
+      
+      // Buscar token do header
+      const token = req.headers['wiseapp-token'] as string;
+      if (!token) {
+        return res.status(401).json({ 
+          error: "Token WiseApp não encontrado" 
+        });
+      }
+
+      // Buscar account_id do header
+      const account_id = req.headers['wiseapp-account-id'] as string;
+      if (!account_id) {
+        return res.status(400).json({ 
+          error: "Account ID não encontrado" 
+        });
+      }
+
+      const formattedPhone = `55${phone}`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/search?q=${formattedPhone}`;
+      
+      const response = await fetch(wiseAppUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`WiseApp API responded with ${response.status}`);
+      }
+
+      const data = await response.json();
+      res.json(data.payload || []);
+
+    } catch (error) {
+      console.error("Erro ao buscar contato:", error);
+      res.status(500).json({
+        error: "Erro ao buscar contato",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
   app.post("/api/wiseapp/validate-config", async (req, res) => {
     try {
       const companyId = req.headers['company-id'] || '1';

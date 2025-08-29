@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Tag, CheckCircle, Calendar } from 'lucide-react';
+import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Tag, CheckCircle, Calendar, Tags } from 'lucide-react';
 import WhatsAppAvatar from '../../components/WhatsAppAvatar';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database'; // Adicionando tipos necessários
@@ -21,6 +21,8 @@ import ScrollableTableIndicator from '../../components/ScrollableTableIndicator'
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
+import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Interface para a view de contratados
 export interface ViewContratado {
@@ -91,6 +93,8 @@ const STATUS_OPTIONS = [
 const Contratados = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
+  const { wiseAppToken, accountId } = useWiseAppAccess();
+  const queryClient = useQueryClient();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -216,6 +220,8 @@ const Contratados = () => {
   });
   
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [isApplyingTag, setIsApplyingTag] = useState(false);
 
   const convertToMotorista = (contratado: ViewContratado | null): MotoristaWithAddress | null => {
     if (!contratado) return null;
@@ -765,6 +771,67 @@ const Contratados = () => {
 
   const handleMassMessage = () => {
     setIsMassMessageModalOpen(true);
+  };
+
+  const handleApplyTags = (motorista: ViewContratado) => {
+    setSelectedMotorista(motorista);
+    setIsTagModalOpen(true);
+  };
+
+  const applyTagToContact = async (tagId: string) => {
+    if (!selectedMotorista || !selectedMotorista.telefone) {
+      toast.error('Telefone do motorista não encontrado');
+      return;
+    }
+
+    setIsApplyingTag(true);
+    try {
+      // Primeiro, buscar o contato no WiseApp pelo telefone
+      const searchResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${selectedMotorista.telefone}`, {
+        headers: {
+          'wiseapp-token': wiseAppToken || '',
+          'wiseapp-account-id': accountId || ''
+        }
+      });
+
+      if (!searchResponse.ok) {
+        throw new Error('Erro ao buscar contato no WiseApp');
+      }
+
+      const contacts = await searchResponse.json();
+      
+      if (contacts.length === 0) {
+        toast.error('Contato não encontrado no WiseApp');
+        return;
+      }
+
+      const contact = contacts[0]; // Pegar o primeiro contato encontrado
+
+      // Aplicar a tag ao contato
+      const applyResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'wiseapp-token': wiseAppToken || '',
+          'wiseapp-account-id': accountId || ''
+        },
+        body: JSON.stringify({ tagId })
+      });
+
+      if (!applyResponse.ok) {
+        throw new Error('Erro ao aplicar tag ao contato');
+      }
+
+      const selectedTag = tags.find(tag => tag.id.toString() === tagId);
+      toast.success(`Tag "${selectedTag?.nome}" aplicada ao contato ${selectedMotorista.nome_motorista}!`);
+      setIsTagModalOpen(false);
+
+    } catch (error) {
+      console.error('Erro ao aplicar tag:', error);
+      toast.error('Erro ao aplicar tag ao contato');
+    } finally {
+      setIsApplyingTag(false);
+    }
   };
 
   const handleContextMenu = (e: React.MouseEvent, motorista: ViewContratado) => {
@@ -1967,6 +2034,13 @@ const Contratados = () => {
               onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome_motorista || ''),
               color: 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300',
               disabled: !contextMenu.motorista!.telefone
+            },
+            {
+              icon: <Tags size={16} />,
+              label: 'Aplicar Tags',
+              onClick: () => handleApplyTags(contextMenu.motorista!),
+              color: 'text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300',
+              disabled: !contextMenu.motorista!.telefone
             }
           ]}
         />
@@ -2085,6 +2159,68 @@ const Contratados = () => {
           })
           .filter(Boolean)}
       />
+
+      {/* Modal de Aplicar Tags */}
+      {isTagModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                Aplicar Tags - {selectedMotorista?.nome_motorista}
+              </h3>
+              <button
+                onClick={() => setIsTagModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {tags.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                  Nenhuma tag disponível. Sincronize tags do WiseApp primeiro.
+                </p>
+              ) : (
+                tags.map((tag: any) => (
+                  <button
+                    key={tag.id}
+                    onClick={() => applyTagToContact(tag.id.toString())}
+                    disabled={isApplyingTag}
+                    className={`w-full text-left p-3 rounded-lg border-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between`}
+                    style={{
+                      borderColor: tag.cor || '#3B82F6',
+                      backgroundColor: `${tag.cor || '#3B82F6'}10`
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: tag.cor || '#3B82F6' }}
+                      />
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {tag.nome}
+                      </span>
+                    </div>
+                    {isApplyingTag && (
+                      <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setIsTagModalOpen(false)}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
