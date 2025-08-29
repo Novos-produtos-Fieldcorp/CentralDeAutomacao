@@ -227,6 +227,71 @@ export const handler = async (event, context) => {
       }
     }
 
+    // Rota de teste com SQL direto - para verificar se problema é do Supabase client
+    if (path === '/tags-sql' && method === 'GET') {
+      console.log('🗃️  NETLIFY TAGS-SQL: Testing direct SQL query');
+      
+      const companyId = queryParams.company_id || '1';
+      
+      try {
+        // Usar SQL direto em vez do Supabase client
+        const { data: tags, error } = await supabase
+          .rpc('exec_sql', { 
+            query: `SELECT * FROM tags WHERE company_id = ${parseInt(companyId)} ORDER BY nome`
+          });
+        
+        if (error) {
+          console.error('❌ NETLIFY TAGS-SQL: SQL error:', error);
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+              error: "Erro SQL direto",
+              details: error.message
+            })
+          };
+        }
+        
+        console.log('✅ NETLIFY TAGS-SQL: Success with', tags?.length || 0, 'tags');
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(tags || [])
+        };
+        
+      } catch (error) {
+        console.error('💥 NETLIFY TAGS-SQL: Exception:', error);
+        
+        // Tentar query alternativa simples
+        try {
+          const { data: simpleTest, error: simpleError } = await supabase
+            .from('tags')
+            .select('count');
+          
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+              error: "Erro na query SQL",
+              details: error.message,
+              simple_test_result: simpleTest,
+              simple_test_error: simpleError
+            })
+          };
+        } catch (fallbackError) {
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+              error: "Erro crítico SQL",
+              details: error.message,
+              fallback_error: fallbackError.message
+            })
+          };
+        }
+      }
+    }
+
     // Rota para buscar todas as labels de uma empresa (simulado via contatos)
     if (path.match(/^\/wiseapp\/(\d+)\/labels$/) && method === 'GET') {
       const matches = path.match(/^\/wiseapp\/(\d+)\/labels$/);
