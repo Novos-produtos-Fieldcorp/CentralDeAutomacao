@@ -786,19 +786,9 @@ const Contratados = () => {
 
     setIsApplyingTag(true);
     try {
-      // Primeiro, buscar o contato no WiseApp pelo telefone
-      const searchResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${selectedMotorista.telefone}`, {
-        headers: {
-          'wiseapp-token': wiseAppToken || '',
-          'wiseapp-account-id': accountId || ''
-        }
-      });
-
-      if (!searchResponse.ok) {
-        throw new Error('Erro ao buscar contato no WiseApp');
-      }
-
-      const contacts = await searchResponse.json();
+      // Usar WiseApp API diretamente
+      const { wiseAppService } = await import('@/lib/directApiService');
+      const contacts = await wiseAppService.searchContacts(parseInt(companyId), selectedMotorista.telefone.toString(), accountId || '');
       
       if (contacts.length === 0) {
         toast.error('Contato não encontrado no WiseApp');
@@ -808,19 +798,7 @@ const Contratados = () => {
       const contact = contacts[0]; // Pegar o primeiro contato encontrado
 
       // Aplicar a tag ao contato
-      const applyResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-token': wiseAppToken || '',
-          'wiseapp-account-id': accountId || ''
-        },
-        body: JSON.stringify({ tagId })
-      });
-
-      if (!applyResponse.ok) {
-        throw new Error('Erro ao aplicar tag ao contato');
-      }
+      await wiseAppService.applyLabels(parseInt(companyId), contact.id, [tagId], accountId || '');
 
       const selectedTag = tags.find(tag => tag.id.toString() === tagId);
       toast.success(`Tag "${selectedTag?.nome}" aplicada ao contato ${selectedMotorista.nome_motorista}!`);

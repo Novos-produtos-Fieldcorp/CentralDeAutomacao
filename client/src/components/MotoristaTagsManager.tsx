@@ -38,17 +38,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
   // Mutation para adicionar tag ao motorista
   const addTagMutation = useMutation({
-    mutationFn: async (tagId: number) => {
-      const response = await fetch(`/api/motoristas/${motoristaId}/tags`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tag_id: tagId }),
-      });
-      if (!response.ok) throw new Error('Erro ao adicionar tag');
-      return response.json();
-    },
+    mutationFn: (tagId: number) => updateMotoristaTags(motoristaId, [...(motoristaTagsData || []), tagId]),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/motoristas', motoristaId, 'tags'] });
+      queryClient.invalidateQueries({ queryKey: ['motorista', motoristaId, 'tags'] });
       toast.success("Tag adicionada com sucesso!");
     },
     onError: (error: any) => {
@@ -58,15 +50,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
   // Mutation para remover tag do motorista
   const removeTagMutation = useMutation({
-    mutationFn: async (tagId: number) => {
-      const response = await fetch(`/api/motoristas/${motoristaId}/tags/${tagId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Erro ao remover tag');
-      return response;
-    },
+    mutationFn: (tagId: number) => updateMotoristaTags(motoristaId, (motoristaTagsData || []).filter(id => id !== tagId)),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/motoristas', motoristaId, 'tags'] });
+      queryClient.invalidateQueries({ queryKey: ['motorista', motoristaId, 'tags'] });
       toast.success("Tag removida com sucesso!");
     },
     onError: (error: any) => {

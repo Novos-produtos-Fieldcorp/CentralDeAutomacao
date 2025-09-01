@@ -517,9 +517,8 @@ const MotoristasLista = () => {
 
   const fetchTags = async () => {
     try {
-      const response = await fetch(`/api/tags?company_id=${companyId}`);
-      if (!response.ok) throw new Error('Erro ao buscar tags');
-      const data = await response.json();
+      const { getTagsByCompany } = await import('@/lib/directApiService');
+      const data = await getTagsByCompany(companyId);
       setTags(data);
     } catch (error) {
       console.error('Error fetching tags:', error);
