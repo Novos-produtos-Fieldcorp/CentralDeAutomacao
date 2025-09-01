@@ -441,25 +441,24 @@ const MotoristasLista = () => {
 
   const fetchMotoristaTags = async (motoristaId: number) => {
     try {
-      // Usar Supabase direto - buscar tags do motorista via tags_ids
-      const { data: motorista } = await supabase
-        .from('motorista')
-        .select('tags_ids')
-        .eq('motorista_id', motoristaId)
-        .single();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
       
-      if (motorista?.tags_ids && motorista.tags_ids.length > 0) {
-        // Buscar informações das tags
-        const { data: tags } = await supabase
-          .from('tags')
-          .select('*')
-          .in('id', motorista.tags_ids);
-        
-        setMotoristaTags(prev => ({ ...prev, [motoristaId]: tags || [] }));
+      const response = await fetch(`/api/motoristas/${motoristaId}/tags`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const tagsData = await response.json();
+        setMotoristaTags(prev => ({ ...prev, [motoristaId]: tagsData }));
       }
     } catch (error) {
       // Silenciar erro para não quebrar a UI - tags são opcionais
-      console.warn(`Tags não disponíveis para motorista ${motoristaId}`);
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.warn(`Tags não disponíveis para motorista ${motoristaId}`);
+      }
     }
   };
 
@@ -517,8 +516,9 @@ const MotoristasLista = () => {
 
   const fetchTags = async () => {
     try {
-      const { getTagsByCompany } = await import('@/lib/directApiService');
-      const data = await getTagsByCompany(companyId);
+      const response = await fetch(`/api/tags?company_id=${companyId}`);
+      if (!response.ok) throw new Error('Erro ao buscar tags');
+      const data = await response.json();
       setTags(data);
     } catch (error) {
       console.error('Error fetching tags:', error);

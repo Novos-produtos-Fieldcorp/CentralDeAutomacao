@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, Tag as TagIcon } from "lucide-react";
 import toast from "react-hot-toast";
-import { getTagsByCompany, getMotoristaWithTags, updateMotoristaTags } from "@/lib/directApiService";
 
 interface Tag {
   id: number;
@@ -23,24 +22,38 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   const queryClient = useQueryClient();
 
   // Query para buscar tags do motorista
-  const { data: motoristaData, isLoading: isLoadingMotorTags } = useQuery({
-    queryKey: ['motorista', motoristaId, 'tags'],
-    queryFn: () => getMotoristaWithTags(motoristaId),
+  const { data: motoristaTagsData = [], isLoading: isLoadingMotorTags } = useQuery<Tag[]>({
+    queryKey: ['/api/motoristas', motoristaId, 'tags'],
+    queryFn: async () => {
+      const response = await fetch(`/api/motoristas/${motoristaId}/tags`);
+      if (!response.ok) throw new Error('Erro ao buscar tags do motorista');
+      return response.json();
+    },
   });
-  
-  const motoristaTagsData = motoristaData?.tags_ids || [];
 
   // Query para buscar todas as tags da empresa
   const { data: allTags = [], isLoading: isLoadingAllTags } = useQuery<Tag[]>({
-    queryKey: ['tags', companyId],
-    queryFn: () => getTagsByCompany(companyId),
+    queryKey: ['/api/tags', companyId],
+    queryFn: async () => {
+      const response = await fetch(`/api/tags?company_id=${companyId}`);
+      if (!response.ok) throw new Error('Erro ao buscar tags');
+      return response.json();
+    },
   });
 
   // Mutation para adicionar tag ao motorista
   const addTagMutation = useMutation({
-    mutationFn: (tagId: number) => updateMotoristaTags(motoristaId, [...(motoristaTagsData || []), tagId]),
+    mutationFn: async (tagId: number) => {
+      const response = await fetch(`/api/motoristas/${motoristaId}/tags`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tag_id: tagId }),
+      });
+      if (!response.ok) throw new Error('Erro ao adicionar tag');
+      return response.json();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['motorista', motoristaId, 'tags'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/motoristas', motoristaId, 'tags'] });
       toast.success("Tag adicionada com sucesso!");
     },
     onError: (error: any) => {
@@ -50,9 +63,15 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
   // Mutation para remover tag do motorista
   const removeTagMutation = useMutation({
-    mutationFn: (tagId: number) => updateMotoristaTags(motoristaId, (motoristaTagsData || []).filter(id => id !== tagId)),
+    mutationFn: async (tagId: number) => {
+      const response = await fetch(`/api/motoristas/${motoristaId}/tags/${tagId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Erro ao remover tag');
+      return response;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['motorista', motoristaId, 'tags'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/motoristas', motoristaId, 'tags'] });
       toast.success("Tag removida com sucesso!");
     },
     onError: (error: any) => {
