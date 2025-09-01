@@ -296,6 +296,110 @@ export const handler = async (event, context) => {
       };
     }
 
+    // Rota para tags
+    if (path === '/tags' && method === 'GET') {
+      const companyId = queryParams.company_id;
+      
+      if (!companyId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'company_id is required' })
+        };
+      }
+
+      const { data: tags, error } = await supabase
+        .from('tags')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
+
+      if (error) {
+        console.error('Error fetching tags:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: 'Failed to fetch tags' })
+        };
+      }
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(tags || [])
+      };
+    }
+
+    if (path === '/tags' && method === 'POST') {
+      const { data: tag, error } = await supabase
+        .from('tags')
+        .insert(body)
+        .select()
+        .single();
+
+      if (error) {
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: 'Failed to create tag' })
+        };
+      }
+
+      return {
+        statusCode: 201,
+        headers,
+        body: JSON.stringify(tag)
+      };
+    }
+
+    if (path.match(/^\/tags\/(\d+)$/) && method === 'PUT') {
+      const tagId = path.match(/^\/tags\/(\d+)$/)[1];
+      
+      const { data: tag, error } = await supabase
+        .from('tags')
+        .update(body)
+        .eq('id', tagId)
+        .select()
+        .single();
+
+      if (error) {
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: 'Failed to update tag' })
+        };
+      }
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(tag)
+      };
+    }
+
+    if (path.match(/^\/tags\/(\d+)$/) && method === 'DELETE') {
+      const tagId = path.match(/^\/tags\/(\d+)$/)[1];
+      
+      const { error } = await supabase
+        .from('tags')
+        .delete()
+        .eq('id', tagId);
+
+      if (error) {
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: 'Failed to delete tag' })
+        };
+      }
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ success: true })
+      };
+    }
+
     return {
       statusCode: 404,
       headers,
