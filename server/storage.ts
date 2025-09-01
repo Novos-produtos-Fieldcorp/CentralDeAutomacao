@@ -456,6 +456,7 @@ export class DatabaseStorage implements IStorage {
         nome: tags.nome,
         cor: tags.cor,
         company_id: tags.company_id,
+        limite_max_associados: tags.limite_max_associados,
         created_at: tags.created_at,
         updated_at: tags.updated_at
       })
