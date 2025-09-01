@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase-fixed';
 import { useNavigate } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { createApiUrl } from '../lib/api-config';
+import { getCompanyByAccountId } from '../lib/directApiService';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -82,35 +82,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-          // Buscar a empresa real baseada no account_id usando URL dinâmica
-          const apiUrl = createApiUrl(`company/by-account/${currentAccountId}`);
-          console.log('Fetching company data from:', apiUrl);
-          const response = await fetch(apiUrl);
+          // Buscar a empresa real baseada no account_id usando Supabase direto
+          console.log('Fetching company data for account_id:', currentAccountId);
+          const companyData = await getCompanyByAccountId(currentAccountId);
           
-          if (response.ok) {
-            const companyData = await response.json();
-            
-            // Update state and cache
-            setIsAuthenticated(true);
-            setCompanyId(companyData.company_id);
-            
-            // Save to localStorage for persistence
-            localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('companyId', companyData.company_id.toString());
-            localStorage.setItem('companyName', companyData.nome_company || '');
-            
-            console.log('Auth successful - account_id:', currentAccountId, 'company_id:', companyData.company_id, 'company:', companyData.nome_company);
-          } else {
-            console.warn('Company not found for account_id:', currentAccountId, 'Status:', response.status);
-            
-            // Clear cached data
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('companyId');
-            localStorage.removeItem('companyName');
-            
-            setIsAuthenticated(false);
-            navigate('/unauthorized');
-          }
+          // Update state and cache
+          setIsAuthenticated(true);
+          setCompanyId(companyData.company_id);
+          
+          // Save to localStorage for persistence
+          localStorage.setItem('isAuthenticated', 'true');
+          localStorage.setItem('companyId', companyData.company_id.toString());
+          localStorage.setItem('companyName', companyData.nome_company || '');
+          
+          console.log('Auth successful - account_id:', currentAccountId, 'company_id:', companyData.company_id, 'company:', companyData.nome_company);
         } catch (fetchError) {
           console.error('Auth check failed:', fetchError);
           // Fallback apenas para account_id=6 (para testes de desenvolvimento)
