@@ -4,6 +4,7 @@ import { Plus, Trash2, Edit, X, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
+import { getTagsByCompany, createTag, updateTag, deleteTag } from "@/lib/directApiService";
 
 interface TagFormData {
   nome: string;
@@ -40,27 +41,15 @@ export function TagManager({ companyId }: TagManagerProps) {
 
   // Query para buscar tags
   const { data: tags = [], isLoading } = useQuery<Tag[]>({
-    queryKey: ['/api/tags', companyId],
-    queryFn: async () => {
-      const response = await fetch(`/api/tags?company_id=${companyId}`);
-      if (!response.ok) throw new Error('Erro ao buscar tags');
-      return response.json();
-    },
+    queryKey: ['tags', companyId],
+    queryFn: () => getTagsByCompany(companyId),
   });
 
   // Mutation para criar tag
   const createTagMutation = useMutation({
-    mutationFn: async (data: TagFormData) => {
-      const response = await fetch('/api/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, company_id: companyId }),
-      });
-      if (!response.ok) throw new Error('Erro ao criar tag');
-      return response.json();
-    },
+    mutationFn: (data: TagFormData) => createTag({ ...data, company_id: companyId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags', companyId] });
       setIsModalOpen(false);
       resetForm();
       toast.success("Tag criada com sucesso!");

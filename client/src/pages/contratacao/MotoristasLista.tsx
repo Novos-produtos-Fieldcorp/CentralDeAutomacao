@@ -441,24 +441,25 @@ const MotoristasLista = () => {
 
   const fetchMotoristaTags = async (motoristaId: number) => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+      // Usar Supabase direto - buscar tags do motorista via tags_ids
+      const { data: motorista } = await supabase
+        .from('motorista')
+        .select('tags_ids')
+        .eq('motorista_id', motoristaId)
+        .single();
       
-      const response = await fetch(`/api/motoristas/${motoristaId}/tags`, {
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (response.ok) {
-        const tagsData = await response.json();
-        setMotoristaTags(prev => ({ ...prev, [motoristaId]: tagsData }));
+      if (motorista?.tags_ids && motorista.tags_ids.length > 0) {
+        // Buscar informações das tags
+        const { data: tags } = await supabase
+          .from('tags')
+          .select('*')
+          .in('id', motorista.tags_ids);
+        
+        setMotoristaTags(prev => ({ ...prev, [motoristaId]: tags || [] }));
       }
     } catch (error) {
       // Silenciar erro para não quebrar a UI - tags são opcionais
-      if (error instanceof Error && error.name !== 'AbortError') {
-        console.warn(`Tags não disponíveis para motorista ${motoristaId}`);
-      }
+      console.warn(`Tags não disponíveis para motorista ${motoristaId}`);
     }
   };
 

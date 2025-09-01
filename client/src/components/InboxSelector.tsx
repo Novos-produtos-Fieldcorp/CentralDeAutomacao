@@ -68,30 +68,24 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
     try {
       console.log('🔍 Tentando carregar inboxes para company:', companyId, 'account:', accountId);
       
-      // Primeiro tentar a API otimizada
-      const response = await fetch(`/api/chatwoot/inboxes/${companyId}?account_id=${accountId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data?.payload && Array.isArray(data.payload)) {
-          console.log('✅ Inboxes carregados da API:', data.payload.length);
-          setInboxes(data.payload.map((inbox: any) => ({
-            ...inbox,
-            isOpen: true // Simplificado para evitar complexidade de horários
-          })));
-        } else {
-          throw new Error('Dados de inboxes inválidos');
-        }
+      // Usar chatWootService diretamente
+      const { chatWootService } = await import('@/lib/directApiService');
+      const data = await chatWootService.getInboxes(parseInt(companyId), accountId);
+      
+      if (data?.payload && Array.isArray(data.payload)) {
+        console.log('✅ Inboxes carregados via ChatWoot direto:', data.payload.length);
+        setInboxes(data.payload.map((inbox: any) => ({
+          ...inbox,
+          isOpen: true // Simplificado para evitar complexidade de horários
+        })));
+      } else if (Array.isArray(data)) {
+        console.log('✅ Inboxes carregados via ChatWoot direto:', data.length);
+        setInboxes(data.map((inbox: any) => ({
+          ...inbox,
+          isOpen: true
+        })));
       } else {
-        console.log('⚠️ API falhou, usando dados de fallback');
-        throw new Error(`API Error: ${response.status}`);
+        throw new Error('Dados de inboxes inválidos');
       }
     } catch (err) {
       console.log('📦 Usando inboxes de fallback devido ao erro:', err);

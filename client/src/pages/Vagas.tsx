@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import DashboardStats from '../components/DashboardStats';
 import VagasList from '../components/VagasList';
 import AddVagaModal from '../components/AddVagaModal';
+import { getCompanyByAccountId } from '../lib/directApiService';
+import { supabase } from '../lib/supabase';
 
 interface DashboardData {
   totalVagas: number;
@@ -26,22 +28,35 @@ const Vagas: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // First get company_id from account_id
-      const companyResponse = await fetch(`/api/company/by-account/${accountId}`);
-      if (!companyResponse.ok) {
-        console.error('Error fetching company data');
-        return;
-      }
+      if (!accountId) return;
       
-      const companyData = await companyResponse.json();
+      // Get company_id from account_id
+      const companyData = await getCompanyByAccountId(accountId);
       const companyId = companyData.company_id;
       
-      // Then fetch dashboard data using company_id
-      const response = await fetch(`/api/vagas/dashboard/${companyId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardData(data);
-      }
+      // Fetch dashboard data using Supabase directly
+      const { data: vagas } = await supabase
+        .from('vaga')
+        .select('*')
+        .eq('company_id', companyId);
+
+      const totalVagas = vagas?.length || 0;
+      const vagasAbertas = vagas?.filter(v => v.st_vaga_id === 1).length || 0;
+      const vagasFechadas = vagas?.filter(v => v.st_vaga_id === 2).length || 0;
+
+      // Vagas vencendo (próximos 7 dias)
+      const now = new Date();
+      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const vagasVencendo = vagas?.filter(v =>
+        v.dt_limite && new Date(v.dt_limite) <= nextWeek
+      ).length || 0;
+
+      setDashboardData({
+        totalVagas,
+        vagasAbertas,
+        vagasFechadas,
+        vagasVencendo
+      });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
