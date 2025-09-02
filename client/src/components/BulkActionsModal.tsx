@@ -238,13 +238,7 @@ const BulkActionsModal = ({
                 <option value="">Selecione uma tag</option>
                 {tags.map(tag => (
                   <option key={tag.id} value={tag.id.toString()}>
-                    <div className="flex items-center">
-                      <div 
-                        className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
-                        style={{ backgroundColor: tag.cor }}
-                      />
-                      {tag.nome}
-                    </div>
+                    {tag.nome}
                   </option>
                 ))}
               </select>

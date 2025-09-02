@@ -279,7 +279,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'company-id': companyId.toString()
+          'company-id': companyId?.toString() || '1'
         },
         body: JSON.stringify({
           motorista_ids: motoristaIds,
@@ -1975,7 +1975,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                   if (motorista.motorista_id) {
                                     setTagDropdownOpen(prev => ({
                                       ...prev,
-                                      [motorista.motorista_id]: !prev[motorista.motorista_id || 0]
+                                      [motorista.motorista_id!]: !prev[motorista.motorista_id || 0]
                                     }));
                                   }
                                 }}

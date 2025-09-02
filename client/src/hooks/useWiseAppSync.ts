@@ -84,7 +84,11 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       queryClient.invalidateQueries({ queryKey: ['/api/motoristas'] });
     },
     onError: (error: Error) => {
-      toast.error(`Erro na sincronização em lote: ${error.message}`);
+      if (error.message.includes('Token WiseApp não configurado')) {
+        toast.error('Para usar a sincronização com WiseApp, configure primeiro o token de acesso nas configurações da empresa.');
+      } else {
+        toast.error(`Erro na sincronização em lote: ${error.message}`);
+      }
     }
   });
 

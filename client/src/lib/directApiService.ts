@@ -226,8 +226,17 @@ export const wiseAppService = {
         .eq('company_id', companyId)
         .single();
 
-      if (!tokenData) {
-        throw new Error('Token WiseApp não configurado');
+      if (!tokenData?.access_token_wiseapp) {
+        // Sem token, apenas processar localmente
+        return { 
+          data: { 
+            totalProcessed: 0, 
+            successful: 0, 
+            failed: 0, 
+            errors: [],
+            message: 'Sincronização pulada - Token WiseApp não configurado'
+          } 
+        };
       }
 
       // 2. Buscar todos os motoristas e agregados
@@ -406,7 +415,7 @@ export const wiseAppService = {
       .eq('company_id', companyId)
       .single();
 
-    if (!tokenData) {
+    if (!tokenData?.access_token_wiseapp) {
       return {
         valid: false,
         error: 'Token WiseApp não configurado para esta empresa'
