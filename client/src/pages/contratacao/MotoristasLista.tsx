@@ -156,6 +156,7 @@ const MotoristasLista = () => {
   // Função para adicionar tag a um motorista
   const handleAddTag = async (motoristaId: number, tagId: number) => {
     try {
+      console.log('Adicionando tag - Motorista ID:', motoristaId, 'Tag ID:', tagId);
       setUpdatingMotoristaTag(motoristaId);
       setTagDropdownOpen(prev => ({ ...prev, [motoristaId]: false }));
 
@@ -717,6 +718,7 @@ const MotoristasLista = () => {
       }
       
       setTags(tags || []);
+      console.log('Tags carregadas do Supabase:', tags);
     } catch (error) {
       console.error('Error fetching tags:', error);
       // Não mostrar toast de erro para evitar spam, tags são opcionais
