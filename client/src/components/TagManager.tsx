@@ -4,7 +4,7 @@ import { Plus, Trash2, Edit, X, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
-import { getTagsByCompany, createTag, updateTag, deleteTag } from "@/lib/directApiService";
+import { getTagsByCompany, createTag, updateTag, deleteTag, getWiseAppLabels } from "@/lib/directApiService";
 
 interface TagFormData {
   nome: string;
@@ -145,17 +145,8 @@ export function TagManager({ companyId }: TagManagerProps) {
       }
 
       // Buscar tags do WiseApp
-      const response = await fetch(`/api/wiseapp/${companyId}/labels`, {
-        headers: {
-          'wiseapp-token': wiseAppToken,
-          'wiseapp-account-id': accountId
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Erro ao buscar tags do WiseApp');
-      }
-
-      const wiseAppTags = await response.json();
+      const wiseAppLabelsResponse = await getWiseAppLabels(companyId);
+      const wiseAppTags = wiseAppLabelsResponse.payload || [];
       console.log('WiseApp tags found:', wiseAppTags);
       
       if (!wiseAppTags || wiseAppTags.length === 0) {

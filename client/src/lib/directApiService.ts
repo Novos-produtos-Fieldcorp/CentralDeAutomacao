@@ -274,6 +274,84 @@ export const wiseAppService = {
   }
 };
 
+// Funções para WiseApp API direto
+export const getWiseAppLabels = async (companyId: number) => {
+  const { data: tokenData, error } = await supabase
+    .from('wiseapp_acesso')
+    .select('access_token_wiseapp, account_id')
+    .eq('company_id', companyId)
+    .single();
+    
+  if (error || !tokenData) {
+    throw new Error('Token WiseApp não encontrado para esta empresa');
+  }
+  
+  const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${tokenData.account_id}/labels`, {
+    headers: {
+      'api_access_token': tokenData.access_token_wiseapp,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Erro ao buscar labels do WiseApp');
+  }
+
+  return response.json();
+};
+
+export const searchWiseAppContact = async (companyId: number, phone: string) => {
+  const { data: tokenData, error } = await supabase
+    .from('wiseapp_acesso')
+    .select('access_token_wiseapp, account_id')
+    .eq('company_id', companyId)
+    .single();
+    
+  if (error || !tokenData) {
+    throw new Error('Token WiseApp não encontrado para esta empresa');
+  }
+  
+  const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${tokenData.account_id}/contacts/search?q=${phone}`, {
+    headers: {
+      'api_access_token': tokenData.access_token_wiseapp,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Erro ao buscar contato no WiseApp');
+  }
+
+  return response.json();
+};
+
+export const applyWiseAppContactLabels = async (companyId: number, contactId: number, labelIds: number[]) => {
+  const { data: tokenData, error } = await supabase
+    .from('wiseapp_acesso')
+    .select('access_token_wiseapp, account_id')
+    .eq('company_id', companyId)
+    .single();
+    
+  if (error || !tokenData) {
+    throw new Error('Token WiseApp não encontrado para esta empresa');
+  }
+  
+  const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${tokenData.account_id}/contacts/${contactId}/labels`, {
+    method: 'POST',
+    headers: {
+      'api_access_token': tokenData.access_token_wiseapp,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ labels: labelIds })
+  });
+
+  if (!response.ok) {
+    throw new Error('Erro ao aplicar labels no WiseApp');
+  }
+
+  return response.json();
+};
+
 // Serviço para ChatWoot (chamadas diretas)
 export const chatWootService = {
   async getInboxes(companyId: number, accountId: string) {
