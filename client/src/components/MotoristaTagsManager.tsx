@@ -46,7 +46,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
   // Query para buscar todas as tags da empresa
   const { data: tagsResponse, isLoading: isLoadingAllTags } = useQuery({
-    queryKey: ['wiseapp-labels', accountId],
+    queryKey: ['wiseapp-tags', accountId],
     queryFn: () => getWiseAppLabels(accountId || '', wiseAppToken || ''),
     enabled: !!accountId && !!wiseAppToken,
   });
