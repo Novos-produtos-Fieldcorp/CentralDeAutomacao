@@ -150,6 +150,72 @@ const MotoristasLista = () => {
   const [tagSearchVisible, setTagSearchVisible] = useState('');
   const [tagActiveTab, setTagActiveTab] = useState<'filter' | 'visibility'>('filter');
   const [motoristaTags, setMotoristaTags] = useState<{[key: number]: any[]}>({});
+  const [tagDropdownOpen, setTagDropdownOpen] = useState<{[key: number]: boolean}>({});
+  const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
+
+  // Função para adicionar tag a um motorista
+  const handleAddTag = async (motoristaId: number, tagId: number) => {
+    try {
+      setUpdatingMotoristaTag(motoristaId);
+      setTagDropdownOpen(prev => ({ ...prev, [motoristaId]: false }));
+
+      const response = await fetch(`/api/motoristas/${motoristaId}/tags`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tag_id: tagId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao adicionar tag');
+      }
+
+      // Atualizar tags localmente
+      const tag = tags.find(t => t.id === tagId);
+      if (tag) {
+        setMotoristaTags(prev => ({
+          ...prev,
+          [motoristaId]: [...(prev[motoristaId] || []), tag]
+        }));
+      }
+
+      toast.success('Tag adicionada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao adicionar tag:', error);
+      toast.error('Erro ao adicionar tag');
+    } finally {
+      setUpdatingMotoristaTag(null);
+    }
+  };
+
+  // Função para remover tag de um motorista
+  const handleRemoveTag = async (motoristaId: number, tagId: number) => {
+    try {
+      setUpdatingMotoristaTag(motoristaId);
+
+      const response = await fetch(`/api/motoristas/${motoristaId}/tags/${tagId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao remover tag');
+      }
+
+      // Remover tag localmente
+      setMotoristaTags(prev => ({
+        ...prev,
+        [motoristaId]: (prev[motoristaId] || []).filter(tag => tag.id !== tagId)
+      }));
+
+      toast.success('Tag removida com sucesso!');
+    } catch (error) {
+      console.error('Erro ao remover tag:', error);
+      toast.error('Erro ao remover tag');
+    } finally {
+      setUpdatingMotoristaTag(null);
+    }
+  };
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -175,6 +241,7 @@ const MotoristasLista = () => {
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
   const ativoDropdownRef = useRef<HTMLDivElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
+  const motoristaTagDropdownRefs = useRef<{[key: number]: HTMLDivElement | null}>({});
   
   // Funções para alternar os dropdowns
   const handleToggleStatusDropdown = (e: React.MouseEvent) => {
@@ -327,13 +394,24 @@ const MotoristasLista = () => {
     if (showTagDropdown && tagDropdownRef.current && !tagDropdownRef.current.contains(target)) {
       setShowTagDropdown(false);
     }
+
+    // Verifica se o clique foi fora dos dropdowns de tags dos motoristas
+    Object.keys(tagDropdownOpen).forEach(motoristaIdStr => {
+      const motoristaId = parseInt(motoristaIdStr);
+      if (tagDropdownOpen[motoristaId]) {
+        const ref = motoristaTagDropdownRefs.current[motoristaId];
+        if (ref && !ref.contains(target)) {
+          setTagDropdownOpen(prev => ({ ...prev, [motoristaId]: false }));
+        }
+      }
+    });
   };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showStatusDropdown, showCidadeDropdown, showClienteDropdown, showAtivoDropdown, showTagDropdown]);
+  }, [showStatusDropdown, showCidadeDropdown, showClienteDropdown, showAtivoDropdown, showTagDropdown, tagDropdownOpen]);
 
   const fetchMotoristas = async () => {
     try {
@@ -1767,26 +1845,91 @@ const MotoristasLista = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-wrap gap-1">
-                          {motoristaTags[motorista.motorista_id]?.filter((tag: any) => !visibleTags.includes(tag.id.toString())).length > 0 ? (
-                            motoristaTags[motorista.motorista_id]
-                              .filter((tag: any) => !visibleTags.includes(tag.id.toString()))
-                              .map((tag: any) => (
+                        <div className="relative">
+                          {/* Tags atuais */}
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {motoristaTags[motorista.motorista_id]?.filter((tag: any) => !visibleTags.includes(tag.id.toString())).map((tag: any) => (
                               <span
                                 key={tag.id}
-                                className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
+                                className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:opacity-75 group"
                                 style={{
                                   backgroundColor: tag.cor + '30',
                                   color: tag.cor,
                                   border: `1px solid ${tag.cor}50`
                                 }}
+                                title="Clique para remover esta tag"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveTag(motorista.motorista_id, tag.id);
+                                }}
                               >
                                 {tag.nome}
+                                <X className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                               </span>
-                            ))
-                          ) : (
-                            <span className="text-sm text-gray-500 dark:text-gray-400">-</span>
-                          )}
+                            ))}
+                          </div>
+
+                          {/* Botão para adicionar tags */}
+                          <div 
+                            className="relative inline-block"
+                            ref={(el) => motoristaTagDropdownRefs.current[motorista.motorista_id] = el}
+                          >
+                            <button
+                              type="button"
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTagDropdownOpen(prev => ({
+                                  ...prev,
+                                  [motorista.motorista_id]: !prev[motorista.motorista_id]
+                                }));
+                              }}
+                              disabled={updatingMotoristaTag === motorista.motorista_id}
+                            >
+                              {updatingMotoristaTag === motorista.motorista_id ? (
+                                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                              ) : (
+                                <Plus className="w-3 h-3 mr-1" />
+                              )}
+                              Add Tag
+                            </button>
+
+                            {/* Dropdown de tags disponíveis */}
+                            {tagDropdownOpen[motorista.motorista_id] && (
+                              <div className="absolute z-[999999] top-full left-0 mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-2 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                                <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                                  <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Adicionar Tags</span>
+                                </div>
+                                <div className="space-y-1">
+                                  {tags
+                                    .filter(tag => !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id))
+                                    .map((tag) => (
+                                    <div
+                                      key={tag.id}
+                                      className="flex items-center px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddTag(motorista.motorista_id, tag.id);
+                                      }}
+                                    >
+                                      <div
+                                        className="w-3 h-3 rounded-full flex-shrink-0 mr-2"
+                                        style={{ backgroundColor: tag.cor }}
+                                      />
+                                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                                        {tag.nome}
+                                      </span>
+                                    </div>
+                                  ))}
+                                  {tags.filter(tag => !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id)).length === 0 && (
+                                    <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                                      Todas as tags já foram adicionadas
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
