@@ -156,7 +156,6 @@ const MotoristasLista = () => {
   // Função para adicionar tag a um motorista
   const handleAddTag = async (motoristaId: number, tagId: number) => {
     try {
-      console.log('Adicionando tag - Motorista ID:', motoristaId, 'Tag ID:', tagId);
       setUpdatingMotoristaTag(motoristaId);
       setTagDropdownOpen(prev => ({ ...prev, [motoristaId]: false }));
 
@@ -705,23 +704,35 @@ const MotoristasLista = () => {
       if (!companyId) return;
       setTagsLoading(true);
       
-      // Buscar tags diretamente do Supabase
-      const { data: tags, error } = await supabase
-        .from('tag')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('nome');
+      // Buscar tags via API backend para garantir consistência
+      const response = await apiRequest(`/tags?company_id=${companyId}`);
       
-      if (error) {
-        console.error('Erro ao buscar tags do Supabase:', error);
-        throw error;
+      if (!response.ok) {
+        throw new Error('Erro ao buscar tags via API');
       }
       
+      const tags = await response.json();
+      console.log('Tags carregadas via API:', tags);
+      
       setTags(tags || []);
-      console.log('Tags carregadas do Supabase:', tags);
     } catch (error) {
       console.error('Error fetching tags:', error);
-      // Não mostrar toast de erro para evitar spam, tags são opcionais
+      // Fallback: buscar diretamente do Supabase se API falhar
+      try {
+        const { data: tags, error: supabaseError } = await supabase
+          .from('tag')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('nome');
+        
+        if (supabaseError) throw supabaseError;
+        
+        console.log('Tags carregadas do Supabase (fallback):', tags);
+        setTags(tags || []);
+      } catch (fallbackError) {
+        console.error('Erro no fallback Supabase:', fallbackError);
+        setTags([]); // Se tudo falhar, usar array vazio
+      }
     } finally {
       setTagsLoading(false);
     }
