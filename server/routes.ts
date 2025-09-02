@@ -1079,7 +1079,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const motoristaTag = await storage.addTagToMotorista(
         Number(motoristaId),
         Number(tag_id),
-        company_id ? Number(company_id) : undefined,
+
       );
       res.status(201).json(motoristaTag);
     } catch (error) {

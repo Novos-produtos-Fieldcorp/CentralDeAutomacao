@@ -425,20 +425,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTag(insertTag: InsertTag): Promise<Tag> {
-    const [newTag] = await db
+    const [tag] = await db
       .insert(tags)
       .values(insertTag)
       .returning();
-    return newTag;
+    return tag;
   }
 
   async updateTag(id: number, insertTag: Partial<InsertTag>): Promise<Tag | undefined> {
-    const [updatedTag] = await db
+    const [tag] = await db
       .update(tags)
       .set(insertTag)
       .where(eq(tags.id, id))
       .returning();
-    return updatedTag || undefined;
+    return tag || undefined;
   }
 
   async deleteTag(id: number): Promise<boolean> {
@@ -450,39 +450,44 @@ export class DatabaseStorage implements IStorage {
 
   // Motorista Tags methods
   async getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]> {
-    return await db
+    // Join motorista_tags with tags to get tag details
+    const result = await db
       .select({
         id: tags.id,
         nome: tags.nome,
         cor: tags.cor,
         company_id: tags.company_id,
-        limite_max_associados: tags.limite_max_associados,
+        limite_max: tags.limite_max,
         created_at: tags.created_at,
         updated_at: tags.updated_at
       })
       .from(motorista_tags)
       .innerJoin(tags, eq(motorista_tags.tag_id, tags.id))
       .where(eq(motorista_tags.motorista_id, motoristaId));
+    
+    return result;
   }
 
-  async addTagToMotorista(motoristaId: number, tagId: number, companyId?: number): Promise<MotoristaTag> {
-    const [newMotoristaTag] = await db
+  async addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag> {
+    const [motoristaTag] = await db
       .insert(motorista_tags)
       .values({ 
         motorista_id: motoristaId, 
         tag_id: tagId
       })
       .returning();
-    return newMotoristaTag;
+    return motoristaTag;
   }
 
   async removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean> {
     const result = await db
       .delete(motorista_tags)
-      .where(and(
-        eq(motorista_tags.motorista_id, motoristaId),
-        eq(motorista_tags.tag_id, tagId)
-      ));
+      .where(
+        and(
+          eq(motorista_tags.motorista_id, motoristaId),
+          eq(motorista_tags.tag_id, tagId)
+        )
+      );
     return (result.rowCount ?? 0) > 0;
   }
 

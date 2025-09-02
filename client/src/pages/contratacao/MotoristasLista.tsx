@@ -892,8 +892,17 @@ const MotoristasLista = () => {
     let tagMatch = true;
     if (Array.isArray(tagFilter) && tagFilter.length > 0) {
       const motoristaTagsList = motoristaTags[motorista.motorista_id] || [];
-      const motoristaTagIds = motoristaTagsList.map((tag: any) => tag.id.toString());
-      tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
+      // Garantir que temos um array válido
+      if (Array.isArray(motoristaTagsList) && motoristaTagsList.length > 0) {
+        const motoristaTagIds = motoristaTagsList.map((tag: any) => {
+          // Garantir que o ID existe e convertê-lo para string
+          return tag?.id?.toString() || '';
+        }).filter(id => id !== '');
+        tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
+      } else {
+        // Se motorista não tem tags, não deve passar no filtro quando tags estão selecionadas
+        tagMatch = false;
+      }
     }
     
     // Verificação de busca por texto

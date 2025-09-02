@@ -51,23 +51,26 @@ export const motorista = pgTable("motorista", {
 });
 
 // Tags table for WiseApp integration
-export const tags = pgTable("tags", {
+export const tags = pgTable("tag", {
   id: serial("id").primaryKey(),
   nome: text("nome").notNull(),
   cor: text("cor").default("#3B82F6"), // Default blue color
-  limite_max_associados: integer("limite_max_associados"), // Maximum associates limit
+  limite_max: integer("limite_max"), // Maximum associates limit
   company_id: integer("company_id").references(() => company.company_id),
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
 });
 
 // Tag assignments (many-to-many relationship with motoristas)
-export const motorista_tags = pgTable("motorista_tags", {
+export const associacao_tags = pgTable("associacao_tags", {
   id: serial("id").primaryKey(),
   motorista_id: integer("motorista_id").references(() => motorista.motorista_id),
   tag_id: integer("tag_id").references(() => tags.id),
   created_at: timestamp("created_at").defaultNow(),
 });
+
+// Legacy alias for backward compatibility
+export const motorista_tags = associacao_tags;
 
 // Estado table
 export const estado = pgTable("estado", {
