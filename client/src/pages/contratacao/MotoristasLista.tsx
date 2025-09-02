@@ -1341,7 +1341,7 @@ const MotoristasLista = () => {
                           setTagActiveTab('filter');
                         }}
                       >
-                        🔍 Filtrar Lista
+                        Filtrar Lista
                       </button>
                       <button
                         type="button"
@@ -1355,7 +1355,7 @@ const MotoristasLista = () => {
                           setTagActiveTab('visibility');
                         }}
                       >
-                        👁️ Exibir Colunas
+                        Exibir Colunas
                       </button>
                     </div>
 
