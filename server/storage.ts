@@ -35,7 +35,7 @@ import {
   type MotoristaTag,
   type InsertMotoristaTag
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, and, desc, like, or, count, sql } from "drizzle-orm";
 import { supabase } from "./db";
 
@@ -419,7 +419,6 @@ export class DatabaseStorage implements IStorage {
 
   // Tags methods - Using direct PostgreSQL connection
   async getTags(companyId: number): Promise<Tag[]> {
-    const { pool } = await import('./db');
     const client = await pool.connect();
     try {
       const result = await client.query(
@@ -433,7 +432,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTag(insertTag: InsertTag): Promise<Tag> {
-    const { pool } = await import('./db');
     const client = await pool.connect();
     try {
       const result = await client.query(
@@ -447,7 +445,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTag(id: number, insertTag: Partial<InsertTag>): Promise<Tag | undefined> {
-    const { pool } = await import('./db');
     const client = await pool.connect();
     try {
       const setParts = [];
@@ -481,7 +478,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTag(id: number): Promise<boolean> {
-    const { pool } = await import('./db');
     const client = await pool.connect();
     try {
       const result = await client.query(
@@ -496,7 +492,6 @@ export class DatabaseStorage implements IStorage {
 
   // Motorista Tags methods - Using direct PostgreSQL connection
   async getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]> {
-    const { pool } = await import('./db');
     const client = await pool.connect();
     try {
       const result = await client.query(`
@@ -516,7 +511,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag> {
-    const { pool } = await import('./db');
     const client = await pool.connect();
     try {
       const result = await client.query(
@@ -533,7 +527,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean> {
-    const { pool } = await import('./db');
     const client = await pool.connect();
     try {
       const result = await client.query(
