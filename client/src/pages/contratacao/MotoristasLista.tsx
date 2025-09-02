@@ -518,10 +518,10 @@ const MotoristasLista = () => {
 
       setMotoristas(motoristasAgrupados || []);
       
-      // Carregar tags após carregar motoristas
-      if (motoristasAgrupados && motoristasAgrupados.length > 0) {
-        await fetchBulkMotoristaTags(motoristasAgrupados);
-      }
+      // Tags serão carregadas apenas via botão Sync WiseApp
+      // if (motoristasAgrupados && motoristasAgrupados.length > 0) {
+      //   await fetchAllMotoristaTags(motoristasAgrupados);
+      // }
     } catch (error) {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');

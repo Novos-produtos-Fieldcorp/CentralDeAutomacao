@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { getWiseAppService } from '../../../shared/wiseAppService';
+import { wiseAppService } from '@/lib/directApiService';
 import { useAuth } from '@/context/AuthContext';
 
 interface SyncResult {
@@ -36,23 +36,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
   const syncMotoristaMutation = useMutation({
     mutationFn: async (motoristaId: number) => {
       if (!companyId) throw new Error('Company ID not found');
-      
-      // Obter configuração do WiseApp
-      const wiseAppService = await getWiseAppService();
-      if (!wiseAppService) {
-        throw new Error('Token WiseApp não configurado');
-      }
-      
-      // Buscar dados do motorista
-      const response = await fetch(`/api/motoristas/${motoristaId}`);
-      if (!response.ok) {
-        throw new Error('Erro ao buscar motorista');
-      }
-      
-      const motorista = await response.json();
-      
-      // Sincronizar com WiseApp
-      return await wiseAppService.syncMotorista(motorista);
+      return wiseAppService.syncMotorista(motoristaId, companyId);
     },
     onSuccess: (data) => {
       if (data.success) {
@@ -72,25 +56,10 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
   const bulkSyncMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
-      
-      // Obter configuração do WiseApp
-      const wiseAppService = await getWiseAppService();
-      if (!wiseAppService) {
-        throw new Error('Token WiseApp não configurado');
-      }
-      
-      // Buscar motoristas do banco
-      const response = await fetch(`/api/motoristas?company_id=${companyId}`);
-      if (!response.ok) {
-        throw new Error('Erro ao buscar motoristas');
-      }
-      
-      const motoristas = await response.json();
-      
-      // Sincronizar com WiseApp
-      return await wiseAppService.syncMultipleMotoristas(motoristas);
+      return wiseAppService.syncMotoristasBulkWithTags(companyId);
     },
-    onSuccess: (result: BulkSyncResult) => {
+    onSuccess: (data) => {
+      const result = data.data as BulkSyncResult;
       
       if (result.successful > 0) {
         toast.success(
