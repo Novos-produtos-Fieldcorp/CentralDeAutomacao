@@ -4,6 +4,7 @@ import { Plus, Trash2, Edit, X, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
+import { getTagsByCompany, createTag, updateTag, deleteTag } from "@/lib/directApiService";
 
 interface TagFormData {
   nome: string;
@@ -40,27 +41,16 @@ export function TagManager({ companyId }: TagManagerProps) {
 
   // Query para buscar tags
   const { data: tags = [], isLoading } = useQuery<Tag[]>({
-    queryKey: ['/api/tags', companyId],
-    queryFn: async () => {
-      const response = await fetch(`/api/tags?company_id=${companyId}`);
-      if (!response.ok) throw new Error('Erro ao buscar tags');
-      return response.json();
-    },
+    queryKey: ['tags', companyId],
+    queryFn: () => getTagsByCompany(companyId),
+    enabled: !!companyId,
   });
 
   // Mutation para criar tag
   const createTagMutation = useMutation({
-    mutationFn: async (data: TagFormData) => {
-      const response = await fetch('/api/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, company_id: companyId }),
-      });
-      if (!response.ok) throw new Error('Erro ao criar tag');
-      return response.json();
-    },
+    mutationFn: (data: TagFormData) => createTag({ ...data, company_id: companyId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags', companyId] });
       setIsModalOpen(false);
       resetForm();
       toast.success("Tag criada com sucesso!");
@@ -72,17 +62,9 @@ export function TagManager({ companyId }: TagManagerProps) {
 
   // Mutation para atualizar tag
   const updateTagMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: TagFormData }) => {
-      const response = await fetch(`/api/tags/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Erro ao atualizar tag');
-      return response.json();
-    },
+    mutationFn: ({ id, data }: { id: number; data: TagFormData }) => updateTag(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags', companyId] });
       setIsModalOpen(false);
       setEditingTag(null);
       resetForm();
@@ -95,15 +77,9 @@ export function TagManager({ companyId }: TagManagerProps) {
 
   // Mutation para deletar tag
   const deleteTagMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/tags/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Erro ao deletar tag');
-      return response;
-    },
+    mutationFn: (id: number) => deleteTag(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags', companyId] });
       toast.success("Tag deletada com sucesso!");
     },
     onError: (error: any) => {
@@ -190,8 +166,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       }
 
       // Buscar tags existentes
-      const existingTagsResponse = await fetch(`/api/tags?company_id=${companyId}`);
-      const existingTags = await existingTagsResponse.json();
+      const existingTags = await getTagsByCompany(companyId);
       const existingTagNames = new Set(existingTags.map((tag: Tag) => tag.nome.toLowerCase()));
 
       // Sincronizar tags locais
@@ -201,22 +176,14 @@ export function TagManager({ companyId }: TagManagerProps) {
           // Verificar se a tag já existe pelo nome (case-insensitive)
           if (!existingTagNames.has(wiseTag.name.toLowerCase())) {
             // Criar nova tag
-            const createResponse = await fetch('/api/tags', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                nome: wiseTag.name,
-                cor: wiseTag.color || '#3B82F6',
-                company_id: companyId,
-              }),
+            await createTag({
+              nome: wiseTag.name,
+              cor: wiseTag.color || '#3B82F6',
+              company_id: companyId,
             });
             
-            if (createResponse.ok) {
-              synced++;
-              console.log(`Tag sincronizada: ${wiseTag.name}`);
-            } else {
-              console.error(`Erro ao criar tag ${wiseTag.name}:`, await createResponse.text());
-            }
+            synced++;
+            console.log(`Tag sincronizada: ${wiseTag.name}`);
           }
         } catch (error) {
           console.error(`Erro ao sincronizar tag ${wiseTag.name}:`, error);
@@ -225,7 +192,7 @@ export function TagManager({ companyId }: TagManagerProps) {
 
       if (synced > 0) {
         toast.success(`${synced} tag(s) sincronizada(s) do WiseApp!`);
-        queryClient.invalidateQueries({ queryKey: ['/api/tags', companyId] });
+        queryClient.invalidateQueries({ queryKey: ['tags', companyId] });
       } else {
         toast('Todas as tags já estavam sincronizadas.', {
           icon: 'ℹ️'
