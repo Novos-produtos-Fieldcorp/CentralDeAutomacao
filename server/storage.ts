@@ -37,6 +37,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, like, or, count, sql } from "drizzle-orm";
+import { supabase } from "./db";
 
 export interface IStorage {
   // User methods
@@ -450,45 +451,132 @@ export class DatabaseStorage implements IStorage {
 
   // Motorista Tags methods
   async getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]> {
-    // Join motorista_tags with tags to get tag details
-    const result = await db
-      .select({
-        id: tags.id,
-        nome: tags.nome,
-        cor: tags.cor,
-        company_id: tags.company_id,
-        limite_max: tags.limite_max,
-        created_at: tags.created_at,
-        updated_at: tags.updated_at
-      })
-      .from(motorista_tags)
-      .innerJoin(tags, eq(motorista_tags.tag_id, tags.id))
-      .where(eq(motorista_tags.motorista_id, motoristaId));
-    
-    return result;
+    try {
+      // Use Supabase directly to avoid WebSocket connection issues if available
+      if (supabase) {
+        const { data: result, error } = await supabase
+          .from('associacao_tags')
+          .select(`
+            tag_id,
+            tag:tag_id (
+              id,
+              nome,
+              cor,
+              company_id,
+              limite_max,
+              created_at,
+              updated_at
+            )
+          `)
+          .eq('motorista_id', motoristaId);
+
+        if (error) {
+          console.error('Error fetching motorista tags:', error);
+          return [];
+        }
+
+        // Transform the result to match the expected Tag[] format
+        return result?.map((item: any) => ({
+          id: item.tag.id,
+          nome: item.tag.nome,
+          cor: item.tag.cor,
+          company_id: item.tag.company_id,
+          limite_max: item.tag.limite_max,
+          created_at: item.tag.created_at,
+          updated_at: item.tag.updated_at
+        })) || [];
+      }
+
+      // Fallback to Drizzle if Supabase not available
+      const result = await db
+        .select({
+          id: tags.id,
+          nome: tags.nome,
+          cor: tags.cor,
+          company_id: tags.company_id,
+          limite_max: tags.limite_max,
+          created_at: tags.created_at,
+          updated_at: tags.updated_at
+        })
+        .from(motorista_tags)
+        .innerJoin(tags, eq(motorista_tags.tag_id, tags.id))
+        .where(eq(motorista_tags.motorista_id, motoristaId));
+      
+      return result;
+    } catch (error) {
+      console.error('Error in getMotoristaTagsWithDetails:', error);
+      return [];
+    }
   }
 
   async addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag> {
-    const [motoristaTag] = await db
-      .insert(motorista_tags)
-      .values({ 
-        motorista_id: motoristaId, 
-        tag_id: tagId
-      })
-      .returning();
-    return motoristaTag;
+    try {
+      // Use Supabase directly to avoid WebSocket connection issues if available
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('associacao_tags')
+          .insert({
+            motorista_id: motoristaId,
+            tag_id: tagId
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error adding tag to motorista:', error);
+          throw new Error('Failed to add tag to motorista');
+        }
+
+        return data;
+      }
+
+      // Fallback to Drizzle
+      const [motoristaTag] = await db
+        .insert(motorista_tags)
+        .values({ 
+          motorista_id: motoristaId, 
+          tag_id: tagId
+        })
+        .returning();
+      return motoristaTag;
+    } catch (error) {
+      console.error('Error in addTagToMotorista:', error);
+      throw error;
+    }
   }
 
   async removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean> {
-    const result = await db
-      .delete(motorista_tags)
-      .where(
-        and(
-          eq(motorista_tags.motorista_id, motoristaId),
-          eq(motorista_tags.tag_id, tagId)
-        )
-      );
-    return (result.rowCount ?? 0) > 0;
+    try {
+      // Use Supabase directly to avoid WebSocket connection issues if available
+      if (supabase) {
+        const { error } = await supabase
+          .from('associacao_tags')
+          .delete()
+          .eq('motorista_id', motoristaId)
+          .eq('tag_id', tagId);
+
+        if (error) {
+          console.error('Error removing tag from motorista:', error);
+          return false;
+        }
+
+        return true;
+      }
+
+      // Fallback to Drizzle
+      const result = await db
+        .delete(motorista_tags)
+        .where(
+          and(
+            eq(motorista_tags.motorista_id, motoristaId),
+            eq(motorista_tags.tag_id, tagId)
+          )
+        );
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error in removeTagFromMotorista:', error);
+      return false;
+    }
   }
 
   // WiseApp token method - queries wiseapp_acesso table

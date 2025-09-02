@@ -63,10 +63,10 @@ export const tags = pgTable("tag", {
 
 // Tag assignments (many-to-many relationship with motoristas)
 export const associacao_tags = pgTable("associacao_tags", {
-  id: serial("id").primaryKey(),
-  motorista_id: integer("motorista_id").references(() => motorista.motorista_id),
-  tag_id: integer("tag_id").references(() => tags.id),
-  created_at: timestamp("created_at").defaultNow(),
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
+  motorista_id: bigint("motorista_id", { mode: "number" }).references(() => motorista.motorista_id),
+  tag_id: bigint("tag_id", { mode: "number" }).references(() => tags.id),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 // Legacy alias for backward compatibility
