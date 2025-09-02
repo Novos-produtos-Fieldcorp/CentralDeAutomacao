@@ -23,6 +23,9 @@ import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
+import { getWiseAppLabels } from '../../lib/directApiService';
+import { useAuth } from '../../context/AuthContext';
+import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
 
 // Função auxiliar para converter ViewMotorista para Motorista
 const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
@@ -441,24 +444,13 @@ const MotoristasLista = () => {
 
   const fetchMotoristaTags = async (motoristaId: number) => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-      
-      const response = await fetch(`/api/motoristas/${motoristaId}/tags`, {
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (response.ok) {
-        const tagsData = await response.json();
-        setMotoristaTags(prev => ({ ...prev, [motoristaId]: tagsData }));
-      }
+      // Por enquanto, simula a função usando dados mock
+      // Esta funcionalidade seria implementada no directApiService
+      // com integração ao Supabase para tags de motorista
+      setMotoristaTags(prev => ({ ...prev, [motoristaId]: [] }));
     } catch (error) {
       // Silenciar erro para não quebrar a UI - tags são opcionais
-      if (error instanceof Error && error.name !== 'AbortError') {
-        console.warn(`Tags não disponíveis para motorista ${motoristaId}`);
-      }
+      console.warn(`Tags não disponíveis para motorista ${motoristaId}`);
     }
   };
 
@@ -514,11 +506,14 @@ const MotoristasLista = () => {
     }
   };
 
+  const { accountId } = useAuth();
+  const { token: wiseAppToken } = useWiseAppAccess();
+  
   const fetchTags = async () => {
     try {
-      const response = await fetch(`/api/tags?company_id=${companyId}`);
-      if (!response.ok) throw new Error('Erro ao buscar tags');
-      const data = await response.json();
+      if (!accountId || !wiseAppToken) return;
+      const response = await getWiseAppLabels(accountId, wiseAppToken);
+      const data = response.payload || [];
       setTags(data);
     } catch (error) {
       console.error('Error fetching tags:', error);
