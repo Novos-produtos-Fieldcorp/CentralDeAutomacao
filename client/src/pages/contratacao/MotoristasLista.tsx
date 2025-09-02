@@ -146,6 +146,8 @@ const MotoristasLista = () => {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [tags, setTags] = useState<any[]>([]);
+  const [tagSearchFilter, setTagSearchFilter] = useState('');
+  const [tagSearchVisible, setTagSearchVisible] = useState('');
   const [motoristaTags, setMotoristaTags] = useState<{[key: number]: any[]}>({});
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
@@ -1337,8 +1339,20 @@ const MotoristasLista = () => {
                           Limpar filtros
                         </button>
                       </div>
-                      <div className="space-y-1">
-                        {tags.map((tag) => (
+                      <div className="mb-3">
+                        <input
+                          type="text"
+                          placeholder="Pesquisar tags..."
+                          value={tagSearchFilter}
+                          onChange={(e) => setTagSearchFilter(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="space-y-1 max-h-48 overflow-y-auto">
+                        {tags.filter(tag => 
+                          tag.nome.toLowerCase().includes(tagSearchFilter.toLowerCase())
+                        ).map((tag) => (
                           <label key={`filter-${tag.id}`} className="flex items-center cursor-pointer py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-600 rounded">
                             <input
                               type="checkbox"
@@ -1354,16 +1368,15 @@ const MotoristasLista = () => {
                               }}
                               onClick={(e) => e.stopPropagation()}
                             />
-                            <span
-                              className="text-xs rounded-full px-2 py-1"
-                              style={{
-                                backgroundColor: tag.cor + '20',
-                                color: tag.cor,
-                                border: `1px solid ${tag.cor}40`
-                              }}
-                            >
-                              {tag.nome}
-                            </span>
+                            <div className="flex items-center gap-2 flex-1">
+                              <div
+                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: tag.cor }}
+                              />
+                              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                                {tag.nome}
+                              </span>
+                            </div>
                           </label>
                         ))}
                       </div>
@@ -1381,8 +1394,20 @@ const MotoristasLista = () => {
                           Mostrar todas
                         </button>
                       </div>
-                      <div className="space-y-1">
-                        {tags.map((tag) => (
+                      <div className="mb-3">
+                        <input
+                          type="text"
+                          placeholder="Pesquisar tags..."
+                          value={tagSearchVisible}
+                          onChange={(e) => setTagSearchVisible(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="space-y-1 max-h-48 overflow-y-auto">
+                        {tags.filter(tag => 
+                          tag.nome.toLowerCase().includes(tagSearchVisible.toLowerCase())
+                        ).map((tag) => (
                           <label key={`visible-${tag.id}`} className="flex items-center cursor-pointer py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-600 rounded">
                             <input
                               type="checkbox"
@@ -1398,16 +1423,15 @@ const MotoristasLista = () => {
                               }}
                               onClick={(e) => e.stopPropagation()}
                             />
-                            <span
-                              className="text-xs rounded-full px-2 py-1"
-                              style={{
-                                backgroundColor: tag.cor + '20',
-                                color: tag.cor,
-                                border: `1px solid ${tag.cor}40`
-                              }}
-                            >
-                              {tag.nome}
-                            </span>
+                            <div className="flex items-center gap-2 flex-1">
+                              <div
+                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: tag.cor }}
+                              />
+                              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                                {tag.nome}
+                              </span>
+                            </div>
                           </label>
                         ))}
                       </div>
