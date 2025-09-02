@@ -436,11 +436,18 @@ export class DatabaseStorage implements IStorage {
         return data || [];
       }
 
-      // Fallback to Drizzle if Supabase not available
-      return await db
-        .select()
-        .from(tags)
-        .where(eq(tags.company_id, companyId));
+      // Use direct pool connection to avoid WebSocket issues
+      const { pool } = await import('./db');
+      const client = await pool.connect();
+      try {
+        const result = await client.query(
+          'SELECT * FROM tag WHERE company_id = $1 ORDER BY nome',
+          [companyId]
+        );
+        return result.rows;
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error('Error in getTags:', error);
       throw error;
