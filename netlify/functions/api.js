@@ -34,35 +34,64 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Tags endpoint - connect to Supabase
+// Tags endpoint - connect to PostgreSQL
 app.get('/tags', async (req, res) => {
   try {
     const { company_id } = req.query;
     
     if (!company_id) {
-      return res.status(400).json({ error: 'company_id is required' });
+      return res.status(400).json({ error: 'company_id é obrigatório' });
     }
     
-    const { createClient } = require('@supabase/supabase-js');
-    const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
-    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
+    // Import PostgreSQL client
+    const { neon } = require('@neondatabase/serverless');
+    const sql = neon(process.env.DATABASE_URL);
     
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    const { data: tags, error } = await supabase
-      .from('tag')
-      .select('id, nome, cor, company_id')
-      .eq('company_id', company_id);
-    
-    if (error) {
-      console.error('Supabase error:', error);
-      return res.status(500).json({ error: 'Failed to fetch tags from database' });
-    }
+    const tags = await sql`
+      SELECT id, nome, cor, company_id, limite_max, created_at, updated_at
+      FROM tag
+      WHERE company_id = ${company_id}
+      ORDER BY nome
+    `;
     
     res.json(tags || []);
   } catch (error) {
     console.error('Tags endpoint error:', error);
-    res.status(500).json({ error: 'Failed to fetch tags' });
+    res.status(500).json({ 
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+});
+
+// Motorista tags endpoint
+app.get('/motoristas/:id/tags', async (req, res) => {
+  try {
+    const motoristaId = parseInt(req.params.id);
+    
+    if (!motoristaId) {
+      return res.status(400).json({ error: 'ID do motorista é obrigatório' });
+    }
+    
+    // Import PostgreSQL client
+    const { neon } = require('@neondatabase/serverless');
+    const sql = neon(process.env.DATABASE_URL);
+    
+    const tags = await sql`
+      SELECT t.id, t.nome, t.cor, t.company_id, t.limite_max, t.created_at, t.updated_at
+      FROM associacao_tags mt
+      INNER JOIN tag t ON mt.tag_id = t.id
+      WHERE mt.motorista_id = ${motoristaId}
+      ORDER BY t.nome
+    `;
+    
+    res.json(tags || []);
+  } catch (error) {
+    console.error('Motorista tags endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
   }
 });
 
