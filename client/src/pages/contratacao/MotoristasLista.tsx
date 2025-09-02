@@ -21,6 +21,7 @@ import Pagination from '../../components/Pagination';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
+import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
 import { useAuth } from '../../context/AuthContext';
@@ -217,6 +218,7 @@ const MotoristasLista = () => {
     }
   };
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [isAgregadoModalOpen, setIsAgregadoModalOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -712,7 +714,6 @@ const MotoristasLista = () => {
       }
       
       const tags = await response.json();
-      console.log('Tags carregadas via API:', tags);
       
       setTags(tags || []);
     } catch (error) {
@@ -727,7 +728,6 @@ const MotoristasLista = () => {
         
         if (supabaseError) throw supabaseError;
         
-        console.log('Tags carregadas do Supabase (fallback):', tags);
         setTags(tags || []);
       } catch (fallbackError) {
         console.error('Erro no fallback Supabase:', fallbackError);
@@ -743,7 +743,13 @@ const MotoristasLista = () => {
     
     try {
       setSelectedMotorista(motorista);
-      setIsDocumentViewerOpen(true);
+      
+      // Verificar se é agregado para usar o modal correto
+      if (motorista.funcao === 'Agregado') {
+        setIsAgregadoModalOpen(true);
+      } else {
+        setIsDocumentViewerOpen(true);
+      }
     } catch (error) {
       console.error('Error loading document:', error);
       toast.error('Erro ao carregar documento');
@@ -2226,6 +2232,13 @@ const MotoristasLista = () => {
         foto_whatsapp={selectedMotorista?.foto_whatsapp}
         endereco={endereco}
         st_cadastro={selectedMotorista?.st_cadastro}
+      />
+
+      <UnifiedAgregadoModal
+        isOpen={isAgregadoModalOpen}
+        onClose={() => setIsAgregadoModalOpen(false)}
+        motorista={selectedMotorista ? toMotorista(selectedMotorista) : null}
+        onSuccess={fetchMotoristas}
       />
 
       <DocumentUploadModal
