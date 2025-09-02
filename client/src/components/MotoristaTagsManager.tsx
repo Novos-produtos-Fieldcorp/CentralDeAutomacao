@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { getWiseAppLabels } from "@/lib/directApiService";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
+import { apiRequest } from '@/lib/queryClient';
 
 interface Tag {
   id: number;
@@ -37,7 +38,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   const { data: motoristaTagsData = [], isLoading: isLoadingMotorTags } = useQuery<Tag[]>({
     queryKey: ['motorista-tags', motoristaId],
     queryFn: async () => {
-      const response = await fetch(`/api/motoristas/${motoristaId}/tags`);
+      const response = await apiRequest(`/motoristas/${motoristaId}/tags`);
       if (!response.ok) throw new Error('Erro ao buscar tags do motorista');
       return response.json();
     },
@@ -56,7 +57,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   // Mutation para adicionar tag ao motorista
   const addTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
-      const response = await fetch(`/api/motoristas/${motoristaId}/tags`, {
+      const response = await apiRequest(`/motoristas/${motoristaId}/tags`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tag_id: tagId }),
@@ -76,7 +77,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   // Mutation para remover tag do motorista
   const removeTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
-      const response = await fetch(`/api/motoristas/${motoristaId}/tags/${tagId}`, {
+      const response = await apiRequest(`/motoristas/${motoristaId}/tags/${tagId}`, {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Erro ao remover tag');

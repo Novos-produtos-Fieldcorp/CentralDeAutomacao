@@ -53,6 +53,7 @@ app.use((req, res, next) => {
     'Pragma',
     'Expires',
     'wiseapp-token',
+    'company-id',
     'wiseapp-account-id',
     'X-Requested-With',
     'Accept',

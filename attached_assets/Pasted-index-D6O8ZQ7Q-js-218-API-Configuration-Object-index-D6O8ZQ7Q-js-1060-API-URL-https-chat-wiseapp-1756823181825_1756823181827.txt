@@ -1,0 +1,41 @@
+index-D6O8ZQ7Q.js:218 API Configuration: Object
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-D6O8ZQ7Q.js:1060 Fetching fresh WiseApp token from database
+index-D6O8ZQ7Q.js:225 Fetching company data for account_id: 1
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-D6O8ZQ7Q.js:225 Auth successful - account_id: 1 company_id: 2 company: Fieldcorp
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-D6O8ZQ7Q.js:225 Using cached auth - account_id: 1 company_id: 2
+index-D6O8ZQ7Q.js:1943 Buscando tags do WiseApp para account: 1
+index-D6O8ZQ7Q.js:225 Fazendo requisição via backend para: https://b8a2fe25-be22-41f5-b1a6-2cecdb29b3a3-00-fbhfhvazvvim.worf.replit.dev/api/wiseapp/2/labels
+index-D6O8ZQ7Q.js:225 Response status: 200
+index-D6O8ZQ7Q.js:225 Response data: Array(20)
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-D6O8ZQ7Q.js:225 Using cached auth - account_id: 1 company_id: 2
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-D6O8ZQ7Q.js:225 Using cached auth - account_id: 1 company_id: 2
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-D6O8ZQ7Q.js:225 Using cached auth - account_id: 1 company_id: 2
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-D6O8ZQ7Q.js:225 Using cached auth - account_id: 1 company_id: 2
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-D6O8ZQ7Q.js:225 Using cached auth - account_id: 1 company_id: 2
+index-D6O8ZQ7Q.js:1553 Clientes Contratados: Object
+index-D6O8ZQ7Q.js:1553 Total Motoristas: Array(1)
+index-D6O8ZQ7Q.js:1553 Total Agregados: Array(3)
+/api/tags?company_id=2:1  Failed to load resource: the server responded with a status of 404 ()
+index-D6O8ZQ7Q.js:1493 Error fetching tags: Error: Failed to fetch tags
+    at We (index-D6O8ZQ7Q.js:1493:8008)
+We @ index-D6O8ZQ7Q.js:1493
+index-D6O8ZQ7Q.js:1060 📱 Abrindo chat para telefone: 11987654322, motorista ID: 484
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+/api/api/v1/accounts/1/inboxes:1  Failed to load resource: the server responded with a status of 404 ()
+index-D6O8ZQ7Q.js:1060 Error fetching inboxes: qr
+Ie @ index-D6O8ZQ7Q.js:1060
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+/api/api/v1/accounts/1/inboxes:1  Failed to load resource: the server responded with a status of 404 ()
+index-D6O8ZQ7Q.js:1060 API URL: https://chat.wiseapp360.com/api/v1

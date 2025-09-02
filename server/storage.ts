@@ -35,7 +35,8 @@ import {
   type MotoristaTag,
   type InsertMotoristaTag
 } from "@shared/schema";
-import { supabase } from "./db";
+import { supabase, db } from "./db";
+import { eq, and, or, like, desc, count, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -415,94 +416,78 @@ export class DatabaseStorage implements IStorage {
       .where(eq(documento_ajudante.motorista_id, motoristaId));
   }
 
-  // Tags methods - Using Supabase client
+  // Tags methods
   async getTags(companyId: number): Promise<Tag[]> {
     try {
-      const { data, error } = await supabase
-        .from('tag')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('nome');
+      const result = await db
+        .select()
+        .from(tags)
+        .where(eq(tags.company_id, companyId));
       
-      if (error) {
-        console.error('Supabase error in getTags:', error);
-        return [];
-      }
-      
-      return data || [];
+      return result;
     } catch (error) {
-      console.error('Error in getTags:', error);
-      return [];
+      throw new Error(`Failed to get tags: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   async createTag(insertTag: InsertTag): Promise<Tag> {
-    const { data, error } = await supabase
-      .from('tag')
-      .insert(insertTag)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Supabase error in createTag:', error);
-      throw error;
+    try {
+      const [result] = await db
+        .insert(tags)
+        .values(insertTag)
+        .returning();
+      
+      return result;
+    } catch (error) {
+      throw new Error(`Failed to create tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-    
-    return data;
   }
 
   async updateTag(id: number, insertTag: Partial<InsertTag>): Promise<Tag | undefined> {
-    const { data, error } = await supabase
-      .from('tag')
-      .update(insertTag)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Supabase error in updateTag:', error);
-      return undefined;
+    try {
+      const [result] = await db
+        .update(tags)
+        .set(insertTag)
+        .where(eq(tags.id, id))
+        .returning();
+      
+      return result || undefined;
+    } catch (error) {
+      throw new Error(`Failed to update tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-    
-    return data;
   }
 
   async deleteTag(id: number): Promise<boolean> {
-    const { error } = await supabase
-      .from('tag')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Supabase error in deleteTag:', error);
+    try {
+      await db
+        .delete(tags)
+        .where(eq(tags.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting tag:', error);
       return false;
     }
-    
-    return true;
   }
 
-  // Motorista Tags methods - Using Supabase
+  // Motorista Tags methods - usando apenas banco local
   async getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]> {
     try {
-      const { data, error } = await supabase
-        .from('associacao_tags')
-        .select(`
-          tag (
-            id,
-            nome,
-            cor,
-            company_id,
-            limite_max
-          )
-        `)
-        .eq('motorista_id', motoristaId);
+      const result = await db
+        .select({
+          id: tags.id,
+          nome: tags.nome,
+          cor: tags.cor,
+          company_id: tags.company_id,
+          limite_max: tags.limite_max,
+          created_at: tags.created_at,
+          updated_at: tags.updated_at
+        })
+        .from(motorista_tags)
+        .innerJoin(tags, eq(motorista_tags.tag_id, tags.id))
+        .where(eq(motorista_tags.motorista_id, motoristaId));
       
-      if (error) {
-        console.error('Supabase error in getMotoristaTagsWithDetails:', error);
-        return [];
-      }
-      
-      return data?.map(item => item.tag).filter(Boolean) || [];
+      return result;
     } catch (error) {
       console.error('Error in getMotoristaTagsWithDetails:', error);
       return [];
@@ -510,33 +495,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag> {
-    const { data, error } = await supabase
-      .from('associacao_tags')
-      .insert({ motorista_id: motoristaId, tag_id: tagId })
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Supabase error in addTagToMotorista:', error);
+    try {
+      const [motoristaTag] = await db
+        .insert(motorista_tags)
+        .values({ 
+          motorista_id: motoristaId, 
+          tag_id: tagId
+        })
+        .returning();
+      return motoristaTag;
+    } catch (error) {
+      console.error('Error in addTagToMotorista:', error);
       throw error;
     }
-    
-    return data;
   }
 
   async removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean> {
-    const { error } = await supabase
-      .from('associacao_tags')
-      .delete()
-      .eq('motorista_id', motoristaId)
-      .eq('tag_id', tagId);
-    
-    if (error) {
-      console.error('Supabase error in removeTagFromMotorista:', error);
+    try {
+      const result = await db
+        .delete(motorista_tags)
+        .where(
+          and(
+            eq(motorista_tags.motorista_id, motoristaId),
+            eq(motorista_tags.tag_id, tagId)
+          )
+        );
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error in removeTagFromMotorista:', error);
       return false;
     }
-    
-    return true;
   }
 
   // WiseApp token method - queries wiseapp_acesso table

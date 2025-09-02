@@ -1,0 +1,11 @@
+{
+  "name": "netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for Fleet Management System",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.13.0",
+    "@supabase/supabase-js": "^2.48.1",
+    "express": "^4.19.2",
+    "serverless-http": "^3.2.0"
+  }
+}

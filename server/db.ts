@@ -1,12 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 import dotenv from "dotenv";
 
 // Load environment variables
 dotenv.config();
 
-// Configure Supabase directly with the project URL
-const supabaseUrl = "https://sngzctgbomqmpdcwjltt.supabase.co";
-const supabaseKey = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuZ3pjdGdib21xbXBkY3dqbHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ1Mjk2NDQsImV4cCI6MjA1MDEwNTY0NH0.xLzxQEGMvJH3FhfR-I0uOOxNI5ktEOINHRQUoDbVLMg";
+// Create Supabase client - using only Supabase
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("SUPABASE_URL/VITE_SUPABASE_URL and SUPABASE_ANON_KEY/VITE_SUPABASE_ANON_KEY must be set");
+}
 
 export const supabase = createClient(
   supabaseUrl,
@@ -19,8 +25,11 @@ export const supabase = createClient(
   }
 );
 
-console.log("Supabase configured with URL:", supabaseUrl);
+// Create local PostgreSQL connection (Drizzle)
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL must be set");
+}
 
-// For legacy compatibility (will be removed)
-export const db = null;
-export const pool = null;
+const sql = neon(connectionString);
+export const db = drizzle(sql);

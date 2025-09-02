@@ -327,9 +327,11 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             Accept: "application/json",
           },
         });
-        const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
-        if (response.data?.payload) {
-          const allInboxes = response.data.payload.map((inbox: any) => ({
+        const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
+        // O servidor retorna os dados diretamente, não em response.data.payload
+        const inboxesData = response.data?.payload || response.data;
+        if (inboxesData && Array.isArray(inboxesData) && inboxesData.length > 0) {
+          const allInboxes = inboxesData.map((inbox: any) => ({
             ...inbox,
             isOpen: true, // ou lógica de horário se quiser
           }));
@@ -337,6 +339,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           setShowInboxSelector(true);
           setSelectedInboxId(null); // Não seleciona automaticamente
         } else {
+          console.log("No inboxes found or empty response");
           setAvailableInboxes([]);
         }
       } catch (error) {
@@ -398,7 +401,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         },
       });
 
-      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
+      const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
       if (response.data?.payload) {
         setInboxes(response.data.payload);
 

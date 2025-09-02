@@ -31,7 +31,6 @@ export const apiRequest = async (url: string, options: RequestInit = {}) => {
   
   // Usar URL dinâmica baseada no ambiente
   const apiUrl = url.startsWith('/') ? createApiUrl(url.slice(1)) : createApiUrl(url);
-  console.log('API Request to:', apiUrl);
   
   const response = await fetch(apiUrl, {
     ...options,
@@ -42,10 +41,5 @@ export const apiRequest = async (url: string, options: RequestInit = {}) => {
     },
   });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-    throw new Error(errorData.error || `HTTP ${response.status}`);
-  }
-
-  return response.json();
+  return response;
 };
