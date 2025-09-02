@@ -417,17 +417,38 @@ export class DatabaseStorage implements IStorage {
       .where(eq(documento_ajudante.motorista_id, motoristaId));
   }
 
-  // Tags methods - Using direct PostgreSQL connection
+  // Tags methods - Using Supabase REST API to avoid WebSocket issues
   async getTags(companyId: number): Promise<Tag[]> {
-    const client = await pool.connect();
     try {
-      const result = await client.query(
-        'SELECT * FROM tag WHERE company_id = $1 ORDER BY nome',
-        [companyId]
-      );
-      return result.rows;
-    } finally {
-      client.release();
+      // Extract database info from DATABASE_URL
+      const dbUrl = process.env.DATABASE_URL;
+      if (!dbUrl) throw new Error('DATABASE_URL not configured');
+      
+      // Use Supabase REST API directly via fetch
+      const url = new URL(dbUrl);
+      const hostname = url.hostname;
+      const parts = hostname.split('.');
+      const projectRef = parts[0].split('-').pop();
+      
+      const supabaseUrl = `https://${projectRef}.supabase.co`;
+      const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuZ3pjdGdib21xbXBkY3dqbHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ1Mjk2NDQsImV4cCI6MjA1MDEwNTY0NH0.xLzxQEGMvJH3FhfR-I0uOOxNI5ktEOINHRQUoDbVLMg';
+      
+      const response = await fetch(`${supabaseUrl}/rest/v1/tag?company_id=eq.${companyId}&order=nome`, {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Supabase API error: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getTags:', error);
+      return [];
     }
   }
 
