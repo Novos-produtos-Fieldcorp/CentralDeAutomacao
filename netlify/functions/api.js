@@ -1,9 +1,6 @@
 const express = require('express');
 const serverless = require('serverless-http');
 
-// Import environment setup
-require('dotenv').config();
-
 // Create app instance
 const app = express();
 app.use(express.json());
@@ -32,80 +29,89 @@ app.use((req, res, next) => {
   next();
 });
 
-// Import and register routes dynamically
-let registerRoutes;
-try {
-  registerRoutes = require('../../dist/routes').registerRoutes;
-  registerRoutes(app);
-} catch (error) {
-  // Fallback - manually define critical routes
-  console.error('Could not load routes from dist, using fallback');
-  
-  // Health check
-  app.get('/health', (req, res) => {
-    res.json({ status: 'OK', timestamp: new Date().toISOString() });
-  });
-  
-  // Tags endpoint - connect to Supabase
-  app.get('/tags', async (req, res) => {
-    try {
-      const { company_id } = req.query;
-      
-      if (!company_id) {
-        return res.status(400).json({ error: 'company_id is required' });
-      }
-      
-      const { createClient } = require('@supabase/supabase-js');
-      const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
-      const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
-      
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      const { data: tags, error } = await supabase
-        .from('tag')
-        .select('id, nome, cor, company_id')
-        .eq('company_id', company_id);
-      
-      if (error) {
-        console.error('Supabase error:', error);
-        return res.status(500).json({ error: 'Failed to fetch tags from database' });
-      }
-      
-      res.json(tags || []);
-    } catch (error) {
-      console.error('Tags endpoint error:', error);
-      res.status(500).json({ error: 'Failed to fetch tags' });
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Tags endpoint - connect to Supabase
+app.get('/tags', async (req, res) => {
+  try {
+    const { company_id } = req.query;
+    
+    if (!company_id) {
+      return res.status(400).json({ error: 'company_id is required' });
     }
-  });
-  
-  // Proxy to WiseApp API for inboxes
-  app.get('/v1/accounts/:accountId/inboxes', async (req, res) => {
-    try {
-      const { accountId } = req.params;
-      const token = req.headers.api_access_token || req.headers['wiseapp-token'];
-      
-      if (!token) {
-        return res.status(401).json({ error: 'API token required' });
-      }
-      
-      const axios = require('axios');
-      const response = await axios.get(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/inboxes`, {
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      res.json(response.data);
-    } catch (error) {
-      console.error('WiseApp proxy error:', error.message);
-      res.status(error.response?.status || 500).json({ 
-        error: 'Failed to fetch inboxes',
-        details: error.message 
-      });
+    
+    const { createClient } = require('@supabase/supabase-js');
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    const { data: tags, error } = await supabase
+      .from('tag')
+      .select('id, nome, cor, company_id')
+      .eq('company_id', company_id);
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      return res.status(500).json({ error: 'Failed to fetch tags from database' });
     }
+    
+    res.json(tags || []);
+  } catch (error) {
+    console.error('Tags endpoint error:', error);
+    res.status(500).json({ error: 'Failed to fetch tags' });
+  }
+});
+
+// Proxy to WiseApp API for inboxes
+app.get('/v1/accounts/:accountId/inboxes', async (req, res) => {
+  try {
+    const { accountId } = req.params;
+    const token = req.headers.api_access_token || req.headers['wiseapp-token'];
+    
+    if (!token) {
+      return res.status(401).json({ error: 'API token required' });
+    }
+    
+    // Use native fetch instead of axios to reduce dependencies
+    const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/inboxes`, {
+      method: 'GET',
+      headers: {
+        'api_access_token': token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      timeout: 10000
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('WiseApp proxy error:', error.message);
+    const statusCode = error.status || (error.message.includes('HTTP') ? parseInt(error.message.split(' ')[1]) : 500);
+    res.status(statusCode).json({ 
+      error: 'Failed to fetch inboxes',
+      details: error.message 
+    });
+  }
+});
+
+// Catch-all for unmatched API routes
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'API endpoint not found',
+    path: req.originalUrl,
+    method: req.method,
+    timestamp: new Date().toISOString()
   });
-}
+});
 
 // Export handler for Netlify Functions  
 exports.handler = serverless(app);
