@@ -171,7 +171,7 @@ export const wiseAppService = {
 
     // Buscar contato no WiseApp
     const phone = `55${motorista.telefone}`;
-    const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${companyId}/contacts/search?q=${phone}`;
+    const searchUrl = `${CHAT_API_URL}/api/v1/accounts/${companyId}/contacts/search?q=${phone}`;
 
     const searchResponse = await fetch(searchUrl, {
       headers: {
@@ -262,20 +262,12 @@ export const wiseAppService = {
 };
 
 // Funções para WiseApp API direto
-export const getWiseAppLabels = async (companyId: number) => {
-  const { data: tokenData, error } = await supabase
-    .from('wiseapp_acesso')
-    .select('access_token_wiseapp, account_id')
-    .eq('company_id', companyId)
-    .single();
-    
-  if (error || !tokenData) {
-    throw new Error('Token WiseApp não encontrado para esta empresa');
-  }
-  
-  const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${tokenData.account_id}/labels`, {
+const CHAT_API_URL = import.meta.env.VITE_CHAT_API_URL || 'https://chat.wiseapp360.com';
+
+export const getWiseAppLabels = async (accountId: string, token: string) => {
+  const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/labels`, {
     headers: {
-      'api_access_token': tokenData.access_token_wiseapp,
+      'api_access_token': token,
       'Content-Type': 'application/json'
     }
   });
@@ -287,20 +279,10 @@ export const getWiseAppLabels = async (companyId: number) => {
   return response.json();
 };
 
-export const searchWiseAppContact = async (companyId: number, phone: string) => {
-  const { data: tokenData, error } = await supabase
-    .from('wiseapp_acesso')
-    .select('access_token_wiseapp, account_id')
-    .eq('company_id', companyId)
-    .single();
-    
-  if (error || !tokenData) {
-    throw new Error('Token WiseApp não encontrado para esta empresa');
-  }
-  
-  const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${tokenData.account_id}/contacts/search?q=${phone}`, {
+export const searchWiseAppContact = async (accountId: string, token: string, phone: string) => {
+  const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/contacts/search?q=${phone}`, {
     headers: {
-      'api_access_token': tokenData.access_token_wiseapp,
+      'api_access_token': token,
       'Content-Type': 'application/json'
     }
   });
@@ -312,21 +294,11 @@ export const searchWiseAppContact = async (companyId: number, phone: string) => 
   return response.json();
 };
 
-export const applyWiseAppContactLabels = async (companyId: number, contactId: number, labelIds: number[]) => {
-  const { data: tokenData, error } = await supabase
-    .from('wiseapp_acesso')
-    .select('access_token_wiseapp, account_id')
-    .eq('company_id', companyId)
-    .single();
-    
-  if (error || !tokenData) {
-    throw new Error('Token WiseApp não encontrado para esta empresa');
-  }
-  
-  const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${tokenData.account_id}/contacts/${contactId}/labels`, {
+export const applyWiseAppContactLabels = async (accountId: string, token: string, contactId: number, labelIds: number[]) => {
+  const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/contacts/${contactId}/labels`, {
     method: 'POST',
     headers: {
-      'api_access_token': tokenData.access_token_wiseapp,
+      'api_access_token': token,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({ labels: labelIds })
@@ -368,7 +340,7 @@ export const chatWootService = {
     }
 
     // Fazer requisição para o ChatWoot
-    const targetUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/inboxes`;
+    const targetUrl = `${CHAT_API_URL}/api/v1/accounts/${accountId}/inboxes`;
 
     const response = await fetch(targetUrl, {
       method: 'GET',

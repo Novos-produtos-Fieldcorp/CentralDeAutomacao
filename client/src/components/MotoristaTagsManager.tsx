@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, Tag as TagIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import { getWiseAppLabels } from "@/lib/directApiService";
+import { useAuth } from "@/context/AuthContext";
+import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
 
 interface Tag {
   id: number;
@@ -21,6 +23,8 @@ interface MotoristaTagsManagerProps {
 export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsManagerProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { accountId } = useAuth();
+  const { token: wiseAppToken } = useWiseAppAccess();
 
   // Query para buscar tags do motorista  
   const { data: motoristaTagsData = [], isLoading: isLoadingMotorTags } = useQuery<Tag[]>({
@@ -35,9 +39,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
   // Query para buscar todas as tags da empresa
   const { data: tagsResponse, isLoading: isLoadingAllTags } = useQuery({
-    queryKey: ['wiseapp-labels', companyId],
-    queryFn: () => getWiseAppLabels(companyId),
-    enabled: !!companyId,
+    queryKey: ['wiseapp-labels', accountId],
+    queryFn: () => getWiseAppLabels(accountId || '', wiseAppToken || ''),
+    enabled: !!accountId && !!wiseAppToken,
   });
   
   const allTags = tagsResponse?.payload || [];

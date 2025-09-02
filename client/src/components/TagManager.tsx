@@ -18,9 +18,9 @@ export function TagManager({ companyId }: TagManagerProps) {
 
   // Query para buscar labels do WiseApp
   const { data: tagsResponse, isLoading } = useQuery({
-    queryKey: ['wiseapp-labels', companyId],
-    queryFn: () => getWiseAppLabels(companyId),
-    enabled: !!companyId,
+    queryKey: ['wiseapp-labels', accountId],
+    queryFn: () => getWiseAppLabels(accountId || '', wiseAppToken || ''),
+    enabled: !!accountId && !!wiseAppToken,
   });
   
   const tags = tagsResponse?.payload || [];
@@ -43,7 +43,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       }
 
       // Buscar labels do WiseApp
-      const wiseAppLabelsResponse = await getWiseAppLabels(companyId);
+      const wiseAppLabelsResponse = await getWiseAppLabels(accountId || '', wiseAppToken || '');
       const wiseAppTags = wiseAppLabelsResponse.payload || [];
       console.log('WiseApp labels found:', wiseAppTags);
       
@@ -55,7 +55,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       }
 
       // Atualizar cache com as novas labels
-      queryClient.invalidateQueries({ queryKey: ['wiseapp-labels', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['wiseapp-labels', accountId] });
       
       if (wiseAppTags.length > 0) {
         toast.success(`${wiseAppTags.length} label(s) sincronizada(s) do WiseApp!`);

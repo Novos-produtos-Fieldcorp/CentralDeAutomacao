@@ -24,6 +24,8 @@ import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
 import { getWiseAppLabels } from '../../lib/directApiService';
+import { useAuth } from '../../context/AuthContext';
+import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
 
 // Função auxiliar para converter ViewMotorista para Motorista
 const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
@@ -504,9 +506,13 @@ const MotoristasLista = () => {
     }
   };
 
+  const { accountId } = useAuth();
+  const { token: wiseAppToken } = useWiseAppAccess();
+  
   const fetchTags = async () => {
     try {
-      const response = await getWiseAppLabels(companyId);
+      if (!accountId || !wiseAppToken) return;
+      const response = await getWiseAppLabels(accountId, wiseAppToken);
       const data = response.payload || [];
       setTags(data);
     } catch (error) {

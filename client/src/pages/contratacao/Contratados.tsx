@@ -22,6 +22,7 @@ import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
+import { useAuth } from '../../context/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { searchWiseAppContact, applyWiseAppContactLabels } from '../../lib/directApiService';
 
@@ -94,7 +95,8 @@ const STATUS_OPTIONS = [
 const Contratados = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const { wiseAppToken, accountId } = useWiseAppAccess();
+  const { accountId } = useAuth();
+  const { token: wiseAppToken } = useWiseAppAccess();
   const queryClient = useQueryClient();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
@@ -788,7 +790,7 @@ const Contratados = () => {
     setIsApplyingTag(true);
     try {
       // Primeiro, buscar o contato no WiseApp pelo telefone
-      const searchData = await searchWiseAppContact(companyId, selectedMotorista.telefone);
+      const searchData = await searchWiseAppContact(accountId || '', wiseAppToken || '', selectedMotorista.telefone);
       const contacts = searchData.payload || [];
       
       if (contacts.length === 0) {
@@ -799,7 +801,7 @@ const Contratados = () => {
       const contact = contacts[0]; // Pegar o primeiro contato encontrado
 
       // Aplicar a tag ao contato
-      await applyWiseAppContactLabels(companyId, contact.id, [parseInt(tagId)]);
+      await applyWiseAppContactLabels(accountId || '', wiseAppToken || '', contact.id, [parseInt(tagId)]);
 
       const selectedTag = tags.find(tag => tag.id.toString() === tagId);
       toast.success(`Tag "${selectedTag?.nome}" aplicada ao contato ${selectedMotorista.nome_motorista}!`);
