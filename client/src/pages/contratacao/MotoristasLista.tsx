@@ -147,6 +147,7 @@ const MotoristasLista = () => {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [tags, setTags] = useState<any[]>([]);
+  const [tagsLoading, setTagsLoading] = useState(false);
   const [tagSearchFilter, setTagSearchFilter] = useState('');
   const [motoristaTags, setMotoristaTags] = useState<{[key: number]: any[]}>({});
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{[key: number]: boolean}>({});
@@ -278,13 +279,19 @@ const MotoristasLista = () => {
     setShowTagDropdown(false);
   };
 
-  const handleToggleTagDropdown = (e: React.MouseEvent) => {
+  const handleToggleTagDropdown = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowTagDropdown(!showTagDropdown);
+    const isOpening = !showTagDropdown;
+    setShowTagDropdown(isOpening);
     setShowStatusDropdown(false);
     setShowCidadeDropdown(false);
     setShowClienteDropdown(false);
     setShowAtivoDropdown(false);
+    
+    // Buscar tags do Supabase quando abrir o dropdown
+    if (isOpening) {
+      await fetchTags();
+    }
   };
 
   const [cidades, setCidades] = useState<string[]>([]);
@@ -337,7 +344,7 @@ const MotoristasLista = () => {
   useEffect(() => {
     fetchMotoristas();
     fetchClientes();
-    fetchTags(); // Carrega tags automaticamente
+    // Tags serão carregadas quando o usuário clicar no filtro
   }, [dateFilter, customDateRange]);
 
   // Carregar tags dos motoristas automaticamente quando a lista de motoristas mudar
@@ -695,6 +702,7 @@ const MotoristasLista = () => {
   const fetchTags = async () => {
     try {
       if (!companyId) return;
+      setTagsLoading(true);
       const response = await apiRequest(`/tags?company_id=${companyId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch tags');
@@ -704,6 +712,8 @@ const MotoristasLista = () => {
     } catch (error) {
       console.error('Error fetching tags:', error);
       // Não mostrar toast de erro para evitar spam, tags são opcionais
+    } finally {
+      setTagsLoading(false);
     }
   };
 
@@ -1539,35 +1549,46 @@ const MotoristasLista = () => {
                         />
                       </div>
                       <div className="space-y-1 max-h-48 overflow-y-auto">
-                        {tags.filter(tag => 
-                          tag.nome.toLowerCase().includes(tagSearchFilter.toLowerCase())
-                        ).map((tag) => (
-                          <label key={`filter-${tag.id}`} className="flex items-center cursor-pointer py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-600 rounded">
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                              checked={tagFilter.includes(tag.id.toString())}
-                              onChange={(e) => {
-                                const tagId = tag.id.toString();
-                                if (e.target.checked) {
-                                  setTagFilter([...tagFilter, tagId]);
-                                } else {
-                                  setTagFilter(tagFilter.filter(id => id !== tagId));
-                                }
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <div className="flex items-center gap-2 flex-1">
-                              <div
-                                className="w-3 h-3 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: tag.cor }}
+                        {tagsLoading ? (
+                          <div className="flex items-center justify-center py-4">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                            <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Carregando tags...</span>
+                          </div>
+                        ) : tags.length === 0 ? (
+                          <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                            Nenhuma tag encontrada
+                          </div>
+                        ) : (
+                          tags.filter(tag => 
+                            tag.nome.toLowerCase().includes(tagSearchFilter.toLowerCase())
+                          ).map((tag) => (
+                            <label key={`filter-${tag.id}`} className="flex items-center cursor-pointer py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-600 rounded">
+                              <input
+                                type="checkbox"
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                                checked={tagFilter.includes(tag.id.toString())}
+                                onChange={(e) => {
+                                  const tagId = tag.id.toString();
+                                  if (e.target.checked) {
+                                    setTagFilter([...tagFilter, tagId]);
+                                  } else {
+                                    setTagFilter(tagFilter.filter(id => id !== tagId));
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
                               />
-                              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
-                                {tag.nome}
-                              </span>
-                            </div>
-                          </label>
-                        ))}
+                              <div className="flex items-center gap-2 flex-1">
+                                <div
+                                  className="w-3 h-3 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: tag.cor }}
+                                />
+                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                                  {tag.nome}
+                                </span>
+                              </div>
+                            </label>
+                          ))
+                        )}
                       </div>
                     </div>
                   </div>
