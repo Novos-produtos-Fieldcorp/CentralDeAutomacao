@@ -23,7 +23,6 @@ import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
-import { getWiseAppLabels } from '../../lib/directApiService';
 import { useAuth } from '../../context/AuthContext';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
 
@@ -444,13 +443,16 @@ const MotoristasLista = () => {
 
   const fetchMotoristaTags = async (motoristaId: number) => {
     try {
-      // Por enquanto, simula a função usando dados mock
-      // Esta funcionalidade seria implementada no directApiService
-      // com integração ao Supabase para tags de motorista
-      setMotoristaTags(prev => ({ ...prev, [motoristaId]: [] }));
+      const response = await fetch(`/api/motoristas/${motoristaId}/tags`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch motorista tags');
+      }
+      const data = await response.json();
+      setMotoristaTags(prev => ({ ...prev, [motoristaId]: data }));
     } catch (error) {
       // Silenciar erro para não quebrar a UI - tags são opcionais
       console.warn(`Tags não disponíveis para motorista ${motoristaId}`);
+      setMotoristaTags(prev => ({ ...prev, [motoristaId]: [] }));
     }
   };
 
@@ -511,9 +513,12 @@ const MotoristasLista = () => {
   
   const fetchTags = async () => {
     try {
-      if (!accountId || !wiseAppToken) return;
-      const response = await getWiseAppLabels(accountId, wiseAppToken);
-      const data = response.payload || [];
+      if (!companyId) return;
+      const response = await fetch(`/api/tags?company_id=${companyId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch tags');
+      }
+      const data = await response.json();
       setTags(data);
     } catch (error) {
       console.error('Error fetching tags:', error);
