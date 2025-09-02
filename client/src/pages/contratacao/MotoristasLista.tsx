@@ -978,6 +978,13 @@ const MotoristasLista = () => {
     let tagMatch = true;
     if (Array.isArray(tagFilter) && tagFilter.length > 0) {
       const motoristaTagsList = motoristaTags[motorista.motorista_id] || [];
+      
+      // Debug: Log para verificar se as tags estão sendo carregadas
+      if (motorista.motorista_id === 17 || motorista.motorista_id === 198) {
+        console.log(`Tags para motorista ${motorista.motorista_id}:`, motoristaTagsList);
+        console.log(`Filtro ativo:`, tagFilter);
+      }
+      
       // Garantir que temos um array válido
       if (Array.isArray(motoristaTagsList) && motoristaTagsList.length > 0) {
         const motoristaTagIds = motoristaTagsList.map((tag: any) => {
@@ -985,6 +992,12 @@ const MotoristasLista = () => {
           return tag?.id?.toString() || '';
         }).filter(id => id !== '');
         tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
+        
+        // Debug: Log da comparação
+        if (motorista.motorista_id === 17 || motorista.motorista_id === 198) {
+          console.log(`IDs das tags do motorista ${motorista.motorista_id}:`, motoristaTagIds);
+          console.log(`Match result:`, tagMatch);
+        }
       } else {
         // Se motorista não tem tags, não deve passar no filtro quando tags estão selecionadas
         tagMatch = false;
