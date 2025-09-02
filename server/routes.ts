@@ -1095,7 +1095,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const motoristaTag = await storage.addTagToMotorista(
         Number(motoristaId),
-        Number(tag_id),
+        Number(tag_id)
 
       );
       res.status(201).json(motoristaTag);
