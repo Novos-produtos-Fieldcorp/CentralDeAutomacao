@@ -340,8 +340,15 @@ const MotoristasLista = () => {
   useEffect(() => {
     fetchMotoristas();
     fetchClientes();
-    // fetchTags(); // Removido - tags só serão carregadas via botão Sync
+    fetchTags(); // Carrega tags automaticamente
   }, [dateFilter, customDateRange]);
+
+  // Carregar tags dos motoristas automaticamente quando a lista de motoristas mudar
+  useEffect(() => {
+    if (motoristas && motoristas.length > 0) {
+      fetchBulkMotoristaTags(motoristas);
+    }
+  }, [motoristas]);
 
   useEffect(() => {
     // Close context menu when clicking anywhere

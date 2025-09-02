@@ -533,9 +533,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     useEffect(() => {
       fetchContratados();
       fetchClientes();
-      fetchTags();
-      // Tags serão carregadas apenas via botão Sync WiseApp
+      fetchTags(); // Carrega tags automaticamente
     }, [dateFilter, customDateRange]);
+
+    // Carregar tags dos agregados automaticamente quando a lista de contratados mudar
+    useEffect(() => {
+      if (contratados && contratados.length > 0) {
+        fetchBulkMotoristaTags(contratados);
+      }
+    }, [contratados]);
 
     useEffect(() => {
       // Close context menu when clicking anywhere
