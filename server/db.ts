@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 import dotenv from "dotenv";
 
 // Load environment variables
@@ -22,3 +24,12 @@ export const supabase = createClient(
     },
   }
 );
+
+// Create local PostgreSQL connection (Drizzle)
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL must be set");
+}
+
+const sql = neon(connectionString);
+export const db = drizzle(sql);

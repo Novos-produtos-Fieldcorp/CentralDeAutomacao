@@ -510,10 +510,10 @@ const MotoristasLista = () => {
 
       setMotoristas(motoristasAgrupados || []);
       
-      // Desabilitado temporariamente devido a problemas de conectividade
-      // if (motoristasAgrupados && motoristasAgrupados.length > 0) {
-      //   await fetchAllMotoristaTags(motoristasAgrupados);
-      // }
+      // Carregar tags dos motoristas 
+      if (motoristasAgrupados && motoristasAgrupados.length > 0) {
+        await fetchAllMotoristaTags(motoristasAgrupados);
+      }
     } catch (error) {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');

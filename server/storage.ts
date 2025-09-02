@@ -35,7 +35,8 @@ import {
   type MotoristaTag,
   type InsertMotoristaTag
 } from "@shared/schema";
-import { supabase } from "./db";
+import { supabase, db } from "./db";
+import { eq, and, or, like, desc, count, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -458,45 +459,9 @@ export class DatabaseStorage implements IStorage {
     return !error;
   }
 
-  // Motorista Tags methods
+  // Motorista Tags methods - usando apenas banco local
   async getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]> {
     try {
-      // Use Supabase directly to avoid WebSocket connection issues if available
-      if (supabase) {
-        const { data: result, error } = await supabase
-          .from('associacao_tags')
-          .select(`
-            tag_id,
-            tag:tag_id (
-              id,
-              nome,
-              cor,
-              company_id,
-              limite_max,
-              created_at,
-              updated_at
-            )
-          `)
-          .eq('motorista_id', motoristaId);
-
-        if (error) {
-          console.error('Error fetching motorista tags:', error);
-          return [];
-        }
-
-        // Transform the result to match the expected Tag[] format
-        return result?.map((item: any) => ({
-          id: item.tag.id,
-          nome: item.tag.nome,
-          cor: item.tag.cor,
-          company_id: item.tag.company_id,
-          limite_max: item.tag.limite_max,
-          created_at: item.tag.created_at,
-          updated_at: item.tag.updated_at
-        })) || [];
-      }
-
-      // Fallback to Drizzle if Supabase not available
       const result = await db
         .select({
           id: tags.id,
@@ -520,26 +485,6 @@ export class DatabaseStorage implements IStorage {
 
   async addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag> {
     try {
-      // Use Supabase directly to avoid WebSocket connection issues if available
-      if (supabase) {
-        const { data, error } = await supabase
-          .from('associacao_tags')
-          .insert({
-            motorista_id: motoristaId,
-            tag_id: tagId
-          })
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Error adding tag to motorista:', error);
-          throw new Error('Failed to add tag to motorista');
-        }
-
-        return data;
-      }
-
-      // Fallback to Drizzle
       const [motoristaTag] = await db
         .insert(motorista_tags)
         .values({ 
@@ -556,23 +501,6 @@ export class DatabaseStorage implements IStorage {
 
   async removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean> {
     try {
-      // Use Supabase directly to avoid WebSocket connection issues if available
-      if (supabase) {
-        const { error } = await supabase
-          .from('associacao_tags')
-          .delete()
-          .eq('motorista_id', motoristaId)
-          .eq('tag_id', tagId);
-
-        if (error) {
-          console.error('Error removing tag from motorista:', error);
-          return false;
-        }
-
-        return true;
-      }
-
-      // Fallback to Drizzle
       const result = await db
         .delete(motorista_tags)
         .where(
