@@ -1,30 +1,14 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool, neonConfig } from "@neondatabase/serverless";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
-import * as schema from "@shared/schema";
 
 // Load environment variables
 dotenv.config();
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set");
-}
+// Configure Supabase directly with the project URL
+const supabaseUrl = "https://sngzctgbomqmpdcwjltt.supabase.co";
+const supabaseKey = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuZ3pjdGdib21xbXBkY3dqbHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ1Mjk2NDQsImV4cCI6MjA1MDEwNTY0NH0.xLzxQEGMvJH3FhfR-I0uOOxNI5ktEOINHRQUoDbVLMg";
 
-// Configure neon for edge runtime compatibility
-neonConfig.fetchConnectionCache = true;
-
-// Create connection pool
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-// Create drizzle instance
-export const db = drizzle(pool, { schema });
-
-// Create Supabase client for fallback queries (only if keys are available)
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-export const supabase = supabaseUrl && supabaseKey ? createClient(
+export const supabase = createClient(
   supabaseUrl,
   supabaseKey,
   {
@@ -33,7 +17,10 @@ export const supabase = supabaseUrl && supabaseKey ? createClient(
       autoRefreshToken: false,
     },
   }
-) : null;
+);
 
-// Export pool for cleanup if needed
-export { pool };
+console.log("Supabase configured with URL:", supabaseUrl);
+
+// For legacy compatibility (will be removed)
+export const db = null;
+export const pool = null;

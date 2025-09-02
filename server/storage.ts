@@ -35,8 +35,6 @@ import {
   type MotoristaTag,
   type InsertMotoristaTag
 } from "@shared/schema";
-import { db, pool } from "./db";
-import { eq, and, desc, like, or, count, sql } from "drizzle-orm";
 import { supabase } from "./db";
 
 export interface IStorage {
@@ -417,35 +415,21 @@ export class DatabaseStorage implements IStorage {
       .where(eq(documento_ajudante.motorista_id, motoristaId));
   }
 
-  // Tags methods - Using Supabase REST API to avoid WebSocket issues
+  // Tags methods - Using Supabase client
   async getTags(companyId: number): Promise<Tag[]> {
     try {
-      // Extract database info from DATABASE_URL
-      const dbUrl = process.env.DATABASE_URL;
-      if (!dbUrl) throw new Error('DATABASE_URL not configured');
+      const { data, error } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
       
-      // Use Supabase REST API directly via fetch
-      const url = new URL(dbUrl);
-      const hostname = url.hostname;
-      const parts = hostname.split('.');
-      const projectRef = parts[0].split('-').pop();
-      
-      const supabaseUrl = `https://${projectRef}.supabase.co`;
-      const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuZ3pjdGdib21xbXBkY3dqbHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ1Mjk2NDQsImV4cCI6MjA1MDEwNTY0NH0.xLzxQEGMvJH3FhfR-I0uOOxNI5ktEOINHRQUoDbVLMg';
-      
-      const response = await fetch(`${supabaseUrl}/rest/v1/tag?company_id=eq.${companyId}&order=nome`, {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Supabase API error: ${response.status}`);
+      if (error) {
+        console.error('Supabase error in getTags:', error);
+        return [];
       }
       
-      return await response.json();
+      return data || [];
     } catch (error) {
       console.error('Error in getTags:', error);
       return [];
@@ -453,114 +437,106 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTag(insertTag: InsertTag): Promise<Tag> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        'INSERT INTO tag (nome, cor, company_id, limite_max) VALUES ($1, $2, $3, $4) RETURNING *',
-        [insertTag.nome, insertTag.cor, insertTag.company_id, insertTag.limite_max]
-      );
-      return result.rows[0];
-    } finally {
-      client.release();
+    const { data, error } = await supabase
+      .from('tag')
+      .insert(insertTag)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Supabase error in createTag:', error);
+      throw error;
     }
+    
+    return data;
   }
 
   async updateTag(id: number, insertTag: Partial<InsertTag>): Promise<Tag | undefined> {
-    const client = await pool.connect();
-    try {
-      const setParts = [];
-      const values = [];
-      let paramIndex = 1;
-
-      if (insertTag.nome !== undefined) {
-        setParts.push(`nome = $${paramIndex++}`);
-        values.push(insertTag.nome);
-      }
-      if (insertTag.cor !== undefined) {
-        setParts.push(`cor = $${paramIndex++}`);
-        values.push(insertTag.cor);
-      }
-      if (insertTag.limite_max !== undefined) {
-        setParts.push(`limite_max = $${paramIndex++}`);
-        values.push(insertTag.limite_max);
-      }
-
-      if (setParts.length === 0) return undefined;
-
-      values.push(id);
-      const result = await client.query(
-        `UPDATE tag SET ${setParts.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-        values
-      );
-      return result.rows[0] || undefined;
-    } finally {
-      client.release();
+    const { data, error } = await supabase
+      .from('tag')
+      .update(insertTag)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Supabase error in updateTag:', error);
+      return undefined;
     }
+    
+    return data;
   }
 
   async deleteTag(id: number): Promise<boolean> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        'DELETE FROM tag WHERE id = $1',
-        [id]
-      );
-      return (result.rowCount ?? 0) > 0;
-    } finally {
-      client.release();
+    const { error } = await supabase
+      .from('tag')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Supabase error in deleteTag:', error);
+      return false;
     }
+    
+    return true;
   }
 
-  // Motorista Tags methods - Using direct PostgreSQL connection
+  // Motorista Tags methods - Using Supabase
   async getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]> {
-    const client = await pool.connect();
     try {
-      const result = await client.query(`
-        SELECT t.* 
-        FROM tag t
-        INNER JOIN associacao_tags at ON t.id = at.tag_id
-        WHERE at.motorista_id = $1
-        ORDER BY t.nome
-      `, [motoristaId]);
-      return result.rows;
+      const { data, error } = await supabase
+        .from('associacao_tags')
+        .select(`
+          tag (
+            id,
+            nome,
+            cor,
+            company_id,
+            limite_max
+          )
+        `)
+        .eq('motorista_id', motoristaId);
+      
+      if (error) {
+        console.error('Supabase error in getMotoristaTagsWithDetails:', error);
+        return [];
+      }
+      
+      return data?.map(item => item.tag).filter(Boolean) || [];
     } catch (error) {
       console.error('Error in getMotoristaTagsWithDetails:', error);
       return [];
-    } finally {
-      client.release();
     }
   }
 
   async addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        'INSERT INTO associacao_tags (motorista_id, tag_id) VALUES ($1, $2) RETURNING *',
-        [motoristaId, tagId]
-      );
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error in addTagToMotorista:', error);
+    const { data, error } = await supabase
+      .from('associacao_tags')
+      .insert({ motorista_id: motoristaId, tag_id: tagId })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Supabase error in addTagToMotorista:', error);
       throw error;
-    } finally {
-      client.release();
     }
+    
+    return data;
   }
 
   async removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        'DELETE FROM associacao_tags WHERE motorista_id = $1 AND tag_id = $2',
-        [motoristaId, tagId]
-      );
-      return (result.rowCount ?? 0) > 0;
-    } catch (error) {
-      console.error('Error in removeTagFromMotorista:', error);
+    const { error } = await supabase
+      .from('associacao_tags')
+      .delete()
+      .eq('motorista_id', motoristaId)
+      .eq('tag_id', tagId);
+    
+    if (error) {
+      console.error('Supabase error in removeTagFromMotorista:', error);
       return false;
-    } finally {
-      client.release();
     }
+    
+    return true;
   }
 
   // WiseApp token method - queries wiseapp_acesso table
