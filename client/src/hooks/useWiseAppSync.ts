@@ -52,11 +52,11 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
-  // Bulk sync mutation (implementação simplificada - sync individual para todos)
+  // Bulk sync mutation com sincronização bidirecional de tags
   const bulkSyncMutation = useMutation({
     mutationFn: async () => {
-      // Implementação simplificada - pode ser expandida depois
-      throw new Error('Bulk sync não implementado ainda via Supabase direto');
+      if (!companyId) throw new Error('Company ID not found');
+      return wiseAppService.syncMotoristasBulkWithTags(companyId);
     },
     onSuccess: (data) => {
       const result = data.data as BulkSyncResult;

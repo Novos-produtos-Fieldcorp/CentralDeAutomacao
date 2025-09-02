@@ -217,6 +217,188 @@ export const wiseAppService = {
     };
   },
 
+  async syncMotoristasBulkWithTags(companyId: number) {
+    try {
+      // 1. Buscar token WiseApp
+      const { data: tokenData } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('company_id', companyId)
+        .single();
+
+      if (!tokenData) {
+        throw new Error('Token WiseApp não configurado');
+      }
+
+      // 2. Buscar todos os motoristas e agregados
+      const { data: motoristas } = await supabase
+        .from('view_motoristas_completo')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('ativo', true);
+
+      if (!motoristas || motoristas.length === 0) {
+        return { data: { totalProcessed: 0, successful: 0, failed: 0, errors: [] } };
+      }
+
+      // 3. Buscar tags locais
+      const { data: tagsLocais } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId);
+
+      // 4. Buscar associações existentes
+      const { data: associacoesExistentes } = await supabase
+        .from('associacao_tags')
+        .select('motorista_id, tag_id, tag(nome, cor)');
+
+      let successful = 0;
+      let failed = 0;
+      const errors: Array<{ motorista_id: number; nome: string; error: string }> = [];
+
+      // 5. Processar cada motorista
+      for (const motorista of motoristas) {
+        try {
+          if (!motorista.telefone) continue;
+
+          const phone = `55${motorista.telefone}`;
+          
+          // Buscar contato no WiseApp
+          const searchUrl = `${CHAT_API_URL}/api/v1/accounts/${companyId}/contacts/search?q=${phone}`;
+          const searchResponse = await fetch(searchUrl, {
+            headers: {
+              'api_access_token': tokenData.access_token_wiseapp,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (!searchResponse.ok) {
+            failed++;
+            errors.push({
+              motorista_id: motorista.motorista_id,
+              nome: motorista.nome_motorista,
+              error: `Erro ao buscar no WiseApp: ${searchResponse.status}`
+            });
+            continue;
+          }
+
+          const searchData = await searchResponse.json();
+
+          if (searchData.payload?.length > 0) {
+            const contact = searchData.payload[0];
+
+            // Atualizar foto se necessário
+            if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
+              await supabase
+                .from('motorista')
+                .update({ foto_whatsapp: contact.thumbnail })
+                .eq('motorista_id', motorista.motorista_id);
+            }
+
+            // Buscar labels do contato no WiseApp
+            const labelsResponse = await fetch(`${CHAT_API_URL}/api/v1/accounts/${companyId}/contacts/${contact.id}/labels`, {
+              headers: {
+                'api_access_token': tokenData.access_token_wiseapp,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            if (labelsResponse.ok) {
+              const labelsData = await labelsResponse.json();
+              const wiseAppLabels = labelsData.payload || [];
+
+              // Importar tags do WiseApp para associacao_tags
+              for (const wiseAppLabel of wiseAppLabels) {
+                // Verificar se já existe uma tag local com esse nome
+                let tagLocal = tagsLocais?.find(t => t.nome.toLowerCase() === wiseAppLabel.title.toLowerCase());
+                
+                if (!tagLocal) {
+                  // Criar tag local se não existir
+                  const { data: novaTag } = await supabase
+                    .from('tag')
+                    .insert({
+                      nome: wiseAppLabel.title,
+                      cor: wiseAppLabel.color || '#3B82F6',
+                      company_id: companyId
+                    })
+                    .select()
+                    .single();
+                  
+                  if (novaTag) {
+                    tagLocal = novaTag;
+                    tagsLocais?.push(novaTag);
+                  }
+                }
+
+                if (tagLocal) {
+                  // Verificar se associação já existe
+                  const associacaoExiste = associacoesExistentes?.some(a => 
+                    a.motorista_id === motorista.motorista_id && a.tag_id === tagLocal.id
+                  );
+
+                  if (!associacaoExiste) {
+                    // Criar associação
+                    await supabase
+                      .from('associacao_tags')
+                      .insert({
+                        motorista_id: motorista.motorista_id,
+                        tag_id: tagLocal.id
+                      });
+                  }
+                }
+              }
+
+              // Enviar tags locais para o WiseApp
+              const tagsParaEnviar = associacoesExistentes
+                ?.filter(a => a.motorista_id === motorista.motorista_id)
+                .map(a => a.tag ? (a.tag as any).nome : null)
+                .filter(Boolean) || [];
+
+              if (tagsParaEnviar.length > 0) {
+                const applyLabelsResponse = await fetch(`${CHAT_API_URL}/api/v1/accounts/${companyId}/contacts/${contact.id}/labels`, {
+                  method: 'POST',
+                  headers: {
+                    'api_access_token': tokenData.access_token_wiseapp,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ labels: tagsParaEnviar })
+                });
+
+                if (!applyLabelsResponse.ok) {
+                  console.warn(`Erro ao aplicar tags no WiseApp para ${motorista.nome_motorista}:`, applyLabelsResponse.status);
+                }
+              }
+            }
+
+            successful++;
+          } else {
+            // Contato não encontrado no WiseApp - apenas contar como processado
+            successful++;
+          }
+        } catch (error) {
+          failed++;
+          errors.push({
+            motorista_id: motorista.motorista_id,
+            nome: motorista.nome_motorista,
+            error: (error as Error).message
+          });
+        }
+      }
+
+      return {
+        data: {
+          totalProcessed: motoristas.length,
+          successful,
+          failed,
+          errors
+        }
+      };
+
+    } catch (error) {
+      throw new Error(`Erro na sincronização bidirecional: ${(error as Error).message}`);
+    }
+  },
+
   async validateConfig(companyId: number) {
     const { data: tokenData } = await supabase
       .from('wiseapp_acesso')
