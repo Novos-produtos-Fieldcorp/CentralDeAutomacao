@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
+import { getWiseAppLabels } from "@/lib/directApiService";
 
 interface TagManagerProps {
   companyId: number;
@@ -29,6 +30,9 @@ export function TagManager({ companyId }: TagManagerProps) {
     retry: 3,
     retryDelay: 1000,
   });
+
+  const tags = tagsResponse?.payload || tagsResponse || [];
+
   const syncWiseAppTags = async () => {
     if (isSyncingWiseApp) return;
     
@@ -58,11 +62,11 @@ export function TagManager({ companyId }: TagManagerProps) {
         });
         return;
       }
-      } else {
-        toast('Nenhuma label encontrada no WiseApp.', {
-          icon: 'ℹ️'
-        });
-      }
+      
+      // Sucesso na sincronização
+      await queryClient.invalidateQueries({ queryKey: ['wiseapp-labels'] });
+      toast.success('Labels sincronizadas com sucesso!');
+      
     } catch (error) {
       console.error('Erro ao sincronizar labels do WiseApp:', error);
       toast.error('Erro ao sincronizar labels do WiseApp');
@@ -112,7 +116,6 @@ export function TagManager({ companyId }: TagManagerProps) {
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-gray-500 dark:text-gray-400">WiseApp</span>
                 </div>
-              </div>
               </div>
             </div>
           ))}
