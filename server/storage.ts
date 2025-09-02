@@ -418,7 +418,7 @@ export class DatabaseStorage implements IStorage {
   // Tags methods
   async getTags(companyId: number): Promise<Tag[]> {
     const { data, error } = await supabase
-      .from('tags')
+      .from('tag')
       .select('*')
       .eq('company_id', companyId);
     
@@ -428,7 +428,7 @@ export class DatabaseStorage implements IStorage {
 
   async createTag(insertTag: InsertTag): Promise<Tag> {
     const { data, error } = await supabase
-      .from('tags')
+      .from('tag')
       .insert(insertTag)
       .select()
       .single();
@@ -439,7 +439,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateTag(id: number, insertTag: Partial<InsertTag>): Promise<Tag | undefined> {
     const { data, error } = await supabase
-      .from('tags')
+      .from('tag')
       .update(insertTag)
       .eq('id', id)
       .select()
@@ -451,7 +451,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTag(id: number): Promise<boolean> {
     const { error } = await supabase
-      .from('tags')
+      .from('tag')
       .delete()
       .eq('id', id);
     

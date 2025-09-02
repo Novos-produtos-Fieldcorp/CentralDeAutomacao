@@ -1456,6 +1456,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para buscar inboxes do WiseApp 
+  app.get("/api/v1/accounts/:accountId/inboxes", async (req, res) => {
+    try {
+      const { accountId } = req.params;
+      console.log(`Fetching WiseApp inboxes for account ${accountId}`);
+      
+      // Buscar token do header (enviado pelo frontend)
+      const token = req.headers['wiseapp-token'] as string || req.headers['api_access_token'] as string;
+      console.log('Token from header:', token ? 'Found' : 'Not found');
+      
+      if (!token) {
+        console.log('No token found in header');
+        return res.status(401).json({ 
+          error: "Token WiseApp não encontrado" 
+        });
+      }
+
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/inboxes`;
+      
+      console.log(`Fetching inboxes from: ${wiseAppUrl}`);
+
+      const response = await fetch(wiseAppUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`WiseApp API responded with ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('WiseApp inboxes response:', data);
+      
+      // Retornar dados das inboxes
+      const inboxes = data.payload || data || [];
+      res.json(inboxes);
+
+    } catch (error) {
+      console.error("Erro ao buscar inboxes do WiseApp:", error);
+      res.status(500).json({
+        error: "Erro ao buscar inboxes do WiseApp",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
   // Aplicar tag a um contato no WiseApp
   app.post("/api/wiseapp/:companyId/contacts/:contactId/labels", async (req, res) => {
     try {
