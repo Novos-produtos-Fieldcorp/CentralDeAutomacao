@@ -13,6 +13,12 @@ import {
   motorista,
 } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
+import { 
+  apiWithRetryAndCache, 
+  retryWithBackoff,
+  WiseAppRetryOptions,
+  WiseAppCacheOptions 
+} from "./utils/api-retry";
 
 // Initialize Supabase client with bypass RLS for backend operations
 const supabaseUrl =

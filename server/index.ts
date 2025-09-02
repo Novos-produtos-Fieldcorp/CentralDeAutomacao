@@ -6,33 +6,78 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Configurar headers para permitir iframe, CORS e evitar cache
+// Configurar headers de segurança otimizados e CORS
 app.use((req, res, next) => {
-  // Permitir ser embutido em iframe de qualquer origem
+  // Headers de segurança otimizados para iframe embedding
   res.removeHeader('X-Frame-Options');
+  res.setHeader('X-Frame-Options', 'ALLOWALL');
   
-  // Configurar Content Security Policy para permitir iframe
-  res.setHeader('Content-Security-Policy', "frame-ancestors *;");
+  // CSP unificado otimizado para iframe e scripts
+  const cspPolicy = [
+    "frame-ancestors *",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.replit.dev",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "connect-src 'self' https:",
+    "font-src 'self' https:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; ');
+  res.setHeader('Content-Security-Policy', cspPolicy);
   
-  // Headers CORS para permitir acesso direto à API do WiseApp
+  // Headers de segurança adicionais
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  
+  // CORS otimizado com fallbacks
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://replit.com',
+    'https://*.replit.dev',
+    'https://*.replit.app',
+    'http://localhost:3000',
+    'http://localhost:5000'
+  ];
+  
+  // Allow all origins for iframe compatibility, but track them
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, api_access_token, Cache-Control, Pragma, Expires, wiseapp-token, wiseapp-account-id');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
+  res.setHeader('Access-Control-Allow-Headers', [
+    'Content-Type',
+    'Authorization', 
+    'api_access_token',
+    'Cache-Control',
+    'Pragma',
+    'Expires',
+    'wiseapp-token',
+    'wiseapp-account-id',
+    'X-Requested-With',
+    'Accept',
+    'Origin'
+  ].join(', '));
   res.setHeader('Access-Control-Allow-Credentials', 'false');
+  res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
   
-  // Responder a requisições OPTIONS (preflight)
+  // Responder a requisições OPTIONS otimizado
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
+    res.status(204).end();
     return;
   }
   
-  // Headers para evitar cache em APIs de chat/inbox
-  if (req.path.includes('/api/v1/accounts') && req.path.includes('/inboxes')) {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.setHeader('Last-Modified', new Date().toUTCString());
-    res.setHeader('ETag', `"${Date.now()}"`);
+  // Cache strategy otimizado por tipo de rota
+  if (req.path.startsWith('/api/')) {
+    if (req.path.includes('/wiseapp/') || req.path.includes('/inboxes')) {
+      // APIs dinâmicas - sem cache
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    } else {
+      // APIs mais estáveis - cache curto
+      res.setHeader('Cache-Control', 'public, max-age=300'); // 5 min
+    }
   }
 
   next();
@@ -71,12 +116,53 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  // Sistema de error handling robusto com fallbacks
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
+    let message = err.message || "Internal Server Error";
+    
+    // Error sanitization - não expor informações sensíveis em produção
+    if (process.env.NODE_ENV === 'production') {
+      if (status >= 500) {
+        message = "Internal Server Error";
+      }
+    }
+    
+    // Estrutura de resposta padronizada para erros
+    const errorResponse: any = {
+      error: true,
+      status,
+      message,
+      timestamp: new Date().toISOString(),
+      path: req.path,
+      method: req.method
+    };
+    
+    // Incluir stack trace apenas em desenvolvimento
+    if (process.env.NODE_ENV === 'development' && err.stack) {
+      errorResponse.stack = err.stack;
+    }
+    
+    // Log detalhado do erro para debugging
+    console.error(`[ERROR] ${req.method} ${req.path} - ${status}:`, {
+      message: err.message,
+      stack: err.stack,
+      headers: req.headers,
+      body: req.body,
+      query: req.query,
+      params: req.params
+    });
+    
+    // Fallback específico para APIs WiseApp
+    if (req.path.includes('/wiseapp/')) {
+      if (status >= 500) {
+        errorResponse.fallback = "WiseApp API temporarily unavailable";
+        errorResponse.retry = true;
+      }
+    }
+    
+    res.status(status).json(errorResponse);
+    // Não re-throw o erro para evitar crash do servidor
   });
 
   // importantly only setup vite in development and after
