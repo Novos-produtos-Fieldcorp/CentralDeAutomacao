@@ -254,7 +254,7 @@ export function TagManager({ companyId }: TagManagerProps) {
             className="bg-green-600 dark:bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-700 dark:hover:bg-green-600 flex items-center gap-2 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${isSyncingWiseApp ? 'animate-spin' : ''}`} />
-            {isSyncingWiseApp ? 'Sincronizando...' : 'Sync WiseApp'}
+            {isSyncingWiseApp ? 'Sincronizando...' : 'Sincronizar com o Wiseapp'}
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
