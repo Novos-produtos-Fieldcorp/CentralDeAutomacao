@@ -264,22 +264,37 @@ export const wiseAppService = {
 // Funções para WiseApp API direto
 const CHAT_API_URL = import.meta.env.VITE_CHAT_API_URL || 'https://chat.wiseapp360.com';
 
-// Buscar todas as labels da conta
+// Buscar todas as labels da conta via backend existente
 export const getWiseAppLabels = async (accountId: string, token: string) => {
-  const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/labels`, {
-    headers: {
-      'api_access_token': token,
-      'Content-Type': 'application/json'
+  // Usar a rota existente no backend
+  const url = `/api/wiseapp/2/labels`; // Usando companyId 2
+  console.log('Fazendo requisição via backend para:', url);
+  
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'wiseapp-token': token,
+        'wiseapp-account-id': accountId
+      }
+    });
+
+    console.log('Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Erro na API WiseApp via backend:', response.status, errorText);
+      throw new Error(`Erro ao buscar labels do WiseApp: ${response.status} - ${errorText}`);
     }
-  });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Erro na API WiseApp:', response.status, errorText);
-    throw new Error(`Erro ao buscar labels do WiseApp: ${response.status}`);
+    const data = await response.json();
+    console.log('Response data:', data);
+    return data;
+  } catch (error) {
+    console.error('Erro na requisição via backend:', error);
+    throw error;
   }
-
-  return response.json();
 };
 
 // Buscar labels de um contato específico
@@ -300,18 +315,21 @@ export const getContactLabels = async (accountId: string, token: string, contact
   return response.json();
 };
 
-// Buscar contato por telefone
+// Buscar contato por telefone via backend existente
 export const searchWiseAppContact = async (accountId: string, token: string, phone: string) => {
-  const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/contacts/search?q=${phone}`, {
+  const url = `/api/wiseapp/2/contacts/search?phone=${phone}`;
+  
+  const response = await fetch(url, {
     headers: {
-      'api_access_token': token,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'wiseapp-token': token,
+      'wiseapp-account-id': accountId
     }
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Erro na API WiseApp:', response.status, errorText);
+    console.error('Erro na API WiseApp via backend:', response.status, errorText);
     throw new Error(`Erro ao buscar contato no WiseApp: ${response.status}`);
   }
 
@@ -336,20 +354,23 @@ export const getWiseAppContact = async (accountId: string, token: string, contac
   return response.json();
 };
 
-// Aplicar labels a um contato (usando nomes das labels)
+// Aplicar labels a um contato via backend existente
 export const applyWiseAppContactLabels = async (accountId: string, token: string, contactId: number, labelNames: string[]) => {
-  const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/contacts/${contactId}/labels`, {
+  const url = `/api/wiseapp/2/contacts/${contactId}/labels`;
+  
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
-      'api_access_token': token,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'wiseapp-token': token,
+      'wiseapp-account-id': accountId
     },
     body: JSON.stringify({ labels: labelNames })
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Erro na API WiseApp:', response.status, errorText);
+    console.error('Erro na API WiseApp via backend:', response.status, errorText);
     throw new Error(`Erro ao aplicar labels no WiseApp: ${response.status}`);
   }
 
