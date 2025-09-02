@@ -461,24 +461,24 @@ export class DatabaseStorage implements IStorage {
 
   // Motorista Tags methods
   async getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]> {
-    const { data, error } = await db
+    // First get tag IDs
+    const { data: associations, error: assocError } = await db
       .from('associacao_tags')
-      .select(`
-        tag_id,
-        tag:tag_id (
-          id,
-          nome,
-          cor,
-          company_id,
-          limite_max_associados,
-          created_at,
-          updated_at
-        )
-      `)
+      .select('tag_id')
       .eq('motorista_id', motoristaId);
     
-    if (error) throw error;
-    return (data || []).map((item: any) => item.tag).filter(Boolean);
+    if (assocError) throw assocError;
+    if (!associations || associations.length === 0) return [];
+    
+    // Then get tag details
+    const tagIds = associations.map(a => a.tag_id);
+    const { data: tags, error: tagsError } = await db
+      .from('tag')
+      .select('*')
+      .in('id', tagIds);
+    
+    if (tagsError) throw tagsError;
+    return tags || [];
   }
 
   async addTagToMotorista(motoristaId: number, tagId: number, companyId?: number): Promise<MotoristaTag> {
