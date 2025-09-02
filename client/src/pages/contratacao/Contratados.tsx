@@ -24,7 +24,7 @@ import { TableDropdown } from '../../components/TableDropdown';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
 import { useAuth } from '../../context/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { searchWiseAppContact, applyWiseAppContactLabels } from '../../lib/directApiService';
+import { searchWiseAppContact, applyWiseAppContactLabels, getWiseAppLabels } from '../../lib/directApiService';
 
 // Interface para a view de contratados
 export interface ViewContratado {
@@ -800,11 +800,18 @@ const Contratados = () => {
 
       const contact = contacts[0]; // Pegar o primeiro contato encontrado
 
-      // Aplicar a tag ao contato
-      await applyWiseAppContactLabels(accountId || '', wiseAppToken || '', contact.id, [parseInt(tagId)]);
+      // Buscar o nome da tag pelo ID para aplicar
+      const selectedTag = await getWiseAppLabels(accountId || '', wiseAppToken || '');
+      const tagToApply = selectedTag.payload?.find((t: any) => t.id.toString() === tagId);
+      
+      if (!tagToApply) {
+        throw new Error('Tag não encontrada');
+      }
+      
+      // Aplicar a tag ao contato usando o nome da tag
+      await applyWiseAppContactLabels(accountId || '', wiseAppToken || '', contact.id, [tagToApply.title || tagToApply.name]);
 
-      const selectedTag = tags.find(tag => tag.id.toString() === tagId);
-      toast.success(`Tag "${selectedTag?.nome}" aplicada ao contato ${selectedMotorista.nome_motorista}!`);
+      toast.success(`Tag "${tagToApply.title || tagToApply.name}" aplicada ao contato ${selectedMotorista.nome_motorista}!`);
       setIsTagModalOpen(false);
 
     } catch (error) {

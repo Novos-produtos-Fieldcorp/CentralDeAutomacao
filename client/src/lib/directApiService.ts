@@ -264,6 +264,7 @@ export const wiseAppService = {
 // Funções para WiseApp API direto
 const CHAT_API_URL = import.meta.env.VITE_CHAT_API_URL || 'https://chat.wiseapp360.com';
 
+// Buscar todas as labels da conta
 export const getWiseAppLabels = async (accountId: string, token: string) => {
   const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/labels`, {
     headers: {
@@ -273,12 +274,33 @@ export const getWiseAppLabels = async (accountId: string, token: string) => {
   });
 
   if (!response.ok) {
-    throw new Error('Erro ao buscar labels do WiseApp');
+    const errorText = await response.text();
+    console.error('Erro na API WiseApp:', response.status, errorText);
+    throw new Error(`Erro ao buscar labels do WiseApp: ${response.status}`);
   }
 
   return response.json();
 };
 
+// Buscar labels de um contato específico
+export const getContactLabels = async (accountId: string, token: string, contactId: number) => {
+  const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/contacts/${contactId}/labels`, {
+    headers: {
+      'api_access_token': token,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Erro na API WiseApp:', response.status, errorText);
+    throw new Error(`Erro ao buscar labels do contato: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// Buscar contato por telefone
 export const searchWiseAppContact = async (accountId: string, token: string, phone: string) => {
   const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/contacts/search?q=${phone}`, {
     headers: {
@@ -288,24 +310,67 @@ export const searchWiseAppContact = async (accountId: string, token: string, pho
   });
 
   if (!response.ok) {
-    throw new Error('Erro ao buscar contato no WiseApp');
+    const errorText = await response.text();
+    console.error('Erro na API WiseApp:', response.status, errorText);
+    throw new Error(`Erro ao buscar contato no WiseApp: ${response.status}`);
   }
 
   return response.json();
 };
 
-export const applyWiseAppContactLabels = async (accountId: string, token: string, contactId: number, labelIds: number[]) => {
+// Buscar detalhes de um contato específico
+export const getWiseAppContact = async (accountId: string, token: string, contactId: number) => {
+  const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/contacts/${contactId}`, {
+    headers: {
+      'api_access_token': token,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Erro na API WiseApp:', response.status, errorText);
+    throw new Error(`Erro ao buscar detalhes do contato: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// Aplicar labels a um contato (usando nomes das labels)
+export const applyWiseAppContactLabels = async (accountId: string, token: string, contactId: number, labelNames: string[]) => {
   const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/contacts/${contactId}/labels`, {
     method: 'POST',
     headers: {
       'api_access_token': token,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ labels: labelIds })
+    body: JSON.stringify({ labels: labelNames })
   });
 
   if (!response.ok) {
-    throw new Error('Erro ao aplicar labels no WiseApp');
+    const errorText = await response.text();
+    console.error('Erro na API WiseApp:', response.status, errorText);
+    throw new Error(`Erro ao aplicar labels no WiseApp: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// Criar uma nova label na conta
+export const createWiseAppLabel = async (accountId: string, token: string, labelData: { title: string; color?: string; description?: string }) => {
+  const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/labels`, {
+    method: 'POST',
+    headers: {
+      'api_access_token': token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(labelData)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Erro na API WiseApp:', response.status, errorText);
+    throw new Error(`Erro ao criar label no WiseApp: ${response.status}`);
   }
 
   return response.json();

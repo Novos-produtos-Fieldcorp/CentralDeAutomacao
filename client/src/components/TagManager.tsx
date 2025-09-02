@@ -4,7 +4,7 @@ import { RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
-import { getWiseAppLabels } from "@/lib/directApiService";
+import { getWiseAppLabels, createWiseAppLabel } from "@/lib/directApiService";
 
 interface TagManagerProps {
   companyId: number;
@@ -17,13 +17,25 @@ export function TagManager({ companyId }: TagManagerProps) {
   const { token: wiseAppToken } = useWiseAppAccess();
 
   // Query para buscar labels do WiseApp
-  const { data: tagsResponse, isLoading } = useQuery({
+  const { data: tagsResponse, isLoading, error } = useQuery({
     queryKey: ['wiseapp-labels', accountId],
-    queryFn: () => getWiseAppLabels(accountId || '', wiseAppToken || ''),
+    queryFn: async () => {
+      if (!accountId || !wiseAppToken) {
+        throw new Error('AccountId ou token não disponível');
+      }
+      console.log('Buscando labels do WiseApp para account:', accountId);
+      return getWiseAppLabels(accountId, wiseAppToken);
+    },
     enabled: !!accountId && !!wiseAppToken,
+    retry: 3,
+    retryDelay: 1000,
   });
   
-  const tags = tagsResponse?.payload || [];
+  const tags = tagsResponse?.payload || tagsResponse || [];
+  
+  // Log para debug
+  console.log('WiseApp Labels Response:', tagsResponse);
+  console.log('WiseApp Labels Error:', error);
 
   // Sincronizar labels do WiseApp
   const syncWiseAppTags = async () => {
@@ -43,8 +55,10 @@ export function TagManager({ companyId }: TagManagerProps) {
       }
 
       // Buscar labels do WiseApp
+      console.log('Sincronizando labels - Account ID:', accountId, 'Token disponível:', !!wiseAppToken);
       const wiseAppLabelsResponse = await getWiseAppLabels(accountId || '', wiseAppToken || '');
-      const wiseAppTags = wiseAppLabelsResponse.payload || [];
+      const wiseAppTags = wiseAppLabelsResponse.payload || wiseAppLabelsResponse || [];
+      console.log('Labels encontradas:', wiseAppTags);
       console.log('WiseApp labels found:', wiseAppTags);
       
       if (!wiseAppTags || wiseAppTags.length === 0) {
