@@ -4,7 +4,6 @@ import { RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
-import { getWiseAppLabels, createWiseAppLabel } from "@/lib/directApiService";
 
 interface TagManagerProps {
   companyId: number;
@@ -30,14 +29,6 @@ export function TagManager({ companyId }: TagManagerProps) {
     retry: 3,
     retryDelay: 1000,
   });
-  
-  const tags = tagsResponse?.payload || tagsResponse || [];
-  
-  // Log para debug
-  console.log('WiseApp Labels Response:', tagsResponse);
-  console.log('WiseApp Labels Error:', error);
-
-  // Sincronizar labels do WiseApp
   const syncWiseAppTags = async () => {
     if (isSyncingWiseApp) return;
     
@@ -67,12 +58,6 @@ export function TagManager({ companyId }: TagManagerProps) {
         });
         return;
       }
-
-      // Atualizar cache com as novas labels
-      queryClient.invalidateQueries({ queryKey: ['wiseapp-labels', accountId] });
-      
-      if (wiseAppTags.length > 0) {
-        toast.success(`${wiseAppTags.length} label(s) sincronizada(s) do WiseApp!`);
       } else {
         toast('Nenhuma label encontrada no WiseApp.', {
           icon: 'ℹ️'
@@ -101,7 +86,7 @@ export function TagManager({ companyId }: TagManagerProps) {
             className="bg-green-600 dark:bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-700 dark:hover:bg-green-600 flex items-center gap-2 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${isSyncingWiseApp ? 'animate-spin' : ''}`} />
-            {isSyncingWiseApp ? 'Sincronizando...' : 'Sync WiseApp'}
+            {isSyncingWiseApp ? 'Sincronizando...' : 'Sincronizar com o Wiseapp'}
           </button>
         </div>
       </div>
@@ -128,8 +113,6 @@ export function TagManager({ companyId }: TagManagerProps) {
                   <span className="text-xs text-gray-500 dark:text-gray-400">WiseApp</span>
                 </div>
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                <span>ID: {tag.id}</span>
               </div>
             </div>
           ))}
