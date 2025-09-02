@@ -192,7 +192,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       // Buscar tags existentes
       const existingTagsResponse = await fetch(`/api/tags?company_id=${companyId}`);
       const existingTags = await existingTagsResponse.json();
-      const existingTagNames = new Set(existingTags.map((tag: Tag) => tag.nome.toLowerCase()));
+      const existingTagNames = new Set((existingTags || []).map((tag: Tag) => tag.nome.toLowerCase()));
 
       // Sincronizar tags locais
       let synced = 0;
