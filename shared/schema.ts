@@ -51,7 +51,7 @@ export const motorista = pgTable("motorista", {
 });
 
 // Tags table for WiseApp integration
-export const tags = pgTable("tags", {
+export const tags = pgTable("tag", {
   id: serial("id").primaryKey(),
   nome: text("nome").notNull(),
   cor: text("cor").default("#3B82F6"), // Default blue color
