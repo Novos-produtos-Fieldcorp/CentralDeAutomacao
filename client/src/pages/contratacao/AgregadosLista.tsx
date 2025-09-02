@@ -543,6 +543,59 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     }, [contratados]);
 
+    // Sistema de aplicação automática de tags
+    useEffect(() => {
+      if (tags.length > 0 && contratados.length > 0 && Object.keys(motoristaTags).length > 0) {
+        applyAutomaticTags();
+      }
+    }, [tags, contratados, motoristaTags]);
+
+    const applyAutomaticTags = async () => {
+      // Aplicar tags automaticamente baseado em critérios inteligentes
+      
+      // Critério 1: Aplicar tag "VIP" para agregados com veículo próprio
+      const vipTag = tags.find(tag => tag.nome.toLowerCase().includes('vip'));
+      if (vipTag) {
+        for (const agregado of contratados) {
+          const hasVeiculo = agregado.veiculo_id && agregado.placa;
+          const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some((tag: any) => tag.id === vipTag.id);
+          
+          if (hasVeiculo && !alreadyHasTag && agregado.motorista_id) {
+            await handleAddTag(agregado.motorista_id, vipTag.id);
+          }
+        }
+      }
+      
+      // Critério 2: Aplicar tag "Novo" para agregados cadastrados nos últimos 7 dias
+      const novoTag = tags.find(tag => tag.nome.toLowerCase().includes('novo'));
+      if (novoTag) {
+        for (const agregado of contratados) {
+          const cadastroDate = new Date(agregado.data_cadastro || '');
+          const daysSinceCadastro = (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
+          const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some((tag: any) => tag.id === novoTag.id);
+          
+          if (daysSinceCadastro <= 7 && !alreadyHasTag && agregado.motorista_id) {
+            await handleAddTag(agregado.motorista_id, novoTag.id);
+          }
+        }
+      }
+      
+      // Critério 3: Aplicar tag "Experiente" para agregados com mais de 6 meses
+      const experienteTag = tags.find(tag => tag.nome.toLowerCase().includes('experiente'));
+      if (experienteTag) {
+        for (const agregado of contratados) {
+          const cadastroDate = new Date(agregado.data_cadastro || '');
+          const daysSinceCadastro = (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
+          const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some((tag: any) => tag.id === experienteTag.id);
+          
+          if (daysSinceCadastro > 180 && !alreadyHasTag && agregado.motorista_id) {
+            await handleAddTag(agregado.motorista_id, experienteTag.id);
+          }
+        }
+      }
+    };
+
+
     useEffect(() => {
       // Close context menu when clicking anywhere
       const handleClick = () => {

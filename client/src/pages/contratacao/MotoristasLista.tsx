@@ -350,6 +350,84 @@ const MotoristasLista = () => {
     }
   }, [motoristas]);
 
+  // Sistema de filtros automáticos de tags
+  useEffect(() => {
+    if (tags.length > 0 && motoristas.length > 0 && Object.keys(motoristaTags).length > 0) {
+      applyAutomaticTagFilters();
+    }
+  }, [tags, motoristas, motoristaTags]);
+
+  const applyAutomaticTagFilters = async () => {
+    // Sistema duplo: filtros automáticos e aplicação automática de tags
+    const currentHour = new Date().getHours();
+    const isWorkingHours = currentHour >= 6 && currentHour <= 18;
+    
+    // PARTE 1: Aplicação automática de tags aos motoristas
+    // Critério 1: Aplicar tag "VIP" para motoristas com veículo próprio
+    const vipTag = tags.find(tag => tag.nome.toLowerCase().includes('vip'));
+    if (vipTag) {
+      for (const motorista of motoristas) {
+        const hasVeiculo = motorista.veiculo_id && motorista.placa;
+        const alreadyHasTag = motoristaTags[motorista.motorista_id || 0]?.some((tag: any) => tag.id === vipTag.id);
+        
+        if (hasVeiculo && !alreadyHasTag && motorista.motorista_id) {
+          await handleAddTag(motorista.motorista_id, vipTag.id);
+        }
+      }
+    }
+    
+    // Critério 2: Aplicar tag "Novo" para motoristas cadastrados nos últimos 7 dias
+    const novoTag = tags.find(tag => tag.nome.toLowerCase().includes('novo'));
+    if (novoTag) {
+      for (const motorista of motoristas) {
+        const cadastroDate = new Date(motorista.data_cadastro || '');
+        const daysSinceCadastro = (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
+        const alreadyHasTag = motoristaTags[motorista.motorista_id || 0]?.some((tag: any) => tag.id === novoTag.id);
+        
+        if (daysSinceCadastro <= 7 && !alreadyHasTag && motorista.motorista_id) {
+          await handleAddTag(motorista.motorista_id, novoTag.id);
+        }
+      }
+    }
+    
+    // Critério 3: Aplicar tag "Experiente" para motoristas com mais de 6 meses
+    const experienteTag = tags.find(tag => tag.nome.toLowerCase().includes('experiente'));
+    if (experienteTag) {
+      for (const motorista of motoristas) {
+        const cadastroDate = new Date(motorista.data_cadastro || '');
+        const daysSinceCadastro = (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
+        const alreadyHasTag = motoristaTags[motorista.motorista_id || 0]?.some((tag: any) => tag.id === experienteTag.id);
+        
+        if (daysSinceCadastro > 180 && !alreadyHasTag && motorista.motorista_id) {
+          await handleAddTag(motorista.motorista_id, experienteTag.id);
+        }
+      }
+    }
+    
+    // PARTE 2: Filtros automáticos na interface
+    // Durante horário comercial, mostrar apenas motoristas VIP e Experientes
+    if (isWorkingHours) {
+      const priorityTags = tags.filter(tag => 
+        tag.nome.toLowerCase().includes('vip') || 
+        tag.nome.toLowerCase().includes('experiente') ||
+        tag.nome.toLowerCase().includes('prioridade')
+      );
+      
+      if (priorityTags.length > 0 && tagFilter.length === 0) {
+        const priorityTagIds = priorityTags.map(tag => tag.id.toString());
+        setTagFilter(priorityTagIds);
+        return;
+      }
+    }
+    
+    // Se há poucos motoristas disponíveis (<3), não filtrar por tags
+    const availableMotoristas = motoristas.filter(m => m.ativo && m.st_cadastro === 'contratado');
+    if (availableMotoristas.length < 3 && tagFilter.length > 0) {
+      setTagFilter([]);
+      return;
+    }
+  };
+
   useEffect(() => {
     // Close context menu when clicking anywhere
     const handleClick = () => {
