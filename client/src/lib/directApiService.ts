@@ -1,5 +1,6 @@
 // Serviço para chamadas diretas sem backend Express
 import { supabase } from './supabase';
+import { API_BASE_URL } from './api-config';
 
 // Serviço para buscar empresa por account_id
 export const getCompanyByAccountId = async (accountId: string) => {
@@ -266,8 +267,8 @@ const CHAT_API_URL = import.meta.env.VITE_CHAT_API_URL || 'https://chat.wiseapp3
 
 // Buscar todas as labels da conta via backend existente
 export const getWiseAppLabels = async (accountId: string, token: string) => {
-  // Usar a rota existente no backend
-  const url = `/api/wiseapp/2/labels`; // Usando companyId 2
+  // Usar a rota existente no backend com URL configurável
+  const url = `${API_BASE_URL}/wiseapp/2/labels`; // Usando companyId 2
   console.log('Fazendo requisição via backend para:', url);
   
   try {
@@ -317,7 +318,7 @@ export const getContactLabels = async (accountId: string, token: string, contact
 
 // Buscar contato por telefone via backend existente
 export const searchWiseAppContact = async (accountId: string, token: string, phone: string) => {
-  const url = `/api/wiseapp/2/contacts/search?phone=${phone}`;
+  const url = `${API_BASE_URL}/wiseapp/2/contacts/search?phone=${phone}`;
   
   const response = await fetch(url, {
     headers: {
@@ -356,7 +357,7 @@ export const getWiseAppContact = async (accountId: string, token: string, contac
 
 // Aplicar labels a um contato via backend existente
 export const applyWiseAppContactLabels = async (accountId: string, token: string, contactId: number, labelNames: string[]) => {
-  const url = `/api/wiseapp/2/contacts/${contactId}/labels`;
+  const url = `${API_BASE_URL}/wiseapp/2/contacts/${contactId}/labels`;
   
   const response = await fetch(url, {
     method: 'POST',
