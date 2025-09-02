@@ -1486,10 +1486,17 @@ const MotoristasLista = () => {
                                 checked={tagFilter.includes(tag.id.toString())}
                                 onChange={(e) => {
                                   const tagId = tag.id.toString();
+                                  console.log(`🔍 Tag clicada: ${tag.nome} (ID: ${tag.id})`);
+                                  console.log(`🔍 tagId convertido: "${tagId}"`);
+                                  console.log(`🔍 Checkbox marcado: ${e.target.checked}`);
                                   if (e.target.checked) {
-                                    setTagFilter([...tagFilter, tagId]);
+                                    const newFilter = [...tagFilter, tagId];
+                                    console.log(`🔍 Novo filtro após adicionar:`, newFilter);
+                                    setTagFilter(newFilter);
                                   } else {
-                                    setTagFilter(tagFilter.filter(id => id !== tagId));
+                                    const newFilter = tagFilter.filter(id => id !== tagId);
+                                    console.log(`🔍 Novo filtro após remover:`, newFilter);
+                                    setTagFilter(newFilter);
                                   }
                                 }}
                                 onClick={(e) => e.stopPropagation()}
