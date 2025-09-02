@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Truck, User, FileText, ExternalLink, Edit2, Users, ShieldAlert, MessageSquare } from 'lucide-react';
+import { X, Truck, User, FileText, ExternalLink, Edit2, Users, ShieldAlert, MessageSquare, Tag } from 'lucide-react';
 import type { 
   DocumentoMotorista, 
   Veiculo, 
@@ -19,6 +19,7 @@ import GestaoRiscoTab from './GestaoRiscoTab';
 import ComentariosTab from './ComentariosTab';
 import EditVeiculoModal from './veiculos/EditVeiculoModal';
 import WhatsAppAvatar from './WhatsAppAvatar';
+import { TagManager } from './TagManager';
 
 interface UnifiedAgregadoModalProps {
   isOpen: boolean;
@@ -28,7 +29,7 @@ interface UnifiedAgregadoModalProps {
 }
 
 const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: UnifiedAgregadoModalProps) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'ajudantes' | 'gestao-risco' | 'comentarios' | 'tags'>('details');
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
@@ -499,6 +500,19 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                         {comentarioCount}
                       </span>
                     )}
+                  </div>
+                </button>
+                <button
+                  onClick={() => setActiveTab('tags')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'tags'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1">
+                    <Tag className="w-4 h-4" />
+                    Tags
                   </div>
                 </button>
               </nav>
@@ -1330,13 +1344,17 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                     onSuccess?.();
                   }}
                 />
-              ) : (
+              ) : activeTab === 'comentarios' ? (
                 <ComentariosTab 
                   motorista_id={motorista.motorista_id}
                   onUpdateSuccess={() => {
                     fetchAgregadoDetails();
                     onSuccess?.();
                   }}
+                />
+              ) : (
+                <TagManager 
+                  companyId={motorista.company_id}
                 />
               )}
             </div>
