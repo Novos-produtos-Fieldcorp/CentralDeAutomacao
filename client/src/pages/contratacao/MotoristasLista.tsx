@@ -703,12 +703,20 @@ const MotoristasLista = () => {
     try {
       if (!companyId) return;
       setTagsLoading(true);
-      const response = await apiRequest(`/tags?company_id=${companyId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch tags');
+      
+      // Buscar tags diretamente do Supabase
+      const { data: tags, error } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
+      
+      if (error) {
+        console.error('Erro ao buscar tags do Supabase:', error);
+        throw error;
       }
-      const data = await response.json();
-      setTags(data);
+      
+      setTags(tags || []);
     } catch (error) {
       console.error('Error fetching tags:', error);
       // Não mostrar toast de erro para evitar spam, tags são opcionais
