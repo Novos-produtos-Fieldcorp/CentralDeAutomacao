@@ -419,10 +419,32 @@ export class DatabaseStorage implements IStorage {
 
   // Tags methods
   async getTags(companyId: number): Promise<Tag[]> {
-    return await db
-      .select()
-      .from(tags)
-      .where(eq(tags.company_id, companyId));
+    try {
+      // Use Supabase directly to avoid WebSocket connection issues if available
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('tag')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('nome');
+
+        if (error) {
+          console.error('Error fetching tags from Supabase:', error);
+          throw error;
+        }
+
+        return data || [];
+      }
+
+      // Fallback to Drizzle if Supabase not available
+      return await db
+        .select()
+        .from(tags)
+        .where(eq(tags.company_id, companyId));
+    } catch (error) {
+      console.error('Error in getTags:', error);
+      throw error;
+    }
   }
 
   async createTag(insertTag: InsertTag): Promise<Tag> {
