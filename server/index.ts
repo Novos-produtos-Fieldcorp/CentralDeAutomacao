@@ -70,10 +70,14 @@ app.use((req, res, next) => {
   // Cache strategy otimizado por tipo de rota
   if (req.path.startsWith('/api/')) {
     if (req.path.includes('/wiseapp/') || req.path.includes('/inboxes')) {
-      // APIs dinâmicas - sem cache
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      // APIs dinâmicas - força no-cache agressivo para resolver problemas de cache
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
+      res.setHeader('Last-Modified', new Date().toUTCString());
+      res.setHeader('Vary', '*');
+      // Header para forçar revalidação
+      res.setHeader('ETag', `"${Date.now()}-${Math.random()}"`);
     } else {
       // APIs mais estáveis - cache curto
       res.setHeader('Cache-Control', 'public, max-age=300'); // 5 min
@@ -165,9 +169,27 @@ app.use((req, res, next) => {
     // Não re-throw o erro para evitar crash do servidor
   });
 
+  // API Route Protection - garantir que rotas /api/* não sejam capturadas pelo SPA
+  app.use('/api/*', (req, res, next) => {
+    // Se chegou aqui, significa que nenhuma rota da API correspondeu
+    res.status(404).json({
+      error: true,
+      status: 404,
+      message: `API endpoint not found: ${req.method} ${req.path}`,
+      timestamp: new Date().toISOString(),
+      path: req.path,
+      method: req.method,
+      available_endpoints: [
+        'GET /api/wiseapp/:companyId/labels',
+        'POST /api/wiseapp/:companyId/contacts/:contactId/labels', 
+        'DELETE /api/wiseapp/:companyId/contacts/:contactId/labels/:tagId'
+      ]
+    });
+  });
+
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // doesn't interfere with the other routes  
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
