@@ -417,194 +417,135 @@ export class DatabaseStorage implements IStorage {
       .where(eq(documento_ajudante.motorista_id, motoristaId));
   }
 
-  // Tags methods
+  // Tags methods - Using direct PostgreSQL connection
   async getTags(companyId: number): Promise<Tag[]> {
+    const { pool } = await import('./db');
+    const client = await pool.connect();
     try {
-      // Use Supabase directly to avoid WebSocket connection issues if available
-      if (supabase) {
-        const { data, error } = await supabase
-          .from('tag')
-          .select('*')
-          .eq('company_id', companyId)
-          .order('nome');
-
-        if (error) {
-          console.error('Error fetching tags from Supabase:', error);
-          throw error;
-        }
-
-        return data || [];
-      }
-
-      // Use direct pool connection to avoid WebSocket issues
-      const { pool } = await import('./db');
-      const client = await pool.connect();
-      try {
-        const result = await client.query(
-          'SELECT * FROM tag WHERE company_id = $1 ORDER BY nome',
-          [companyId]
-        );
-        return result.rows;
-      } finally {
-        client.release();
-      }
-    } catch (error) {
-      console.error('Error in getTags:', error);
-      throw error;
+      const result = await client.query(
+        'SELECT * FROM tag WHERE company_id = $1 ORDER BY nome',
+        [companyId]
+      );
+      return result.rows;
+    } finally {
+      client.release();
     }
   }
 
   async createTag(insertTag: InsertTag): Promise<Tag> {
-    const [tag] = await db
-      .insert(tags)
-      .values(insertTag)
-      .returning();
-    return tag;
+    const { pool } = await import('./db');
+    const client = await pool.connect();
+    try {
+      const result = await client.query(
+        'INSERT INTO tag (nome, cor, company_id, limite_max) VALUES ($1, $2, $3, $4) RETURNING *',
+        [insertTag.nome, insertTag.cor, insertTag.company_id, insertTag.limite_max]
+      );
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
   }
 
   async updateTag(id: number, insertTag: Partial<InsertTag>): Promise<Tag | undefined> {
-    const [tag] = await db
-      .update(tags)
-      .set(insertTag)
-      .where(eq(tags.id, id))
-      .returning();
-    return tag || undefined;
+    const { pool } = await import('./db');
+    const client = await pool.connect();
+    try {
+      const setParts = [];
+      const values = [];
+      let paramIndex = 1;
+
+      if (insertTag.nome !== undefined) {
+        setParts.push(`nome = $${paramIndex++}`);
+        values.push(insertTag.nome);
+      }
+      if (insertTag.cor !== undefined) {
+        setParts.push(`cor = $${paramIndex++}`);
+        values.push(insertTag.cor);
+      }
+      if (insertTag.limite_max !== undefined) {
+        setParts.push(`limite_max = $${paramIndex++}`);
+        values.push(insertTag.limite_max);
+      }
+
+      if (setParts.length === 0) return undefined;
+
+      values.push(id);
+      const result = await client.query(
+        `UPDATE tag SET ${setParts.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+        values
+      );
+      return result.rows[0] || undefined;
+    } finally {
+      client.release();
+    }
   }
 
   async deleteTag(id: number): Promise<boolean> {
-    const result = await db
-      .delete(tags)
-      .where(eq(tags.id, id));
-    return (result.rowCount ?? 0) > 0;
+    const { pool } = await import('./db');
+    const client = await pool.connect();
+    try {
+      const result = await client.query(
+        'DELETE FROM tag WHERE id = $1',
+        [id]
+      );
+      return (result.rowCount ?? 0) > 0;
+    } finally {
+      client.release();
+    }
   }
 
-  // Motorista Tags methods
+  // Motorista Tags methods - Using direct PostgreSQL connection
   async getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]> {
+    const { pool } = await import('./db');
+    const client = await pool.connect();
     try {
-      // Use Supabase directly to avoid WebSocket connection issues if available
-      if (supabase) {
-        const { data: result, error } = await supabase
-          .from('associacao_tags')
-          .select(`
-            tag_id,
-            tag:tag_id (
-              id,
-              nome,
-              cor,
-              company_id,
-              limite_max,
-              created_at,
-              updated_at
-            )
-          `)
-          .eq('motorista_id', motoristaId);
-
-        if (error) {
-          console.error('Error fetching motorista tags:', error);
-          return [];
-        }
-
-        // Transform the result to match the expected Tag[] format
-        return result?.map((item: any) => ({
-          id: item.tag.id,
-          nome: item.tag.nome,
-          cor: item.tag.cor,
-          company_id: item.tag.company_id,
-          limite_max: item.tag.limite_max,
-          created_at: item.tag.created_at,
-          updated_at: item.tag.updated_at
-        })) || [];
-      }
-
-      // Fallback to Drizzle if Supabase not available
-      const result = await db
-        .select({
-          id: tags.id,
-          nome: tags.nome,
-          cor: tags.cor,
-          company_id: tags.company_id,
-          limite_max: tags.limite_max,
-          created_at: tags.created_at,
-          updated_at: tags.updated_at
-        })
-        .from(motorista_tags)
-        .innerJoin(tags, eq(motorista_tags.tag_id, tags.id))
-        .where(eq(motorista_tags.motorista_id, motoristaId));
-      
-      return result;
+      const result = await client.query(`
+        SELECT t.* 
+        FROM tag t
+        INNER JOIN associacao_tags at ON t.id = at.tag_id
+        WHERE at.motorista_id = $1
+        ORDER BY t.nome
+      `, [motoristaId]);
+      return result.rows;
     } catch (error) {
       console.error('Error in getMotoristaTagsWithDetails:', error);
       return [];
+    } finally {
+      client.release();
     }
   }
 
   async addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag> {
+    const { pool } = await import('./db');
+    const client = await pool.connect();
     try {
-      // Use Supabase directly to avoid WebSocket connection issues if available
-      if (supabase) {
-        const { data, error } = await supabase
-          .from('associacao_tags')
-          .insert({
-            motorista_id: motoristaId,
-            tag_id: tagId
-          })
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Error adding tag to motorista:', error);
-          throw new Error('Failed to add tag to motorista');
-        }
-
-        return data;
-      }
-
-      // Fallback to Drizzle
-      const [motoristaTag] = await db
-        .insert(motorista_tags)
-        .values({ 
-          motorista_id: motoristaId, 
-          tag_id: tagId
-        })
-        .returning();
-      return motoristaTag;
+      const result = await client.query(
+        'INSERT INTO associacao_tags (motorista_id, tag_id) VALUES ($1, $2) RETURNING *',
+        [motoristaId, tagId]
+      );
+      return result.rows[0];
     } catch (error) {
       console.error('Error in addTagToMotorista:', error);
       throw error;
+    } finally {
+      client.release();
     }
   }
 
   async removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean> {
+    const { pool } = await import('./db');
+    const client = await pool.connect();
     try {
-      // Use Supabase directly to avoid WebSocket connection issues if available
-      if (supabase) {
-        const { error } = await supabase
-          .from('associacao_tags')
-          .delete()
-          .eq('motorista_id', motoristaId)
-          .eq('tag_id', tagId);
-
-        if (error) {
-          console.error('Error removing tag from motorista:', error);
-          return false;
-        }
-
-        return true;
-      }
-
-      // Fallback to Drizzle
-      const result = await db
-        .delete(motorista_tags)
-        .where(
-          and(
-            eq(motorista_tags.motorista_id, motoristaId),
-            eq(motorista_tags.tag_id, tagId)
-          )
-        );
+      const result = await client.query(
+        'DELETE FROM associacao_tags WHERE motorista_id = $1 AND tag_id = $2',
+        [motoristaId, tagId]
+      );
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error in removeTagFromMotorista:', error);
       return false;
+    } finally {
+      client.release();
     }
   }
 
