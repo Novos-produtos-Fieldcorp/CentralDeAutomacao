@@ -25,6 +25,7 @@ import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
 import { useAuth } from '../../context/AuthContext';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
+import { createApiUrl } from '../../lib/api-config';
 
 // Função auxiliar para converter ViewMotorista para Motorista
 const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
@@ -159,7 +160,7 @@ const MotoristasLista = () => {
       setUpdatingMotoristaTag(motoristaId);
       setTagDropdownOpen(prev => ({ ...prev, [motoristaId]: false }));
 
-      const response = await fetch(`/api/motoristas/${motoristaId}/tags`, {
+      const response = await fetch(createApiUrl(`motoristas/${motoristaId}/tags`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -194,7 +195,7 @@ const MotoristasLista = () => {
     try {
       setUpdatingMotoristaTag(motoristaId);
 
-      const response = await fetch(`/api/motoristas/${motoristaId}/tags/${tagId}`, {
+      const response = await fetch(createApiUrl(`motoristas/${motoristaId}/tags/${tagId}`), {
         method: 'DELETE',
       });
 
@@ -524,7 +525,7 @@ const MotoristasLista = () => {
 
   const fetchMotoristaTags = async (motoristaId: number) => {
     try {
-      const response = await fetch(`/api/motoristas/${motoristaId}/tags`);
+      const response = await fetch(createApiUrl(`motoristas/${motoristaId}/tags`));
       if (!response.ok) {
         throw new Error('Failed to fetch motorista tags');
       }
@@ -595,7 +596,7 @@ const MotoristasLista = () => {
   const fetchTags = async () => {
     try {
       if (!companyId) return;
-      const response = await fetch(`/api/tags?company_id=${companyId}`);
+      const response = await fetch(createApiUrl(`tags?company_id=${companyId}`));
       if (!response.ok) {
         throw new Error('Failed to fetch tags');
       }

@@ -1,13 +1,12 @@
-// Configuração da API - forçar uso do servidor Replit para garantir funcionamento
-const REPLIT_SERVER_URL = 'https://b8a2fe25-be22-41f5-b1a6-2cecdb29b3a3-00-fbhfhvazvvim.worf.replit.dev';
-
-// Detectar se está rodando no Replit ou foi deployado
+// Detectar ambiente
 const isReplit = window.location.hostname.includes('replit.dev');
 const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isNetlify = window.location.hostname.includes('netlify.app');
 
-export const API_BASE_URL = (isLocalDev || isReplit) 
-  ? '/api'  // URLs relativas quando no ambiente correto
-  : `${REPLIT_SERVER_URL}/api`;  // URLs absolutas quando acessado via outros domínios (ex: Netlify)
+// Configuração da API baseada no ambiente
+export const API_BASE_URL = (isLocalDev || isReplit || isNetlify) 
+  ? '/api'  // URLs relativas para todos os ambientes com serverless functions
+  : '/api'; // Fallback para relativo
 
 console.log('API Configuration:', {
   hostname: window.location.hostname,
