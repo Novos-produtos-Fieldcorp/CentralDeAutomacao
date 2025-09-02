@@ -141,7 +141,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
   const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
-  const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
+  const [bulkActionType, setBulkActionType] = useState<'status' | 'client' | 'tags'>('status');
   const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
   const [selectAll, setSelectAll] = useState(false);
   const [documento] = useState<DocumentoMotorista | null>(null);
@@ -990,7 +990,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     };
 
-    const handleBulkAction = (type: 'status' | 'client') => {
+    const handleBulkAction = (type: 'status' | 'client' | 'tags') => {
       setBulkActionType(type);
       setIsBulkActionsModalOpen(true);
     };
@@ -1260,6 +1260,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                   </svg>
                   Atribuir Cliente
+                </button>
+                <button
+                  onClick={() => handleBulkAction('tags')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 
+                          focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 
+                          transition-colors flex items-center gap-2"
+                >
+                  <Tag className="w-5 h-5" />
+                  Adicionar Tag
                 </button>
                 <button
                   onClick={handleMassMessage}

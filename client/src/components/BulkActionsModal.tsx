@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Users, Building2 } from 'lucide-react';
+import { X, Loader2, Users, Building2, Tag } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import toast from 'react-hot-toast';
 import type { Cliente } from '../types/database';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 interface BulkActionsModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedItems: Set<number>;
-  actionType: 'status' | 'client';
+  actionType: 'status' | 'client' | 'tags';
   onSuccess: () => void;
   clientes?: Cliente[];
 }
@@ -22,9 +24,35 @@ const BulkActionsModal = ({
   clientes = []
 }: BulkActionsModalProps) => {
   const { query } = useCompanyData();
+  const { companyId } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedClient, setSelectedClient] = useState<string>('');
+  const [selectedTag, setSelectedTag] = useState<string>('');
+  const [tags, setTags] = useState<any[]>([]);
+
+  // Buscar tags quando o modal abrir para ação de tags
+  useEffect(() => {
+    if (isOpen && actionType === 'tags' && companyId) {
+      fetchTags();
+    }
+  }, [isOpen, actionType, companyId]);
+
+  const fetchTags = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
+
+      if (error) throw error;
+      setTags(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar tags:', error);
+      toast.error('Erro ao carregar tags');
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -44,6 +72,11 @@ const BulkActionsModal = ({
     
     if (actionType === 'status' && !selectedStatus) {
       toast.error('Selecione um status');
+      return;
+    }
+
+    if (actionType === 'tags' && !selectedTag) {
+      toast.error('Selecione uma tag');
       return;
     }
 
@@ -77,6 +110,34 @@ const BulkActionsModal = ({
         }
         
         toast.success(`Cliente atualizado para ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''}`);
+      } else if (actionType === 'tags') {
+        // Add tag to all selected items
+        const tagId = parseInt(selectedTag);
+        
+        for (const motoristaId of itemIds) {
+          // Verificar se a associação já existe
+          const { data: existingAssociation } = await supabase
+            .from('associacao_tags')
+            .select('id')
+            .eq('motorista_id', motoristaId)
+            .eq('tag_id', tagId)
+            .single();
+          
+          // Se não existe, criar a associação
+          if (!existingAssociation) {
+            const { error } = await supabase
+              .from('associacao_tags')
+              .insert({
+                motorista_id: motoristaId,
+                tag_id: tagId
+              });
+            
+            if (error) throw error;
+          }
+        }
+        
+        const tagName = tags.find(t => t.id === tagId)?.nome || '';
+        toast.success(`Tag "${tagName}" adicionada a ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''}`);
       }
       
       onSuccess();
@@ -99,10 +160,15 @@ const BulkActionsModal = ({
                 <Users className="text-blue-500" size={24} />
                 Atualizar Status em Massa
               </>
-            ) : (
+            ) : actionType === 'client' ? (
               <>
                 <Building2 className="text-blue-500" size={24} />
                 Atualizar Cliente em Massa
+              </>
+            ) : (
+              <>
+                <Tag className="text-green-500" size={24} />
+                Adicionar Tag em Massa
               </>
             )}
           </h2>
@@ -140,7 +206,7 @@ const BulkActionsModal = ({
                 ))}
               </select>
             </div>
-          ) : (
+          ) : actionType === 'client' ? (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Novo Cliente
@@ -158,6 +224,36 @@ const BulkActionsModal = ({
                 ))}
               </select>
             </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Tag para Adicionar
+              </label>
+              <select
+                value={selectedTag}
+                onChange={(e) => setSelectedTag(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 max-h-60"
+                required
+              >
+                <option value="">Selecione uma tag</option>
+                {tags.map(tag => (
+                  <option key={tag.id} value={tag.id.toString()}>
+                    <div className="flex items-center">
+                      <div 
+                        className="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                        style={{ backgroundColor: tag.cor }}
+                      />
+                      {tag.nome}
+                    </div>
+                  </option>
+                ))}
+              </select>
+              {tags.length === 0 && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  Nenhuma tag encontrada. Crie tags primeiro na seção de administração.
+                </p>
+              )}
+            </div>
           )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -172,7 +268,7 @@ const BulkActionsModal = ({
             <button
               type="submit"
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              disabled={submitting || (actionType === 'status' && !selectedStatus)}
+              disabled={submitting || (actionType === 'status' && !selectedStatus) || (actionType === 'tags' && !selectedTag)}
             >
               {submitting ? (
                 <>
