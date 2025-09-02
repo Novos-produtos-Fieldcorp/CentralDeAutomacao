@@ -418,34 +418,45 @@ export class DatabaseStorage implements IStorage {
 
   // Tags methods
   async getTags(companyId: number): Promise<Tag[]> {
-    return await db
-      .select()
-      .from(tags)
-      .where(eq(tags.company_id, companyId));
+    const { data, error } = await db
+      .from('tag')
+      .select('*')
+      .eq('company_id', companyId);
+    
+    if (error) throw error;
+    return data || [];
   }
 
   async createTag(insertTag: InsertTag): Promise<Tag> {
-    const [newTag] = await db
-      .insert(tags)
-      .values(insertTag)
-      .returning();
-    return newTag;
+    const { data, error } = await db
+      .from('tag')
+      .insert(insertTag)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
   }
 
   async updateTag(id: number, insertTag: Partial<InsertTag>): Promise<Tag | undefined> {
-    const [updatedTag] = await db
-      .update(tags)
-      .set(insertTag)
-      .where(eq(tags.id, id))
-      .returning();
-    return updatedTag || undefined;
+    const { data, error } = await db
+      .from('tag')
+      .update(insertTag)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data || undefined;
   }
 
   async deleteTag(id: number): Promise<boolean> {
-    const result = await db
-      .delete(tags)
-      .where(eq(tags.id, id));
-    return (result.rowCount ?? 0) > 0;
+    const { error } = await db
+      .from('tag')
+      .delete()
+      .eq('id', id);
+    
+    return !error;
   }
 
   // Motorista Tags methods
