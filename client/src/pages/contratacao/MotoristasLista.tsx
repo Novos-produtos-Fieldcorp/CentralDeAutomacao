@@ -1553,8 +1553,7 @@ const MotoristasLista = () => {
                     {/* Conteúdo da aba Filtrar */}
                     {tagActiveTab === 'filter' && (
                       <div className="px-3 py-2">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Filtrar motoristas por tags</span>
+                        <div className="flex justify-end mb-2">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
