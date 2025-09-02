@@ -954,7 +954,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "company_id é obrigatório" });
       }
 
-      const tags = await storage.getTags(Number(companyId));
+      // Buscar tags diretamente do Supabase
+      const { data: tags, error } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
+      
+      if (error) {
+        console.error('Erro ao buscar tags do Supabase:', error);
+        throw error;
+      }
       res.json(tags);
     } catch (error) {
       console.error("Erro ao buscar tags:", error);
