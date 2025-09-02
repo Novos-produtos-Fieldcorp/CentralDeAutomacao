@@ -148,8 +148,6 @@ const MotoristasLista = () => {
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [tags, setTags] = useState<any[]>([]);
   const [tagSearchFilter, setTagSearchFilter] = useState('');
-  const [tagSearchVisible, setTagSearchVisible] = useState('');
-  const [tagActiveTab, setTagActiveTab] = useState<'filter' | 'visibility'>('filter');
   const [motoristaTags, setMotoristaTags] = useState<{[key: number]: any[]}>({});
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{[key: number]: boolean}>({});
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
@@ -229,7 +227,6 @@ const MotoristasLista = () => {
   const [clienteFilter, setClienteFilter] = useState<string[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
   const [tagFilter, setTagFilter] = useState<string[]>([]);
-  const [visibleTags, setVisibleTags] = useState<string[]>([]);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
@@ -1518,154 +1515,61 @@ const MotoristasLista = () => {
                       marginBottom: '4px',
                       zIndex: 999999
                     }}>
-                    {/* Tabs para alternar entre Filtrar e Exibir */}
-                    <div className="flex border-b border-gray-200 dark:border-gray-600">
-                      <button
-                        type="button"
-                        className={`flex-1 px-3 py-2 text-xs font-medium ${
-                          tagActiveTab === 'filter' 
-                            ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTagActiveTab('filter');
-                        }}
-                      >
-                        Filtrar Lista
-                      </button>
-                      <button
-                        type="button"
-                        className={`flex-1 px-3 py-2 text-xs font-medium ${
-                          tagActiveTab === 'visibility' 
-                            ? 'text-green-600 dark:text-green-400 border-b-2 border-green-600 dark:border-green-400 bg-green-50 dark:bg-green-900/20' 
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTagActiveTab('visibility');
-                        }}
-                      >
-                        Exibir Colunas
-                      </button>
+
+                    <div className="px-3 py-2">
+                      <div className="flex justify-end mb-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTagFilter([]);
+                          }}
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          Limpar
+                        </button>
+                      </div>
+                      <div className="mb-3">
+                        <input
+                          type="text"
+                          placeholder="Pesquisar tags..."
+                          value={tagSearchFilter}
+                          onChange={(e) => setTagSearchFilter(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="space-y-1 max-h-48 overflow-y-auto">
+                        {tags.filter(tag => 
+                          tag.nome.toLowerCase().includes(tagSearchFilter.toLowerCase())
+                        ).map((tag) => (
+                          <label key={`filter-${tag.id}`} className="flex items-center cursor-pointer py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-600 rounded">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                              checked={tagFilter.includes(tag.id.toString())}
+                              onChange={(e) => {
+                                const tagId = tag.id.toString();
+                                if (e.target.checked) {
+                                  setTagFilter([...tagFilter, tagId]);
+                                } else {
+                                  setTagFilter(tagFilter.filter(id => id !== tagId));
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div className="flex items-center gap-2 flex-1">
+                              <div
+                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: tag.cor }}
+                              />
+                              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                                {tag.nome}
+                              </span>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
                     </div>
-
-                    {/* Conteúdo da aba Filtrar */}
-                    {tagActiveTab === 'filter' && (
-                      <div className="px-3 py-2">
-                        <div className="flex justify-end mb-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTagFilter([]);
-                            }}
-                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                          >
-                            Limpar
-                          </button>
-                        </div>
-                        <div className="mb-3">
-                          <input
-                            type="text"
-                            placeholder="Pesquisar tags..."
-                            value={tagSearchFilter}
-                            onChange={(e) => setTagSearchFilter(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                        <div className="space-y-1 max-h-48 overflow-y-auto">
-                          {tags.filter(tag => 
-                            tag.nome.toLowerCase().includes(tagSearchFilter.toLowerCase())
-                          ).map((tag) => (
-                            <label key={`filter-${tag.id}`} className="flex items-center cursor-pointer py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-600 rounded">
-                              <input
-                                type="checkbox"
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                                checked={tagFilter.includes(tag.id.toString())}
-                                onChange={(e) => {
-                                  const tagId = tag.id.toString();
-                                  if (e.target.checked) {
-                                    setTagFilter([...tagFilter, tagId]);
-                                  } else {
-                                    setTagFilter(tagFilter.filter(id => id !== tagId));
-                                  }
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <div className="flex items-center gap-2 flex-1">
-                                <div
-                                  className="w-3 h-3 rounded-full flex-shrink-0"
-                                  style={{ backgroundColor: tag.cor }}
-                                />
-                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
-                                  {tag.nome}
-                                </span>
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Conteúdo da aba Exibir */}
-                    {tagActiveTab === 'visibility' && (
-                      <div className="px-3 py-2">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Ocultar tags da coluna</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setVisibleTags([]);
-                            }}
-                            className="text-xs text-green-600 dark:text-green-400 hover:underline"
-                          >
-                            Mostrar todas
-                          </button>
-                        </div>
-                        <div className="mb-3">
-                          <input
-                            type="text"
-                            placeholder="Pesquisar tags..."
-                            value={tagSearchVisible}
-                            onChange={(e) => setTagSearchVisible(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                          />
-                        </div>
-                        <div className="space-y-1 max-h-48 overflow-y-auto">
-                          {tags.filter(tag => 
-                            tag.nome.toLowerCase().includes(tagSearchVisible.toLowerCase())
-                          ).map((tag) => (
-                            <label key={`visible-${tag.id}`} className="flex items-center cursor-pointer py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-600 rounded">
-                              <input
-                                type="checkbox"
-                                className="rounded border-gray-300 text-green-600 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                                checked={!visibleTags.includes(tag.id.toString())}
-                                onChange={(e) => {
-                                  const tagId = tag.id.toString();
-                                  if (e.target.checked) {
-                                    setVisibleTags(visibleTags.filter(id => id !== tagId));
-                                  } else {
-                                    setVisibleTags([...visibleTags, tagId]);
-                                  }
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <div className="flex items-center gap-2 flex-1">
-                                <div
-                                  className="w-3 h-3 rounded-full flex-shrink-0"
-                                  style={{ backgroundColor: tag.cor }}
-                                />
-                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
-                                  {tag.nome}
-                                </span>
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -1966,7 +1870,7 @@ const MotoristasLista = () => {
                         <div className="relative">
                           {/* Tags atuais */}
                           <div className="flex flex-wrap gap-1 mb-2">
-                            {motoristaTags[motorista.motorista_id]?.filter((tag: any) => !visibleTags.includes(tag.id.toString())).map((tag: any) => (
+                            {motoristaTags[motorista.motorista_id]?.map((tag: any) => (
                               <span
                                 key={tag.id}
                                 className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:opacity-75 group"
