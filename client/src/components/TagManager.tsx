@@ -16,14 +16,14 @@ export function TagManager({ companyId }: TagManagerProps) {
   const { accountId } = useAuth();
   const { token: wiseAppToken } = useWiseAppAccess();
 
-  // Query para buscar labels do WiseApp
+  // Query para buscar tags do WiseApp
   const { data: tagsResponse, isLoading, error } = useQuery({
-    queryKey: ['wiseapp-labels', accountId],
+    queryKey: ['wiseapp-tags', accountId],
     queryFn: async () => {
       if (!accountId || !wiseAppToken) {
         throw new Error('AccountId ou token não disponível');
       }
-      console.log('Buscando labels do WiseApp para account:', accountId);
+      console.log('Buscando tags do WiseApp para account:', accountId);
       return getWiseAppLabels(accountId, wiseAppToken);
     },
     enabled: !!accountId && !!wiseAppToken,
@@ -49,40 +49,40 @@ export function TagManager({ companyId }: TagManagerProps) {
         return;
       }
 
-      // Buscar labels do WiseApp
-      console.log('Sincronizando labels - Account ID:', accountId, 'Token disponível:', !!wiseAppToken);
+      // Buscar tags do WiseApp
+      console.log('Sincronizando tags - Account ID:', accountId, 'Token disponível:', !!wiseAppToken);
       const wiseAppLabelsResponse = await getWiseAppLabels(accountId || '', wiseAppToken || '');
       const wiseAppTags = wiseAppLabelsResponse.payload || wiseAppLabelsResponse || [];
-      console.log('Labels encontradas:', wiseAppTags);
+      console.log('Tags encontradas:', wiseAppTags);
       console.log('WiseApp labels found:', wiseAppTags);
       
       if (!wiseAppTags || wiseAppTags.length === 0) {
-        toast('Nenhuma label encontrada no WiseApp.', {
+        toast('Nenhuma tag encontrada no WiseApp.', {
           icon: 'ℹ️'
         });
         return;
       }
       
       // Sucesso na sincronização
-      await queryClient.invalidateQueries({ queryKey: ['wiseapp-labels'] });
-      toast.success('Labels sincronizadas com sucesso!');
+      await queryClient.invalidateQueries({ queryKey: ['wiseapp-tags'] });
+      toast.success('Tags sincronizadas com sucesso!');
       
     } catch (error) {
-      console.error('Erro ao sincronizar labels do WiseApp:', error);
-      toast.error('Erro ao sincronizar labels do WiseApp');
+      console.error('Erro ao sincronizar tags do WiseApp:', error);
+      toast.error('Erro ao sincronizar tags do WiseApp');
     } finally {
       setIsSyncingWiseApp(false);
     }
   };
 
   if (isLoading) {
-    return <div className="text-center">Carregando labels...</div>;
+    return <div className="text-center">Carregando tags...</div>;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Labels WiseApp</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Tags WiseApp</h3>
         <div className="flex items-center gap-2">
           <button
             onClick={syncWiseAppTags}
@@ -110,7 +110,7 @@ export function TagManager({ companyId }: TagManagerProps) {
                     title={`Cor: ${tag.color || '#3B82F6'}`}
                   />
                   <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {tag.title || tag.name || 'Label'}
+                    {tag.title || tag.name || 'Tag'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -123,7 +123,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       ) : (
         <div className="text-center py-8">
           <p className="text-gray-500 dark:text-gray-400">
-            Nenhuma label encontrada. Clique em "Sync WiseApp" para buscar labels.
+            Nenhuma tag encontrada. Clique em "Sync WiseApp" para buscar tags.
           </p>
         </div>
       )}
