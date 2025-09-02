@@ -1953,7 +1953,11 @@ const MotoristasLista = () => {
                                 </div>
                                 <div className="space-y-1">
                                   {tags
-                                    .filter(tag => !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id))
+                                    .filter(tag => 
+                                      // Só mostrar tags que têm ID numérico (do Supabase) e não foram adicionadas
+                                      typeof tag.id === 'number' && 
+                                      !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id)
+                                    )
                                     .map((tag) => (
                                     <div
                                       key={tag.id}
@@ -1972,9 +1976,12 @@ const MotoristasLista = () => {
                                       </span>
                                     </div>
                                   ))}
-                                  {tags.filter(tag => !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id)).length === 0 && (
+                                  {tags.filter(tag => 
+                                    typeof tag.id === 'number' && 
+                                    !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id)
+                                  ).length === 0 && (
                                     <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-                                      Todas as tags já foram adicionadas
+                                      {tags.length === 0 ? 'Nenhuma tag disponível' : 'Todas as tags já foram adicionadas'}
                                     </div>
                                   )}
                                 </div>
