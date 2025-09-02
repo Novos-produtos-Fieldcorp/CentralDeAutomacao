@@ -704,8 +704,6 @@ const MotoristasLista = () => {
       if (!companyId) return;
       setTagsLoading(true);
       
-      console.log('Buscando tags para company_id:', companyId);
-      
       // Buscar tags diretamente do Supabase
       const { data: tags, error } = await supabase
         .from('tag')
@@ -713,15 +711,12 @@ const MotoristasLista = () => {
         .eq('company_id', companyId)
         .order('nome');
       
-      console.log('Resultado da consulta tags:', { tags, error });
-      
       if (error) {
         console.error('Erro ao buscar tags do Supabase:', error);
         throw error;
       }
       
       setTags(tags || []);
-      console.log('Tags definidas no estado:', tags || []);
     } catch (error) {
       console.error('Error fetching tags:', error);
       // Não mostrar toast de erro para evitar spam, tags são opcionais

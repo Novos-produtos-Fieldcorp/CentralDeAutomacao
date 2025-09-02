@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
 import { getWiseAppLabels } from "@/lib/directApiService";
+import { supabase } from "@/lib/supabase";
 
 interface TagManagerProps {
   companyId: number;
@@ -62,10 +63,57 @@ export function TagManager({ companyId }: TagManagerProps) {
         });
         return;
       }
+
+      // Salvar tags no Supabase
+      console.log('Salvando tags no Supabase para company_id:', companyId);
       
-      // Sucesso na sincronização
+      // Primeiro, buscar tags existentes para evitar duplicatas
+      const { data: existingTags, error: fetchError } = await supabase
+        .from('tag')
+        .select('nome')
+        .eq('company_id', companyId);
+
+      if (fetchError) {
+        console.error('Erro ao buscar tags existentes:', fetchError);
+        throw fetchError;
+      }
+
+      const existingTagNames = new Set(existingTags?.map(tag => tag.nome.toLowerCase()) || []);
+
+      // Preparar tags para inserção (apenas as que não existem)
+      const tagsToInsert = wiseAppTags
+        .filter((tag: any) => !existingTagNames.has((tag.name || tag.title || 'Tag').toLowerCase()))
+        .map((tag: any) => ({
+          nome: tag.name || tag.title || 'Tag',
+          cor: tag.color || '#3B82F6',
+          company_id: companyId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+
+      console.log('Tags para inserir:', tagsToInsert);
+
+      if (tagsToInsert.length > 0) {
+        const { data: insertedTags, error: insertError } = await supabase
+          .from('tag')
+          .insert(tagsToInsert)
+          .select();
+
+        if (insertError) {
+          console.error('Erro ao inserir tags no Supabase:', insertError);
+          throw insertError;
+        }
+
+        console.log('Tags inseridas com sucesso:', insertedTags);
+        toast.success(`${tagsToInsert.length} tags sincronizadas e salvas no banco de dados!`);
+      } else {
+        toast('Todas as tags já existem no banco de dados.', {
+          icon: 'ℹ️'
+        });
+      }
+      
+      // Invalidar queries para atualizar UI
       await queryClient.invalidateQueries({ queryKey: ['wiseapp-tags'] });
-      toast.success('Tags sincronizadas com sucesso!');
       
     } catch (error) {
       console.error('Erro ao sincronizar tags do WiseApp:', error);
