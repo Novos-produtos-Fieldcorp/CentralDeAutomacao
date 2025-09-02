@@ -1706,8 +1706,8 @@ const MotoristasLista = () => {
       {/* WiseApp Bulk Sync Panel - now positioned fixed in top right */}
       <WiseAppBulkSyncPanel 
         onTagsSync={() => {
-          if (motoristasAgrupados && motoristasAgrupados.length > 0) {
-            fetchBulkMotoristaTags(motoristasAgrupados);
+          if (motoristas && motoristas.length > 0) {
+            fetchBulkMotoristaTags(motoristas);
           }
         }}
       />
