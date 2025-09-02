@@ -4,7 +4,6 @@ import WhatsAppAvatar from '../../components/WhatsAppAvatar';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
-import DocumentViewer from '../../components/DocumentViewer';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
 import EditMotoristaModal from '../../components/EditMotoristaModal';
 import AddMotoristaModal from '../../components/AddMotoristaModal';
@@ -217,7 +216,6 @@ const MotoristasLista = () => {
       setUpdatingMotoristaTag(null);
     }
   };
-  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isAgregadoModalOpen, setIsAgregadoModalOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -748,7 +746,7 @@ const MotoristasLista = () => {
       if (motorista.funcao === 'Agregado') {
         setIsAgregadoModalOpen(true);
       } else {
-        setIsDocumentViewerOpen(true);
+        setIsUnifiedModalOpen(true);
       }
     } catch (error) {
       console.error('Error loading document:', error);
@@ -2218,20 +2216,6 @@ const MotoristasLista = () => {
         onClose={() => setIsUnifiedModalOpen(false)}
         motorista={selectedMotorista ? toMotorista(selectedMotorista) : null}
         onSuccess={fetchMotoristas}
-      />
-
-      <DocumentViewer
-        isOpen={isDocumentViewerOpen}
-        onClose={() => setIsDocumentViewerOpen(false)}
-        documento={documento}
-        nome={selectedMotorista?.nome || ''}
-        cpf={selectedMotorista?.cpf || undefined}
-        email={selectedMotorista?.email || undefined}
-        telefone={selectedMotorista?.telefone ? String(selectedMotorista.telefone) : undefined}
-        dt_nascimento={selectedMotorista?.dt_nascimento}
-        foto_whatsapp={selectedMotorista?.foto_whatsapp}
-        endereco={endereco}
-        st_cadastro={selectedMotorista?.st_cadastro}
       />
 
       <UnifiedAgregadoModal
