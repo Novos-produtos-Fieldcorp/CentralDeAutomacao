@@ -595,16 +595,28 @@ const MotoristasLista = () => {
   
   const fetchTags = async () => {
     try {
-      if (!companyId) return;
-      const response = await apiRequest(`/tags?company_id=${companyId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch tags');
+      if (!companyId) {
+        console.log('❌ fetchTags: companyId não disponível');
+        return;
       }
+      
+      console.log('🔄 fetchTags: Iniciando busca de tags para company_id:', companyId);
+      const response = await apiRequest(`/tags?company_id=${companyId}`);
+      console.log('📡 fetchTags: Resposta recebida:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tags: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('✅ fetchTags: Tags recebidas:', data.length, 'tags');
+      console.log('🏷️ fetchTags: Tags:', data);
       setTags(data);
+      console.log('💾 fetchTags: Estado atualizado com', data.length, 'tags');
     } catch (error) {
-      console.error('Error fetching tags:', error);
-      // Não mostrar toast de erro para evitar spam, tags são opcionais
+      console.error('❌ fetchTags: Erro ao buscar tags:', error);
+      // Mostrar toast para debug
+      toast.error('Erro ao carregar tags: ' + (error as Error).message);
     }
   };
 
