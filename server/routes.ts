@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { db } from "./db";
+import { supabase } from "./db";
 import { eq, and } from "drizzle-orm";
 import {
   cliente,

@@ -327,7 +327,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             Accept: "application/json",
           },
         });
-        const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
+        const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
         if (response.data?.payload) {
           const allInboxes = response.data.payload.map((inbox: any) => ({
             ...inbox,
@@ -398,7 +398,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         },
       });
 
-      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
+      const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
       if (response.data?.payload) {
         setInboxes(response.data.payload);
 

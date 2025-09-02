@@ -35,8 +35,6 @@ import {
   type MotoristaTag,
   type InsertMotoristaTag
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, and, desc, like, or, count, sql } from "drizzle-orm";
 import { supabase } from "./db";
 
 export interface IStorage {
@@ -419,34 +417,45 @@ export class DatabaseStorage implements IStorage {
 
   // Tags methods
   async getTags(companyId: number): Promise<Tag[]> {
-    return await db
-      .select()
-      .from(tags)
-      .where(eq(tags.company_id, companyId));
+    const { data, error } = await supabase
+      .from('tags')
+      .select('*')
+      .eq('company_id', companyId);
+    
+    if (error) throw new Error(`Failed to get tags: ${error.message}`);
+    return data || [];
   }
 
   async createTag(insertTag: InsertTag): Promise<Tag> {
-    const [tag] = await db
-      .insert(tags)
-      .values(insertTag)
-      .returning();
-    return tag;
+    const { data, error } = await supabase
+      .from('tags')
+      .insert(insertTag)
+      .select()
+      .single();
+    
+    if (error) throw new Error(`Failed to create tag: ${error.message}`);
+    return data;
   }
 
   async updateTag(id: number, insertTag: Partial<InsertTag>): Promise<Tag | undefined> {
-    const [tag] = await db
-      .update(tags)
-      .set(insertTag)
-      .where(eq(tags.id, id))
-      .returning();
-    return tag || undefined;
+    const { data, error } = await supabase
+      .from('tags')
+      .update(insertTag)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw new Error(`Failed to update tag: ${error.message}`);
+    return data || undefined;
   }
 
   async deleteTag(id: number): Promise<boolean> {
-    const result = await db
-      .delete(tags)
-      .where(eq(tags.id, id));
-    return (result.rowCount ?? 0) > 0;
+    const { error } = await supabase
+      .from('tags')
+      .delete()
+      .eq('id', id);
+    
+    return !error;
   }
 
   // Motorista Tags methods
