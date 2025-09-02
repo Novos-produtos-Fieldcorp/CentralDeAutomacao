@@ -979,12 +979,6 @@ const MotoristasLista = () => {
     if (Array.isArray(tagFilter) && tagFilter.length > 0) {
       const motoristaTagsList = motoristaTags[motorista.motorista_id] || [];
       
-      // Debug: Log para verificar se as tags estão sendo carregadas
-      if (motorista.motorista_id === 17 || motorista.motorista_id === 198) {
-        console.log(`Tags para motorista ${motorista.motorista_id}:`, motoristaTagsList);
-        console.log(`Filtro ativo:`, tagFilter);
-      }
-      
       // Garantir que temos um array válido
       if (Array.isArray(motoristaTagsList) && motoristaTagsList.length > 0) {
         const motoristaTagIds = motoristaTagsList.map((tag: any) => {
@@ -992,12 +986,6 @@ const MotoristasLista = () => {
           return tag?.id?.toString() || '';
         }).filter(id => id !== '');
         tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
-        
-        // Debug: Log da comparação
-        if (motorista.motorista_id === 17 || motorista.motorista_id === 198) {
-          console.log(`IDs das tags do motorista ${motorista.motorista_id}:`, motoristaTagIds);
-          console.log(`Match result:`, tagMatch);
-        }
       } else {
         // Se motorista não tem tags, não deve passar no filtro quando tags estão selecionadas
         tagMatch = false;
@@ -1486,17 +1474,10 @@ const MotoristasLista = () => {
                                 checked={tagFilter.includes(tag.id.toString())}
                                 onChange={(e) => {
                                   const tagId = tag.id.toString();
-                                  console.log(`🔍 Tag clicada: ${tag.nome} (ID: ${tag.id})`);
-                                  console.log(`🔍 tagId convertido: "${tagId}"`);
-                                  console.log(`🔍 Checkbox marcado: ${e.target.checked}`);
                                   if (e.target.checked) {
-                                    const newFilter = [...tagFilter, tagId];
-                                    console.log(`🔍 Novo filtro após adicionar:`, newFilter);
-                                    setTagFilter(newFilter);
+                                    setTagFilter([...tagFilter, tagId]);
                                   } else {
-                                    const newFilter = tagFilter.filter(id => id !== tagId);
-                                    console.log(`🔍 Novo filtro após remover:`, newFilter);
-                                    setTagFilter(newFilter);
+                                    setTagFilter(tagFilter.filter(id => id !== tagId));
                                   }
                                 }}
                                 onClick={(e) => e.stopPropagation()}

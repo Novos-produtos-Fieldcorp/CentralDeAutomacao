@@ -418,45 +418,56 @@ export class DatabaseStorage implements IStorage {
 
   // Tags methods
   async getTags(companyId: number): Promise<Tag[]> {
-    const { data, error } = await supabase
-      .from('tag')
-      .select('*')
-      .eq('company_id', companyId);
-    
-    if (error) throw new Error(`Failed to get tags: ${error.message}`);
-    return data || [];
+    try {
+      const result = await db
+        .select()
+        .from(tags)
+        .where(eq(tags.company_id, companyId));
+      
+      return result;
+    } catch (error) {
+      throw new Error(`Failed to get tags: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   async createTag(insertTag: InsertTag): Promise<Tag> {
-    const { data, error } = await supabase
-      .from('tag')
-      .insert(insertTag)
-      .select()
-      .single();
-    
-    if (error) throw new Error(`Failed to create tag: ${error.message}`);
-    return data;
+    try {
+      const [result] = await db
+        .insert(tags)
+        .values(insertTag)
+        .returning();
+      
+      return result;
+    } catch (error) {
+      throw new Error(`Failed to create tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   async updateTag(id: number, insertTag: Partial<InsertTag>): Promise<Tag | undefined> {
-    const { data, error } = await supabase
-      .from('tag')
-      .update(insertTag)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw new Error(`Failed to update tag: ${error.message}`);
-    return data || undefined;
+    try {
+      const [result] = await db
+        .update(tags)
+        .set(insertTag)
+        .where(eq(tags.id, id))
+        .returning();
+      
+      return result || undefined;
+    } catch (error) {
+      throw new Error(`Failed to update tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   async deleteTag(id: number): Promise<boolean> {
-    const { error } = await supabase
-      .from('tag')
-      .delete()
-      .eq('id', id);
-    
-    return !error;
+    try {
+      await db
+        .delete(tags)
+        .where(eq(tags.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+      return false;
+    }
   }
 
   // Motorista Tags methods - usando apenas banco local
