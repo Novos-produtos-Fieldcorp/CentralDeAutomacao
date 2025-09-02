@@ -461,40 +461,48 @@ export class DatabaseStorage implements IStorage {
 
   // Motorista Tags methods
   async getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]> {
-    return await db
-      .select({
-        id: tags.id,
-        nome: tags.nome,
-        cor: tags.cor,
-        company_id: tags.company_id,
-        limite_max_associados: tags.limite_max_associados,
-        created_at: tags.created_at,
-        updated_at: tags.updated_at
-      })
-      .from(motorista_tags)
-      .innerJoin(tags, eq(motorista_tags.tag_id, tags.id))
-      .where(eq(motorista_tags.motorista_id, motoristaId));
+    const { data, error } = await db
+      .from('associacao_tags')
+      .select(`
+        tag_id,
+        tag:tag_id (
+          id,
+          nome,
+          cor,
+          company_id,
+          limite_max_associados,
+          created_at,
+          updated_at
+        )
+      `)
+      .eq('motorista_id', motoristaId);
+    
+    if (error) throw error;
+    return (data || []).map((item: any) => item.tag).filter(Boolean);
   }
 
   async addTagToMotorista(motoristaId: number, tagId: number, companyId?: number): Promise<MotoristaTag> {
-    const [newMotoristaTag] = await db
-      .insert(motorista_tags)
-      .values({ 
+    const { data, error } = await db
+      .from('associacao_tags')
+      .insert({ 
         motorista_id: motoristaId, 
         tag_id: tagId
       })
-      .returning();
-    return newMotoristaTag;
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
   }
 
   async removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean> {
-    const result = await db
-      .delete(motorista_tags)
-      .where(and(
-        eq(motorista_tags.motorista_id, motoristaId),
-        eq(motorista_tags.tag_id, tagId)
-      ));
-    return (result.rowCount ?? 0) > 0;
+    const { error } = await db
+      .from('associacao_tags')
+      .delete()
+      .eq('motorista_id', motoristaId)
+      .eq('tag_id', tagId);
+    
+    return !error;
   }
 
   // WiseApp token method - queries wiseapp_acesso table

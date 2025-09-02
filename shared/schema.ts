@@ -62,12 +62,15 @@ export const tags = pgTable("tag", {
 });
 
 // Tag assignments (many-to-many relationship with motoristas)
-export const motorista_tags = pgTable("motorista_tags", {
+export const associacao_tags = pgTable("associacao_tags", {
   id: serial("id").primaryKey(),
   motorista_id: integer("motorista_id").references(() => motorista.motorista_id),
   tag_id: integer("tag_id").references(() => tags.id),
   created_at: timestamp("created_at").defaultNow(),
 });
+
+// Legacy alias for backward compatibility
+export const motorista_tags = associacao_tags;
 
 // Estado table
 export const estado = pgTable("estado", {
