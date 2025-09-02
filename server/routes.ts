@@ -19,6 +19,7 @@ import {
   WiseAppRetryOptions,
   WiseAppCacheOptions 
 } from "./utils/api-retry";
+import { getBulkMotoristaTags } from "./bulk-tags-api";
 
 // Initialize Supabase client with bypass RLS for backend operations
 const supabaseUrl =
@@ -1817,6 +1818,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Unexpected error in summary cron'
       });
+    }
+  });
+
+  // Nova rota otimizada - buscar tags de múltiplos motoristas de uma vez  
+  app.post("/api/motoristas/tags/bulk", async (req, res) => {
+    try {
+      const { motorista_ids, company_id } = req.body;
+      
+      if (!Array.isArray(motorista_ids) || motorista_ids.length === 0) {
+        return res.status(400).json({ error: "motorista_ids deve ser um array não vazio" });
+      }
+      
+      if (!company_id) {
+        return res.status(400).json({ error: "company_id é obrigatório" });
+      }
+
+      const result = await getBulkMotoristaTags(motorista_ids, company_id);
+      res.json(result);
+    } catch (error) {
+      console.error('Erro ao buscar tags em lote:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
     }
   });
 

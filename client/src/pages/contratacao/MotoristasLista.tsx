@@ -340,7 +340,7 @@ const MotoristasLista = () => {
   useEffect(() => {
     fetchMotoristas();
     fetchClientes();
-    fetchTags();
+    // fetchTags(); // Removido - tags só serão carregadas via botão Sync
   }, [dateFilter, customDateRange]);
 
   useEffect(() => {
@@ -511,10 +511,10 @@ const MotoristasLista = () => {
 
       setMotoristas(motoristasAgrupados || []);
       
-      // Carregar tags dos motoristas 
-      if (motoristasAgrupados && motoristasAgrupados.length > 0) {
-        await fetchAllMotoristaTags(motoristasAgrupados);
-      }
+      // Tags serão carregadas apenas via botão Sync WiseApp
+      // if (motoristasAgrupados && motoristasAgrupados.length > 0) {
+      //   await fetchAllMotoristaTags(motoristasAgrupados);
+      // }
     } catch (error) {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
@@ -538,21 +538,38 @@ const MotoristasLista = () => {
     }
   };
 
-  const fetchAllMotoristaTags = async (motoristas: ViewMotorista[]) => {
+  // Nova função otimizada para carregar tags em lote
+  const fetchBulkMotoristaTags = async (motoristas: ViewMotorista[]) => {
     try {
-      const promises = motoristas.map(motorista => {
-        if (motorista.motorista_id) {
-          return fetchMotoristaTags(motorista.motorista_id).catch(() => {
-            // Ignorar falhas individuais para não quebrar o Promise.all
-            return Promise.resolve();
-          });
-        }
-        return Promise.resolve();
+      const motoristaIds = motoristas
+        .map(m => m.motorista_id)
+        .filter((id): id is number => id !== undefined);
+      
+      if (motoristaIds.length === 0) return;
+      
+      const response = await apiRequest('/motoristas/tags/bulk', {
+        method: 'POST',
+        body: JSON.stringify({
+          motorista_ids: motoristaIds,
+          company_id: companyId
+        })
       });
-      await Promise.allSettled(promises); // Usar allSettled ao invés de all
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch bulk tags');
+      }
+      
+      const bulkTags = await response.json();
+      setMotoristaTags(bulkTags);
     } catch (error) {
-      console.warn('Erro ao carregar tags dos motoristas:', error);
+      console.error('Erro ao carregar tags em lote:', error);
+      toast.error('Erro ao carregar tags dos motoristas');
     }
+  };
+
+  const fetchAllMotoristaTags = async (motoristas: ViewMotorista[]) => {
+    // Função mantida para compatibilidade, mas usando a versão otimizada
+    await fetchBulkMotoristaTags(motoristas);
   };
 
   // Cores padrão para os clientes (apenas fundo, sem borda)
@@ -1671,7 +1688,13 @@ const MotoristasLista = () => {
       </div>
 
       {/* WiseApp Bulk Sync Panel - now positioned fixed in top right */}
-      <WiseAppBulkSyncPanel />
+      <WiseAppBulkSyncPanel 
+        onTagsSync={() => {
+          if (motoristasAgrupados && motoristasAgrupados.length > 0) {
+            fetchBulkMotoristaTags(motoristasAgrupados);
+          }
+        }}
+      />
 
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative z-[10]">
         <div className="overflow-hidden">
