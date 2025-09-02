@@ -5,8 +5,7 @@
   import { useCompanyData } from '../../hooks/useCompanyData';
   import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database';
   import { formatCPF, formatPhone, formatDate } from '../../utils/format';
-  import DocumentViewer from '../../components/DocumentViewer';
-  import DocumentUploadModal from '../../components/DocumentUploadModal';
+    import DocumentUploadModal from '../../components/DocumentUploadModal';
   import EditMotoristaModal from '../../components/EditMotoristaModal';
   import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
   import BulkActionsModal from '../../components/BulkActionsModal';
@@ -123,7 +122,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
-  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
@@ -870,7 +868,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const handleViewDocument = async (motorista: ViewContratado) => {
       try {
         setSelectedMotorista(motorista);
-        setIsDocumentViewerOpen(true);
+        setIsUnifiedAgregadoModalOpen(true);
       } catch (error) {
         console.error('Error opening agregado details:', error);
         toast.error('Erro ao abrir detalhes do agregado');
@@ -2195,25 +2193,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         {/* Modals */}
         <UnifiedAgregadoModal
-          isOpen={isUnifiedModalOpen}
-          onClose={() => setIsUnifiedModalOpen(false)}
+          isOpen={isUnifiedAgregadoModalOpen}
+          onClose={() => setIsUnifiedAgregadoModalOpen(false)}
           motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : null}
           onSuccess={fetchContratados}
         />
 
-        <DocumentViewer
-          isOpen={isDocumentViewerOpen}
-          onClose={() => setIsDocumentViewerOpen(false)}
-          documento={documento}
-          nome={selectedMotorista?.nome_motorista || ''}
-          cpf={selectedMotorista?.cpf}
-          email={selectedMotorista?.email || undefined}
-          telefone={selectedMotorista?.telefone?.toString()}
-          dt_nascimento={selectedMotorista?.dt_nascimento}
-          foto_whatsapp={selectedMotorista?.foto_whatsapp}
-          endereco={endereco || undefined}
-          st_cadastro={selectedMotorista?.st_cadastro || 'cadastrado'}
-        />
 
         <DocumentUploadModal
           isOpen={isDocumentUploadOpen}
