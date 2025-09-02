@@ -474,7 +474,7 @@ export class DatabaseStorage implements IStorage {
     const tagIds = associations.map(a => a.tag_id);
     const { data: tags, error: tagsError } = await db
       .from('tag')
-      .select('*')
+      .select('id, nome, cor, company_id, limite_max, created_at, updated_at')
       .in('id', tagIds);
     
     if (tagsError) throw tagsError;

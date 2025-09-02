@@ -8,14 +8,14 @@ import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
 interface TagFormData {
   nome: string;
   cor: string;
-  limite_max_associados?: number;
+  limite_max?: number;
 }
 
 interface Tag {
   id: number;
   nome: string;
   cor: string;
-  limite_max_associados?: number;
+  limite_max?: number;
   company_id: number;
   created_at: string;
   updated_at: string;
@@ -134,7 +134,7 @@ export function TagManager({ companyId }: TagManagerProps) {
     setFormData({ 
       nome: tag.nome, 
       cor: tag.cor, 
-      limite_max_associados: tag.limite_max_associados || undefined 
+      limite_max: tag.limite_max || undefined 
     });
     setIsModalOpen(true);
   };
@@ -353,10 +353,10 @@ export function TagManager({ companyId }: TagManagerProps) {
                 </label>
                 <input
                   type="number"
-                  value={formData.limite_max_associados || ''}
+                  value={formData.limite_max || ''}
                   onChange={(e) => setFormData({ 
                     ...formData, 
-                    limite_max_associados: e.target.value ? parseInt(e.target.value) : undefined 
+                    limite_max: e.target.value ? parseInt(e.target.value) : undefined 
                   })}
                   placeholder="Ex: 10 (deixe vazio para ilimitado)"
                   min="1"
