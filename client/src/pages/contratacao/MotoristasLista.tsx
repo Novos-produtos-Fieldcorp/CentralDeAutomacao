@@ -23,7 +23,7 @@ import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
-import { getTagsByCompany } from '../../lib/directApiService';
+import { getWiseAppLabels } from '../../lib/directApiService';
 
 // Função auxiliar para converter ViewMotorista para Motorista
 const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
@@ -506,7 +506,8 @@ const MotoristasLista = () => {
 
   const fetchTags = async () => {
     try {
-      const data = await getTagsByCompany(companyId);
+      const response = await getWiseAppLabels(companyId);
+      const data = response.payload || [];
       setTags(data);
     } catch (error) {
       console.error('Error fetching tags:', error);

@@ -16,20 +16,7 @@ export const getCompanyByAccountId = async (accountId: string) => {
   return data;
 };
 
-// Serviço para buscar tags por empresa
-export const getTagsByCompany = async (companyId: number) => {
-  const { data, error } = await supabase
-    .from('tags')
-    .select('*')
-    .eq('company_id', companyId)
-    .order('nome');
-
-  if (error) {
-    throw new Error('Failed to fetch tags');
-  }
-
-  return data || [];
-};
+// REMOVIDO: getTagsByCompany - agora usamos getWiseAppLabels
 
 // Serviço para criar tag
 export const createTag = async (tagData: any) => {

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, Tag as TagIcon } from "lucide-react";
 import toast from "react-hot-toast";
-import { getTagsByCompany } from "@/lib/directApiService";
+import { getWiseAppLabels } from "@/lib/directApiService";
 
 interface Tag {
   id: number;
@@ -34,11 +34,13 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   });
 
   // Query para buscar todas as tags da empresa
-  const { data: allTags = [], isLoading: isLoadingAllTags } = useQuery<Tag[]>({
-    queryKey: ['tags', companyId],
-    queryFn: () => getTagsByCompany(companyId),
+  const { data: tagsResponse, isLoading: isLoadingAllTags } = useQuery({
+    queryKey: ['wiseapp-labels', companyId],
+    queryFn: () => getWiseAppLabels(companyId),
     enabled: !!companyId,
   });
+  
+  const allTags = tagsResponse?.payload || [];
 
   // Mutation para adicionar tag ao motorista
   const addTagMutation = useMutation({
