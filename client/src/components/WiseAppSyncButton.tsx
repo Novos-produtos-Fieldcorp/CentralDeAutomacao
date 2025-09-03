@@ -124,9 +124,10 @@ export function WiseAppSyncStatus({
 
 interface WiseAppBulkSyncPanelProps {
   className?: string;
+  onTagsSync?: () => void; // Callback para quando tags forem sincronizadas
 }
 
-export function WiseAppBulkSyncPanel({ className }: WiseAppBulkSyncPanelProps) {
+export function WiseAppBulkSyncPanel({ className, onTagsSync }: WiseAppBulkSyncPanelProps) {
   const { 
     syncAllMotoristas, 
     isBulkSyncing
@@ -139,7 +140,12 @@ export function WiseAppBulkSyncPanel({ className }: WiseAppBulkSyncPanelProps) {
       </div>
 
       <button
-        onClick={syncAllMotoristas}
+        onClick={async () => {
+          await syncAllMotoristas();
+          if (onTagsSync) {
+            onTagsSync(); // Chamar callback para carregar tags após sync
+          }
+        }}
         disabled={isBulkSyncing}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full justify-center"
         title="Sincronizar contatos e fotos do WhatsApp de motoristas e agregados com o WiseApp"

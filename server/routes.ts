@@ -19,6 +19,7 @@ import {
   WiseAppRetryOptions,
   WiseAppCacheOptions 
 } from "./utils/api-retry";
+import { getBulkMotoristaTags } from "./bulk-tags-api";
 
 // Initialize Supabase client with bypass RLS for backend operations
 const supabaseUrl =
@@ -26,7 +27,7 @@ const supabaseUrl =
 const supabaseKey =
   process.env.VITE_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ";
-const supabase = createClient(supabaseUrl, supabaseKey, {
+const supabaseBackend = createClient(supabaseUrl, supabaseKey, {
   db: { schema: "public" },
   auth: {
     persistSession: false,
@@ -45,7 +46,7 @@ async function getCompanyIdFromAccount(
   accountId: string,
 ): Promise<number | null> {
   try {
-    const { data: companies, error } = await supabase
+    const { data: companies, error } = await supabaseBackend
       .from("company")
       .select("company_id")
       .eq("id_conta_wiseapp", accountId)
@@ -117,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar dados da empresa para validar account_id
-      const { data: companies, error: companyError } = await supabase
+      const { data: companies, error: companyError } = await supabaseBackend
         .from("company")
         .select("id_conta_wiseapp")
         .eq("company_id", parseInt(companyId))
@@ -193,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { accountId } = req.params;
       console.log("Fetching company for account_id:", accountId);
 
-      const { data: companies, error } = await supabase
+      const { data: companies, error } = await supabaseBackend
         .from("company")
         .select("*")
         .eq("id_conta_wiseapp", accountId)
@@ -470,7 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clientes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: clientes, error } = await supabase
+      const { data: clientes, error } = await supabaseBackend
         .from("cliente")
         .select("*")
         .eq("company_id", companyId);
@@ -490,7 +491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/unidades/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: unidades, error } = await supabase
+      const { data: unidades, error } = await supabaseBackend
         .from("unidade")
         .select("*")
         .eq("company_id", companyId);
@@ -510,7 +511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/operacoes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: operacoes, error } = await supabase
+      const { data: operacoes, error } = await supabaseBackend
         .from("operacao")
         .select("*")
         .eq("company_id", companyId);
@@ -530,7 +531,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/status-vagas/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: statusVagas, error } = await supabase
+      const { data: statusVagas, error } = await supabaseBackend
         .from("st_vaga")
         .select("*")
         .eq("company_id", companyId);
@@ -553,7 +554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       
       // Fetch vagas
-      const { data: vagas, error: vagasError } = await supabase
+      const { data: vagas, error: vagasError } = await supabaseBackend
         .from("vaga")
         .select("*")
         .eq("company_id", companyId)
@@ -609,7 +610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/vagas/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: vagas, error } = await supabase
+      const { data: vagas, error } = await supabaseBackend
         .from("vaga")
         .select("*")
         .eq("company_id", companyId);
@@ -631,13 +632,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       
       // Fetch all vagas for the company
-      const { data: vagas, error } = await supabase
+      const { data: vagas, error } = await supabaseBackend
         .from("vaga")
         .select("*")
         .eq("company_id", companyId);
 
       // Get status information separately
-      const { data: statusData } = await supabase
+      const { data: statusData } = await supabaseBackend
         .from("st_vaga")
         .select("id, status_vaga")
         .eq("company_id", companyId);
@@ -706,7 +707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
       }
 
-      const { data: newVaga, error } = await supabase
+      const { data: newVaga, error } = await supabaseBackend
         .from("vaga")
         .insert({
           nome: vagaData.nome,
@@ -763,7 +764,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
       }
 
-      const { data: updatedVaga, error } = await supabase
+      const { data: updatedVaga, error } = await supabaseBackend
         .from("vaga")
         .update({
           nome: vagaData.nome,
@@ -810,7 +811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Updating vaga status:", { vagaId, st_vaga_id });
 
-      const { data: updatedVaga, error } = await supabase
+      const { data: updatedVaga, error } = await supabaseBackend
         .from("vaga")
         .update({ 
           st_vaga_id: Number(st_vaga_id),
@@ -846,7 +847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Deleting vaga:", vagaId);
 
-      const { error } = await supabase
+      const { error } = await supabaseBackend
         .from("vaga")
         .delete()
         .eq("id", Number(vagaId));
@@ -875,7 +876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { unidade: unidadeNome, company_id } = req.body;
       
-      const { data: newUnidade, error } = await supabase
+      const { data: newUnidade, error } = await supabaseBackend
         .from("unidade")
         .insert({
           unidade: unidadeNome,
@@ -900,7 +901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { operacao: operacaoNome, company_id } = req.body;
       
-      const { data: newOperacao, error } = await supabase
+      const { data: newOperacao, error } = await supabaseBackend
         .from("operacao")
         .insert({
           operacao: operacaoNome,
@@ -925,7 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { status_vaga, company_id } = req.body;
       
-      const { data: newStatus, error } = await supabase
+      const { data: newStatus, error } = await supabaseBackend
         .from("st_vaga")
         .insert({
           status_vaga,
@@ -955,7 +956,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar tags diretamente do Supabase
-      const { data: tags, error } = await supabase
+      const { data: tags, error } = await supabaseBackend
         .from('tag')
         .select('*')
         .eq('company_id', companyId)
@@ -1094,7 +1095,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const motoristaTag = await storage.addTagToMotorista(
         Number(motoristaId),
-        Number(tag_id),
+        Number(tag_id)
 
       );
       res.status(201).json(motoristaTag);
@@ -1148,7 +1149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar diretamente usando Supabase
-      const { data: result, error } = await supabase
+      const { data: result, error } = await supabaseBackend
         .from('motorista')
         .select('motorista_id, nome, telefone')
         .eq('company_id', companyId)
@@ -1174,7 +1175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`❌ Nenhum motorista encontrado com telefone ${cleanPhone} na empresa ${companyId}`);
         
         // Debug: mostrar alguns motoristas da empresa
-        const { data: allMotoristas } = await supabase
+        const { data: allMotoristas } = await supabaseBackend
           .from('motorista')
           .select('nome, telefone')
           .eq('company_id', companyId)
@@ -1201,7 +1202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "foto_whatsapp is required" });
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseBackend
         .from('motorista')
         .update({ foto_whatsapp })
         .eq('motorista_id', id)
@@ -1227,7 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const companyId = req.headers['company-id'] || '1';
       
       // Buscar dados do motorista
-      const { data: motorista, error: motoristaError } = await supabase
+      const { data: motorista, error: motoristaError } = await supabaseBackend
         .from('motorista')
         .select('motorista_id, nome, telefone, foto_whatsapp')
         .eq('motorista_id', id)
@@ -1264,7 +1265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Se tem foto e é diferente da atual, atualizar
         if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
-          const { error: updateError } = await supabase
+          const { error: updateError } = await supabaseBackend
             .from('motorista')
             .update({ foto_whatsapp: contact.thumbnail })
             .eq('motorista_id', id);
@@ -1302,7 +1303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const companyId = req.headers['company-id'] || '1';
       
       // Buscar todos os motoristas ativos com telefone
-      const { data: motoristas, error: motoristasError } = await supabase
+      const { data: motoristas, error: motoristasError } = await supabaseBackend
         .from('motorista')
         .select('motorista_id, nome, telefone, foto_whatsapp')
         .eq('company_id', companyId)
@@ -1345,7 +1346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Se tem foto e é diferente da atual, atualizar
               if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
-                const { error: updateError } = await supabase
+                const { error: updateError } = await supabaseBackend
                   .from('motorista')
                   .update({ foto_whatsapp: contact.thumbnail })
                   .eq('motorista_id', motorista.motorista_id);
@@ -1817,6 +1818,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Unexpected error in summary cron'
       });
+    }
+  });
+
+  // Nova rota otimizada - buscar tags de múltiplos motoristas de uma vez  
+  app.post("/api/motoristas/tags/bulk", async (req, res) => {
+    try {
+      const { motorista_ids, company_id } = req.body;
+      
+      if (!Array.isArray(motorista_ids) || motorista_ids.length === 0) {
+        return res.status(400).json({ error: "motorista_ids deve ser um array não vazio" });
+      }
+      
+      if (!company_id) {
+        return res.status(400).json({ error: "company_id é obrigatório" });
+      }
+
+      const result = await getBulkMotoristaTags(motorista_ids, company_id);
+      res.json(result);
+    } catch (error) {
+      console.error('Erro ao buscar tags em lote:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
     }
   });
 

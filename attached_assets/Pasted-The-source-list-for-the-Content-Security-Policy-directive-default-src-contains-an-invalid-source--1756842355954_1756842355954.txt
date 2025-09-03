@@ -1,0 +1,203 @@
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+/t/fieldcorp:1 The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+/t/fieldcorp:1 The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+/t/fieldcorp:1 The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+cdn.segment.com/analytics-next/bundles/ajs-destination.bundle.8e6b895db75187c55313.js:1  Failed to load resource: the server responded with a status of 499 ()
+/t/fieldcorp:1 Refused to execute script from 'https://cdn.segment.com/analytics-next/bundles/ajs-destination.bundle.8e6b895db75187c55313.js' because its MIME type ('image/png') is not executable.
+standalone.ts:45 [analytics.js] Failed to load Analytics.js ChunkLoadError: Loading chunk 50 failed.
+(error: https://cdn.segment.com/analytics-next/bundles/ajs-destination.bundle.8e6b895db75187c55313.js)
+    at s.f.j (jsonp chunk loading:28:25)
+    at get javascript chunk filename:2:21
+    at Array.reduce (<anonymous>)
+    at s.e (ensure chunk:5:82)
+    at index.ts:138:15
+    at tslib.es6.js:103:23
+    at Object.next (tslib.es6.js:108:37)
+    at tslib.es6.js:80:8
+    at new Promise (<anonymous>)
+    at u (tslib.es6.js:72:27)
+(anonymous) @ standalone.ts:45
+api.segment.io/v1/m:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+remote-metrics.ts:53 Error sending segment performance metrics TypeError: Failed to fetch
+    at o (sdk.min.js:1:23763)
+    at t.<anonymous> (remote-metrics.ts:138:12)
+    at tslib.es6.js:103:23
+    at Object.next (tslib.es6.js:108:37)
+    at tslib.es6.js:80:8
+    at new Promise (<anonymous>)
+    at u (tslib.es6.js:72:27)
+    at t.send (sdk.min.js:1:22021)
+    at t.<anonymous> (remote-metrics.ts:125:16)
+    at tslib.es6.js:103:23
+a @ remote-metrics.ts:53
+_app-81fe2a2be78c746a.js:38 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+/t/fieldcorp:1 Access to fetch at 'https://o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0' from origin 'https://replit.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_FAILED
+_app-81fe2a2be78c746a.js:38 [LaunchDarkly] LaunchDarkly client initialized
+/t/fieldcorp:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+1756820929143_c02677b833ee27ff8a1b3e01db17b851.png:1  Failed to load resource: the server responded with a status of 415 ()
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Adf0f5d87&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=e63da893-0191-45a8-9411-79c7eb05e942:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+/t/fieldcorp:1 Access to fetch at 'https://o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0' from origin 'https://replit.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_FAILED
+CentralDeAutomacao-gabriel:1 Access to fetch at 'https://o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0' from origin 'https://replit.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_FAILED
+CentralDeAutomacao-gabriel:1 Access to fetch at 'https://o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0' from origin 'https://replit.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_FAILED
+_app-81fe2a2be78c746a.js:38 Adding extension: manim Object
+_app-81fe2a2be78c746a.js:38 Adding extension: Icon Generator Object
+ Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+_ @ framework-4114e2515dd48d6b.js:1
+ Unrecognized feature: 'ambient-light-sensor'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Unrecognized feature: 'battery'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Unrecognized feature: 'execution-while-not-rendered'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Unrecognized feature: 'execution-while-out-of-viewport'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Unrecognized feature: 'layout-animations'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Unrecognized feature: 'legacy-image-formats'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Unrecognized feature: 'navigation-override'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Unrecognized feature: 'oversized-images'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Unrecognized feature: 'publickey-credentials'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Unrecognized feature: 'speaker-selection'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Unrecognized feature: 'unoptimized-images'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Unrecognized feature: 'unsized-media'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Unrecognized feature: 'pointer-lock'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Allow attribute will take precedence over 'allowfullscreen'.
+_ @ framework-4114e2515dd48d6b.js:1
+framework-4114e2515dd48d6b.js:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+_ @ framework-4114e2515dd48d6b.js:1
+workspace_iframe.html:32 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+workspace_iframe.html:32 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html:32 Unrecognized feature: 'battery'.
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html:32 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html:32 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html:32 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html:32 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html:32 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html:32 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowpaymentrequest'.
+Refused to load the font '<URL>' because it violates the following Content Security Policy directive: "font-src 'self' https:".
+
+Refused to load the font '<URL>' because it violates the following Content Security Policy directive: "font-src 'self' https:".
+
+Refused to load the font '<URL>' because it violates the following Content Security Policy directive: "font-src 'self' https:".
+
+Refused to load the font '<URL>' because it violates the following Content Security Policy directive: "font-src 'self' https:".
+
+Refused to load the font '<URL>' because it violates the following Content Security Policy directive: "font-src 'self' https:".
+
+Refused to load the font '<URL>' because it violates the following Content Security Policy directive: "font-src 'self' https:".
+
+image_1756838020950.png:1  Failed to load resource: the server responded with a status of 404 ()
+CentralDeAutomacao-gabriel#.env:1 Access to fetch at 'https://o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0' from origin 'https://replit.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_FAILED
+CentralDeAutomacao-gabriel#.env:1 Access to fetch at 'https://o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0' from origin 'https://replit.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_FAILED
+CentralDeAutomacao-gabriel:1 Access to fetch at 'https://o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0' from origin 'https://replit.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_FAILED
+CentralDeAutomacao-gabriel:1 Access to fetch at 'https://o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0' from origin 'https://replit.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_FAILED
+Console.js:61 API Configuration: Object
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 Fetching fresh WiseApp token from database
+Console.js:61 Using cached auth - account_id: 6 company_id: 1
+Console.js:61 Fetching fresh WiseApp token from database
+Console.js:61 Using cached auth - account_id: 6 company_id: 1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 Using cached auth - account_id: 6 company_id: 1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 Using cached auth - account_id: 6 company_id: 1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 Using cached auth - account_id: 6 company_id: 1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 Using cached auth - account_id: 6 company_id: 1
+Console.js:61 Clientes Contratados: Object
+Console.js:61 Total Motoristas: Array(544)
+Console.js:61 Total Agregados: Array(63)
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 API URL: https://chat.wiseapp360.com/api/v1
+Console.js:61 Using cached auth - account_id: 6 company_id: 1
+Console.js:61 Clientes Contratados: Object
+Console.js:61 Total Motoristas: Array(544)
+Console.js:61 Total Agregados: Array(63)
+b8a2fe25-be22-41f5-b1a6-2cecdb29b3a3-00-fbhfhvazvvim.worf.replit.dev/api/motoristas/7203/tags/32:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+Console.js:61 Erro ao remover tag: Error: Erro ao remover tag
+    at handleRemoveTag (MotoristasLista.tsx:202:15)
+Mt.forEach.n.<computed> @ Console.js:61
+b8a2fe25-be22-41f5-b1a6-2cecdb29b3a3-00-fbhfhvazvvim.worf.replit.dev/api/motoristas/7203/tags:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+Console.js:61 Erro ao adicionar tag: Error: Erro ao adicionar tag
+    at handleAddTag (MotoristasLista.tsx:171:15)
+Mt.forEach.n.<computed> @ Console.js:61
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Abeacon%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3Adf0f5d87&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=a6c5141e-6da7-4dc3-8990-45e6186922b9:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+CentralDeAutomacao-gabriel:1 Access to fetch at 'https://o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0' from origin 'https://replit.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.112.0:1  Failed to load resource: net::ERR_FAILED

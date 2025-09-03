@@ -5,8 +5,7 @@
   import { useCompanyData } from '../../hooks/useCompanyData';
   import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database';
   import { formatCPF, formatPhone, formatDate } from '../../utils/format';
-  import DocumentViewer from '../../components/DocumentViewer';
-  import DocumentUploadModal from '../../components/DocumentUploadModal';
+    import DocumentUploadModal from '../../components/DocumentUploadModal';
   import EditMotoristaModal from '../../components/EditMotoristaModal';
   import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
   import BulkActionsModal from '../../components/BulkActionsModal';
@@ -22,6 +21,7 @@
   import ContextMenu from '../../components/ContextMenu';
   import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
   import { TableDropdown } from '../../components/TableDropdown';
+import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
 
 interface AgregadosListaProps {
   onSuccess?: () => void;
@@ -122,7 +122,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
-  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
@@ -140,7 +139,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
   const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
-  const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
+  const [bulkActionType, setBulkActionType] = useState<'status' | 'client' | 'tags'>('status');
   const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
   const [selectAll, setSelectAll] = useState(false);
   const [documento] = useState<DocumentoMotorista | null>(null);
@@ -247,6 +246,136 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }, [selectedMotorista]);
     
     const [clientes, setClientes] = useState<any[]>([]);
+
+  // Buscar tags do Supabase
+  const fetchTags = async () => {
+    if (!companyId) return;
+    try {
+      const { data, error } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
+
+      if (error) throw error;
+      setTags(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar tags:', error);
+    }
+  };
+
+  // Nova função otimizada para carregar tags em lote
+  const fetchBulkMotoristaTags = async (motoristas: ViewContratado[]) => {
+    try {
+      const motoristaIds = motoristas
+        .map(m => m.motorista_id)
+        .filter((id): id is number => id !== undefined);
+      
+      if (motoristaIds.length === 0) return;
+      
+      const response = await fetch('/api/motoristas/tags/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'company-id': companyId?.toString() || '1'
+        },
+        body: JSON.stringify({
+          motorista_ids: motoristaIds,
+          company_id: companyId
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch bulk tags');
+      }
+      
+      const bulkTags = await response.json();
+      setMotoristaTags(bulkTags);
+    } catch (error) {
+      console.error('Erro ao carregar tags em lote:', error);
+      toast.error('Erro ao carregar tags dos agregados');
+    }
+  };
+
+  // Adicionar tag a um motorista
+  const handleAddTag = async (motoristaId: number | undefined, tagId: number) => {
+    if (!motoristaId) return;
+    
+    setUpdatingMotoristaTag(motoristaId);
+    try {
+      const { error } = await supabase
+        .from('associacao_tags')
+        .insert({
+          motorista_id: motoristaId,
+          tag_id: tagId
+        });
+
+      if (error) throw error;
+
+      // Atualizar estado local
+      const tag = tags.find(t => t.id === tagId);
+      if (tag) {
+        setMotoristaTags(prev => ({
+          ...prev,
+          [motoristaId]: [...(prev[motoristaId] || []), tag]
+        }));
+      }
+
+      // Fechar dropdown
+      setTagDropdownOpen(prev => ({ ...prev, [motoristaId]: false }));
+      
+      toast.success('Tag adicionada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao adicionar tag:', error);
+      toast.error('Erro ao adicionar tag');
+    } finally {
+      setUpdatingMotoristaTag(null);
+    }
+  };
+
+  // Remover tag de um motorista
+  const handleRemoveTag = async (motoristaId: number | undefined, tagId: number) => {
+    if (!motoristaId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('associacao_tags')
+        .delete()
+        .eq('motorista_id', motoristaId)
+        .eq('tag_id', tagId);
+
+      if (error) throw error;
+
+      // Atualizar estado local
+      setMotoristaTags(prev => ({
+        ...prev,
+        [motoristaId]: (prev[motoristaId] || []).filter((tag: any) => tag.id !== tagId)
+      }));
+      
+      toast.success('Tag removida com sucesso!');
+    } catch (error) {
+      console.error('Erro ao remover tag:', error);
+      toast.error('Erro ao remover tag');
+    }
+  };
+
+  // Fechar dropdown quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const isClickInside = Object.values(motoristaTagDropdownRefs.current).some(ref => 
+        ref && ref.contains(event.target as Node)
+      );
+      
+      if (!isClickInside) {
+        setTagDropdownOpen({});
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
     const [clienteFilter, setClienteFilter] = useState<string[]>([]);
     const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
     const [cidades, setCidades] = useState<string[]>([]);
@@ -373,6 +502,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const [dateFilter, setDateFilter] = useState<string>('all');
     const [showAddModal, setShowAddModal] = useState<boolean>(false);
     const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+
+  // Estados para o sistema de tags
+  const [tags, setTags] = useState<any[]>([]);
+  const [motoristaTags, setMotoristaTags] = useState<{ [key: number]: any[] }>({});
+  const [tagDropdownOpen, setTagDropdownOpen] = useState<{ [key: number]: boolean }>({});
+  const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
+  const motoristaTagDropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const [roleChangeModal, setRoleChangeModal] = useState<{
     isOpen: boolean;
     motorista: ViewContratado | null;
@@ -395,7 +531,68 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     useEffect(() => {
       fetchContratados();
       fetchClientes();
+      fetchTags(); // Carrega tags automaticamente
     }, [dateFilter, customDateRange]);
+
+    // Carregar tags dos agregados automaticamente quando a lista de contratados mudar
+    useEffect(() => {
+      if (contratados && contratados.length > 0) {
+        fetchBulkMotoristaTags(contratados);
+      }
+    }, [contratados]);
+
+    // Sistema de aplicação automática de tags
+    useEffect(() => {
+      if (tags.length > 0 && contratados.length > 0 && Object.keys(motoristaTags).length > 0) {
+        applyAutomaticTags();
+      }
+    }, [tags, contratados, motoristaTags]);
+
+    const applyAutomaticTags = async () => {
+      // Aplicar tags automaticamente baseado em critérios inteligentes
+      
+      // Critério 1: Aplicar tag "VIP" para agregados com veículo próprio
+      const vipTag = tags.find(tag => tag.nome.toLowerCase().includes('vip'));
+      if (vipTag) {
+        for (const agregado of contratados) {
+          const hasVeiculo = agregado.veiculo_id && agregado.placa;
+          const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some((tag: any) => tag.id === vipTag.id);
+          
+          if (hasVeiculo && !alreadyHasTag && agregado.motorista_id) {
+            await handleAddTag(agregado.motorista_id, vipTag.id);
+          }
+        }
+      }
+      
+      // Critério 2: Aplicar tag "Novo" para agregados cadastrados nos últimos 7 dias
+      const novoTag = tags.find(tag => tag.nome.toLowerCase().includes('novo'));
+      if (novoTag) {
+        for (const agregado of contratados) {
+          const cadastroDate = new Date(agregado.data_cadastro || '');
+          const daysSinceCadastro = (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
+          const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some((tag: any) => tag.id === novoTag.id);
+          
+          if (daysSinceCadastro <= 7 && !alreadyHasTag && agregado.motorista_id) {
+            await handleAddTag(agregado.motorista_id, novoTag.id);
+          }
+        }
+      }
+      
+      // Critério 3: Aplicar tag "Experiente" para agregados com mais de 6 meses
+      const experienteTag = tags.find(tag => tag.nome.toLowerCase().includes('experiente'));
+      if (experienteTag) {
+        for (const agregado of contratados) {
+          const cadastroDate = new Date(agregado.data_cadastro || '');
+          const daysSinceCadastro = (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
+          const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some((tag: any) => tag.id === experienteTag.id);
+          
+          if (daysSinceCadastro > 180 && !alreadyHasTag && agregado.motorista_id) {
+            await handleAddTag(agregado.motorista_id, experienteTag.id);
+          }
+        }
+      }
+    };
+
 
     useEffect(() => {
       // Close context menu when clicking anywhere
@@ -671,7 +868,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const handleViewDocument = async (motorista: ViewContratado) => {
       try {
         setSelectedMotorista(motorista);
-        setIsDocumentViewerOpen(true);
+        setIsUnifiedAgregadoModalOpen(true);
       } catch (error) {
         console.error('Error opening agregado details:', error);
         toast.error('Erro ao abrir detalhes do agregado');
@@ -844,7 +1041,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     };
 
-    const handleBulkAction = (type: 'status' | 'client') => {
+    const handleBulkAction = (type: 'status' | 'client' | 'tags') => {
       setBulkActionType(type);
       setIsBulkActionsModalOpen(true);
     };
@@ -1114,6 +1311,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                   </svg>
                   Atribuir Cliente
+                </button>
+                <button
+                  onClick={() => handleBulkAction('tags')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 
+                          focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 
+                          transition-colors flex items-center gap-2"
+                >
+                  <Tag className="w-5 h-5" />
+                  Adicionar Tag
                 </button>
                 <button
                   onClick={handleMassMessage}
@@ -1779,7 +1985,98 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                          <div className="relative">
+                            {/* Tags atuais */}
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {motorista.motorista_id && motoristaTags[motorista.motorista_id]?.map((tag: any) => (
+                                <span
+                                  key={tag.id}
+                                  className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:opacity-75 group"
+                                  style={{
+                                    backgroundColor: tag.cor + '30',
+                                    color: tag.cor,
+                                    border: `1px solid ${tag.cor}50`
+                                  }}
+                                  title="Clique para remover esta tag"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveTag(motorista.motorista_id, tag.id);
+                                  }}
+                                >
+                                  {tag.nome}
+                                  <X className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </span>
+                              ))}
+                            </div>
+
+                            {/* Botão para adicionar tags */}
+                            <div 
+                              className="relative inline-block"
+                              ref={(el) => {
+                                if (motorista.motorista_id) {
+                                  motoristaTagDropdownRefs.current[motorista.motorista_id] = el;
+                                }
+                              }}
+                            >
+                              <button
+                                type="button"
+                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (motorista.motorista_id) {
+                                    setTagDropdownOpen(prev => ({
+                                      ...prev,
+                                      [motorista.motorista_id!]: !prev[motorista.motorista_id || 0]
+                                    }));
+                                  }
+                                }}
+                                disabled={updatingMotoristaTag === motorista.motorista_id}
+                              >
+                                {updatingMotoristaTag === motorista.motorista_id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                                ) : (
+                                  <Plus className="w-3 h-3 mr-1" />
+                                )}
+                                Add Tag
+                              </button>
+
+                              {/* Dropdown de tags disponíveis */}
+                              {motorista.motorista_id && tagDropdownOpen[motorista.motorista_id] && (
+                                <div className="absolute z-[999999] top-full left-0 mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-2 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
+                                  <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                                    <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Adicionar Tags</span>
+                                  </div>
+                                  <div className="space-y-1">
+                                    {tags
+                                      .filter(tag => !motorista.motorista_id || !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id))
+                                      .map((tag) => (
+                                      <div
+                                        key={tag.id}
+                                        className="flex items-center px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleAddTag(motorista.motorista_id, tag.id);
+                                        }}
+                                      >
+                                        <div
+                                          className="w-3 h-3 rounded-full flex-shrink-0 mr-2"
+                                          style={{ backgroundColor: tag.cor }}
+                                        />
+                                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                                          {tag.nome}
+                                        </span>
+                                      </div>
+                                    ))}
+                                    {tags.filter(tag => !motorista.motorista_id || !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id)).length === 0 && (
+                                      <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                                        Todas as tags já foram adicionadas
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 dark:text-white">
@@ -1861,6 +2158,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           )}
         </div>
 
+        {/* WiseApp Bulk Sync Panel - positioned fixed in top right */}
+        <WiseAppBulkSyncPanel 
+          onTagsSync={() => {
+            if (contratados && contratados.length > 0) {
+              fetchBulkMotoristaTags(contratados);
+            }
+          }}
+        />
+
         {/* Context Menu */}
         {contextMenu.visible && contextMenu.motorista && (
           <ContextMenu
@@ -1887,25 +2193,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         {/* Modals */}
         <UnifiedAgregadoModal
-          isOpen={isUnifiedModalOpen}
-          onClose={() => setIsUnifiedModalOpen(false)}
+          isOpen={isUnifiedAgregadoModalOpen}
+          onClose={() => setIsUnifiedAgregadoModalOpen(false)}
           motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : null}
           onSuccess={fetchContratados}
         />
 
-        <DocumentViewer
-          isOpen={isDocumentViewerOpen}
-          onClose={() => setIsDocumentViewerOpen(false)}
-          documento={documento}
-          nome={selectedMotorista?.nome_motorista || ''}
-          cpf={selectedMotorista?.cpf}
-          email={selectedMotorista?.email || undefined}
-          telefone={selectedMotorista?.telefone?.toString()}
-          dt_nascimento={selectedMotorista?.dt_nascimento}
-          foto_whatsapp={selectedMotorista?.foto_whatsapp}
-          endereco={endereco || undefined}
-          st_cadastro={selectedMotorista?.st_cadastro || 'cadastrado'}
-        />
 
         <DocumentUploadModal
           isOpen={isDocumentUploadOpen}
