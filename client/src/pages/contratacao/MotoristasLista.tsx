@@ -371,7 +371,7 @@ const MotoristasLista = () => {
     const vipTag = tags.find(tag => tag.nome.toLowerCase().includes('vip'));
     if (vipTag) {
       for (const motorista of motoristas) {
-        const hasVeiculo = motorista.veiculo_id && motorista.placa;
+        const hasVeiculo = motorista.veiculo && motorista.veiculo.length > 0;
         const alreadyHasTag = motoristaTags[motorista.motorista_id || 0]?.some((tag: any) => tag.id === vipTag.id);
         
         if (hasVeiculo && !alreadyHasTag && motorista.motorista_id) {
@@ -636,7 +636,7 @@ const MotoristasLista = () => {
       
       if (motoristaIds.length === 0) return;
       
-      const response = await apiRequest('/motoristas/tags/bulk', {
+      const response = await apiRequest('/motoristas/bulk-tags', {
         method: 'POST',
         body: JSON.stringify({
           motorista_ids: motoristaIds,
@@ -1733,8 +1733,8 @@ const MotoristasLista = () => {
       {/* WiseApp Bulk Sync Panel - now positioned fixed in top right */}
       <WiseAppBulkSyncPanel 
         onTagsSync={() => {
-          if (motoristasAgrupados && motoristasAgrupados.length > 0) {
-            fetchBulkMotoristaTags(motoristasAgrupados);
+          if (motoristas && motoristas.length > 0) {
+            fetchBulkMotoristaTags(motoristas);
           }
         }}
       />

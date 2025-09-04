@@ -74,13 +74,6 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   // Mutation para adicionar tag ao motorista
   const addTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
-      // Verificar limite antes de adicionar
-      const { canAdd, currentCount, limit } = await checkTagLimit(tagId);
-      
-      if (!canAdd) {
-        throw new Error(`Limite máximo de ${limit} associados atingido para esta tag. Atual: ${currentCount}`);
-      }
-
       const response = await apiRequest(`/motoristas/${motoristaId}/tags`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

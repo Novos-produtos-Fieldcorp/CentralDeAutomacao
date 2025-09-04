@@ -167,44 +167,6 @@ export function TagManager({ companyId }: TagManagerProps) {
           </div>
         </div>
       </div>
-
-      {tags && tags.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {tags.map((tag: any) => (
-            <div
-              key={tag.id}
-              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600"
-                    style={{ backgroundColor: tag.cor || '#3B82F6' }}
-                    title={`Cor: ${tag.cor || '#3B82F6'}`}
-                  />
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {tag.nome}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Local</span>
-                </div>
-              </div>
-              {tag.limite_max && (
-                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  Limite: {tag.limite_max} associados
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8">
-          <p className="text-gray-500 dark:text-gray-400">
-            Nenhuma tag encontrada. Clique em "Sincronizar com WiseApp" para buscar tags do WiseApp.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

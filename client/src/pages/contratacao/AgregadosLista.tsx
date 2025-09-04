@@ -280,7 +280,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       
       if (motoristaIds.length === 0) return;
       
-      const response = await fetch('/api/motoristas/tags/bulk', {
+      const response = await fetch('/api/motoristas/bulk-tags', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

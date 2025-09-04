@@ -196,16 +196,94 @@ app.get('/motoristas/:id/tags', async (req, res) => {
   }
 });
 
+// Add tag to motorista endpoint
+app.post('/motoristas/:id/tags', async (req, res) => {
+  try {
+    const motoristaId = parseInt(req.params.id);
+    const { tag_id } = req.body;
+    
+    if (!motoristaId) {
+      return res.status(400).json({ error: 'ID do motorista é obrigatório' });
+    }
+    
+    if (!tag_id) {
+      return res.status(400).json({ error: 'tag_id é obrigatório' });
+    }
+    
+    // Verificar se a associação já existe
+    const { data: existingAssociation } = await supabase
+      .from('associacao_tags')
+      .select('id')
+      .eq('motorista_id', motoristaId)
+      .eq('tag_id', tag_id)
+      .single();
+    
+    if (existingAssociation) {
+      return res.status(409).json({ error: 'Tag já está associada a este motorista' });
+    }
+    
+    // Criar a associação
+    const { data, error } = await supabase
+      .from('associacao_tags')
+      .insert({
+        motorista_id: motoristaId,
+        tag_id: tag_id
+      })
+      .select();
+    
+    if (error) throw error;
+    
+    res.json(data[0]);
+  } catch (error) {
+    console.error('Add tag to motorista endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+});
+
+// Remove tag from motorista endpoint
+app.delete('/motoristas/:id/tags/:tagId', async (req, res) => {
+  try {
+    const motoristaId = parseInt(req.params.id);
+    const tagId = parseInt(req.params.tagId);
+    
+    if (!motoristaId || !tagId) {
+      return res.status(400).json({ error: 'IDs são obrigatórios' });
+    }
+    
+    const { error } = await supabase
+      .from('associacao_tags')
+      .delete()
+      .eq('motorista_id', motoristaId)
+      .eq('tag_id', tagId);
+    
+    if (error) throw error;
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Remove tag from motorista endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+});
+
 // Bulk motorista tags endpoint
 app.post('/motoristas/bulk-tags', async (req, res) => {
   try {
+    console.log('Bulk tags endpoint called with body:', req.body);
     const { motorista_ids, company_id } = req.body;
     
     if (!motorista_ids || !Array.isArray(motorista_ids) || motorista_ids.length === 0) {
+      console.log('Error: motorista_ids is required and must be an array');
       return res.status(400).json({ error: 'motorista_ids é obrigatório e deve ser um array' });
     }
     
     if (!company_id) {
+      console.log('Error: company_id is required');
       return res.status(400).json({ error: 'company_id é obrigatório' });
     }
     
