@@ -434,6 +434,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     if (!motoristaId) return;
     
     try {
+      // Buscar dados da tag para remoção no Chatwoot
+      const tagToRemove = motoristaTags[motoristaId]?.find((tag: any) => tag.id === tagId);
+      
+      // Remover da base de dados local
       const { error } = await supabase
         .from('associacao_tags')
         .delete()
@@ -447,6 +451,16 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         ...prev,
         [motoristaId]: (prev[motoristaId] || []).filter((tag: any) => tag.id !== tagId)
       }));
+      
+      // Sincronizar remoção com Chatwoot se disponível
+      if (accountId && wiseAppToken && tagToRemove) {
+        try {
+          await removeTagFromWiseApp(motoristaId, tagToRemove);
+        } catch (wiseAppError) {
+          console.error('Erro ao remover tag do Chatwoot:', wiseAppError);
+          // Não falhar a operação se o Chatwoot falhar
+        }
+      }
       
       toast.success('Tag removida com sucesso!');
     } catch (error) {
@@ -721,6 +735,93 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       console.warn('Erro ao sincronizar tag com Chatwoot (não crítico):', error);
     }
   };
+
+  // Função para remover tag do Chatwoot via proxy backend
+  const removeTagFromWiseApp = async (motoristaId: number, tagData: any) => {
+    if (!companyId) return;
+    
+    try {
+      // 1. Buscar o motorista para obter o telefone
+      const motorista = contratados.find(m => m.motorista_id === motoristaId);
+      if (!motorista?.telefone) {
+        console.warn('Telefone do motorista não encontrado para remoção da tag');
+        return;
+      }
+
+      // 2. Buscar o contato no Chatwoot pelo telefone (sem +55 como funciona na individual)
+      const phoneStr = String(motorista.telefone);
+      const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
+      
+      const searchContactResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${formattedPhone}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'wiseapp-account-id': accountId || '',
+          'wiseapp-token': wiseAppToken || ''
+        }
+      });
+
+      if (!searchContactResponse.ok) {
+        console.warn(`Erro ao buscar contato no Chatwoot para telefone ${motorista.telefone}: ${searchContactResponse.status}`);
+        return;
+      }
+
+      const contactData = await searchContactResponse.json();
+      const contactId = contactData.payload?.[0]?.id || contactData[0]?.id;
+
+      if (!contactId) {
+        console.warn(`Contato não encontrado no Chatwoot para telefone ${motorista.telefone}`);
+        return;
+      }
+
+      // 3. Buscar labels atuais do contato
+      const getLabelsResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contactId}/labels`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'wiseapp-account-id': accountId || '',
+          'wiseapp-token': wiseAppToken || ''
+        }
+      });
+
+      if (!getLabelsResponse.ok) {
+        console.warn(`Erro ao buscar labels do contato: ${getLabelsResponse.status}`);
+        return;
+      }
+
+      const labelsData = await getLabelsResponse.json();
+      const currentLabels = labelsData.payload || [];
+      
+      // 4. Remover a tag específica das labels (preservando as outras)
+      const updatedLabels = currentLabels.filter((label: string) => 
+        label.toLowerCase() !== tagData.nome.toLowerCase()
+      );
+
+      // 5. Aplicar as labels atualizadas (sem a tag removida)
+      const updateLabelsResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contactId}/labels`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'wiseapp-account-id': accountId || '',
+          'wiseapp-token': wiseAppToken || ''
+        },
+        body: JSON.stringify({
+          labels: updatedLabels
+        })
+      });
+
+      if (updateLabelsResponse.ok) {
+        console.log(`Tag "${tagData.nome}" removida com sucesso do contato ${motorista.nome_motorista} no Chatwoot`);
+      } else {
+        const errorText = await updateLabelsResponse.text();
+        console.error(`Erro ao remover tag do contato: ${updateLabelsResponse.status} - ${errorText}`);
+      }
+
+    } catch (error) {
+      console.warn('Erro ao remover tag do Chatwoot (não crítico):', error);
+    }
+  };
+
   const motoristaTagDropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const [roleChangeModal, setRoleChangeModal] = useState<{
     isOpen: boolean;
