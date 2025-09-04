@@ -670,8 +670,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         return;
       }
 
-      // 3. Buscar o contato no Chatwoot pelo telefone
-      const searchContactResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${motorista.telefone}`, {
+      // 3. Buscar o contato no Chatwoot pelo telefone (com +55 se necessário)
+      const phoneStr = String(motorista.telefone);
+      const formattedPhone = phoneStr.startsWith('+55') 
+        ? phoneStr 
+        : `+55${phoneStr}`;
+      
+      const searchContactResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${formattedPhone}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

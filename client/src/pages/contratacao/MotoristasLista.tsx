@@ -204,7 +204,7 @@ const MotoristasLista = () => {
 
       if (!existingTag) {
         console.warn(`❌ Tag "${tagData.nome}" não encontrada no Chatwoot`);
-        console.log('📋 Tags disponíveis:', labels.map(l => l.name));
+        console.log('📋 Tags disponíveis:', labels.map((l: any) => l.name));
         return;
       }
 
@@ -217,9 +217,14 @@ const MotoristasLista = () => {
         return;
       }
 
-      // 3. Buscar o contato no Chatwoot pelo telefone
-      console.log(`Buscando contato no Chatwoot para telefone: ${motorista.telefone}`);
-      const searchContactResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${motorista.telefone}`, {
+      // 3. Buscar o contato no Chatwoot pelo telefone (com +55 se necessário)
+      const phoneStr = String(motorista.telefone);
+      const formattedPhone = phoneStr.startsWith('+55') 
+        ? phoneStr 
+        : `+55${phoneStr}`;
+      
+      console.log(`Buscando contato no Chatwoot para telefone: ${formattedPhone}`);
+      const searchContactResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${formattedPhone}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
