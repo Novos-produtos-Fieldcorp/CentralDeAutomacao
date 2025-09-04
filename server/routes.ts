@@ -1973,29 +1973,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Iniciando sincronização bulk para company_id: ${company_id}`);
 
-      // 1. Buscar token WiseApp
-      const { data: tokenDataArray, error: tokenError } = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp')
-        .eq('company_id', company_id)
-        .limit(1);
-
-      const tokenData = tokenDataArray?.[0];
-
-      if (tokenError) {
-        console.error('Erro ao buscar token WiseApp:', tokenError);
-        return res.json({ 
-          data: { 
-            totalProcessed: 0, 
-            successful: 0, 
-            failed: 0, 
-            errors: [],
-            message: 'Erro ao buscar token WiseApp: ' + tokenError.message
-          } 
-        });
-      }
-
-      if (!tokenData?.access_token_wiseapp) {
+      // 1. Buscar token WiseApp usando a mesma lógica das outras rotas
+      const token = await storage.getWiseappToken(company_id);
+      
+      if (!token) {
         console.log('Token WiseApp não encontrado para company_id:', company_id);
         return res.json({ 
           data: { 
@@ -2106,7 +2087,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/search?q=${phone}`;
           const searchResponse = await fetch(searchUrl, {
             headers: {
-              'api_access_token': tokenData.access_token_wiseapp,
+              'api_access_token': token,
               'Content-Type': 'application/json'
             }
           });
@@ -2131,7 +2112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contact.id}/labels`;
             const labelsResponse = await fetch(labelsUrl, {
               headers: {
-                'api_access_token': tokenData.access_token_wiseapp,
+                'api_access_token': token,
                 'Content-Type': 'application/json'
               }
             });
@@ -2195,7 +2176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const applyTagsResponse = await fetch(applyTagsUrl, {
                 method: 'POST',
                 headers: {
-                  'api_access_token': tokenData.access_token_wiseapp,
+                  'api_access_token': token,
                   'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ labels: tagsParaExportar })
