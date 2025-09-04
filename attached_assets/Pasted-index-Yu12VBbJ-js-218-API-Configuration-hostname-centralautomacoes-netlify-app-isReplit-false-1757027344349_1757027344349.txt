@@ -1,0 +1,209 @@
+index-Yu12VBbJ.js:218 API Configuration: {hostname: 'centralautomacoes.netlify.app', isReplit: false, isLocalDev: false, isNetlify: true, API_BASE_URL: 'https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api'}
+index-Yu12VBbJ.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-Yu12VBbJ.js:1060 Using cached WiseApp token and data
+index-Yu12VBbJ.js:225 Using cached auth - account_id: 20 company_id: 5
+index-Yu12VBbJ.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-Yu12VBbJ.js:1577 Valores de funcao encontrados: ['Agregado']
+index-Yu12VBbJ.js:1577 Dados completos: (6315) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, …]
+index-Yu12VBbJ.js:1566 Buscando tags para 6306 motoristas em chunks de 50
+index-Yu12VBbJ.js:223  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.500&tag_id=eq.112 406 (Not Acceptable)
+(anonymous) @ index-Yu12VBbJ.js:223
+(anonymous) @ index-Yu12VBbJ.js:223
+l @ index-Yu12VBbJ.js:223
+Promise.then
+d @ index-Yu12VBbJ.js:223
+(anonymous) @ index-Yu12VBbJ.js:223
+hAe @ index-Yu12VBbJ.js:223
+(anonymous) @ index-Yu12VBbJ.js:223
+then @ index-Yu12VBbJ.js:218
+index-Yu12VBbJ.js:1577  GET https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels 500 (Internal Server Error)
+Xe @ index-Yu12VBbJ.js:1577
+fe @ index-Yu12VBbJ.js:1577
+await in fe
+onClick @ index-Yu12VBbJ.js:1587
+ile @ index-Yu12VBbJ.js:37
+lle @ index-Yu12VBbJ.js:37
+cle @ index-Yu12VBbJ.js:37
+LI @ index-Yu12VBbJ.js:37
+zK @ index-Yu12VBbJ.js:37
+(anonymous) @ index-Yu12VBbJ.js:37
+LF @ index-Yu12VBbJ.js:40
+hK @ index-Yu12VBbJ.js:37
+U4 @ index-Yu12VBbJ.js:37
+uF @ index-Yu12VBbJ.js:37
+jle @ index-Yu12VBbJ.js:37
+index-Yu12VBbJ.js:1577 Erro ao buscar tags do Chatwoot: 500
+Xe @ index-Yu12VBbJ.js:1577
+await in Xe
+fe @ index-Yu12VBbJ.js:1577
+await in fe
+onClick @ index-Yu12VBbJ.js:1587
+ile @ index-Yu12VBbJ.js:37
+lle @ index-Yu12VBbJ.js:37
+cle @ index-Yu12VBbJ.js:37
+LI @ index-Yu12VBbJ.js:37
+zK @ index-Yu12VBbJ.js:37
+(anonymous) @ index-Yu12VBbJ.js:37
+LF @ index-Yu12VBbJ.js:40
+hK @ index-Yu12VBbJ.js:37
+U4 @ index-Yu12VBbJ.js:37
+uF @ index-Yu12VBbJ.js:37
+jle @ index-Yu12VBbJ.js:37
+index-Yu12VBbJ.js:223  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.1843&tag_id=eq.115 406 (Not Acceptable)
+(anonymous) @ index-Yu12VBbJ.js:223
+(anonymous) @ index-Yu12VBbJ.js:223
+l @ index-Yu12VBbJ.js:223
+Promise.then
+d @ index-Yu12VBbJ.js:223
+(anonymous) @ index-Yu12VBbJ.js:223
+hAe @ index-Yu12VBbJ.js:223
+(anonymous) @ index-Yu12VBbJ.js:223
+then @ index-Yu12VBbJ.js:218
+index-Yu12VBbJ.js:223  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.1843&tag_id=eq.101 406 (Not Acceptable)
+(anonymous) @ index-Yu12VBbJ.js:223
+(anonymous) @ index-Yu12VBbJ.js:223
+l @ index-Yu12VBbJ.js:223
+Promise.then
+d @ index-Yu12VBbJ.js:223
+(anonymous) @ index-Yu12VBbJ.js:223
+hAe @ index-Yu12VBbJ.js:223
+(anonymous) @ index-Yu12VBbJ.js:223
+then @ index-Yu12VBbJ.js:218
+index-Yu12VBbJ.js:1577  GET https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels 500 (Internal Server Error)
+Xe @ index-Yu12VBbJ.js:1577
+fe @ index-Yu12VBbJ.js:1577
+await in fe
+onClick @ index-Yu12VBbJ.js:1587
+ile @ index-Yu12VBbJ.js:37
+lle @ index-Yu12VBbJ.js:37
+cle @ index-Yu12VBbJ.js:37
+LI @ index-Yu12VBbJ.js:37
+zK @ index-Yu12VBbJ.js:37
+(anonymous) @ index-Yu12VBbJ.js:37
+LF @ index-Yu12VBbJ.js:40
+hK @ index-Yu12VBbJ.js:37
+U4 @ index-Yu12VBbJ.js:37
+uF @ index-Yu12VBbJ.js:37
+jle @ index-Yu12VBbJ.js:37
+index-Yu12VBbJ.js:1577 Erro ao buscar tags do Chatwoot: 500
+Xe @ index-Yu12VBbJ.js:1577
+await in Xe
+fe @ index-Yu12VBbJ.js:1577
+await in fe
+onClick @ index-Yu12VBbJ.js:1587
+ile @ index-Yu12VBbJ.js:37
+lle @ index-Yu12VBbJ.js:37
+cle @ index-Yu12VBbJ.js:37
+LI @ index-Yu12VBbJ.js:37
+zK @ index-Yu12VBbJ.js:37
+(anonymous) @ index-Yu12VBbJ.js:37
+LF @ index-Yu12VBbJ.js:40
+hK @ index-Yu12VBbJ.js:37
+U4 @ index-Yu12VBbJ.js:37
+uF @ index-Yu12VBbJ.js:37
+jle @ index-Yu12VBbJ.js:37
+index-Yu12VBbJ.js:1577  GET https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels 500 (Internal Server Error)
+Xe @ index-Yu12VBbJ.js:1577
+fe @ index-Yu12VBbJ.js:1577
+await in fe
+onClick @ index-Yu12VBbJ.js:1587
+ile @ index-Yu12VBbJ.js:37
+lle @ index-Yu12VBbJ.js:37
+cle @ index-Yu12VBbJ.js:37
+LI @ index-Yu12VBbJ.js:37
+zK @ index-Yu12VBbJ.js:37
+(anonymous) @ index-Yu12VBbJ.js:37
+LF @ index-Yu12VBbJ.js:40
+hK @ index-Yu12VBbJ.js:37
+U4 @ index-Yu12VBbJ.js:37
+uF @ index-Yu12VBbJ.js:37
+jle @ index-Yu12VBbJ.js:37
+index-Yu12VBbJ.js:1577 Erro ao buscar tags do Chatwoot: 500
+Xe @ index-Yu12VBbJ.js:1577
+await in Xe
+fe @ index-Yu12VBbJ.js:1577
+await in fe
+onClick @ index-Yu12VBbJ.js:1587
+ile @ index-Yu12VBbJ.js:37
+lle @ index-Yu12VBbJ.js:37
+cle @ index-Yu12VBbJ.js:37
+LI @ index-Yu12VBbJ.js:37
+zK @ index-Yu12VBbJ.js:37
+(anonymous) @ index-Yu12VBbJ.js:37
+LF @ index-Yu12VBbJ.js:40
+hK @ index-Yu12VBbJ.js:37
+U4 @ index-Yu12VBbJ.js:37
+uF @ index-Yu12VBbJ.js:37
+jle @ index-Yu12VBbJ.js:37
+index-Yu12VBbJ.js:223  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.1843&tag_id=eq.107 406 (Not Acceptable)
+(anonymous) @ index-Yu12VBbJ.js:223
+(anonymous) @ index-Yu12VBbJ.js:223
+l @ index-Yu12VBbJ.js:223
+Promise.then
+d @ index-Yu12VBbJ.js:223
+(anonymous) @ index-Yu12VBbJ.js:223
+hAe @ index-Yu12VBbJ.js:223
+(anonymous) @ index-Yu12VBbJ.js:223
+then @ index-Yu12VBbJ.js:218
+index-Yu12VBbJ.js:1425 Aplicando tag "sul" aos contatos no WiseApp para 1 motoristas...
+index-Yu12VBbJ.js:1425 DEBUG: Processando 1 motoristas: [1843]
+index-Yu12VBbJ.js:1425 Processing 1 motoristas with 200ms delay (Account: 20)
+index-Yu12VBbJ.js:1425 DEBUG: Buscando dados do motorista 1843 (1/1)
+index-Yu12VBbJ.js:1425 DEBUG: Dados do motorista 1843: {telefone: 11979615187, nome_motorista: 'MARCELO PEREIRA DA SILVA'}
+index-Yu12VBbJ.js:225  GET https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/contacts/search?phone=11979615187 500 (Internal Server Error)
+iE @ index-Yu12VBbJ.js:225
+w @ index-Yu12VBbJ.js:1425
+await in w
+_ @ index-Yu12VBbJ.js:1425
+await in _
+ile @ index-Yu12VBbJ.js:37
+lle @ index-Yu12VBbJ.js:37
+cle @ index-Yu12VBbJ.js:37
+LI @ index-Yu12VBbJ.js:37
+zK @ index-Yu12VBbJ.js:37
+(anonymous) @ index-Yu12VBbJ.js:37
+LF @ index-Yu12VBbJ.js:40
+hK @ index-Yu12VBbJ.js:37
+U4 @ index-Yu12VBbJ.js:37
+uF @ index-Yu12VBbJ.js:37
+jle @ index-Yu12VBbJ.js:37
+index-Yu12VBbJ.js:225 Erro na API WiseApp via backend: 500 {"error":"Erro ao buscar contato","details":"currentAccountId is not defined"}
+iE @ index-Yu12VBbJ.js:225
+await in iE
+w @ index-Yu12VBbJ.js:1425
+await in w
+_ @ index-Yu12VBbJ.js:1425
+await in _
+ile @ index-Yu12VBbJ.js:37
+lle @ index-Yu12VBbJ.js:37
+cle @ index-Yu12VBbJ.js:37
+LI @ index-Yu12VBbJ.js:37
+zK @ index-Yu12VBbJ.js:37
+(anonymous) @ index-Yu12VBbJ.js:37
+LF @ index-Yu12VBbJ.js:40
+hK @ index-Yu12VBbJ.js:37
+U4 @ index-Yu12VBbJ.js:37
+uF @ index-Yu12VBbJ.js:37
+jle @ index-Yu12VBbJ.js:37
+index-Yu12VBbJ.js:1425 BULK DEBUG: Erro na busca do contato: Error: Erro ao buscar contato no WiseApp: 500
+    at iE (index-Yu12VBbJ.js:225:41237)
+    at async w (index-Yu12VBbJ.js:1425:39568)
+    at async _ (index-Yu12VBbJ.js:1425:42819)
+w @ index-Yu12VBbJ.js:1425
+await in w
+_ @ index-Yu12VBbJ.js:1425
+await in _
+ile @ index-Yu12VBbJ.js:37
+lle @ index-Yu12VBbJ.js:37
+cle @ index-Yu12VBbJ.js:37
+LI @ index-Yu12VBbJ.js:37
+zK @ index-Yu12VBbJ.js:37
+(anonymous) @ index-Yu12VBbJ.js:37
+LF @ index-Yu12VBbJ.js:40
+hK @ index-Yu12VBbJ.js:37
+U4 @ index-Yu12VBbJ.js:37
+uF @ index-Yu12VBbJ.js:37
+jle @ index-Yu12VBbJ.js:37
+index-Yu12VBbJ.js:1566 Buscando tags para 6306 motoristas em chunks de 50
+index-Yu12VBbJ.js:1577 Valores de funcao encontrados: ['Agregado']
+index-Yu12VBbJ.js:1577 Dados completos: (6315) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, …]

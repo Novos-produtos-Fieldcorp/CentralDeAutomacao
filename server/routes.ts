@@ -1449,9 +1449,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           // Para account_id 20 ou outros accounts grandes, adicionar delay
-          const currentAccountId = account_id;
-          if (currentAccountId === '20' && attempts > 1) {
-            console.log(`Rate limiting retry ${attempts} for account ${currentAccountId}, waiting 3s...`);
+          if (account_id === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${account_id}, waiting 3s...`);
             await delay(3000); // 3 segundos entre tentativas
           }
 
@@ -1462,8 +1461,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
           
           // For account ID 20, try different token header formats
-          if (currentAccountId === '20' && attempts > 1) {
-            console.log(`Attempting alternative headers for account ${currentAccountId}, attempt ${attempts}`);
+          if (account_id === '20' && attempts > 1) {
+            console.log(`Attempting alternative headers for account ${account_id}, attempt ${attempts}`);
             // Try both token formats
             headers['Authorization'] = `Bearer ${token}`;
             headers['api_access_token'] = token;
@@ -1481,8 +1480,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Se 401 em account grande, tentar novamente
-          if (response.status === 401 && (currentAccountId === '20' || parseInt(currentAccountId) > 15)) {
-            console.log(`Got 401 for large account ${currentAccountId}, attempt ${attempts}/${maxAttempts}`);
+          if (response.status === 401 && (account_id === '20' || parseInt(account_id) > 15)) {
+            console.log(`Got 401 for large account ${account_id}, attempt ${attempts}/${maxAttempts}`);
             
             if (attempts < maxAttempts) {
               continue; // Try again
@@ -1496,7 +1495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (attempts === maxAttempts) {
             throw fetchError;
           }
-          console.log(`API fetch attempt ${attempts} failed for account ${currentAccountId}:`, fetchError);
+          console.log(`API fetch attempt ${attempts} failed for account ${account_id}:`, fetchError);
         }
       }
 
@@ -1663,9 +1662,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           // Para account_id 20 ou outros accounts grandes, adicionar delay
-          const currentAccountId = account_id;
-          if (currentAccountId === '20' && attempts > 1) {
-            console.log(`Rate limiting retry ${attempts} for account ${currentAccountId}, waiting 3s...`);
+          if (account_id === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${account_id}, waiting 3s...`);
             await delay(3000); // 3 segundos entre tentativas
           }
 
@@ -1676,8 +1674,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
           
           // For account ID 20, try different token header formats
-          if (currentAccountId === '20' && attempts > 1) {
-            console.log(`Attempting alternative headers for account ${currentAccountId}, attempt ${attempts}`);
+          if (account_id === '20' && attempts > 1) {
+            console.log(`Attempting alternative headers for account ${account_id}, attempt ${attempts}`);
             // Try both token formats
             headers['Authorization'] = `Bearer ${token}`;
             headers['api_access_token'] = token;
@@ -1695,8 +1693,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Se 401 em account grande, tentar novamente
-          if (response.status === 401 && (currentAccountId === '20' || parseInt(currentAccountId) > 15)) {
-            console.log(`Got 401 for large account ${currentAccountId}, attempt ${attempts}/${maxAttempts}`);
+          if (response.status === 401 && (account_id === '20' || parseInt(account_id) > 15)) {
+            console.log(`Got 401 for large account ${account_id}, attempt ${attempts}/${maxAttempts}`);
             
             if (attempts < maxAttempts) {
               continue; // Try again
@@ -1710,7 +1708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (attempts === maxAttempts) {
             throw fetchError;
           }
-          console.log(`API fetch attempt ${attempts} failed for account ${currentAccountId}:`, fetchError);
+          console.log(`API fetch attempt ${attempts} failed for account ${account_id}:`, fetchError);
         }
       }
 
@@ -2040,8 +2038,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Se 401 em account grande, tentar novamente
-          if (response.status === 401 && (currentAccountId === '20' || parseInt(currentAccountId) > 15)) {
-            console.log(`Got 401 for large account ${currentAccountId}, attempt ${attempts}/${maxAttempts}`);
+          if (response.status === 401 && (account_id === '20' || parseInt(account_id) > 15)) {
+            console.log(`Got 401 for large account ${account_id}, attempt ${attempts}/${maxAttempts}`);
             
             if (attempts < maxAttempts) {
               continue; // Try again
