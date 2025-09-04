@@ -620,47 +620,30 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
 
-  // Função para sincronizar tag com WiseApp
+  // Função para sincronizar tag com WiseApp via proxy backend
   const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
-    if (!accountId || !wiseAppToken) return;
+    if (!companyId) return;
     
     try {
-      // Buscar dados do motorista
-      const { data: motoristaData } = await supabase
-        .from('motorista')
-        .select('*')
-        .eq('motorista_id', motoristaId)
-        .single();
-      
-      if (!motoristaData) return;
-
-      // Criar label no WiseApp
-      const labelData = {
-        name: tagData.nome,
-        color: tagData.cor,
-        account_id: accountId
-      };
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
-
-      const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+      // Usar o proxy backend para criar a tag no WiseApp
+      const response = await fetch(`/api/wiseapp/${companyId}/labels`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${wiseAppToken}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'wiseapp-account-id': accountId || '',
+          'wiseapp-token': wiseAppToken || ''
         },
-        body: JSON.stringify(labelData),
-        signal: controller.signal
+        body: JSON.stringify({
+          name: tagData.nome,
+          color: tagData.cor
+        })
       });
 
-      clearTimeout(timeoutId);
-
       if (response.ok) {
-        const wiseAppLabel = await response.json();
-        console.log('Tag sincronizada com WiseApp:', wiseAppLabel);
+        const result = await response.json();
+        console.log('Tag sincronizada com WiseApp:', result);
       } else {
-        console.warn(`WiseApp retornou status ${response.status}: ${response.statusText}`);
+        console.warn(`Erro ao sincronizar com WiseApp: ${response.status}`);
       }
     } catch (error) {
       console.warn('Erro ao sincronizar tag com WiseApp (não crítico):', error);
