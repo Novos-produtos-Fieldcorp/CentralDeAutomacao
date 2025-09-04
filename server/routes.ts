@@ -1976,7 +1976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 1. Buscar token WiseApp
       const { data: tokenData, error: tokenError } = await supabase
         .from('wiseapp_acesso')
-        .select('access_token_wiseapp, account_id')
+        .select('access_token_wiseapp')
         .eq('company_id', company_id)
         .single();
 
@@ -2042,7 +2042,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const account_id = tokenData.account_id || company_id;
+      const account_id = company_id;
       let successful = 0;
       let failed = 0;
       let tagsImportadas = 0;
