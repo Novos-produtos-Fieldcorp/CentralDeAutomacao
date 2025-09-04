@@ -174,34 +174,32 @@ const MotoristasLista = () => {
     if (!companyId) return;
     
     try {
-      // 1. Criar a tag no sistema WiseApp (se não existir)
-      const createTagResponse = await fetch(`/api/wiseapp/${companyId}/labels`, {
-        method: 'POST',
+      // 1. Buscar todas as tags existentes no WiseApp
+      const labelsResponse = await fetch(`/api/wiseapp/${companyId}/labels`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'wiseapp-account-id': accountId || '',
           'wiseapp-token': wiseAppToken || ''
-        },
-        body: JSON.stringify({
-          name: tagData.nome,
-          color: tagData.cor
-        })
+        }
       });
 
-      if (!createTagResponse.ok) {
-        console.warn(`Erro ao criar tag no WiseApp: ${createTagResponse.status}`);
+      if (!labelsResponse.ok) {
+        console.warn(`Erro ao buscar tags do WiseApp: ${labelsResponse.status}`);
         return;
       }
 
-      const tagResult = await createTagResponse.json();
-      const wiseAppTagId = tagResult.label?.id;
-      
-      if (!wiseAppTagId) {
-        console.warn('ID da tag WiseApp não encontrado');
+      const labels = await labelsResponse.json();
+      const existingTag = labels.find((label: any) => 
+        label.name.toLowerCase() === tagData.nome.toLowerCase()
+      );
+
+      if (!existingTag) {
+        console.warn(`Tag "${tagData.nome}" não encontrada no WiseApp`);
         return;
       }
 
-      console.log('Tag criada/encontrada no WiseApp:', tagResult);
+      console.log(`Tag "${tagData.nome}" encontrada no WiseApp:`, existingTag);
 
       // 2. Buscar o motorista para obter o telefone
       const motorista = motoristas.find(m => m.motorista_id === motoristaId);
@@ -221,7 +219,7 @@ const MotoristasLista = () => {
       });
 
       if (!searchContactResponse.ok) {
-        console.warn(`Contato não encontrado no WiseApp para telefone ${motorista.telefone}`);
+        console.warn(`Erro ao buscar contato no WiseApp para telefone ${motorista.telefone}: ${searchContactResponse.status}`);
         return;
       }
 
@@ -233,7 +231,7 @@ const MotoristasLista = () => {
         return;
       }
 
-      // 4. Aplicar a tag ao contato específico
+      // 4. Aplicar a tag existente ao contato específico
       const applyTagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contactId}/labels`, {
         method: 'POST',
         headers: {
@@ -242,14 +240,15 @@ const MotoristasLista = () => {
           'wiseapp-token': wiseAppToken || ''
         },
         body: JSON.stringify({
-          tagId: wiseAppTagId
+          tagId: existingTag.id
         })
       });
 
       if (applyTagResponse.ok) {
-        console.log(`Tag "${tagData.nome}" aplicada com sucesso ao contato ${contactId} no WiseApp`);
+        console.log(`Tag "${tagData.nome}" aplicada com sucesso ao contato ${contactId} (${motorista.nome}) no WiseApp`);
       } else {
-        console.warn(`Erro ao aplicar tag ao contato: ${applyTagResponse.status}`);
+        const errorText = await applyTagResponse.text();
+        console.warn(`Erro ao aplicar tag ao contato: ${applyTagResponse.status} - ${errorText}`);
       }
 
     } catch (error) {
