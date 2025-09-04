@@ -744,13 +744,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           const contactLabels = await verifyTagResponse.json();
           console.log(`📋 Tags atuais do contato ${contactId}:`, contactLabels);
           
-          const hasAppliedTag = contactLabels.payload?.some((label: any) => label.id === existingTag.id) || 
-                               contactLabels.some?.((label: any) => label.id === existingTag.id);
+          // Chatwoot retorna array de IDs como strings: ["136", "51", ...]
+          const tagIds = contactLabels.payload || contactLabels;
+          const hasAppliedTag = tagIds.includes(existingTag.id.toString()) || tagIds.includes(existingTag.id);
           
           if (hasAppliedTag) {
-            console.log(`✅ CONFIRMADO: Tag "${tagData.nome}" está aplicada ao contato`);
+            console.log(`✅ CONFIRMADO: Tag "${tagData.nome}" (ID: ${existingTag.id}) está aplicada ao contato`);
           } else {
-            console.warn(`⚠️ ATENÇÃO: Tag "${tagData.nome}" não foi encontrada nas tags do contato após aplicação`);
+            console.warn(`⚠️ ATENÇÃO: Tag "${tagData.nome}" (ID: ${existingTag.id}) não foi encontrada nas tags do contato`);
+            console.log(`🔍 IDs das tags no contato:`, tagIds);
           }
         } else {
           console.warn(`❌ Erro ao verificar tags do contato: ${verifyTagResponse.status}`);
