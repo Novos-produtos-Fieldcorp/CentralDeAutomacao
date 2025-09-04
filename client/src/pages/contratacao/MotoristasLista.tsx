@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, ArrowLeftRight, AlertTriangle, XCircle, Tag, CheckCircle, Calendar } from 'lucide-react';
 import WhatsAppAvatar from '../../components/WhatsAppAvatar';
 import { useCompanyData } from '../../hooks/useCompanyData';
+import { useQuery } from '@tanstack/react-query';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
@@ -146,12 +147,134 @@ const MotoristasLista = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
-  const [tags, setTags] = useState<any[]>([]);
-  const [tagsLoading, setTagsLoading] = useState(false);
+  // Query para buscar tags da empresa
+  const { data: tags = [], isLoading: tagsLoading } = useQuery<any[]>({
+    queryKey: ['local-tags', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      
+      const { data, error } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!companyId,
+  });
   const [tagSearchFilter, setTagSearchFilter] = useState('');
   const [motoristaTags, setMotoristaTags] = useState<{[key: number]: any[]}>({});
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{[key: number]: boolean}>({});
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
+
+  // Função para sincronizar tag com WiseApp
+  const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
+    if (!accountId || !wiseAppToken) return;
+    
+    try {
+      // Buscar dados do motorista
+      const { data: motoristaData } = await supabase
+        .from('motorista')
+        .select('*')
+        .eq('motorista_id', motoristaId)
+        .single();
+      
+      if (!motoristaData) return;
+
+      // Criar label no WiseApp
+      const labelData = {
+        name: tagData.nome,
+        color: tagData.cor,
+        account_id: accountId
+      };
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
+
+      const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${wiseAppToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(labelData),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const wiseAppLabel = await response.json();
+        console.log('Tag sincronizada com WiseApp:', wiseAppLabel);
+      } else {
+        console.warn(`WiseApp retornou status ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.warn('Erro ao sincronizar tag com WiseApp (não crítico):', error);
+    }
+  };
+
+  const removeTagFromWiseApp = async (motoristaId: number, tagId: number) => {
+    if (!accountId || !wiseAppToken) return;
+    
+    try {
+      // Buscar dados da tag
+      const { data: tagData } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('id', tagId)
+        .single();
+      
+      if (!tagData) return;
+
+      // Buscar label no WiseApp
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const labelsResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+        headers: {
+          'Authorization': `Bearer ${wiseAppToken}`
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (labelsResponse.ok) {
+        const labels = await labelsResponse.json();
+        const wiseAppLabel = labels.find((label: any) => label.name === tagData.nome);
+        
+        if (wiseAppLabel) {
+          // Remover label do WiseApp
+          const deleteController = new AbortController();
+          const deleteTimeoutId = setTimeout(() => deleteController.abort(), 10000);
+
+          const deleteResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels/${wiseAppLabel.id}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${wiseAppToken}`
+            },
+            signal: deleteController.signal
+          });
+
+          clearTimeout(deleteTimeoutId);
+          
+          if (deleteResponse.ok) {
+            console.log('Tag removida do WiseApp com sucesso');
+          } else {
+            console.warn(`Erro ao remover tag do WiseApp: ${deleteResponse.status}`);
+          }
+        }
+      } else {
+        console.warn(`Erro ao buscar labels do WiseApp: ${labelsResponse.status}`);
+      }
+    } catch (error) {
+      console.warn('Erro ao remover tag do WiseApp (não crítico):', error);
+      // Não relançar o erro para não quebrar a operação principal
+    }
+  };
 
   // Função para adicionar tag a um motorista
   const handleAddTag = async (motoristaId: number, tagId: number) => {
@@ -159,25 +282,55 @@ const MotoristasLista = () => {
       setUpdatingMotoristaTag(motoristaId);
       setTagDropdownOpen(prev => ({ ...prev, [motoristaId]: false }));
 
-      const response = await apiRequest(`/motoristas/${motoristaId}/tags`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tag_id: tagId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Erro ao adicionar tag');
+      // Verificar se a associação já existe
+      const { data: existingAssociation } = await supabase
+        .from('associacao_tags')
+        .select('id')
+        .eq('motorista_id', motoristaId)
+        .eq('tag_id', tagId)
+        .single();
+      
+      if (existingAssociation) {
+        toast.error('Tag já está associada a este motorista');
+        return;
       }
+      
+      // Criar a associação no Supabase
+      const { data, error } = await supabase
+        .from('associacao_tags')
+        .insert({
+          motorista_id: motoristaId,
+          tag_id: tagId
+        })
+        .select();
+      
+      if (error) throw error;
+
+      // Buscar a tag completa para atualizar o estado local
+      const { data: tagData, error: tagError } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('id', tagId)
+        .single();
+      
+      if (tagError) throw tagError;
 
       // Atualizar tags localmente
-      const tag = tags.find(t => t.id === tagId);
-      if (tag) {
+      if (tagData) {
         setMotoristaTags(prev => ({
           ...prev,
-          [motoristaId]: [...(prev[motoristaId] || []), tag]
+          [motoristaId]: [...(prev[motoristaId] || []), tagData]
         }));
+      }
+
+      // Sincronizar com WiseApp se disponível
+      if (accountId && wiseAppToken) {
+        try {
+          await syncTagWithWiseApp(motoristaId, tagData);
+        } catch (wiseAppError) {
+          console.error('Erro ao sincronizar com WiseApp:', wiseAppError);
+          // Não falhar a operação se o WiseApp falhar
+        }
       }
 
       toast.success('Tag adicionada com sucesso!');
@@ -194,19 +347,30 @@ const MotoristasLista = () => {
     try {
       setUpdatingMotoristaTag(motoristaId);
 
-      const response = await apiRequest(`/motoristas/${motoristaId}/tags/${tagId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Erro ao remover tag');
-      }
+      // Remover a associação do Supabase
+      const { error } = await supabase
+        .from('associacao_tags')
+        .delete()
+        .eq('motorista_id', motoristaId)
+        .eq('tag_id', tagId);
+      
+      if (error) throw error;
 
       // Remover tag localmente
       setMotoristaTags(prev => ({
         ...prev,
         [motoristaId]: (prev[motoristaId] || []).filter(tag => tag.id !== tagId)
       }));
+
+      // Sincronizar remoção com WiseApp se disponível
+      if (accountId && wiseAppToken) {
+        try {
+          await removeTagFromWiseApp(motoristaId, tagId);
+        } catch (wiseAppError) {
+          console.error('Erro ao sincronizar remoção com WiseApp:', wiseAppError);
+          // Não falhar a operação se o WiseApp falhar
+        }
+      }
 
       toast.success('Tag removida com sucesso!');
     } catch (error) {
@@ -290,7 +454,6 @@ const MotoristasLista = () => {
     
     // Buscar tags do Supabase quando abrir o dropdown
     if (isOpening) {
-      await fetchTags();
     }
   };
 
@@ -350,9 +513,10 @@ const MotoristasLista = () => {
   // Carregar tags dos motoristas automaticamente quando a lista de motoristas mudar
   useEffect(() => {
     if (motoristas && motoristas.length > 0) {
-      fetchBulkMotoristaTags(motoristas);
+      fetchAllMotoristaTags(motoristas);
     }
   }, [motoristas]);
+
 
   // Sistema de filtros automáticos de tags
   useEffect(() => {
@@ -371,7 +535,7 @@ const MotoristasLista = () => {
     const vipTag = tags.find(tag => tag.nome.toLowerCase().includes('vip'));
     if (vipTag) {
       for (const motorista of motoristas) {
-        const hasVeiculo = motorista.veiculo_id && motorista.placa;
+        const hasVeiculo = motorista.veiculo && motorista.veiculo.length > 0;
         const alreadyHasTag = motoristaTags[motorista.motorista_id || 0]?.some((tag: any) => tag.id === vipTag.id);
         
         if (hasVeiculo && !alreadyHasTag && motorista.motorista_id) {
@@ -612,53 +776,82 @@ const MotoristasLista = () => {
     }
   };
 
-  const fetchMotoristaTags = async (motoristaId: number) => {
+  // Carregar tags individuais dos motoristas
+  const fetchMotoristaTags = async (motoristas: ViewMotorista[]) => {
     try {
-      const response = await apiRequest(`/motoristas/${motoristaId}/tags`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch motorista tags');
-      }
-      const data = await response.json();
-      setMotoristaTags(prev => ({ ...prev, [motoristaId]: data }));
-    } catch (error) {
-      // Silenciar erro para não quebrar a UI - tags são opcionais
-      console.warn(`Tags não disponíveis para motorista ${motoristaId}`);
-      setMotoristaTags(prev => ({ ...prev, [motoristaId]: [] }));
-    }
-  };
-
-  // Nova função otimizada para carregar tags em lote
-  const fetchBulkMotoristaTags = async (motoristas: ViewMotorista[]) => {
-    try {
-      const motoristaIds = motoristas
-        .map(m => m.motorista_id)
-        .filter((id): id is number => id !== undefined);
+      const newMotoristaTags: { [key: number]: any[] } = {};
       
-      if (motoristaIds.length === 0) return;
-      
-      const response = await apiRequest('/motoristas/tags/bulk', {
-        method: 'POST',
-        body: JSON.stringify({
-          motorista_ids: motoristaIds,
-          company_id: companyId
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch bulk tags');
+      for (const motorista of motoristas) {
+        if (motorista.motorista_id) {
+          try {
+            const { data, error } = await supabase
+              .from('tag')
+              .select(`
+                tag:tag_id (
+                  id,
+                  nome,
+                  cor,
+                  company_id,
+                  limite_max,
+                  created_at,
+                  updated_at
+                )
+              `)
+              .eq('motorista_id', motorista.motorista_id);
+            
+            if (error) throw error;
+            newMotoristaTags[motorista.motorista_id] = data?.map(item => item.tag).filter(Boolean) || [];
+          } catch (error) {
+            console.error(`Erro ao carregar tags do motorista ${motorista.motorista_id}:`, error);
+            newMotoristaTags[motorista.motorista_id] = [];
+          }
+        }
       }
       
-      const bulkTags = await response.json();
-      setMotoristaTags(bulkTags);
+      setMotoristaTags(newMotoristaTags);
     } catch (error) {
-      console.error('Erro ao carregar tags em lote:', error);
+      console.error('Erro ao carregar tags dos motoristas:', error);
       toast.error('Erro ao carregar tags dos motoristas');
     }
   };
 
   const fetchAllMotoristaTags = async (motoristas: ViewMotorista[]) => {
-    // Função mantida para compatibilidade, mas usando a versão otimizada
-    await fetchBulkMotoristaTags(motoristas);
+    // Carregar tags individuais dos motoristas
+    try {
+      const newMotoristaTags: { [key: number]: any[] } = {};
+      
+      for (const motorista of motoristas) {
+        if (motorista.motorista_id) {
+          try {
+            const { data, error } = await supabase
+              .from('associacao_tags')
+              .select(`
+                tag:tag_id (
+                  id,
+                  nome,
+                  cor,
+                  company_id,
+                  limite_max,
+                  created_at,
+                  updated_at
+                )
+              `)
+              .eq('motorista_id', motorista.motorista_id);
+            
+            if (error) throw error;
+            newMotoristaTags[motorista.motorista_id] = data?.map((item: any) => item.tag).filter(Boolean) || [];
+          } catch (error) {
+            console.error(`Erro ao carregar tags do motorista ${motorista.motorista_id}:`, error);
+            newMotoristaTags[motorista.motorista_id] = [];
+          }
+        }
+      }
+      
+      setMotoristaTags(newMotoristaTags);
+    } catch (error) {
+      console.error('Erro ao carregar tags dos motoristas:', error);
+      toast.error('Erro ao carregar tags dos motoristas');
+    }
   };
 
   // Cores padrão para os clientes (apenas fundo, sem borda)
@@ -699,42 +892,6 @@ const MotoristasLista = () => {
   const { accountId } = useAuth();
   const { token: wiseAppToken } = useWiseAppAccess();
   
-  const fetchTags = async () => {
-    try {
-      if (!companyId) return;
-      setTagsLoading(true);
-      
-      // Buscar tags via API backend para garantir consistência
-      const response = await apiRequest(`/tags?company_id=${companyId}`);
-      
-      if (!response.ok) {
-        throw new Error('Erro ao buscar tags via API');
-      }
-      
-      const tags = await response.json();
-      
-      setTags(tags || []);
-    } catch (error) {
-      console.error('Error fetching tags:', error);
-      // Fallback: buscar diretamente do Supabase se API falhar
-      try {
-        const { data: tags, error: supabaseError } = await supabase
-          .from('tag')
-          .select('*')
-          .eq('company_id', companyId)
-          .order('nome');
-        
-        if (supabaseError) throw supabaseError;
-        
-        setTags(tags || []);
-      } catch (fallbackError) {
-        console.error('Erro no fallback Supabase:', fallbackError);
-        setTags([]); // Se tudo falhar, usar array vazio
-      }
-    } finally {
-      setTagsLoading(false);
-    }
-  };
 
   const handleViewDocument = async (motorista: ViewMotorista | null) => {
     if (!motorista) return;
@@ -1733,8 +1890,8 @@ const MotoristasLista = () => {
       {/* WiseApp Bulk Sync Panel - now positioned fixed in top right */}
       <WiseAppBulkSyncPanel 
         onTagsSync={() => {
-          if (motoristasAgrupados && motoristasAgrupados.length > 0) {
-            fetchBulkMotoristaTags(motoristasAgrupados);
+          if (motoristas && motoristas.length > 0) {
+            fetchAllMotoristaTags(motoristas);
           }
         }}
       />

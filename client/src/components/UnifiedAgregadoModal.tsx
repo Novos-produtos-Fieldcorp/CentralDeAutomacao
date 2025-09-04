@@ -19,7 +19,7 @@ import GestaoRiscoTab from './GestaoRiscoTab';
 import ComentariosTab from './ComentariosTab';
 import EditVeiculoModal from './veiculos/EditVeiculoModal';
 import WhatsAppAvatar from './WhatsAppAvatar';
-import { TagManager } from './TagManager';
+import { MotoristaTagsManager } from './MotoristaTagsManager';
 
 interface UnifiedAgregadoModalProps {
   isOpen: boolean;
@@ -1353,9 +1353,18 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   }}
                 />
               ) : (
-                <TagManager 
-                  companyId={motorista.company_id}
-                />
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      Gerenciar Tags
+                    </h3>
+                  </div>
+                  
+                  <MotoristaTagsManager 
+                    motoristaId={motorista.motorista_id}
+                    companyId={motorista.company_id || 1}
+                  />
+                </div>
               )}
             </div>
           </div>

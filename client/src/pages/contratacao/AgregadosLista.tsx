@@ -1,8 +1,10 @@
   import React, { useState, useEffect, useRef } from 'react';
   import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag, CheckCircle, Calendar } from 'lucide-react';
+import { TagLimitNotification } from '../../components/TagLimitNotification';
   import WhatsAppAvatar from '../../components/WhatsAppAvatar';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
+  import { useQuery } from '@tanstack/react-query';
   import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database';
   import { formatCPF, formatPhone, formatDate } from '../../utils/format';
     import DocumentUploadModal from '../../components/DocumentUploadModal';
@@ -15,6 +17,8 @@
   import { useFloatingChat } from '../../hooks/useFloatingChat';
   import { supabase } from '../../lib/supabase';
   import LoadingSpinner from '../../components/LoadingSpinner';
+  import { useAuth } from '../../context/AuthContext';
+  import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
   import { usePagination } from '../../hooks/usePagination';
   import Pagination from '../../components/Pagination';
   import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
@@ -117,6 +121,8 @@ const STATUS_OPTIONS = [
 const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
+  const { accountId } = useAuth();
+  const { token: wiseAppToken } = useWiseAppAccess();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -126,11 +132,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
   
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
   const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
 
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -172,6 +181,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       setShowClienteDropdown(false);
       setShowCidadeDropdown(false);
       setShowTipoVeiculoDropdown(false);
+      setShowTagDropdown(false);
     };
 
     const toggleDropdown = (dropdownType: string) => {
@@ -189,7 +199,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         case 'tipoVeiculo':
           setShowTipoVeiculoDropdown(true);
           break;
-
+        case 'tag':
+          setShowTagDropdown(true);
+          break;
       }
     };
     
@@ -248,52 +260,78 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const [clientes, setClientes] = useState<any[]>([]);
 
   // Buscar tags do Supabase
-  const fetchTags = async () => {
-    if (!companyId) return;
-    try {
-      const { data, error } = await supabase
-        .from('tag')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('nome');
 
-      if (error) throw error;
-      setTags(data || []);
+  // Carregar tags individuais dos motoristas
+  const fetchMotoristaTags = async (motoristas: ViewContratado[]) => {
+    try {
+      const newMotoristaTags: { [key: number]: any[] } = {};
+      
+      for (const motorista of motoristas) {
+        if (motorista.motorista_id) {
+          try {
+            const { data, error } = await supabase
+              .from('associacao_tags')
+              .select(`
+                tag:tag_id (
+                  id,
+                  nome,
+                  cor,
+                  company_id,
+                  limite_max,
+                  created_at,
+                  updated_at
+                )
+              `)
+              .eq('motorista_id', motorista.motorista_id);
+            
+            if (error) throw error;
+            newMotoristaTags[motorista.motorista_id] = data?.map(item => item.tag).filter(Boolean) || [];
+          } catch (error) {
+            console.error(`Erro ao carregar tags do motorista ${motorista.motorista_id}:`, error);
+            newMotoristaTags[motorista.motorista_id] = [];
+          }
+        }
+      }
+      
+      setMotoristaTags(newMotoristaTags);
     } catch (error) {
-      console.error('Erro ao buscar tags:', error);
+      console.error('Erro ao carregar tags dos agregados:', error);
+      toast.error('Erro ao carregar tags dos agregados');
     }
   };
 
-  // Nova função otimizada para carregar tags em lote
-  const fetchBulkMotoristaTags = async (motoristas: ViewContratado[]) => {
+  // Verificar limite de associados por tag
+  const checkTagLimit = async (tagId: number): Promise<{ canAdd: boolean; currentCount: number; limit: number | null }> => {
     try {
-      const motoristaIds = motoristas
-        .map(m => m.motorista_id)
-        .filter((id): id is number => id !== undefined);
-      
-      if (motoristaIds.length === 0) return;
-      
-      const response = await fetch('/api/motoristas/tags/bulk', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'company-id': companyId?.toString() || '1'
-        },
-        body: JSON.stringify({
-          motorista_ids: motoristaIds,
-          company_id: companyId
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch bulk tags');
+      // Buscar informações da tag
+      const { data: tagData, error: tagError } = await supabase
+        .from('tag')
+        .select('limite_max')
+        .eq('id', tagId)
+        .single();
+
+      if (tagError) throw tagError;
+
+      const limit = tagData?.limite_max;
+      if (!limit) {
+        return { canAdd: true, currentCount: 0, limit: null };
       }
-      
-      const bulkTags = await response.json();
-      setMotoristaTags(bulkTags);
+
+      // Contar associados atuais da tag
+      const { count, error: countError } = await supabase
+        .from('associacao_tags')
+        .select('*', { count: 'exact', head: true })
+        .eq('tag_id', tagId);
+
+      if (countError) throw countError;
+
+      const currentCount = count || 0;
+      const canAdd = currentCount < limit;
+
+      return { canAdd, currentCount, limit };
     } catch (error) {
-      console.error('Erro ao carregar tags em lote:', error);
-      toast.error('Erro ao carregar tags dos agregados');
+      console.error('Erro ao verificar limite da tag:', error);
+      return { canAdd: true, currentCount: 0, limit: null };
     }
   };
 
@@ -303,6 +341,27 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     
     setUpdatingMotoristaTag(motoristaId);
     try {
+      // Verificar limite antes de adicionar
+      const { canAdd, currentCount, limit } = await checkTagLimit(tagId);
+      
+      if (!canAdd) {
+        toast.error(`Limite máximo de ${limit} associados atingido para esta tag. Atual: ${currentCount}`);
+        return;
+      }
+
+      // Verificar se a associação já existe
+      const { data: existingAssociation } = await supabase
+        .from('associacao_tags')
+        .select('id')
+        .eq('motorista_id', motoristaId)
+        .eq('tag_id', tagId)
+        .single();
+      
+      if (existingAssociation) {
+        toast.error('Tag já está associada a este agregado');
+        return;
+      }
+
       const { error } = await supabase
         .from('associacao_tags')
         .insert({
@@ -312,19 +371,43 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       if (error) throw error;
 
+      // Buscar a tag completa para atualizar o estado local
+      const { data: tagData, error: tagError } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('id', tagId)
+        .single();
+      
+      if (tagError) throw tagError;
+
       // Atualizar estado local
-      const tag = tags.find(t => t.id === tagId);
-      if (tag) {
+      if (tagData) {
         setMotoristaTags(prev => ({
           ...prev,
-          [motoristaId]: [...(prev[motoristaId] || []), tag]
+          [motoristaId]: [...(prev[motoristaId] || []), tagData]
         }));
       }
 
       // Fechar dropdown
       setTagDropdownOpen(prev => ({ ...prev, [motoristaId]: false }));
       
-      toast.success('Tag adicionada com sucesso!');
+      // Sincronizar com WiseApp se disponível
+      if (accountId && wiseAppToken) {
+        try {
+          await syncTagWithWiseApp(motoristaId, tagData);
+        } catch (wiseAppError) {
+          console.error('Erro ao sincronizar com WiseApp:', wiseAppError);
+          // Não falhar a operação se o WiseApp falhar
+        }
+      }
+      
+      // Verificar se atingiu o limite após adicionar
+      const { canAdd: canStillAdd, currentCount: newCount, limit: tagLimit } = await checkTagLimit(tagId);
+      if (!canStillAdd && tagLimit) {
+        toast.error(`Atenção: Tag "${tagData.nome}" atingiu o limite máximo de ${tagLimit} associados!`);
+      } else {
+        toast.success('Tag adicionada com sucesso!');
+      }
     } catch (error) {
       console.error('Erro ao adicionar tag:', error);
       toast.error('Erro ao adicionar tag');
@@ -503,11 +586,74 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const [showAddModal, setShowAddModal] = useState<boolean>(false);
     const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
 
-  // Estados para o sistema de tags
-  const [tags, setTags] = useState<any[]>([]);
+  // Query para buscar tags da empresa
+  const { data: tags = [], isLoading: tagsLoading } = useQuery<any[]>({
+    queryKey: ['local-tags', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      
+      const { data, error } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!companyId,
+  });
+  
   const [motoristaTags, setMotoristaTags] = useState<{ [key: number]: any[] }>({});
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
+
+  // Função para sincronizar tag com WiseApp
+  const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
+    if (!accountId || !wiseAppToken) return;
+    
+    try {
+      // Buscar dados do motorista
+      const { data: motoristaData } = await supabase
+        .from('motorista')
+        .select('*')
+        .eq('motorista_id', motoristaId)
+        .single();
+      
+      if (!motoristaData) return;
+
+      // Criar label no WiseApp
+      const labelData = {
+        name: tagData.nome,
+        color: tagData.cor,
+        account_id: accountId
+      };
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
+
+      const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${wiseAppToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(labelData),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const wiseAppLabel = await response.json();
+        console.log('Tag sincronizada com WiseApp:', wiseAppLabel);
+      } else {
+        console.warn(`WiseApp retornou status ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.warn('Erro ao sincronizar tag com WiseApp (não crítico):', error);
+    }
+  };
   const motoristaTagDropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const [roleChangeModal, setRoleChangeModal] = useState<{
     isOpen: boolean;
@@ -531,15 +677,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     useEffect(() => {
       fetchContratados();
       fetchClientes();
-      fetchTags(); // Carrega tags automaticamente
     }, [dateFilter, customDateRange]);
 
     // Carregar tags dos agregados automaticamente quando a lista de contratados mudar
     useEffect(() => {
       if (contratados && contratados.length > 0) {
-        fetchBulkMotoristaTags(contratados);
+        fetchMotoristaTags(contratados);
       }
     }, [contratados]);
+
 
     // Sistema de aplicação automática de tags
     useEffect(() => {
@@ -549,9 +695,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }, [tags, contratados, motoristaTags]);
 
     const applyAutomaticTags = async () => {
-      // Aplicar tags automaticamente baseado em critérios inteligentes
-      
-      // Critério 1: Aplicar tag "VIP" para agregados com veículo próprio
       const vipTag = tags.find(tag => tag.nome.toLowerCase().includes('vip'));
       if (vipTag) {
         for (const agregado of contratados) {
@@ -920,7 +1063,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     };
     
     // Funções para manipular filtros de múltipla seleção
-    const toggleFilterOption = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo', value: string | null | undefined) => {
+    const toggleFilterOption = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'tag', value: string | null | undefined) => {
       // Skip if value is null or undefined
       if (value == null) return;
       switch (filterType) {
@@ -952,10 +1095,17 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               : [...prev, value]
           );
           break;
+        case 'tag':
+          setTagFilter(prev => 
+            prev.includes(value) 
+              ? prev.filter(v => v !== value) 
+              : [...prev, value]
+          );
+          break;
       }
     };
     
-    const clearFilter = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo') => {
+    const clearFilter = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'tag') => {
       switch (filterType) {
         case 'status':
           setStatusFilter([]);
@@ -969,10 +1119,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         case 'tipoVeiculo':
           setTipoVeiculoFilter([]);
           break;
+        case 'tag':
+          setTagFilter([]);
+          break;
       }
     };
     
-    const getFilterButtonText = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo') => {
+    const getFilterButtonText = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'tag') => {
       const filterMap = {
         status: { 
           label: 'Status', 
@@ -993,6 +1146,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           label: 'Tipo de Veículo', 
           filter: tipoVeiculoFilter,
           allText: 'Todos os tipos de veículo'
+        },
+        tag: { 
+          label: 'Tags', 
+          filter: tagFilter,
+          allText: 'Todas as tags'
         }
       };
       
@@ -1234,6 +1392,19 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         }
       }
       
+      // Lógica para filtro de tags (multiseleção)
+      let tagMatch = true;
+      if (tagFilter.length > 0) {
+        const motoristaId = motorista.motorista_id;
+        if (motoristaId) {
+          const motoristaTagsList = motoristaTags[motoristaId] || [];
+          const motoristaTagIds = motoristaTagsList.map((tag: any) => tag.id.toString());
+          tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
+        } else {
+          tagMatch = false;
+        }
+      }
+      
       const ativoMatch = ativoFilter === '' ? true : 
                         ativoFilter === 'active' ? motorista.ativo === true : 
                         ativoFilter === 'inactive' ? motorista.ativo === false : true;
@@ -1250,6 +1421,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         clienteMatch &&
         cidadeMatch &&
         tipoVeiculoMatch &&
+        tagMatch &&
         ativoMatch &&
         searchMatch
       );
@@ -1274,6 +1446,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
     return (
       <div className="space-y-6">
+        {/* Notificação de limite de tags */}
+        <TagLimitNotification companyId={companyId || 1} />
+        
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             {selectedItems.size > 0 && (
@@ -1730,7 +1905,77 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 </div>
               </div>
 
+              {/* Tag Filter */}
+              <div className="relative" style={{ position: 'relative' }}>
+                <div className="relative group" ref={tagDropdownRef}>
+                  <button
+                    type="button"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                    onClick={() => setShowTagDropdown(!showTagDropdown)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      <span>
+                        {tagFilter.length === 0 ? 'Tags' : `Tags (${tagFilter.length})`}
+                      </span>
+                    </div>
+                  </button>
 
+                  {showTagDropdown && (
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                      style={{ 
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: 0,
+                        marginBottom: '4px',
+                        zIndex: 999999
+                      }}>
+                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tags</span>
+                          <button 
+                            type="button" 
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTagFilter([]);
+                            }}
+                          >
+                            Limpar
+                          </button>
+                        </div>
+                      </div>
+                      {tags.map((tag) => (
+                        <div key={tag.id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                              checked={tagFilter.includes(tag.id.toString())}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setTagFilter([...tagFilter, tag.id.toString()]);
+                                } else {
+                                  setTagFilter(tagFilter.filter(id => id !== tag.id.toString()));
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: tag.cor || '#3B82F6' }}
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-200">{tag.nome}</span>
+                            </div>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Status Ativo Filter */}
               <div className="relative z-[30]">
@@ -2162,7 +2407,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         <WiseAppBulkSyncPanel 
           onTagsSync={() => {
             if (contratados && contratados.length > 0) {
-              fetchBulkMotoristaTags(contratados);
+              fetchMotoristaTags(contratados);
             }
           }}
         />
