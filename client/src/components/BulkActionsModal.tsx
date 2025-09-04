@@ -93,38 +93,64 @@ const BulkActionsModal = ({
             // Fallback: tentar buscar em diferentes tabelas
             let motoristaFallback = null;
             
-            // Tentar tabela motorista
-            const { data: fromMotorista } = await supabase
+            // Nota: motoristaId pode referenciar qualquer tipo de usuário
+            // Tentar diferentes campos de ID
+            
+            // Tentar tabela motorista (usando motorista_id e id)
+            let { data: fromMotorista } = await supabase
               .from('motorista')
               .select('telefone, nome')
               .eq('id', motoristaId)
               .single();
+              
+            if (!fromMotorista) {
+              const { data: fromMotoristaAlt } = await supabase
+                .from('motorista')
+                .select('telefone, nome')
+                .eq('motorista_id', motoristaId)
+                .single();
+              fromMotorista = fromMotoristaAlt;
+            }
             
             if (fromMotorista) {
               motoristaFallback = fromMotorista;
               console.log(`DEBUG: Encontrado na tabela motorista:`, motoristaFallback);
             } else {
-              // Tentar tabela agregado
-              const { data: fromAgregado } = await supabase
+              // Tentar tabela agregado (usando agregado_id e id)
+              let { data: fromAgregado } = await supabase
                 .from('agregado')
                 .select('telefone, nome')
                 .eq('id', motoristaId)
                 .single();
+                
+              if (!fromAgregado) {
+                const { data: fromAgregadoAlt } = await supabase
+                  .from('agregado')
+                  .select('telefone, nome')
+                  .eq('agregado_id', motoristaId)
+                  .single();
+                fromAgregado = fromAgregadoAlt;
+              }
               
               if (fromAgregado) {
                 motoristaFallback = fromAgregado;
                 console.log(`DEBUG: Encontrado na tabela agregado:`, motoristaFallback);
               } else {
-                // Tentar tabela contratado
-                const { data: fromContratado } = await supabase
-                  .from('contratado')
-                  .select('telefone, nome')
-                  .eq('id', motoristaId)
-                  .single();
+                // Usar query mais ampla - buscar o telefone baseado no motorista_id da view
+                console.log(`DEBUG: Tentando busca ampla com motorista_id ${motoristaId}...`);
                 
-                if (fromContratado) {
-                  motoristaFallback = fromContratado;
-                  console.log(`DEBUG: Encontrado na tabela contratado:`, motoristaFallback);
+                const { data: fromAnyTable } = await supabase
+                  .from('vw_agregados_completo')
+                  .select('telefone, nome_motorista')
+                  .eq('motorista_id', motoristaId)
+                  .limit(1);
+                
+                if (fromAnyTable && fromAnyTable.length > 0) {
+                  motoristaFallback = {
+                    telefone: fromAnyTable[0].telefone,
+                    nome: fromAnyTable[0].nome_motorista
+                  };
+                  console.log(`DEBUG: Encontrado via busca ampla:`, motoristaFallback);
                 }
               }
             }
