@@ -171,10 +171,16 @@ const MotoristasLista = () => {
 
   // Função para sincronizar tag com WiseApp via proxy backend
   const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
-    if (!companyId) return;
+    console.log('🚀 Iniciando sincronização de tag com Chatwoot:', { motoristaId, tagData, companyId });
+    
+    if (!companyId) {
+      console.warn('❌ CompanyId não encontrado');
+      return;
+    }
     
     try {
-      // 1. Buscar todas as tags existentes no WiseApp
+      // 1. Buscar todas as tags existentes no Chatwoot
+      console.log('🔍 Buscando tags existentes no Chatwoot...');
       const labelsResponse = await fetch(`/api/wiseapp/${companyId}/labels`, {
         method: 'GET',
         headers: {
@@ -185,21 +191,24 @@ const MotoristasLista = () => {
       });
 
       if (!labelsResponse.ok) {
-        console.warn(`Erro ao buscar tags do WiseApp: ${labelsResponse.status}`);
+        console.warn(`❌ Erro ao buscar tags do Chatwoot: ${labelsResponse.status}`);
         return;
       }
 
       const labels = await labelsResponse.json();
+      console.log('📋 Tags encontradas no Chatwoot:', labels);
+      
       const existingTag = labels.find((label: any) => 
         label.name.toLowerCase() === tagData.nome.toLowerCase()
       );
 
       if (!existingTag) {
-        console.warn(`Tag "${tagData.nome}" não encontrada no WiseApp`);
+        console.warn(`❌ Tag "${tagData.nome}" não encontrada no Chatwoot`);
+        console.log('📋 Tags disponíveis:', labels.map(l => l.name));
         return;
       }
 
-      console.log(`Tag "${tagData.nome}" encontrada no WiseApp:`, existingTag);
+      console.log(`✅ Tag "${tagData.nome}" encontrada no Chatwoot:`, existingTag);
 
       // 2. Buscar o motorista para obter o telefone
       const motorista = motoristas.find(m => m.motorista_id === motoristaId);
