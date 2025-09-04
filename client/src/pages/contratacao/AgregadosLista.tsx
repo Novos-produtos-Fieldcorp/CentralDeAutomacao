@@ -2481,27 +2481,35 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                 className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  console.log('🔥 Botão Add Tag clicado para motorista:', motorista.motorista_id);
                                   if (motorista.motorista_id) {
                                     const isOpening = !tagDropdownOpen[motorista.motorista_id];
+                                    console.log('🔥 Estado atual do dropdown:', tagDropdownOpen[motorista.motorista_id], 'isOpening:', isOpening);
                                     
                                     if (isOpening) {
                                       // Calcular posição do dropdown
                                       const buttonElement = e.currentTarget as HTMLElement;
                                       const rect = buttonElement.getBoundingClientRect();
+                                      const position = {
+                                        top: rect.bottom + window.scrollY + 4,
+                                        left: rect.left + window.scrollX,
+                                        width: 256 // w-64 = 256px
+                                      };
+                                      console.log('🔥 Calculando posição:', position);
                                       setTagDropdownPosition(prev => ({
                                         ...prev,
-                                        [motorista.motorista_id!]: {
-                                          top: rect.bottom + window.scrollY + 4,
-                                          left: rect.left + window.scrollX,
-                                          width: 256 // w-64 = 256px
-                                        }
+                                        [motorista.motorista_id!]: position
                                       }));
                                     }
                                     
-                                    setTagDropdownOpen(prev => ({
-                                      ...prev,
-                                      [motorista.motorista_id!]: isOpening
-                                    }));
+                                    setTagDropdownOpen(prev => {
+                                      const newState = {
+                                        ...prev,
+                                        [motorista.motorista_id!]: isOpening
+                                      };
+                                      console.log('🔥 Novo estado do tagDropdownOpen:', newState);
+                                      return newState;
+                                    });
                                   }
                                 }}
                                 disabled={updatingMotoristaTag === motorista.motorista_id}
@@ -2515,7 +2523,20 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                               </button>
 
                               {/* Dropdown de tags disponíveis - usando createPortal para z-index correto */}
-                              {motorista.motorista_id && tagDropdownOpen[motorista.motorista_id] && tagDropdownPosition[motorista.motorista_id] && 
+                              {(() => {
+                                const shouldRender = motorista.motorista_id && 
+                                  tagDropdownOpen[motorista.motorista_id] && 
+                                  tagDropdownPosition[motorista.motorista_id];
+                                console.log('🔥 Verificação do dropdown render:', {
+                                  motoristaId: motorista.motorista_id,
+                                  isOpen: tagDropdownOpen[motorista.motorista_id],
+                                  hasPosition: !!tagDropdownPosition[motorista.motorista_id],
+                                  shouldRender,
+                                  tagDropdownOpen,
+                                  tagDropdownPosition
+                                });
+                                return shouldRender;
+                              })() && 
                                 createPortal(
                                   <div 
                                     className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-2 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto"
