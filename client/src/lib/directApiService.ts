@@ -219,103 +219,20 @@ export const wiseAppService = {
 
   async syncMotoristasBulkWithTags(companyId: number) {
     try {
-      // 1. Buscar token e dados necessários
-      const { data: tokenData } = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp, account_id')
-        .eq('company_id', companyId)
-        .single();
+      // Usar a rota backend que gerencia tudo
+      const response = await fetch('/api/sync-motoristas-bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ company_id: companyId })
+      });
 
-      if (!tokenData?.access_token_wiseapp) {
-        return { 
-          data: { 
-            totalProcessed: 0, 
-            successful: 0, 
-            failed: 0, 
-            errors: [],
-            message: 'Sincronização pulada - Token WiseApp não configurado'
-          } 
-        };
+      if (!response.ok) {
+        throw new Error(`Erro na sincronização: ${response.status}`);
       }
 
-      // 2. Buscar todos os motoristas e agregados
-      const { data: motoristas } = await supabase
-        .from('view_motoristas_completo')
-        .select('*')
-        .eq('company_id', companyId)
-        .eq('ativo', true);
-
-      if (!motoristas || motoristas.length === 0) {
-        return { data: { totalProcessed: 0, successful: 0, failed: 0, errors: [] } };
-      }
-
-      // Headers para as rotas WiseApp
-      const wiseAppHeaders = {
-        'Content-Type': 'application/json',
-        'wiseapp-token': tokenData.access_token_wiseapp,
-        'wiseapp-account-id': tokenData.account_id?.toString() || companyId.toString()
-      };
-
-      let successful = 0;
-      let failed = 0;
-      const errors: Array<{ motorista_id: number; nome: string; error: string }> = [];
-
-      // 3. Processar cada motorista
-      for (const motorista of motoristas) {
-        try {
-          if (!motorista.telefone) continue;
-
-          // Buscar contato no WiseApp via proxy backend
-          const searchResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?q=${motorista.telefone}`, {
-            headers: wiseAppHeaders
-          });
-
-          if (!searchResponse.ok) {
-            failed++;
-            errors.push({
-              motorista_id: motorista.motorista_id,
-              nome: motorista.nome_motorista,
-              error: `Erro ao buscar no WiseApp: ${searchResponse.status}`
-            });
-            continue;
-          }
-
-          const contacts = await searchResponse.json();
-
-          if (contacts && contacts.length > 0) {
-            const contact = contacts[0];
-
-            // Atualizar foto se necessário
-            if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
-              await supabase
-                .from('motorista')
-                .update({ foto_whatsapp: contact.thumbnail })
-                .eq('motorista_id', motorista.motorista_id);
-            }
-
-            successful++;
-          } else {
-            // Contato não encontrado no WiseApp - apenas contar como processado
-            successful++;
-          }
-        } catch (error) {
-          failed++;
-          errors.push({
-            motorista_id: motorista.motorista_id,
-            nome: motorista.nome_motorista,
-            error: (error as Error).message
-          });
-        }
-      }
-
-      return {
-        data: {
-          totalProcessed: motoristas.length,
-          successful,
-          failed,
-          errors
-        }
-      };
+      return await response.json();
 
     } catch (error) {
       throw new Error(`Erro na sincronização bidirecional: ${(error as Error).message}`);

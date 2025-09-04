@@ -1962,6 +1962,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sincronização completa de motoristas com WiseApp
+  app.post("/api/sync-motoristas-bulk", async (req, res) => {
+    try {
+      const { company_id } = req.body;
+      
+      if (!company_id) {
+        return res.status(400).json({ error: "company_id é obrigatório" });
+      }
+
+      console.log(`Iniciando sincronização bulk para company_id: ${company_id}`);
+
+      // 1. Buscar token WiseApp
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp, account_id')
+        .eq('company_id', company_id)
+        .single();
+
+      if (tokenError || !tokenData?.access_token_wiseapp) {
+        return res.json({ 
+          data: { 
+            totalProcessed: 0, 
+            successful: 0, 
+            failed: 0, 
+            errors: [],
+            message: 'Sincronização pulada - Token WiseApp não configurado'
+          } 
+        });
+      }
+
+      // 2. Buscar todos os motoristas e agregados ativos
+      const { data: motoristas, error: motoristasError } = await supabase
+        .from('view_motoristas_completo')
+        .select('*')
+        .eq('company_id', company_id)
+        .eq('ativo', true);
+
+      if (motoristasError || !motoristas || motoristas.length === 0) {
+        return res.json({ 
+          data: { 
+            totalProcessed: 0, 
+            successful: 0, 
+            failed: 0, 
+            errors: [],
+            message: 'Nenhum motorista ativo encontrado'
+          } 
+        });
+      }
+
+      const account_id = tokenData.account_id || company_id;
+      let successful = 0;
+      let failed = 0;
+      const errors: Array<{ motorista_id: number; nome: string; error: string }> = [];
+
+      // 3. Processar cada motorista
+      for (const motorista of motoristas) {
+        try {
+          if (!motorista.telefone) {
+            successful++;
+            continue;
+          }
+
+          const phone = `55${motorista.telefone}`;
+          console.log(`Processando ${motorista.nome_motorista} - ${phone}`);
+          
+          // Buscar contato no WiseApp
+          const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/search?q=${phone}`;
+          const searchResponse = await fetch(searchUrl, {
+            headers: {
+              'api_access_token': tokenData.access_token_wiseapp,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (!searchResponse.ok) {
+            failed++;
+            errors.push({
+              motorista_id: motorista.motorista_id,
+              nome: motorista.nome_motorista,
+              error: `Erro ao buscar no WiseApp: ${searchResponse.status}`
+            });
+            continue;
+          }
+
+          const searchData = await searchResponse.json();
+
+          if (searchData.payload?.length > 0) {
+            const contact = searchData.payload[0];
+            console.log(`Contato encontrado para ${motorista.nome_motorista}: ${contact.id}`);
+
+            // Atualizar foto se necessário
+            if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
+              await supabase
+                .from('motorista')
+                .update({ foto_whatsapp: contact.thumbnail })
+                .eq('motorista_id', motorista.motorista_id);
+              console.log(`Foto atualizada para ${motorista.nome_motorista}`);
+            }
+
+            successful++;
+          } else {
+            console.log(`Contato não encontrado para ${motorista.nome_motorista}`);
+            successful++;
+          }
+        } catch (error) {
+          console.error(`Erro processando ${motorista.nome_motorista}:`, error);
+          failed++;
+          errors.push({
+            motorista_id: motorista.motorista_id,
+            nome: motorista.nome_motorista,
+            error: (error as Error).message
+          });
+        }
+      }
+
+      const result = {
+        data: {
+          totalProcessed: motoristas.length,
+          successful,
+          failed,
+          errors
+        }
+      };
+
+      console.log(`Sincronização concluída: ${successful} sucessos, ${failed} falhas de ${motoristas.length} total`);
+      res.json(result);
+
+    } catch (error) {
+      console.error('Erro na sincronização bulk:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
