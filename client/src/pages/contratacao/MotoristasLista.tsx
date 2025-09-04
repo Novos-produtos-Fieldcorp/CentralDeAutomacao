@@ -2188,8 +2188,8 @@ const MotoristasLista = () => {
                                   setTagDropdownPosition(prev => ({
                                     ...prev,
                                     [motorista.motorista_id]: {
-                                      top: rect.bottom + window.scrollY + 4,
-                                      left: rect.left + window.scrollX,
+                                      top: rect.bottom + 4, // Usar posição direta, sem window.scrollY
+                                      left: rect.left,      // Usar posição direta, sem window.scrollX
                                       width: 256 // w-64 = 256px
                                     }
                                   }));
