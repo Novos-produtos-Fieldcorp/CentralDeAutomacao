@@ -182,6 +182,7 @@ app.use((req, res, next) => {
       method: req.method,
       available_endpoints: [
         'GET /api/wiseapp/:companyId/labels',
+        'POST /api/wiseapp/:companyId/labels',
         'POST /api/wiseapp/:companyId/contacts/:contactId/labels', 
         'DELETE /api/wiseapp/:companyId/contacts/:contactId/labels/:tagId'
       ]
