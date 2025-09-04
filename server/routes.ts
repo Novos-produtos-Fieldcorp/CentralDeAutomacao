@@ -1419,9 +1419,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: "Token WiseApp não configurado para esta empresa" 
         });
       }
-
+      
       // Buscar account_id do header (enviado pelo frontend) 
       const account_id = req.headers['wiseapp-account-id'] as string;
+      
+      // Log específico para account ID 20
+      if (account_id === '20') {
+        console.log(`Special handling for Account ID 20 - Token length: ${token?.length || 0}`);
+      }
       console.log('Account ID from header:', account_id ? 'Found' : 'Not found');
       
       if (!account_id) {
@@ -1444,19 +1449,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           // Para account_id 20 ou outros accounts grandes, adicionar delay
-          const currentAccountId = req.params.accountId || req.headers['wiseapp-account-id'] as string;
+          const currentAccountId = account_id;
           if (currentAccountId === '20' && attempts > 1) {
             console.log(`Rate limiting retry ${attempts} for account ${currentAccountId}, waiting 3s...`);
             await delay(3000); // 3 segundos entre tentativas
           }
 
+          // Try different header configurations for problematic accounts
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          };
+          
+          // For account ID 20, try different token header formats
+          if (currentAccountId === '20' && attempts > 1) {
+            console.log(`Attempting alternative headers for account ${currentAccountId}, attempt ${attempts}`);
+            // Try both token formats
+            headers['Authorization'] = `Bearer ${token}`;
+            headers['api_access_token'] = token;
+          } else {
+            headers['api_access_token'] = token;
+          }
+          
           response = await fetch(wiseAppUrl, {
             method: 'GET',
-            headers: {
-              'api_access_token': token,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
+            headers,
           });
 
           if (response.ok) {
@@ -1646,19 +1663,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           // Para account_id 20 ou outros accounts grandes, adicionar delay
-          const currentAccountId = req.params.accountId || req.headers['wiseapp-account-id'] as string;
+          const currentAccountId = account_id;
           if (currentAccountId === '20' && attempts > 1) {
             console.log(`Rate limiting retry ${attempts} for account ${currentAccountId}, waiting 3s...`);
             await delay(3000); // 3 segundos entre tentativas
           }
 
+          // Try different header configurations for problematic accounts
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          };
+          
+          // For account ID 20, try different token header formats
+          if (currentAccountId === '20' && attempts > 1) {
+            console.log(`Attempting alternative headers for account ${currentAccountId}, attempt ${attempts}`);
+            // Try both token formats
+            headers['Authorization'] = `Bearer ${token}`;
+            headers['api_access_token'] = token;
+          } else {
+            headers['api_access_token'] = token;
+          }
+          
           response = await fetch(wiseAppUrl, {
             method: 'GET',
-            headers: {
-              'api_access_token': token,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
+            headers,
           });
 
           if (response.ok) {

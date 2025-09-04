@@ -137,7 +137,28 @@ export function TagManager({ companyId }: TagManagerProps) {
       
     } catch (error) {
       console.error('Erro ao sincronizar tags do WiseApp:', error);
-      toast.error('Erro ao sincronizar tags do WiseApp');
+      
+      // Enhanced fallback messaging for different error types
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          toast.error(`Falha na autenticação WiseApp (Account ID: ${accountId}). Verifique as credenciais.`, {
+            duration: 5000
+          });
+        } else if (error.message.includes('500')) {
+          toast.error('Servidor WiseApp temporariamente indisponível. Tente novamente mais tarde.', {
+            duration: 5000
+          });
+        } else {
+          toast.error(`Erro ao sincronizar com WiseApp: ${error.message}`, {
+            duration: 4000
+          });
+        }
+      } else {
+        toast.error('Erro desconhecido ao sincronizar tags do WiseApp');
+      }
+      
+      // Still show local tags even if WiseApp fails
+      console.log('Sistema continuará funcionando apenas com tags locais');
     } finally {
       setIsSyncingWiseApp(false);
     }

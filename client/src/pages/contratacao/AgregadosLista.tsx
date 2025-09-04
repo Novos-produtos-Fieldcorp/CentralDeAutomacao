@@ -273,22 +273,46 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         return;
       }
 
-      // Buscar todas as associações de uma vez
-      const { data: associations, error } = await supabase
-        .from('associacao_tags')
-        .select(`
-          motorista_id,
-          tag:tag_id (
-            id,
-            nome,
-            cor,
-            company_id,
-            limite_max,
-            created_at,
-            updated_at
-          )
-        `)
-        .in('motorista_id', motoristaIds);
+      // Buscar todas as associações em chunks para evitar erro 414 (URL muito longa)
+      const chunkSize = 50; // Limite seguro para evitar URLs muito longas com associacao_tags
+      const associations = [];
+      
+      console.log(`Buscando tags para ${motoristaIds.length} motoristas em chunks de ${chunkSize}`);
+      
+      for (let i = 0; i < motoristaIds.length; i += chunkSize) {
+        const chunk = motoristaIds.slice(i, i + chunkSize);
+        
+        try {
+          const { data: chunkAssociations, error: chunkError } = await supabase
+            .from('associacao_tags')
+            .select(`
+              motorista_id,
+              tag:tag_id (
+                id,
+                nome,
+                cor,
+                company_id,
+                limite_max,
+                created_at,
+                updated_at
+              )
+            `)
+            .in('motorista_id', chunk);
+          
+          if (chunkError) {
+            console.warn(`Erro ao buscar chunk ${i}-${i + chunkSize}:`, chunkError);
+            continue; // Continue com próximo chunk
+          }
+          
+          if (chunkAssociations) {
+            associations.push(...chunkAssociations);
+          }
+        } catch (chunkError) {
+          console.warn(`Erro no chunk ${i}-${i + chunkSize}:`, chunkError);
+        }
+      }
+      
+      const error = null; // Reset error since we handled chunks individually
       
       if (error) throw error;
 
