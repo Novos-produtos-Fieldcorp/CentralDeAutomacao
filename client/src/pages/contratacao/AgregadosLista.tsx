@@ -1,5 +1,6 @@
   import React, { useState, useEffect, useRef } from 'react';
   import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag, CheckCircle, Calendar } from 'lucide-react';
+import { TagLimitNotification } from '../../components/TagLimitNotification';
   import WhatsAppAvatar from '../../components/WhatsAppAvatar';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
@@ -126,11 +127,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
   
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
   const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
 
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -172,6 +176,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       setShowClienteDropdown(false);
       setShowCidadeDropdown(false);
       setShowTipoVeiculoDropdown(false);
+      setShowTagDropdown(false);
     };
 
     const toggleDropdown = (dropdownType: string) => {
@@ -189,7 +194,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         case 'tipoVeiculo':
           setShowTipoVeiculoDropdown(true);
           break;
-
+        case 'tag':
+          setShowTagDropdown(true);
+          break;
       }
     };
     
@@ -297,12 +304,55 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
   };
 
+  // Verificar limite de associados por tag
+  const checkTagLimit = async (tagId: number): Promise<{ canAdd: boolean; currentCount: number; limit: number | null }> => {
+    try {
+      // Buscar informações da tag
+      const { data: tagData, error: tagError } = await supabase
+        .from('tag')
+        .select('limite_max')
+        .eq('id', tagId)
+        .single();
+
+      if (tagError) throw tagError;
+
+      const limit = tagData?.limite_max;
+      if (!limit) {
+        return { canAdd: true, currentCount: 0, limit: null };
+      }
+
+      // Contar associados atuais da tag
+      const { count, error: countError } = await supabase
+        .from('associacao_tags')
+        .select('*', { count: 'exact', head: true })
+        .eq('tag_id', tagId);
+
+      if (countError) throw countError;
+
+      const currentCount = count || 0;
+      const canAdd = currentCount < limit;
+
+      return { canAdd, currentCount, limit };
+    } catch (error) {
+      console.error('Erro ao verificar limite da tag:', error);
+      return { canAdd: true, currentCount: 0, limit: null };
+    }
+  };
+
   // Adicionar tag a um motorista
   const handleAddTag = async (motoristaId: number | undefined, tagId: number) => {
     if (!motoristaId) return;
     
     setUpdatingMotoristaTag(motoristaId);
     try {
+      // Verificar limite antes de adicionar
+      const { canAdd, currentCount, limit } = await checkTagLimit(tagId);
+      
+      if (!canAdd) {
+        toast.error(`Limite máximo de ${limit} associados atingido para esta tag. Atual: ${currentCount}`);
+        return;
+      }
+
       const { error } = await supabase
         .from('associacao_tags')
         .insert({
@@ -324,7 +374,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       // Fechar dropdown
       setTagDropdownOpen(prev => ({ ...prev, [motoristaId]: false }));
       
-      toast.success('Tag adicionada com sucesso!');
+      // Verificar se atingiu o limite após adicionar
+      const { canAdd: canStillAdd, currentCount: newCount, limit: tagLimit } = await checkTagLimit(tagId);
+      if (!canStillAdd && tagLimit) {
+        toast.warning(`Atenção: Tag "${tag.nome}" atingiu o limite máximo de ${tagLimit} associados!`);
+      } else {
+        toast.success('Tag adicionada com sucesso!');
+      }
     } catch (error) {
       console.error('Erro ao adicionar tag:', error);
       toast.error('Erro ao adicionar tag');
@@ -920,7 +976,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     };
     
     // Funções para manipular filtros de múltipla seleção
-    const toggleFilterOption = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo', value: string | null | undefined) => {
+    const toggleFilterOption = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'tag', value: string | null | undefined) => {
       // Skip if value is null or undefined
       if (value == null) return;
       switch (filterType) {
@@ -952,10 +1008,17 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               : [...prev, value]
           );
           break;
+        case 'tag':
+          setTagFilter(prev => 
+            prev.includes(value) 
+              ? prev.filter(v => v !== value) 
+              : [...prev, value]
+          );
+          break;
       }
     };
     
-    const clearFilter = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo') => {
+    const clearFilter = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'tag') => {
       switch (filterType) {
         case 'status':
           setStatusFilter([]);
@@ -969,10 +1032,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         case 'tipoVeiculo':
           setTipoVeiculoFilter([]);
           break;
+        case 'tag':
+          setTagFilter([]);
+          break;
       }
     };
     
-    const getFilterButtonText = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo') => {
+    const getFilterButtonText = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'tag') => {
       const filterMap = {
         status: { 
           label: 'Status', 
@@ -993,6 +1059,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           label: 'Tipo de Veículo', 
           filter: tipoVeiculoFilter,
           allText: 'Todos os tipos de veículo'
+        },
+        tag: { 
+          label: 'Tags', 
+          filter: tagFilter,
+          allText: 'Todas as tags'
         }
       };
       
@@ -1234,6 +1305,19 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         }
       }
       
+      // Lógica para filtro de tags (multiseleção)
+      let tagMatch = true;
+      if (tagFilter.length > 0) {
+        const motoristaId = motorista.motorista_id;
+        if (motoristaId) {
+          const motoristaTagsList = motoristaTags[motoristaId] || [];
+          const motoristaTagIds = motoristaTagsList.map((tag: any) => tag.id.toString());
+          tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
+        } else {
+          tagMatch = false;
+        }
+      }
+      
       const ativoMatch = ativoFilter === '' ? true : 
                         ativoFilter === 'active' ? motorista.ativo === true : 
                         ativoFilter === 'inactive' ? motorista.ativo === false : true;
@@ -1250,6 +1334,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         clienteMatch &&
         cidadeMatch &&
         tipoVeiculoMatch &&
+        tagMatch &&
         ativoMatch &&
         searchMatch
       );
@@ -1274,6 +1359,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
     return (
       <div className="space-y-6">
+        {/* Notificação de limite de tags */}
+        <TagLimitNotification companyId={companyId || 1} />
+        
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             {selectedItems.size > 0 && (
@@ -1730,7 +1818,77 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 </div>
               </div>
 
+              {/* Tag Filter */}
+              <div className="relative" style={{ position: 'relative' }}>
+                <div className="relative group" ref={tagDropdownRef}>
+                  <button
+                    type="button"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                    onClick={() => setShowTagDropdown(!showTagDropdown)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      <span>
+                        {tagFilter.length === 0 ? 'Tags' : `Tags (${tagFilter.length})`}
+                      </span>
+                    </div>
+                  </button>
 
+                  {showTagDropdown && (
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                      style={{ 
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: 0,
+                        marginBottom: '4px',
+                        zIndex: 999999
+                      }}>
+                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tags</span>
+                          <button 
+                            type="button" 
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTagFilter([]);
+                            }}
+                          >
+                            Limpar
+                          </button>
+                        </div>
+                      </div>
+                      {tags.map((tag) => (
+                        <div key={tag.id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                              checked={tagFilter.includes(tag.id.toString())}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setTagFilter([...tagFilter, tag.id.toString()]);
+                                } else {
+                                  setTagFilter(tagFilter.filter(id => id !== tag.id.toString()));
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: tag.cor || '#3B82F6' }}
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-200">{tag.nome}</span>
+                            </div>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Status Ativo Filter */}
               <div className="relative z-[30]">

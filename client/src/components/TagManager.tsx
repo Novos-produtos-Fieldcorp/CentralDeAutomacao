@@ -17,8 +17,24 @@ export function TagManager({ companyId }: TagManagerProps) {
   const { accountId } = useAuth();
   const { token: wiseAppToken } = useWiseAppAccess();
 
-  // Query para buscar tags do WiseApp
-  const { data: tagsResponse, isLoading, error } = useQuery({
+  // Query para buscar tags do banco local
+  const { data: localTags, isLoading: isLoadingLocal, error: localError } = useQuery({
+    queryKey: ['local-tags', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!companyId,
+  });
+
+  // Query para buscar tags do WiseApp (apenas quando necessário)
+  const { data: tagsResponse, isLoading: isLoadingWiseApp, error: wiseAppError } = useQuery({
     queryKey: ['wiseapp-tags', accountId],
     queryFn: async () => {
       if (!accountId || !wiseAppToken) {
@@ -27,12 +43,14 @@ export function TagManager({ companyId }: TagManagerProps) {
       console.log('Buscando tags do WiseApp para account:', accountId);
       return getWiseAppLabels(accountId, wiseAppToken);
     },
-    enabled: !!accountId && !!wiseAppToken,
+    enabled: false, // Não carregar automaticamente
     retry: 3,
     retryDelay: 1000,
   });
 
-  const tags = tagsResponse?.payload || tagsResponse || [];
+  const wiseAppTags = tagsResponse?.payload || tagsResponse || [];
+  const tags = localTags || [];
+  const isLoading = isLoadingLocal;
 
   const syncWiseAppTags = async () => {
     if (isSyncingWiseApp) return;
@@ -53,11 +71,11 @@ export function TagManager({ companyId }: TagManagerProps) {
       // Buscar tags do WiseApp
       console.log('Sincronizando tags - Account ID:', accountId, 'Token disponível:', !!wiseAppToken);
       const wiseAppLabelsResponse = await getWiseAppLabels(accountId || '', wiseAppToken || '');
-      const wiseAppTags = wiseAppLabelsResponse.payload || wiseAppLabelsResponse || [];
-      console.log('Tags encontradas:', wiseAppTags);
-      console.log('WiseApp labels found:', wiseAppTags);
+      const wiseAppTagsData = wiseAppLabelsResponse.payload || wiseAppLabelsResponse || [];
+      console.log('Tags encontradas:', wiseAppTagsData);
+      console.log('WiseApp labels found:', wiseAppTagsData);
       
-      if (!wiseAppTags || wiseAppTags.length === 0) {
+      if (!wiseAppTagsData || wiseAppTagsData.length === 0) {
         toast('Nenhuma tag encontrada no WiseApp.', {
           icon: 'ℹ️'
         });
@@ -81,7 +99,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       const existingTagNames = new Set(existingTags?.map(tag => tag.nome.toLowerCase()) || []);
 
       // Preparar tags para inserção (apenas as que não existem)
-      const tagsToInsert = wiseAppTags
+      const tagsToInsert = wiseAppTagsData
         .filter((tag: any) => !existingTagNames.has((tag.name || tag.title || 'Tag').toLowerCase()))
         .map((tag: any) => ({
           nome: tag.name || tag.title || 'Tag',
@@ -113,6 +131,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       }
       
       // Invalidar queries para atualizar UI
+      await queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       await queryClient.invalidateQueries({ queryKey: ['wiseapp-tags'] });
       
     } catch (error) {
@@ -130,7 +149,7 @@ export function TagManager({ companyId }: TagManagerProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Tags WiseApp</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Tags do Sistema</h3>
         <div className="flex items-center gap-2">
           <button
             onClick={syncWiseAppTags}
@@ -138,7 +157,7 @@ export function TagManager({ companyId }: TagManagerProps) {
             className="bg-green-600 dark:bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-700 dark:hover:bg-green-600 flex items-center gap-2 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${isSyncingWiseApp ? 'animate-spin' : ''}`} />
-            {isSyncingWiseApp ? 'Sincronizando...' : 'Sincronizar com o Wiseapp'}
+            {isSyncingWiseApp ? 'Sincronizando...' : 'Sincronizar com WiseApp'}
           </button>
         </div>
       </div>
@@ -154,24 +173,29 @@ export function TagManager({ companyId }: TagManagerProps) {
                 <div className="flex items-center gap-2">
                   <div
                     className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600"
-                    style={{ backgroundColor: tag.color || '#3B82F6' }}
-                    title={`Cor: ${tag.color || '#3B82F6'}`}
+                    style={{ backgroundColor: tag.cor || '#3B82F6' }}
+                    title={`Cor: ${tag.cor || '#3B82F6'}`}
                   />
                   <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {tag.title || tag.name || 'Tag'}
+                    {tag.nome}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">WiseApp</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Local</span>
                 </div>
               </div>
+              {tag.limite_max && (
+                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Limite: {tag.limite_max} associados
+                </div>
+              )}
             </div>
           ))}
         </div>
       ) : (
         <div className="text-center py-8">
           <p className="text-gray-500 dark:text-gray-400">
-            Nenhuma tag encontrada. Clique em "Sync WiseApp" para buscar tags.
+            Nenhuma tag encontrada. Clique em "Sincronizar com WiseApp" para buscar tags do WiseApp.
           </p>
         </div>
       )}

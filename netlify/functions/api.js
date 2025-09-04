@@ -95,6 +95,55 @@ app.get('/motoristas/:id/tags', async (req, res) => {
   }
 });
 
+// Tag limit check endpoint
+app.get('/tags/:id/limit-check', async (req, res) => {
+  try {
+    const tagId = parseInt(req.params.id);
+    
+    if (!tagId) {
+      return res.status(400).json({ error: 'ID da tag é obrigatório' });
+    }
+    
+    // Import PostgreSQL client
+    const { neon } = require('@neondatabase/serverless');
+    const sql = neon(process.env.DATABASE_URL);
+    
+    // Buscar informações da tag
+    const tagData = await sql`
+      SELECT limite_max
+      FROM tag
+      WHERE id = ${tagId}
+    `;
+    
+    if (!tagData || tagData.length === 0) {
+      return res.status(404).json({ error: 'Tag não encontrada' });
+    }
+    
+    const limit = tagData[0].limite_max;
+    if (!limit) {
+      return res.json({ canAdd: true, currentCount: 0, limit: null });
+    }
+    
+    // Contar associados atuais da tag
+    const countResult = await sql`
+      SELECT COUNT(*) as count
+      FROM associacao_tags
+      WHERE tag_id = ${tagId}
+    `;
+    
+    const currentCount = parseInt(countResult[0].count) || 0;
+    const canAdd = currentCount < limit;
+    
+    res.json({ canAdd, currentCount, limit });
+  } catch (error) {
+    console.error('Tag limit check endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+});
+
 // Proxy to WiseApp API for inboxes
 app.get('/v1/accounts/:accountId/inboxes', async (req, res) => {
   try {

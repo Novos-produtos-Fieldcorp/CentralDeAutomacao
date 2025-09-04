@@ -113,6 +113,38 @@ const BulkActionsModal = ({
       } else if (actionType === 'tags') {
         // Add tag to all selected items
         const tagId = parseInt(selectedTag);
+        const tag = tags.find(t => t.id === tagId);
+        
+        if (!tag) {
+          toast.error('Tag não encontrada');
+          return;
+        }
+
+        // Verificar limite da tag antes de adicionar
+        if (tag.limite_max) {
+          const { count, error: countError } = await supabase
+            .from('associacao_tags')
+            .select('*', { count: 'exact', head: true })
+            .eq('tag_id', tagId);
+
+          if (countError) throw countError;
+
+          const currentCount = count || 0;
+          const availableSlots = tag.limite_max - currentCount;
+          
+          if (availableSlots <= 0) {
+            toast.error(`Limite máximo de ${tag.limite_max} associados atingido para a tag "${tag.nome}"`);
+            return;
+          }
+
+          if (itemIds.length > availableSlots) {
+            toast.error(`Apenas ${availableSlots} vaga${availableSlots !== 1 ? 's' : ''} disponível${availableSlots !== 1 ? 'is' : ''} para a tag "${tag.nome}". Limite: ${tag.limite_max}`);
+            return;
+          }
+        }
+        
+        let addedCount = 0;
+        let alreadyHasCount = 0;
         
         for (const motoristaId of itemIds) {
           // Verificar se a associação já existe
@@ -133,11 +165,18 @@ const BulkActionsModal = ({
               });
             
             if (error) throw error;
+            addedCount++;
+          } else {
+            alreadyHasCount++;
           }
         }
         
-        const tagName = tags.find(t => t.id === tagId)?.nome || '';
-        toast.success(`Tag "${tagName}" adicionada a ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''}`);
+        const tagName = tag.nome;
+        if (addedCount > 0) {
+          toast.success(`Tag "${tagName}" adicionada a ${addedCount} item${addedCount !== 1 ? 's' : ''}${alreadyHasCount > 0 ? ` (${alreadyHasCount} já possuíam a tag)` : ''}`);
+        } else {
+          toast.info(`Todos os ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''} selecionado${itemIds.length !== 1 ? 's' : ''} já possuem a tag "${tagName}"`);
+        }
       }
       
       onSuccess();
@@ -238,10 +277,35 @@ const BulkActionsModal = ({
                 <option value="">Selecione uma tag</option>
                 {tags.map(tag => (
                   <option key={tag.id} value={tag.id.toString()}>
-                    {tag.nome}
+                    {tag.nome} {tag.limite_max ? `(Limite: ${tag.limite_max})` : '(Sem limite)'}
                   </option>
                 ))}
               </select>
+              {selectedTag && (() => {
+                const selectedTagData = tags.find(t => t.id.toString() === selectedTag);
+                return selectedTagData ? (
+                  <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: selectedTagData.cor || '#3B82F6' }}
+                      />
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {selectedTagData.nome}
+                      </span>
+                    </div>
+                    {selectedTagData.limite_max ? (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Limite máximo: {selectedTagData.limite_max} associados
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Sem limite de associados
+                      </p>
+                    )}
+                  </div>
+                ) : null;
+              })()}
               {tags.length === 0 && (
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                   Nenhuma tag encontrada. Crie tags primeiro na seção de administração.
