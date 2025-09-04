@@ -167,9 +167,6 @@ const ContratacaoDashboard = () => {
           }
         });
 
-        console.log('Clientes Contratados:', clientesContratados);
-        console.log('Total Motoristas:', totalMotoristasData);
-        console.log('Total Agregados:', totalAgregadosData);
 
         const totalContratados = Object.values(clientesContratados).reduce((sum, client) => sum + client.total, 0);
 

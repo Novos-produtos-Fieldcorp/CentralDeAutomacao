@@ -169,47 +169,30 @@ const MotoristasLista = () => {
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{[key: number]: boolean}>({});
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
 
-  // Função para sincronizar tag com WiseApp
+  // Função para sincronizar tag com WiseApp via proxy backend
   const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
-    if (!accountId || !wiseAppToken) return;
+    if (!companyId) return;
     
     try {
-      // Buscar dados do motorista
-      const { data: motoristaData } = await supabase
-        .from('motorista')
-        .select('*')
-        .eq('motorista_id', motoristaId)
-        .single();
-      
-      if (!motoristaData) return;
-
-      // Criar label no WiseApp
-      const labelData = {
-        name: tagData.nome,
-        color: tagData.cor,
-        account_id: accountId
-      };
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
-
-      const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+      // Usar o proxy backend para criar a tag no WiseApp
+      const response = await fetch(`/api/wiseapp/${companyId}/labels`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${wiseAppToken}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'wiseapp-account-id': accountId || '',
+          'wiseapp-token': wiseAppToken || ''
         },
-        body: JSON.stringify(labelData),
-        signal: controller.signal
+        body: JSON.stringify({
+          name: tagData.nome,
+          color: tagData.cor
+        })
       });
 
-      clearTimeout(timeoutId);
-
       if (response.ok) {
-        const wiseAppLabel = await response.json();
-        console.log('Tag sincronizada com WiseApp:', wiseAppLabel);
+        const result = await response.json();
+        console.log('Tag sincronizada com WiseApp:', result);
       } else {
-        console.warn(`WiseApp retornou status ${response.status}: ${response.statusText}`);
+        console.warn(`Erro ao sincronizar com WiseApp: ${response.status}`);
       }
     } catch (error) {
       console.warn('Erro ao sincronizar tag com WiseApp (não crítico):', error);
@@ -217,7 +200,7 @@ const MotoristasLista = () => {
   };
 
   const removeTagFromWiseApp = async (motoristaId: number, tagId: number) => {
-    if (!accountId || !wiseAppToken) return;
+    if (!companyId) return;
     
     try {
       // Buscar dados da tag
@@ -229,37 +212,27 @@ const MotoristasLista = () => {
       
       if (!tagData) return;
 
-      // Buscar label no WiseApp
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      const labelsResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+      // Buscar labels no WiseApp via proxy
+      const labelsResponse = await fetch(`/api/wiseapp/${companyId}/labels`, {
         headers: {
-          'Authorization': `Bearer ${wiseAppToken}`
-        },
-        signal: controller.signal
+          'wiseapp-account-id': accountId || '',
+          'wiseapp-token': wiseAppToken || ''
+        }
       });
-
-      clearTimeout(timeoutId);
 
       if (labelsResponse.ok) {
         const labels = await labelsResponse.json();
         const wiseAppLabel = labels.find((label: any) => label.name === tagData.nome);
         
         if (wiseAppLabel) {
-          // Remover label do WiseApp
-          const deleteController = new AbortController();
-          const deleteTimeoutId = setTimeout(() => deleteController.abort(), 10000);
-
-          const deleteResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels/${wiseAppLabel.id}`, {
+          // Remover label do WiseApp via proxy
+          const deleteResponse = await fetch(`/api/wiseapp/${companyId}/labels/${wiseAppLabel.id}`, {
             method: 'DELETE',
             headers: {
-              'Authorization': `Bearer ${wiseAppToken}`
-            },
-            signal: deleteController.signal
+              'wiseapp-account-id': accountId || '',
+              'wiseapp-token': wiseAppToken || ''
+            }
           });
-
-          clearTimeout(deleteTimeoutId);
           
           if (deleteResponse.ok) {
             console.log('Tag removida do WiseApp com sucesso');
@@ -272,7 +245,6 @@ const MotoristasLista = () => {
       }
     } catch (error) {
       console.warn('Erro ao remover tag do WiseApp (não crítico):', error);
-      // Não relançar o erro para não quebrar a operação principal
     }
   };
 
@@ -452,8 +424,9 @@ const MotoristasLista = () => {
     setShowClienteDropdown(false);
     setShowAtivoDropdown(false);
     
-    // Buscar tags do Supabase quando abrir o dropdown
-    if (isOpening) {
+    // Carregar tags dos motoristas apenas quando abrir o dropdown pela primeira vez
+    if (isOpening && Object.keys(motoristaTags).length === 0 && motoristas.length > 0) {
+      await fetchAllMotoristaTags(motoristas);
     }
   };
 
@@ -764,10 +737,8 @@ const MotoristasLista = () => {
 
       setMotoristas(motoristasAgrupados || []);
       
-      // Tags serão carregadas apenas via botão Sync WiseApp
-      // if (motoristasAgrupados && motoristasAgrupados.length > 0) {
-      //   await fetchAllMotoristaTags(motoristasAgrupados);
-      // }
+      // Tags serão carregadas apenas quando necessário (filtro, ações em massa, etc.)
+      // Para melhor performance, não carregar automaticamente
     } catch (error) {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');

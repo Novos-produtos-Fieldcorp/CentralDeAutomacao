@@ -442,6 +442,18 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
   };
 
+  // Função para abrir/fechar dropdown de tags com carregamento lazy
+  const handleToggleTagDropdown = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const isOpening = !showTagDropdown;
+    setShowTagDropdown(isOpening);
+    
+    // Carregar tags dos motoristas apenas quando abrir o dropdown pela primeira vez
+    if (isOpening && Object.keys(motoristaTags).length === 0 && contratados.length > 0) {
+      await fetchMotoristaTags(contratados);
+    }
+  };
+
   // Fechar dropdown quando clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -608,47 +620,30 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
 
-  // Função para sincronizar tag com WiseApp
+  // Função para sincronizar tag com WiseApp via proxy backend
   const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
-    if (!accountId || !wiseAppToken) return;
+    if (!companyId) return;
     
     try {
-      // Buscar dados do motorista
-      const { data: motoristaData } = await supabase
-        .from('motorista')
-        .select('*')
-        .eq('motorista_id', motoristaId)
-        .single();
-      
-      if (!motoristaData) return;
-
-      // Criar label no WiseApp
-      const labelData = {
-        name: tagData.nome,
-        color: tagData.cor,
-        account_id: accountId
-      };
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
-
-      const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+      // Usar o proxy backend para criar a tag no WiseApp
+      const response = await fetch(`/api/wiseapp/${companyId}/labels`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${wiseAppToken}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'wiseapp-account-id': accountId || '',
+          'wiseapp-token': wiseAppToken || ''
         },
-        body: JSON.stringify(labelData),
-        signal: controller.signal
+        body: JSON.stringify({
+          name: tagData.nome,
+          color: tagData.cor
+        })
       });
 
-      clearTimeout(timeoutId);
-
       if (response.ok) {
-        const wiseAppLabel = await response.json();
-        console.log('Tag sincronizada com WiseApp:', wiseAppLabel);
+        const result = await response.json();
+        console.log('Tag sincronizada com WiseApp:', result);
       } else {
-        console.warn(`WiseApp retornou status ${response.status}: ${response.statusText}`);
+        console.warn(`Erro ao sincronizar com WiseApp: ${response.status}`);
       }
     } catch (error) {
       console.warn('Erro ao sincronizar tag com WiseApp (não crítico):', error);
@@ -963,6 +958,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
 
         setContratados(agregadosAgrupados);
+        
+        // Tags serão carregadas apenas quando necessário (filtro, ações em massa, etc.)
+        // Para melhor performance, não carregar automaticamente
       } catch (error) {
         console.error('Error fetching contratados:', error);
         toast.error('Erro ao carregar contratados');
@@ -1911,7 +1909,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   <button
                     type="button"
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                    onClick={() => setShowTagDropdown(!showTagDropdown)}
+                    onClick={handleToggleTagDropdown}
                   >
                     <div className="flex items-center gap-2">
                       <Tag className="h-4 w-4" />
