@@ -2016,7 +2016,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let failed = 0;
       const errors: Array<{ motorista_id: number; nome: string; error: string }> = [];
 
-      // 3. Processar cada motorista
+      // 3. Buscar associações de tags de todos os motoristas
+      const { data: associacoesTags, error: associacoesError } = await supabase
+        .from('associacao_tags')
+        .select(`
+          motorista_id,
+          tag_id,
+          tag!inner (
+            id,
+            nome,
+            cor,
+            company_id
+          )
+        `)
+        .in('motorista_id', motoristas.map(m => m.motorista_id))
+        .eq('tag.company_id', company_id);
+
+      if (associacoesError) {
+        console.error('Erro ao buscar associações de tags:', associacoesError);
+      }
+
+      // Organizar tags por motorista
+      const tagsPorMotorista: { [key: number]: string[] } = {};
+      associacoesTags?.forEach((assoc: any) => {
+        if (!tagsPorMotorista[assoc.motorista_id]) {
+          tagsPorMotorista[assoc.motorista_id] = [];
+        }
+        if (assoc.tag?.nome) {
+          tagsPorMotorista[assoc.motorista_id].push(assoc.tag.nome);
+        }
+      });
+
+      // 4. Processar cada motorista
       for (const motorista of motoristas) {
         try {
           if (!motorista.telefone) {
@@ -2052,13 +2083,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const contact = searchData.payload[0];
             console.log(`Contato encontrado para ${motorista.nome_motorista}: ${contact.id}`);
 
-            // Atualizar foto se necessário
-            if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
-              await supabase
-                .from('motorista')
-                .update({ foto_whatsapp: contact.thumbnail })
-                .eq('motorista_id', motorista.motorista_id);
-              console.log(`Foto atualizada para ${motorista.nome_motorista}`);
+            // Aplicar tags locais no contato do WiseApp
+            const tagsParaAplicar = tagsPorMotorista[motorista.motorista_id] || [];
+            
+            if (tagsParaAplicar.length > 0) {
+              console.log(`Aplicando ${tagsParaAplicar.length} tags para ${motorista.nome_motorista}: ${tagsParaAplicar.join(', ')}`);
+              
+              const applyTagsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contact.id}/labels`;
+              const applyTagsResponse = await fetch(applyTagsUrl, {
+                method: 'POST',
+                headers: {
+                  'api_access_token': tokenData.access_token_wiseapp,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ labels: tagsParaAplicar })
+              });
+
+              if (applyTagsResponse.ok) {
+                console.log(`Tags aplicadas com sucesso para ${motorista.nome_motorista}`);
+              } else {
+                console.warn(`Erro ao aplicar tags para ${motorista.nome_motorista}: ${applyTagsResponse.status}`);
+              }
+            } else {
+              console.log(`Nenhuma tag local encontrada para ${motorista.nome_motorista}`);
             }
 
             successful++;
