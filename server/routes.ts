@@ -1698,22 +1698,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Usar endpoint correto do Chatwoot para adicionar labels
-      const addLabelUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
+      const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
       
       console.log(`🏷️ Adicionando label "${tagName || tagId}" ao contato ${contactId}`);
       
-      // Enviar apenas a nova tag - Chatwoot deve preservar as existentes
-      const newTagName = tagName || tagId;
+      // 1. Buscar tags existentes do contato
+      const getLabelsResponse = await fetch(labelsUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      let existingLabels: string[] = [];
       
-      const response = await fetch(addLabelUrl, {
+      if (getLabelsResponse.ok) {
+        const labelsResult = await getLabelsResponse.json();
+        const existingLabelIds = labelsResult.payload || [];
+        
+        // Buscar todas as labels da conta para converter IDs em nomes
+        const allLabelsResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`, {
+          headers: {
+            'api_access_token': token,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (allLabelsResponse.ok) {
+          const allLabels = await allLabelsResponse.json();
+          
+          // Converter IDs para nomes
+          existingLabels = existingLabelIds
+            .map((id: number) => {
+              const label = allLabels.find((l: any) => l.id === id);
+              return label ? label.name : null;
+            })
+            .filter((name: string | null) => name !== null);
+        }
+      }
+
+      // 2. Adicionar nova tag se não existir
+      const newTagName = tagName || tagId;
+      if (!existingLabels.includes(newTagName)) {
+        existingLabels.push(newTagName);
+      }
+      
+      console.log(`📝 Aplicando tags: [${existingLabels.join(', ')}]`);
+      
+      // 3. Aplicar lista completa
+      const response = await fetch(labelsUrl, {
         method: 'POST',
         headers: {
           'api_access_token': token,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          labels: [newTagName]
+          labels: existingLabels
         }),
       });
 
