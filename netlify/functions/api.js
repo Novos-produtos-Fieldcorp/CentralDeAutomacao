@@ -64,6 +64,39 @@ app.get('/tags', async (req, res) => {
   }
 });
 
+// Create tag endpoint
+app.post('/tags', async (req, res) => {
+  try {
+    const { nome, cor, limite_max, company_id } = req.body;
+    
+    if (!nome || !company_id) {
+      return res.status(400).json({ error: 'nome e company_id são obrigatórios' });
+    }
+    
+    const { data, error } = await supabase
+      .from('tag')
+      .insert({
+        nome,
+        cor: cor || '#3B82F6',
+        limite_max: limite_max || null,
+        company_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select();
+    
+    if (error) throw error;
+    
+    res.json(data[0]);
+  } catch (error) {
+    console.error('Create tag endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+});
+
 // Update tag endpoint
 app.put('/tags/:id', async (req, res) => {
   try {

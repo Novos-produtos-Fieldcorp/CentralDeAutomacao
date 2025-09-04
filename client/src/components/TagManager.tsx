@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
 import { getWiseAppLabels } from "@/lib/directApiService";
 import { supabase } from "@/lib/supabase";
+import { TagAdministration } from './TagAdministration';
 
 interface TagManagerProps {
   companyId: number;
@@ -147,18 +148,23 @@ export function TagManager({ companyId }: TagManagerProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Tags do Sistema</h3>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={syncWiseAppTags}
-            disabled={isSyncingWiseApp}
-            className="bg-green-600 dark:bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-700 dark:hover:bg-green-600 flex items-center gap-2 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${isSyncingWiseApp ? 'animate-spin' : ''}`} />
-            {isSyncingWiseApp ? 'Sincronizando...' : 'Sincronizar com WiseApp'}
-          </button>
+    <div className="space-y-6">
+      {/* Administração de Tags */}
+      <TagAdministration companyId={companyId} />
+      
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Sincronização com WiseApp</h3>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={syncWiseAppTags}
+              disabled={isSyncingWiseApp}
+              className="bg-green-600 dark:bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-700 dark:hover:bg-green-600 flex items-center gap-2 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncingWiseApp ? 'animate-spin' : ''}`} />
+              {isSyncingWiseApp ? 'Sincronizando...' : 'Sincronizar com WiseApp'}
+            </button>
+          </div>
         </div>
       </div>
 
