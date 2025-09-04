@@ -670,11 +670,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         return;
       }
 
-      // 3. Buscar o contato no Chatwoot pelo telefone (com +55 se necessário)
+      // 3. Buscar o contato no Chatwoot pelo telefone (sem +55 como funciona na individual)
       const phoneStr = String(motorista.telefone);
-      const formattedPhone = phoneStr.startsWith('+55') 
-        ? phoneStr 
-        : `+55${phoneStr}`;
+      const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
       
       const searchContactResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${formattedPhone}`, {
         method: 'GET',

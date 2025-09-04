@@ -339,8 +339,8 @@ export const getContactLabels = async (accountId: string, token: string, contact
 };
 
 // Buscar contato por telefone via backend existente
-export const searchWiseAppContact = async (accountId: string, token: string, phone: string) => {
-  const url = `${API_BASE_URL}/wiseapp/2/contacts/search?phone=${phone}`;
+export const searchWiseAppContact = async (accountId: string, token: string, phone: string, companyId: number = 2) => {
+  const url = `${API_BASE_URL}/wiseapp/${companyId}/contacts/search?phone=${phone}`;
   
   const response = await fetch(url, {
     headers: {

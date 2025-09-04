@@ -78,14 +78,12 @@ const BulkActionsModal = ({
             .single();
 
           if (motorista?.telefone) {
-            // Formatar telefone para WiseApp (+55 prefix se não tiver)
+            // Usar telefone sem +55 como na versão individual que funciona
             const phoneStr = String(motorista.telefone);
-            const formattedPhone = phoneStr.startsWith('+55') 
-              ? phoneStr 
-              : `+55${phoneStr}`;
+            const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
             
             // Buscar contato no WiseApp usando o serviço existente
-            const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone);
+            const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId);
             const contacts = searchData.payload || [];
             
             if (contacts.length > 0) {
