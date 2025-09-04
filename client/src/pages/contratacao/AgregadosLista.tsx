@@ -442,6 +442,18 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
   };
 
+  // Função para abrir/fechar dropdown de tags com carregamento lazy
+  const handleToggleTagDropdown = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const isOpening = !showTagDropdown;
+    setShowTagDropdown(isOpening);
+    
+    // Carregar tags dos motoristas apenas quando abrir o dropdown pela primeira vez
+    if (isOpening && Object.keys(motoristaTags).length === 0 && contratados.length > 0) {
+      await fetchMotoristaTags(contratados);
+    }
+  };
+
   // Fechar dropdown quando clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -964,10 +976,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         setContratados(agregadosAgrupados);
         
-        // Carregar tags dos motoristas para permitir filtro
-        if (agregadosAgrupados && agregadosAgrupados.length > 0) {
-          await fetchMotoristaTags(agregadosAgrupados);
-        }
+        // Tags serão carregadas apenas quando necessário (filtro, ações em massa, etc.)
+        // Para melhor performance, não carregar automaticamente
       } catch (error) {
         console.error('Error fetching contratados:', error);
         toast.error('Erro ao carregar contratados');
@@ -1916,7 +1926,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   <button
                     type="button"
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                    onClick={() => setShowTagDropdown(!showTagDropdown)}
+                    onClick={handleToggleTagDropdown}
                   >
                     <div className="flex items-center gap-2">
                       <Tag className="h-4 w-4" />

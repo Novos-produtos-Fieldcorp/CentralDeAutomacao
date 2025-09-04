@@ -452,8 +452,9 @@ const MotoristasLista = () => {
     setShowClienteDropdown(false);
     setShowAtivoDropdown(false);
     
-    // Buscar tags do Supabase quando abrir o dropdown
-    if (isOpening) {
+    // Carregar tags dos motoristas apenas quando abrir o dropdown pela primeira vez
+    if (isOpening && Object.keys(motoristaTags).length === 0 && motoristas.length > 0) {
+      await fetchAllMotoristaTags(motoristas);
     }
   };
 
@@ -764,10 +765,8 @@ const MotoristasLista = () => {
 
       setMotoristas(motoristasAgrupados || []);
       
-      // Carregar tags dos motoristas para permitir filtro
-      if (motoristasAgrupados && motoristasAgrupados.length > 0) {
-        await fetchAllMotoristaTags(motoristasAgrupados);
-      }
+      // Tags serão carregadas apenas quando necessário (filtro, ações em massa, etc.)
+      // Para melhor performance, não carregar automaticamente
     } catch (error) {
       console.error('Error fetching motoristas:', error);
       toast.error('Erro ao carregar motoristas');
