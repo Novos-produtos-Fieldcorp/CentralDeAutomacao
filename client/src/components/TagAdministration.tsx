@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Trash2, Tag as TagIcon, Save, X } from "lucide-react";
+import { Plus, Edit, Trash2, Tag as TagIcon, Save, X, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from '@/lib/supabase';
 import { getWiseAppLabels } from "@/lib/directApiService";
@@ -26,6 +26,8 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [deletingTag, setDeletingTag] = useState<Tag | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { accountId } = useAuth();
   const { token: wiseAppToken } = useWiseAppAccess();
@@ -188,10 +190,22 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     }
   };
 
-  const handleDeleteTag = (tagId: number) => {
-    if (window.confirm('Tem certeza que deseja deletar esta tag? Esta ação não pode ser desfeita.')) {
-      deleteTagMutation.mutate(tagId);
+  const handleDeleteTag = (tag: Tag) => {
+    setDeletingTag(tag);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteTag = () => {
+    if (deletingTag) {
+      deleteTagMutation.mutate(deletingTag.id);
+      setIsDeleteModalOpen(false);
+      setDeletingTag(null);
     }
+  };
+
+  const cancelDeleteTag = () => {
+    setIsDeleteModalOpen(false);
+    setDeletingTag(null);
   };
 
   // Função para criar tag no WiseApp usando a rota do backend
@@ -336,7 +350,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
                   <Edit className="w-3 h-3" />
                 </button>
                 <button
-                  onClick={() => handleDeleteTag(tag.id)}
+                  onClick={() => handleDeleteTag(tag)}
                   className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                   title="Deletar tag"
                 >
@@ -387,6 +401,17 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           tag={editingTag}
           onSave={handleUpdateTag}
           isLoading={updateTagMutation.isPending}
+        />
+      )}
+
+      {/* Modal para confirmar deleção */}
+      {isDeleteModalOpen && deletingTag && (
+        <DeleteConfirmationModal
+          isOpen={isDeleteModalOpen}
+          onClose={cancelDeleteTag}
+          onConfirm={confirmDeleteTag}
+          tag={deletingTag}
+          isLoading={deleteTagMutation.isPending}
         />
       )}
     </div>
@@ -612,6 +637,89 @@ function EditTagModal({ isOpen, onClose, tag, onSave, isLoading }: EditTagModalP
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// Modal para confirmar deleção de tag
+interface DeleteConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  tag: Tag;
+  isLoading: boolean;
+}
+
+function DeleteConfirmationModal({ isOpen, onClose, onConfirm, tag, isLoading }: DeleteConfirmationModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4 border dark:border-gray-700">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-10 h-10 mx-auto bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Confirmar Deleção</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            disabled={isLoading}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <p className="text-gray-600 dark:text-gray-300 mb-3">
+            Tem certeza que deseja deletar a tag <strong>"{tag.nome}"</strong>?
+          </p>
+          <div className="flex items-center gap-2 mb-3">
+            <div
+              className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600"
+              style={{ backgroundColor: tag.cor }}
+            />
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Cor: {tag.cor}
+            </span>
+          </div>
+          <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-md p-3">
+            <p className="text-sm text-red-700 dark:text-red-300">
+              <strong>Atenção:</strong> Esta ação irá:
+            </p>
+            <ul className="text-sm text-red-600 dark:text-red-400 mt-1 ml-4 list-disc">
+              <li>Remover a tag do banco de dados local</li>
+              <li>Deletar a tag do WiseApp também</li>
+              <li>Remover todas as associações com motoristas</li>
+            </ul>
+            <p className="text-sm text-red-700 dark:text-red-300 mt-2 font-medium">
+              Esta ação não pode ser desfeita.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-md hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 transition-colors flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            {isLoading ? "Deletando..." : "Deletar Tag"}
+          </button>
+        </div>
       </div>
     </div>
   );
