@@ -691,7 +691,6 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, tag, isLoading }:
               <strong>Atenção:</strong> Esta ação irá:
             </p>
             <ul className="text-sm text-red-600 dark:text-red-400 mt-1 ml-4 list-disc">
-              <li>Remover a tag do banco de dados local</li>
               <li>Deletar a tag do WiseApp também</li>
               <li>Remover todas as associações com motoristas</li>
             </ul>
