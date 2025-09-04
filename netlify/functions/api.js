@@ -29,138 +29,301 @@ app.use((req, res, next) => {
   next();
 });
 
+// Configure Supabase
+const { createClient } = require("@supabase/supabase-js");
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co";
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ";
+
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Tags endpoint - connect to PostgreSQL
-app.get('/tags', async (req, res) => {
+// WiseApp proxy routes for labels
+app.get('/wiseapp/:companyId/labels', async (req, res) => {
   try {
-    const { company_id } = req.query;
-    
-    if (!company_id) {
-      return res.status(400).json({ error: 'company_id é obrigatório' });
+    const { companyId } = req.params;
+    const token = req.headers['wiseapp-token'];
+    const accountId = req.headers['wiseapp-account-id'];
+
+    console.log(`Fetching WiseApp labels for company ${companyId}`);
+    console.log("Request headers:", {
+      host: req.headers.host,
+      'user-agent': req.headers['user-agent'],
+      accept: req.headers.accept,
+      'accept-encoding': req.headers['accept-encoding'],
+      'accept-language': req.headers['accept-language'],
+      'content-type': req.headers['content-type'],
+      referer: req.headers.referer,
+      'sec-fetch-dest': req.headers['sec-fetch-dest'],
+      'sec-fetch-mode': req.headers['sec-fetch-mode'],
+      'sec-fetch-site': req.headers['sec-fetch-site'],
+      'wiseapp-account-id': req.headers['wiseapp-account-id'],
+      'wiseapp-token': req.headers['wiseapp-token'],
+      'x-forwarded-for': req.headers['x-forwarded-for'],
+      'x-forwarded-proto': req.headers['x-forwarded-proto'],
+      'x-replit-user-bio': req.headers['x-replit-user-bio'],
+      'x-replit-user-id': req.headers['x-replit-user-id'],
+      'x-replit-user-name': req.headers['x-replit-user-name'],
+      'x-replit-user-profile-image': req.headers['x-replit-user-profile-image'],
+      'x-replit-user-roles': req.headers['x-replit-user-roles'],
+      'x-replit-user-teams': req.headers['x-replit-user-teams'],
+      'x-replit-user-url': req.headers['x-replit-user-url']
+    });
+    console.log("Token from header:", token ? "Found" : "Missing");
+    console.log("Account ID from header:", accountId ? "Found" : "Missing");
+
+    if (!token || !accountId) {
+      return res.status(401).json({ error: "Token e Account ID são obrigatórios" });
     }
-    
-    // Import PostgreSQL client
-    const { neon } = require('@neondatabase/serverless');
-    const sql = neon(process.env.DATABASE_URL);
-    
-    const tags = await sql`
-      SELECT id, nome, cor, company_id, limite_max, created_at, updated_at
-      FROM tag
-      WHERE company_id = ${company_id}
-      ORDER BY nome
-    `;
-    
-    res.json(tags || []);
+
+    const wiseappUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
+    console.log("Fetching labels from:", wiseappUrl);
+
+    const response = await fetch(wiseappUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`WiseApp API error: ${response.status} ${response.statusText}`);
+      return res.status(response.status).json({
+        error: `Erro na API WiseApp: ${response.status}`,
+        details: await response.text()
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
   } catch (error) {
-    console.error('Tags endpoint error:', error);
-    res.status(500).json({ 
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    console.error("Erro ao buscar labels do WiseApp:", error);
+    res.status(500).json({
+      error: "Erro interno do servidor",
+      details: error instanceof Error ? error.message : "Erro desconhecido",
     });
   }
 });
 
-// Create tag endpoint
-app.post('/tags', async (req, res) => {
+// WiseApp proxy route for contact search
+app.get('/wiseapp/:companyId/contacts/search', async (req, res) => {
   try {
-    const { nome, cor, limite_max, company_id } = req.body;
-    
-    if (!nome || !company_id) {
-      return res.status(400).json({ error: 'nome e company_id são obrigatórios' });
+    const { companyId } = req.params;
+    const { phone } = req.query;
+    const token = req.headers['wiseapp-token'];
+    const accountId = req.headers['wiseapp-account-id'];
+
+    console.log(`Searching contact by phone ${phone} for company ${companyId}`);
+
+    if (!token || !accountId) {
+      return res.status(401).json({ error: "Token e Account ID são obrigatórios" });
     }
-    
-    const { data, error } = await supabase
-      .from('tag')
-      .insert({
-        nome,
-        cor: cor || '#3B82F6',
-        limite_max: limite_max || null,
-        company_id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select();
-    
-    if (error) throw error;
-    
-    res.json(data[0]);
+
+    if (!phone) {
+      return res.status(400).json({ error: "Phone é obrigatório" });
+    }
+
+    const wiseappUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${phone}`;
+
+    const response = await fetch(wiseappUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`WiseApp API error: ${response.status} ${response.statusText}`);
+      return res.status(response.status).json({
+        error: `Erro na API WiseApp: ${response.status}`,
+        details: await response.text()
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
   } catch (error) {
-    console.error('Create tag endpoint error:', error);
-    res.status(500).json({ 
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    console.error("Erro ao buscar contato no WiseApp:", error);
+    res.status(500).json({
+      error: "Erro interno do servidor",
+      details: error instanceof Error ? error.message : "Erro desconhecido",
     });
   }
 });
 
-// Update tag endpoint
-app.put('/tags/:id', async (req, res) => {
+// WiseApp proxy route for getting contact labels
+app.get('/wiseapp/:companyId/contacts/:contactId/labels', async (req, res) => {
   try {
-    const tagId = parseInt(req.params.id);
-    const updates = req.body;
-    
-    if (!tagId) {
-      return res.status(400).json({ error: 'ID da tag é obrigatório' });
+    const { companyId, contactId } = req.params;
+    const token = req.headers['wiseapp-token'];
+    const accountId = req.headers['wiseapp-account-id'];
+
+    console.log(`Fetching labels for contact ${contactId} in company ${companyId}`);
+
+    if (!token || !accountId) {
+      return res.status(401).json({ error: "Token e Account ID são obrigatórios" });
     }
-    
-    const { data, error } = await supabase
-      .from('tag')
-      .update({
-        nome: updates.nome,
-        cor: updates.cor,
-        limite_max: updates.limite_max,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', tagId)
-      .select();
-    
-    if (error) throw error;
-    
-    res.json(data[0]);
+
+    const wiseappUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
+
+    const response = await fetch(wiseappUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`WiseApp API error: ${response.status} ${response.statusText}`);
+      return res.status(response.status).json({
+        error: `Erro na API WiseApp: ${response.status}`,
+        details: await response.text()
+      });
+    }
+
+    const data = await response.json();
+    console.log(`Labels fetched successfully for contact ${contactId}:`, data);
+    res.json(data);
   } catch (error) {
-    console.error('Update tag endpoint error:', error);
-    res.status(500).json({ 
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    console.error("Erro ao buscar labels do contato no WiseApp:", error);
+    res.status(500).json({
+      error: "Erro interno do servidor",
+      details: error instanceof Error ? error.message : "Erro desconhecido",
     });
   }
 });
 
-// Delete tag endpoint
-app.delete('/tags/:id', async (req, res) => {
+// WiseApp proxy route for applying contact labels
+app.post('/wiseapp/:companyId/contacts/:contactId/labels', async (req, res) => {
   try {
-    const tagId = parseInt(req.params.id);
-    
-    if (!tagId) {
-      return res.status(400).json({ error: 'ID da tag é obrigatório' });
+    const { companyId, contactId } = req.params;
+    const token = req.headers['wiseapp-token'];
+    const accountId = req.headers['wiseapp-account-id'];
+
+    console.log(`Applying labels to contact ${contactId} for company ${companyId}`);
+    console.log("Request body:", req.body);
+
+    if (!token || !accountId) {
+      return res.status(401).json({ error: "Token e Account ID são obrigatórios" });
     }
+
+    // Support both formats: {labels: [...]} and {tagId, tagName}
+    let labelsToApply = [];
     
-    // Primeiro remover todas as associações
-    const { error: deleteAssociationsError } = await supabase
-      .from('associacao_tags')
-      .delete()
-      .eq('tag_id', tagId);
-    
-    if (deleteAssociationsError) throw deleteAssociationsError;
-    
-    // Depois deletar a tag
-    const { error: deleteTagError } = await supabase
-      .from('tag')
-      .delete()
-      .eq('id', tagId);
-    
-    if (deleteTagError) throw deleteTagError;
-    
+    if (req.body.labels && Array.isArray(req.body.labels)) {
+      // New format with complete labels array
+      labelsToApply = req.body.labels;
+      console.log("Using complete labels array:", labelsToApply.join(', '));
+    } else if (req.body.tagName) {
+      // Legacy format - get existing labels first, then add new one
+      console.log("Adding single tag \"" + req.body.tagName + "\" without overwriting");
+      
+      // Get current labels
+      const currentLabelsResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (currentLabelsResponse.ok) {
+        const currentLabelsData = await currentLabelsResponse.json();
+        const existingLabels = currentLabelsData.payload || [];
+        console.log(`Found ${existingLabels.length} existing labels`);
+        
+        // Add new label to existing ones
+        labelsToApply = [...existingLabels, req.body.tagName];
+        console.log(`Added "${req.body.tagName}" to labels list`);
+      } else {
+        // If can't get current labels, just apply the new one
+        labelsToApply = [req.body.tagName];
+      }
+    }
+
+    console.log(`Applying ${labelsToApply.length} labels:`, labelsToApply.join(', '));
+
+    const payload = { labels: labelsToApply };
+    console.log("PAYLOAD BEING SENT:", JSON.stringify(payload));
+
+    const wiseappUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
+    console.log("URL:", wiseappUrl);
+    console.log("TOKEN:", token ? "Present" : "Missing");
+    console.log("ACCOUNT ID:", accountId);
+
+    const response = await fetch(wiseappUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    console.log("CHATWOOT RESPONSE STATUS:", response.status);
+    const responseText = await response.text();
+    console.log("CHATWOOT RESPONSE BODY:", responseText);
+
+    if (!response.ok) {
+      console.error(`WiseApp API error: ${response.status} ${response.statusText}`);
+      return res.status(response.status).json({
+        error: `Erro na API WiseApp: ${response.status}`,
+        details: responseText
+      });
+    }
+
+    const data = JSON.parse(responseText);
     res.json({ success: true });
   } catch (error) {
-    console.error('Delete tag endpoint error:', error);
-    res.status(500).json({ 
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    console.error("Erro ao aplicar labels no contato do WiseApp:", error);
+    res.status(500).json({
+      error: "Erro interno do servidor",
+      details: error instanceof Error ? error.message : "Erro desconhecido",
+    });
+  }
+});
+
+// Tags API routes
+app.get("/tags", async (req, res) => {
+  try {
+    const companyId = req.query.company_id;
+    if (!companyId) {
+      return res.status(400).json({ error: "company_id é obrigatório" });
+    }
+
+    const { data: tags, error } = await supabase
+      .from('tag')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('nome');
+    
+    if (error) {
+      console.error('Erro ao buscar tags do Supabase:', error);
+      throw error;
+    }
+    res.json(tags);
+  } catch (error) {
+    console.error("Erro ao buscar tags:", error);
+    res.status(500).json({
+      error: "Erro interno do servidor",
+      details: error instanceof Error ? error.message : "Erro desconhecido",
     });
   }
 });
@@ -174,19 +337,25 @@ app.get('/motoristas/:id/tags', async (req, res) => {
       return res.status(400).json({ error: 'ID do motorista é obrigatório' });
     }
     
-    // Import PostgreSQL client
-    const { neon } = require('@neondatabase/serverless');
-    const sql = neon(process.env.DATABASE_URL);
+    const { data: associations, error } = await supabase
+      .from('associacao_tags')
+      .select(`
+        tag:tag_id (
+          id,
+          nome,
+          cor,
+          company_id,
+          limite_max,
+          created_at,
+          updated_at
+        )
+      `)
+      .eq('motorista_id', motoristaId);
     
-    const tags = await sql`
-      SELECT t.id, t.nome, t.cor, t.company_id, t.limite_max, t.created_at, t.updated_at
-      FROM associacao_tags mt
-      INNER JOIN tag t ON mt.tag_id = t.id
-      WHERE mt.motorista_id = ${motoristaId}
-      ORDER BY t.nome
-    `;
+    if (error) throw error;
     
-    res.json(tags || []);
+    const tags = associations?.map(assoc => assoc.tag).filter(Boolean) || [];
+    res.json(tags);
   } catch (error) {
     console.error('Motorista tags endpoint error:', error);
     res.status(500).json({ 
@@ -288,7 +457,7 @@ app.post('/motoristas/bulk-tags', async (req, res) => {
     }
     
     // Buscar todas as tags para os motoristas especificados
-    const { data: tags, error } = await supabase
+    const { data: associations, error } = await supabase
       .from('associacao_tags')
       .select(`
         motorista_id,
@@ -308,7 +477,7 @@ app.post('/motoristas/bulk-tags', async (req, res) => {
     
     // Agrupar tags por motorista
     const tagsByMotorista = {};
-    tags.forEach(item => {
+    associations?.forEach(item => {
       if (item.tag) {
         if (!tagsByMotorista[item.motorista_id]) {
           tagsByMotorista[item.motorista_id] = [];
@@ -336,34 +505,31 @@ app.get('/tags/:id/limit-check', async (req, res) => {
       return res.status(400).json({ error: 'ID da tag é obrigatório' });
     }
     
-    // Import PostgreSQL client
-    const { neon } = require('@neondatabase/serverless');
-    const sql = neon(process.env.DATABASE_URL);
-    
     // Buscar informações da tag
-    const tagData = await sql`
-      SELECT limite_max
-      FROM tag
-      WHERE id = ${tagId}
-    `;
+    const { data: tagData, error: tagError } = await supabase
+      .from('tag')
+      .select('limite_max')
+      .eq('id', tagId)
+      .single();
     
-    if (!tagData || tagData.length === 0) {
+    if (tagError || !tagData) {
       return res.status(404).json({ error: 'Tag não encontrada' });
     }
     
-    const limit = tagData[0].limite_max;
+    const limit = tagData.limite_max;
     if (!limit) {
       return res.json({ canAdd: true, currentCount: 0, limit: null });
     }
     
     // Contar associados atuais da tag
-    const countResult = await sql`
-      SELECT COUNT(*) as count
-      FROM associacao_tags
-      WHERE tag_id = ${tagId}
-    `;
+    const { count, error: countError } = await supabase
+      .from('associacao_tags')
+      .select('*', { count: 'exact', head: true })
+      .eq('tag_id', tagId);
     
-    const currentCount = parseInt(countResult[0].count) || 0;
+    if (countError) throw countError;
+    
+    const currentCount = count || 0;
     const canAdd = currentCount < limit;
     
     res.json({ canAdd, currentCount, limit });
@@ -372,43 +538,6 @@ app.get('/tags/:id/limit-check', async (req, res) => {
     res.status(500).json({ 
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
-    });
-  }
-});
-
-// Proxy to WiseApp API for inboxes
-app.get('/v1/accounts/:accountId/inboxes', async (req, res) => {
-  try {
-    const { accountId } = req.params;
-    const token = req.headers.api_access_token || req.headers['wiseapp-token'];
-    
-    if (!token) {
-      return res.status(401).json({ error: 'API token required' });
-    }
-    
-    // Use native fetch instead of axios to reduce dependencies
-    const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/inboxes`, {
-      method: 'GET',
-      headers: {
-        'api_access_token': token,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      timeout: 10000
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    console.error('WiseApp proxy error:', error.message);
-    const statusCode = error.status || (error.message.includes('HTTP') ? parseInt(error.message.split(' ')[1]) : 500);
-    res.status(statusCode).json({ 
-      error: 'Failed to fetch inboxes',
-      details: error.message 
     });
   }
 });
@@ -425,110 +554,3 @@ app.use('*', (req, res) => {
 
 // Export handler for Netlify Functions  
 exports.handler = serverless(app);
-
-import express from 'express';
-import serverless from 'serverless-http';
-import cors from 'cors';
-import { createClient } from "@supabase/supabase-js";
-
-// Configure Supabase
-const supabaseUrl = "https://sngzctgbomqmpdcwjltt.supabase.co";
-const supabaseKey = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuZ3pjdGdib21xbXBkY3dqbHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ1Mjk2NDQsImV4cCI6MjA1MDEwNTY0NH0.xLzxQEGMvJH3FhfR-I0uOOxNI5ktEOINHRQUoDbVLMg";
-
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-});
-
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'api_access_token', 'Cache-Control', 'Pragma', 'Expires', 'wiseapp-token', 'wiseapp-account-id'],
-  credentials: false
-}));
-
-app.use(express.json());
-
-// Tags API routes
-app.get("/tags", async (req, res) => {
-  try {
-    const companyId = req.query.company_id;
-    if (!companyId) {
-      return res.status(400).json({ error: "company_id é obrigatório" });
-    }
-
-    // Buscar tags diretamente do Supabase
-    const { data: tags, error } = await supabase
-      .from('tag')
-      .select('*')
-      .eq('company_id', companyId)
-      .order('nome');
-    
-    if (error) {
-      console.error('Erro ao buscar tags do Supabase:', error);
-      throw error;
-    }
-    res.json(tags);
-  } catch (error) {
-    console.error("Erro ao buscar tags:", error);
-    res.status(500).json({
-      error: "Erro interno do servidor",
-      details: error instanceof Error ? error.message : "Erro desconhecido",
-    });
-  }
-});
-
-// WiseApp proxy routes
-app.get("/wiseapp/:companyId/labels", async (req, res) => {
-  try {
-    const { companyId } = req.params;
-    const token = req.headers['wiseapp-token'];
-    const accountId = req.headers['wiseapp-account-id'];
-
-    if (!token || !accountId) {
-      return res.status(401).json({ error: "Token e Account ID são obrigatórios" });
-    }
-
-    console.log(`Fetching WiseApp labels for company ${companyId}`);
-    console.log("Token from header:", token ? "Found" : "Missing");
-    console.log("Account ID from header:", accountId ? "Found" : "Missing");
-
-    const wiseappUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
-    console.log("Fetching labels from:", wiseappUrl);
-
-    const response = await fetch(wiseappUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      console.error(`WiseApp API error: ${response.status} ${response.statusText}`);
-      return res.status(response.status).json({
-        error: `Erro na API WiseApp: ${response.status}`,
-        details: await response.text()
-      });
-    }
-
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    console.error("Erro ao buscar labels do WiseApp:", error);
-    res.status(500).json({
-      error: "Erro interno do servidor",
-      details: error instanceof Error ? error.message : "Erro desconhecido",
-    });
-  }
-});
-
-// Health check
-app.get("/health", (req, res) => {
-  res.json({ status: "OK", timestamp: new Date().toISOString() });
-});
-
-export const handler = serverless(app);
