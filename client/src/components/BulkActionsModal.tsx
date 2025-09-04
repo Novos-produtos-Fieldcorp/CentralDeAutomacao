@@ -88,16 +88,48 @@ const BulkActionsModal = ({
           console.log(`DEBUG: Dados do motorista ${motoristaId}:`, motorista);
 
           if (!motorista) {
-            console.log(`DEBUG: Motorista ${motoristaId} não encontrado na view, tentando tabela direta...`);
+            console.log(`DEBUG: Motorista ${motoristaId} não encontrado na view, tentando tabelas...`);
             
-            // Fallback: tentar buscar na tabela motorista diretamente
-            const { data: motoristaFallback } = await supabase
+            // Fallback: tentar buscar em diferentes tabelas
+            let motoristaFallback = null;
+            
+            // Tentar tabela motorista
+            const { data: fromMotorista } = await supabase
               .from('motorista')
               .select('telefone, nome')
               .eq('id', motoristaId)
               .single();
             
-            console.log(`DEBUG: Dados fallback do motorista ${motoristaId}:`, motoristaFallback);
+            if (fromMotorista) {
+              motoristaFallback = fromMotorista;
+              console.log(`DEBUG: Encontrado na tabela motorista:`, motoristaFallback);
+            } else {
+              // Tentar tabela agregado
+              const { data: fromAgregado } = await supabase
+                .from('agregado')
+                .select('telefone, nome')
+                .eq('id', motoristaId)
+                .single();
+              
+              if (fromAgregado) {
+                motoristaFallback = fromAgregado;
+                console.log(`DEBUG: Encontrado na tabela agregado:`, motoristaFallback);
+              } else {
+                // Tentar tabela contratado
+                const { data: fromContratado } = await supabase
+                  .from('contratado')
+                  .select('telefone, nome')
+                  .eq('id', motoristaId)
+                  .single();
+                
+                if (fromContratado) {
+                  motoristaFallback = fromContratado;
+                  console.log(`DEBUG: Encontrado na tabela contratado:`, motoristaFallback);
+                }
+              }
+            }
+            
+            console.log(`DEBUG: Dados fallback finais do ID ${motoristaId}:`, motoristaFallback);
             
             if (motoristaFallback?.telefone) {
               // Usar dados da tabela direta
