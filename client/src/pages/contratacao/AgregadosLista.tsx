@@ -285,6 +285,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             
             if (error) throw error;
             newMotoristaTags[motorista.motorista_id] = data?.map(item => item.tag).filter(Boolean) || [];
+            
+            // Log para debug
+            if (data && data.length > 0) {
+              console.log(`Motorista ${motorista.motorista_id} tem ${data.length} tags:`, data);
+            }
           } catch (error) {
             console.error(`Erro ao carregar tags do motorista ${motorista.motorista_id}:`, error);
             newMotoristaTags[motorista.motorista_id] = [];
@@ -292,6 +297,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         }
       }
       
+      console.log('Tags carregadas para todos os agregados:', newMotoristaTags);
       setMotoristaTags(newMotoristaTags);
     } catch (error) {
       console.error('Erro ao carregar tags dos agregados:', error);
@@ -1397,6 +1403,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           const motoristaTagsList = motoristaTags[motoristaId] || [];
           const motoristaTagIds = motoristaTagsList.map((tag: any) => tag.id.toString());
           tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
+          
+          // Debug para o filtro
+          if (motoristaTagsList.length > 0) {
+            console.log(`Motorista ${motoristaId} (${motorista.nome_motorista}):`, {
+              tagFilter,
+              motoristaTagIds,
+              tagMatch
+            });
+          }
         } else {
           tagMatch = false;
         }
