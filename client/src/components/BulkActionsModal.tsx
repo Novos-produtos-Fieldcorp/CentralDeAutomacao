@@ -70,9 +70,9 @@ const BulkActionsModal = ({
       let syncSuccessCount = 0;
       for (const motoristaId of motoristaIds) {
         try {
-          // Buscar dados do motorista
+          // Buscar dados do motorista via view (para compatibilidade com AgregadosLista)
           const { data: motorista } = await supabase
-            .from('motorista')
+            .from('vw_agregados_completo')
             .select('telefone, nome_motorista')
             .eq('motorista_id', motoristaId)
             .single();
