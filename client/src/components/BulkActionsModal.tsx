@@ -70,6 +70,12 @@ const BulkActionsModal = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validar limite máximo de 150 seleções
+    if (selectedItems.size > 150) {
+      toast.error(`Você pode selecionar no máximo 150 itens por vez. Atualmente você tem ${selectedItems.size} itens selecionados.`);
+      return;
+    }
+    
     if (actionType === 'status' && !selectedStatus) {
       toast.error('Selecione um status');
       return;
@@ -225,9 +231,22 @@ const BulkActionsModal = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              Esta ação irá atualizar {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selecionado{selectedItems.size !== 1 ? 's' : ''}.
+          <div className={`p-4 rounded-lg ${
+            selectedItems.size > 150 
+              ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' 
+              : 'bg-blue-50 dark:bg-blue-900/20'
+          }`}>
+            <p className={`text-sm ${
+              selectedItems.size > 150 
+                ? 'text-red-700 dark:text-red-300' 
+                : 'text-blue-800 dark:text-blue-200'
+            }`}>
+              Esta ação irá atualizar <strong>{selectedItems.size}</strong> item{selectedItems.size !== 1 ? 's' : ''} selecionado{selectedItems.size !== 1 ? 's' : ''}.
+              {selectedItems.size > 150 && (
+                <span className="block mt-2 font-medium">
+                  ⚠️ Limite máximo é de 150 itens por operação
+                </span>
+              )}
             </p>
           </div>
 
@@ -330,14 +349,20 @@ const BulkActionsModal = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              disabled={submitting || (actionType === 'status' && !selectedStatus) || (actionType === 'tags' && !selectedTag)}
+              className={`px-4 py-2 text-sm font-medium text-white border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
+                selectedItems.size > 150 
+                  ? 'bg-gray-400 dark:bg-gray-600' 
+                  : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 dark:hover:bg-blue-500'
+              }`}
+              disabled={submitting || selectedItems.size > 150 || (actionType === 'status' && !selectedStatus) || (actionType === 'tags' && !selectedTag)}
             >
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Atualizando...
                 </>
+              ) : selectedItems.size > 150 ? (
+                'Excede limite (150)'
               ) : (
                 'Atualizar'
               )}
