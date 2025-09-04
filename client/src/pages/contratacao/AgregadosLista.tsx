@@ -271,35 +271,41 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
   };
 
-  // Nova função otimizada para carregar tags em lote
-  const fetchBulkMotoristaTags = async (motoristas: ViewContratado[]) => {
+  // Carregar tags individuais dos motoristas
+  const fetchMotoristaTags = async (motoristas: ViewContratado[]) => {
     try {
-      const motoristaIds = motoristas
-        .map(m => m.motorista_id)
-        .filter((id): id is number => id !== undefined);
+      const newMotoristaTags: { [key: number]: any[] } = {};
       
-      if (motoristaIds.length === 0) return;
-      
-      const response = await fetch('/api/motoristas/bulk-tags', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'company-id': companyId?.toString() || '1'
-        },
-        body: JSON.stringify({
-          motorista_ids: motoristaIds,
-          company_id: companyId
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch bulk tags');
+      for (const motorista of motoristas) {
+        if (motorista.motorista_id) {
+          try {
+            const { data, error } = await supabase
+              .from('tag')
+              .select(`
+                tag:tag_id (
+                  id,
+                  nome,
+                  cor,
+                  company_id,
+                  limite_max,
+                  created_at,
+                  updated_at
+                )
+              `)
+              .eq('motorista_id', motorista.motorista_id);
+            
+            if (error) throw error;
+            newMotoristaTags[motorista.motorista_id] = data?.map(item => item.tag).filter(Boolean) || [];
+          } catch (error) {
+            console.error(`Erro ao carregar tags do motorista ${motorista.motorista_id}:`, error);
+            newMotoristaTags[motorista.motorista_id] = [];
+          }
+        }
       }
       
-      const bulkTags = await response.json();
-      setMotoristaTags(bulkTags);
+      setMotoristaTags(newMotoristaTags);
     } catch (error) {
-      console.error('Erro ao carregar tags em lote:', error);
+      console.error('Erro ao carregar tags dos agregados:', error);
       toast.error('Erro ao carregar tags dos agregados');
     }
   };
@@ -377,7 +383,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       // Verificar se atingiu o limite após adicionar
       const { canAdd: canStillAdd, currentCount: newCount, limit: tagLimit } = await checkTagLimit(tagId);
       if (!canStillAdd && tagLimit) {
-        toast.warning(`Atenção: Tag "${tag.nome}" atingiu o limite máximo de ${tagLimit} associados!`);
+        toast.error(`Atenção: Tag "${tag.nome}" atingiu o limite máximo de ${tagLimit} associados!`);
       } else {
         toast.success('Tag adicionada com sucesso!');
       }
@@ -593,7 +599,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     // Carregar tags dos agregados automaticamente quando a lista de contratados mudar
     useEffect(() => {
       if (contratados && contratados.length > 0) {
-        fetchBulkMotoristaTags(contratados);
+        fetchMotoristaTags(contratados);
       }
     }, [contratados]);
 
@@ -2320,7 +2326,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         <WiseAppBulkSyncPanel 
           onTagsSync={() => {
             if (contratados && contratados.length > 0) {
-              fetchBulkMotoristaTags(contratados);
+              fetchMotoristaTags(contratados);
             }
           }}
         />

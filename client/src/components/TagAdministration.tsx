@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Edit, Trash2, Tag as TagIcon, Save, X } from "lucide-react";
 import toast from "react-hot-toast";
-import { apiRequest } from '@/lib/queryClient';
+import { supabase } from '@/lib/supabase';
 import { getWiseAppLabels } from "@/lib/directApiService";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
@@ -33,9 +33,14 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   const { data: tags = [], isLoading } = useQuery<Tag[]>({
     queryKey: ['local-tags', companyId],
     queryFn: async () => {
-      const response = await apiRequest(`/tags?company_id=${companyId}`);
-      if (!response.ok) throw new Error('Erro ao buscar tags');
-      return response.json();
+      const { data, error } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!companyId,
   });
@@ -43,13 +48,20 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   // Mutation para criar tag
   const createTagMutation = useMutation({
     mutationFn: async (tagData: Omit<Tag, 'id' | 'created_at' | 'updated_at'>) => {
-      const response = await apiRequest('/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tagData),
-      });
-      if (!response.ok) throw new Error('Erro ao criar tag');
-      return response.json();
+      const { data, error } = await supabase
+        .from('tag')
+        .insert({
+          nome: tagData.nome,
+          cor: tagData.cor || '#3B82F6',
+          limite_max: tagData.limite_max || null,
+          company_id: tagData.company_id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select();
+      
+      if (error) throw error;
+      return data[0];
     },
     onSuccess: async (newTag) => {
       // Criar no WiseApp também
@@ -74,13 +86,19 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   // Mutation para atualizar tag
   const updateTagMutation = useMutation({
     mutationFn: async ({ tagId, updates }: { tagId: number; updates: Partial<Tag> }) => {
-      const response = await apiRequest(`/tags/${tagId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      if (!response.ok) throw new Error('Erro ao atualizar tag');
-      return response.json();
+      const { data, error } = await supabase
+        .from('tag')
+        .update({
+          nome: updates.nome,
+          cor: updates.cor,
+          limite_max: updates.limite_max,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tagId)
+        .select();
+      
+      if (error) throw error;
+      return data[0];
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
@@ -96,11 +114,23 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   // Mutation para deletar tag
   const deleteTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
-      const response = await apiRequest(`/tags/${tagId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Erro ao deletar tag');
-      return response.json();
+      // Primeiro remover todas as associações
+      const { error: deleteAssociationsError } = await supabase
+        .from('associacao_tags')
+        .delete()
+        .eq('tag_id', tagId);
+      
+      if (deleteAssociationsError) throw deleteAssociationsError;
+      
+      // Depois deletar a tag
+      const { error: deleteTagError } = await supabase
+        .from('tag')
+        .delete()
+        .eq('id', tagId);
+      
+      if (deleteTagError) throw deleteTagError;
+      
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });

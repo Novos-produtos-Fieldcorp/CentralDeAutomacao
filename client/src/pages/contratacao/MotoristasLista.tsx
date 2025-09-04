@@ -350,7 +350,7 @@ const MotoristasLista = () => {
   // Carregar tags dos motoristas automaticamente quando a lista de motoristas mudar
   useEffect(() => {
     if (motoristas && motoristas.length > 0) {
-      fetchBulkMotoristaTags(motoristas);
+      fetchAllMotoristaTags(motoristas);
     }
   }, [motoristas]);
 
@@ -612,53 +612,81 @@ const MotoristasLista = () => {
     }
   };
 
-  const fetchMotoristaTags = async (motoristaId: number) => {
+  // Carregar tags individuais dos motoristas
+  const fetchMotoristaTags = async (motoristas: ViewMotorista[]) => {
     try {
-      const response = await apiRequest(`/motoristas/${motoristaId}/tags`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch motorista tags');
-      }
-      const data = await response.json();
-      setMotoristaTags(prev => ({ ...prev, [motoristaId]: data }));
-    } catch (error) {
-      // Silenciar erro para não quebrar a UI - tags são opcionais
-      console.warn(`Tags não disponíveis para motorista ${motoristaId}`);
-      setMotoristaTags(prev => ({ ...prev, [motoristaId]: [] }));
-    }
-  };
-
-  // Nova função otimizada para carregar tags em lote
-  const fetchBulkMotoristaTags = async (motoristas: ViewMotorista[]) => {
-    try {
-      const motoristaIds = motoristas
-        .map(m => m.motorista_id)
-        .filter((id): id is number => id !== undefined);
+      const newMotoristaTags: { [key: number]: any[] } = {};
       
-      if (motoristaIds.length === 0) return;
-      
-      const response = await apiRequest('/motoristas/bulk-tags', {
-        method: 'POST',
-        body: JSON.stringify({
-          motorista_ids: motoristaIds,
-          company_id: companyId
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch bulk tags');
+      for (const motorista of motoristas) {
+        if (motorista.motorista_id) {
+          try {
+            const { data, error } = await supabase
+              .from('tag')
+              .select(`
+                tag:tag_id (
+                  id,
+                  nome,
+                  cor,
+                  company_id,
+                  limite_max,
+                  created_at,
+                  updated_at
+                )
+              `)
+              .eq('motorista_id', motorista.motorista_id);
+            
+            if (error) throw error;
+            newMotoristaTags[motorista.motorista_id] = data?.map(item => item.tag).filter(Boolean) || [];
+          } catch (error) {
+            console.error(`Erro ao carregar tags do motorista ${motorista.motorista_id}:`, error);
+            newMotoristaTags[motorista.motorista_id] = [];
+          }
+        }
       }
       
-      const bulkTags = await response.json();
-      setMotoristaTags(bulkTags);
+      setMotoristaTags(newMotoristaTags);
     } catch (error) {
-      console.error('Erro ao carregar tags em lote:', error);
+      console.error('Erro ao carregar tags dos motoristas:', error);
       toast.error('Erro ao carregar tags dos motoristas');
     }
   };
 
   const fetchAllMotoristaTags = async (motoristas: ViewMotorista[]) => {
-    // Função mantida para compatibilidade, mas usando a versão otimizada
-    await fetchBulkMotoristaTags(motoristas);
+    try {
+      const newMotoristaTags: { [key: number]: any[] } = {};
+      
+      for (const motorista of motoristas) {
+        if (motorista.motorista_id) {
+          try {
+            const { data, error } = await supabase
+              .from('tag')
+              .select(`
+                tag:tag_id (
+                  id,
+                  nome,
+                  cor,
+                  company_id,
+                  limite_max,
+                  created_at,
+                  updated_at
+                )
+              `)
+              .eq('motorista_id', motorista.motorista_id);
+            
+            if (error) throw error;
+            newMotoristaTags[motorista.motorista_id] = data?.map((item: any) => item.tag).filter(Boolean) || [];
+          } catch (error) {
+            console.error(`Erro ao carregar tags do motorista ${motorista.motorista_id}:`, error);
+            newMotoristaTags[motorista.motorista_id] = [];
+          }
+        }
+      }
+      
+      setMotoristaTags(newMotoristaTags);
+    } catch (error) {
+      console.error('Erro ao carregar tags dos motoristas:', error);
+      toast.error('Erro ao carregar tags dos motoristas');
+    }
   };
 
   // Cores padrão para os clientes (apenas fundo, sem borda)
@@ -1734,7 +1762,7 @@ const MotoristasLista = () => {
       <WiseAppBulkSyncPanel 
         onTagsSync={() => {
           if (motoristas && motoristas.length > 0) {
-            fetchBulkMotoristaTags(motoristas);
+            fetchAllMotoristaTags(motoristas);
           }
         }}
       />

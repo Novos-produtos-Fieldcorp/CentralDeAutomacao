@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { getWiseAppLabels } from "@/lib/directApiService";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
-import { apiRequest } from '@/lib/queryClient';
+import { supabase } from '@/lib/supabase';
 
 interface Tag {
   id: number;
@@ -41,9 +41,22 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   const { data: motoristaTagsData = [], isLoading: isLoadingMotorTags } = useQuery<Tag[]>({
     queryKey: ['motorista-tags', motoristaId],
     queryFn: async () => {
-      const response = await apiRequest(`/motoristas/${motoristaId}/tags`);
-      if (!response.ok) throw new Error('Erro ao buscar tags do motorista');
-      return response.json();
+      const { data, error } = await supabase
+        .from('tag')
+        .select(`
+          tag:tag_id (
+            id,
+            nome,
+            cor,
+            company_id,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('motorista_id', motoristaId);
+      
+      if (error) throw error;
+      return data?.map((item: any) => item.tag).filter(Boolean) || [];
     },
     enabled: !!motoristaId,
   });
@@ -52,9 +65,14 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   const { data: allTags = [], isLoading: isLoadingAllTags } = useQuery<Tag[]>({
     queryKey: ['local-tags', companyId],
     queryFn: async () => {
-      const response = await apiRequest(`/tags?company_id=${companyId}`);
-      if (!response.ok) throw new Error('Erro ao buscar tags');
-      return response.json();
+      const { data, error } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!companyId,
   });
@@ -62,9 +80,31 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   // Verificar limite de associados por tag
   const checkTagLimit = async (tagId: number): Promise<{ canAdd: boolean; currentCount: number; limit: number | null }> => {
     try {
-      const response = await apiRequest(`/tags/${tagId}/limit-check`);
-      if (!response.ok) throw new Error('Erro ao verificar limite da tag');
-      return response.json();
+      // Buscar informações da tag
+      const { data: tagData, error: tagError } = await supabase
+        .from('tag')
+        .select('limite_max')
+        .eq('id', tagId)
+        .single();
+      
+      if (tagError) throw tagError;
+      
+      if (!tagData.limite_max) {
+        return { canAdd: true, currentCount: 0, limit: null };
+      }
+      
+      // Contar associados atuais
+      const { count, error: countError } = await supabase
+        .from('associacao_tags')
+        .select('*', { count: 'exact', head: true })
+        .eq('tag_id', tagId);
+      
+      if (countError) throw countError;
+      
+      const currentCount = count || 0;
+      const canAdd = currentCount < tagData.limite_max;
+      
+      return { canAdd, currentCount, limit: tagData.limite_max };
     } catch (error) {
       console.error('Erro ao verificar limite da tag:', error);
       return { canAdd: true, currentCount: 0, limit: null };
@@ -74,13 +114,29 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   // Mutation para adicionar tag ao motorista
   const addTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
-      const response = await apiRequest(`/motoristas/${motoristaId}/tags`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tag_id: tagId }),
-      });
-      if (!response.ok) throw new Error('Erro ao adicionar tag');
-      return response.json();
+      // Verificar se a associação já existe
+      const { data: existingAssociation } = await supabase
+        .from('associacao_tags')
+        .select('id')
+        .eq('motorista_id', motoristaId)
+        .eq('tag_id', tagId)
+        .single();
+      
+      if (existingAssociation) {
+        throw new Error('Tag já está associada a este motorista');
+      }
+      
+      // Criar a associação
+      const { data, error } = await supabase
+        .from('associacao_tags')
+        .insert({
+          motorista_id: motoristaId,
+          tag_id: tagId
+        })
+        .select();
+      
+      if (error) throw error;
+      return data[0];
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
@@ -94,11 +150,14 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   // Mutation para remover tag do motorista
   const removeTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
-      const response = await apiRequest(`/motoristas/${motoristaId}/tags/${tagId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Erro ao remover tag');
-      return response;
+      const { error } = await supabase
+        .from('associacao_tags')
+        .delete()
+        .eq('motorista_id', motoristaId)
+        .eq('tag_id', tagId);
+      
+      if (error) throw error;
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
@@ -112,13 +171,19 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   // Mutation para atualizar tag
   const updateTagMutation = useMutation({
     mutationFn: async ({ tagId, updates }: { tagId: number; updates: Partial<Tag> }) => {
-      const response = await apiRequest(`/tags/${tagId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      if (!response.ok) throw new Error('Erro ao atualizar tag');
-      return response.json();
+      const { data, error } = await supabase
+        .from('tag')
+        .update({
+          nome: updates.nome,
+          cor: updates.cor,
+          limite_max: updates.limite_max,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tagId)
+        .select();
+      
+      if (error) throw error;
+      return data[0];
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
@@ -135,11 +200,23 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   // Mutation para deletar tag completamente
   const deleteTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
-      const response = await apiRequest(`/tags/${tagId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Erro ao deletar tag');
-      return response.json();
+      // Primeiro remover todas as associações
+      const { error: deleteAssociationsError } = await supabase
+        .from('associacao_tags')
+        .delete()
+        .eq('tag_id', tagId);
+      
+      if (deleteAssociationsError) throw deleteAssociationsError;
+      
+      // Depois deletar a tag
+      const { error: deleteTagError } = await supabase
+        .from('tag')
+        .delete()
+        .eq('id', tagId);
+      
+      if (deleteTagError) throw deleteTagError;
+      
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
@@ -152,8 +229,8 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   });
 
   const motoristaTags = motoristaTagsData || [];
-  const availableTags = allTags.filter((tag: Tag) => 
-    !motoristaTags.find(motTag => motTag.id === tag.id)
+  const availableTags = allTags.filter((tag: any) => 
+    !motoristaTags.find((motTag: any) => motTag.id === tag.id)
   );
 
   const handleAddTag = (tagId: number) => {
@@ -206,7 +283,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {motoristaTags.map((tag) => (
+        {motoristaTags.map((tag: any) => (
           <div key={tag.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -282,7 +359,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                   Nenhuma tag disponível.
                 </div>
               ) : (
-                availableTags.map((tag: Tag) => (
+                availableTags.map((tag: any) => (
                   <button
                     key={tag.id}
                     onClick={() => handleAddTag(tag.id)}
