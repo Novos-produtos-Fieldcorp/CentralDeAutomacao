@@ -208,7 +208,8 @@ const MotoristasLista = () => {
         return;
       }
 
-      // 3. Buscar o contato no WiseApp pelo telefone
+      // 3. Buscar o contato no Chatwoot pelo telefone
+      console.log(`Buscando contato no Chatwoot para telefone: ${motorista.telefone}`);
       const searchContactResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${motorista.telefone}`, {
         method: 'GET',
         headers: {
@@ -219,19 +220,25 @@ const MotoristasLista = () => {
       });
 
       if (!searchContactResponse.ok) {
-        console.warn(`Erro ao buscar contato no WiseApp para telefone ${motorista.telefone}: ${searchContactResponse.status}`);
+        console.warn(`Erro ao buscar contato no Chatwoot para telefone ${motorista.telefone}: ${searchContactResponse.status}`);
         return;
       }
 
       const contactData = await searchContactResponse.json();
-      const contactId = contactData.payload?.[0]?.id;
+      console.log('Dados do contato retornados:', contactData);
+      
+      const contactId = contactData.payload?.[0]?.id || contactData[0]?.id;
 
       if (!contactId) {
-        console.warn(`Contato não encontrado no WiseApp para telefone ${motorista.telefone}`);
+        console.warn(`Contato não encontrado no Chatwoot para telefone ${motorista.telefone}`);
+        console.log('Estrutura dos dados de contato:', contactData);
         return;
       }
 
+      console.log(`Contato encontrado - ID: ${contactId}`);
+
       // 4. Aplicar a tag existente ao contato específico
+      console.log(`Aplicando tag ${existingTag.id} ao contato ${contactId}...`);
       const applyTagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contactId}/labels`, {
         method: 'POST',
         headers: {
@@ -244,11 +251,13 @@ const MotoristasLista = () => {
         })
       });
 
+      console.log(`Status da aplicação da tag: ${applyTagResponse.status}`);
+
       if (applyTagResponse.ok) {
-        console.log(`Tag "${tagData.nome}" aplicada com sucesso ao contato ${contactId} (${motorista.nome}) no WiseApp`);
+        console.log(`✅ Tag "${tagData.nome}" aplicada com sucesso ao contato ${contactId} (${motorista.nome}) no Chatwoot`);
       } else {
         const errorText = await applyTagResponse.text();
-        console.warn(`Erro ao aplicar tag ao contato: ${applyTagResponse.status} - ${errorText}`);
+        console.error(`❌ Erro ao aplicar tag ao contato: ${applyTagResponse.status} - ${errorText}`);
       }
 
     } catch (error) {
