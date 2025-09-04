@@ -1,0 +1,129 @@
+index-DuEBfWVS.js:218 API Configuration: Object
+index-DuEBfWVS.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-DuEBfWVS.js:1060 Using cached WiseApp token and data
+index-DuEBfWVS.js:225 Using cached auth - account_id: 20 company_id: 5
+index-DuEBfWVS.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-DuEBfWVS.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-DuEBfWVS.js:225 Using cached auth - account_id: 20 company_id: 5
+index-DuEBfWVS.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-DuEBfWVS.js:225 Using cached auth - account_id: 20 company_id: 5
+index-DuEBfWVS.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-DuEBfWVS.js:225 Using cached auth - account_id: 20 company_id: 5
+index-DuEBfWVS.js:1577 Valores de funcao encontrados: Array(1)
+index-DuEBfWVS.js:1577 Dados completos: Array(6315)
+index-DuEBfWVS.js:1566 Buscando tags para 6306 motoristas em chunks de 50
+index-DuEBfWVS.js:223  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.1843&tag_id=eq.114 406 (Not Acceptable)
+(anonymous) @ index-DuEBfWVS.js:223
+(anonymous) @ index-DuEBfWVS.js:223
+l @ index-DuEBfWVS.js:223
+Promise.then
+d @ index-DuEBfWVS.js:223
+(anonymous) @ index-DuEBfWVS.js:223
+hAe @ index-DuEBfWVS.js:223
+(anonymous) @ index-DuEBfWVS.js:223
+then @ index-DuEBfWVS.js:218
+index-DuEBfWVS.js:1577  GET https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels 500 (Internal Server Error)
+Xe @ index-DuEBfWVS.js:1577
+fe @ index-DuEBfWVS.js:1577
+await in fe
+onClick @ index-DuEBfWVS.js:1587
+ile @ index-DuEBfWVS.js:37
+lle @ index-DuEBfWVS.js:37
+cle @ index-DuEBfWVS.js:37
+LI @ index-DuEBfWVS.js:37
+zK @ index-DuEBfWVS.js:37
+(anonymous) @ index-DuEBfWVS.js:37
+LF @ index-DuEBfWVS.js:40
+hK @ index-DuEBfWVS.js:37
+U4 @ index-DuEBfWVS.js:37
+uF @ index-DuEBfWVS.js:37
+jle @ index-DuEBfWVS.js:37
+index-DuEBfWVS.js:1577 Erro ao buscar tags do Chatwoot: 500
+Xe @ index-DuEBfWVS.js:1577
+await in Xe
+fe @ index-DuEBfWVS.js:1577
+await in fe
+onClick @ index-DuEBfWVS.js:1587
+ile @ index-DuEBfWVS.js:37
+lle @ index-DuEBfWVS.js:37
+cle @ index-DuEBfWVS.js:37
+LI @ index-DuEBfWVS.js:37
+zK @ index-DuEBfWVS.js:37
+(anonymous) @ index-DuEBfWVS.js:37
+LF @ index-DuEBfWVS.js:40
+hK @ index-DuEBfWVS.js:37
+U4 @ index-DuEBfWVS.js:37
+uF @ index-DuEBfWVS.js:37
+jle @ index-DuEBfWVS.js:37
+index-DuEBfWVS.js:223  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.1843&tag_id=eq.79 406 (Not Acceptable)
+(anonymous) @ index-DuEBfWVS.js:223
+(anonymous) @ index-DuEBfWVS.js:223
+l @ index-DuEBfWVS.js:223
+Promise.then
+d @ index-DuEBfWVS.js:223
+(anonymous) @ index-DuEBfWVS.js:223
+hAe @ index-DuEBfWVS.js:223
+(anonymous) @ index-DuEBfWVS.js:223
+then @ index-DuEBfWVS.js:218
+index-DuEBfWVS.js:1425 Aplicando tag "campinas" aos contatos no WiseApp para 1 motoristas...
+index-DuEBfWVS.js:1425 DEBUG: Processando 1 motoristas: [1843]
+index-DuEBfWVS.js:1425 Processing 1 motoristas with 200ms delay (Account: 20)
+index-DuEBfWVS.js:1425 DEBUG: Buscando dados do motorista 1843 (1/1)
+index-DuEBfWVS.js:1425 DEBUG: Dados do motorista 1843: {telefone: 11979615187, nome_motorista: 'MARCELO PEREIRA DA SILVA'}
+index-DuEBfWVS.js:225  GET https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/contacts/search?phone=11979615187 500 (Internal Server Error)
+iE @ index-DuEBfWVS.js:225
+w @ index-DuEBfWVS.js:1425
+await in w
+_ @ index-DuEBfWVS.js:1425
+await in _
+ile @ index-DuEBfWVS.js:37
+lle @ index-DuEBfWVS.js:37
+cle @ index-DuEBfWVS.js:37
+LI @ index-DuEBfWVS.js:37
+zK @ index-DuEBfWVS.js:37
+(anonymous) @ index-DuEBfWVS.js:37
+LF @ index-DuEBfWVS.js:40
+hK @ index-DuEBfWVS.js:37
+U4 @ index-DuEBfWVS.js:37
+uF @ index-DuEBfWVS.js:37
+jle @ index-DuEBfWVS.js:37
+index-DuEBfWVS.js:225 Erro na API WiseApp via backend: 500 {"error":"Erro ao buscar contato","details":"WiseApp API responded with 401"}
+iE @ index-DuEBfWVS.js:225
+await in iE
+w @ index-DuEBfWVS.js:1425
+await in w
+_ @ index-DuEBfWVS.js:1425
+await in _
+ile @ index-DuEBfWVS.js:37
+lle @ index-DuEBfWVS.js:37
+cle @ index-DuEBfWVS.js:37
+LI @ index-DuEBfWVS.js:37
+zK @ index-DuEBfWVS.js:37
+(anonymous) @ index-DuEBfWVS.js:37
+LF @ index-DuEBfWVS.js:40
+hK @ index-DuEBfWVS.js:37
+U4 @ index-DuEBfWVS.js:37
+uF @ index-DuEBfWVS.js:37
+jle @ index-DuEBfWVS.js:37
+index-DuEBfWVS.js:1425 BULK DEBUG: Erro na busca do contato: Error: Erro ao buscar contato no WiseApp: 500
+    at iE (index-DuEBfWVS.js:225:41237)
+    at async w (index-DuEBfWVS.js:1425:39568)
+    at async _ (index-DuEBfWVS.js:1425:42819)
+w @ index-DuEBfWVS.js:1425
+await in w
+_ @ index-DuEBfWVS.js:1425
+await in _
+ile @ index-DuEBfWVS.js:37
+lle @ index-DuEBfWVS.js:37
+cle @ index-DuEBfWVS.js:37
+LI @ index-DuEBfWVS.js:37
+zK @ index-DuEBfWVS.js:37
+(anonymous) @ index-DuEBfWVS.js:37
+LF @ index-DuEBfWVS.js:40
+hK @ index-DuEBfWVS.js:37
+U4 @ index-DuEBfWVS.js:37
+uF @ index-DuEBfWVS.js:37
+jle @ index-DuEBfWVS.js:37
+index-DuEBfWVS.js:1566 Buscando tags para 6306 motoristas em chunks de 50
+index-DuEBfWVS.js:1577 Valores de funcao encontrados: ['Agregado']
+index-DuEBfWVS.js:1577 Dados completos: (6315) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, …]
