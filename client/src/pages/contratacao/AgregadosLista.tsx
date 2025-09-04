@@ -1,6 +1,5 @@
   import React, { useState, useEffect, useRef } from 'react';
   import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag, CheckCircle, Calendar } from 'lucide-react';
-import { TagLimitNotification } from '../../components/TagLimitNotification';
   import WhatsAppAvatar from '../../components/WhatsAppAvatar';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
@@ -1444,8 +1443,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
     return (
       <div className="space-y-6">
-        {/* Notificação de limite de tags */}
-        <TagLimitNotification companyId={companyId || 1} />
         
         <div className="flex justify-between items-center">
           <div className="flex items-center">
