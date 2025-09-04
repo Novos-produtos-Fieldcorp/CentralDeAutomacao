@@ -2,14 +2,14 @@ const express = require('express');
 const serverless = require('serverless-http');
 const { createClient } = require("@supabase/supabase-js");
 
-// Create app instance
+// Create Express app
 const app = express();
 
 // Configure middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Configure CORS for Netlify
+// Configure CORS
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
@@ -32,10 +32,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Debug logging
+// Debug middleware
 app.use((req, res, next) => {
-  console.log(`[NETLIFY] ${req.method} ${req.path}`);
-  console.log(`[NETLIFY] Query:`, req.query);
+  console.log(`[NETLIFY DEBUG] Method: ${req.method}`);
+  console.log(`[NETLIFY DEBUG] URL: ${req.url}`);
+  console.log(`[NETLIFY DEBUG] Path: ${req.path}`);
+  console.log(`[NETLIFY DEBUG] Query:`, req.query);
+  console.log(`[NETLIFY DEBUG] Headers:`, {
+    'wiseapp-token': req.headers['wiseapp-token'] ? 'Present' : 'Missing',
+    'wiseapp-account-id': req.headers['wiseapp-account-id'] ? 'Present' : 'Missing'
+  });
   next();
 });
 
@@ -52,30 +58,38 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 
 // ========== HEALTH CHECK ==========
 app.get('/health', (req, res) => {
-  console.log('[NETLIFY] Health check accessed');
+  console.log('[NETLIFY] Health endpoint accessed');
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    netlify: true,
-    version: '2.0'
+    platform: 'netlify',
+    version: '3.0'
   });
 });
 
-// ========== WISEAPP ROUTES ==========
+// ========== WISEAPP PROXY ROUTES ==========
 
-// Get labels from WiseApp
+// Get WiseApp labels
 app.get('/wiseapp/:companyId/labels', async (req, res) => {
-  console.log('[NETLIFY] Labels route accessed');
+  console.log('[NETLIFY] WiseApp labels route accessed');
   try {
     const { companyId } = req.params;
     const token = req.headers['wiseapp-token'];
     const accountId = req.headers['wiseapp-account-id'];
 
+    console.log(`Company: ${companyId}, Token: ${token ? 'Present' : 'Missing'}, AccountId: ${accountId}`);
+
     if (!token || !accountId) {
-      return res.status(401).json({ error: "Token e Account ID obrigatórios" });
+      return res.status(401).json({ 
+        error: "Token e Account ID obrigatórios",
+        received: { token: !!token, accountId: !!accountId }
+      });
     }
 
-    const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+    const url = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
+    console.log(`Fetching from: ${url}`);
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -83,39 +97,55 @@ app.get('/wiseapp/:companyId/labels', async (req, res) => {
       }
     });
 
+    console.log(`WiseApp response status: ${response.status}`);
+
     if (!response.ok) {
-      console.error(`WiseApp API error: ${response.status}`);
-      return res.status(response.status).json({ error: `WiseApp API error: ${response.status}` });
+      const errorText = await response.text();
+      console.error(`WiseApp error: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({ 
+        error: `WiseApp API error: ${response.status}`,
+        details: errorText
+      });
     }
 
     const data = await response.json();
+    console.log(`Labels fetched successfully, count: ${data?.length || 'unknown'}`);
     res.json(data);
   } catch (error) {
     console.error("Labels error:", error);
-    res.status(500).json({ error: "Erro interno" });
+    res.status(500).json({ 
+      error: "Erro interno do servidor",
+      details: error.message
+    });
   }
 });
 
-// Search contacts in WiseApp
+// Search WiseApp contacts
 app.get('/wiseapp/:companyId/contacts/search', async (req, res) => {
-  console.log('[NETLIFY] Contact search route accessed');
+  console.log('[NETLIFY] WiseApp contact search route accessed');
   try {
     const { companyId } = req.params;
     const { phone } = req.query;
     const token = req.headers['wiseapp-token'];
     const accountId = req.headers['wiseapp-account-id'];
 
-    console.log(`Searching contact by phone ${phone}`);
+    console.log(`Searching contact - Company: ${companyId}, Phone: ${phone}`);
 
     if (!token || !accountId) {
-      return res.status(401).json({ error: "Token e Account ID obrigatórios" });
+      return res.status(401).json({ 
+        error: "Token e Account ID obrigatórios",
+        received: { token: !!token, accountId: !!accountId }
+      });
     }
 
     if (!phone) {
-      return res.status(400).json({ error: "Phone obrigatório" });
+      return res.status(400).json({ error: "Parâmetro 'phone' obrigatório" });
     }
 
-    const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${phone}`, {
+    const url = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${phone}`;
+    console.log(`Searching at: ${url}`);
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -123,16 +153,26 @@ app.get('/wiseapp/:companyId/contacts/search', async (req, res) => {
       }
     });
 
+    console.log(`WiseApp search response status: ${response.status}`);
+
     if (!response.ok) {
-      console.error(`WiseApp API error: ${response.status}`);
-      return res.status(response.status).json({ error: `WiseApp API error: ${response.status}` });
+      const errorText = await response.text();
+      console.error(`WiseApp search error: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({ 
+        error: `WiseApp API error: ${response.status}`,
+        details: errorText
+      });
     }
 
     const data = await response.json();
+    console.log(`Contact search successful, results: ${data?.length || 'unknown'}`);
     res.json(data);
   } catch (error) {
     console.error("Contact search error:", error);
-    res.status(500).json({ error: "Erro interno" });
+    res.status(500).json({ 
+      error: "Erro interno do servidor",
+      details: error.message
+    });
   }
 });
 
@@ -144,11 +184,19 @@ app.get('/wiseapp/:companyId/contacts/:contactId/labels', async (req, res) => {
     const token = req.headers['wiseapp-token'];
     const accountId = req.headers['wiseapp-account-id'];
 
+    console.log(`Getting labels for contact ${contactId} in company ${companyId}`);
+
     if (!token || !accountId) {
-      return res.status(401).json({ error: "Token e Account ID obrigatórios" });
+      return res.status(401).json({ 
+        error: "Token e Account ID obrigatórios",
+        received: { token: !!token, accountId: !!accountId }
+      });
     }
 
-    const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`, {
+    const url = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
+    console.log(`Fetching from: ${url}`);
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -156,16 +204,26 @@ app.get('/wiseapp/:companyId/contacts/:contactId/labels', async (req, res) => {
       }
     });
 
+    console.log(`WiseApp get labels response status: ${response.status}`);
+
     if (!response.ok) {
-      console.error(`WiseApp API error: ${response.status}`);
-      return res.status(response.status).json({ error: `WiseApp API error: ${response.status}` });
+      const errorText = await response.text();
+      console.error(`WiseApp get labels error: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({ 
+        error: `WiseApp API error: ${response.status}`,
+        details: errorText
+      });
     }
 
     const data = await response.json();
+    console.log(`Contact labels fetched successfully`);
     res.json(data);
   } catch (error) {
     console.error("Get contact labels error:", error);
-    res.status(500).json({ error: "Erro interno" });
+    res.status(500).json({ 
+      error: "Erro interno do servidor",
+      details: error.message
+    });
   }
 });
 
@@ -177,18 +235,28 @@ app.post('/wiseapp/:companyId/contacts/:contactId/labels', async (req, res) => {
     const token = req.headers['wiseapp-token'];
     const accountId = req.headers['wiseapp-account-id'];
 
+    console.log(`Applying labels to contact ${contactId} in company ${companyId}`);
+    console.log(`Request body:`, req.body);
+
     if (!token || !accountId) {
-      return res.status(401).json({ error: "Token e Account ID obrigatórios" });
+      return res.status(401).json({ 
+        error: "Token e Account ID obrigatórios",
+        received: { token: !!token, accountId: !!accountId }
+      });
     }
 
-    // Support both formats: {labels: [...]} and {tagId, tagName}
+    // Support both formats: {labels: [...]} and {tagName}
     let labelsToApply = [];
     
     if (req.body.labels && Array.isArray(req.body.labels)) {
       labelsToApply = req.body.labels;
+      console.log(`Using provided labels array: ${labelsToApply}`);
     } else if (req.body.tagName) {
+      console.log(`Adding single tag: ${req.body.tagName}`);
+      
       // Get existing labels first
-      const getResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`, {
+      const getUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
+      const getResponse = await fetch(getUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -199,13 +267,24 @@ app.post('/wiseapp/:companyId/contacts/:contactId/labels', async (req, res) => {
       if (getResponse.ok) {
         const currentData = await getResponse.json();
         const existingLabels = currentData.payload || [];
+        console.log(`Existing labels: ${existingLabels}`);
         labelsToApply = [...existingLabels, req.body.tagName];
+        console.log(`Final labels to apply: ${labelsToApply}`);
       } else {
+        console.log(`Could not get existing labels, applying only new tag`);
         labelsToApply = [req.body.tagName];
       }
+    } else {
+      return res.status(400).json({ 
+        error: "Formato inválido. Use {labels: [...]} ou {tagName: '...'}" 
+      });
     }
 
-    const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`, {
+    const url = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
+    console.log(`Posting to: ${url}`);
+    console.log(`Payload: ${JSON.stringify({ labels: labelsToApply })}`);
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -214,22 +293,33 @@ app.post('/wiseapp/:companyId/contacts/:contactId/labels', async (req, res) => {
       body: JSON.stringify({ labels: labelsToApply })
     });
 
+    console.log(`WiseApp apply labels response status: ${response.status}`);
+
     if (!response.ok) {
-      console.error(`WiseApp API error: ${response.status}`);
-      return res.status(response.status).json({ error: `WiseApp API error: ${response.status}` });
+      const errorText = await response.text();
+      console.error(`WiseApp apply labels error: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({ 
+        error: `WiseApp API error: ${response.status}`,
+        details: errorText
+      });
     }
 
     const data = await response.json();
-    res.json({ success: true });
+    console.log(`Labels applied successfully`);
+    res.json({ success: true, data });
   } catch (error) {
     console.error("Apply contact labels error:", error);
-    res.status(500).json({ error: "Erro interno" });
+    res.status(500).json({ 
+      error: "Erro interno do servidor",
+      details: error.message
+    });
   }
 });
 
-// ========== LOCAL TAGS ROUTES ==========
+// ========== LOCAL DATABASE ROUTES ==========
 
 app.get("/tags", async (req, res) => {
+  console.log('[NETLIFY] Local tags route accessed');
   try {
     const companyId = req.query.company_id;
     if (!companyId) {
@@ -243,26 +333,21 @@ app.get("/tags", async (req, res) => {
       .order('nome');
     
     if (error) throw error;
+    console.log(`Local tags fetched: ${tags?.length || 0} tags`);
     res.json(tags);
   } catch (error) {
-    console.error("Tags error:", error);
-    res.status(500).json({ error: "Erro interno" });
+    console.error("Local tags error:", error);
+    res.status(500).json({ 
+      error: "Erro interno do servidor",
+      details: error.message
+    });
   }
 });
 
-// ========== FALLBACK ROUTES ==========
+// ========== CATCH-ALL ==========
 
-// Catch-all with detailed logging
 app.use('*', (req, res) => {
   console.log(`[NETLIFY] UNMATCHED ROUTE: ${req.method} ${req.originalUrl}`);
-  console.log(`[NETLIFY] Available routes:`);
-  console.log(`- GET /health`);
-  console.log(`- GET /wiseapp/:companyId/labels`);
-  console.log(`- GET /wiseapp/:companyId/contacts/search`);
-  console.log(`- GET /wiseapp/:companyId/contacts/:contactId/labels`);
-  console.log(`- POST /wiseapp/:companyId/contacts/:contactId/labels`);
-  console.log(`- GET /tags`);
-  
   res.status(404).json({
     error: 'Endpoint não encontrado',
     path: req.originalUrl,
@@ -278,5 +363,5 @@ app.use('*', (req, res) => {
   });
 });
 
-// Export handler for Netlify Functions  
+// Export the serverless handler
 module.exports.handler = serverless(app);
