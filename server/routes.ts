@@ -1704,16 +1704,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const labelsToApply = tagName ? [tagName] : [tagId];
       console.log(`Sending labels to Chatwoot:`, labelsToApply);
       
+      const requestBody = {
+        labels: labelsToApply
+      };
+      console.log(`Full request body:`, JSON.stringify(requestBody));
+      console.log(`Request URL:`, wiseAppUrl);
+      
       const response = await fetch(wiseAppUrl, {
         method: 'POST',
         headers: {
           'api_access_token': token,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          labels: labelsToApply
-        }),
+        body: JSON.stringify(requestBody),
       });
+      
+      console.log(`Chatwoot response status: ${response.status}`);
+      const responseText = await response.text();
+      console.log(`Chatwoot response body:`, responseText);
 
       if (!response.ok) {
         throw new Error(`WiseApp API responded with ${response.status}`);
