@@ -111,7 +111,7 @@ const BulkActionsModal = ({
         
         toast.success(`Cliente atualizado para ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''}`);
       } else if (actionType === 'tags') {
-        // Add tag to all selected items
+        // Add tag to selected items, respecting the tag limit
         const tagId = parseInt(selectedTag);
         const tag = tags.find(t => t.id === tagId);
         
@@ -120,33 +120,34 @@ const BulkActionsModal = ({
           return;
         }
 
-        // Verificar limite da tag antes de adicionar
-        if (tag.limite_max) {
-          const { count, error: countError } = await supabase
-            .from('associacao_tags')
-            .select('*', { count: 'exact', head: true })
-            .eq('tag_id', tagId);
+        // Verificar quantas associações já existem para esta tag
+        const { count, error: countError } = await supabase
+          .from('associacao_tags')
+          .select('*', { count: 'exact', head: true })
+          .eq('tag_id', tagId);
 
-          if (countError) throw countError;
+        if (countError) throw countError;
 
-          const currentCount = count || 0;
-          const availableSlots = tag.limite_max - currentCount;
-          
-          if (availableSlots <= 0) {
-            toast.error(`Limite máximo de ${tag.limite_max} associados atingido para a tag "${tag.nome}"`);
-            return;
-          }
-
-          if (itemIds.length > availableSlots) {
-            toast.error(`Apenas ${availableSlots} vaga${availableSlots !== 1 ? 's' : ''} disponível${availableSlots !== 1 ? 'is' : ''} para a tag "${tag.nome}". Limite: ${tag.limite_max}`);
-            return;
-          }
+        const currentCount = count || 0;
+        let availableSlots = tag.limite_max ? tag.limite_max - currentCount : itemIds.length;
+        
+        // Se a tag tem limite e já atingiu o máximo, avisar e sair
+        if (tag.limite_max && availableSlots <= 0) {
+          toast.error(`Limite máximo de ${tag.limite_max} associados já atingido para a tag "${tag.nome}"`);
+          return;
         }
         
         let addedCount = 0;
         let alreadyHasCount = 0;
+        let limitReached = false;
         
         for (const motoristaId of itemIds) {
+          // Se temos limite e já atingimos, parar
+          if (tag.limite_max && addedCount >= availableSlots) {
+            limitReached = true;
+            break;
+          }
+          
           // Verificar se a associação já existe
           const { data: existingAssociation } = await supabase
             .from('associacao_tags')
@@ -172,9 +173,13 @@ const BulkActionsModal = ({
         }
         
         const tagName = tag.nome;
-        if (addedCount > 0) {
+        
+        // Mensagens de resultado
+        if (limitReached && tag.limite_max) {
+          toast.success(`Tag "${tagName}" adicionada a ${addedCount} motorista${addedCount !== 1 ? 's' : ''}. Limite de ${tag.limite_max} associações atingido - restante não foi processado.`);
+        } else if (addedCount > 0) {
           toast.success(`Tag "${tagName}" adicionada a ${addedCount} item${addedCount !== 1 ? 's' : ''}${alreadyHasCount > 0 ? ` (${alreadyHasCount} já possuíam a tag)` : ''}`);
-        } else {
+        } else if (alreadyHasCount > 0) {
           toast.info(`Todos os ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''} selecionado${itemIds.length !== 1 ? 's' : ''} já possuem a tag "${tagName}"`);
         }
       }
