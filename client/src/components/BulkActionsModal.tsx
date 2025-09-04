@@ -56,107 +56,83 @@ const BulkActionsModal = ({
     }
   };
 
-  // Função para sincronizar tag com WiseApp
-  const syncTagWithWiseApp = async (tagData: any, motoristaIds: number[]) => {
+  // Função para aplicar tag aos contatos no WiseApp
+  const applyTagToWiseAppContacts = async (tagData: any, motoristaIds: number[]) => {
     if (!accountId || !wiseAppToken || !companyId) {
       console.log('Token WiseApp ou dados não disponíveis para sincronização');
       return;
     }
 
     try {
-      console.log(`Sincronizando tag "${tagData.nome}" com WiseApp para ${motoristaIds.length} motoristas...`);
+      console.log(`Aplicando tag "${tagData.nome}" aos contatos no WiseApp para ${motoristaIds.length} motoristas...`);
       
-      // 1. Primeiro, criar/verificar se a tag existe no WiseApp
-      const createTagResponse = await fetch(`/api/wiseapp/${companyId}/labels`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId,
-          'wiseapp-token': wiseAppToken
-        },
-        body: JSON.stringify({
-          name: tagData.nome,
-          color: tagData.cor || '#3B82F6'
-        })
-      });
+      let syncSuccessCount = 0;
+      for (const motoristaId of motoristaIds) {
+        try {
+          // Buscar dados do motorista
+          const { data: motorista } = await supabase
+            .from('motorista')
+            .select('telefone, nome_motorista')
+            .eq('motorista_id', motoristaId)
+            .single();
 
-      if (createTagResponse.ok) {
-        const tagResult = await createTagResponse.json();
-        console.log('Tag criada/verificada no WiseApp:', tagResult);
-        
-        if (tagResult.message) {
-          console.log('Mensagem do WiseApp:', tagResult.message);
-        }
-        
-        // 2. Para cada motorista, buscar no WiseApp e aplicar a tag
-        let syncSuccessCount = 0;
-        for (const motoristaId of motoristaIds) {
-          try {
-            // Buscar dados do motorista
-            const { data: motorista } = await supabase
-              .from('motorista')
-              .select('telefone, nome_motorista')
-              .eq('motorista_id', motoristaId)
-              .single();
-
-            if (motorista?.telefone) {
-              const phone = `55${motorista.telefone}`;
-              
-              // Buscar contato no WiseApp
-              const searchResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?q=${phone}`, {
-                headers: {
-                  'wiseapp-account-id': accountId,
-                  'wiseapp-token': wiseAppToken
-                }
-              });
-
-              if (searchResponse.ok) {
-                const searchData = await searchResponse.json();
-                if (searchData.payload?.length > 0) {
-                  const contact = searchData.payload[0];
-                  
-                  // Aplicar tag ao contato
-                  const applyTagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'wiseapp-account-id': accountId,
-                      'wiseapp-token': wiseAppToken
-                    },
-                    body: JSON.stringify({
-                      labels: [tagData.nome]
-                    })
-                  });
-
-                  if (applyTagResponse.ok) {
-                    syncSuccessCount++;
-                    console.log(`Tag aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
-                  }
-                }
+          if (motorista?.telefone) {
+            const phone = `55${motorista.telefone}`;
+            
+            // Buscar contato no WiseApp
+            const searchResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?q=${phone}`, {
+              headers: {
+                'wiseapp-account-id': accountId,
+                'wiseapp-token': wiseAppToken
               }
+            });
+
+            if (searchResponse.ok) {
+              const searchData = await searchResponse.json();
+              if (searchData.payload?.length > 0) {
+                const contact = searchData.payload[0];
+                
+                // Aplicar tag ao contato
+                const applyTagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'wiseapp-account-id': accountId,
+                    'wiseapp-token': wiseAppToken
+                  },
+                  body: JSON.stringify({
+                    labels: [tagData.nome]
+                  })
+                });
+
+                if (applyTagResponse.ok) {
+                  syncSuccessCount++;
+                  console.log(`Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
+                } else {
+                  console.warn(`Erro ao aplicar tag ao contato ${motorista.nome_motorista}:`, applyTagResponse.status);
+                }
+              } else {
+                console.log(`Contato não encontrado no WiseApp para ${motorista.nome_motorista} (${phone})`);
+              }
+            } else {
+              console.warn(`Erro ao buscar contato ${motorista.nome_motorista}:`, searchResponse.status);
             }
-          } catch (contactError) {
-            console.warn(`Erro ao sincronizar motorista ${motoristaId}:`, contactError);
           }
+        } catch (contactError) {
+          console.warn(`Erro ao processar motorista ${motoristaId}:`, contactError);
         }
-        
-        if (syncSuccessCount > 0) {
-          toast.success(`Tag "${tagData.nome}" sincronizada com WiseApp para ${syncSuccessCount} contato(s)!`);
-        } else {
-          toast('Tag adicionada localmente. Nenhum contato foi encontrado no WiseApp.', {
-            icon: 'ℹ️'
-          });
-        }
+      }
+      
+      if (syncSuccessCount > 0) {
+        toast.success(`Tag "${tagData.nome}" aplicada a ${syncSuccessCount} contato(s) no WiseApp!`);
       } else {
-        const errorText = await createTagResponse.text();
-        console.warn('Erro na resposta do WiseApp:', createTagResponse.status, errorText);
-        toast('Tag adicionada localmente. Erro ao acessar WiseApp.', {
-          icon: '⚠️'
+        toast('Tag adicionada localmente. Nenhum contato correspondente foi encontrado no WiseApp.', {
+          icon: 'ℹ️'
         });
       }
     } catch (error) {
-      console.warn('Erro ao sincronizar com WiseApp (não crítico):', error);
-      toast('Tag adicionada localmente. Sincronização com WiseApp falhou.', {
+      console.warn('Erro ao aplicar tags no WiseApp (não crítico):', error);
+      toast('Tag adicionada localmente. Falha ao sincronizar com WiseApp.', {
         icon: '⚠️'
       });
     }
@@ -290,9 +266,9 @@ const BulkActionsModal = ({
         
         const tagName = tag.nome;
         
-        // Sincronizar com WiseApp após adicionar tags localmente
+        // Aplicar tag aos contatos no WiseApp após adicionar tags localmente
         if (motoristasComNovaTag.length > 0) {
-          await syncTagWithWiseApp(tag, motoristasComNovaTag);
+          await applyTagToWiseAppContacts(tag, motoristasComNovaTag);
         }
         
         // Mensagens de resultado
@@ -301,7 +277,9 @@ const BulkActionsModal = ({
         } else if (addedCount > 0) {
           toast.success(`Tag "${tagName}" adicionada a ${addedCount} item${addedCount !== 1 ? 's' : ''}${alreadyHasCount > 0 ? ` (${alreadyHasCount} já possuíam a tag)` : ''}`);
         } else if (alreadyHasCount > 0) {
-          toast.info(`Todos os ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''} selecionado${itemIds.length !== 1 ? 's' : ''} já possuem a tag "${tagName}"`);
+          toast(`Todos os ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''} selecionado${itemIds.length !== 1 ? 's' : ''} já possuem a tag "${tagName}"`, {
+            icon: 'ℹ️'
+          });
         }
       }
       
