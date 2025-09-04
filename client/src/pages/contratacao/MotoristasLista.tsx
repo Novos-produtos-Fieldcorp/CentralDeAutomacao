@@ -2275,10 +2275,15 @@ const MotoristasLista = () => {
                                         className="flex items-center px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleAddTag(motorista.motorista_id, tag.id);
-                                          // Fechar dropdown e limpar pesquisa após adicionar tag
-                                          setTagDropdownOpen(prev => ({ ...prev, [motorista.motorista_id]: false }));
-                                          setTagSearchTerm(prev => ({ ...prev, [motorista.motorista_id]: '' }));
+                                          console.log('🏷️ Clique na tag (Motoristas):', { motoristaId: motorista.motorista_id, tagId: tag.id, tagName: tag.nome });
+                                          if (motorista.motorista_id && tag.id) {
+                                            handleAddTag(motorista.motorista_id, tag.id);
+                                            // Fechar dropdown e limpar pesquisa após adicionar tag
+                                            setTagDropdownOpen(prev => ({ ...prev, [motorista.motorista_id]: false }));
+                                            setTagSearchTerm(prev => ({ ...prev, [motorista.motorista_id]: '' }));
+                                          } else {
+                                            console.error('❌ Dados inválidos (Motoristas):', { motoristaId: motorista.motorista_id, tagId: tag.id });
+                                          }
                                         }}
                                       >
                                         <div
