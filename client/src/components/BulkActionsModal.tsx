@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import type { Cliente } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 
 interface BulkActionsModalProps {
   isOpen: boolean;
@@ -24,7 +25,8 @@ const BulkActionsModal = ({
   clientes = []
 }: BulkActionsModalProps) => {
   const { query } = useCompanyData();
-  const { companyId } = useAuth();
+  const { companyId, accountId } = useAuth();
+  const { token: wiseAppToken } = useWiseAppAccess();
   const [submitting, setSubmitting] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedClient, setSelectedClient] = useState<string>('');
@@ -51,6 +53,98 @@ const BulkActionsModal = ({
     } catch (error) {
       console.error('Erro ao buscar tags:', error);
       toast.error('Erro ao carregar tags');
+    }
+  };
+
+  // Função para sincronizar tag com WiseApp
+  const syncTagWithWiseApp = async (tagData: any, motoristaIds: number[]) => {
+    if (!accountId || !wiseAppToken || !companyId) {
+      console.log('Token WiseApp ou dados não disponíveis para sincronização');
+      return;
+    }
+
+    try {
+      console.log(`Sincronizando tag "${tagData.nome}" com WiseApp para ${motoristaIds.length} motoristas...`);
+      
+      // 1. Primeiro, criar/verificar se a tag existe no WiseApp
+      const createTagResponse = await fetch(`/api/wiseapp/${companyId}/labels`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'wiseapp-account-id': accountId,
+          'wiseapp-token': wiseAppToken
+        },
+        body: JSON.stringify({
+          name: tagData.nome,
+          color: tagData.cor || '#3B82F6'
+        })
+      });
+
+      if (createTagResponse.ok) {
+        const tagResult = await createTagResponse.json();
+        console.log('Tag criada/verificada no WiseApp:', tagResult);
+        
+        // 2. Para cada motorista, buscar no WiseApp e aplicar a tag
+        let syncSuccessCount = 0;
+        for (const motoristaId of motoristaIds) {
+          try {
+            // Buscar dados do motorista
+            const { data: motorista } = await supabase
+              .from('motorista')
+              .select('telefone, nome_motorista')
+              .eq('motorista_id', motoristaId)
+              .single();
+
+            if (motorista?.telefone) {
+              const phone = `55${motorista.telefone}`;
+              
+              // Buscar contato no WiseApp
+              const searchResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?q=${phone}`, {
+                headers: {
+                  'wiseapp-account-id': accountId,
+                  'wiseapp-token': wiseAppToken
+                }
+              });
+
+              if (searchResponse.ok) {
+                const searchData = await searchResponse.json();
+                if (searchData.payload?.length > 0) {
+                  const contact = searchData.payload[0];
+                  
+                  // Aplicar tag ao contato
+                  const applyTagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'wiseapp-account-id': accountId,
+                      'wiseapp-token': wiseAppToken
+                    },
+                    body: JSON.stringify({
+                      labels: [tagData.nome]
+                    })
+                  });
+
+                  if (applyTagResponse.ok) {
+                    syncSuccessCount++;
+                    console.log(`Tag aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
+                  }
+                }
+              }
+            }
+          } catch (contactError) {
+            console.warn(`Erro ao sincronizar motorista ${motoristaId}:`, contactError);
+          }
+        }
+        
+        if (syncSuccessCount > 0) {
+          toast.success(`Tag "${tagData.nome}" sincronizada com WiseApp para ${syncSuccessCount} contato(s)!`);
+        }
+      }
+    } catch (error) {
+      console.warn('Erro ao sincronizar com WiseApp (não crítico):', error);
+      toast('Tag adicionada localmente. Sincronização com WiseApp falhou.', {
+        icon: '⚠️'
+      });
     }
   };
 
@@ -146,6 +240,7 @@ const BulkActionsModal = ({
         let addedCount = 0;
         let alreadyHasCount = 0;
         let limitReached = false;
+        const motoristasComNovaTag: number[] = [];
         
         for (const motoristaId of itemIds) {
           // Se temos limite e já atingimos, parar
@@ -173,12 +268,18 @@ const BulkActionsModal = ({
             
             if (error) throw error;
             addedCount++;
+            motoristasComNovaTag.push(motoristaId); // Coletar para sincronização
           } else {
             alreadyHasCount++;
           }
         }
         
         const tagName = tag.nome;
+        
+        // Sincronizar com WiseApp após adicionar tags localmente
+        if (motoristasComNovaTag.length > 0) {
+          await syncTagWithWiseApp(tag, motoristasComNovaTag);
+        }
         
         // Mensagens de resultado
         if (limitReached && tag.limite_max) {
