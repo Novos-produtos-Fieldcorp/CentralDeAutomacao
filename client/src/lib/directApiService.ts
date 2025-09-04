@@ -219,15 +219,14 @@ export const wiseAppService = {
 
   async syncMotoristasBulkWithTags(companyId: number) {
     try {
-      // 1. Buscar token WiseApp
+      // 1. Buscar token e dados necessários
       const { data: tokenData } = await supabase
         .from('wiseapp_acesso')
-        .select('access_token_wiseapp')
+        .select('access_token_wiseapp, account_id')
         .eq('company_id', companyId)
         .single();
 
       if (!tokenData?.access_token_wiseapp) {
-        // Sem token, apenas processar localmente
         return { 
           data: { 
             totalProcessed: 0, 
@@ -250,33 +249,25 @@ export const wiseAppService = {
         return { data: { totalProcessed: 0, successful: 0, failed: 0, errors: [] } };
       }
 
-      // 3. Buscar tags locais
-      const { data: tagsLocais } = await supabase
-        .from('tag')
-        .select('*')
-        .eq('company_id', companyId);
-
-      // 4. Buscar associações existentes
-      const { data: associacoesExistentes } = await supabase
-        .from('associacao_tags')
-        .select('motorista_id, tag_id, tag(nome, cor)');
+      // Headers para as rotas WiseApp
+      const wiseAppHeaders = {
+        'Content-Type': 'application/json',
+        'wiseapp-token': tokenData.access_token_wiseapp,
+        'wiseapp-account-id': tokenData.account_id?.toString() || companyId.toString()
+      };
 
       let successful = 0;
       let failed = 0;
       const errors: Array<{ motorista_id: number; nome: string; error: string }> = [];
 
-      // 5. Processar cada motorista
+      // 3. Processar cada motorista
       for (const motorista of motoristas) {
         try {
           if (!motorista.telefone) continue;
 
-          const phone = `55${motorista.telefone}`;
-          
           // Buscar contato no WiseApp via proxy backend
-          const searchResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?q=${phone}`, {
-            headers: {
-              'Content-Type': 'application/json'
-            }
+          const searchResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?q=${motorista.telefone}`, {
+            headers: wiseAppHeaders
           });
 
           if (!searchResponse.ok) {
@@ -289,10 +280,10 @@ export const wiseAppService = {
             continue;
           }
 
-          const searchData = await searchResponse.json();
+          const contacts = await searchResponse.json();
 
-          if (searchData.payload?.length > 0) {
-            const contact = searchData.payload[0];
+          if (contacts && contacts.length > 0) {
+            const contact = contacts[0];
 
             // Atualizar foto se necessário
             if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
@@ -300,79 +291,6 @@ export const wiseAppService = {
                 .from('motorista')
                 .update({ foto_whatsapp: contact.thumbnail })
                 .eq('motorista_id', motorista.motorista_id);
-            }
-
-            // Buscar labels do contato no WiseApp via proxy backend
-            const labelsResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            });
-
-            if (labelsResponse.ok) {
-              const labelsData = await labelsResponse.json();
-              const wiseAppLabels = labelsData.payload || [];
-
-              // Importar tags do WiseApp para associacao_tags
-              for (const wiseAppLabel of wiseAppLabels) {
-                // Verificar se já existe uma tag local com esse nome
-                let tagLocal = tagsLocais?.find(t => t.nome.toLowerCase() === wiseAppLabel.title.toLowerCase());
-                
-                if (!tagLocal) {
-                  // Criar tag local se não existir
-                  const { data: novaTag } = await supabase
-                    .from('tag')
-                    .insert({
-                      nome: wiseAppLabel.title,
-                      cor: wiseAppLabel.color || '#3B82F6',
-                      company_id: companyId
-                    })
-                    .select()
-                    .single();
-                  
-                  if (novaTag) {
-                    tagLocal = novaTag;
-                    tagsLocais?.push(novaTag);
-                  }
-                }
-
-                if (tagLocal) {
-                  // Verificar se associação já existe
-                  const associacaoExiste = associacoesExistentes?.some(a => 
-                    a.motorista_id === motorista.motorista_id && a.tag_id === tagLocal.id
-                  );
-
-                  if (!associacaoExiste) {
-                    // Criar associação
-                    await supabase
-                      .from('associacao_tags')
-                      .insert({
-                        motorista_id: motorista.motorista_id,
-                        tag_id: tagLocal.id
-                      });
-                  }
-                }
-              }
-
-              // Enviar tags locais para o WiseApp
-              const tagsParaEnviar = associacoesExistentes
-                ?.filter(a => a.motorista_id === motorista.motorista_id)
-                .map(a => a.tag ? (a.tag as any).nome : null)
-                .filter(Boolean) || [];
-
-              if (tagsParaEnviar.length > 0) {
-                const applyLabelsResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ labels: tagsParaEnviar })
-                });
-
-                if (!applyLabelsResponse.ok) {
-                  console.warn(`Erro ao aplicar tags no WiseApp para ${motorista.nome_motorista}:`, applyLabelsResponse.status);
-                }
-              }
             }
 
             successful++;
