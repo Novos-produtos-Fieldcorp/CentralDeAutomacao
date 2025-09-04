@@ -125,6 +125,15 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   // Mutation para deletar tag
   const deleteTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
+      // Buscar dados da tag antes de deletar
+      const { data: tagData } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('id', tagId)
+        .single();
+      
+      if (!tagData) throw new Error('Tag não encontrada');
+
       // Primeiro remover todas as associações
       const { error: deleteAssociationsError } = await supabase
         .from('associacao_tags')
@@ -141,9 +150,18 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       
       if (deleteTagError) throw deleteTagError;
       
-      return { success: true };
+      return { success: true, tagData };
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
+      // Deletar tag no WiseApp também
+      if (accountId && wiseAppToken && result.tagData) {
+        try {
+          await deleteWiseAppTag(result.tagData);
+        } catch (error) {
+          console.warn('Erro ao deletar tag no WiseApp (não crítico):', error);
+        }
+      }
+      
       // Invalidar todas as queries relacionadas a tags
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
@@ -212,6 +230,66 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       }
     } catch (error) {
       console.warn('Erro ao criar tag no WiseApp (não crítico):', error);
+    }
+  };
+
+  // Função para deletar tag no WiseApp usando a rota do backend
+  const deleteWiseAppTag = async (tag: Tag) => {
+    if (!accountId || !wiseAppToken) return;
+    
+    try {
+      // Primeiro buscar todas as labels do WiseApp para encontrar o ID correto
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const labelsResponse = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels`), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'wiseapp-token': wiseAppToken,
+          'wiseapp-account-id': accountId
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (labelsResponse.ok) {
+        const labels = await labelsResponse.json();
+        const wiseAppLabel = labels.find((label: any) => label.name === tag.nome);
+        
+        if (wiseAppLabel) {
+          // Deletar a label no WiseApp
+          const deleteController = new AbortController();
+          const deleteTimeoutId = setTimeout(() => deleteController.abort(), 10000);
+
+          const deleteResponse = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels/${wiseAppLabel.id}`), {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'wiseapp-token': wiseAppToken,
+              'wiseapp-account-id': accountId
+            },
+            signal: deleteController.signal
+          });
+
+          clearTimeout(deleteTimeoutId);
+          
+          if (deleteResponse.ok) {
+            console.log('Tag deletada do WiseApp com sucesso');
+          } else {
+            const errorData = await deleteResponse.text();
+            console.warn(`Erro ao deletar tag do WiseApp: ${deleteResponse.status} - ${errorData}`);
+          }
+        } else {
+          console.log('Tag não encontrada no WiseApp, pode já ter sido deletada');
+        }
+      } else {
+        const errorData = await labelsResponse.text();
+        console.warn(`Erro ao buscar labels do WiseApp: ${labelsResponse.status} - ${errorData}`);
+      }
+    } catch (error) {
+      console.warn('Erro ao deletar tag do WiseApp (não crítico):', error);
     }
   };
 

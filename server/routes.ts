@@ -1586,6 +1586,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para deletar label no WiseApp
+  app.delete("/api/wiseapp/:companyId/labels/:labelId", async (req, res) => {
+    try {
+      const { companyId, labelId } = req.params;
+      
+      console.log(`Deleting WiseApp label ${labelId} for company ${companyId}`);
+      
+      // Buscar token do header
+      const token = req.headers['wiseapp-token'] as string;
+      if (!token) {
+        return res.status(401).json({ 
+          error: "Token WiseApp não encontrado" 
+        });
+      }
+
+      // Buscar account_id do header
+      const account_id = req.headers['wiseapp-account-id'] as string;
+      if (!account_id) {
+        return res.status(400).json({ 
+          error: "Account ID não encontrado" 
+        });
+      }
+
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels/${labelId}`;
+      
+      const response = await fetch(wiseAppUrl, {
+        method: 'DELETE',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error(`WiseApp API error: ${response.status} - ${errorData}`);
+        throw new Error(`WiseApp API responded with ${response.status}`);
+      }
+
+      console.log('WiseApp label deleted successfully');
+      res.json({ success: true });
+
+    } catch (error) {
+      console.error("Erro ao deletar label no WiseApp:", error);
+      res.status(500).json({
+        error: "Erro ao deletar label no WiseApp",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
   // Aplicar tag a um contato no WiseApp
   app.post("/api/wiseapp/:companyId/contacts/:contactId/labels", async (req, res) => {
     try {
