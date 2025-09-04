@@ -1701,9 +1701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
       
       console.log(`🏷️ Adicionando label "${tagName || tagId}" ao contato ${contactId}`);
-      
-      // 1. Buscar tags existentes do contato
-      console.log('Step 1: Getting existing labels...');
+      console.log('DEBUG: Starting label addition process');
       
       const getLabelsResponse = await fetch(labelsUrl, {
         method: 'GET',
