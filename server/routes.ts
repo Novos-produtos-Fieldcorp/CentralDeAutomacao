@@ -1433,17 +1433,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fetching labels from: ${wiseAppUrl}`);
 
-      const response = await fetch(wiseAppUrl, {
-        method: 'GET',
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      });
+      // Implementar retry logic para accounts grandes (como account_id 20)
+      let response;
+      let attempts = 0;
+      const maxAttempts = 3;
+      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-      if (!response.ok) {
-        throw new Error(`WiseApp API responded with ${response.status}`);
+      while (attempts < maxAttempts) {
+        attempts++;
+        
+        try {
+          // Para account_id 20 ou outros accounts grandes, adicionar delay
+          const currentAccountId = req.params.accountId || req.headers['wiseapp-account-id'] as string;
+          if (currentAccountId === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${currentAccountId}, waiting 3s...`);
+            await delay(3000); // 3 segundos entre tentativas
+          }
+
+          response = await fetch(wiseAppUrl, {
+            method: 'GET',
+            headers: {
+              'api_access_token': token,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            break; // Success!
+          }
+          
+          // Se 401 em account grande, tentar novamente
+          if (response.status === 401 && (currentAccountId === '20' || parseInt(currentAccountId) > 15)) {
+            console.log(`Got 401 for large account ${currentAccountId}, attempt ${attempts}/${maxAttempts}`);
+            
+            if (attempts < maxAttempts) {
+              continue; // Try again
+            }
+          }
+          
+          // Para outros erros, falhar imediatamente
+          throw new Error(`WiseApp API responded with ${response.status}`);
+          
+        } catch (fetchError) {
+          if (attempts === maxAttempts) {
+            throw fetchError;
+          }
+          console.log(`API fetch attempt ${attempts} failed for account ${currentAccountId}:`, fetchError);
+        }
+      }
+
+      if (!response || !response.ok) {
+        throw new Error(`WiseApp API failed after ${maxAttempts} attempts with status ${response?.status || 'unknown'}`);
       }
 
       const data = await response.json();
@@ -1594,17 +1635,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fetching inboxes from: ${wiseAppUrl}`);
 
-      const response = await fetch(wiseAppUrl, {
-        method: 'GET',
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      });
+      // Implementar retry logic para accounts grandes (como account_id 20)
+      let response;
+      let attempts = 0;
+      const maxAttempts = 3;
+      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-      if (!response.ok) {
-        throw new Error(`WiseApp API responded with ${response.status}`);
+      while (attempts < maxAttempts) {
+        attempts++;
+        
+        try {
+          // Para account_id 20 ou outros accounts grandes, adicionar delay
+          const currentAccountId = req.params.accountId || req.headers['wiseapp-account-id'] as string;
+          if (currentAccountId === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${currentAccountId}, waiting 3s...`);
+            await delay(3000); // 3 segundos entre tentativas
+          }
+
+          response = await fetch(wiseAppUrl, {
+            method: 'GET',
+            headers: {
+              'api_access_token': token,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            break; // Success!
+          }
+          
+          // Se 401 em account grande, tentar novamente
+          if (response.status === 401 && (currentAccountId === '20' || parseInt(currentAccountId) > 15)) {
+            console.log(`Got 401 for large account ${currentAccountId}, attempt ${attempts}/${maxAttempts}`);
+            
+            if (attempts < maxAttempts) {
+              continue; // Try again
+            }
+          }
+          
+          // Para outros erros, falhar imediatamente
+          throw new Error(`WiseApp API responded with ${response.status}`);
+          
+        } catch (fetchError) {
+          if (attempts === maxAttempts) {
+            throw fetchError;
+          }
+          console.log(`API fetch attempt ${attempts} failed for account ${currentAccountId}:`, fetchError);
+        }
+      }
+
+      if (!response || !response.ok) {
+        throw new Error(`WiseApp API failed after ${maxAttempts} attempts with status ${response?.status || 'unknown'}`);
       }
 
       const data = await response.json();
@@ -1900,16 +1982,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const formattedPhone = `55${phone}`;
       const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/search?q=${formattedPhone}`;
       
-      const response = await fetch(wiseAppUrl, {
-        method: 'GET',
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json',
-        },
-      });
+      // Implementar retry logic para accounts grandes (como account_id 20)
+      let response;
+      let attempts = 0;
+      const maxAttempts = 3;
+      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-      if (!response.ok) {
-        throw new Error(`WiseApp API responded with ${response.status}`);
+      while (attempts < maxAttempts) {
+        attempts++;
+        
+        try {
+          // Para account_id 20 ou outros accounts grandes, adicionar delay
+          if (account_id === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${account_id}, waiting 2s...`);
+            await delay(2000); // 2 segundos entre tentativas
+          }
+
+          response = await fetch(wiseAppUrl, {
+            method: 'GET',
+            headers: {
+              'api_access_token': token,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            break; // Success!
+          }
+          
+          // Se 401 em account grande, tentar novamente
+          if (response.status === 401 && (currentAccountId === '20' || parseInt(currentAccountId) > 15)) {
+            console.log(`Got 401 for large account ${currentAccountId}, attempt ${attempts}/${maxAttempts}`);
+            
+            if (attempts < maxAttempts) {
+              continue; // Try again
+            }
+          }
+          
+          // Para outros erros, falhar imediatamente
+          throw new Error(`WiseApp API responded with ${response.status}`);
+          
+        } catch (fetchError) {
+          if (attempts === maxAttempts) {
+            throw fetchError;
+          }
+          console.log(`Fetch attempt ${attempts} failed for account ${account_id}:`, fetchError);
+        }
+      }
+
+      if (!response || !response.ok) {
+        throw new Error(`WiseApp API failed after ${maxAttempts} attempts with status ${response?.status || 'unknown'}`);
       }
 
       const data = await response.json();

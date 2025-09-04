@@ -70,9 +70,22 @@ const BulkActionsModal = ({
       let syncSuccessCount = 0;
       console.log(`DEBUG: Processando ${motoristaIds.length} motoristas:`, motoristaIds);
       
-      for (const motoristaId of motoristaIds) {
+      // Rate limiting inteligente: mais delay para contas com muitos motoristas
+      const shouldRateLimit = motoristaIds.length > 50 || accountId === '20';
+      const delayMs = shouldRateLimit ? 200 : 50; // 200ms para contas grandes
+      
+      console.log(`Processing ${motoristaIds.length} motoristas with ${delayMs}ms delay (Account: ${accountId})`);
+      
+      for (let i = 0; i < motoristaIds.length; i++) {
+        const motoristaId = motoristaIds[i];
+        
+        // Rate limiting: delay entre requisições para evitar 401
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+        
         try {
-          console.log(`DEBUG: Buscando dados do motorista ${motoristaId}`);
+          console.log(`DEBUG: Buscando dados do motorista ${motoristaId} (${i + 1}/${motoristaIds.length})`);
           
           // Buscar dados do motorista via view (para compatibilidade com AgregadosLista)
           const { data: motorista, error: supabaseError } = await supabase
@@ -364,7 +377,7 @@ const BulkActionsModal = ({
               
               if (error) {
                 // Ignorar erros de RLS ou duplicata
-                if (error.code === 'PGRST301' || error.status === 406 || error.code === '23505') {
+                if (error.code === 'PGRST301' || error.code === '23505') {
                   console.warn(`Supabase association blocked for motorista ${motoristaId}, but WiseApp will work`);
                   alreadyHasCount++;
                   shouldCreateAssociation = false;
