@@ -208,7 +208,51 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
               updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome);
               console.log('WiseApp token fetched and cached successfully');
             } else {
-              // No token found, show modal only if not shown before in this session
+              // Check if we have a valid cached token that could be saved to database
+              try {
+                const cachedToken = localStorage.getItem('wiseapp_token_cache');
+                if (cachedToken) {
+                  const tokenData = JSON.parse(cachedToken);
+                  const isTokenValid = Date.now() < tokenData.expiresAt;
+                  
+                  if (isTokenValid && tokenData.token) {
+                    console.log('Found valid cached token, saving to database...');
+                    
+                    // Try to save the cached token to database
+                    const { error: insertError } = await supabase
+                      .from('wiseapp_acesso')
+                      .insert([{ 
+                        email: 'auto@sistema.com', 
+                        nome: 'Token Automático', 
+                        company_id: company.company_id, 
+                        id_conta_wiseapp: accountId, 
+                        access_token_wiseapp: tokenData.token 
+                      }]);
+                    
+                    if (!insertError) {
+                      // Successfully saved, now fetch it back to get the ID
+                      const { data: newAccess } = await supabase
+                        .from('wiseapp_acesso')
+                        .select('wiseapp_acesso_id, access_token_wiseapp, nome')
+                        .eq('company_id', company.company_id)
+                        .eq('access_token_wiseapp', tokenData.token)
+                        .single();
+                      
+                      if (newAccess) {
+                        updateToken(newAccess.access_token_wiseapp, newAccess.wiseapp_acesso_id, newAccess.nome);
+                        console.log('Cached token successfully saved to database and loaded');
+                        return; // Don't show modal, we're done
+                      }
+                    } else {
+                      console.error('Error saving cached token to database:', insertError);
+                    }
+                  }
+                }
+              } catch (cacheError) {
+                console.log('Error processing cached token:', cacheError);
+              }
+              
+              // No token found and couldn't save cached token, show modal
               setShowModal(true);
             }
           }
