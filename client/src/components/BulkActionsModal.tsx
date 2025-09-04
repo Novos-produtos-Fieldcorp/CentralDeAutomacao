@@ -75,13 +75,51 @@ const BulkActionsModal = ({
           console.log(`DEBUG: Buscando dados do motorista ${motoristaId}`);
           
           // Buscar dados do motorista via view (para compatibilidade com AgregadosLista)
-          const { data: motorista } = await supabase
+          const { data: motorista, error: supabaseError } = await supabase
             .from('vw_agregados_completo')
             .select('telefone, nome_motorista')
             .eq('motorista_id', motoristaId)
             .single();
 
+          if (supabaseError) {
+            console.log(`DEBUG: Erro no Supabase para motorista ${motoristaId}:`, supabaseError);
+          }
+
           console.log(`DEBUG: Dados do motorista ${motoristaId}:`, motorista);
+
+          if (!motorista) {
+            console.log(`DEBUG: Motorista ${motoristaId} não encontrado na view, tentando tabela direta...`);
+            
+            // Fallback: tentar buscar na tabela motorista diretamente
+            const { data: motoristaFallback } = await supabase
+              .from('motorista')
+              .select('telefone, nome')
+              .eq('id', motoristaId)
+              .single();
+            
+            console.log(`DEBUG: Dados fallback do motorista ${motoristaId}:`, motoristaFallback);
+            
+            if (motoristaFallback?.telefone) {
+              // Usar dados da tabela direta
+              const phoneStr = String(motoristaFallback.telefone);
+              const formattedPhone = phoneStr.replace(/^\+55/, ''); 
+              
+              console.log(`DEBUG: Processando via fallback - telefone ${formattedPhone}`);
+              
+              const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId);
+              const contacts = Array.isArray(searchData) ? searchData : (searchData?.payload || []);
+              
+              if (contacts.length > 0) {
+                const contact = contacts[0];
+                await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome], companyId);
+                syncSuccessCount++;
+                console.log(`Tag "${tagData.nome}" aplicada ao contato ${motoristaFallback.nome} no WiseApp`);
+              } else {
+                console.log(`Contato não encontrado no WiseApp para ${motoristaFallback.nome} (${motoristaFallback.telefone})`);
+              }
+            }
+            continue; // Pular para próximo motorista
+          }
 
           if (motorista?.telefone) {
             // Usar telefone sem +55 como na versão individual que funciona
