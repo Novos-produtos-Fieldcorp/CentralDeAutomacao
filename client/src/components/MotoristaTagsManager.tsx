@@ -140,6 +140,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
+      queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       toast.success("Tag adicionada com sucesso!");
     },
     onError: (error: any) => {
@@ -161,6 +164,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
+      queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       toast.success("Tag removida com sucesso!");
     },
     onError: (error: any) => {
@@ -188,6 +194,8 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       toast.success("Tag atualizada com sucesso!");
       setIsEditModalOpen(false);
       setEditingTag(null);
@@ -221,6 +229,8 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       toast.success("Tag deletada com sucesso!");
     },
     onError: (error: any) => {

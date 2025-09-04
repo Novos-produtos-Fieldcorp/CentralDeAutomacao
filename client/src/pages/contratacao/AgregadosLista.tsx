@@ -16,6 +16,8 @@ import { TagLimitNotification } from '../../components/TagLimitNotification';
   import { useFloatingChat } from '../../hooks/useFloatingChat';
   import { supabase } from '../../lib/supabase';
   import LoadingSpinner from '../../components/LoadingSpinner';
+  import { useAuth } from '../../context/AuthContext';
+  import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
   import { usePagination } from '../../hooks/usePagination';
   import Pagination from '../../components/Pagination';
   import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
@@ -118,6 +120,8 @@ const STATUS_OPTIONS = [
 const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
+  const { accountId } = useAuth();
+  const { token: wiseAppToken } = useWiseAppAccess();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -359,6 +363,19 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         return;
       }
 
+      // Verificar se a associação já existe
+      const { data: existingAssociation } = await supabase
+        .from('associacao_tags')
+        .select('id')
+        .eq('motorista_id', motoristaId)
+        .eq('tag_id', tagId)
+        .single();
+      
+      if (existingAssociation) {
+        toast.error('Tag já está associada a este agregado');
+        return;
+      }
+
       const { error } = await supabase
         .from('associacao_tags')
         .insert({
@@ -368,22 +385,40 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       if (error) throw error;
 
+      // Buscar a tag completa para atualizar o estado local
+      const { data: tagData, error: tagError } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('id', tagId)
+        .single();
+      
+      if (tagError) throw tagError;
+
       // Atualizar estado local
-      const tag = tags.find(t => t.id === tagId);
-      if (tag) {
+      if (tagData) {
         setMotoristaTags(prev => ({
           ...prev,
-          [motoristaId]: [...(prev[motoristaId] || []), tag]
+          [motoristaId]: [...(prev[motoristaId] || []), tagData]
         }));
       }
 
       // Fechar dropdown
       setTagDropdownOpen(prev => ({ ...prev, [motoristaId]: false }));
       
+      // Sincronizar com WiseApp se disponível
+      if (accountId && wiseAppToken) {
+        try {
+          await syncTagWithWiseApp(motoristaId, tagData);
+        } catch (wiseAppError) {
+          console.error('Erro ao sincronizar com WiseApp:', wiseAppError);
+          // Não falhar a operação se o WiseApp falhar
+        }
+      }
+      
       // Verificar se atingiu o limite após adicionar
       const { canAdd: canStillAdd, currentCount: newCount, limit: tagLimit } = await checkTagLimit(tagId);
       if (!canStillAdd && tagLimit) {
-        toast.error(`Atenção: Tag "${tag.nome}" atingiu o limite máximo de ${tagLimit} associados!`);
+        toast.error(`Atenção: Tag "${tagData.nome}" atingiu o limite máximo de ${tagLimit} associados!`);
       } else {
         toast.success('Tag adicionada com sucesso!');
       }
@@ -570,6 +605,53 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [motoristaTags, setMotoristaTags] = useState<{ [key: number]: any[] }>({});
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
+
+  // Função para sincronizar tag com WiseApp
+  const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
+    if (!accountId || !wiseAppToken) return;
+    
+    try {
+      // Buscar dados do motorista
+      const { data: motoristaData } = await supabase
+        .from('motorista')
+        .select('*')
+        .eq('motorista_id', motoristaId)
+        .single();
+      
+      if (!motoristaData) return;
+
+      // Criar label no WiseApp
+      const labelData = {
+        name: tagData.nome,
+        color: tagData.cor,
+        account_id: accountId
+      };
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
+
+      const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${wiseAppToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(labelData),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const wiseAppLabel = await response.json();
+        console.log('Tag sincronizada com WiseApp:', wiseAppLabel);
+      } else {
+        console.warn(`WiseApp retornou status ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.warn('Erro ao sincronizar tag com WiseApp (não crítico):', error);
+    }
+  };
   const motoristaTagDropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const [roleChangeModal, setRoleChangeModal] = useState<{
     isOpen: boolean;
@@ -603,6 +685,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     }, [contratados]);
 
+    useEffect(() => {
+      fetchTags();
+    }, [companyId]);
+
     // Sistema de aplicação automática de tags
     useEffect(() => {
       if (tags.length > 0 && contratados.length > 0 && Object.keys(motoristaTags).length > 0) {
@@ -611,9 +697,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }, [tags, contratados, motoristaTags]);
 
     const applyAutomaticTags = async () => {
-      // Aplicar tags automaticamente baseado em critérios inteligentes
-      
-      // Critério 1: Aplicar tag "VIP" para agregados com veículo próprio
       const vipTag = tags.find(tag => tag.nome.toLowerCase().includes('vip'));
       if (vipTag) {
         for (const agregado of contratados) {

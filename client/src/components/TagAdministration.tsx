@@ -69,12 +69,14 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         try {
           await createWiseAppTag(newTag);
         } catch (error) {
-          console.error('Erro ao criar tag no WiseApp:', error);
-          toast.error('Tag criada localmente, mas erro ao sincronizar com WiseApp');
+          console.warn('Erro ao criar tag no WiseApp (não crítico):', error);
         }
       }
       
+      // Invalidar todas as queries relacionadas a tags
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       toast.success("Tag criada com sucesso!");
       setIsCreateModalOpen(false);
     },
@@ -101,7 +103,10 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       return data[0];
     },
     onSuccess: () => {
+      // Invalidar todas as queries relacionadas a tags
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       toast.success("Tag atualizada com sucesso!");
       setIsEditModalOpen(false);
       setEditingTag(null);
@@ -133,7 +138,10 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       return { success: true };
     },
     onSuccess: () => {
+      // Invalidar todas as queries relacionadas a tags
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       toast.success("Tag deletada com sucesso!");
     },
     onError: (error: any) => {
