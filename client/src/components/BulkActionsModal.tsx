@@ -88,8 +88,23 @@ const BulkActionsModal = ({
               // Buscar contato no WiseApp usando o serviço existente
               const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId);
               console.log(`BULK DEBUG: Resultado da busca:`, searchData);
+              console.log(`BULK DEBUG: Tipo do resultado:`, typeof searchData);
+              console.log(`BULK DEBUG: É array?:`, Array.isArray(searchData));
               
-              const contacts = searchData.payload || [];
+              // Verificar diferentes estruturas possíveis
+              let contacts = [];
+              if (Array.isArray(searchData)) {
+                contacts = searchData;
+                console.log(`BULK DEBUG: Usando resultado direto como array`);
+              } else if (searchData?.payload && Array.isArray(searchData.payload)) {
+                contacts = searchData.payload;
+                console.log(`BULK DEBUG: Usando searchData.payload`);
+              } else if (searchData?.data && Array.isArray(searchData.data)) {
+                contacts = searchData.data;
+                console.log(`BULK DEBUG: Usando searchData.data`);
+              }
+              
+              console.log(`BULK DEBUG: Contacts finais:`, contacts, `Length: ${contacts.length}`);
               
               if (contacts.length > 0) {
                 const contact = contacts[0];
