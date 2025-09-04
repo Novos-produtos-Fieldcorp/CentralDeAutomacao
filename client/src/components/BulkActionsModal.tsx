@@ -6,6 +6,7 @@ import type { Cliente } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
+import { searchWiseAppContact, applyWiseAppContactLabels } from '../lib/directApiService';
 
 interface BulkActionsModalProps {
   isOpen: boolean;
@@ -56,9 +57,9 @@ const BulkActionsModal = ({
     }
   };
 
-  // Função para aplicar tag aos contatos no WiseApp
+  // Função para aplicar tag aos contatos no WiseApp (usando serviços existentes)
   const applyTagToWiseAppContacts = async (tagData: any, motoristaIds: number[]) => {
-    if (!accountId || !wiseAppToken || !companyId) {
+    if (!accountId || !wiseAppToken) {
       console.log('Token WiseApp ou dados não disponíveis para sincronização');
       return;
     }
@@ -77,45 +78,20 @@ const BulkActionsModal = ({
             .single();
 
           if (motorista?.telefone) {
-            const phone = `55${motorista.telefone}`;
+            // Buscar contato no WiseApp usando o serviço existente
+            const searchData = await searchWiseAppContact(accountId, wiseAppToken, motorista.telefone);
+            const contacts = searchData.payload || [];
             
-            // Buscar contato no WiseApp
-            const searchResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?q=${phone}`, {
-              headers: {
-                'wiseapp-account-id': accountId,
-                'wiseapp-token': wiseAppToken
-              }
-            });
-
-            if (searchResponse.ok) {
-              const searchData = await searchResponse.json();
-              if (searchData.payload?.length > 0) {
-                const contact = searchData.payload[0];
-                
-                // Aplicar tag ao contato
-                const applyTagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'wiseapp-account-id': accountId,
-                    'wiseapp-token': wiseAppToken
-                  },
-                  body: JSON.stringify({
-                    labels: [tagData.nome]
-                  })
-                });
-
-                if (applyTagResponse.ok) {
-                  syncSuccessCount++;
-                  console.log(`Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
-                } else {
-                  console.warn(`Erro ao aplicar tag ao contato ${motorista.nome_motorista}:`, applyTagResponse.status);
-                }
-              } else {
-                console.log(`Contato não encontrado no WiseApp para ${motorista.nome_motorista} (${phone})`);
-              }
+            if (contacts.length > 0) {
+              const contact = contacts[0];
+              
+              // Aplicar tag ao contato usando o serviço existente
+              await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome]);
+              
+              syncSuccessCount++;
+              console.log(`Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
             } else {
-              console.warn(`Erro ao buscar contato ${motorista.nome_motorista}:`, searchResponse.status);
+              console.log(`Contato não encontrado no WiseApp para ${motorista.nome_motorista} (${motorista.telefone})`);
             }
           }
         } catch (contactError) {
