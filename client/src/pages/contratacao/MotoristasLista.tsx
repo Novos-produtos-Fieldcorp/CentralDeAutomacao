@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, ArrowLeftRight, AlertTriangle, XCircle, Tag, CheckCircle, Calendar } from 'lucide-react';
 import WhatsAppAvatar from '../../components/WhatsAppAvatar';
 import { useCompanyData } from '../../hooks/useCompanyData';
@@ -168,6 +169,7 @@ const MotoristasLista = () => {
   const [tagSearchFilter, setTagSearchFilter] = useState('');
   const [motoristaTags, setMotoristaTags] = useState<{[key: number]: any[]}>({});
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{[key: number]: boolean}>({});
+  const [tagDropdownPosition, setTagDropdownPosition] = useState<{[key: number]: {top: number, left: number, width: number}}>({});
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
 
   // Função para sincronizar tag com WiseApp via proxy backend
@@ -2177,9 +2179,25 @@ const MotoristasLista = () => {
                               className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                const isOpening = !tagDropdownOpen[motorista.motorista_id];
+                                
+                                if (isOpening) {
+                                  // Calcular posição do dropdown
+                                  const buttonElement = e.currentTarget as HTMLElement;
+                                  const rect = buttonElement.getBoundingClientRect();
+                                  setTagDropdownPosition(prev => ({
+                                    ...prev,
+                                    [motorista.motorista_id]: {
+                                      top: rect.bottom + window.scrollY + 4,
+                                      left: rect.left + window.scrollX,
+                                      width: 256 // w-64 = 256px
+                                    }
+                                  }));
+                                }
+                                
                                 setTagDropdownOpen(prev => ({
                                   ...prev,
-                                  [motorista.motorista_id]: !prev[motorista.motorista_id]
+                                  [motorista.motorista_id]: isOpening
                                 }));
                               }}
                               disabled={updatingMotoristaTag === motorista.motorista_id}
@@ -2192,48 +2210,60 @@ const MotoristasLista = () => {
                               Add Tag
                             </button>
 
-                            {/* Dropdown de tags disponíveis */}
-                            {tagDropdownOpen[motorista.motorista_id] && (
-                              <div className="absolute z-[999999] top-full left-0 mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-2 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto">
-                                <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                                  <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Adicionar Tags</span>
-                                </div>
-                                <div className="space-y-1">
-                                  {tags
-                                    .filter(tag => 
-                                      // Só mostrar tags que têm ID numérico (do Supabase) e não foram adicionadas
+                            {/* Dropdown de tags disponíveis - usando createPortal para z-index correto */}
+                            {tagDropdownOpen[motorista.motorista_id] && tagDropdownPosition[motorista.motorista_id] && 
+                              createPortal(
+                                <div 
+                                  className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-2 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto"
+                                  style={{
+                                    position: 'fixed',
+                                    top: tagDropdownPosition[motorista.motorista_id].top,
+                                    left: tagDropdownPosition[motorista.motorista_id].left,
+                                    width: tagDropdownPosition[motorista.motorista_id].width,
+                                    zIndex: 9999
+                                  }}
+                                >
+                                  <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                                    <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Adicionar Tags</span>
+                                  </div>
+                                  <div className="space-y-1">
+                                    {tags
+                                      .filter(tag => 
+                                        // Só mostrar tags que têm ID numérico (do Supabase) e não foram adicionadas
+                                        typeof tag.id === 'number' && 
+                                        !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id)
+                                      )
+                                      .map((tag) => (
+                                      <div
+                                        key={tag.id}
+                                        className="flex items-center px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleAddTag(motorista.motorista_id, tag.id);
+                                        }}
+                                      >
+                                        <div
+                                          className="w-3 h-3 rounded-full flex-shrink-0 mr-2"
+                                          style={{ backgroundColor: tag.cor }}
+                                        />
+                                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                                          {tag.nome}
+                                        </span>
+                                      </div>
+                                    ))}
+                                    {tags.filter(tag => 
                                       typeof tag.id === 'number' && 
                                       !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id)
-                                    )
-                                    .map((tag) => (
-                                    <div
-                                      key={tag.id}
-                                      className="flex items-center px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleAddTag(motorista.motorista_id, tag.id);
-                                      }}
-                                    >
-                                      <div
-                                        className="w-3 h-3 rounded-full flex-shrink-0 mr-2"
-                                        style={{ backgroundColor: tag.cor }}
-                                      />
-                                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
-                                        {tag.nome}
-                                      </span>
-                                    </div>
-                                  ))}
-                                  {tags.filter(tag => 
-                                    typeof tag.id === 'number' && 
-                                    !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id)
-                                  ).length === 0 && (
-                                    <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-                                      {tags.length === 0 ? 'Nenhuma tag disponível' : 'Todas as tags já foram adicionadas'}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
+                                    ).length === 0 && (
+                                      <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                                        {tags.length === 0 ? 'Nenhuma tag disponível' : 'Todas as tags já foram adicionadas'}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>,
+                                document.body
+                              )
+                            }
                           </div>
                         </div>
                       </td>
