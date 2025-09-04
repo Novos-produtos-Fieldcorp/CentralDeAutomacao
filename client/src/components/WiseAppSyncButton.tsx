@@ -1,6 +1,8 @@
 import React from 'react';
-import { MessageSquare, Users, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { MessageSquare, Users, Loader2, CheckCircle, XCircle, Key } from 'lucide-react';
 import { useWiseAppSync } from '../hooks/useWiseAppSync';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 interface WiseAppSyncButtonProps {
   motoristaId?: number;
@@ -21,8 +23,52 @@ export function WiseAppSyncButton({
     isSyncing, 
     isBulkSyncing 
   } = useWiseAppSync();
+  
+  const { accountId, companyId } = useAuth();
+
+  // Função para capturar e salvar token do localStorage
+  const captureAndSaveToken = async () => {
+    try {
+      const cachedToken = localStorage.getItem('wiseapp_token_cache');
+      if (cachedToken) {
+        const tokenData = JSON.parse(cachedToken);
+        const isTokenValid = Date.now() < tokenData.expiresAt;
+        
+        if (isTokenValid && tokenData.token && companyId) {
+          console.log('Salvando token do localStorage no banco...');
+          
+          // Salvar token no banco de dados
+          const { error } = await supabase
+            .from('wiseapp_acesso')
+            .upsert({
+              company_id: companyId,
+              access_token_wiseapp: tokenData.token,
+              nome: 'Token Automático',
+              email: 'auto@sistema.com',
+              id_conta_wiseapp: accountId
+            }, {
+              onConflict: 'company_id'
+            });
+          
+          if (!error) {
+            console.log('✅ Token salvo com sucesso!');
+            return true;
+          } else {
+            console.error('Erro ao salvar token:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao capturar token:', error);
+    }
+    return false;
+  };
 
   const handleSync = async () => {
+    // Primeiro, tenta capturar e salvar o token automaticamente
+    await captureAndSaveToken();
+    
+    // Depois executa a sincronização
     if (variant === 'individual' && motoristaId) {
       await syncMotorista(motoristaId);
     } else if (variant === 'bulk') {
