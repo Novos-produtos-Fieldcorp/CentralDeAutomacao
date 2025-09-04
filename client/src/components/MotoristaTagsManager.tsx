@@ -42,13 +42,14 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
     queryKey: ['motorista-tags', motoristaId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('tag')
+        .from('associacao_tags')
         .select(`
           tag:tag_id (
             id,
             nome,
             cor,
             company_id,
+            limite_max,
             created_at,
             updated_at
           )

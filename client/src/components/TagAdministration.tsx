@@ -74,9 +74,14 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       }
       
       // Invalidar todas as queries relacionadas a tags
-      queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
-      queryClient.invalidateQueries({ queryKey: ['tags'] });
-      queryClient.invalidateQueries({ queryKey: ['all-tags'] });
+      await queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      await queryClient.invalidateQueries({ queryKey: ['tags'] });
+      await queryClient.invalidateQueries({ queryKey: ['all-tags'] });
+      await queryClient.invalidateQueries({ queryKey: ['motorista-tags'] });
+      
+      // Forçar refetch das queries
+      await queryClient.refetchQueries({ queryKey: ['local-tags', companyId] });
+      
       toast.success("Tag criada com sucesso!");
       setIsCreateModalOpen(false);
     },
@@ -174,9 +179,37 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   const createWiseAppTag = async (tag: Tag) => {
     if (!accountId || !wiseAppToken) return;
     
-    // Aqui você implementaria a lógica para criar a tag no WiseApp
-    // Por enquanto, apenas log
-    console.log('Criando tag no WiseApp:', tag);
+    try {
+      const labelData = {
+        name: tag.nome,
+        color: tag.cor,
+        account_id: accountId
+      };
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${wiseAppToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(labelData),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const wiseAppLabel = await response.json();
+        console.log('Tag criada no WiseApp:', wiseAppLabel);
+      } else {
+        console.warn(`WiseApp retornou status ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.warn('Erro ao criar tag no WiseApp (não crítico):', error);
+    }
   };
 
   if (isLoading) {

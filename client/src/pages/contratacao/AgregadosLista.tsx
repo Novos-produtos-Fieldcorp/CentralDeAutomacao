@@ -4,6 +4,7 @@ import { TagLimitNotification } from '../../components/TagLimitNotification';
   import WhatsAppAvatar from '../../components/WhatsAppAvatar';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
+  import { useQuery } from '@tanstack/react-query';
   import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database';
   import { formatCPF, formatPhone, formatDate } from '../../utils/format';
     import DocumentUploadModal from '../../components/DocumentUploadModal';
@@ -259,21 +260,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const [clientes, setClientes] = useState<any[]>([]);
 
   // Buscar tags do Supabase
-  const fetchTags = async () => {
-    if (!companyId) return;
-    try {
-      const { data, error } = await supabase
-        .from('tag')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('nome');
-
-      if (error) throw error;
-      setTags(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar tags:', error);
-    }
-  };
 
   // Carregar tags individuais dos motoristas
   const fetchMotoristaTags = async (motoristas: ViewContratado[]) => {
@@ -600,8 +586,24 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const [showAddModal, setShowAddModal] = useState<boolean>(false);
     const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
 
-  // Estados para o sistema de tags
-  const [tags, setTags] = useState<any[]>([]);
+  // Query para buscar tags da empresa
+  const { data: tags = [], isLoading: tagsLoading } = useQuery<any[]>({
+    queryKey: ['local-tags', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      
+      const { data, error } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!companyId,
+  });
+  
   const [motoristaTags, setMotoristaTags] = useState<{ [key: number]: any[] }>({});
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
@@ -675,7 +677,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     useEffect(() => {
       fetchContratados();
       fetchClientes();
-      fetchTags(); // Carrega tags automaticamente
     }, [dateFilter, customDateRange]);
 
     // Carregar tags dos agregados automaticamente quando a lista de contratados mudar
@@ -685,9 +686,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     }, [contratados]);
 
-    useEffect(() => {
-      fetchTags();
-    }, [companyId]);
 
     // Sistema de aplicação automática de tags
     useEffect(() => {

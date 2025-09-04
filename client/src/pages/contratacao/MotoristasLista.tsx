@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Trash2, ArrowLeftRight, AlertTriangle, XCircle, Tag, CheckCircle, Calendar } from 'lucide-react';
 import WhatsAppAvatar from '../../components/WhatsAppAvatar';
 import { useCompanyData } from '../../hooks/useCompanyData';
+import { useQuery } from '@tanstack/react-query';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista } from '../../types/database';
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
@@ -146,8 +147,23 @@ const MotoristasLista = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
-  const [tags, setTags] = useState<any[]>([]);
-  const [tagsLoading, setTagsLoading] = useState(false);
+  // Query para buscar tags da empresa
+  const { data: tags = [], isLoading: tagsLoading } = useQuery<any[]>({
+    queryKey: ['local-tags', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      
+      const { data, error } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!companyId,
+  });
   const [tagSearchFilter, setTagSearchFilter] = useState('');
   const [motoristaTags, setMotoristaTags] = useState<{[key: number]: any[]}>({});
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{[key: number]: boolean}>({});
@@ -438,7 +454,6 @@ const MotoristasLista = () => {
     
     // Buscar tags do Supabase quando abrir o dropdown
     if (isOpening) {
-      await fetchTags();
     }
   };
 
@@ -502,9 +517,6 @@ const MotoristasLista = () => {
     }
   }, [motoristas]);
 
-  useEffect(() => {
-    fetchTags();
-  }, [companyId]);
 
   // Sistema de filtros automáticos de tags
   useEffect(() => {
@@ -880,27 +892,6 @@ const MotoristasLista = () => {
   const { accountId } = useAuth();
   const { token: wiseAppToken } = useWiseAppAccess();
   
-  const fetchTags = async () => {
-    try {
-      if (!companyId) return;
-      setTagsLoading(true);
-      
-      const { data: tags, error: supabaseError } = await supabase
-        .from('tag')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('nome');
-      
-      if (supabaseError) throw supabaseError;
-      
-      setTags(tags || []);
-    } catch (error) {
-      console.error('Error fetching tags from Supabase:', error);
-      setTags([]);
-    } finally {
-      setTagsLoading(false);
-    }
-  };
 
   const handleViewDocument = async (motorista: ViewMotorista | null) => {
     if (!motorista) return;
