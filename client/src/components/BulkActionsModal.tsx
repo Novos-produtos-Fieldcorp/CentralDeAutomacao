@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import type { Cliente } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useWiseAppAccess } from '../context/WiseAppAccessContext';
+import { searchWiseAppContact, applyWiseAppContactLabels } from '../lib/directApiService';
 
 interface BulkActionsModalProps {
   isOpen: boolean;
@@ -24,7 +26,8 @@ const BulkActionsModal = ({
   clientes = []
 }: BulkActionsModalProps) => {
   const { query } = useCompanyData();
-  const { companyId } = useAuth();
+  const { companyId, accountId } = useAuth();
+  const { token: wiseAppToken } = useWiseAppAccess();
   const [submitting, setSubmitting] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedClient, setSelectedClient] = useState<string>('');
@@ -51,6 +54,63 @@ const BulkActionsModal = ({
     } catch (error) {
       console.error('Erro ao buscar tags:', error);
       toast.error('Erro ao carregar tags');
+    }
+  };
+
+  // Função para aplicar tag aos contatos no WiseApp (usando serviços existentes)
+  const applyTagToWiseAppContacts = async (tagData: any, motoristaIds: number[]) => {
+    if (!accountId || !wiseAppToken) {
+      console.log('Token WiseApp ou dados não disponíveis para sincronização');
+      return;
+    }
+
+    try {
+      console.log(`Aplicando tag "${tagData.nome}" aos contatos no WiseApp para ${motoristaIds.length} motoristas...`);
+      
+      let syncSuccessCount = 0;
+      for (const motoristaId of motoristaIds) {
+        try {
+          // Buscar dados do motorista
+          const { data: motorista } = await supabase
+            .from('motorista')
+            .select('telefone, nome_motorista')
+            .eq('motorista_id', motoristaId)
+            .single();
+
+          if (motorista?.telefone) {
+            // Buscar contato no WiseApp usando o serviço existente
+            const searchData = await searchWiseAppContact(accountId, wiseAppToken, motorista.telefone);
+            const contacts = searchData.payload || [];
+            
+            if (contacts.length > 0) {
+              const contact = contacts[0];
+              
+              // Aplicar tag ao contato usando o serviço existente
+              await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome]);
+              
+              syncSuccessCount++;
+              console.log(`Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
+            } else {
+              console.log(`Contato não encontrado no WiseApp para ${motorista.nome_motorista} (${motorista.telefone})`);
+            }
+          }
+        } catch (contactError) {
+          console.warn(`Erro ao processar motorista ${motoristaId}:`, contactError);
+        }
+      }
+      
+      if (syncSuccessCount > 0) {
+        toast.success(`Tag "${tagData.nome}" aplicada a ${syncSuccessCount} contato(s) no WiseApp!`);
+      } else {
+        toast('Tag adicionada localmente. Nenhum contato correspondente foi encontrado no WiseApp.', {
+          icon: 'ℹ️'
+        });
+      }
+    } catch (error) {
+      console.warn('Erro ao aplicar tags no WiseApp (não crítico):', error);
+      toast('Tag adicionada localmente. Falha ao sincronizar com WiseApp.', {
+        icon: '⚠️'
+      });
     }
   };
 
@@ -146,6 +206,7 @@ const BulkActionsModal = ({
         let addedCount = 0;
         let alreadyHasCount = 0;
         let limitReached = false;
+        const motoristasComNovaTag: number[] = [];
         
         for (const motoristaId of itemIds) {
           // Se temos limite e já atingimos, parar
@@ -173,6 +234,7 @@ const BulkActionsModal = ({
             
             if (error) throw error;
             addedCount++;
+            motoristasComNovaTag.push(motoristaId); // Coletar para sincronização
           } else {
             alreadyHasCount++;
           }
@@ -180,13 +242,20 @@ const BulkActionsModal = ({
         
         const tagName = tag.nome;
         
+        // Aplicar tag aos contatos no WiseApp após adicionar tags localmente
+        if (motoristasComNovaTag.length > 0) {
+          await applyTagToWiseAppContacts(tag, motoristasComNovaTag);
+        }
+        
         // Mensagens de resultado
         if (limitReached && tag.limite_max) {
           toast.success(`Tag "${tagName}" adicionada a ${addedCount} motorista${addedCount !== 1 ? 's' : ''}. Limite de ${tag.limite_max} associações atingido - restante não foi processado.`);
         } else if (addedCount > 0) {
           toast.success(`Tag "${tagName}" adicionada a ${addedCount} item${addedCount !== 1 ? 's' : ''}${alreadyHasCount > 0 ? ` (${alreadyHasCount} já possuíam a tag)` : ''}`);
         } else if (alreadyHasCount > 0) {
-          toast.info(`Todos os ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''} selecionado${itemIds.length !== 1 ? 's' : ''} já possuem a tag "${tagName}"`);
+          toast(`Todos os ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''} selecionado${itemIds.length !== 1 ? 's' : ''} já possuem a tag "${tagName}"`, {
+            icon: 'ℹ️'
+          });
         }
       }
       
