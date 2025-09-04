@@ -280,7 +280,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         if (motorista.motorista_id) {
           try {
             const { data, error } = await supabase
-              .from('tag')
+              .from('associacao_tags')
               .select(`
                 tag:tag_id (
                   id,
