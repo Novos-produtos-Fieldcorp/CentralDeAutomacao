@@ -378,8 +378,8 @@ export const getWiseAppContact = async (accountId: string, token: string, contac
 };
 
 // Aplicar labels a um contato via backend existente
-export const applyWiseAppContactLabels = async (accountId: string, token: string, contactId: number, labelNames: string[]) => {
-  const url = `${API_BASE_URL}/wiseapp/2/contacts/${contactId}/labels`;
+export const applyWiseAppContactLabels = async (accountId: string, token: string, contactId: number, labelNames: string[], companyId: number = 2) => {
+  const url = `${API_BASE_URL}/wiseapp/${companyId}/contacts/${contactId}/labels`;
   
   const response = await fetch(url, {
     method: 'POST',

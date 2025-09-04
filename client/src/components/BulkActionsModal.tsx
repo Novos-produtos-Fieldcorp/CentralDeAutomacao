@@ -86,7 +86,7 @@ const BulkActionsModal = ({
               const contact = contacts[0];
               
               // Aplicar tag ao contato usando o serviço existente
-              await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome]);
+              await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome], companyId);
               
               syncSuccessCount++;
               console.log(`Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
