@@ -2012,7 +2012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 2. Buscar todos os motoristas e agregados ativos
       const { data: motoristas, error: motoristasError } = await supabase
-        .from('view_motoristas_completo')
+        .from('motorista')
         .select('*')
         .eq('company_id', company_id)
         .eq('ativo', true);
