@@ -272,11 +272,9 @@ export const wiseAppService = {
 
           const phone = `55${motorista.telefone}`;
           
-          // Buscar contato no WiseApp
-          const searchUrl = `${CHAT_API_URL}/api/v1/accounts/${companyId}/contacts/search?q=${phone}`;
-          const searchResponse = await fetch(searchUrl, {
+          // Buscar contato no WiseApp via proxy backend
+          const searchResponse = await fetch(`/api/wiseapp/${companyId}/contacts/search?q=${phone}`, {
             headers: {
-              'api_access_token': tokenData.access_token_wiseapp,
               'Content-Type': 'application/json'
             }
           });
@@ -304,10 +302,9 @@ export const wiseAppService = {
                 .eq('motorista_id', motorista.motorista_id);
             }
 
-            // Buscar labels do contato no WiseApp
-            const labelsResponse = await fetch(`${CHAT_API_URL}/api/v1/accounts/${companyId}/contacts/${contact.id}/labels`, {
+            // Buscar labels do contato no WiseApp via proxy backend
+            const labelsResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
               headers: {
-                'api_access_token': tokenData.access_token_wiseapp,
                 'Content-Type': 'application/json'
               }
             });
@@ -364,10 +361,9 @@ export const wiseAppService = {
                 .filter(Boolean) || [];
 
               if (tagsParaEnviar.length > 0) {
-                const applyLabelsResponse = await fetch(`${CHAT_API_URL}/api/v1/accounts/${companyId}/contacts/${contact.id}/labels`, {
+                const applyLabelsResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                   method: 'POST',
                   headers: {
-                    'api_access_token': tokenData.access_token_wiseapp,
                     'Content-Type': 'application/json'
                   },
                   body: JSON.stringify({ labels: tagsParaEnviar })
