@@ -1678,9 +1678,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/wiseapp/:companyId/contacts/:contactId/labels", async (req, res) => {
     try {
       const { companyId, contactId } = req.params;
-      const { tagId } = req.body;
+      const { tagId, tagName } = req.body;
       
-      console.log(`Applying tag ${tagId} to contact ${contactId} for company ${companyId}`);
+      console.log(`Applying tag ${tagName || tagId} to contact ${contactId} for company ${companyId}`);
       
       // Buscar token do header
       const token = req.headers['wiseapp-token'] as string;
@@ -1700,6 +1700,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
       
+      // Chatwoot espera array de NOMES das tags, não IDs
+      const labelsToApply = tagName ? [tagName] : [tagId];
+      console.log(`Sending labels to Chatwoot:`, labelsToApply);
+      
       const response = await fetch(wiseAppUrl, {
         method: 'POST',
         headers: {
@@ -1707,7 +1711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          labels: [parseInt(tagId)]
+          labels: labelsToApply
         }),
       });
 

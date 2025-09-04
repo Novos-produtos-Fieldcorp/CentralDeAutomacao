@@ -720,7 +720,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           'wiseapp-token': wiseAppToken || ''
         },
         body: JSON.stringify({
-          tagId: existingTag.id
+          tagId: existingTag.id,
+          tagName: existingTag.name
         })
       });
 
