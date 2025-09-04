@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { getWiseAppLabels } from "@/lib/directApiService";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
+import { createApiUrl } from '@/lib/api-config';
 
 interface Tag {
   id: number;
@@ -189,7 +190,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const response = await fetch(`/api/wiseapp/${tag.company_id}/labels`, {
+      const response = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
