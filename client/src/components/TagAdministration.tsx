@@ -175,7 +175,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     }
   };
 
-  // Função para criar tag no WiseApp
+  // Função para criar tag no WiseApp usando a rota do backend
   const createWiseAppTag = async (tag: Tag) => {
     if (!accountId || !wiseAppToken) return;
     
@@ -183,17 +183,18 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       const labelData = {
         name: tag.nome,
         color: tag.cor,
-        account_id: accountId
+        description: tag.nome
       };
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const response = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+      const response = await fetch(`/api/wiseapp/${tag.company_id}/labels`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${wiseAppToken}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'wiseapp-token': wiseAppToken,
+          'wiseapp-account-id': accountId
         },
         body: JSON.stringify(labelData),
         signal: controller.signal
@@ -202,10 +203,11 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       clearTimeout(timeoutId);
 
       if (response.ok) {
-        const wiseAppLabel = await response.json();
-        console.log('Tag criada no WiseApp:', wiseAppLabel);
+        const result = await response.json();
+        console.log('Tag criada no WiseApp:', result);
       } else {
-        console.warn(`WiseApp retornou status ${response.status}: ${response.statusText}`);
+        const errorData = await response.text();
+        console.warn(`WiseApp API retornou status ${response.status}: ${errorData}`);
       }
     } catch (error) {
       console.warn('Erro ao criar tag no WiseApp (não crítico):', error);

@@ -1467,6 +1467,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para criar label no WiseApp
+  app.post("/api/wiseapp/:companyId/labels", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const { name, color, description } = req.body;
+      
+      console.log(`Creating WiseApp label for company ${companyId}`);
+      
+      // Buscar token do header
+      const token = req.headers['wiseapp-token'] as string;
+      if (!token) {
+        return res.status(401).json({ 
+          error: "Token WiseApp não encontrado" 
+        });
+      }
+
+      // Buscar account_id do header
+      const account_id = req.headers['wiseapp-account-id'] as string;
+      if (!account_id) {
+        return res.status(400).json({ 
+          error: "Account ID não encontrado" 
+        });
+      }
+
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`;
+      
+      const payload = {
+        title: name,
+        description: description || '',
+        color: color || '#3B82F6'
+      };
+
+      const response = await fetch(wiseAppUrl, {
+        method: 'POST',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error(`WiseApp API error: ${response.status} - ${errorData}`);
+        throw new Error(`WiseApp API responded with ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('WiseApp label created:', data);
+      
+      // Transformar resposta para nosso formato
+      const label = data.payload ? {
+        id: data.payload.id,
+        name: data.payload.title,
+        color: data.payload.color,
+        description: data.payload.description
+      } : null;
+
+      res.json({ success: true, label });
+
+    } catch (error) {
+      console.error("Erro ao criar label no WiseApp:", error);
+      res.status(500).json({
+        error: "Erro ao criar label no WiseApp",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
   // Rota para buscar inboxes do WiseApp 
   app.get("/api/v1/accounts/:accountId/inboxes", async (req, res) => {
     try {
