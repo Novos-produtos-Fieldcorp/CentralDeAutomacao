@@ -68,14 +68,20 @@ const BulkActionsModal = ({
       console.log(`Aplicando tag "${tagData.nome}" aos contatos no WiseApp para ${motoristaIds.length} motoristas...`);
       
       let syncSuccessCount = 0;
+      console.log(`DEBUG: Processando ${motoristaIds.length} motoristas:`, motoristaIds);
+      
       for (const motoristaId of motoristaIds) {
         try {
+          console.log(`DEBUG: Buscando dados do motorista ${motoristaId}`);
+          
           // Buscar dados do motorista via view (para compatibilidade com AgregadosLista)
           const { data: motorista } = await supabase
             .from('vw_agregados_completo')
             .select('telefone, nome_motorista')
             .eq('motorista_id', motoristaId)
             .single();
+
+          console.log(`DEBUG: Dados do motorista ${motoristaId}:`, motorista);
 
           if (motorista?.telefone) {
             // Usar telefone sem +55 como na versão individual que funciona
