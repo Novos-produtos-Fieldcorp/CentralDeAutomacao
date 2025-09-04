@@ -82,20 +82,30 @@ const BulkActionsModal = ({
             const phoneStr = String(motorista.telefone);
             const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
             
-            // Buscar contato no WiseApp usando o serviço existente
-            const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId);
-            const contacts = searchData.payload || [];
+            console.log(`BULK DEBUG: Buscando contato para ${motorista.nome_motorista} com telefone ${formattedPhone}`);
             
-            if (contacts.length > 0) {
-              const contact = contacts[0];
+            try {
+              // Buscar contato no WiseApp usando o serviço existente
+              const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId);
+              console.log(`BULK DEBUG: Resultado da busca:`, searchData);
               
-              // Aplicar tag ao contato usando o serviço existente
-              await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome], companyId);
+              const contacts = searchData.payload || [];
               
-              syncSuccessCount++;
-              console.log(`Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
-            } else {
-              console.log(`Contato não encontrado no WiseApp para ${motorista.nome_motorista} (${motorista.telefone})`);
+              if (contacts.length > 0) {
+                const contact = contacts[0];
+                console.log(`BULK DEBUG: Contato encontrado - ID ${contact.id}, aplicando tag...`);
+                
+                // Aplicar tag ao contato usando o serviço existente
+                await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome], companyId);
+                
+                syncSuccessCount++;
+                console.log(`Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
+              } else {
+                console.log(`BULK DEBUG: Nenhum contato retornado para telefone ${formattedPhone}`);
+                console.log(`Contato não encontrado no WiseApp para ${motorista.nome_motorista} (${motorista.telefone})`);
+              }
+            } catch (searchError) {
+              console.error(`BULK DEBUG: Erro na busca do contato:`, searchError);
             }
           }
         } catch (contactError) {
