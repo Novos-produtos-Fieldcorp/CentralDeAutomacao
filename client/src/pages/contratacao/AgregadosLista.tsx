@@ -260,44 +260,52 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   // Buscar tags do Supabase
 
-  // Carregar tags individuais dos motoristas
+  // Carregar tags individuais dos motoristas - versão otimizada em lote
   const fetchMotoristaTags = async (motoristas: ViewContratado[]) => {
     try {
+      const motoristaIds = motoristas
+        .map(m => m.motorista_id)
+        .filter((id): id is number => id !== undefined && id !== null);
+      
+      if (motoristaIds.length === 0) {
+        setMotoristaTags({});
+        return;
+      }
+
+      // Buscar todas as associações de uma vez
+      const { data: associations, error } = await supabase
+        .from('associacao_tags')
+        .select(`
+          motorista_id,
+          tag:tag_id (
+            id,
+            nome,
+            cor,
+            company_id,
+            limite_max,
+            created_at,
+            updated_at
+          )
+        `)
+        .in('motorista_id', motoristaIds);
+      
+      if (error) throw error;
+
+      // Organizar por motorista_id
       const newMotoristaTags: { [key: number]: any[] } = {};
       
-      for (const motorista of motoristas) {
-        if (motorista.motorista_id) {
-          try {
-            const { data, error } = await supabase
-              .from('associacao_tags')
-              .select(`
-                tag:tag_id (
-                  id,
-                  nome,
-                  cor,
-                  company_id,
-                  limite_max,
-                  created_at,
-                  updated_at
-                )
-              `)
-              .eq('motorista_id', motorista.motorista_id);
-            
-            if (error) throw error;
-            newMotoristaTags[motorista.motorista_id] = data?.map(item => item.tag).filter(Boolean) || [];
-            
-            // Log para debug
-            if (data && data.length > 0) {
-              console.log(`Motorista ${motorista.motorista_id} tem ${data.length} tags:`, data);
-            }
-          } catch (error) {
-            console.error(`Erro ao carregar tags do motorista ${motorista.motorista_id}:`, error);
-            newMotoristaTags[motorista.motorista_id] = [];
-          }
-        }
-      }
+      // Inicializar todos os motoristas com array vazio
+      motoristaIds.forEach(id => {
+        newMotoristaTags[id] = [];
+      });
       
-      console.log('Tags carregadas para todos os agregados:', newMotoristaTags);
+      // Preencher com as tags encontradas
+      associations?.forEach((association: any) => {
+        if (association.tag && association.motorista_id) {
+          newMotoristaTags[association.motorista_id].push(association.tag);
+        }
+      });
+      
       setMotoristaTags(newMotoristaTags);
     } catch (error) {
       console.error('Erro ao carregar tags dos agregados:', error);
@@ -1404,14 +1412,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           const motoristaTagIds = motoristaTagsList.map((tag: any) => tag.id.toString());
           tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
           
-          // Debug para o filtro
-          if (motoristaTagsList.length > 0) {
-            console.log(`Motorista ${motoristaId} (${motorista.nome_motorista}):`, {
-              tagFilter,
-              motoristaTagIds,
-              tagMatch
-            });
-          }
         } else {
           tagMatch = false;
         }
@@ -2544,7 +2544,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           onClose={() => setIsBulkActionsModalOpen(false)}
           selectedItems={selectedItems}
           actionType={bulkActionType}
-          onSuccess={fetchContratados}
+          onSuccess={() => {
+            fetchContratados();
+            // Recarregar tags imediatamente após operação em massa
+            if (contratados && contratados.length > 0) {
+              fetchMotoristaTags(contratados);
+            }
+          }}
           clientes={clientes}
         />
 
