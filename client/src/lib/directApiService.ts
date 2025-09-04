@@ -377,10 +377,41 @@ export const getWiseAppContact = async (accountId: string, token: string, contac
   return response.json();
 };
 
-// Aplicar labels a um contato via backend existente
+// Aplicar labels a um contato preservando existentes (mesma lógica que funciona individual)
 export const applyWiseAppContactLabels = async (accountId: string, token: string, contactId: number, labelNames: string[], companyId: number = 2) => {
   const url = `${API_BASE_URL}/wiseapp/${companyId}/contacts/${contactId}/labels`;
   
+  console.log(`Bulk: Adding labels to contact ${contactId} without overwriting`);
+  
+  // 1. Buscar labels existentes primeiro (mesma lógica que funciona individual)
+  const getResponse = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'wiseapp-token': token,
+      'wiseapp-account-id': accountId
+    }
+  });
+  
+  let existingLabels: string[] = [];
+  if (getResponse.ok) {
+    const result = await getResponse.json();
+    existingLabels = result.payload || [];
+    console.log(`Bulk: Found ${existingLabels.length} existing labels for contact ${contactId}`);
+  }
+  
+  // 2. Adicionar novas labels se não existirem
+  const mergedLabels = [...existingLabels];
+  for (const newLabel of labelNames) {
+    if (!mergedLabels.includes(newLabel)) {
+      mergedLabels.push(newLabel);
+      console.log(`Bulk: Added "${newLabel}" to contact ${contactId}`);
+    }
+  }
+  
+  console.log(`Bulk: Applying ${mergedLabels.length} labels to contact ${contactId}: ${mergedLabels.join(', ')}`);
+  
+  // 3. Enviar lista completa (mesma lógica que funciona individual)
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -388,7 +419,7 @@ export const applyWiseAppContactLabels = async (accountId: string, token: string
       'wiseapp-token': token,
       'wiseapp-account-id': accountId
     },
-    body: JSON.stringify({ labels: labelNames })
+    body: JSON.stringify({ labels: mergedLabels })
   });
 
   if (!response.ok) {
