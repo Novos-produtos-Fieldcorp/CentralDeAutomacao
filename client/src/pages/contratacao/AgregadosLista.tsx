@@ -963,6 +963,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
 
         setContratados(agregadosAgrupados);
+        
+        // Carregar tags dos motoristas para permitir filtro
+        if (agregadosAgrupados && agregadosAgrupados.length > 0) {
+          await fetchMotoristaTags(agregadosAgrupados);
+        }
       } catch (error) {
         console.error('Error fetching contratados:', error);
         toast.error('Erro ao carregar contratados');
