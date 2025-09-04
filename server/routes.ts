@@ -1723,6 +1723,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Applying ${existingLabels.length} labels: ${existingLabels.join(', ')}`);
+      console.log(`PAYLOAD BEING SENT:`, JSON.stringify({ labels: existingLabels }));
+      console.log(`URL: ${labelsUrl}`);
+      console.log(`TOKEN: ${token ? 'Present' : 'Missing'}`);
+      console.log(`ACCOUNT ID: ${account_id}`);
       
       // Enviar lista completa (conforme API do Chatwoot)
       const response = await fetch(labelsUrl, {
@@ -1736,8 +1740,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }),
       });
 
+      console.log(`CHATWOOT RESPONSE STATUS: ${response.status}`);
+      const responseText = await response.text();
+      console.log(`CHATWOOT RESPONSE BODY: ${responseText}`);
+
       if (!response.ok) {
-        throw new Error(`WiseApp API responded with ${response.status}`);
+        throw new Error(`WiseApp API responded with ${response.status}: ${responseText}`);
       }
 
       res.json({ success: true });

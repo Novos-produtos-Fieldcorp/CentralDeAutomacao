@@ -82,33 +82,15 @@ const BulkActionsModal = ({
             const phoneStr = String(motorista.telefone);
             const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
             
-            console.log(`BULK DEBUG: Buscando contato para ${motorista.nome_motorista} com telefone ${formattedPhone}`);
-            
             try {
               // Buscar contato no WiseApp usando o serviço existente
               const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId);
-              console.log(`BULK DEBUG: Resultado da busca:`, searchData);
-              console.log(`BULK DEBUG: Tipo do resultado:`, typeof searchData);
-              console.log(`BULK DEBUG: É array?:`, Array.isArray(searchData));
               
-              // Verificar diferentes estruturas possíveis
-              let contacts = [];
-              if (Array.isArray(searchData)) {
-                contacts = searchData;
-                console.log(`BULK DEBUG: Usando resultado direto como array`);
-              } else if (searchData?.payload && Array.isArray(searchData.payload)) {
-                contacts = searchData.payload;
-                console.log(`BULK DEBUG: Usando searchData.payload`);
-              } else if (searchData?.data && Array.isArray(searchData.data)) {
-                contacts = searchData.data;
-                console.log(`BULK DEBUG: Usando searchData.data`);
-              }
-              
-              console.log(`BULK DEBUG: Contacts finais:`, contacts, `Length: ${contacts.length}`);
+              // Corrigir estrutura de dados (descoberta: searchData é array direto)
+              const contacts = Array.isArray(searchData) ? searchData : (searchData?.payload || []);
               
               if (contacts.length > 0) {
                 const contact = contacts[0];
-                console.log(`BULK DEBUG: Contato encontrado - ID ${contact.id}, aplicando tag...`);
                 
                 // Aplicar tag ao contato usando o serviço existente
                 await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome], companyId);
