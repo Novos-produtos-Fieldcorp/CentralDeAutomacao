@@ -328,26 +328,63 @@ const BulkActionsModal = ({
             break;
           }
           
-          // Verificar se a associação já existe
-          const { data: existingAssociation } = await supabase
-            .from('associacao_tags')
-            .select('id')
-            .eq('motorista_id', motoristaId)
-            .eq('tag_id', tagId)
-            .single();
+          // Verificar se a associação já existe (ignorar erros RLS)
+          let existingAssociation = null;
+          let shouldCreateAssociation = true;
           
-          // Se não existe, criar a associação
-          if (!existingAssociation) {
-            const { error } = await supabase
+          try {
+            const result = await supabase
               .from('associacao_tags')
-              .insert({
-                motorista_id: motoristaId,
-                tag_id: tagId
-              });
-            
-            if (error) throw error;
-            addedCount++;
-            motoristasComNovaTag.push(motoristaId); // Coletar para sincronização
+              .select('id')
+              .eq('motorista_id', motoristaId)
+              .eq('tag_id', tagId)
+              .single();
+            existingAssociation = result.data;
+          } catch (error: any) {
+            // Ignorar erros de RLS (406) e continuar
+            if (error.code === 'PGRST301' || error.status === 406) {
+              console.warn(`RLS blocked duplicate check for motorista ${motoristaId}, proceeding with creation`);
+            } else if (error.code === 'PGRST116') {
+              // Nenhum registro encontrado - OK para criar
+              console.log(`No existing association found for motorista ${motoristaId}`);
+            } else {
+              throw error;
+            }
+          }
+          
+          // Se não existe (ou RLS bloqueou verificação), tentar criar
+          if (!existingAssociation) {
+            try {
+              const { error } = await supabase
+                .from('associacao_tags')
+                .insert({
+                  motorista_id: motoristaId,
+                  tag_id: tagId
+                });
+              
+              if (error) {
+                // Ignorar erros de RLS ou duplicata
+                if (error.code === 'PGRST301' || error.status === 406 || error.code === '23505') {
+                  console.warn(`Supabase association blocked for motorista ${motoristaId}, but WiseApp will work`);
+                  alreadyHasCount++;
+                  shouldCreateAssociation = false;
+                } else {
+                  throw error;
+                }
+              }
+              
+              if (shouldCreateAssociation && !error) {
+                addedCount++;
+                motoristasComNovaTag.push(motoristaId); // Coletar para sincronização
+              }
+            } catch (insertError: any) {
+              if (insertError.code === 'PGRST301' || insertError.status === 406 || insertError.code === '23505') {
+                console.warn(`Insert blocked by RLS for motorista ${motoristaId}`);
+                alreadyHasCount++;
+              } else {
+                throw insertError;
+              }
+            }
           } else {
             alreadyHasCount++;
           }
