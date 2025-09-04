@@ -1703,6 +1703,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🏷️ Adicionando label "${tagName || tagId}" ao contato ${contactId}`);
       
       // 1. Buscar tags existentes do contato
+      console.log('Step 1: Getting existing labels...');
+      
       const getLabelsResponse = await fetch(labelsUrl, {
         method: 'GET',
         headers: {
@@ -1715,6 +1717,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (getLabelsResponse.ok) {
         const labelsResult = await getLabelsResponse.json();
+        console.log('Existing label IDs:', labelsResult.payload);
+        
         const existingLabelIds = labelsResult.payload || [];
         
         // Buscar todas as labels da conta para converter IDs em nomes
@@ -1727,6 +1731,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (allLabelsResponse.ok) {
           const allLabels = await allLabelsResponse.json();
+          console.log('All labels count:', allLabels.length);
           
           // Converter IDs para nomes
           existingLabels = existingLabelIds
@@ -1735,16 +1740,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
               return label ? label.name : null;
             })
             .filter((name: string | null) => name !== null);
+          
+          console.log('Existing labels as names:', existingLabels);
+        } else {
+          console.log('Failed to get all labels:', allLabelsResponse.status);
         }
+      } else {
+        console.log('Failed to get contact labels:', getLabelsResponse.status);
       }
 
       // 2. Adicionar nova tag se não existir
       const newTagName = tagName || tagId;
+      console.log('New tag to add:', newTagName);
+      
       if (!existingLabels.includes(newTagName)) {
         existingLabels.push(newTagName);
+        console.log('Tag added to list');
+      } else {
+        console.log('Tag already exists in list');
       }
       
-      console.log(`📝 Aplicando tags: [${existingLabels.join(', ')}]`);
+      console.log('Final tags to apply:', existingLabels);
       
       // 3. Aplicar lista completa
       const response = await fetch(labelsUrl, {
