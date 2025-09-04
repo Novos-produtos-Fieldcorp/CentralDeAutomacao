@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, X, Tag as TagIcon } from "lucide-react";
+import { Plus, X, Tag as TagIcon, Edit, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { getWiseAppLabels } from "@/lib/directApiService";
 import { useAuth } from "@/context/AuthContext";
@@ -12,6 +12,7 @@ interface Tag {
   nome: string;
   cor: string;
   company_id: number;
+  limite_max: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +31,8 @@ interface MotoristaTagsManagerProps {
 
 export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsManagerProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTag, setEditingTag] = useState<Tag | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { accountId } = useAuth();
   const { token: wiseAppToken } = useWiseAppAccess();
@@ -45,14 +48,16 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
     enabled: !!motoristaId,
   });
 
-  // Query para buscar todas as tags da empresa
-  const { data: tagsResponse, isLoading: isLoadingAllTags } = useQuery({
-    queryKey: ['wiseapp-tags', accountId],
-    queryFn: () => getWiseAppLabels(accountId || '', wiseAppToken || ''),
-    enabled: !!accountId && !!wiseAppToken,
+  // Query para buscar todas as tags da empresa do banco local
+  const { data: allTags = [], isLoading: isLoadingAllTags } = useQuery<Tag[]>({
+    queryKey: ['local-tags', companyId],
+    queryFn: async () => {
+      const response = await apiRequest(`/tags?company_id=${companyId}`);
+      if (!response.ok) throw new Error('Erro ao buscar tags');
+      return response.json();
+    },
+    enabled: !!companyId,
   });
-  
-  const allTags: WiseAppTag[] = tagsResponse?.payload || [];
 
   // Verificar limite de associados por tag
   const checkTagLimit = async (tagId: number): Promise<{ canAdd: boolean; currentCount: number; limit: number | null }> => {
@@ -111,8 +116,50 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
     },
   });
 
+  // Mutation para atualizar tag
+  const updateTagMutation = useMutation({
+    mutationFn: async ({ tagId, updates }: { tagId: number; updates: Partial<Tag> }) => {
+      const response = await apiRequest(`/tags/${tagId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!response.ok) throw new Error('Erro ao atualizar tag');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
+      queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      toast.success("Tag atualizada com sucesso!");
+      setIsEditModalOpen(false);
+      setEditingTag(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erro ao atualizar tag");
+    },
+  });
+
+  // Mutation para deletar tag completamente
+  const deleteTagMutation = useMutation({
+    mutationFn: async (tagId: number) => {
+      const response = await apiRequest(`/tags/${tagId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Erro ao deletar tag');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
+      queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      toast.success("Tag deletada com sucesso!");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erro ao deletar tag");
+    },
+  });
+
   const motoristaTags = motoristaTagsData || [];
-  const availableTags = allTags.filter((tag: WiseAppTag) => 
+  const availableTags = allTags.filter((tag: Tag) => 
     !motoristaTags.find(motTag => motTag.id === tag.id)
   );
 
@@ -124,6 +171,23 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   const handleRemoveTag = (tagId: number) => {
     if (confirm("Tem certeza que deseja remover esta tag?")) {
       removeTagMutation.mutate(tagId);
+    }
+  };
+
+  const handleEditTag = (tag: Tag) => {
+    setEditingTag(tag);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteTag = (tagId: number) => {
+    if (window.confirm('Tem certeza que deseja deletar esta tag? Esta ação não pode ser desfeita.')) {
+      deleteTagMutation.mutate(tagId);
+    }
+  };
+
+  const handleUpdateTag = (updates: Partial<Tag>) => {
+    if (editingTag) {
+      updateTagMutation.mutate({ tagId: editingTag.id, updates });
     }
   };
 
@@ -148,21 +212,49 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {motoristaTags.map((tag) => (
-          <div key={tag.id} className="flex items-center gap-1">
-            <span
-              style={{ backgroundColor: tag.cor }}
-              className="text-white px-2 py-1 rounded-md text-sm"
-            >
-              {tag.nome}
-            </span>
-            <button
-              onClick={() => handleRemoveTag(tag.id)}
-              className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-            >
-              <X className="w-3 h-3" />
-            </button>
+          <div key={tag.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600"
+                  style={{ backgroundColor: tag.cor }}
+                  title={`Cor: ${tag.cor}`}
+                />
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  {tag.nome}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleEditTag(tag)}
+                  className="p-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  title="Editar tag"
+                >
+                  <Edit className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => handleRemoveTag(tag.id)}
+                  className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  title="Remover do motorista"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => handleDeleteTag(tag.id)}
+                  className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-800 dark:hover:text-red-600 transition-colors"
+                  title="Deletar tag permanentemente"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+            {tag.limite_max && (
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                Limite: {tag.limite_max} associados
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -197,7 +289,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                   Nenhuma tag disponível para adicionar.
                 </div>
               ) : (
-                availableTags.map((tag: WiseAppTag) => (
+                availableTags.map((tag: Tag) => (
                   <button
                     key={tag.id}
                     onClick={() => handleAddTag(tag.id)}
@@ -205,10 +297,10 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                     className="w-full flex items-center gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
                   >
                     <span
-                      style={{ backgroundColor: tag.color }}
+                      style={{ backgroundColor: tag.cor }}
                       className="text-white px-2 py-1 rounded-md text-sm"
                     >
-                      {tag.name}
+                      {tag.nome}
                     </span>
                   </button>
                 ))
@@ -226,6 +318,130 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
           </div>
         </div>
       )}
+
+      {/* Modal para editar tag */}
+      {isEditModalOpen && editingTag && (
+        <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4 border dark:border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar Tag</h2>
+              <button
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setEditingTag(null);
+                }}
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <EditTagForm
+              tag={editingTag}
+              onSave={handleUpdateTag}
+              onCancel={() => {
+                setIsEditModalOpen(false);
+                setEditingTag(null);
+              }}
+              isLoading={updateTagMutation.isPending}
+            />
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+// Componente para editar tag
+interface EditTagFormProps {
+  tag: Tag;
+  onSave: (updates: Partial<Tag>) => void;
+  onCancel: () => void;
+  isLoading: boolean;
+}
+
+function EditTagForm({ tag, onSave, onCancel, isLoading }: EditTagFormProps) {
+  const [formData, setFormData] = useState({
+    nome: tag.nome,
+    cor: tag.cor,
+    limite_max: tag.limite_max || ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      nome: formData.nome,
+      cor: formData.cor,
+      limite_max: formData.limite_max ? parseInt(formData.limite_max.toString()) : null
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Nome da Tag
+        </label>
+        <input
+          type="text"
+          value={formData.nome}
+          onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Cor
+        </label>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={formData.cor}
+            onChange={(e) => setFormData(prev => ({ ...prev, cor: e.target.value }))}
+            className="w-12 h-8 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
+          />
+          <input
+            type="text"
+            value={formData.cor}
+            onChange={(e) => setFormData(prev => ({ ...prev, cor: e.target.value }))}
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            placeholder="#000000"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Limite Máximo de Associados (opcional)
+        </label>
+        <input
+          type="number"
+          min="1"
+          value={formData.limite_max}
+          onChange={(e) => setFormData(prev => ({ ...prev, limite_max: e.target.value }))}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          placeholder="Deixe vazio para sem limite"
+        />
+      </div>
+
+      <div className="flex justify-end gap-2 pt-4">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors"
+        >
+          {isLoading ? 'Salvando...' : 'Salvar'}
+        </button>
+      </div>
+    </form>
   );
 }
