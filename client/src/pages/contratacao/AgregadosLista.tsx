@@ -668,7 +668,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       if (!existingTag) {
         console.warn(`❌ Tag "${tagData.nome}" não encontrada no Chatwoot`);
-        console.log('📋 Tags disponíveis:', labels.map(l => l.name));
+        console.log('📋 Tags disponíveis:', labels.map((l: any) => l.name));
         return;
       }
 
