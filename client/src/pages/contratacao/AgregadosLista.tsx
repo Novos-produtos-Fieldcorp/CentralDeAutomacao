@@ -533,6 +533,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (!isClickInside) {
         setTagDropdownOpen({});
         setTagDropdownPosition({});
+        setTagSearchTerm({});
       }
     };
 
@@ -541,6 +542,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (event.target === document || event.target === document.documentElement || event.target === document.body) {
         setTagDropdownOpen({});
         setTagDropdownPosition({});
+        setTagSearchTerm({});
       }
     };
 
@@ -700,6 +702,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const [tagDropdownPosition, setTagDropdownPosition] = useState<{[key: number]: {top: number, left: number, width: number}}>({});
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
+  const [tagSearchTerm, setTagSearchTerm] = useState<{[key: number]: string}>({});
 
   // Função para sincronizar tag com Chatwoot via proxy backend
   const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
@@ -2496,7 +2499,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                     const isOpening = !tagDropdownOpen[motorista.motorista_id];
                                     
                                     if (isOpening) {
-                                      // Calcular posição do dropdown
+                                      // Calcular posição do dropdown e limpar campo de pesquisa
                                       const buttonElement = e.currentTarget as HTMLElement;
                                       const rect = buttonElement.getBoundingClientRect();
                                       setTagDropdownPosition(prev => ({
@@ -2506,6 +2509,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                           left: rect.left,      // Usar posição direta, sem window.scrollX
                                           width: 256 // w-64 = 256px
                                         }
+                                      }));
+                                      setTagSearchTerm(prev => ({
+                                        ...prev,
+                                        [motorista.motorista_id!]: ''
                                       }));
                                     }
                                     
@@ -2539,11 +2546,26 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                     }}
                                   >
                                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                                      <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Adicionar Tags</span>
+                                      <input
+                                        type="text"
+                                        placeholder="Buscar tags..."
+                                        className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        value={tagSearchTerm[motorista.motorista_id] || ''}
+                                        onChange={(e) => setTagSearchTerm(prev => ({
+                                          ...prev,
+                                          [motorista.motorista_id!]: e.target.value
+                                        }))}
+                                        autoFocus
+                                      />
                                     </div>
                                     <div className="space-y-1">
                                       {tags
-                                        .filter(tag => !motorista.motorista_id || !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id))
+                                        .filter(tag => {
+                                          const notAdded = !motorista.motorista_id || !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id);
+                                          const searchTerm = tagSearchTerm[motorista.motorista_id] || '';
+                                          const matchesSearch = !searchTerm || tag.nome.toLowerCase().includes(searchTerm.toLowerCase());
+                                          return notAdded && matchesSearch;
+                                        })
                                         .map((tag) => (
                                         <div
                                           key={tag.id}
@@ -2551,6 +2573,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             handleAddTag(motorista.motorista_id, tag.id);
+                                            // Fechar dropdown e limpar pesquisa após adicionar tag
+                                            setTagDropdownOpen(prev => ({ ...prev, [motorista.motorista_id!]: false }));
+                                            setTagSearchTerm(prev => ({ ...prev, [motorista.motorista_id!]: '' }));
                                           }}
                                         >
                                           <div
@@ -2562,9 +2587,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                           </span>
                                         </div>
                                       ))}
-                                      {tags.filter(tag => !motorista.motorista_id || !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id)).length === 0 && (
+                                      {tags.filter(tag => {
+                                        const notAdded = !motorista.motorista_id || !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id);
+                                        const searchTerm = tagSearchTerm[motorista.motorista_id] || '';
+                                        const matchesSearch = !searchTerm || tag.nome.toLowerCase().includes(searchTerm.toLowerCase());
+                                        return notAdded && matchesSearch;
+                                      }).length === 0 && (
                                         <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-                                          Todas as tags já foram adicionadas
+                                          {tagSearchTerm[motorista.motorista_id] ? 'Nenhuma tag encontrada' : 'Todas as tags já foram adicionadas'}
                                         </div>
                                       )}
                                     </div>

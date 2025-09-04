@@ -171,6 +171,7 @@ const MotoristasLista = () => {
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{[key: number]: boolean}>({});
   const [tagDropdownPosition, setTagDropdownPosition] = useState<{[key: number]: {top: number, left: number, width: number}}>({});
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
+  const [tagSearchTerm, setTagSearchTerm] = useState<{[key: number]: string}>({});
 
   // Função para sincronizar tag com WiseApp via proxy backend
   const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
@@ -752,6 +753,7 @@ const MotoristasLista = () => {
           Object.values(tagDropdownOpen).some(isOpen => isOpen)) {
         setTagDropdownOpen({});
         setTagDropdownPosition({});
+        setTagSearchTerm({});
       }
     };
 
@@ -2199,7 +2201,7 @@ const MotoristasLista = () => {
                                 const isOpening = !tagDropdownOpen[motorista.motorista_id];
                                 
                                 if (isOpening) {
-                                  // Calcular posição do dropdown
+                                  // Calcular posição do dropdown e limpar campo de pesquisa
                                   const buttonElement = e.currentTarget as HTMLElement;
                                   const rect = buttonElement.getBoundingClientRect();
                                   setTagDropdownPosition(prev => ({
@@ -2209,6 +2211,10 @@ const MotoristasLista = () => {
                                       left: rect.left,      // Usar posição direta, sem window.scrollX
                                       width: 256 // w-64 = 256px
                                     }
+                                  }));
+                                  setTagSearchTerm(prev => ({
+                                    ...prev,
+                                    [motorista.motorista_id]: ''
                                   }));
                                 }
                                 
@@ -2241,15 +2247,28 @@ const MotoristasLista = () => {
                                   }}
                                 >
                                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                                    <span className="text-xs font-medium text-gray-900 dark:text-gray-100">Adicionar Tags</span>
+                                    <input
+                                      type="text"
+                                      placeholder="Buscar tags..."
+                                      className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                      value={tagSearchTerm[motorista.motorista_id] || ''}
+                                      onChange={(e) => setTagSearchTerm(prev => ({
+                                        ...prev,
+                                        [motorista.motorista_id]: e.target.value
+                                      }))}
+                                      autoFocus
+                                    />
                                   </div>
                                   <div className="space-y-1">
                                     {tags
-                                      .filter(tag => 
+                                      .filter(tag => {
                                         // Só mostrar tags que têm ID numérico (do Supabase) e não foram adicionadas
-                                        typeof tag.id === 'number' && 
-                                        !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id)
-                                      )
+                                        const hasNumericId = typeof tag.id === 'number';
+                                        const notAdded = !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id);
+                                        const searchTerm = tagSearchTerm[motorista.motorista_id] || '';
+                                        const matchesSearch = !searchTerm || tag.nome.toLowerCase().includes(searchTerm.toLowerCase());
+                                        return hasNumericId && notAdded && matchesSearch;
+                                      })
                                       .map((tag) => (
                                       <div
                                         key={tag.id}
@@ -2257,6 +2276,9 @@ const MotoristasLista = () => {
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleAddTag(motorista.motorista_id, tag.id);
+                                          // Fechar dropdown e limpar pesquisa após adicionar tag
+                                          setTagDropdownOpen(prev => ({ ...prev, [motorista.motorista_id]: false }));
+                                          setTagSearchTerm(prev => ({ ...prev, [motorista.motorista_id]: '' }));
                                         }}
                                       >
                                         <div
@@ -2268,12 +2290,15 @@ const MotoristasLista = () => {
                                         </span>
                                       </div>
                                     ))}
-                                    {tags.filter(tag => 
-                                      typeof tag.id === 'number' && 
-                                      !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id)
-                                    ).length === 0 && (
+                                    {tags.filter(tag => {
+                                      const hasNumericId = typeof tag.id === 'number';
+                                      const notAdded = !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id);
+                                      const searchTerm = tagSearchTerm[motorista.motorista_id] || '';
+                                      const matchesSearch = !searchTerm || tag.nome.toLowerCase().includes(searchTerm.toLowerCase());
+                                      return hasNumericId && notAdded && matchesSearch;
+                                    }).length === 0 && (
                                       <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-                                        {tags.length === 0 ? 'Nenhuma tag disponível' : 'Todas as tags já foram adicionadas'}
+                                        {tagSearchTerm[motorista.motorista_id] ? 'Nenhuma tag encontrada' : (tags.length === 0 ? 'Nenhuma tag disponível' : 'Todas as tags já foram adicionadas')}
                                       </div>
                                     )}
                                   </div>
