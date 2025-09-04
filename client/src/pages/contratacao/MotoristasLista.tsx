@@ -746,17 +746,18 @@ const MotoristasLista = () => {
 
   // Listener adicional para scroll - fechar dropdowns de tags quando rolar
   useEffect(() => {
-    const handleScroll = () => {
-      // Fechar todos os dropdowns de tags quando rolar a página
-      if (Object.values(tagDropdownOpen).some(isOpen => isOpen)) {
+    const handleScroll = (event: Event) => {
+      // Só fechar dropdown se for scroll da janela principal, não scroll interno de elementos
+      if ((event.target === document || event.target === document.documentElement || event.target === document.body) && 
+          Object.values(tagDropdownOpen).some(isOpen => isOpen)) {
         setTagDropdownOpen({});
         setTagDropdownPosition({});
       }
     };
 
-    window.addEventListener('scroll', handleScroll, true); // true para capturar scroll em qualquer elemento
+    window.addEventListener('scroll', handleScroll);
     return () => {
-      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, [tagDropdownOpen]);
 

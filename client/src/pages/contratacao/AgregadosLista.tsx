@@ -536,17 +536,19 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     };
 
-    const handleScroll = () => {
-      // Fechar todos os dropdowns quando rolar a página
-      setTagDropdownOpen({});
-      setTagDropdownPosition({});
+    const handleScroll = (event: Event) => {
+      // Só fechar dropdown se for scroll da janela principal, não scroll interno de elementos
+      if (event.target === document || event.target === document.documentElement || event.target === document.body) {
+        setTagDropdownOpen({});
+        setTagDropdownPosition({});
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('scroll', handleScroll, true); // true para capturar scroll em qualquer elemento
+    window.addEventListener('scroll', handleScroll);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
     const [clienteFilter, setClienteFilter] = useState<string[]>([]);
