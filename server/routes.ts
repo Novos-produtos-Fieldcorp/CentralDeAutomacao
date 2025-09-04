@@ -1726,6 +1726,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Buscar tags de um contato no WiseApp
+  app.get("/api/wiseapp/:companyId/contacts/:contactId/labels", async (req, res) => {
+    try {
+      const { companyId, contactId } = req.params;
+      
+      console.log(`Fetching labels for contact ${contactId} in company ${companyId}`);
+      
+      // Buscar token do header
+      const token = req.headers['wiseapp-token'] as string;
+      if (!token) {
+        return res.status(401).json({ 
+          error: "Token WiseApp não encontrado" 
+        });
+      }
+
+      // Buscar account_id do header
+      const account_id = req.headers['wiseapp-account-id'] as string;
+      if (!account_id) {
+        return res.status(400).json({ 
+          error: "Account ID não encontrado" 
+        });
+      }
+
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
+      
+      const response = await fetch(wiseAppUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`Labels fetched successfully for contact ${contactId}:`, result);
+        res.json(result);
+      } else {
+        const errorText = await response.text();
+        console.error(`Error fetching contact labels: ${response.status} - ${errorText}`);
+        res.status(response.status).json({ error: errorText });
+      }
+    } catch (error) {
+      console.error("Erro ao buscar tags do contato:", error);
+      res.status(500).json({
+        error: "Erro ao buscar tags do contato",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
   // Remover tag de um contato no WiseApp
   app.delete("/api/wiseapp/:companyId/contacts/:contactId/labels/:tagId", async (req, res) => {
     try {

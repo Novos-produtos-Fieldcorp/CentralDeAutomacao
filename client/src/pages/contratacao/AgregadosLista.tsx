@@ -728,6 +728,33 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       if (applyTagResponse.ok) {
         console.log(`✅ Tag "${tagData.nome}" aplicada com sucesso ao contato ${contactId} (${motorista.nome_motorista}) no Chatwoot`);
+        
+        // 5. Verificar se a tag foi realmente aplicada (confirmar)
+        console.log(`🔍 Verificando se a tag foi aplicada ao contato...`);
+        const verifyTagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contactId}/labels`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'wiseapp-account-id': accountId || '',
+            'wiseapp-token': wiseAppToken || ''
+          }
+        });
+
+        if (verifyTagResponse.ok) {
+          const contactLabels = await verifyTagResponse.json();
+          console.log(`📋 Tags atuais do contato ${contactId}:`, contactLabels);
+          
+          const hasAppliedTag = contactLabels.payload?.some((label: any) => label.id === existingTag.id) || 
+                               contactLabels.some?.((label: any) => label.id === existingTag.id);
+          
+          if (hasAppliedTag) {
+            console.log(`✅ CONFIRMADO: Tag "${tagData.nome}" está aplicada ao contato`);
+          } else {
+            console.warn(`⚠️ ATENÇÃO: Tag "${tagData.nome}" não foi encontrada nas tags do contato após aplicação`);
+          }
+        } else {
+          console.warn(`❌ Erro ao verificar tags do contato: ${verifyTagResponse.status}`);
+        }
       } else {
         const errorText = await applyTagResponse.text();
         console.error(`❌ Erro ao aplicar tag ao contato: ${applyTagResponse.status} - ${errorText}`);
