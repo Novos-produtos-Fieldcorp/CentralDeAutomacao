@@ -84,6 +84,10 @@ const BulkActionsModal = ({
         const tagResult = await createTagResponse.json();
         console.log('Tag criada/verificada no WiseApp:', tagResult);
         
+        if (tagResult.message) {
+          console.log('Mensagem do WiseApp:', tagResult.message);
+        }
+        
         // 2. Para cada motorista, buscar no WiseApp e aplicar a tag
         let syncSuccessCount = 0;
         for (const motoristaId of motoristaIds) {
@@ -138,7 +142,17 @@ const BulkActionsModal = ({
         
         if (syncSuccessCount > 0) {
           toast.success(`Tag "${tagData.nome}" sincronizada com WiseApp para ${syncSuccessCount} contato(s)!`);
+        } else {
+          toast('Tag adicionada localmente. Nenhum contato foi encontrado no WiseApp.', {
+            icon: 'ℹ️'
+          });
         }
+      } else {
+        const errorText = await createTagResponse.text();
+        console.warn('Erro na resposta do WiseApp:', createTagResponse.status, errorText);
+        toast('Tag adicionada localmente. Erro ao acessar WiseApp.', {
+          icon: '⚠️'
+        });
       }
     } catch (error) {
       console.warn('Erro ao sincronizar com WiseApp (não crítico):', error);

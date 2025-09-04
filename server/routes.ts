@@ -1510,8 +1510,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error(`WiseApp API error: ${response.status} - ${errorData}`);
-        throw new Error(`WiseApp API responded with ${response.status}`);
+        console.log(`WiseApp API response: ${response.status} - ${errorData}`);
+        
+        // Se a tag já existe (422), buscar a tag existente
+        if (response.status === 422) {
+          try {
+            console.log('Tag já existe, buscando tag existente...');
+            
+            // Buscar todas as tags para encontrar a existente
+            const listResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`, {
+              method: 'GET',
+              headers: {
+                'api_access_token': token,
+                'Content-Type': 'application/json',
+              }
+            });
+            
+            if (listResponse.ok) {
+              const listData = await listResponse.json();
+              const existingLabel = listData.payload?.find((label: any) => 
+                label.title.toLowerCase() === name.toLowerCase()
+              );
+              
+              if (existingLabel) {
+                console.log('Tag existente encontrada:', existingLabel);
+                const label = {
+                  id: existingLabel.id,
+                  name: existingLabel.title,
+                  color: existingLabel.color,
+                  description: existingLabel.description
+                };
+                return res.json({ success: true, label, message: 'Tag já existia no WiseApp' });
+              }
+            }
+          } catch (searchError) {
+            console.error('Erro ao buscar tag existente:', searchError);
+          }
+        }
+        
+        throw new Error(`WiseApp API responded with ${response.status}: ${errorData}`);
       }
 
       const data = await response.json();
@@ -1525,7 +1562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: data.payload.description
       } : null;
 
-      res.json({ success: true, label });
+      res.json({ success: true, label, message: 'Tag criada no WiseApp' });
 
     } catch (error) {
       console.error("Erro ao criar label no WiseApp:", error);
