@@ -744,6 +744,22 @@ const MotoristasLista = () => {
     };
   }, [showStatusDropdown, showCidadeDropdown, showClienteDropdown, showAtivoDropdown, showTagDropdown, tagDropdownOpen]);
 
+  // Listener adicional para scroll - fechar dropdowns de tags quando rolar
+  useEffect(() => {
+    const handleScroll = () => {
+      // Fechar todos os dropdowns de tags quando rolar a página
+      if (Object.values(tagDropdownOpen).some(isOpen => isOpen)) {
+        setTagDropdownOpen({});
+        setTagDropdownPosition({});
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, true); // true para capturar scroll em qualquer elemento
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [tagDropdownOpen]);
+
   const fetchMotoristas = async () => {
     try {
       setLoading(true);

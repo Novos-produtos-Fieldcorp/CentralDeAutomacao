@@ -532,12 +532,21 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       
       if (!isClickInside) {
         setTagDropdownOpen({});
+        setTagDropdownPosition({});
       }
     };
 
+    const handleScroll = () => {
+      // Fechar todos os dropdowns quando rolar a página
+      setTagDropdownOpen({});
+      setTagDropdownPosition({});
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScroll, true); // true para capturar scroll em qualquer elemento
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
     };
   }, []);
     const [clienteFilter, setClienteFilter] = useState<string[]>([]);
