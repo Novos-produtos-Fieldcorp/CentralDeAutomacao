@@ -1678,9 +1678,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/wiseapp/:companyId/contacts/:contactId/labels", async (req, res) => {
     try {
       const { companyId, contactId } = req.params;
-      const { tagId, tagName } = req.body;
+      const { tagId, tagName, labels } = req.body;
       
-      console.log(`Applying tag ${tagName || tagId} to contact ${contactId} for company ${companyId}`);
+      console.log(`Applying labels to contact ${contactId} for company ${companyId}`);
+      console.log(`Request body:`, req.body);
       
       // Buscar token do header
       const token = req.headers['wiseapp-token'] as string;
@@ -1698,32 +1699,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log(`Adding tag "${tagName || tagId}" to contact ${contactId} without overwriting`);
-      
       const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
       
-      // Buscar labels existentes (conforme documentação oficial do Chatwoot)
-      const getResponse = await fetch(labelsUrl, {
-        method: 'GET',
-        headers: { 'api_access_token': token }
-      });
+      let finalLabels: string[] = [];
       
-      let existingLabels: string[] = [];
-      if (getResponse.ok) {
-        const result = await getResponse.json();
-        existingLabels = result.payload || [];
-        console.log(`Found ${existingLabels.length} existing labels`);
+      // Verificar se recebeu lista completa de labels (novo formato)
+      if (labels && Array.isArray(labels)) {
+        console.log(`Using complete labels array: ${labels.join(', ')}`);
+        finalLabels = labels;
+      } else {
+        // Formato antigo: adicionar uma tag preservando existentes
+        console.log(`Adding single tag "${tagName || tagId}" without overwriting`);
+        
+        // Buscar labels existentes primeiro
+        const getResponse = await fetch(labelsUrl, {
+          method: 'GET',
+          headers: { 'api_access_token': token }
+        });
+        
+        let existingLabels: string[] = [];
+        if (getResponse.ok) {
+          const result = await getResponse.json();
+          existingLabels = result.payload || [];
+          console.log(`Found ${existingLabels.length} existing labels`);
+        }
+        
+        // Adicionar nova label se não existir
+        const newLabel = tagName || tagId;
+        finalLabels = [...existingLabels];
+        if (newLabel && !finalLabels.includes(newLabel)) {
+          finalLabels.push(newLabel);
+          console.log(`Added "${newLabel}" to labels list`);
+        }
       }
       
-      // Adicionar nova label se não existir
-      const newLabel = tagName || tagId;
-      if (!existingLabels.includes(newLabel)) {
-        existingLabels.push(newLabel);
-        console.log(`Added "${newLabel}" to labels list`);
-      }
-      
-      console.log(`Applying ${existingLabels.length} labels: ${existingLabels.join(', ')}`);
-      console.log(`PAYLOAD BEING SENT:`, JSON.stringify({ labels: existingLabels }));
+      console.log(`Applying ${finalLabels.length} labels: ${finalLabels.join(', ')}`);
+      console.log(`PAYLOAD BEING SENT:`, JSON.stringify({ labels: finalLabels }));
       console.log(`URL: ${labelsUrl}`);
       console.log(`TOKEN: ${token ? 'Present' : 'Missing'}`);
       console.log(`ACCOUNT ID: ${account_id}`);
@@ -1736,7 +1747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          labels: existingLabels
+          labels: finalLabels
         }),
       });
 
