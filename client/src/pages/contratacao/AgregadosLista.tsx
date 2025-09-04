@@ -1,6 +1,5 @@
   import React, { useState, useEffect, useRef } from 'react';
   import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag, CheckCircle, Calendar } from 'lucide-react';
-import { TagLimitNotification } from '../../components/TagLimitNotification';
   import WhatsAppAvatar from '../../components/WhatsAppAvatar';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
@@ -261,37 +260,51 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   // Buscar tags do Supabase
 
-  // Carregar tags individuais dos motoristas
+  // Carregar tags individuais dos motoristas - versão otimizada em lote
   const fetchMotoristaTags = async (motoristas: ViewContratado[]) => {
     try {
+      const motoristaIds = motoristas
+        .map(m => m.motorista_id)
+        .filter((id): id is number => id !== undefined && id !== null);
+      
+      if (motoristaIds.length === 0) {
+        setMotoristaTags({});
+        return;
+      }
+
+      // Buscar todas as associações de uma vez
+      const { data: associations, error } = await supabase
+        .from('associacao_tags')
+        .select(`
+          motorista_id,
+          tag:tag_id (
+            id,
+            nome,
+            cor,
+            company_id,
+            limite_max,
+            created_at,
+            updated_at
+          )
+        `)
+        .in('motorista_id', motoristaIds);
+      
+      if (error) throw error;
+
+      // Organizar por motorista_id
       const newMotoristaTags: { [key: number]: any[] } = {};
       
-      for (const motorista of motoristas) {
-        if (motorista.motorista_id) {
-          try {
-            const { data, error } = await supabase
-              .from('associacao_tags')
-              .select(`
-                tag:tag_id (
-                  id,
-                  nome,
-                  cor,
-                  company_id,
-                  limite_max,
-                  created_at,
-                  updated_at
-                )
-              `)
-              .eq('motorista_id', motorista.motorista_id);
-            
-            if (error) throw error;
-            newMotoristaTags[motorista.motorista_id] = data?.map(item => item.tag).filter(Boolean) || [];
-          } catch (error) {
-            console.error(`Erro ao carregar tags do motorista ${motorista.motorista_id}:`, error);
-            newMotoristaTags[motorista.motorista_id] = [];
-          }
+      // Inicializar todos os motoristas com array vazio
+      motoristaIds.forEach(id => {
+        newMotoristaTags[id] = [];
+      });
+      
+      // Preencher com as tags encontradas
+      associations?.forEach((association: any) => {
+        if (association.tag && association.motorista_id) {
+          newMotoristaTags[association.motorista_id].push(association.tag);
         }
-      }
+      });
       
       setMotoristaTags(newMotoristaTags);
     } catch (error) {
@@ -1398,6 +1411,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           const motoristaTagsList = motoristaTags[motoristaId] || [];
           const motoristaTagIds = motoristaTagsList.map((tag: any) => tag.id.toString());
           tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
+          
         } else {
           tagMatch = false;
         }
@@ -1444,8 +1458,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
     return (
       <div className="space-y-6">
-        {/* Notificação de limite de tags */}
-        <TagLimitNotification companyId={companyId || 1} />
         
         <div className="flex justify-between items-center">
           <div className="flex items-center">
@@ -2532,7 +2544,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           onClose={() => setIsBulkActionsModalOpen(false)}
           selectedItems={selectedItems}
           actionType={bulkActionType}
-          onSuccess={fetchContratados}
+          onSuccess={() => {
+            fetchContratados();
+            // Recarregar tags imediatamente após operação em massa
+            if (contratados && contratados.length > 0) {
+              fetchMotoristaTags(contratados);
+            }
+          }}
           clientes={clientes}
         />
 
