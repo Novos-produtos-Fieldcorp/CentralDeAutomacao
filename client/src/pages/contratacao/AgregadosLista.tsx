@@ -1797,78 +1797,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           {/* Filtros modernos */}
           <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
             <div className="flex flex-wrap gap-2">
-              {/* Tag Filter */}
-              <div className="relative" style={{ position: 'relative' }}>
-                <div className="relative group" ref={tagDropdownRef}>
-                  <button
-                    type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                    onClick={handleToggleTagDropdown}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Tag className="h-4 w-4" />
-                      <span>
-                        {tagFilter.length === 0 ? 'Tags' : `Tags (${tagFilter.length})`}
-                      </span>
-                    </div>
-                  </button>
-
-                  {showTagDropdown && (
-                    <div 
-                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
-                      style={{ 
-                        position: 'absolute',
-                        bottom: '100%',
-                        left: 0,
-                        marginBottom: '4px',
-                        zIndex: 999999
-                      }}>
-                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tags</span>
-                          <button 
-                            type="button" 
-                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTagFilter([]);
-                            }}
-                          >
-                            Limpar
-                          </button>
-                        </div>
-                      </div>
-                      {tags.map((tag) => (
-                        <div key={tag.id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                          <label className="flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                              checked={tagFilter.includes(tag.id.toString())}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setTagFilter([...tagFilter, tag.id.toString()]);
-                                } else {
-                                  setTagFilter(tagFilter.filter(id => id !== tag.id.toString()));
-                                }
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: tag.cor || '#3B82F6' }}
-                              />
-                              <span className="text-sm text-gray-700 dark:text-gray-200">{tag.nome}</span>
-                            </div>
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Status Filter */}
               <div className="relative" style={{ position: 'relative' }}>
                 <div className="relative group" ref={statusDropdownRef}>
@@ -2180,6 +2108,78 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                               onClick={(e) => e.stopPropagation()}
                             />
                             <span className="text-sm text-gray-700 dark:text-gray-200">{tipo}</span>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tag Filter */}
+              <div className="relative" style={{ position: 'relative' }}>
+                <div className="relative group" ref={tagDropdownRef}>
+                  <button
+                    type="button"
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                    onClick={handleToggleTagDropdown}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      <span>
+                        {tagFilter.length === 0 ? 'Tags' : `Tags (${tagFilter.length})`}
+                      </span>
+                    </div>
+                  </button>
+
+                  {showTagDropdown && (
+                    <div 
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                      style={{ 
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: 0,
+                        marginBottom: '4px',
+                        zIndex: 999999
+                      }}>
+                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tags</span>
+                          <button 
+                            type="button" 
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTagFilter([]);
+                            }}
+                          >
+                            Limpar
+                          </button>
+                        </div>
+                      </div>
+                      {tags.map((tag) => (
+                        <div key={tag.id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                              checked={tagFilter.includes(tag.id.toString())}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setTagFilter([...tagFilter, tag.id.toString()]);
+                                } else {
+                                  setTagFilter(tagFilter.filter(id => id !== tag.id.toString()));
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: tag.cor || '#3B82F6' }}
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-200">{tag.nome}</span>
+                            </div>
                           </label>
                         </div>
                       ))}
