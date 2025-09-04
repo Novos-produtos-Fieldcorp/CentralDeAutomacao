@@ -1698,69 +1698,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      console.log(`Adding tag "${tagName || tagId}" to contact ${contactId} without overwriting`);
+      
       const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
       
-      console.log(`🏷️ Adicionando label "${tagName || tagId}" ao contato ${contactId}`);
-      console.log('DEBUG: Starting label addition process');
-      
-      const getLabelsResponse = await fetch(labelsUrl, {
+      // Buscar labels existentes (conforme documentação oficial do Chatwoot)
+      const getResponse = await fetch(labelsUrl, {
         method: 'GET',
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'api_access_token': token }
       });
-
+      
       let existingLabels: string[] = [];
-      
-      if (getLabelsResponse.ok) {
-        const labelsResult = await getLabelsResponse.json();
-        console.log('Existing label IDs:', labelsResult.payload);
-        
-        const existingLabelIds = labelsResult.payload || [];
-        
-        // Buscar todas as labels da conta para converter IDs em nomes
-        const allLabelsResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`, {
-          headers: {
-            'api_access_token': token,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (allLabelsResponse.ok) {
-          const allLabels = await allLabelsResponse.json();
-          console.log('All labels count:', allLabels.length);
-          
-          // Converter IDs para nomes
-          existingLabels = existingLabelIds
-            .map((id: number) => {
-              const label = allLabels.find((l: any) => l.id === id);
-              return label ? label.name : null;
-            })
-            .filter((name: string | null) => name !== null);
-          
-          console.log('Existing labels as names:', existingLabels);
-        } else {
-          console.log('Failed to get all labels:', allLabelsResponse.status);
-        }
-      } else {
-        console.log('Failed to get contact labels:', getLabelsResponse.status);
-      }
-
-      // 2. Adicionar nova tag se não existir
-      const newTagName = tagName || tagId;
-      console.log('New tag to add:', newTagName);
-      
-      if (!existingLabels.includes(newTagName)) {
-        existingLabels.push(newTagName);
-        console.log('Tag added to list');
-      } else {
-        console.log('Tag already exists in list');
+      if (getResponse.ok) {
+        const result = await getResponse.json();
+        existingLabels = result.payload || [];
+        console.log(`Found ${existingLabels.length} existing labels`);
       }
       
-      console.log('Final tags to apply:', existingLabels);
+      // Adicionar nova label se não existir
+      const newLabel = tagName || tagId;
+      if (!existingLabels.includes(newLabel)) {
+        existingLabels.push(newLabel);
+        console.log(`Added "${newLabel}" to labels list`);
+      }
       
-      // 3. Aplicar lista completa
+      console.log(`Applying ${existingLabels.length} labels: ${existingLabels.join(', ')}`);
+      
+      // Enviar lista completa (conforme API do Chatwoot)
       const response = await fetch(labelsUrl, {
         method: 'POST',
         headers: {
