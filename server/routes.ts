@@ -1980,7 +1980,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .eq('company_id', company_id)
         .single();
 
-      if (tokenError || !tokenData?.access_token_wiseapp) {
+      if (tokenError) {
+        console.error('Erro ao buscar token WiseApp:', tokenError);
+        return res.json({ 
+          data: { 
+            totalProcessed: 0, 
+            successful: 0, 
+            failed: 0, 
+            errors: [],
+            message: 'Erro ao buscar token WiseApp: ' + tokenError.message
+          } 
+        });
+      }
+
+      if (!tokenData?.access_token_wiseapp) {
+        console.log('Token WiseApp não encontrado para company_id:', company_id);
         return res.json({ 
           data: { 
             totalProcessed: 0, 
@@ -1992,6 +2006,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      console.log('Token WiseApp encontrado, buscando motoristas...');
+
       // 2. Buscar todos os motoristas e agregados ativos
       const { data: motoristas, error: motoristasError } = await supabase
         .from('view_motoristas_completo')
@@ -1999,7 +2015,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .eq('company_id', company_id)
         .eq('ativo', true);
 
-      if (motoristasError || !motoristas || motoristas.length === 0) {
+      if (motoristasError) {
+        console.error('Erro ao buscar motoristas:', motoristasError);
+        return res.json({ 
+          data: { 
+            totalProcessed: 0, 
+            successful: 0, 
+            failed: 0, 
+            errors: [],
+            message: 'Erro ao buscar motoristas: ' + motoristasError.message
+          } 
+        });
+      }
+
+      console.log(`Encontrados ${motoristas?.length || 0} motoristas ativos`);
+
+      if (!motoristas || motoristas.length === 0) {
         return res.json({ 
           data: { 
             totalProcessed: 0, 
@@ -2014,10 +2045,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const account_id = tokenData.account_id || company_id;
       let successful = 0;
       let failed = 0;
+      let tagsImportadas = 0;
+      let tagsExportadas = 0;
       const errors: Array<{ motorista_id: number; nome: string; error: string }> = [];
 
-      // 3. Buscar associações de tags de todos os motoristas
-      const { data: associacoesTags, error: associacoesError } = await supabase
+      // 3. Buscar tags locais existentes
+      const { data: tagsLocais } = await supabase
+        .from('tag')
+        .select('*')
+        .eq('company_id', company_id);
+
+      const tagsLocaisPorNome = new Map();
+      tagsLocais?.forEach(tag => {
+        tagsLocaisPorNome.set(tag.nome.toLowerCase(), tag);
+      });
+
+      // 4. Buscar associações de tags existentes
+      const { data: associacoesExistentes } = await supabase
         .from('associacao_tags')
         .select(`
           motorista_id,
@@ -2032,22 +2076,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .in('motorista_id', motoristas.map(m => m.motorista_id))
         .eq('tag.company_id', company_id);
 
-      if (associacoesError) {
-        console.error('Erro ao buscar associações de tags:', associacoesError);
-      }
-
-      // Organizar tags por motorista
-      const tagsPorMotorista: { [key: number]: string[] } = {};
-      associacoesTags?.forEach((assoc: any) => {
-        if (!tagsPorMotorista[assoc.motorista_id]) {
-          tagsPorMotorista[assoc.motorista_id] = [];
+      // Organizar tags locais por motorista
+      const tagsLocaisPorMotorista: { [key: number]: string[] } = {};
+      associacoesExistentes?.forEach((assoc: any) => {
+        if (!tagsLocaisPorMotorista[assoc.motorista_id]) {
+          tagsLocaisPorMotorista[assoc.motorista_id] = [];
         }
         if (assoc.tag?.nome) {
-          tagsPorMotorista[assoc.motorista_id].push(assoc.tag.nome);
+          tagsLocaisPorMotorista[assoc.motorista_id].push(assoc.tag.nome);
         }
       });
 
-      // 4. Processar cada motorista
+      console.log(`Iniciando sincronização bidirecional para ${motoristas.length} motoristas`);
+
+      // 5. SINCRONIZAÇÃO BIDIRECIONAL - processar cada motorista
       for (const motorista of motoristas) {
         try {
           if (!motorista.telefone) {
@@ -2081,13 +2123,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           if (searchData.payload?.length > 0) {
             const contact = searchData.payload[0];
-            console.log(`Contato encontrado para ${motorista.nome_motorista}: ${contact.id}`);
+            console.log(`Contato encontrado: ${motorista.nome_motorista} (ID: ${contact.id})`);
 
-            // Aplicar tags locais no contato do WiseApp
-            const tagsParaAplicar = tagsPorMotorista[motorista.motorista_id] || [];
+            // PARTE 1: WiseApp → Banco Local (IMPORTAR)
+            const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contact.id}/labels`;
+            const labelsResponse = await fetch(labelsUrl, {
+              headers: {
+                'api_access_token': tokenData.access_token_wiseapp,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            if (labelsResponse.ok) {
+              const labelsData = await labelsResponse.json();
+              const wiseAppLabels = labelsData.payload || [];
+              
+              console.log(`Tags no WiseApp para ${motorista.nome_motorista}: ${wiseAppLabels.map((l: any) => l.title).join(', ')}`);
+              
+              // Importar tags do WiseApp
+              for (const wiseLabel of wiseAppLabels) {
+                let tagLocal = tagsLocaisPorNome.get(wiseLabel.title.toLowerCase());
+                
+                // Criar tag local se não existir
+                if (!tagLocal) {
+                  const { data: novaTag } = await supabase
+                    .from('tag')
+                    .insert({
+                      nome: wiseLabel.title,
+                      cor: wiseLabel.color || '#3B82F6',
+                      company_id: company_id
+                    })
+                    .select()
+                    .single();
+                  
+                  if (novaTag) {
+                    tagLocal = novaTag;
+                    tagsLocaisPorNome.set(wiseLabel.title.toLowerCase(), novaTag);
+                    console.log(`Nova tag criada: ${wiseLabel.title}`);
+                  }
+                }
+
+                // Criar associação se não existir
+                if (tagLocal) {
+                  const associacaoExiste = associacoesExistentes?.some((a: any) => 
+                    a.motorista_id === motorista.motorista_id && a.tag_id === tagLocal.id
+                  );
+
+                  if (!associacaoExiste) {
+                    await supabase
+                      .from('associacao_tags')
+                      .insert({
+                        motorista_id: motorista.motorista_id,
+                        tag_id: tagLocal.id
+                      });
+                    tagsImportadas++;
+                    console.log(`Tag importada: ${wiseLabel.title} → ${motorista.nome_motorista}`);
+                  }
+                }
+              }
+            }
+
+            // PARTE 2: Banco Local → WiseApp (EXPORTAR)
+            const tagsParaExportar = tagsLocaisPorMotorista[motorista.motorista_id] || [];
             
-            if (tagsParaAplicar.length > 0) {
-              console.log(`Aplicando ${tagsParaAplicar.length} tags para ${motorista.nome_motorista}: ${tagsParaAplicar.join(', ')}`);
+            if (tagsParaExportar.length > 0) {
+              console.log(`Exportando tags para ${motorista.nome_motorista}: ${tagsParaExportar.join(', ')}`);
               
               const applyTagsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contact.id}/labels`;
               const applyTagsResponse = await fetch(applyTagsUrl, {
@@ -2096,21 +2196,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   'api_access_token': tokenData.access_token_wiseapp,
                   'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ labels: tagsParaAplicar })
+                body: JSON.stringify({ labels: tagsParaExportar })
               });
 
               if (applyTagsResponse.ok) {
-                console.log(`Tags aplicadas com sucesso para ${motorista.nome_motorista}`);
+                tagsExportadas += tagsParaExportar.length;
+                console.log(`Tags exportadas com sucesso para ${motorista.nome_motorista}`);
               } else {
-                console.warn(`Erro ao aplicar tags para ${motorista.nome_motorista}: ${applyTagsResponse.status}`);
+                console.warn(`Erro ao exportar tags para ${motorista.nome_motorista}: ${applyTagsResponse.status}`);
               }
-            } else {
-              console.log(`Nenhuma tag local encontrada para ${motorista.nome_motorista}`);
             }
 
             successful++;
           } else {
-            console.log(`Contato não encontrado para ${motorista.nome_motorista}`);
+            console.log(`Contato não encontrado no WiseApp: ${motorista.nome_motorista}`);
             successful++;
           }
         } catch (error) {
@@ -2129,11 +2228,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalProcessed: motoristas.length,
           successful,
           failed,
-          errors
+          tagsImportadas,
+          tagsExportadas,
+          errors,
+          message: `Sincronização bidirecional concluída: ${successful} contatos processados, ${tagsImportadas} tags importadas do WiseApp, ${tagsExportadas} tags exportadas para o WiseApp`
         }
       };
 
-      console.log(`Sincronização concluída: ${successful} sucessos, ${failed} falhas de ${motoristas.length} total`);
+      console.log(`Sincronização bidirecional concluída: ${successful} sucessos, ${failed} falhas, ${tagsImportadas} tags importadas, ${tagsExportadas} tags exportadas`);
       res.json(result);
 
     } catch (error) {
