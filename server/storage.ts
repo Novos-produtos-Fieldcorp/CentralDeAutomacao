@@ -35,8 +35,7 @@ import {
   type MotoristaTag,
   type InsertMotoristaTag
 } from "@shared/schema";
-import { supabase, db } from "./db";
-import { eq, and, or, like, desc, count, sql } from "drizzle-orm";
+import { supabase } from "./db";
 
 export interface IStorage {
   // User methods
