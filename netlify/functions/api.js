@@ -6,6 +6,17 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Debug middleware to log ALL incoming requests
+app.use((req, res, next) => {
+  console.log(`[NETLIFY DEBUG] ${req.method} ${req.path}`);
+  console.log(`[NETLIFY DEBUG] Query:`, req.query);
+  console.log(`[NETLIFY DEBUG] Headers:`, {
+    'wiseapp-token': req.headers['wiseapp-token'] ? 'Present' : 'Missing',
+    'wiseapp-account-id': req.headers['wiseapp-account-id'] ? 'Present' : 'Missing'
+  });
+  next();
+});
+
 // Configure CORS for Netlify
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -44,7 +55,13 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  console.log('[NETLIFY] Health check called');
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    netlify: true,
+    routes: 'WiseApp proxy routes active'
+  });
 });
 
 // WiseApp proxy routes for labels
@@ -116,8 +133,9 @@ app.get('/wiseapp/:companyId/labels', async (req, res) => {
   }
 });
 
-// WiseApp proxy route for contact search
+// WiseApp proxy route for contact search - FIXED
 app.get('/wiseapp/:companyId/contacts/search', async (req, res) => {
+  console.log(`[NETLIFY] Contact search called: ${req.method} ${req.path}`);
   try {
     const { companyId } = req.params;
     const { phone } = req.query;
@@ -542,13 +560,25 @@ app.get('/tags/:id/limit-check', async (req, res) => {
   }
 });
 
-// Catch-all for unmatched API routes
+// (Debug middleware moved to top)
+
+// Catch-all for unmatched API routes - but with better logging
 app.use('*', (req, res) => {
+  console.log(`Unmatched route: ${req.method} ${req.originalUrl}`);
+  console.log('Available routes should include:');
+  console.log('- GET /wiseapp/:companyId/labels');
+  console.log('- GET /wiseapp/:companyId/contacts/search');
+  console.log('- GET /wiseapp/:companyId/contacts/:contactId/labels');
+  console.log('- POST /wiseapp/:companyId/contacts/:contactId/labels');
+  console.log('- GET /tags');
+  console.log('- GET /health');
+  
   res.status(404).json({
     error: 'API endpoint not found',
     path: req.originalUrl,
     method: req.method,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    hint: 'Check available routes in logs'
   });
 });
 
