@@ -1700,9 +1700,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
       
-      // Chatwoot espera array de NOMES das tags, não IDs
-      const labelsToApply = tagName ? [tagName] : [tagId];
+      // 1. Primeiro buscar tags existentes do contato
+      const getLabelsResponse = await fetch(wiseAppUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      let existingLabels: string[] = [];
+      if (getLabelsResponse.ok) {
+        const labelsResult = await getLabelsResponse.json();
+        // Buscar nomes das tags existentes a partir dos IDs
+        const existingLabelIds = labelsResult.payload || [];
+        
+        // Buscar todas as labels da conta para converter IDs em nomes
+        const allLabelsResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`, {
+          headers: {
+            'api_access_token': token,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (allLabelsResponse.ok) {
+          const allLabels = await allLabelsResponse.json();
+          existingLabels = existingLabelIds
+            .map((id: number) => {
+              const label = allLabels.find((l: any) => l.id === id);
+              return label ? label.name : null;
+            })
+            .filter((name: string | null) => name !== null);
+        }
+      }
+
+      // 2. Adicionar nova tag se não existir
+      const newTagName = tagName || tagId;
+      if (!existingLabels.includes(newTagName)) {
+        existingLabels.push(newTagName);
+      }
       
+      // 3. Aplicar lista completa (existentes + nova)
       const response = await fetch(wiseAppUrl, {
         method: 'POST',
         headers: {
@@ -1710,7 +1748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          labels: labelsToApply
+          labels: existingLabels
         }),
       });
 
