@@ -1973,10 +1973,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Iniciando sincronização bulk para company_id: ${company_id}`);
 
-      // 1. Buscar token WiseApp usando a mesma lógica das outras rotas
-      const token = await storage.getWiseappToken(company_id);
-      
-      if (!token) {
+      // 1. Buscar token WiseApp diretamente
+      const { data: tokenDataArray, error: tokenError } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('company_id', company_id)
+        .limit(1);
+
+      const tokenData = tokenDataArray?.[0];
+      const token = tokenData?.access_token_wiseapp;
+
+      if (tokenError || !token) {
         console.log('Token WiseApp não encontrado para company_id:', company_id);
         return res.json({ 
           data: { 
