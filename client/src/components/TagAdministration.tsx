@@ -316,14 +316,14 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
           <TagIcon className="w-5 h-5" />
-          Administração de Tags
+          Administração de Marcadores
         </h3>
         <button
           onClick={() => setIsCreateModalOpen(true)}
           className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-2 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Nova Tag
+          Novo Marcador
         </button>
       </div>
 
@@ -345,14 +345,14 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
                 <button
                   onClick={() => handleEditTag(tag)}
                   className="p-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                  title="Editar tag"
+                  title="Editar marcador"
                 >
                   <Edit className="w-3 h-3" />
                 </button>
                 <button
                   onClick={() => handleDeleteTag(tag)}
                   className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                  title="Deletar tag"
+                  title="Deletar marcador"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -375,7 +375,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       {tags.length === 0 && (
         <div className="text-center py-8">
           <p className="text-gray-500 dark:text-gray-400">
-            Nenhuma tag encontrada. Clique em "Nova Tag" para criar a primeira.
+            Nenhum marcador encontrado. Clique em "Novo Marcador" para criar o primeiro.
           </p>
         </div>
       )}
