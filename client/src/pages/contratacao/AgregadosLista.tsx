@@ -19,8 +19,8 @@ import { createPortal } from 'react-dom';
   import LoadingSpinner from '../../components/LoadingSpinner';
   import { useAuth } from '../../context/AuthContext';
   import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
-  import { usePaginationServerSide } from '../../hooks/usePaginationServerSide';
-  import ServerSidePagination from '../../components/ServerSidePagination';
+  import { usePagination } from '../../hooks/usePagination';
+  import Pagination from '../../components/Pagination';
   import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
   import ContextMenu from '../../components/ContextMenu';
   import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
@@ -126,9 +126,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { token: wiseAppToken } = useWiseAppAccess();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
-  const [hasMoreData, setHasMoreData] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
@@ -144,7 +141,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
   const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
-
 
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -903,21 +899,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       endDate: '',
     });
 
-    // Initial data load and data refresh
     useEffect(() => {
-      if (loadInitialData) {
-        loadInitialData();
-      }
+      fetchContratados();
       fetchClientes();
-    }, [dateFilter, customDateRange, loadInitialData]);
-
-    // Auto-load more data when filters are applied and not enough results  
-    useEffect(() => {
-      const needsMoreData = contratados.length < 20 && hasMoreData && !paginationLoadingMore && !loading;
-      if (needsMoreData && (searchTerm || statusFilter.length > 0 || clienteFilter.length > 0 || cidadeFilter.length > 0 || tagFilter.length > 0)) {
-        loadNextPage();
-      }
-    }, [contratados.length, hasMoreData, paginationLoadingMore, loading, searchTerm, statusFilter, clienteFilter, cidadeFilter, tagFilter, loadNextPage]);
+    }, [dateFilter, customDateRange]);
 
     // Carregar tags dos agregados automaticamente quando a lista de contratados mudar
     useEffect(() => {
@@ -1057,22 +1042,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       });
     };
 
-    const fetchContratados = async (page = 1, limit = 50, reset = true) => {
+    const fetchContratados = async () => {
       try {
-        if (reset) {
-          setLoading(true);
-          setContratados([]);
-        } else {
-          setLoadingMore(true);
-        }
-        
-        // Calculate pagination offset
-        const offset = (page - 1) * limit;
-        
-        // Buscar os agregados da view específica com paginação
+        setLoading(true);
+        // Buscar os agregados da view específica
         let query = supabase
           .from('vw_agregados_completo')
-          .select('*', { count: 'exact' })
+          .select('*')
           .eq('company_id', companyId);
 
         // Apply date filter
@@ -1104,28 +1080,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           }
         }
 
-        // Order by data_cadastro (newest first) and add pagination
-        query = query.order('data_cadastro', { ascending: false }).range(offset, offset + limit - 1);
+        // Order by data_cadastro (newest first)
+        query = query.order('data_cadastro', { ascending: false });
 
-        const { data, error, count } = await query;
+        const { data, error } = await query;
 
         if (error) throw error;
-
-        // Update total count
-        if (count !== null && count !== undefined) {
-          setTotalCount(count);
-          setHasMoreData(offset + limit < count);
-        }
-
-        if (!data || data.length === 0) {
-          if (reset) {
-            setContratados([]);
-            setCidades([]);
-            setTiposVeiculo([]);
-          }
-          setHasMoreData(false);
-          return;
-        }
 
         // Log para debug dos valores de funcao
         console.log('Valores de funcao encontrados:', Array.from(new Set(data?.map(item => item.funcao))));
@@ -1224,55 +1184,22 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         const agregadosAgrupados = Array.from(agregadosAgrupadosMap.values());
 
         // Filter out null or undefined values before setting the state
-        if (reset) {
-          // First load - replace all data
-          setCidades(Array.from(uniqueCities).filter((c): c is string => c != null).sort());
-          setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
-          setContratados(agregadosAgrupados);
-        } else {
-          // Subsequent loads - append data
-          setCidades(prev => {
-            const newCities = new Set([...prev, ...Array.from(uniqueCities).filter((c): c is string => c != null)]);
-            return Array.from(newCities).sort();
-          });
-          setTiposVeiculo(prev => {
-            const newTypes = new Set([...prev, ...Array.from(uniqueVehicleTypes)]);
-            return Array.from(newTypes).sort();
-          });
-          setContratados(prev => [...prev, ...agregadosAgrupados]);
-        }
+        setCidades(Array.from(uniqueCities).filter((c): c is string => c != null).sort());
+        setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
+
+        setContratados(agregadosAgrupados);
         
         // Tags serão carregadas apenas quando necessário (filtro, ações em massa, etc.)
         // Para melhor performance, não carregar automaticamente
       } catch (error) {
         console.error('Error fetching contratados:', error);
         toast.error('Erro ao carregar contratados');
-        if (reset) {
-          setContratados([]);
-        }
-        setHasMoreData(false);
       } finally {
         setLoading(false);
-        setLoadingMore(false);
       }
     };
 
-  // Setup server-side pagination hook after fetchContratados is defined
-  const serverPagination = usePaginationServerSide({
-    initialPageSize: 50,
-    fetchFunction: fetchContratados
-  });
 
-  const {
-    currentPage: serverCurrentPage,
-    pageSize: serverPageSize,
-    loading: serverLoading,
-    loadingMore: paginationLoadingMore,
-    loadInitialData,
-    loadNextPage,
-    changePageSize: changeServerPageSize,
-    refresh: refreshData
-  } = serverPagination;
 
     // Cores padrão para os clientes (apenas fundo, sem borda)
     const defaultClientColors = [
@@ -1360,7 +1287,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       setSelectedItems(newSelectedItems);
       
       // Update selectAll state
-      setSelectAll(newSelectedItems.size === displayData.length);
+      setSelectAll(newSelectedItems.size === filteredContratados.length);
     };
     
     // Funções para manipular filtros de múltipla seleção
@@ -1470,7 +1397,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (selectAll) {
         setSelectedItems(new Set());
       } else {
-        setSelectedItems(new Set(displayData.map(m => m.motorista_id || 0)));
+        setSelectedItems(new Set(filteredContratados.map(m => m.motorista_id || 0)));
       }
       setSelectAll(!selectAll);
     };
@@ -1729,20 +1656,20 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       );
     });
 
-    // Client-side pagination for display (when using filters)
-    const displayData = filteredContratados.slice(0, Math.max(50, filteredContratados.length));
-    
-    const paginationInfo = {
-      currentPage: 1,
-      pageSize: displayData.length,
-      totalPages: 1,  
-      totalItems: displayData.length,
-      paginatedData: displayData,
-      handlePageChange: () => {},
-      handlePageSizeChange: () => {}
-    };
+    const {
+      currentPage,
+      pageSize,
+      totalPages,
+      totalItems,
+      paginatedData,
+      handlePageChange,
+      handlePageSizeChange
+    } = usePagination({
+      data: filteredContratados,
+      initialPageSize: 10
+    });
 
-    if (loading || serverLoading) {
+    if (loading) {
       return <LoadingSpinner />;
     }
 
@@ -1750,24 +1677,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       <div className="space-y-6">
         
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center">
             {selectedItems.size > 0 && (
               <span className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 rounded-full text-sm">
                 {selectedItems.size} selecionado{selectedItems.size !== 1 ? 's' : ''}
               </span>
             )}
-            {/* Loading status indicator */}
-            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <span>
-                {contratados.length} de {totalCount} agregados carregados
-              </span>
-              {paginationLoadingMore && (
-                <div className="flex items-center gap-1">
-                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                  <span>Carregando...</span>
-                </div>
-              )}
-            </div>
           </div>
           <div className="flex gap-2">
             {selectedItems.size > 0 && (
@@ -2399,7 +2314,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {displayData.map((motorista, index) => (
+                    {paginatedData.map((motorista, index) => (
                       <tr 
                         key={`agregado-${motorista.motorista_id || ''}-${motorista.cpf || ''}-${index}`}
                         className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
@@ -2757,16 +2672,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 containerRef={tableContainerRef} 
                 className="mr-2 ml-2"
               />
-              
-              {/* Loading more indicator in table */}
-              {paginationLoadingMore && (
-                <div className="flex items-center justify-center py-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Carregando mais agregados...</span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
           
@@ -2777,15 +2682,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </p>
             </div>
           ) : (
-            <ServerSidePagination
-              currentPage={serverCurrentPage}
-              totalCount={totalCount}
-              pageSize={serverPageSize}
-              hasMoreData={hasMoreData}
-              loadingMore={paginationLoadingMore}
-              onLoadMore={loadNextPage}
-              onPageSizeChange={changeServerPageSize}
-              loadedItems={contratados.length}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
             />
           )}
         </div>
