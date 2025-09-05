@@ -18,7 +18,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript, built for scalability.
-- **Database**: PostgreSQL, accessed via Drizzle ORM and Neon Database's serverless driver.
+- **Database**: PostgreSQL via Supabase, providing real-time features and secure data access.
 - **Development**: Features hot reload integration with Vite middleware.
 - **Session Management**: Currently in-memory, with plans for database persistence.
 
@@ -29,7 +29,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Architectural Decisions
 - **Authentication**: Dynamic context-based system using account IDs from URL parameters, enabling multi-company support with company-specific data isolation.
-- **Database Layer**: Drizzle ORM for type-safe PostgreSQL interactions, Zod for schema validation, and connection pooling for performance. Database migrations are managed through Drizzle Kit.
+- **Database Layer**: Supabase for PostgreSQL with real-time subscriptions, Row Level Security (RLS), and built-in authentication. Type-safe database operations with Supabase client.
 - **UI/UX**: Emphasis on a comprehensive, responsive component library with dark/light theme support, consistent design via custom CSS variables, and streamlined user interactions.
 - **Data Flow**: Custom React hooks and TanStack Query manage frontend-to-backend communication, ensuring company-filtered queries and data isolation.
 - **External Integrations**: Designed for modular integration with third-party services like Supabase and WiseApp through a proxy system for secure communication.
@@ -52,7 +52,7 @@ Preferred communication style: Simple, everyday language.
 - **React Ecosystem**: `@radix-ui/react-components`, `@tanstack/react-query`, `react-router-dom`, `react-hook-form`.
 - **Styling**: `tailwindcss`, `shadcn/ui`, `class-variance-authority`.
 - **Build Tools**: `vite`, `typescript`, `tsx`, `esbuild`.
-- **Database**: `drizzle-orm`, `@neondatabase/serverless`, `pg` (for Drizzle Kit).
+- **Database**: `@supabase/supabase-js` for PostgreSQL database operations and real-time features.
 - **Validation**: `zod`.
 
 ### Third-party Services

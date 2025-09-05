@@ -35,8 +35,7 @@ import {
   type MotoristaTag,
   type InsertMotoristaTag
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, and, or, like, desc, count, sql } from "drizzle-orm";
+import { supabase } from "./db";
 
 export interface IStorage {
   // User methods
@@ -85,346 +84,210 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error || !data) return undefined;
+    return data as User;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .single();
+    
+    if (error || !data) return undefined;
+    return data as User;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
+    const { data, error } = await supabase
+      .from('users')
+      .insert(insertUser)
+      .select()
+      .single();
+    
+    if (error || !data) throw error;
+    return data as User;
   }
 
-  // Motorista methods
+  // Motorista methods - usando view para dados completos
   async getMotoristas(
     companyId: number, 
     page: number = 1, 
     limit: number = 20, 
     search?: string
   ): Promise<{ motoristas: MotoristaWithAddress[], total: number }> {
-    let query = db
-      .select({
-        motorista_id: motorista.motorista_id,
-        nome: motorista.nome,
-        cpf: motorista.cpf,
-        dt_nascimento: motorista.dt_nascimento,
-        genero: motorista.genero,
-        telefone: motorista.telefone,
-        email: motorista.email,
-        funcao: motorista.funcao,
-        origem_usuario: motorista.origem_usuario,
-        st_cadastro: motorista.st_cadastro,
-        autorizacao_lgpd: motorista.autorizacao_lgpd,
-        company_id: motorista.company_id,
-        data_cadastro: motorista.data_cadastro,
-        cliente_id: motorista.cliente_id,
-        conversation_id: motorista.conversation_id,
-        foto_whatsapp: motorista.foto_whatsapp,
-        ativo: motorista.ativo,
-        // Address fields
-        id_end_motorista: end_motorista.id_end_motorista,
-        nr_end: end_motorista.nr_end,
-        ds_complemento_end: end_motorista.ds_complemento_end,
-        st_end: end_motorista.st_end,
-        logradouro: logradouro.logradouro,
-        nr_cep: logradouro.nr_cep,
-        nome_bairro: bairro.bairro,
-        nome_cidade: cidade.cidade,
-        nome_estado: estado.estado,
-        sigla_estado: estado.sigla_estado,
-      })
-      .from(motorista)
-      .leftJoin(end_motorista, eq(motorista.motorista_id, end_motorista.id_motorista))
-      .leftJoin(logradouro, eq(end_motorista.id_logradouro, logradouro.id_logradouro))
-      .leftJoin(bairro, eq(logradouro.id_bairro, bairro.id_bairro))
-      .leftJoin(cidade, eq(bairro.id_cidade, cidade.id_cidade))
-      .leftJoin(estado, eq(cidade.id_estado, estado.id_estado))
-      .where(eq(motorista.company_id, companyId));
+    let query = supabase
+      .from('vw_motoristas_completo')
+      .select('*', { count: 'exact' })
+      .eq('company_id', companyId);
 
     if (search) {
-      const baseQuery = db
-        .select({
-          motorista_id: motorista.motorista_id,
-          nome: motorista.nome,
-          cpf: motorista.cpf,
-          dt_nascimento: motorista.dt_nascimento,
-          genero: motorista.genero,
-          telefone: motorista.telefone,
-          email: motorista.email,
-          funcao: motorista.funcao,
-          origem_usuario: motorista.origem_usuario,
-          st_cadastro: motorista.st_cadastro,
-          autorizacao_lgpd: motorista.autorizacao_lgpd,
-          company_id: motorista.company_id,
-          data_cadastro: motorista.data_cadastro,
-          cliente_id: motorista.cliente_id,
-          conversation_id: motorista.conversation_id,
-          foto_whatsapp: motorista.foto_whatsapp,
-          ativo: motorista.ativo,
-          // Address fields
-          id_end_motorista: end_motorista.id_end_motorista,
-          nr_end: end_motorista.nr_end,
-          ds_complemento_end: end_motorista.ds_complemento_end,
-          st_end: end_motorista.st_end,
-          logradouro: logradouro.logradouro,
-          nr_cep: logradouro.nr_cep,
-          nome_bairro: bairro.bairro,
-          nome_cidade: cidade.cidade,
-          nome_estado: estado.estado,
-          sigla_estado: estado.sigla_estado,
-        })
-        .from(motorista)
-        .leftJoin(end_motorista, eq(motorista.motorista_id, end_motorista.id_motorista))
-        .leftJoin(logradouro, eq(end_motorista.id_logradouro, logradouro.id_logradouro))
-        .leftJoin(bairro, eq(logradouro.id_bairro, bairro.id_bairro))
-        .leftJoin(cidade, eq(bairro.id_cidade, cidade.id_cidade))
-        .leftJoin(estado, eq(cidade.id_estado, estado.id_estado))
-        .where(
-          and(
-            eq(motorista.company_id, companyId),
-            or(
-              like(motorista.nome, `%${search}%`),
-              like(motorista.cpf, `%${search}%`),
-              like(motorista.email, `%${search}%`),
-              like(sql`${motorista.telefone}::text`, `%${search}%`)
-            )
-          )
-        );
-      
-      query = baseQuery;
+      query = query.or(`nome.ilike.%${search}%,cpf.ilike.%${search}%,email.ilike.%${search}%,telefone.ilike.%${search}%`);
     }
 
-    const totalResult = await db
-      .select({ count: count() })
-      .from(motorista)
-      .where(eq(motorista.company_id, companyId));
+    const { data, error, count } = await query
+      .order('data_cadastro', { ascending: false })
+      .range((page - 1) * limit, page * limit - 1);
 
-    const total = totalResult[0]?.count || 0;
+    if (error) throw error;
 
-    const results = await query
-      .orderBy(desc(motorista.data_cadastro))
-      .limit(limit)
-      .offset((page - 1) * limit);
-
-    const motoristas: MotoristaWithAddress[] = results.map(row => ({
-      motorista_id: row.motorista_id,
-      nome: row.nome,
-      cpf: row.cpf,
-      dt_nascimento: row.dt_nascimento,
-      genero: row.genero,
-      telefone: row.telefone,
-      email: row.email,
-      funcao: row.funcao,
-      origem_usuario: row.origem_usuario,
-      st_cadastro: row.st_cadastro,
-      autorizacao_lgpd: row.autorizacao_lgpd,
-      company_id: row.company_id,
-      data_cadastro: row.data_cadastro,
-      cliente_id: row.cliente_id,
-      conversation_id: row.conversation_id,
-      foto_whatsapp: row.foto_whatsapp,
-      ativo: row.ativo,
-      endereco: row.id_end_motorista ? {
-        id_end_motorista: row.id_end_motorista,
-        nr_end: row.nr_end,
-        ds_complemento_end: row.ds_complemento_end,
-        st_end: row.st_end,
-        logradouro: row.logradouro,
-        nr_cep: row.nr_cep,
-        bairro: row.nome_bairro,
-        cidade: row.nome_cidade,
-        estado: row.nome_estado,
-        sigla_estado: row.sigla_estado,
-      } : undefined
-    }));
-
-    return { motoristas, total };
-  }
-
-  async getMotoristasById(id: number): Promise<MotoristaWithAddress | undefined> {
-    const result = await db
-      .select({
-        motorista_id: motorista.motorista_id,
-        nome: motorista.nome,
-        cpf: motorista.cpf,
-        dt_nascimento: motorista.dt_nascimento,
-        genero: motorista.genero,
-        telefone: motorista.telefone,
-        email: motorista.email,
-        funcao: motorista.funcao,
-        origem_usuario: motorista.origem_usuario,
-        st_cadastro: motorista.st_cadastro,
-        autorizacao_lgpd: motorista.autorizacao_lgpd,
-        company_id: motorista.company_id,
-        data_cadastro: motorista.data_cadastro,
-        cliente_id: motorista.cliente_id,
-        conversation_id: motorista.conversation_id,
-        foto_whatsapp: motorista.foto_whatsapp,
-        ativo: motorista.ativo,
-        // Address fields
-        id_end_motorista: end_motorista.id_end_motorista,
-        nr_end: end_motorista.nr_end,
-        ds_complemento_end: end_motorista.ds_complemento_end,
-        st_end: end_motorista.st_end,
-        logradouro: logradouro.logradouro,
-        nr_cep: logradouro.nr_cep,
-        nome_bairro: bairro.bairro,
-        nome_cidade: cidade.cidade,
-        nome_estado: estado.estado,
-        sigla_estado: estado.sigla_estado,
-      })
-      .from(motorista)
-      .leftJoin(end_motorista, eq(motorista.motorista_id, end_motorista.id_motorista))
-      .leftJoin(logradouro, eq(end_motorista.id_logradouro, logradouro.id_logradouro))
-      .leftJoin(bairro, eq(logradouro.id_bairro, bairro.id_bairro))
-      .leftJoin(cidade, eq(bairro.id_cidade, cidade.id_cidade))
-      .leftJoin(estado, eq(cidade.id_estado, estado.id_estado))
-      .where(eq(motorista.motorista_id, id))
-      .limit(1);
-
-    if (!result.length) return undefined;
-
-    const row = result[0];
-    return {
-      motorista_id: row.motorista_id,
-      nome: row.nome,
-      cpf: row.cpf,
-      dt_nascimento: row.dt_nascimento,
-      genero: row.genero,
-      telefone: row.telefone,
-      email: row.email,
-      funcao: row.funcao,
-      origem_usuario: row.origem_usuario,
-      st_cadastro: row.st_cadastro,
-      autorizacao_lgpd: row.autorizacao_lgpd,
-      company_id: row.company_id,
-      data_cadastro: row.data_cadastro,
-      cliente_id: row.cliente_id,
-      conversation_id: row.conversation_id,
-      foto_whatsapp: row.foto_whatsapp,
-      ativo: row.ativo,
-      endereco: row.id_end_motorista ? {
-        id_end_motorista: row.id_end_motorista,
-        nr_end: row.nr_end,
-        ds_complemento_end: row.ds_complemento_end,
-        st_end: row.st_end,
-        logradouro: row.logradouro,
-        nr_cep: row.nr_cep,
-        bairro: row.nome_bairro,
-        cidade: row.nome_cidade,
-        estado: row.nome_estado,
-        sigla_estado: row.sigla_estado,
-      } : undefined
+    return { 
+      motoristas: (data || []) as MotoristaWithAddress[], 
+      total: count || 0 
     };
   }
 
+  async getMotoristasById(id: number): Promise<MotoristaWithAddress | undefined> {
+    const { data, error } = await supabase
+      .from('vw_motoristas_completo')
+      .select('*')
+      .eq('motorista_id', id)
+      .single();
+
+    if (error || !data) return undefined;
+    return data as MotoristaWithAddress;
+  }
+
   async createMotorista(insertMotorista: InsertMotorista): Promise<Motorista> {
-    const [newMotorista] = await db
-      .insert(motorista)
-      .values(insertMotorista)
-      .returning();
-    return newMotorista;
+    const { data, error } = await supabase
+      .from('motorista')
+      .insert(insertMotorista)
+      .select()
+      .single();
+    
+    if (error || !data) throw error;
+    return data as Motorista;
   }
 
   async updateMotorista(id: number, updateData: Partial<InsertMotorista>): Promise<Motorista | undefined> {
-    const [updatedMotorista] = await db
-      .update(motorista)
-      .set(updateData)
-      .where(eq(motorista.motorista_id, id))
-      .returning();
-    return updatedMotorista || undefined;
+    const { data, error } = await supabase
+      .from('motorista')
+      .update(updateData)
+      .eq('motorista_id', id)
+      .select()
+      .single();
+    
+    if (error || !data) return undefined;
+    return data as Motorista;
   }
 
   async deleteMotorista(id: number): Promise<boolean> {
-    const result = await db
-      .delete(motorista)
-      .where(eq(motorista.motorista_id, id));
-    return (result.rowCount ?? 0) > 0;
+    const { error } = await supabase
+      .from('motorista')
+      .delete()
+      .eq('motorista_id', id);
+    
+    return !error;
   }
 
   // Cliente methods
   async getClientes(companyId: number): Promise<Cliente[]> {
-    return await db
-      .select()
-      .from(cliente)
-      .where(eq(cliente.company_id, companyId));
+    const { data, error } = await supabase
+      .from('cliente')
+      .select('*')
+      .eq('company_id', companyId);
+    
+    if (error) throw error;
+    return (data || []) as Cliente[];
   }
 
   async createCliente(insertCliente: InsertCliente): Promise<Cliente> {
-    const [newCliente] = await db
-      .insert(cliente)
-      .values(insertCliente)
-      .returning();
-    return newCliente;
+    const { data, error } = await supabase
+      .from('cliente')
+      .insert(insertCliente)
+      .select()
+      .single();
+    
+    if (error || !data) throw error;
+    return data as Cliente;
   }
 
   // Veiculo methods
   async getVeiculos(motoristaId?: number): Promise<Veiculo[]> {
+    let query = supabase.from('veiculo').select('*');
+    
     if (motoristaId) {
-      return await db.select().from(veiculo).where(eq(veiculo.motorista_id, motoristaId));
+      query = query.eq('motorista_id', motoristaId);
     }
     
-    return await db.select().from(veiculo);
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data || []) as Veiculo[];
   }
 
   async createVeiculo(insertVeiculo: InsertVeiculo): Promise<Veiculo> {
-    const [newVeiculo] = await db
-      .insert(veiculo)
-      .values(insertVeiculo)
-      .returning();
-    return newVeiculo;
+    const { data, error } = await supabase
+      .from('veiculo')
+      .insert(insertVeiculo)
+      .select()
+      .single();
+    
+    if (error || !data) throw error;
+    return data as Veiculo;
   }
 
   // Comentario methods
   async getComentarios(motoristaId: number): Promise<Comentario[]> {
-    return await db
-      .select()
-      .from(comentario)
-      .where(eq(comentario.id_motorista, motoristaId))
-      .orderBy(desc(comentario.created_at));
+    const { data, error } = await supabase
+      .from('comentario')
+      .select('*')
+      .eq('id_motorista', motoristaId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return (data || []) as Comentario[];
   }
 
   async createComentario(insertComentario: InsertComentario): Promise<Comentario> {
-    const [newComentario] = await db
-      .insert(comentario)
-      .values(insertComentario)
-      .returning();
-    return newComentario;
+    const { data, error } = await supabase
+      .from('comentario')
+      .insert(insertComentario)
+      .select()
+      .single();
+    
+    if (error || !data) throw error;
+    return data as Comentario;
   }
 
   // Document methods
   async getDocumentoMotorista(motoristaId: number): Promise<DocumentoMotorista | undefined> {
-    const [documento] = await db
-      .select()
-      .from(documento_motorista)
-      .where(eq(documento_motorista.motorista_id, motoristaId))
-      .limit(1);
-    return documento || undefined;
+    const { data, error } = await supabase
+      .from('documento_motorista')
+      .select('*')
+      .eq('motorista_id', motoristaId)
+      .single();
+    
+    if (error || !data) return undefined;
+    return data as DocumentoMotorista;
   }
 
   async getDocumentosAjudante(motoristaId: number): Promise<DocumentoAjudante[]> {
-    return await db
-      .select()
-      .from(documento_ajudante)
-      .where(eq(documento_ajudante.motorista_id, motoristaId));
+    const { data, error } = await supabase
+      .from('documento_ajudante')
+      .select('*')
+      .eq('motorista_id', motoristaId);
+    
+    if (error) throw error;
+    return (data || []) as DocumentoAjudante[];
   }
 
   // Tags methods
   async getTags(companyId: number): Promise<Tag[]> {
     try {
-      const result = await db
-        .select()
-        .from(tags)
-        .where(eq(tags.company_id, companyId));
+      const { data, error } = await supabase
+        .from('tags')
+        .select('*')
+        .eq('company_id', companyId);
       
-      return result;
+      if (error) throw error;
+      return (data || []) as Tag[];
     } catch (error) {
       throw new Error(`Failed to get tags: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -432,12 +295,14 @@ export class DatabaseStorage implements IStorage {
 
   async createTag(insertTag: InsertTag): Promise<Tag> {
     try {
-      const [result] = await db
-        .insert(tags)
-        .values(insertTag)
-        .returning();
+      const { data, error } = await supabase
+        .from('tags')
+        .insert(insertTag)
+        .select()
+        .single();
       
-      return result;
+      if (error || !data) throw error;
+      return data as Tag;
     } catch (error) {
       throw new Error(`Failed to create tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -445,13 +310,15 @@ export class DatabaseStorage implements IStorage {
 
   async updateTag(id: number, insertTag: Partial<InsertTag>): Promise<Tag | undefined> {
     try {
-      const [result] = await db
-        .update(tags)
-        .set(insertTag)
-        .where(eq(tags.id, id))
-        .returning();
+      const { data, error } = await supabase
+        .from('tags')
+        .update(insertTag)
+        .eq('id', id)
+        .select()
+        .single();
       
-      return result || undefined;
+      if (error || !data) return undefined;
+      return data as Tag;
     } catch (error) {
       throw new Error(`Failed to update tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -459,35 +326,40 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTag(id: number): Promise<boolean> {
     try {
-      await db
-        .delete(tags)
-        .where(eq(tags.id, id));
+      const { error } = await supabase
+        .from('tags')
+        .delete()
+        .eq('id', id);
       
-      return true;
+      return !error;
     } catch (error) {
       console.error('Error deleting tag:', error);
       return false;
     }
   }
 
-  // Motorista Tags methods - usando apenas banco local
+  // Motorista Tags methods
   async getMotoristaTagsWithDetails(motoristaId: number): Promise<Tag[]> {
     try {
-      const result = await db
-        .select({
-          id: tags.id,
-          nome: tags.nome,
-          cor: tags.cor,
-          company_id: tags.company_id,
-          limite_max: tags.limite_max,
-          created_at: tags.created_at,
-          updated_at: tags.updated_at
-        })
-        .from(motorista_tags)
-        .innerJoin(tags, eq(motorista_tags.tag_id, tags.id))
-        .where(eq(motorista_tags.motorista_id, motoristaId));
+      const { data, error } = await supabase
+        .from('associacao_tags')
+        .select(`
+          tag_id,
+          tag:tags (
+            id,
+            nome,
+            cor,
+            company_id,
+            limite_max,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('motorista_id', motoristaId);
       
-      return result;
+      if (error) throw error;
+      
+      return (data || []).map((item: any) => item.tag).filter(Boolean);
     } catch (error) {
       console.error('Error in getMotoristaTagsWithDetails:', error);
       return [];
@@ -496,14 +368,17 @@ export class DatabaseStorage implements IStorage {
 
   async addTagToMotorista(motoristaId: number, tagId: number): Promise<MotoristaTag> {
     try {
-      const [motoristaTag] = await db
-        .insert(motorista_tags)
-        .values({ 
+      const { data, error } = await supabase
+        .from('associacao_tags')
+        .insert({ 
           motorista_id: motoristaId, 
           tag_id: tagId
         })
-        .returning();
-      return motoristaTag;
+        .select()
+        .single();
+      
+      if (error || !data) throw error;
+      return data as MotoristaTag;
     } catch (error) {
       console.error('Error in addTagToMotorista:', error);
       throw error;
@@ -512,38 +387,36 @@ export class DatabaseStorage implements IStorage {
 
   async removeTagFromMotorista(motoristaId: number, tagId: number): Promise<boolean> {
     try {
-      const result = await db
-        .delete(motorista_tags)
-        .where(
-          and(
-            eq(motorista_tags.motorista_id, motoristaId),
-            eq(motorista_tags.tag_id, tagId)
-          )
-        );
-      return (result.rowCount ?? 0) > 0;
+      const { error } = await supabase
+        .from('associacao_tags')
+        .delete()
+        .eq('motorista_id', motoristaId)
+        .eq('tag_id', tagId);
+      
+      return !error;
     } catch (error) {
       console.error('Error in removeTagFromMotorista:', error);
       return false;
     }
   }
 
-  // WiseApp token method - queries wiseapp_acesso table
+  // WiseApp token method
   async getWiseappToken(companyId: number): Promise<string | null> {
     console.log(`Fetching WiseApp token for company ${companyId}`);
     try {
-      const [token] = await db
-        .select({ access_token_wiseapp: wiseapp_acesso.access_token_wiseapp })
-        .from(wiseapp_acesso)
-        .where(eq(wiseapp_acesso.company_id, companyId))
-        .limit(1);
+      const { data, error } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('company_id', companyId)
+        .single();
       
-      if (token?.access_token_wiseapp) {
-        console.log(`Found WiseApp token for company ${companyId}`);
-        return token.access_token_wiseapp;
-      } else {
+      if (error || !data?.access_token_wiseapp) {
         console.log(`No WiseApp token found for company ${companyId}`);
         return null;
       }
+      
+      console.log(`Found WiseApp token for company ${companyId}`);
+      return data.access_token_wiseapp;
     } catch (error) {
       console.error(`Error fetching WiseApp token for company ${companyId}:`, error);
       return null;
