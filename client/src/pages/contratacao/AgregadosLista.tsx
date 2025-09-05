@@ -376,11 +376,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   // Adicionar tag a um motorista
   const handleAddTag = async (motoristaId: number | undefined, tagId: number) => {
-    console.log('🚀 handleAddTag chamado:', { motoristaId, tagId });
-    if (!motoristaId) {
-      console.error('❌ motoristaId é undefined ou nulo');
-      return;
-    }
+    if (!motoristaId) return;
     
     setUpdatingMotoristaTag(motoristaId);
     try {
@@ -2496,7 +2492,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             >
                               <button
                                 type="button"
-                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (motorista.motorista_id) {
@@ -2529,11 +2525,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                 disabled={updatingMotoristaTag === motorista.motorista_id}
                               >
                                 {updatingMotoristaTag === motorista.motorista_id ? (
-                                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                                  <Loader2 className="w-3 h-3 animate-spin" />
                                 ) : (
-                                  <Plus className="w-3 h-3 mr-1" />
+                                  <Tag className="w-3 h-3" />
                                 )}
-                                Add Tag
                               </button>
 
                               {/* Dropdown de tags disponíveis - usando createPortal para z-index correto */}
@@ -2577,7 +2572,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                           onMouseDown={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            console.log('🏷️ MouseDown na tag:', { motoristaId: motorista.motorista_id, tagId: tag.id, tagName: tag.nome });
                                             if (motorista.motorista_id && tag.id) {
                                               handleAddTag(motorista.motorista_id, tag.id);
                                               // Fechar dropdown e limpar pesquisa após adicionar tag
@@ -2590,8 +2584,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                                 });
                                                 setTagSearchTerm(prev => ({ ...prev, [motorista.motorista_id!]: '' }));
                                               }, 100);
-                                            } else {
-                                              console.error('❌ Dados inválidos:', { motoristaId: motorista.motorista_id, tagId: tag.id });
                                             }
                                           }}
                                         >
