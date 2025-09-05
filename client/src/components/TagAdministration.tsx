@@ -85,11 +85,11 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       // Forçar refetch das queries
       await queryClient.refetchQueries({ queryKey: ['local-tags', companyId] });
       
-      toast.success("Tag criada com sucesso!");
+      toast.success("Marcador criado com sucesso!");
       setIsCreateModalOpen(false);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao criar tag");
+      toast.error(error.message || "Erro ao criar marcador");
     },
   });
 
@@ -115,12 +115,12 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag atualizada com sucesso!");
+      toast.success("Marcador atualizado com sucesso!");
       setIsEditModalOpen(false);
       setEditingTag(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao atualizar tag");
+      toast.error(error.message || "Erro ao atualizar marcador");
     },
   });
 
@@ -168,10 +168,10 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag deletada com sucesso!");
+      toast.success("Marcador deletado com sucesso!");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao deletar tag");
+      toast.error(error.message || "Erro ao deletar marcador");
     },
   });
 

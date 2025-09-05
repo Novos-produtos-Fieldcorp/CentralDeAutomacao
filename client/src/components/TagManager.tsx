@@ -77,7 +77,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       console.log('WiseApp labels found:', wiseAppTagsData);
       
       if (!wiseAppTagsData || wiseAppTagsData.length === 0) {
-        toast('Nenhuma tag encontrada no WiseApp.', {
+        toast('Nenhum marcador encontrado no WiseApp.', {
           icon: 'ℹ️'
         });
         return;
@@ -124,9 +124,9 @@ export function TagManager({ companyId }: TagManagerProps) {
         }
 
         console.log('Tags inseridas com sucesso:', insertedTags);
-        toast.success(`${tagsToInsert.length} tags sincronizadas e salvas no banco de dados!`);
+        toast.success(`${tagsToInsert.length} marcadores sincronizados e salvos no banco de dados!`);
       } else {
-        toast('Todas as tags já existem no banco de dados.', {
+        toast('Todos os marcadores já existem no banco de dados.', {
           icon: 'ℹ️'
         });
       }
@@ -154,7 +154,7 @@ export function TagManager({ companyId }: TagManagerProps) {
           });
         }
       } else {
-        toast.error('Erro desconhecido ao sincronizar tags do WiseApp');
+        toast.error('Erro desconhecido ao sincronizar marcadores do WiseApp');
       }
       
       // Still show local tags even if WiseApp fails
