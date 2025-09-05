@@ -469,6 +469,7 @@ const MotoristasLista = () => {
   const [clienteFilter, setClienteFilter] = useState<string[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
   const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [tagFilterMode, setTagFilterMode] = useState<'contains' | 'not_contains'>('contains');
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
@@ -1371,10 +1372,17 @@ const MotoristasLista = () => {
           // Garantir que o ID existe e convertê-lo para string
           return tag?.id?.toString() || '';
         }).filter(id => id !== '');
-        tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
+        
+        if (tagFilterMode === 'contains') {
+          // Modo "contém": motorista deve ter pelo menos uma das tags selecionadas
+          tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
+        } else {
+          // Modo "não contém": motorista NÃO deve ter nenhuma das tags selecionadas
+          tagMatch = !tagFilter.some(tagId => motoristaTagIds.includes(tagId));
+        }
       } else {
-        // Se motorista não tem tags, não deve passar no filtro quando tags estão selecionadas
-        tagMatch = false;
+        // Se motorista não tem tags, no modo "contém" não passa, no modo "não contém" passa
+        tagMatch = tagFilterMode === 'not_contains';
       }
     }
     
@@ -1786,7 +1794,10 @@ const MotoristasLista = () => {
                   <div className="flex items-center gap-2">
                     <Tag className="h-4 w-4" />
                     <span>
-                      {tagFilter.length === 0 ? 'Tags' : `Tags (${tagFilter.length})`}
+                      {tagFilter.length === 0 
+                        ? (tagFilterMode === 'contains' ? 'Contém tags' : 'Não contém tags')
+                        : `${tagFilterMode === 'contains' ? 'Contém' : 'Não contém'} (${tagFilter.length})`
+                      }
                     </span>
                   </div>
 
@@ -1803,7 +1814,8 @@ const MotoristasLista = () => {
                     }}>
 
                     <div className="px-3 py-2">
-                      <div className="flex justify-end mb-2">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Filtro de tags</span>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1812,6 +1824,38 @@ const MotoristasLista = () => {
                           className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           Limpar
+                        </button>
+                      </div>
+
+                      {/* Abas Contém / Não Contém */}
+                      <div className="flex bg-gray-100 dark:bg-gray-800 rounded-md p-1 mb-3">
+                        <button
+                          type="button"
+                          className={`flex-1 text-xs px-2 py-1 rounded transition-colors ${
+                            tagFilterMode === 'contains'
+                              ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTagFilterMode('contains');
+                          }}
+                        >
+                          Contém
+                        </button>
+                        <button
+                          type="button"
+                          className={`flex-1 text-xs px-2 py-1 rounded transition-colors ${
+                            tagFilterMode === 'not_contains'
+                              ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTagFilterMode('not_contains');
+                          }}
+                        >
+                          Não contém
                         </button>
                       </div>
                       <div className="mb-3">
