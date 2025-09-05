@@ -49,13 +49,9 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
           setStep('tutorial');
         }
       } else {
-        // Email doesn't exist, require attendant name
+        // Email doesn't exist, require attendant name in token step
         setRequiresAttendantName(true);
-        if (!attendantName) {
-          setError('Nome do atendente é obrigatório para novos usuários.');
-          setLoading(false);
-          return;
-        }
+        setStep('tutorial');
         // Get account_id from URL or use default for serverless compatibility
         let accountId;
         try {
@@ -133,18 +129,13 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
   };
 
-  // Reset requiresAttendantName when modal opens or email changes
+  // Reset requiresAttendantName when modal opens
   useEffect(() => {
     if (open && step === 'email') {
       setRequiresAttendantName(false);
       setAttendantName(''); // Also reset the name
     }
   }, [open, step]);
-
-  // Reset when email changes
-  useEffect(() => {
-    setRequiresAttendantName(false);
-  }, [email]);
 
   if (!open) return null;
 
@@ -189,21 +180,6 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
         />
       </div>
       
-      {requiresAttendantName && (
-        <div className="space-y-2">
-          <label htmlFor="attendantName" className="block text-left text-sm font-medium text-gray-700 dark:text-gray-300">
-            Nome do Atendente
-          </label>
-          <input
-            id="attendantName"
-            type="text"
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:text-white"
-            value={attendantName}
-            onChange={(e) => setAttendantName(e.target.value)}
-            placeholder="Seu nome completo"
-          />
-        </div>
-      )}
     </div>
 
     {error && (
@@ -213,7 +189,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     <button
       onClick={handleEmailSubmit}
       className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-      disabled={loading || !email || (requiresAttendantName && !attendantName)}
+      disabled={loading || !email}
     >
       Verificar
     </button>
@@ -276,6 +252,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
                   value={attendantName}
                   onChange={(e) => setAttendantName(e.target.value)}
                   placeholder="Seu nome completo"
+                  required
                 />
               </div>
             )}
