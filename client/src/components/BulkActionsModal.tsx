@@ -52,7 +52,7 @@ const BulkActionsModal = ({
       if (error) throw error;
       setTags(data || []);
     } catch (error) {
-      console.error('Erro ao buscar tags:', error);
+      console.error('Erro ao buscar marcadores:', error);
       toast.error('Erro ao carregar marcadores');
     }
   };
@@ -226,7 +226,7 @@ const BulkActionsModal = ({
       }
       
       if (syncSuccessCount > 0) {
-        toast.success(`Tag "${tagData.nome}" aplicada a ${syncSuccessCount} contato(s) no WiseApp!`);
+        toast.success(`Marcador "${tagData.nome}" aplicado a ${syncSuccessCount} contato(s) no WiseApp!`);
       } else {
         toast('Tag adicionada localmente. Nenhum contato correspondente foi encontrado no WiseApp.', {
           icon: 'ℹ️'
@@ -405,7 +405,7 @@ const BulkActionsModal = ({
         
         const tagName = tag.nome;
         
-        // Aplicar tag aos contatos no WiseApp após adicionar tags localmente
+        // Aplicar marcador aos contatos no WiseApp após adicionar marcadores localmente
         if (motoristasComNovaTag.length > 0) {
           await applyTagToWiseAppContacts(tag, motoristasComNovaTag);
         }
@@ -450,7 +450,7 @@ const BulkActionsModal = ({
             ) : (
               <>
                 <Tag className="text-green-500" size={24} />
-                Adicionar Tag em Massa
+                Adicionar Marcador em Massa
               </>
             )}
           </h2>
@@ -530,7 +530,7 @@ const BulkActionsModal = ({
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 max-h-60"
                 required
               >
-                <option value="">Selecione uma tag</option>
+                <option value="">Selecione um marcador</option>
                 {tags.map(tag => (
                   <option key={tag.id} value={tag.id.toString()}>
                     {tag.nome} {tag.limite_max ? `(Limite: ${tag.limite_max})` : '(Sem limite)'}
