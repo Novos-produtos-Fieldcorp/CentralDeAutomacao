@@ -1,0 +1,79 @@
+[vite] connecting...
+[vite] connected.
+API Configuration: 
+Object {hostname: "7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev", isReplit: true, isLocalDev: false, isNetlify: false, API_BASE_URL: "/api"}
+API URL: https://chat.wiseapp360.com/api/v1
+Using cached WiseApp token and data
+Using cached auth - account_id: 6 company_id: 1
+Using cached WiseApp token and data
+Using cached auth - account_id: 6 company_id: 1
+API URL: https://chat.wiseapp360.com/api/v1
+Using cached auth - account_id: 6 company_id: 1
+API URL: https://chat.wiseapp360.com/api/v1
+Using cached auth - account_id: 6 company_id: 1
+loadInitialData is not defined
+API URL: https://chat.wiseapp360.com/api/v1
+loadInitialData is not defined
+API URL: https://chat.wiseapp360.com/api/v1
+The above error occurred in the <Contratados> component:
+
+    at Contratados (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/pages/contratacao/AgregadosLista.tsx:66:24)
+    at RenderedRoute (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:5455:26)
+    at Routes (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:6188:3)
+    at div
+    at div
+    at div
+    at Motoristas (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/pages/Motoristas.tsx:31:20)
+    at RenderedRoute (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:5455:26)
+    at Routes (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:6188:3)
+    at div
+    at main
+    at div
+    at ProtectedRoute (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/App.tsx?v=TkecmR-ymJME1iRvRc3RN:45:27)
+    at RenderedRoute (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:5455:26)
+    at Routes (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:6188:3)
+    at ChatProvider (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/context/ChatContext.tsx:21:32)
+    at WiseAppAccessProvider (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/context/WiseAppAccessContext.tsx:29:41)
+    at AuthProvider (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/context/AuthContext.tsx:32:32)
+    at Router (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:6131:13)
+    at BrowserRouter (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:9149:3)
+    at ChecklistProvider (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/context/ChecklistContext.tsx:68:37)
+    at ThemeProvider (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/context/ThemeContext.tsx:20:33)
+    at QueryClientProvider (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=92ebfa38:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+
+at Contratados (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/pages/contratacao/AgregadosLista.tsx:66:24)
+at RenderedRoute (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:5455:26)
+at Routes (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:6188:3)
+at div
+at div
+at div
+at Motoristas (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/pages/Motoristas.tsx:31:20)
+at RenderedRoute (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:5455:26)
+at Routes (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:6188:3)
+at div
+at main
+at div
+at ProtectedRoute (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/App.tsx?v=TkecmR-ymJME1iRvRc3RN:45:27)
+at RenderedRoute (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:5455:26)
+at Routes (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:6188:3)
+at ChatProvider (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/context/ChatContext.tsx:21:32)
+at WiseAppAccessProvider (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/context/WiseAppAccessContext.tsx:29:41)
+at AuthProvider (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/context/AuthContext.tsx:32:32)
+at Router (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:6131:13)
+at BrowserRouter (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:9149:3)
+at ChecklistProvider (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/context/ChecklistContext.tsx:68:37)
+at ThemeProvider (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/src/context/ThemeContext.tsx:20:33)
+at QueryClientProvider (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=92ebfa38:2805:3)
+at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+at t.value (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+loadInitialData is not defined

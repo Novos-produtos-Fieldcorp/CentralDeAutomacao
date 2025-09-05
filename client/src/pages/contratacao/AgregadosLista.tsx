@@ -145,6 +145,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
 
+
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -904,17 +905,19 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
     // Initial data load and data refresh
     useEffect(() => {
-      loadInitialData();
+      if (loadInitialData) {
+        loadInitialData();
+      }
       fetchClientes();
     }, [dateFilter, customDateRange, loadInitialData]);
 
-    // Auto-load more data when filters are applied and not enough results
+    // Auto-load more data when filters are applied and not enough results  
     useEffect(() => {
-      const needsMoreData = filteredContratados.length < 20 && hasMoreData && !loadingMore && !loading;
+      const needsMoreData = contratados.length < 20 && hasMoreData && !paginationLoadingMore && !loading;
       if (needsMoreData && (searchTerm || statusFilter.length > 0 || clienteFilter.length > 0 || cidadeFilter.length > 0 || tagFilter.length > 0)) {
         loadNextPage();
       }
-    }, [filteredContratados.length, hasMoreData, loadingMore, loading, searchTerm, statusFilter, clienteFilter, cidadeFilter, tagFilter, loadNextPage]);
+    }, [contratados.length, hasMoreData, paginationLoadingMore, loading, searchTerm, statusFilter, clienteFilter, cidadeFilter, tagFilter, loadNextPage]);
 
     // Carregar tags dos agregados automaticamente quando a lista de contratados mudar
     useEffect(() => {
@@ -1254,7 +1257,22 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     };
 
+  // Setup server-side pagination hook after fetchContratados is defined
+  const serverPagination = usePaginationServerSide({
+    initialPageSize: 50,
+    fetchFunction: fetchContratados
+  });
 
+  const {
+    currentPage: serverCurrentPage,
+    pageSize: serverPageSize,
+    loading: serverLoading,
+    loadingMore: paginationLoadingMore,
+    loadInitialData,
+    loadNextPage,
+    changePageSize: changeServerPageSize,
+    refresh: refreshData
+  } = serverPagination;
 
     // Cores padrão para os clientes (apenas fundo, sem borda)
     const defaultClientColors = [
@@ -1743,7 +1761,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               <span>
                 {contratados.length} de {totalCount} agregados carregados
               </span>
-              {loadingMore && (
+              {paginationLoadingMore && (
                 <div className="flex items-center gap-1">
                   <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                   <span>Carregando...</span>
@@ -2741,7 +2759,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               />
               
               {/* Loading more indicator in table */}
-              {loadingMore && (
+              {paginationLoadingMore && (
                 <div className="flex items-center justify-center py-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
                     <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -2764,7 +2782,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               totalCount={totalCount}
               pageSize={serverPageSize}
               hasMoreData={hasMoreData}
-              loadingMore={loadingMore}
+              loadingMore={paginationLoadingMore}
               onLoadMore={loadNextPage}
               onPageSizeChange={changeServerPageSize}
               loadedItems={contratados.length}
