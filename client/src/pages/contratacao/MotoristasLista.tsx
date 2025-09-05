@@ -331,7 +331,7 @@ const MotoristasLista = () => {
     }
   };
 
-  // Função para adicionar tag a um motorista
+  // Função para adicionar marcador a um motorista
   const handleAddTag = async (motoristaId: number, tagId: number) => {
     try {
       setUpdatingMotoristaTag(motoristaId);
@@ -348,7 +348,7 @@ const MotoristasLista = () => {
           .single();
         
         if (existingAssociation) {
-          toast.error('Tag já está associada a este motorista');
+          toast.error('Marcador já está associado a este motorista');
           return;
         }
       } catch (error: any) {
@@ -410,10 +410,10 @@ const MotoristasLista = () => {
         }
       }
 
-      toast.success('Tag adicionada com sucesso!');
+      toast.success('Marcador adicionado com sucesso!');
     } catch (error) {
-      console.error('Erro ao adicionar tag:', error);
-      toast.error('Erro ao adicionar tag');
+      console.error('Erro ao adicionar marcador:', error);
+      toast.error('Erro ao adicionar marcador');
     } finally {
       setUpdatingMotoristaTag(null);
     }
@@ -1461,7 +1461,7 @@ const MotoristasLista = () => {
                         transition-colors flex items-center gap-2"
               >
                 <Tag className="w-5 h-5" />
-                Adicionar Tag
+                Adicionar Marcador
               </button>
               <button
                 onClick={handleMassMessage}
@@ -2219,7 +2219,7 @@ const MotoristasLista = () => {
                                   backgroundColor: tag.cor + '30',
                                   border: `1px solid ${tag.cor}50`
                                 }}
-                                title="Clique para remover esta tag"
+                                title="Clique para remover este marcador"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleRemoveTag(motorista.motorista_id, tag.id);
@@ -2231,7 +2231,7 @@ const MotoristasLista = () => {
                             ))}
                           </div>
 
-                          {/* Botão para adicionar tags */}
+                          {/* Botão para adicionar marcadores */}
                           <div 
                             className="relative inline-block"
                             ref={(el) => motoristaTagDropdownRefs.current[motorista.motorista_id] = el}

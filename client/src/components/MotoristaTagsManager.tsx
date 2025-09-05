@@ -107,12 +107,12 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       
       return { canAdd, currentCount, limit: tagData.limite_max };
     } catch (error) {
-      console.error('Erro ao verificar limite da tag:', error);
+      console.error('Erro ao verificar limite do marcador:', error);
       return { canAdd: true, currentCount: 0, limit: null };
     }
   };
 
-  // Mutation para adicionar tag ao motorista
+  // Mutation para adicionar marcador ao motorista
   const addTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
       try {
@@ -125,7 +125,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
           .single();
         
         if (existingAssociation) {
-          throw new Error('Tag já está associada a este motorista');
+          throw new Error('Marcador já está associado a este motorista');
         }
         
         // Buscar dados do motorista e da tag
@@ -172,7 +172,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
             if (contacts && contacts.length > 0) {
               const contact = contacts[0];
               
-              // Adicionar tag no Chatwoot
+              // Adicionar marcador no Chatwoot
               const addResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                 method: 'POST',
                 headers: {
@@ -187,7 +187,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
               });
               
               if (addResponse.ok) {
-                console.log(`Tag "${tag.nome}" aplicada com sucesso ao contato ${motorista.nome} no Chatwoot`);
+                console.log(`Marcador "${tag.nome}" aplicado com sucesso ao contato ${motorista.nome} no Chatwoot`);
               }
             }
           } catch (error) {
@@ -208,7 +208,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       toast.success("Tag adicionada e sincronizada com sucesso!");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao adicionar tag");
+      toast.error(error.message || "Erro ao adicionar marcador");
     },
   });
 
@@ -457,7 +457,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                 <button
                   onClick={() => handleDeleteTag(tag.id)}
                   className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-800 dark:hover:text-red-600 transition-colors"
-                  title="Deletar tag permanentemente"
+                  title="Deletar marcador permanentemente"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -473,19 +473,19 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       </div>
 
       {motoristaTags.length === 0 && (
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Nenhuma tag atribuída ainda.</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">Nenhum marcador atribuído ainda.</p>
       )}
 
       {availableTags.length === 0 && motoristaTags.length > 0 && (
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Todas as tags disponíveis já foram atribuídas.</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">Todos os marcadores disponíveis já foram atribuídos.</p>
       )}
 
-      {/* Modal para adicionar tags */}
+      {/* Modal para adicionar marcadores */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 w-80 max-w-sm mx-4 border dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Adicionar Tag</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Adicionar Marcador</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
@@ -496,10 +496,10 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
             <div className="max-h-64 overflow-y-auto space-y-1">
               {isLoadingAllTags ? (
-                <div className="text-center py-4 text-gray-600 dark:text-gray-400 text-sm">Carregando tags...</div>
+                <div className="text-center py-4 text-gray-600 dark:text-gray-400 text-sm">Carregando marcadores...</div>
               ) : availableTags.length === 0 ? (
                 <div className="text-center py-3 text-gray-500 dark:text-gray-400 text-sm">
-                  Nenhuma tag disponível.
+                  Nenhum marcador disponível.
                 </div>
               ) : (
                 availableTags.map((tag: any) => (

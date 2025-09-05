@@ -375,7 +375,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
   };
 
-  // Adicionar tag a um motorista
+  // Adicionar marcador a um motorista
   const handleAddTag = async (motoristaId: number | undefined, tagId: number) => {
     if (!motoristaId) return;
     
@@ -460,8 +460,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         toast.success('Tag adicionada com sucesso!');
       }
     } catch (error) {
-      console.error('Erro ao adicionar tag:', error);
-      toast.error('Erro ao adicionar tag');
+      console.error('Erro ao adicionar marcador:', error);
+      toast.error('Erro ao adicionar marcador');
     } finally {
       setUpdatingMotoristaTag(null);
     }
@@ -1739,7 +1739,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                           transition-colors flex items-center gap-2"
                 >
                   <Tag className="w-5 h-5" />
-                  Adicionar Tag
+                  Adicionar Marcador
                 </button>
                 <button
                   onClick={handleMassMessage}
@@ -2531,7 +2531,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                               ))}
                             </div>
 
-                            {/* Botão para adicionar tags */}
+                            {/* Botão para adicionar marcadores */}
                             <div 
                               className="relative inline-block"
                               ref={(el) => {
@@ -2624,7 +2624,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                             e.stopPropagation();
                                             if (motorista.motorista_id && tag.id) {
                                               handleAddTag(motorista.motorista_id, tag.id);
-                                              // Fechar dropdown e limpar pesquisa após adicionar tag
+                                              // Fechar dropdown e limpar pesquisa após adicionar marcador
                                               setTimeout(() => {
                                                 setTagDropdownOpen(prev => ({ ...prev, [motorista.motorista_id!]: false }));
                                                 setTagDropdownPosition(prev => {
