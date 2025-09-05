@@ -413,7 +413,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       <div className="flex items-center justify-between">
         <h4 className="text-md font-medium flex items-center gap-2 text-gray-900 dark:text-gray-100">
           <TagIcon className="w-4 h-4" />
-          Tags do Motorista
+          Marcadores do Motorista
         </h4>
         <button
           onClick={() => setIsModalOpen(true)}
@@ -443,7 +443,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                 <button
                   onClick={() => handleEditTag(tag)}
                   className="p-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                  title="Editar tag"
+                  title="Editar marcador"
                 >
                   <Edit className="w-3 h-3" />
                 </button>
@@ -544,12 +544,12 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         </div>
       )}
 
-      {/* Modal para editar tag */}
+      {/* Modal para editar marcador */}
       {isEditModalOpen && editingTag && (
         <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4 border dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar Tag</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar Marcador</h2>
               <button
                 onClick={() => {
                   setIsEditModalOpen(false);
@@ -577,7 +577,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   );
 }
 
-// Componente para editar tag
+// Componente para editar marcador
 interface EditTagFormProps {
   tag: Tag;
   onSave: (updates: Partial<Tag>) => void;
@@ -605,7 +605,7 @@ function EditTagForm({ tag, onSave, onCancel, isLoading }: EditTagFormProps) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Nome da Tag
+          Nome do Marcador
         </label>
         <input
           type="text"
