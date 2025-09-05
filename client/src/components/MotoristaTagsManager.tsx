@@ -115,36 +115,97 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   // Mutation para adicionar tag ao motorista
   const addTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
-      // Verificar se a associação já existe
-      const { data: existingAssociation } = await supabase
-        .from('associacao_tags')
-        .select('id')
-        .eq('motorista_id', motoristaId)
-        .eq('tag_id', tagId)
-        .single();
-      
-      if (existingAssociation) {
-        throw new Error('Tag já está associada a este motorista');
+      try {
+        // Verificar se a associação já existe
+        const { data: existingAssociation } = await supabase
+          .from('associacao_tags')
+          .select('id')
+          .eq('motorista_id', motoristaId)
+          .eq('tag_id', tagId)
+          .single();
+        
+        if (existingAssociation) {
+          throw new Error('Tag já está associada a este motorista');
+        }
+        
+        // Buscar dados do motorista e da tag
+        const { data: motorista, error: motoristaError } = await supabase
+          .from('motorista')
+          .select('nome, telefone')
+          .eq('motorista_id', motoristaId)
+          .single();
+        
+        if (motoristaError) throw motoristaError;
+        
+        const { data: tag, error: tagError } = await supabase
+          .from('tag')
+          .select('nome')
+          .eq('id', tagId)
+          .single();
+        
+        if (tagError) throw tagError;
+        
+        // Criar a associação local
+        const { data, error } = await supabase
+          .from('associacao_tags')
+          .insert({
+            motorista_id: motoristaId,
+            tag_id: tagId
+          })
+          .select();
+        
+        if (error) throw error;
+        
+        // Sincronizar com Chatwoot via API
+        if (motorista.telefone && accountId) {
+          try {
+            const response = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${motorista.telefone}`, {
+              headers: {
+                'wiseapp-token': wiseAppToken,
+                'wiseapp-account-id': accountId.toString(),
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            const contacts = await response.json();
+            
+            if (contacts && contacts.length > 0) {
+              const contact = contacts[0];
+              
+              // Adicionar tag no Chatwoot
+              const addResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                method: 'POST',
+                headers: {
+                  'wiseapp-token': wiseAppToken,
+                  'wiseapp-account-id': accountId.toString(),
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                  tagId: tagId,
+                  tagName: tag.nome 
+                })
+              });
+              
+              if (addResponse.ok) {
+                console.log(`Tag "${tag.nome}" aplicada com sucesso ao contato ${motorista.nome} no Chatwoot`);
+              }
+            }
+          } catch (error) {
+            console.warn('Erro ao sincronizar com Chatwoot:', error);
+          }
+        }
+        
+        return data[0];
+      } catch (error) {
+        throw error;
       }
-      
-      // Criar a associação
-      const { data, error } = await supabase
-        .from('associacao_tags')
-        .insert({
-          motorista_id: motoristaId,
-          tag_id: tagId
-        })
-        .select();
-      
-      if (error) throw error;
-      return data[0];
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag adicionada com sucesso!");
+      toast.success("Tag adicionada e sincronizada com sucesso!");
     },
     onError: (error: any) => {
       toast.error(error.message || "Erro ao adicionar tag");
@@ -154,21 +215,92 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   // Mutation para remover tag do motorista
   const removeTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
-      const { error } = await supabase
-        .from('associacao_tags')
-        .delete()
-        .eq('motorista_id', motoristaId)
-        .eq('tag_id', tagId);
-      
-      if (error) throw error;
-      return { success: true };
+      try {
+        // Buscar dados do motorista e da tag antes de remover
+        const { data: motorista, error: motoristaError } = await supabase
+          .from('motorista')
+          .select('nome, telefone')
+          .eq('motorista_id', motoristaId)
+          .single();
+        
+        if (motoristaError) throw motoristaError;
+        
+        const { data: tag, error: tagError } = await supabase
+          .from('tag')
+          .select('nome')
+          .eq('id', tagId)
+          .single();
+        
+        if (tagError) throw tagError;
+        
+        // Remover a associação local
+        const { error } = await supabase
+          .from('associacao_tags')
+          .delete()
+          .eq('motorista_id', motoristaId)
+          .eq('tag_id', tagId);
+        
+        if (error) throw error;
+        
+        // Sincronizar com Chatwoot via API
+        if (motorista.telefone && accountId) {
+          try {
+            const response = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${motorista.telefone}`, {
+              headers: {
+                'wiseapp-token': wiseAppToken,
+                'wiseapp-account-id': accountId.toString(),
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            const contacts = await response.json();
+            
+            if (contacts && contacts.length > 0) {
+              const contact = contacts[0];
+              
+              // Buscar todas as tags atuais do motorista
+              const { data: allMotoristaTagsAfterRemoval } = await supabase
+                .from('associacao_tags')
+                .select(`
+                  tag:tag_id (nome)
+                `)
+                .eq('motorista_id', motoristaId);
+              
+              const remainingTagNames = allMotoristaTagsAfterRemoval?.map((item: any) => item.tag.nome) || [];
+              
+              // Atualizar todas as tags no Chatwoot (sem a removida)
+              const updateResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                method: 'POST',
+                headers: {
+                  'wiseapp-token': wiseAppToken,
+                  'wiseapp-account-id': accountId.toString(),
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                  labels: remainingTagNames
+                })
+              });
+              
+              if (updateResponse.ok) {
+                console.log(`Tag "${tag.nome}" removida com sucesso do contato ${motorista.nome} no Chatwoot`);
+              }
+            }
+          } catch (error) {
+            console.warn('Erro ao sincronizar com Chatwoot:', error);
+          }
+        }
+        
+        return { success: true };
+      } catch (error) {
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag removida com sucesso!");
+      toast.success("Tag removida e sincronizada com sucesso!");
     },
     onError: (error: any) => {
       toast.error(error.message || "Erro ao remover tag");
@@ -373,9 +505,15 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                 availableTags.map((tag: any) => (
                   <button
                     key={tag.id}
-                    onClick={() => handleAddTag(tag.id)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!addTagMutation.isPending) {
+                        handleAddTag(tag.id);
+                      }
+                    }}
                     disabled={addTagMutation.isPending}
-                    className="w-full flex items-center gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors text-left"
+                    className="w-full flex items-center gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors text-left select-none"
                   >
                     <div
                       className="w-3 h-3 rounded-full border border-gray-300"

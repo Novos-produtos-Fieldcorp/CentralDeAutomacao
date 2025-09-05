@@ -1,0 +1,172 @@
+ Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+ API Configuration: Object
+ API URL: https://chat.wiseapp360.com/api/v1
+ API URL: https://chat.wiseapp360.com/api/v1
+ Using cached WiseApp token and data
+ Using cached auth - account_id: 20 company_id: 5
+ Using cached WiseApp token and data
+ Using cached auth - account_id: 20 company_id: 5
+ API URL: https://chat.wiseapp360.com/api/v1
+ API URL: https://chat.wiseapp360.com/api/v1
+ Valores de funcao encontrados: Array(1)
+ Dados completos: Array(6315)
+ Valores de funcao encontrados: Array(1)
+ Dados completos: Array(6315)
+ Buscando tags para 6306 motoristas em chunks de 50
+ Buscando tags para 6306 motoristas em chunks de 50
+ Valores de funcao encontrados: Array(1)
+ Dados completos: Array(6315)
+ Buscando tags para 6306 motoristas em chunks de 50
+ UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+ === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+ motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.2071&tag_id=eq.115:1  Failed to load resource: the server responded with a status of 406 ()
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:54 UnifiedAgregadoModal aberto para: BRUNO BRANDINO DOS SANTOS
+UnifiedAgregadoModal.tsx:217 === INICIANDO BUSCA PROPRIETÁRIO VEÍCULO (AGREGADO MODAL) ===
+UnifiedAgregadoModal.tsx:218 motorista.motorista_id: 2071
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
+UnifiedAgregadoModal.tsx:228 Veículo encontrado: Object
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:97 Dados de gestão de risco encontrados: null
+UnifiedAgregadoModal.tsx:113 Nenhum dado de gestão de risco encontrado para o motorista: 2071
+UnifiedAgregadoModal.tsx:243 Documento veículo encontrado: Object
+UnifiedAgregadoModal.tsx:247 Nenhum documento de veículo encontrado
