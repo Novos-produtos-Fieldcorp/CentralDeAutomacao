@@ -385,7 +385,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const { canAdd, currentCount, limit } = await checkTagLimit(tagId);
       
       if (!canAdd) {
-        toast.error(`Limite máximo de ${limit} associados atingido para esta tag. Atual: ${currentCount}`);
+        toast.error(`Limite máximo de ${limit} associados atingido para este marcador. Atual: ${currentCount}`);
         return;
       }
 
