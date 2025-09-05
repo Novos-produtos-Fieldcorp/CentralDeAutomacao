@@ -11,6 +11,7 @@ interface Props {
 
 export default function WiseAppTokenModal({ open, onClose, onTokenSaved, companyId }: Props) {
   const [step, setStep] = useState<'email' | 'tutorial' | 'token'>('email');
+  const [requiresAttendantName, setRequiresAttendantName] = useState(false);
   const [email, setEmail] = useState('');
   const [attendantName, setAttendantName] = useState('');
   const [token, setToken] = useState('');
@@ -21,8 +22,8 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     setLoading(true);
     setError('');
 
-    if (!email || !attendantName) {
-      setError('Email e nome do atendente são obrigatórios.');
+    if (!email) {
+      setError('Email é obrigatório.');
       setLoading(false);
       return;
     }
@@ -42,9 +43,18 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
           onTokenSaved(existing.access_token_wiseapp);
           onClose();
         } else {
+          // Email exists but no token, go to tutorial without requiring name
+          setRequiresAttendantName(false);
           setStep('tutorial');
         }
       } else {
+        // Email doesn't exist, require attendant name
+        setRequiresAttendantName(true);
+        if (!attendantName) {
+          setError('Nome do atendente é obrigatório para novos usuários.');
+          setLoading(false);
+          return;
+        }
         // Get account_id from URL or use default for serverless compatibility
         let accountId;
         try {
@@ -89,10 +99,23 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       return;
     }
 
+    // Se requer nome do atendente mas não foi fornecido
+    if (requiresAttendantName && !attendantName) {
+      setError('Nome do atendente é obrigatório.');
+      setLoading(false);
+      return;
+    }
+
     try {
+      // Atualizar com nome apenas se foi fornecido ou se é obrigatório
+      const updateData: any = { access_token_wiseapp: token };
+      if (attendantName || requiresAttendantName) {
+        updateData.nome = attendantName;
+      }
+
       const { error: updateError } = await supabase
         .from('wiseapp_acesso')
-        .update({ access_token_wiseapp: token, nome: attendantName })
+        .update(updateData)
         .eq('email', email);
 
       if (updateError) throw updateError;
@@ -151,19 +174,21 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
         />
       </div>
       
-      <div className="space-y-2">
-        <label htmlFor="attendantName" className="block text-left text-sm font-medium text-gray-700 dark:text-gray-300">
-          Nome do Atendente
-        </label>
-        <input
-          id="attendantName"
-          type="text"
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:text-white"
-          value={attendantName}
-          onChange={(e) => setAttendantName(e.target.value)}
-          placeholder="Seu nome completo"
-        />
-      </div>
+      {requiresAttendantName && (
+        <div className="space-y-2">
+          <label htmlFor="attendantName" className="block text-left text-sm font-medium text-gray-700 dark:text-gray-300">
+            Nome do Atendente
+          </label>
+          <input
+            id="attendantName"
+            type="text"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:text-white"
+            value={attendantName}
+            onChange={(e) => setAttendantName(e.target.value)}
+            placeholder="Seu nome completo"
+          />
+        </div>
+      )}
     </div>
 
     {error && (
@@ -173,7 +198,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     <button
       onClick={handleEmailSubmit}
       className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-      disabled={loading || !email}
+      disabled={loading || !email || (requiresAttendantName && !attendantName)}
     >
       Verificar
     </button>
@@ -223,23 +248,46 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
 )}
 
         {step === 'token' && (
-          <>
-            <input
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-white"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Cole seu access_token da WiseApp aqui"
-            />
+          <div className="space-y-4">
+            {requiresAttendantName && (
+              <div className="space-y-2">
+                <label htmlFor="tokenAttendantName" className="block text-left text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Nome do Atendente
+                </label>
+                <input
+                  id="tokenAttendantName"
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:text-white"
+                  value={attendantName}
+                  onChange={(e) => setAttendantName(e.target.value)}
+                  placeholder="Seu nome completo"
+                />
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <label htmlFor="tokenInput" className="block text-left text-sm font-medium text-gray-700 dark:text-gray-300">
+                Token de Acesso WiseApp
+              </label>
+              <input
+                id="tokenInput"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:text-white"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="Cole seu access_token da WiseApp aqui"
+              />
+            </div>
+            
             <div className="flex justify-between gap-2">
               <button
                 onClick={handleTokenSubmit}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-                disabled={loading || !token}
+                disabled={loading || !token || (requiresAttendantName && !attendantName)}
               >
                 Salvar
               </button>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
