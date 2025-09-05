@@ -57,7 +57,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
         try {
           accountId = localStorage?.getItem('account_id');
         } catch {
-          accountId = '123456'; // Default for serverless environments
+          throw new Error('Account ID não encontrado - acesse via URL com account_id');
         }
 
         const { data: companyData, error: companyError } = await supabase
