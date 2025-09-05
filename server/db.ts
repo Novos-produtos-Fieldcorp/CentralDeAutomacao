@@ -1,24 +1,23 @@
-import { createClient } from "@supabase/supabase-js";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { Pool } from "@neondatabase/serverless";
+import * as schema from "../shared/schema.js";
 import dotenv from "dotenv";
 
 // Load environment variables
 dotenv.config();
 
-// Create Supabase client - using only Supabase
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Get the DATABASE_URL from environment
+const connectionString = process.env.DATABASE_URL;
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error("SUPABASE_URL/VITE_SUPABASE_URL and SUPABASE_ANON_KEY/VITE_SUPABASE_ANON_KEY must be set");
+if (!connectionString) {
+  throw new Error("DATABASE_URL must be set");
 }
 
-export const supabase = createClient(
-  supabaseUrl,
-  supabaseKey,
-  {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  }
-);
+// Create Neon connection pool
+const pool = new Pool({ connectionString });
+
+// Create Drizzle client
+export const db = drizzle(pool, { schema });
+
+// Export schema for convenient access
+export * from "../shared/schema.js";
