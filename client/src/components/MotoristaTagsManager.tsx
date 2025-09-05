@@ -205,7 +205,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag adicionada e sincronizada com sucesso!");
+      toast.success("Marcador adicionado e sincronizado com sucesso!");
     },
     onError: (error: any) => {
       toast.error(error.message || "Erro ao adicionar marcador");
@@ -300,10 +300,10 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag removida e sincronizada com sucesso!");
+      toast.success("Marcador removido e sincronizado com sucesso!");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao remover tag");
+      toast.error(error.message || "Erro ao remover marcador");
     },
   });
 
@@ -329,12 +329,12 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag atualizada com sucesso!");
+      toast.success("Marcador atualizado com sucesso!");
       setIsEditModalOpen(false);
       setEditingTag(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao atualizar tag");
+      toast.error(error.message || "Erro ao atualizar marcador");
     },
   });
 
@@ -364,10 +364,10 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag deletada com sucesso!");
+      toast.success("Marcador deletado com sucesso!");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao deletar tag");
+      toast.error(error.message || "Erro ao deletar marcador");
     },
   });
 

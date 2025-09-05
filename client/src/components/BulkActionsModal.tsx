@@ -228,13 +228,13 @@ const BulkActionsModal = ({
       if (syncSuccessCount > 0) {
         toast.success(`Marcador "${tagData.nome}" aplicado a ${syncSuccessCount} contato(s) no WiseApp!`);
       } else {
-        toast('Tag adicionada localmente. Nenhum contato correspondente foi encontrado no WiseApp.', {
+        toast('Marcador adicionado localmente. Nenhum contato correspondente foi encontrado no WiseApp.', {
           icon: 'ℹ️'
         });
       }
     } catch (error) {
       console.warn('Erro ao aplicar tags no WiseApp (não crítico):', error);
-      toast('Tag adicionada localmente. Falha ao sincronizar com WiseApp.', {
+      toast('Marcador adicionado localmente. Falha ao sincronizar com WiseApp.', {
         icon: '⚠️'
       });
     }
@@ -308,7 +308,7 @@ const BulkActionsModal = ({
         const tag = tags.find(t => t.id === tagId);
         
         if (!tag) {
-          toast.error('Tag não encontrada');
+          toast.error('Marcador não encontrado');
           return;
         }
 
