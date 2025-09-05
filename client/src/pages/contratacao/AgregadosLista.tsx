@@ -2463,10 +2463,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                               {motorista.motorista_id && motoristaTags[motorista.motorista_id]?.map((tag: any) => (
                                 <span
                                   key={tag.id}
-                                  className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:opacity-75 group"
+                                  className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:opacity-75 group text-gray-900 dark:text-white"
                                   style={{
                                     backgroundColor: tag.cor + '30',
-                                    color: tag.cor,
                                     border: `1px solid ${tag.cor}50`
                                   }}
                                   title="Clique para remover esta tag"
