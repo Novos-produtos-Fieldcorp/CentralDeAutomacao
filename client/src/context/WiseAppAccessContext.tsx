@@ -127,11 +127,11 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
 
       let accountId = searchParams.get('account_id')?.trim();
       if (!accountId) {
-        // Default for migration - try to get from localStorage if available (for dev environment)
+        // Get from localStorage if available
         try {
-          accountId = localStorage?.getItem('account_id') ?? '123456';
+          accountId = localStorage?.getItem('account_id');
         } catch {
-          accountId = '123456'; // Fallback for serverless environments
+          accountId = null;
         }
       }
       if (!accountId) {

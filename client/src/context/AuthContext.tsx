@@ -55,9 +55,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           currentAccountId = localStorage.getItem('account_id') || undefined;
         }
 
-        // If still no account_id, use default for testing
+        // If no account_id, user needs to provide one
         if (!currentAccountId || currentAccountId === 'null' || currentAccountId === 'undefined') {
-          currentAccountId = '6'; // Default account ID for testing
+          console.log('No account_id provided - user must specify one in URL');
+          setIsLoading(false);
+          navigate('/unauthorized');
+          return;
         }
 
         // Store account_id in localStorage
@@ -98,23 +101,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('Auth successful - account_id:', currentAccountId, 'company_id:', companyData.company_id, 'company:', companyData.nome_company);
         } catch (fetchError) {
           console.error('Auth check failed:', fetchError);
-          // Fallback apenas para account_id=6 (para testes de desenvolvimento)
-          if (currentAccountId === '6') {
-            setIsAuthenticated(true);
-            setCompanyId(1);
-            
-            // Save fallback to localStorage
-            localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('companyId', '1');
-          } else {
-            // Clear cached data on failure
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('companyId');
-            localStorage.removeItem('companyName');
-            
-            setIsAuthenticated(false);
-            navigate('/unauthorized');
-          }
+          
+          // Clear cached data on failure
+          localStorage.removeItem('isAuthenticated');
+          localStorage.removeItem('companyId');
+          localStorage.removeItem('companyName');
+          
+          setIsAuthenticated(false);
+          navigate('/unauthorized');
         }
       } catch (error) {
         console.error('Auth check failed:', error);
