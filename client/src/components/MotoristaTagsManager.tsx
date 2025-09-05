@@ -55,7 +55,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
           )
         `)
         .eq('motorista_id', motoristaId);
-      
+
       if (error) throw error;
       return data?.map((item: any) => item.tag).filter(Boolean) || [];
     },
@@ -71,7 +71,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         .select('*')
         .eq('company_id', companyId)
         .order('nome');
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -87,32 +87,32 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         .select('limite_max')
         .eq('id', tagId)
         .single();
-      
+
       if (tagError) throw tagError;
-      
+
       if (!tagData.limite_max) {
         return { canAdd: true, currentCount: 0, limit: null };
       }
-      
+
       // Contar associados atuais
       const { count, error: countError } = await supabase
         .from('associacao_tags')
         .select('*', { count: 'exact', head: true })
         .eq('tag_id', tagId);
-      
+
       if (countError) throw countError;
-      
+
       const currentCount = count || 0;
       const canAdd = currentCount < tagData.limite_max;
-      
+
       return { canAdd, currentCount, limit: tagData.limite_max };
     } catch (error) {
-      console.error('Erro ao verificar limite da tag:', error);
+      console.error('Erro ao verificar limite do marcador:', error);
       return { canAdd: true, currentCount: 0, limit: null };
     }
   };
 
-  // Mutation para adicionar tag ao motorista
+  // Mutation para adicionar marcador ao motorista
   const addTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
       try {
@@ -123,28 +123,28 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
           .eq('motorista_id', motoristaId)
           .eq('tag_id', tagId)
           .single();
-        
+
         if (existingAssociation) {
-          throw new Error('Tag já está associada a este motorista');
+          throw new Error('Marcador já está associado a este motorista');
         }
-        
+
         // Buscar dados do motorista e da tag
         const { data: motorista, error: motoristaError } = await supabase
           .from('motorista')
           .select('nome, telefone')
           .eq('motorista_id', motoristaId)
           .single();
-        
+
         if (motoristaError) throw motoristaError;
-        
+
         const { data: tag, error: tagError } = await supabase
           .from('tag')
           .select('nome')
           .eq('id', tagId)
           .single();
-        
+
         if (tagError) throw tagError;
-        
+
         // Criar a associação local
         const { data, error } = await supabase
           .from('associacao_tags')
@@ -153,9 +153,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
             tag_id: tagId
           })
           .select();
-        
+
         if (error) throw error;
-        
+
         // Sincronizar com Chatwoot via API
         if (motorista.telefone && accountId) {
           try {
@@ -166,13 +166,13 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                 'Content-Type': 'application/json'
               }
             });
-            
+
             const contacts = await response.json();
-            
+
             if (contacts && contacts.length > 0) {
               const contact = contacts[0];
-              
-              // Adicionar tag no Chatwoot
+
+              // Adicionar marcador no Chatwoot
               const addResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                 method: 'POST',
                 headers: {
@@ -185,16 +185,16 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                   tagName: tag.nome 
                 })
               });
-              
+
               if (addResponse.ok) {
-                console.log(`Tag "${tag.nome}" aplicada com sucesso ao contato ${motorista.nome} no Chatwoot`);
+                console.log(`Marcador "${tag.nome}" aplicado com sucesso ao contato ${motorista.nome} no Chatwoot`);
               }
             }
           } catch (error) {
             console.warn('Erro ao sincronizar com Chatwoot:', error);
           }
         }
-        
+
         return data[0];
       } catch (error) {
         throw error;
@@ -205,10 +205,10 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag adicionada e sincronizada com sucesso!");
+      toast.success("Marcador adicionado e sincronizado com sucesso!");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao adicionar tag");
+      toast.error(error.message || "Erro ao adicionar marcador");
     },
   });
 
@@ -222,26 +222,26 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
           .select('nome, telefone')
           .eq('motorista_id', motoristaId)
           .single();
-        
+
         if (motoristaError) throw motoristaError;
-        
+
         const { data: tag, error: tagError } = await supabase
           .from('tag')
           .select('nome')
           .eq('id', tagId)
           .single();
-        
+
         if (tagError) throw tagError;
-        
+
         // Remover a associação local
         const { error } = await supabase
           .from('associacao_tags')
           .delete()
           .eq('motorista_id', motoristaId)
           .eq('tag_id', tagId);
-        
+
         if (error) throw error;
-        
+
         // Sincronizar com Chatwoot via API
         if (motorista.telefone && accountId) {
           try {
@@ -252,12 +252,12 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                 'Content-Type': 'application/json'
               }
             });
-            
+
             const contacts = await response.json();
-            
+
             if (contacts && contacts.length > 0) {
               const contact = contacts[0];
-              
+
               // Buscar todas as tags atuais do motorista
               const { data: allMotoristaTagsAfterRemoval } = await supabase
                 .from('associacao_tags')
@@ -265,9 +265,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                   tag:tag_id (nome)
                 `)
                 .eq('motorista_id', motoristaId);
-              
+
               const remainingTagNames = allMotoristaTagsAfterRemoval?.map((item: any) => item.tag.nome) || [];
-              
+
               // Atualizar todas as tags no Chatwoot (sem a removida)
               const updateResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                 method: 'POST',
@@ -280,7 +280,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                   labels: remainingTagNames
                 })
               });
-              
+
               if (updateResponse.ok) {
                 console.log(`Tag "${tag.nome}" removida com sucesso do contato ${motorista.nome} no Chatwoot`);
               }
@@ -289,7 +289,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
             console.warn('Erro ao sincronizar com Chatwoot:', error);
           }
         }
-        
+
         return { success: true };
       } catch (error) {
         throw error;
@@ -300,10 +300,10 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag removida e sincronizada com sucesso!");
+      toast.success("Marcador removido e sincronizado com sucesso!");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao remover tag");
+      toast.error(error.message || "Erro ao remover marcador");
     },
   });
 
@@ -320,7 +320,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         })
         .eq('id', tagId)
         .select();
-      
+
       if (error) throw error;
       return data[0];
     },
@@ -329,12 +329,12 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag atualizada com sucesso!");
+      toast.success("Marcador atualizado com sucesso!");
       setIsEditModalOpen(false);
       setEditingTag(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao atualizar tag");
+      toast.error(error.message || "Erro ao atualizar marcador");
     },
   });
 
@@ -346,17 +346,17 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         .from('associacao_tags')
         .delete()
         .eq('tag_id', tagId);
-      
+
       if (deleteAssociationsError) throw deleteAssociationsError;
-      
+
       // Depois deletar a tag
       const { error: deleteTagError } = await supabase
         .from('tag')
         .delete()
         .eq('id', tagId);
-      
+
       if (deleteTagError) throw deleteTagError;
-      
+
       return { success: true };
     },
     onSuccess: () => {
@@ -364,10 +364,10 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag deletada com sucesso!");
+      toast.success("Marcador deletado com sucesso!");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao deletar tag");
+      toast.error(error.message || "Erro ao deletar marcador");
     },
   });
 
@@ -413,7 +413,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       <div className="flex items-center justify-between">
         <h4 className="text-md font-medium flex items-center gap-2 text-gray-900 dark:text-gray-100">
           <TagIcon className="w-4 h-4" />
-          Tags do Motorista
+          Marcadores do Motorista
         </h4>
         <button
           onClick={() => setIsModalOpen(true)}
@@ -443,7 +443,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                 <button
                   onClick={() => handleEditTag(tag)}
                   className="p-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                  title="Editar tag"
+                  title="Editar marcador"
                 >
                   <Edit className="w-3 h-3" />
                 </button>
@@ -457,7 +457,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                 <button
                   onClick={() => handleDeleteTag(tag.id)}
                   className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-800 dark:hover:text-red-600 transition-colors"
-                  title="Deletar tag permanentemente"
+                  title="Deletar marcador permanentemente"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -473,19 +473,19 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
       </div>
 
       {motoristaTags.length === 0 && (
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Nenhuma tag atribuída ainda.</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">Nenhum marcador atribuído ainda.</p>
       )}
 
       {availableTags.length === 0 && motoristaTags.length > 0 && (
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Todas as tags disponíveis já foram atribuídas.</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">Todos os marcadores disponíveis já foram atribuídos.</p>
       )}
 
-      {/* Modal para adicionar tags */}
+      {/* Modal para adicionar marcadores */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 w-80 max-w-sm mx-4 border dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Adicionar Tag</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Adicionar Marcador</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
@@ -496,10 +496,10 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
             <div className="max-h-64 overflow-y-auto space-y-1">
               {isLoadingAllTags ? (
-                <div className="text-center py-4 text-gray-600 dark:text-gray-400 text-sm">Carregando tags...</div>
+                <div className="text-center py-4 text-gray-600 dark:text-gray-400 text-sm">Carregando marcadores...</div>
               ) : availableTags.length === 0 ? (
                 <div className="text-center py-3 text-gray-500 dark:text-gray-400 text-sm">
-                  Nenhuma tag disponível.
+                  Nenhum marcador disponível.
                 </div>
               ) : (
                 availableTags.map((tag: any) => (
@@ -544,12 +544,12 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         </div>
       )}
 
-      {/* Modal para editar tag */}
+      {/* Modal para editar marcador */}
       {isEditModalOpen && editingTag && (
         <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4 border dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar Tag</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar Marcador</h2>
               <button
                 onClick={() => {
                   setIsEditModalOpen(false);
@@ -577,7 +577,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   );
 }
 
-// Componente para editar tag
+// Componente para editar marcador
 interface EditTagFormProps {
   tag: Tag;
   onSave: (updates: Partial<Tag>) => void;
@@ -605,7 +605,7 @@ function EditTagForm({ tag, onSave, onCancel, isLoading }: EditTagFormProps) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Nome da Tag
+          Nome do Marcador
         </label>
         <input
           type="text"

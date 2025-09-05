@@ -811,12 +811,12 @@ const Contratados = () => {
       // Aplicar a tag ao contato usando o nome da tag
       await applyWiseAppContactLabels(accountId || '', wiseAppToken || '', contact.id, [tagToApply.title || tagToApply.name]);
 
-      toast.success(`Tag "${tagToApply.title || tagToApply.name}" aplicada ao contato ${selectedMotorista.nome_motorista}!`);
+      toast.success(`Marcador "${tagToApply.title || tagToApply.name}" aplicado ao contato ${selectedMotorista.nome_motorista}!`);
       setIsTagModalOpen(false);
 
     } catch (error) {
       console.error('Erro ao aplicar tag:', error);
-      toast.error('Erro ao aplicar tag ao contato');
+      toast.error('Erro ao aplicar marcador ao contato');
     } finally {
       setIsApplyingTag(false);
     }

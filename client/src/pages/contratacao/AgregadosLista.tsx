@@ -335,8 +335,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       
       setMotoristaTags(newMotoristaTags);
     } catch (error) {
-      console.error('Erro ao carregar tags dos agregados:', error);
-      toast.error('Erro ao carregar tags dos agregados');
+      console.error('Erro ao carregar marcadores dos agregados:', error);
+      toast.error('Erro ao carregar marcadores dos agregados');
     }
   };
 
@@ -375,7 +375,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
   };
 
-  // Adicionar tag a um motorista
+  // Adicionar marcador a um motorista
   const handleAddTag = async (motoristaId: number | undefined, tagId: number) => {
     if (!motoristaId) return;
     
@@ -385,7 +385,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const { canAdd, currentCount, limit } = await checkTagLimit(tagId);
       
       if (!canAdd) {
-        toast.error(`Limite máximo de ${limit} associados atingido para esta tag. Atual: ${currentCount}`);
+        toast.error(`Limite máximo de ${limit} associados atingido para este marcador. Atual: ${currentCount}`);
         return;
       }
 
@@ -409,7 +409,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
       
       if (existingAssociation) {
-        toast.error('Tag já está associada a este agregado');
+        toast.error('Marcador já está associado a este agregado');
         return;
       }
 
@@ -455,13 +455,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       // Verificar se atingiu o limite após adicionar
       const { canAdd: canStillAdd, currentCount: newCount, limit: tagLimit } = await checkTagLimit(tagId);
       if (!canStillAdd && tagLimit) {
-        toast.error(`Atenção: Tag "${tagData.nome}" atingiu o limite máximo de ${tagLimit} associados!`);
+        toast.error(`Atenção: Marcador "${tagData.nome}" atingiu o limite máximo de ${tagLimit} associados!`);
       } else {
-        toast.success('Tag adicionada com sucesso!');
+        toast.success('Marcador adicionado com sucesso!');
       }
     } catch (error) {
-      console.error('Erro ao adicionar tag:', error);
-      toast.error('Erro ao adicionar tag');
+      console.error('Erro ao adicionar marcador:', error);
+      toast.error('Erro ao adicionar marcador');
     } finally {
       setUpdatingMotoristaTag(null);
     }
@@ -505,10 +505,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         }
       }
       
-      toast.success('Tag removida com sucesso!');
+      toast.success('Marcador removido com sucesso!');
     } catch (error) {
-      console.error('Erro ao remover tag:', error);
-      toast.error('Erro ao remover tag');
+      console.error('Erro ao remover marcador:', error);
+      toast.error('Erro ao remover marcador');
     }
   };
 
@@ -1378,9 +1378,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           allText: 'Todos os tipos de veículo'
         },
         tag: { 
-          label: 'Tags', 
+          label: 'Marcadores', 
           filter: tagFilter,
-          allText: tagFilterMode === 'contains' ? 'Contém tags' : 'Não contém tags'
+          allText: tagFilterMode === 'contains' ? 'Contém marcadores' : 'Não contém marcadores'
         }
       };
       
@@ -1393,7 +1393,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           const tagName = tags.find(t => t.id.toString() === filter[0])?.nome || filter[0];
           return `${modeText}: ${tagName}`;
         }
-        return `${modeText}: ${filter.length} tag${filter.length !== 1 ? 's' : ''}`;
+        return `${modeText}: ${filter.length} marcador${filter.length !== 1 ? 'es' : ''}`;
       }
       if (filter.length === 1) {
         if (filter[0] === 'sem_cliente') return 'Sem cliente';
@@ -1739,7 +1739,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                           transition-colors flex items-center gap-2"
                 >
                   <Tag className="w-5 h-5" />
-                  Adicionar Tag
+                  Adicionar Marcador
                 </button>
                 <button
                   onClick={handleMassMessage}
@@ -2161,7 +2161,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     <div className="flex items-center gap-2">
                       <Tag className="h-4 w-4" />
                       <span>
-                        {tagFilter.length === 0 ? 'Tags' : `Tags (${tagFilter.length})`}
+                        {tagFilter.length === 0 ? 'Marcadores' : `Marcadores (${tagFilter.length})`}
                       </span>
                     </div>
                   </button>
@@ -2179,7 +2179,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                       {/* Header com abas */}
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">Filtro de tags</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Filtro de marcadores</span>
                           <button 
                             type="button" 
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
@@ -2359,7 +2359,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Tags</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Marcadores</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
                     </tr>
@@ -2519,7 +2519,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                     backgroundColor: tag.cor + '30',
                                     border: `1px solid ${tag.cor}50`
                                   }}
-                                  title="Clique para remover esta tag"
+                                  title="Clique para remover este marcador"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleRemoveTag(motorista.motorista_id, tag.id);
@@ -2531,7 +2531,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                               ))}
                             </div>
 
-                            {/* Botão para adicionar tags */}
+                            {/* Botão para adicionar marcadores */}
                             <div 
                               className="relative inline-block"
                               ref={(el) => {
@@ -2597,7 +2597,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                     <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                                       <input
                                         type="text"
-                                        placeholder="Buscar tags..."
+                                        placeholder="Buscar marcadores..."
                                         className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                         value={tagSearchTerm[motorista.motorista_id] || ''}
                                         onChange={(e) => setTagSearchTerm(prev => ({
@@ -2624,7 +2624,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                             e.stopPropagation();
                                             if (motorista.motorista_id && tag.id) {
                                               handleAddTag(motorista.motorista_id, tag.id);
-                                              // Fechar dropdown e limpar pesquisa após adicionar tag
+                                              // Fechar dropdown e limpar pesquisa após adicionar marcador
                                               setTimeout(() => {
                                                 setTagDropdownOpen(prev => ({ ...prev, [motorista.motorista_id!]: false }));
                                                 setTagDropdownPosition(prev => {
@@ -2653,7 +2653,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                         return notAdded && matchesSearch;
                                       }).length === 0 && (
                                         <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-                                          {tagSearchTerm[motorista.motorista_id] ? 'Nenhuma tag encontrada' : 'Todas as tags já foram adicionadas'}
+                                          {tagSearchTerm[motorista.motorista_id] ? 'Nenhum marcador encontrado' : 'Todos os marcadores já foram adicionados'}
                                         </div>
                                       )}
                                     </div>
@@ -2778,14 +2778,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         )}
 
         {/* Modals */}
-        <UnifiedAgregadoModal
-          isOpen={isUnifiedAgregadoModalOpen}
-          onClose={() => setIsUnifiedAgregadoModalOpen(false)}
-          motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : null}
-          onSuccess={fetchContratados}
-        />
-
-
         <DocumentUploadModal
           isOpen={isDocumentUploadOpen}
           onClose={() => setIsDocumentUploadOpen(false)}

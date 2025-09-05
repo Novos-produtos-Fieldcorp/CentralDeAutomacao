@@ -41,7 +41,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         .select('*')
         .eq('company_id', companyId)
         .order('nome');
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -62,7 +62,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           updated_at: new Date().toISOString()
         })
         .select();
-      
+
       if (error) throw error;
       return data[0];
     },
@@ -75,21 +75,21 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           console.warn('Erro ao criar tag no WiseApp (não crítico):', error);
         }
       }
-      
+
       // Invalidar todas as queries relacionadas a tags
       await queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       await queryClient.invalidateQueries({ queryKey: ['tags'] });
       await queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       await queryClient.invalidateQueries({ queryKey: ['motorista-tags'] });
-      
+
       // Forçar refetch das queries
       await queryClient.refetchQueries({ queryKey: ['local-tags', companyId] });
-      
-      toast.success("Tag criada com sucesso!");
+
+      toast.success("Marcador criado com sucesso!");
       setIsCreateModalOpen(false);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao criar tag");
+      toast.error(error.message || "Erro ao criar marcador");
     },
   });
 
@@ -106,7 +106,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         })
         .eq('id', tagId)
         .select();
-      
+
       if (error) throw error;
       return data[0];
     },
@@ -115,12 +115,12 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag atualizada com sucesso!");
+      toast.success("Marcador atualizado com sucesso!");
       setIsEditModalOpen(false);
       setEditingTag(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao atualizar tag");
+      toast.error(error.message || "Erro ao atualizar marcador");
     },
   });
 
@@ -133,7 +133,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         .select('*')
         .eq('id', tagId)
         .single();
-      
+
       if (!tagData) throw new Error('Tag não encontrada');
 
       // Primeiro remover todas as associações
@@ -141,17 +141,17 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         .from('associacao_tags')
         .delete()
         .eq('tag_id', tagId);
-      
+
       if (deleteAssociationsError) throw deleteAssociationsError;
-      
+
       // Depois deletar a tag
       const { error: deleteTagError } = await supabase
         .from('tag')
         .delete()
         .eq('id', tagId);
-      
+
       if (deleteTagError) throw deleteTagError;
-      
+
       return { success: true, tagData };
     },
     onSuccess: async (result) => {
@@ -163,15 +163,15 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           console.warn('Erro ao deletar tag no WiseApp (não crítico):', error);
         }
       }
-      
+
       // Invalidar todas as queries relacionadas a tags
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Tag deletada com sucesso!");
+      toast.success("Marcador deletado com sucesso!");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao deletar tag");
+      toast.error(error.message || "Erro ao deletar marcador");
     },
   });
 
@@ -211,7 +211,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   // Função para criar tag no WiseApp usando a rota do backend
   const createWiseAppTag = async (tag: Tag) => {
     if (!accountId || !wiseAppToken) return;
-    
+
     try {
       const labelData = {
         name: tag.nome,
@@ -250,7 +250,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   // Função para deletar tag no WiseApp usando a rota do backend
   const deleteWiseAppTag = async (tag: Tag) => {
     if (!accountId || !wiseAppToken) return;
-    
+
     try {
       // Primeiro buscar todas as labels do WiseApp para encontrar o ID correto
       const controller = new AbortController();
@@ -271,7 +271,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       if (labelsResponse.ok) {
         const labels = await labelsResponse.json();
         const wiseAppLabel = labels.find((label: any) => label.name === tag.nome);
-        
+
         if (wiseAppLabel) {
           // Deletar a label no WiseApp
           const deleteController = new AbortController();
@@ -288,7 +288,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           });
 
           clearTimeout(deleteTimeoutId);
-          
+
           if (deleteResponse.ok) {
             console.log('Tag deletada do WiseApp com sucesso');
           } else {
@@ -316,14 +316,14 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
           <TagIcon className="w-5 h-5" />
-          Administração de Tags
+          Administração de Marcadores
         </h3>
         <button
           onClick={() => setIsCreateModalOpen(true)}
           className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-2 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Nova Tag
+          Novo Marcador
         </button>
       </div>
 
@@ -345,26 +345,26 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
                 <button
                   onClick={() => handleEditTag(tag)}
                   className="p-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                  title="Editar tag"
+                  title="Editar marcador"
                 >
                   <Edit className="w-3 h-3" />
                 </button>
                 <button
                   onClick={() => handleDeleteTag(tag)}
                   className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                  title="Deletar tag"
+                  title="Deletar marcador"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
               </div>
             </div>
-            
+
             {tag.limite_max && (
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 Limite: {tag.limite_max} associados
               </div>
             )}
-            
+
             <div className="text-xs text-gray-400 dark:text-gray-500 mt-2">
               Criada em: {new Date(tag.created_at).toLocaleDateString()}
             </div>
@@ -375,7 +375,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       {tags.length === 0 && (
         <div className="text-center py-8">
           <p className="text-gray-500 dark:text-gray-400">
-            Nenhuma tag encontrada. Clique em "Nova Tag" para criar a primeira.
+            Nenhum marcador encontrado. Clique em "Novo Marcador" para criar o primeiro.
           </p>
         </div>
       )}
@@ -449,7 +449,7 @@ function CreateTagModal({ isOpen, onClose, onSave, isLoading }: CreateTagModalPr
     <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4 border dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nova Tag</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Novo Marcador</h2>
           <button
             onClick={onClose}
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
@@ -461,7 +461,7 @@ function CreateTagModal({ isOpen, onClose, onSave, isLoading }: CreateTagModalPr
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nome da Tag
+              Nome do Marcador
             </label>
             <input
               type="text"
@@ -469,6 +469,7 @@ function CreateTagModal({ isOpen, onClose, onSave, isLoading }: CreateTagModalPr
               onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
+              placeholder="Nome do marcador"
             />
           </div>
 
@@ -521,7 +522,7 @@ function CreateTagModal({ isOpen, onClose, onSave, isLoading }: CreateTagModalPr
               className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
-              {isLoading ? 'Criando...' : 'Criar Tag'}
+              {isLoading ? 'Criando...' : 'Criar Marcador'}
             </button>
           </div>
         </form>
@@ -561,7 +562,7 @@ function EditTagModal({ isOpen, onClose, tag, onSave, isLoading }: EditTagModalP
     <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4 border dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar Tag</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar Marcador</h2>
           <button
             onClick={onClose}
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
@@ -573,7 +574,7 @@ function EditTagModal({ isOpen, onClose, tag, onSave, isLoading }: EditTagModalP
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nome da Tag
+              Nome do Marcador
             </label>
             <input
               type="text"
@@ -581,6 +582,7 @@ function EditTagModal({ isOpen, onClose, tag, onSave, isLoading }: EditTagModalP
               onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
+              placeholder="Nome do marcador"
             />
           </div>
 
@@ -675,7 +677,7 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, tag, isLoading }:
 
         <div className="mb-6">
           <p className="text-gray-600 dark:text-gray-300 mb-3">
-            Tem certeza que deseja deletar a tag <strong>"{tag.nome}"</strong>?
+            Tem certeza que deseja deletar o marcador <strong>"{tag.nome}"</strong>?
           </p>
           <div className="flex items-center gap-2 mb-3">
             <div
@@ -691,7 +693,7 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, tag, isLoading }:
               <strong>Atenção:</strong> Esta ação irá:
             </p>
             <ul className="text-sm text-red-600 dark:text-red-400 mt-1 ml-4 list-disc">
-              <li>Deletar a tag do WiseApp também</li>
+              <li>Deletar o marcador do WiseApp também</li>
               <li>Remover todas as associações com motoristas</li>
             </ul>
             <p className="text-sm text-red-700 dark:text-red-300 mt-2 font-medium">
@@ -716,7 +718,7 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, tag, isLoading }:
             className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-md hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             <Trash2 className="w-4 h-4" />
-            {isLoading ? "Deletando..." : "Deletar Tag"}
+            {isLoading ? "Deletando..." : "Deletar Marcador"}
           </button>
         </div>
       </div>

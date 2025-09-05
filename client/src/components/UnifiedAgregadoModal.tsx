@@ -512,7 +512,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                 >
                   <div className="flex items-center gap-1">
                     <Tag className="w-4 h-4" />
-                    Tags
+                    Marcadores
                   </div>
                 </button>
               </nav>
@@ -1355,9 +1355,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
               ) : (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      Gerenciar Tags
-                    </h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Gerenciar Marcadores</h3>
                   </div>
                   
                   <MotoristaTagsManager 
