@@ -449,10 +449,10 @@ const MotoristasLista = () => {
         }
       }
 
-      toast.success('Tag removida com sucesso!');
+      toast.success('Marcador removido com sucesso!');
     } catch (error) {
-      console.error('Erro ao remover tag:', error);
-      toast.error('Erro ao remover tag');
+      console.error('Erro ao remover marcador:', error);
+      toast.error('Erro ao remover marcador');
     } finally {
       setUpdatingMotoristaTag(null);
     }
@@ -905,8 +905,8 @@ const MotoristasLista = () => {
       
       setMotoristaTags(newMotoristaTags);
     } catch (error) {
-      console.error('Erro ao carregar tags dos motoristas:', error);
-      toast.error('Erro ao carregar tags dos motoristas');
+      console.error('Erro ao carregar marcadores dos motoristas:', error);
+      toast.error('Erro ao carregar marcadores dos motoristas');
     }
   };
 
@@ -944,8 +944,8 @@ const MotoristasLista = () => {
       
       setMotoristaTags(newMotoristaTags);
     } catch (error) {
-      console.error('Erro ao carregar tags dos motoristas:', error);
-      toast.error('Erro ao carregar tags dos motoristas');
+      console.error('Erro ao carregar marcadores dos motoristas:', error);
+      toast.error('Erro ao carregar marcadores dos motoristas');
     }
   };
 
@@ -1795,7 +1795,7 @@ const MotoristasLista = () => {
                     <Tag className="h-4 w-4" />
                     <span>
                       {tagFilter.length === 0 
-                        ? (tagFilterMode === 'contains' ? 'Contém tags' : 'Não contém tags')
+                        ? (tagFilterMode === 'contains' ? 'Contém marcadores' : 'Não contém marcadores')
                         : `${tagFilterMode === 'contains' ? 'Contém' : 'Não contém'} (${tagFilter.length})`
                       }
                     </span>
@@ -1861,7 +1861,7 @@ const MotoristasLista = () => {
                       <div className="mb-3">
                         <input
                           type="text"
-                          placeholder="Pesquisar tags..."
+                          placeholder="Pesquisar marcadores..."
                           value={tagSearchFilter}
                           onChange={(e) => setTagSearchFilter(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
@@ -2291,7 +2291,7 @@ const MotoristasLista = () => {
                                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                                     <input
                                       type="text"
-                                      placeholder="Buscar tags..."
+                                      placeholder="Buscar marcadores..."
                                       className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                       value={tagSearchTerm[motorista.motorista_id] || ''}
                                       onChange={(e) => setTagSearchTerm(prev => ({
@@ -2350,7 +2350,7 @@ const MotoristasLista = () => {
                                       return hasNumericId && notAdded && matchesSearch;
                                     }).length === 0 && (
                                       <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-                                        {tagSearchTerm[motorista.motorista_id] ? 'Nenhuma tag encontrada' : (tags.length === 0 ? 'Nenhuma tag disponível' : 'Todas as tags já foram adicionadas')}
+                                        {tagSearchTerm[motorista.motorista_id] ? 'Nenhum marcador encontrado' : (tags.length === 0 ? 'Nenhum marcador disponível' : 'Todos os marcadores já foram adicionados')}
                                       </div>
                                     )}
                                   </div>
