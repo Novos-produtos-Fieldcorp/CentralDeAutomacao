@@ -449,7 +449,7 @@ function CreateTagModal({ isOpen, onClose, onSave, isLoading }: CreateTagModalPr
     <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4 border dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nova Tag</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Novo Marcador</h2>
           <button
             onClick={onClose}
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
@@ -461,7 +461,7 @@ function CreateTagModal({ isOpen, onClose, onSave, isLoading }: CreateTagModalPr
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nome da Tag
+              Nome do Marcador
             </label>
             <input
               type="text"
@@ -521,7 +521,7 @@ function CreateTagModal({ isOpen, onClose, onSave, isLoading }: CreateTagModalPr
               className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
-              {isLoading ? 'Criando...' : 'Criar Tag'}
+              {isLoading ? 'Criando...' : 'Criar Marcador'}
             </button>
           </div>
         </form>
@@ -561,7 +561,7 @@ function EditTagModal({ isOpen, onClose, tag, onSave, isLoading }: EditTagModalP
     <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4 border dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar Tag</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar Marcador</h2>
           <button
             onClick={onClose}
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
@@ -573,7 +573,7 @@ function EditTagModal({ isOpen, onClose, tag, onSave, isLoading }: EditTagModalP
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nome da Tag
+              Nome do Marcador
             </label>
             <input
               type="text"
@@ -675,7 +675,7 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, tag, isLoading }:
 
         <div className="mb-6">
           <p className="text-gray-600 dark:text-gray-300 mb-3">
-            Tem certeza que deseja deletar a tag <strong>"{tag.nome}"</strong>?
+            Tem certeza que deseja deletar o marcador <strong>"{tag.nome}"</strong>?
           </p>
           <div className="flex items-center gap-2 mb-3">
             <div
@@ -691,7 +691,7 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, tag, isLoading }:
               <strong>Atenção:</strong> Esta ação irá:
             </p>
             <ul className="text-sm text-red-600 dark:text-red-400 mt-1 ml-4 list-disc">
-              <li>Deletar a tag do WiseApp também</li>
+              <li>Deletar o marcador do WiseApp também</li>
               <li>Remover todas as associações com motoristas</li>
             </ul>
             <p className="text-sm text-red-700 dark:text-red-300 mt-2 font-medium">
@@ -716,7 +716,7 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, tag, isLoading }:
             className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-md hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             <Trash2 className="w-4 h-4" />
-            {isLoading ? "Deletando..." : "Deletar Tag"}
+            {isLoading ? "Deletando..." : "Deletar Marcador"}
           </button>
         </div>
       </div>
