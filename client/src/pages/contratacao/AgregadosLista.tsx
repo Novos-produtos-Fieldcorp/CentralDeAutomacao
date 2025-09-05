@@ -2778,14 +2778,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         )}
 
         {/* Modals */}
-        <UnifiedAgregadoModal
-          isOpen={isUnifiedAgregadoModalOpen}
-          onClose={() => setIsUnifiedAgregadoModalOpen(false)}
-          motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : null}
-          onSuccess={fetchContratados}
-        />
-
-
         <DocumentUploadModal
           isOpen={isDocumentUploadOpen}
           onClose={() => setIsDocumentUploadOpen(false)}
