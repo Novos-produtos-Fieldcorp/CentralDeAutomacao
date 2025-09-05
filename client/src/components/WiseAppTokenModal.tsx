@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Lock } from 'lucide-react';
 
@@ -21,6 +21,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
   const handleEmailSubmit = async () => {
     setLoading(true);
     setError('');
+    setRequiresAttendantName(false); // Reset the flag at start
 
     if (!email) {
       setError('Email é obrigatório.');
@@ -83,6 +84,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       }
     } catch (err) {
       setError('Erro ao verificar/criar acesso.');
+      setRequiresAttendantName(false); // Reset on error
       console.error(err);
     } finally {
       setLoading(false);
@@ -130,6 +132,19 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       setLoading(false);
     }
   };
+
+  // Reset requiresAttendantName when modal opens or email changes
+  useEffect(() => {
+    if (open && step === 'email') {
+      setRequiresAttendantName(false);
+      setAttendantName(''); // Also reset the name
+    }
+  }, [open, step]);
+
+  // Reset when email changes
+  useEffect(() => {
+    setRequiresAttendantName(false);
+  }, [email]);
 
   if (!open) return null;
 
