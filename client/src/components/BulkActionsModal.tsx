@@ -53,7 +53,7 @@ const BulkActionsModal = ({
       setTags(data || []);
     } catch (error) {
       console.error('Erro ao buscar tags:', error);
-      toast.error('Erro ao carregar tags');
+      toast.error('Erro ao carregar marcadores');
     }
   };
 
@@ -268,7 +268,7 @@ const BulkActionsModal = ({
     }
 
     if (actionType === 'tags' && !selectedTag) {
-      toast.error('Selecione uma tag');
+      toast.error('Selecione um marcador');
       return;
     }
 
@@ -325,7 +325,7 @@ const BulkActionsModal = ({
         
         // Se a tag tem limite e já atingiu o máximo, avisar e sair
         if (tag.limite_max && availableSlots <= 0) {
-          toast.error(`Limite máximo de ${tag.limite_max} associados já atingido para a tag "${tag.nome}"`);
+          toast.error(`Limite máximo de ${tag.limite_max} associados já atingido para o marcador "${tag.nome}"`);
           return;
         }
         
@@ -412,11 +412,11 @@ const BulkActionsModal = ({
         
         // Mensagens de resultado
         if (limitReached && tag.limite_max) {
-          toast.success(`Tag "${tagName}" adicionada a ${addedCount} motorista${addedCount !== 1 ? 's' : ''}. Limite de ${tag.limite_max} associações atingido - restante não foi processado.`);
+          toast.success(`Marcador "${tagName}" adicionado a ${addedCount} motorista${addedCount !== 1 ? 's' : ''}. Limite de ${tag.limite_max} associações atingido - restante não foi processado.`);
         } else if (addedCount > 0) {
-          toast.success(`Tag "${tagName}" adicionada a ${addedCount} item${addedCount !== 1 ? 's' : ''}${alreadyHasCount > 0 ? ` (${alreadyHasCount} já possuíam a tag)` : ''}`);
+          toast.success(`Marcador "${tagName}" adicionado a ${addedCount} item${addedCount !== 1 ? 's' : ''}${alreadyHasCount > 0 ? ` (${alreadyHasCount} já possuíam o marcador)` : ''}`);
         } else if (alreadyHasCount > 0) {
-          toast(`Todos os ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''} selecionado${itemIds.length !== 1 ? 's' : ''} já possuem a tag "${tagName}"`, {
+          toast(`Todos os ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''} selecionado${itemIds.length !== 1 ? 's' : ''} já possuem o marcador "${tagName}"`, {
             icon: 'ℹ️'
           });
         }
