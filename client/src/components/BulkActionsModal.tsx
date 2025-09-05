@@ -66,27 +66,27 @@ const BulkActionsModal = ({
 
     try {
       console.log(`Aplicando tag "${tagData.nome}" aos contatos no WiseApp para ${motoristaIds.length} motoristas...`);
-      
+
       let syncSuccessCount = 0;
       console.log(`DEBUG: Processando ${motoristaIds.length} motoristas:`, motoristaIds);
-      
+
       // Rate limiting inteligente: mais delay para contas com muitos motoristas
       const shouldRateLimit = motoristaIds.length > 50 || accountId === '20';
       const delayMs = shouldRateLimit ? 200 : 50; // 200ms para contas grandes
-      
+
       console.log(`Processing ${motoristaIds.length} motoristas with ${delayMs}ms delay (Account: ${accountId})`);
-      
+
       for (let i = 0; i < motoristaIds.length; i++) {
         const motoristaId = motoristaIds[i];
-        
+
         // Rate limiting: delay entre requisições para evitar 401
         if (i > 0) {
           await new Promise(resolve => setTimeout(resolve, delayMs));
         }
-        
+
         try {
           console.log(`DEBUG: Buscando dados do motorista ${motoristaId} (${i + 1}/${motoristaIds.length})`);
-          
+
           // Buscar dados do motorista via view (para compatibilidade com AgregadosLista)
           const { data: motorista, error: supabaseError } = await supabase
             .from('vw_agregados_completo')
@@ -102,20 +102,20 @@ const BulkActionsModal = ({
 
           if (!motorista) {
             console.log(`DEBUG: Motorista ${motoristaId} não encontrado na view, tentando tabelas...`);
-            
+
             // Fallback: tentar buscar em diferentes tabelas
             let motoristaFallback = null;
-            
+
             // Nota: motoristaId pode referenciar qualquer tipo de usuário
             // Tentar diferentes campos de ID
-            
+
             // Tentar tabela motorista (usando motorista_id e id)
             let { data: fromMotorista } = await supabase
               .from('motorista')
               .select('telefone, nome')
               .eq('id', motoristaId)
               .single();
-              
+
             if (!fromMotorista) {
               const { data: fromMotoristaAlt } = await supabase
                 .from('motorista')
@@ -124,7 +124,7 @@ const BulkActionsModal = ({
                 .single();
               fromMotorista = fromMotoristaAlt;
             }
-            
+
             if (fromMotorista) {
               motoristaFallback = fromMotorista;
               console.log(`DEBUG: Encontrado na tabela motorista:`, motoristaFallback);
@@ -135,7 +135,7 @@ const BulkActionsModal = ({
                 .select('telefone, nome')
                 .eq('id', motoristaId)
                 .single();
-                
+
               if (!fromAgregado) {
                 const { data: fromAgregadoAlt } = await supabase
                   .from('agregado')
@@ -144,20 +144,20 @@ const BulkActionsModal = ({
                   .single();
                 fromAgregado = fromAgregadoAlt;
               }
-              
+
               if (fromAgregado) {
                 motoristaFallback = fromAgregado;
                 console.log(`DEBUG: Encontrado na tabela agregado:`, motoristaFallback);
               } else {
                 // Usar query mais ampla - buscar o telefone baseado no motorista_id da view
                 console.log(`DEBUG: Tentando busca ampla com motorista_id ${motoristaId}...`);
-                
+
                 const { data: fromAnyTable } = await supabase
                   .from('vw_agregados_completo')
                   .select('telefone, nome_motorista')
                   .eq('motorista_id', motoristaId)
                   .limit(1);
-                
+
                 if (fromAnyTable && fromAnyTable.length > 0) {
                   motoristaFallback = {
                     telefone: fromAnyTable[0].telefone,
@@ -167,19 +167,19 @@ const BulkActionsModal = ({
                 }
               }
             }
-            
+
             console.log(`DEBUG: Dados fallback finais do ID ${motoristaId}:`, motoristaFallback);
-            
+
             if (motoristaFallback?.telefone) {
               // Usar dados da tabela direta
               const phoneStr = String(motoristaFallback.telefone);
               const formattedPhone = phoneStr.replace(/^\+55/, ''); 
-              
+
               console.log(`DEBUG: Processando via fallback - telefone ${formattedPhone}`);
-              
+
               const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId);
               const contacts = Array.isArray(searchData) ? searchData : (searchData?.payload || []);
-              
+
               if (contacts.length > 0) {
                 const contact = contacts[0];
                 await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome], companyId);
@@ -196,20 +196,20 @@ const BulkActionsModal = ({
             // Usar telefone sem +55 como na versão individual que funciona
             const phoneStr = String(motorista.telefone);
             const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
-            
+
             try {
               // Buscar contato no WiseApp usando o serviço existente
               const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId);
-              
+
               // Corrigir estrutura de dados (descoberta: searchData é array direto)
               const contacts = Array.isArray(searchData) ? searchData : (searchData?.payload || []);
-              
+
               if (contacts.length > 0) {
                 const contact = contacts[0];
-                
+
                 // Aplicar tag ao contato usando o serviço existente
                 await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome], companyId);
-                
+
                 syncSuccessCount++;
                 console.log(`Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
               } else {
@@ -224,7 +224,7 @@ const BulkActionsModal = ({
           console.warn(`Erro ao processar motorista ${motoristaId}:`, contactError);
         }
       }
-      
+
       if (syncSuccessCount > 0) {
         toast.success(`Marcador "${tagData.nome}" aplicado a ${syncSuccessCount} contato(s) no WiseApp!`);
       } else {
@@ -255,13 +255,13 @@ const BulkActionsModal = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validar limite máximo de 150 seleções
     if (selectedItems.size > 150) {
       toast.error(`Você pode selecionar no máximo 150 itens por vez. Atualmente você tem ${selectedItems.size} itens selecionados.`);
       return;
     }
-    
+
     if (actionType === 'status' && !selectedStatus) {
       toast.error('Selecione um status');
       return;
@@ -274,39 +274,39 @@ const BulkActionsModal = ({
 
     try {
       setSubmitting(true);
-      
+
       // Convert selectedItems Set to array
       const itemIds = Array.from(selectedItems);
-      
+
       if (actionType === 'status') {
         // Update status for all selected items
         for (const id of itemIds) {
           const { error } = await query('motorista')
             .update({ st_cadastro: selectedStatus })
             .eq('motorista_id', id);
-            
+
           if (error) throw error;
         }
-        
+
         toast.success(`Status atualizado para ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''}`);
       } else if (actionType === 'client') {
         // Update client for all selected items
         const clienteId = selectedClient ? parseInt(selectedClient) : null;
-        
+
         for (const id of itemIds) {
           const { error } = await query('motorista')
             .update({ cliente_id: clienteId })
             .eq('motorista_id', id);
-            
+
           if (error) throw error;
         }
-        
+
         toast.success(`Cliente atualizado para ${itemIds.length} item${itemIds.length !== 1 ? 's' : ''}`);
       } else if (actionType === 'tags') {
         // Add tag to selected items, respecting the tag limit
         const tagId = parseInt(selectedTag);
         const tag = tags.find(t => t.id === tagId);
-        
+
         if (!tag) {
           toast.error('Marcador não encontrado');
           return;
@@ -322,29 +322,29 @@ const BulkActionsModal = ({
 
         const currentCount = count || 0;
         let availableSlots = tag.limite_max ? tag.limite_max - currentCount : itemIds.length;
-        
+
         // Se a tag tem limite e já atingiu o máximo, avisar e sair
         if (tag.limite_max && availableSlots <= 0) {
           toast.error(`Limite máximo de ${tag.limite_max} associados já atingido para o marcador "${tag.nome}"`);
           return;
         }
-        
+
         let addedCount = 0;
         let alreadyHasCount = 0;
         let limitReached = false;
         const motoristasComNovaTag: number[] = [];
-        
+
         for (const motoristaId of itemIds) {
           // Se temos limite e já atingimos, parar
           if (tag.limite_max && addedCount >= availableSlots) {
             limitReached = true;
             break;
           }
-          
+
           // Verificar se a associação já existe (ignorar erros RLS)
           let existingAssociation = null;
           let shouldCreateAssociation = true;
-          
+
           try {
             const result = await supabase
               .from('associacao_tags')
@@ -364,7 +364,7 @@ const BulkActionsModal = ({
               throw error;
             }
           }
-          
+
           // Se não existe (ou RLS bloqueou verificação), tentar criar
           if (!existingAssociation) {
             try {
@@ -374,7 +374,7 @@ const BulkActionsModal = ({
                   motorista_id: motoristaId,
                   tag_id: tagId
                 });
-              
+
               if (error) {
                 // Ignorar erros de RLS ou duplicata
                 if (error.code === 'PGRST301' || error.code === '23505') {
@@ -385,7 +385,7 @@ const BulkActionsModal = ({
                   throw error;
                 }
               }
-              
+
               if (shouldCreateAssociation && !error) {
                 addedCount++;
                 motoristasComNovaTag.push(motoristaId); // Coletar para sincronização
@@ -402,14 +402,14 @@ const BulkActionsModal = ({
             alreadyHasCount++;
           }
         }
-        
+
         const tagName = tag.nome;
-        
+
         // Aplicar marcador aos contatos no WiseApp após adicionar marcadores localmente
         if (motoristasComNovaTag.length > 0) {
           await applyTagToWiseAppContacts(tag, motoristasComNovaTag);
         }
-        
+
         // Mensagens de resultado
         if (limitReached && tag.limite_max) {
           toast.success(`Marcador "${tagName}" adicionado a ${addedCount} motorista${addedCount !== 1 ? 's' : ''}. Limite de ${tag.limite_max} associações atingido - restante não foi processado.`);
@@ -421,7 +421,7 @@ const BulkActionsModal = ({
           });
         }
       }
-      
+
       onSuccess();
       onClose();
     } catch (error) {

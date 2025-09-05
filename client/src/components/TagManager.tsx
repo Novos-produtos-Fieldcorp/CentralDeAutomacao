@@ -55,7 +55,7 @@ export function TagManager({ companyId }: TagManagerProps) {
 
   const syncWiseAppTags = async () => {
     if (isSyncingWiseApp) return;
-    
+
     setIsSyncingWiseApp(true);
     try {
       if (!accountId) {
@@ -75,7 +75,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       const wiseAppTagsData = wiseAppLabelsResponse.payload || wiseAppLabelsResponse || [];
       console.log('Tags encontradas:', wiseAppTagsData);
       console.log('WiseApp labels found:', wiseAppTagsData);
-      
+
       if (!wiseAppTagsData || wiseAppTagsData.length === 0) {
         toast('Nenhum marcador encontrado no WiseApp.', {
           icon: 'ℹ️'
@@ -85,7 +85,7 @@ export function TagManager({ companyId }: TagManagerProps) {
 
       // Salvar tags no Supabase
       console.log('Salvando tags no Supabase para company_id:', companyId);
-      
+
       // Primeiro, buscar tags existentes para evitar duplicatas
       const { data: existingTags, error: fetchError } = await supabase
         .from('tag')
@@ -130,14 +130,14 @@ export function TagManager({ companyId }: TagManagerProps) {
           icon: 'ℹ️'
         });
       }
-      
+
       // Invalidar queries para atualizar UI
       await queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       await queryClient.invalidateQueries({ queryKey: ['wiseapp-tags'] });
-      
+
     } catch (error) {
       console.error('Erro ao sincronizar tags do WiseApp:', error);
-      
+
       // Enhanced fallback messaging for different error types
       if (error instanceof Error) {
         if (error.message.includes('401')) {
@@ -156,7 +156,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       } else {
         toast.error('Erro desconhecido ao sincronizar marcadores do WiseApp');
       }
-      
+
       // Still show local tags even if WiseApp fails
       console.log('Sistema continuará funcionando apenas com tags locais');
     } finally {
@@ -172,10 +172,10 @@ export function TagManager({ companyId }: TagManagerProps) {
     <div className="space-y-6">
       {/* Administração de Tags */}
       <TagAdministration companyId={companyId} />
-      
+
       <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Sincronização com WiseApp</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Marcadores</h3>
           <div className="flex items-center gap-2">
             <button
               onClick={syncWiseAppTags}
