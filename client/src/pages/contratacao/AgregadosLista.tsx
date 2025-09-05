@@ -1378,7 +1378,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           allText: 'Todos os tipos de veículo'
         },
         tag: { 
-          label: 'Tags', 
+          label: 'Marcadores', 
           filter: tagFilter,
           allText: tagFilterMode === 'contains' ? 'Contém tags' : 'Não contém tags'
         }
@@ -2161,7 +2161,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     <div className="flex items-center gap-2">
                       <Tag className="h-4 w-4" />
                       <span>
-                        {tagFilter.length === 0 ? 'Tags' : `Tags (${tagFilter.length})`}
+                        {tagFilter.length === 0 ? 'Marcadores' : `Marcadores (${tagFilter.length})`}
                       </span>
                     </div>
                   </button>
@@ -2179,7 +2179,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                       {/* Header com abas */}
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">Filtro de tags</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Filtro de marcadores</span>
                           <button 
                             type="button" 
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"

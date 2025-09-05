@@ -168,10 +168,10 @@ const Dashboard = () => {
       enabled: moduleAccess.resumos
     },
     {
-      title: "Tags",
+      title: "Marcadores",
       icon: Tag,
       link: "/tags-admin",
-      description: "Gerencie tags para categorizar e organizar motoristas",
+      description: "Gerencie marcadores para categorizar e organizar motoristas",
       enabled: moduleAccess.tags
     }
   ];
