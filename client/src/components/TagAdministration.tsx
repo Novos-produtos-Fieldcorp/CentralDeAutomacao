@@ -41,7 +41,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         .select('*')
         .eq('company_id', companyId)
         .order('nome');
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -62,7 +62,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           updated_at: new Date().toISOString()
         })
         .select();
-      
+
       if (error) throw error;
       return data[0];
     },
@@ -75,16 +75,16 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           console.warn('Erro ao criar tag no WiseApp (não crítico):', error);
         }
       }
-      
+
       // Invalidar todas as queries relacionadas a tags
       await queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       await queryClient.invalidateQueries({ queryKey: ['tags'] });
       await queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       await queryClient.invalidateQueries({ queryKey: ['motorista-tags'] });
-      
+
       // Forçar refetch das queries
       await queryClient.refetchQueries({ queryKey: ['local-tags', companyId] });
-      
+
       toast.success("Marcador criado com sucesso!");
       setIsCreateModalOpen(false);
     },
@@ -106,7 +106,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         })
         .eq('id', tagId)
         .select();
-      
+
       if (error) throw error;
       return data[0];
     },
@@ -133,7 +133,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         .select('*')
         .eq('id', tagId)
         .single();
-      
+
       if (!tagData) throw new Error('Tag não encontrada');
 
       // Primeiro remover todas as associações
@@ -141,17 +141,17 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         .from('associacao_tags')
         .delete()
         .eq('tag_id', tagId);
-      
+
       if (deleteAssociationsError) throw deleteAssociationsError;
-      
+
       // Depois deletar a tag
       const { error: deleteTagError } = await supabase
         .from('tag')
         .delete()
         .eq('id', tagId);
-      
+
       if (deleteTagError) throw deleteTagError;
-      
+
       return { success: true, tagData };
     },
     onSuccess: async (result) => {
@@ -163,7 +163,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           console.warn('Erro ao deletar tag no WiseApp (não crítico):', error);
         }
       }
-      
+
       // Invalidar todas as queries relacionadas a tags
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
@@ -211,7 +211,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   // Função para criar tag no WiseApp usando a rota do backend
   const createWiseAppTag = async (tag: Tag) => {
     if (!accountId || !wiseAppToken) return;
-    
+
     try {
       const labelData = {
         name: tag.nome,
@@ -250,7 +250,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   // Função para deletar tag no WiseApp usando a rota do backend
   const deleteWiseAppTag = async (tag: Tag) => {
     if (!accountId || !wiseAppToken) return;
-    
+
     try {
       // Primeiro buscar todas as labels do WiseApp para encontrar o ID correto
       const controller = new AbortController();
@@ -271,7 +271,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       if (labelsResponse.ok) {
         const labels = await labelsResponse.json();
         const wiseAppLabel = labels.find((label: any) => label.name === tag.nome);
-        
+
         if (wiseAppLabel) {
           // Deletar a label no WiseApp
           const deleteController = new AbortController();
@@ -288,7 +288,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           });
 
           clearTimeout(deleteTimeoutId);
-          
+
           if (deleteResponse.ok) {
             console.log('Tag deletada do WiseApp com sucesso');
           } else {
@@ -358,13 +358,13 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
                 </button>
               </div>
             </div>
-            
+
             {tag.limite_max && (
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 Limite: {tag.limite_max} associados
               </div>
             )}
-            
+
             <div className="text-xs text-gray-400 dark:text-gray-500 mt-2">
               Criada em: {new Date(tag.created_at).toLocaleDateString()}
             </div>
@@ -469,6 +469,7 @@ function CreateTagModal({ isOpen, onClose, onSave, isLoading }: CreateTagModalPr
               onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
+              placeholder="Nome do marcador"
             />
           </div>
 
@@ -581,6 +582,7 @@ function EditTagModal({ isOpen, onClose, tag, onSave, isLoading }: EditTagModalP
               onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
+              placeholder="Nome do marcador"
             />
           </div>
 

@@ -154,13 +154,13 @@ const MotoristasLista = () => {
     queryKey: ['local-tags', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      
+
       const { data, error } = await supabase
         .from('tag')
         .select('*')
         .eq('company_id', companyId)
         .order('nome');
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -176,12 +176,12 @@ const MotoristasLista = () => {
   // Função para sincronizar tag com WiseApp via proxy backend
   const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
     console.log('🚀 Iniciando sincronização de tag com Chatwoot:', { motoristaId, tagData, companyId });
-    
+
     if (!companyId) {
       console.warn('❌ CompanyId não encontrado');
       return;
     }
-    
+
     try {
       // 1. Buscar todas as tags existentes no Chatwoot
       console.log('🔍 Buscando tags existentes no Chatwoot...');
@@ -201,7 +201,7 @@ const MotoristasLista = () => {
 
       const labels = await labelsResponse.json();
       console.log('📋 Tags encontradas no Chatwoot:', labels);
-      
+
       const existingTag = labels.find((label: any) => 
         label.name.toLowerCase() === tagData.nome.toLowerCase()
       );
@@ -224,7 +224,7 @@ const MotoristasLista = () => {
       // 3. Buscar o contato no Chatwoot pelo telefone (sem +55 como funciona)
       const phoneStr = String(motorista.telefone);
       const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
-      
+
       console.log(`Buscando contato no Chatwoot para telefone: ${formattedPhone}`);
       const searchContactResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/contacts/search?phone=${formattedPhone}`, {
         method: 'GET',
@@ -242,7 +242,7 @@ const MotoristasLista = () => {
 
       const contactData = await searchContactResponse.json();
       console.log('Dados do contato retornados:', contactData);
-      
+
       const contactId = contactData.payload?.[0]?.id || contactData[0]?.id;
 
       if (!contactId) {
@@ -284,7 +284,7 @@ const MotoristasLista = () => {
 
   const removeTagFromWiseApp = async (motoristaId: number, tagId: number) => {
     if (!companyId) return;
-    
+
     try {
       // Buscar dados da tag
       const { data: tagData } = await supabase
@@ -292,7 +292,7 @@ const MotoristasLista = () => {
         .select('*')
         .eq('id', tagId)
         .single();
-      
+
       if (!tagData) return;
 
       // Buscar labels no WiseApp via proxy
@@ -306,7 +306,7 @@ const MotoristasLista = () => {
       if (labelsResponse.ok) {
         const labels = await labelsResponse.json();
         const wiseAppLabel = labels.find((label: any) => label.name === tagData.nome);
-        
+
         if (wiseAppLabel) {
           // Remover label do WiseApp via proxy
           const deleteResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/labels/${wiseAppLabel.id}`, {
@@ -316,7 +316,7 @@ const MotoristasLista = () => {
               'wiseapp-token': wiseAppToken || ''
             }
           });
-          
+
           if (deleteResponse.ok) {
             console.log('Tag removida do WiseApp com sucesso');
           } else {
@@ -346,7 +346,7 @@ const MotoristasLista = () => {
           .eq('motorista_id', motoristaId)
           .eq('tag_id', tagId)
           .single();
-        
+
         if (existingAssociation) {
           toast.error('Marcador já está associado a este motorista');
           return;
@@ -360,7 +360,7 @@ const MotoristasLista = () => {
           throw error;
         }
       }
-      
+
       // Criar a associação no Supabase (ignorar erros RLS se duplicata check foi pulado)
       if (!skipDuplicateCheck) {
         try {
@@ -371,7 +371,7 @@ const MotoristasLista = () => {
               tag_id: tagId
             })
             .select();
-          
+
           if (error) throw error;
         } catch (error: any) {
           // Ignorar erros de RLS ou duplicata
@@ -389,7 +389,7 @@ const MotoristasLista = () => {
         .select('*')
         .eq('id', tagId)
         .single();
-      
+
       if (tagError) throw tagError;
 
       // Atualizar tags localmente
@@ -430,7 +430,7 @@ const MotoristasLista = () => {
         .delete()
         .eq('motorista_id', motoristaId)
         .eq('tag_id', tagId);
-      
+
       if (error) throw error;
 
       // Remover tag localmente
@@ -475,7 +475,7 @@ const MotoristasLista = () => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
-  
+
   // Refs para os dropdowns
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
@@ -483,7 +483,7 @@ const MotoristasLista = () => {
   const ativoDropdownRef = useRef<HTMLDivElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const motoristaTagDropdownRefs = useRef<{[key: number]: HTMLDivElement | null}>({});
-  
+
   // Funções para alternar os dropdowns
   const handleToggleStatusDropdown = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -493,7 +493,7 @@ const MotoristasLista = () => {
     setShowAtivoDropdown(false);
     setShowTagDropdown(false);
   };
-  
+
   const handleToggleCidadeDropdown = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowCidadeDropdown(!showCidadeDropdown);
@@ -502,7 +502,7 @@ const MotoristasLista = () => {
     setShowAtivoDropdown(false);
     setShowTagDropdown(false);
   };
-  
+
   const handleToggleClienteDropdown = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowClienteDropdown(!showClienteDropdown);
@@ -511,7 +511,7 @@ const MotoristasLista = () => {
     setShowAtivoDropdown(false);
     setShowTagDropdown(false);
   };
-  
+
   const handleToggleAtivoDropdown = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowAtivoDropdown(!showAtivoDropdown);
@@ -529,7 +529,7 @@ const MotoristasLista = () => {
     setShowCidadeDropdown(false);
     setShowClienteDropdown(false);
     setShowAtivoDropdown(false);
-    
+
     // Carregar tags dos motoristas apenas quando abrir o dropdown pela primeira vez
     if (isOpening && Object.keys(motoristaTags).length === 0 && motoristas.length > 0) {
       await fetchAllMotoristaTags(motoristas);
@@ -608,7 +608,7 @@ const MotoristasLista = () => {
     // Sistema duplo: filtros automáticos e aplicação automática de tags
     const currentHour = new Date().getHours();
     const isWorkingHours = currentHour >= 6 && currentHour <= 18;
-    
+
     // PARTE 1: Aplicação automática de tags aos motoristas
     // Critério 1: Aplicar tag "VIP" para motoristas com veículo próprio
     const vipTag = tags.find(tag => tag.nome.toLowerCase().includes('vip'));
@@ -616,13 +616,13 @@ const MotoristasLista = () => {
       for (const motorista of motoristas) {
         const hasVeiculo = motorista.veiculo && motorista.veiculo.length > 0;
         const alreadyHasTag = motoristaTags[motorista.motorista_id || 0]?.some((tag: any) => tag.id === vipTag.id);
-        
+
         if (hasVeiculo && !alreadyHasTag && motorista.motorista_id) {
           await handleAddTag(motorista.motorista_id, vipTag.id);
         }
       }
     }
-    
+
     // Critério 2: Aplicar tag "Novo" para motoristas cadastrados nos últimos 7 dias
     const novoTag = tags.find(tag => tag.nome.toLowerCase().includes('novo'));
     if (novoTag) {
@@ -630,13 +630,13 @@ const MotoristasLista = () => {
         const cadastroDate = new Date(motorista.data_cadastro || '');
         const daysSinceCadastro = (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
         const alreadyHasTag = motoristaTags[motorista.motorista_id || 0]?.some((tag: any) => tag.id === novoTag.id);
-        
+
         if (daysSinceCadastro <= 7 && !alreadyHasTag && motorista.motorista_id) {
           await handleAddTag(motorista.motorista_id, novoTag.id);
         }
       }
     }
-    
+
     // Critério 3: Aplicar tag "Experiente" para motoristas com mais de 6 meses
     const experienteTag = tags.find(tag => tag.nome.toLowerCase().includes('experiente'));
     if (experienteTag) {
@@ -644,13 +644,13 @@ const MotoristasLista = () => {
         const cadastroDate = new Date(motorista.data_cadastro || '');
         const daysSinceCadastro = (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
         const alreadyHasTag = motoristaTags[motorista.motorista_id || 0]?.some((tag: any) => tag.id === experienteTag.id);
-        
+
         if (daysSinceCadastro > 180 && !alreadyHasTag && motorista.motorista_id) {
           await handleAddTag(motorista.motorista_id, experienteTag.id);
         }
       }
     }
-    
+
     // PARTE 2: Filtros automáticos na interface
     // Durante horário comercial, mostrar apenas motoristas VIP e Experientes
     if (isWorkingHours) {
@@ -659,14 +659,14 @@ const MotoristasLista = () => {
         tag.nome.toLowerCase().includes('experiente') ||
         tag.nome.toLowerCase().includes('prioridade')
       );
-      
+
       if (priorityTags.length > 0 && tagFilter.length === 0) {
         const priorityTagIds = priorityTags.map(tag => tag.id.toString());
         setTagFilter(priorityTagIds);
         return;
       }
     }
-    
+
     // Se há poucos motoristas disponíveis (<3), não filtrar por tags
     const availableMotoristas = motoristas.filter(m => m.ativo && m.st_cadastro === 'contratado');
     if (availableMotoristas.length < 3 && tagFilter.length > 0) {
@@ -681,12 +681,12 @@ const MotoristasLista = () => {
       if (contextMenu.visible) {
         setContextMenu({ ...contextMenu, visible: false });
       }
-      
+
       // Close any open status dropdown
       if (statusDropdownOpen !== null) {
         setStatusDropdownOpen(null);
       }
-      
+
       // Close any open cliente dropdown
       if (clienteDropdownOpen !== null) {
         setClienteDropdownOpen(null);
@@ -702,27 +702,27 @@ const MotoristasLista = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
     const target = event.target as HTMLElement;
-    
+
     // Verifica se o clique foi fora do dropdown de status
     if (showStatusDropdown && statusDropdownRef.current && !statusDropdownRef.current.contains(target)) {
       setShowStatusDropdown(false);
     }
-    
+
     // Verifica se o clique foi fora do dropdown de cidades
     if (showCidadeDropdown && cidadeDropdownRef.current && !cidadeDropdownRef.current.contains(target)) {
       setShowCidadeDropdown(false);
     }
-    
+
     // Verifica se o clique foi fora do dropdown de clientes
     if (showClienteDropdown && clienteDropdownRef.current && !clienteDropdownRef.current.contains(target)) {
       setShowClienteDropdown(false);
     }
-    
+
     // Verifica se o clique foi fora do dropdown de ativo/inativo
     if (showAtivoDropdown && ativoDropdownRef.current && !ativoDropdownRef.current.contains(target)) {
       setShowAtivoDropdown(false);
     }
-    
+
     // Verifica se o clique foi fora do dropdown de tags
     if (showTagDropdown && tagDropdownRef.current && !tagDropdownRef.current.contains(target)) {
       setShowTagDropdown(false);
@@ -775,7 +775,7 @@ const MotoristasLista = () => {
       if (dateFilter !== 'all') {
         const today = new Date();
         let startDate = new Date();
-        
+
         if (dateFilter === 'today') {
           // Today only
           startDate = new Date(today.setHours(0, 0, 0, 0));
@@ -821,7 +821,7 @@ const MotoristasLista = () => {
           } catch (error) {
             console.warn(`Erro ao buscar foto para motorista ${motorista.motorista_id}:`, error);
           }
-          
+
           return {
             ...motorista,
             nome: motorista.nome || motorista.nome_motorista || 'N/A',
@@ -860,7 +860,7 @@ const MotoristasLista = () => {
       setCidades(Array.from(uniqueCities).sort());
 
       setMotoristas(motoristasAgrupados || []);
-      
+
       // Tags serão carregadas apenas quando necessário (filtro, ações em massa, etc.)
       // Para melhor performance, não carregar automaticamente
     } catch (error) {
@@ -875,7 +875,7 @@ const MotoristasLista = () => {
   const fetchMotoristaTags = async (motoristas: ViewMotorista[]) => {
     try {
       const newMotoristaTags: { [key: number]: any[] } = {};
-      
+
       for (const motorista of motoristas) {
         if (motorista.motorista_id) {
           try {
@@ -893,7 +893,7 @@ const MotoristasLista = () => {
                 )
               `)
               .eq('motorista_id', motorista.motorista_id);
-            
+
             if (error) throw error;
             newMotoristaTags[motorista.motorista_id] = data?.map(item => item.tag).filter(Boolean) || [];
           } catch (error) {
@@ -902,7 +902,7 @@ const MotoristasLista = () => {
           }
         }
       }
-      
+
       setMotoristaTags(newMotoristaTags);
     } catch (error) {
       console.error('Erro ao carregar marcadores dos motoristas:', error);
@@ -914,7 +914,7 @@ const MotoristasLista = () => {
     // Carregar tags individuais dos motoristas
     try {
       const newMotoristaTags: { [key: number]: any[] } = {};
-      
+
       for (const motorista of motoristas) {
         if (motorista.motorista_id) {
           try {
@@ -932,7 +932,7 @@ const MotoristasLista = () => {
                 )
               `)
               .eq('motorista_id', motorista.motorista_id);
-            
+
             if (error) throw error;
             newMotoristaTags[motorista.motorista_id] = data?.map((item: any) => item.tag).filter(Boolean) || [];
           } catch (error) {
@@ -941,7 +941,7 @@ const MotoristasLista = () => {
           }
         }
       }
-      
+
       setMotoristaTags(newMotoristaTags);
     } catch (error) {
       console.error('Erro ao carregar marcadores dos motoristas:', error);
@@ -986,14 +986,14 @@ const MotoristasLista = () => {
 
   const { accountId } = useAuth();
   const { token: wiseAppToken } = useWiseAppAccess();
-  
+
 
   const handleViewDocument = async (motorista: ViewMotorista | null) => {
     if (!motorista) return;
-    
+
     try {
       setSelectedMotorista(motorista);
-      
+
       // Verificar se é agregado para usar o modal correto
       if (motorista.funcao === 'Agregado') {
         setIsAgregadoModalOpen(true);
@@ -1042,7 +1042,7 @@ const MotoristasLista = () => {
     if (e && 'stopPropagation' in e) {
       e.stopPropagation();
     }
-    
+
     const newSelectedItems = new Set(selectedItems);
     if (newSelectedItems.has(motoristaId)) {
       newSelectedItems.delete(motoristaId);
@@ -1050,7 +1050,7 @@ const MotoristasLista = () => {
       newSelectedItems.add(motoristaId);
     }
     setSelectedItems(newSelectedItems);
-    
+
     // Atualiza o estado de selecionar todos
     setSelectAll(newSelectedItems.size === filteredMotoristas.length);
   };
@@ -1060,7 +1060,7 @@ const MotoristasLista = () => {
     if (e && 'stopPropagation' in e) {
       e.stopPropagation();
     }
-    
+
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
@@ -1069,11 +1069,11 @@ const MotoristasLista = () => {
           .filter(motorista => {
             if (!motorista) return false;
             const searchLower = searchTerm.toLowerCase();
-            
+
             // Lógica para filtro de status (multiseleção)
             const statusMatch = statusFilter.length === 0 || 
               (motorista.st_cadastro && statusFilter.includes(motorista.st_cadastro));
-            
+
             // Lógica para filtro de cliente (multiseleção)
             let clienteMatch = true;
             if (clienteFilter.length > 0) {
@@ -1084,27 +1084,27 @@ const MotoristasLista = () => {
                   motorista.cliente_id !== undefined &&
                   clienteFilter.includes(motorista.cliente_id.toString());
               }
-              
+
               if (clienteFilter.includes('sem_cliente') && clienteFilter.length > 1) {
                 clienteMatch = clienteMatch || (motorista.cliente_id === null || motorista.cliente_id === undefined);
               }
             }
-            
+
             // Lógica para filtro de cidade (já está em multiseleção)
             const cidadeMatch = cidadeFilter.length === 0 || 
               (motorista.nome_cidade && cidadeFilter.includes(motorista.nome_cidade));
-              
+
             // Lógica para filtro de ativo/inativo (seleção única)
             const ativoMatch = !ativoFilter || 
               (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false);
-            
+
             // Verificação de busca por texto
             const searchMatch = searchTerm === '' ||
               (motorista.nome?.toLowerCase().includes(searchLower) ||
                motorista.cpf?.includes(searchLower) ||
                (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
                (motorista.telefone ? String(motorista.telefone).includes(searchLower) : false));
-            
+
             return statusMatch && clienteMatch && cidadeMatch && ativoMatch && searchMatch;
           })
           .map(motorista => motorista.motorista_id)
@@ -1115,10 +1115,10 @@ const MotoristasLista = () => {
 
   const handleRoleChangeConfirm = async () => {
     if (!roleChangeModal.motorista || !roleChangeModal.newRole) return;
-    
+
     try {
       setRoleChangeModal(prev => ({ ...prev, isLoading: true }));
-      
+
       const { error } = await supabase
         .from('motorista')
         .update({ funcao: roleChangeModal.newRole })
@@ -1139,12 +1139,12 @@ const MotoristasLista = () => {
         `Função alterada com sucesso para ${roleChangeModal.newRole === 'Motorista' ? 'Motorista' : 'Agregado'}!`,
         { duration: 3000 }
       );
-      
+
       // If in filtered view, refresh the list
       if (searchTerm) {
         fetchMotoristas();
       }
-      
+
       // Close the modal
       setRoleChangeModal({ isOpen: false, motorista: null, newRole: null, isLoading: false });
     } catch (error) {
@@ -1184,7 +1184,7 @@ const MotoristasLista = () => {
       // Update the list
       setMotoristas(motoristas.filter(m => !selectedItems.has(m.motorista_id || 0)));
       toast.success(`${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
-      
+
       // Reset selection
       setSelectedItems(new Set());
       setSelectAll(false);
@@ -1230,15 +1230,15 @@ const MotoristasLista = () => {
     if (e) e.stopPropagation();
     try {
       setUpdatingCliente(motorista.motorista_id || 0);
-      
+
       // Update the cliente_id in the database
       const { error } = await supabase
         .from('motorista')
         .update({ cliente_id: clienteId })
         .eq('motorista_id', motorista.motorista_id);
-        
+
       if (error) throw error;
-      
+
       // Update the local state
       setMotoristas(prev => 
         prev.map(m => 
@@ -1253,7 +1253,7 @@ const MotoristasLista = () => {
             : m
         )
       );
-      
+
       toast.success(clienteId ? 'Cliente atualizado com sucesso' : 'Cliente removido com sucesso');
     } catch (error) {
       console.error('Error updating cliente:', error);
@@ -1268,14 +1268,14 @@ const MotoristasLista = () => {
     if (e) e.stopPropagation();
     try {
       setUpdatingStatus(motorista.motorista_id || 0);
-      
+
       const { error } = await supabase
         .from('motorista')
         .update({ st_cadastro: newStatus })
         .eq('motorista_id', motorista.motorista_id);
-        
+
       if (error) throw error;
-      
+
       // Update the local state
       setMotoristas(prev => 
         prev.map(m => 
@@ -1284,7 +1284,7 @@ const MotoristasLista = () => {
             : m
         )
       );
-      
+
       toast.success(`Status atualizado para ${newStatus.replace('_', ' ')}`);
     } catch (error) {
       console.error('Error updating status:', error);
@@ -1299,10 +1299,10 @@ const MotoristasLista = () => {
     e.stopPropagation();
     try {
       setUpdatingStatus(motorista.motorista_id || 0);
-      
+
       // Update the ativo status in the database (toggle it)
       const newAtivo = !motorista.ativo;
-      
+
       const { error } = await supabase
         .from('motorista')
         .update({ ativo: newAtivo })
@@ -1330,13 +1330,13 @@ const MotoristasLista = () => {
 
   const filteredMotoristas = (motoristas || []).filter(motorista => {
     if (!motorista) return false;
-    
+
     const searchLower = searchTerm.toLowerCase();
-    
+
     // Lógica para filtro de status (multiseleção)
     const statusMatch = statusFilter.length === 0 || 
       (motorista.st_cadastro && statusFilter.includes(motorista.st_cadastro));
-    
+
     // Lógica para filtro de cliente (multiseleção)
     let clienteMatch = true;
     if (clienteFilter.length > 0) {
@@ -1347,32 +1347,32 @@ const MotoristasLista = () => {
           motorista.cliente_id !== undefined &&
           clienteFilter.includes(motorista.cliente_id.toString());
       }
-      
+
       if (clienteFilter.includes('sem_cliente') && clienteFilter.length > 1) {
         clienteMatch = clienteMatch || (motorista.cliente_id === null || motorista.cliente_id === undefined);
       }
     }
-    
+
     // Lógica para filtro de cidade (já está em multiseleção)
     const cidadeMatch = cidadeFilter.length === 0 || 
       (motorista.nome_cidade && cidadeFilter.includes(motorista.nome_cidade));
-      
+
     // Lógica para filtro de ativo/inativo (seleção única)
     const ativoMatch = !ativoFilter || 
       (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false);
-    
+
     // Lógica para filtro de tags (multiseleção)
     let tagMatch = true;
     if (Array.isArray(tagFilter) && tagFilter.length > 0) {
       const motoristaTagsList = motoristaTags[motorista.motorista_id] || [];
-      
+
       // Garantir que temos um array válido
       if (Array.isArray(motoristaTagsList) && motoristaTagsList.length > 0) {
         const motoristaTagIds = motoristaTagsList.map((tag: any) => {
           // Garantir que o ID existe e convertê-lo para string
           return tag?.id?.toString() || '';
         }).filter(id => id !== '');
-        
+
         if (tagFilterMode === 'contains') {
           // Modo "contém": motorista deve ter pelo menos uma das tags selecionadas
           tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
@@ -1385,14 +1385,14 @@ const MotoristasLista = () => {
         tagMatch = tagFilterMode === 'not_contains';
       }
     }
-    
+
     // Verificação de busca por texto
     const searchMatch = searchTerm === '' ||
       (motorista.nome?.toLowerCase().includes(searchLower) ||
        motorista.cpf?.includes(searchLower) ||
        (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
        (motorista.telefone ? String(motorista.telefone).includes(searchLower) : false));
-    
+
     try {
       return statusMatch && clienteMatch && cidadeMatch && ativoMatch && tagMatch && searchMatch;
     } catch (error) {
@@ -1503,7 +1503,7 @@ const MotoristasLista = () => {
                 <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tagFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
               </div>
             )}
-            
+
             {/* Botão limpar filtros */}
             {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
               ativoFilter !== '' || tagFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
@@ -1570,7 +1570,7 @@ const MotoristasLista = () => {
                   </div>
 
                 </button>
-            
+
               {showStatusDropdown && (
                 <div 
                   className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
@@ -1639,7 +1639,7 @@ const MotoristasLista = () => {
                   </div>
 
                 </button>
-            
+
               {showCidadeDropdown && (
                 <div 
                   className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
@@ -1711,7 +1711,7 @@ const MotoristasLista = () => {
                   </div>
 
                 </button>
-            
+
               {showClienteDropdown && (
                 <div 
                   className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
@@ -1931,7 +1931,7 @@ const MotoristasLista = () => {
                     </span>
                   </div>
                 </button>
-                
+
                 {showAtivoDropdown && (
                   <div className="absolute z-[999999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
                     <div 
@@ -1986,7 +1986,7 @@ const MotoristasLista = () => {
             </div>
 
           </div>
-          
+
           {/* Botão Novo Motorista */}
           <button
             onClick={() => setIsNovoMotoristaModalOpen(true)}
@@ -2056,7 +2056,7 @@ const MotoristasLista = () => {
               </span>
             </div>
           </div>
-          
+
           <div className="relative">
             <div ref={tableContainerRef} className="overflow-x-auto w-full">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -2169,7 +2169,7 @@ const MotoristasLista = () => {
                               'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                             }
                           />
-                          
+
                           {updatingStatus === motorista.motorista_id && (
                             <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
                               <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
@@ -2199,7 +2199,7 @@ const MotoristasLista = () => {
                                 : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
                             }
                           />
-                          
+
                           {updatingCliente === motorista.motorista_id && (
                             <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
                               <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
@@ -2242,7 +2242,7 @@ const MotoristasLista = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const isOpening = !tagDropdownOpen[motorista.motorista_id];
-                                
+
                                 if (isOpening) {
                                   // Calcular posição do dropdown e limpar campo de pesquisa
                                   const buttonElement = e.currentTarget as HTMLElement;
@@ -2260,7 +2260,7 @@ const MotoristasLista = () => {
                                     [motorista.motorista_id]: ''
                                   }));
                                 }
-                                
+
                                 setTagDropdownOpen(prev => ({
                                   ...prev,
                                   [motorista.motorista_id]: isOpening
@@ -2423,14 +2423,14 @@ const MotoristasLista = () => {
                 </tbody>
               </table>
             </div>
-            
+
             <ScrollableTableIndicator 
               containerRef={tableContainerRef} 
               className="mr-2 ml-2"
             />
           </div>
         </div>
-        
+
         {filteredMotoristas.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400">
@@ -2472,7 +2472,7 @@ const MotoristasLista = () => {
                   <AlertTriangle className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
                 </div>
               </div>
-              
+
               <p className="text-sm text-gray-600 dark:text-gray-300 text-center mb-6">
                 Tem certeza que deseja transformar <span className="font-semibold">{roleChangeModal.motorista.nome}</span> em um <span className="font-semibold">{roleChangeModal.newRole === 'Motorista' ? 'Motorista' : 'Agregado'}</span>?
               </p>

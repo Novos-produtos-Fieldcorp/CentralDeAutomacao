@@ -55,7 +55,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
           )
         `)
         .eq('motorista_id', motoristaId);
-      
+
       if (error) throw error;
       return data?.map((item: any) => item.tag).filter(Boolean) || [];
     },
@@ -71,7 +71,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         .select('*')
         .eq('company_id', companyId)
         .order('nome');
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -87,24 +87,24 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         .select('limite_max')
         .eq('id', tagId)
         .single();
-      
+
       if (tagError) throw tagError;
-      
+
       if (!tagData.limite_max) {
         return { canAdd: true, currentCount: 0, limit: null };
       }
-      
+
       // Contar associados atuais
       const { count, error: countError } = await supabase
         .from('associacao_tags')
         .select('*', { count: 'exact', head: true })
         .eq('tag_id', tagId);
-      
+
       if (countError) throw countError;
-      
+
       const currentCount = count || 0;
       const canAdd = currentCount < tagData.limite_max;
-      
+
       return { canAdd, currentCount, limit: tagData.limite_max };
     } catch (error) {
       console.error('Erro ao verificar limite do marcador:', error);
@@ -123,28 +123,28 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
           .eq('motorista_id', motoristaId)
           .eq('tag_id', tagId)
           .single();
-        
+
         if (existingAssociation) {
           throw new Error('Marcador já está associado a este motorista');
         }
-        
+
         // Buscar dados do motorista e da tag
         const { data: motorista, error: motoristaError } = await supabase
           .from('motorista')
           .select('nome, telefone')
           .eq('motorista_id', motoristaId)
           .single();
-        
+
         if (motoristaError) throw motoristaError;
-        
+
         const { data: tag, error: tagError } = await supabase
           .from('tag')
           .select('nome')
           .eq('id', tagId)
           .single();
-        
+
         if (tagError) throw tagError;
-        
+
         // Criar a associação local
         const { data, error } = await supabase
           .from('associacao_tags')
@@ -153,9 +153,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
             tag_id: tagId
           })
           .select();
-        
+
         if (error) throw error;
-        
+
         // Sincronizar com Chatwoot via API
         if (motorista.telefone && accountId) {
           try {
@@ -166,12 +166,12 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                 'Content-Type': 'application/json'
               }
             });
-            
+
             const contacts = await response.json();
-            
+
             if (contacts && contacts.length > 0) {
               const contact = contacts[0];
-              
+
               // Adicionar marcador no Chatwoot
               const addResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                 method: 'POST',
@@ -185,7 +185,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                   tagName: tag.nome 
                 })
               });
-              
+
               if (addResponse.ok) {
                 console.log(`Marcador "${tag.nome}" aplicado com sucesso ao contato ${motorista.nome} no Chatwoot`);
               }
@@ -194,7 +194,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
             console.warn('Erro ao sincronizar com Chatwoot:', error);
           }
         }
-        
+
         return data[0];
       } catch (error) {
         throw error;
@@ -222,26 +222,26 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
           .select('nome, telefone')
           .eq('motorista_id', motoristaId)
           .single();
-        
+
         if (motoristaError) throw motoristaError;
-        
+
         const { data: tag, error: tagError } = await supabase
           .from('tag')
           .select('nome')
           .eq('id', tagId)
           .single();
-        
+
         if (tagError) throw tagError;
-        
+
         // Remover a associação local
         const { error } = await supabase
           .from('associacao_tags')
           .delete()
           .eq('motorista_id', motoristaId)
           .eq('tag_id', tagId);
-        
+
         if (error) throw error;
-        
+
         // Sincronizar com Chatwoot via API
         if (motorista.telefone && accountId) {
           try {
@@ -252,12 +252,12 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                 'Content-Type': 'application/json'
               }
             });
-            
+
             const contacts = await response.json();
-            
+
             if (contacts && contacts.length > 0) {
               const contact = contacts[0];
-              
+
               // Buscar todas as tags atuais do motorista
               const { data: allMotoristaTagsAfterRemoval } = await supabase
                 .from('associacao_tags')
@@ -265,9 +265,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                   tag:tag_id (nome)
                 `)
                 .eq('motorista_id', motoristaId);
-              
+
               const remainingTagNames = allMotoristaTagsAfterRemoval?.map((item: any) => item.tag.nome) || [];
-              
+
               // Atualizar todas as tags no Chatwoot (sem a removida)
               const updateResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                 method: 'POST',
@@ -280,7 +280,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                   labels: remainingTagNames
                 })
               });
-              
+
               if (updateResponse.ok) {
                 console.log(`Tag "${tag.nome}" removida com sucesso do contato ${motorista.nome} no Chatwoot`);
               }
@@ -289,7 +289,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
             console.warn('Erro ao sincronizar com Chatwoot:', error);
           }
         }
-        
+
         return { success: true };
       } catch (error) {
         throw error;
@@ -320,7 +320,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         })
         .eq('id', tagId)
         .select();
-      
+
       if (error) throw error;
       return data[0];
     },
@@ -346,17 +346,17 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         .from('associacao_tags')
         .delete()
         .eq('tag_id', tagId);
-      
+
       if (deleteAssociationsError) throw deleteAssociationsError;
-      
+
       // Depois deletar a tag
       const { error: deleteTagError } = await supabase
         .from('tag')
         .delete()
         .eq('id', tagId);
-      
+
       if (deleteTagError) throw deleteTagError;
-      
+
       return { success: true };
     },
     onSuccess: () => {
