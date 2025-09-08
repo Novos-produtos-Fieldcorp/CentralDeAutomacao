@@ -45,6 +45,68 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const AppRoutes = () => {
+  return (
+    <Routes>
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute>
+            <div className="min-h-screen bg-background relative theme-transition">
+              <Navbar />
+              <main className="relative ml-20 transition-all duration-300 min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+                <div className="max-w-[2000px] mx-auto p-8">
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route
+                      path="/motoristas/*"
+                      element={<Motoristas />}
+                    />
+                    <Route
+                      path="/veiculos/*"
+                      element={<Veiculos />}
+                    />
+                    <Route
+                      path="/hodometros/*"
+                      element={<Hodometros />}
+                    />
+                    <Route
+                      path="/checklist/*"
+                      element={<Checklist />}
+                    />
+                    <Route
+                      path="/clientes"
+                      element={<Clientes />}
+                    />
+                    <Route
+                      path="/resumos-grupo"
+                      element={<ResumosGrupo />}
+                    />
+                    <Route
+                      path="/tags-admin"
+                      element={<TagsAdmin />}
+                    />
+                    <Route path="/vagas/*" element={<Vagas />} />
+                  </Routes>
+                </div>
+              </main>
+              <Version />
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  className: "z-[60]",
+                }}
+              />
+            </div>
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  );
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -54,68 +116,12 @@ function App() {
             <AuthProvider>
               <WiseAppAccessProvider>
                 <ChatProvider>
-                  <Routes>
-                  <Route path="/unauthorized" element={<Unauthorized />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route
-                    path="/*"
-                    element={
-                      <ProtectedRoute>
-                        <div className="min-h-screen bg-background relative theme-transition">
-                          <Navbar />
-                          <main className="relative ml-20 transition-all duration-300 min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
-                            <div className="max-w-[2000px] mx-auto p-8">
-                              <Routes>
-                                <Route path="/" element={<Dashboard />} />
-                                <Route
-                                  path="/motoristas/*"
-                                  element={<Motoristas />}
-                                />
-                                <Route
-                                  path="/veiculos/*"
-                                  element={<Veiculos />}
-                                />
-                                <Route
-                                  path="/hodometros/*"
-                                  element={<Hodometros />}
-                                />
-                                <Route
-                                  path="/checklist/*"
-                                  element={<Checklist />}
-                                />
-                                <Route
-                                  path="/clientes"
-                                  element={<Clientes />}
-                                />
-                                <Route
-                                  path="/resumos-grupo"
-                                  element={<ResumosGrupo />}
-                                />
-                                <Route
-                                  path="/tags-admin"
-                                  element={<TagsAdmin />}
-                                />
-                                <Route path="/vagas/*" element={<Vagas />} />
-                              </Routes>
-                            </div>
-                          </main>
-                          <Version />
-                          <Toaster
-                            position="top-right"
-                            toastOptions={{
-                              className: "z-[60]",
-                            }}
-                          />
-                        </div>
-                      </ProtectedRoute>
-                    }
-                  />
-                </Routes>
-              </ChatProvider>
-            </WiseAppAccessProvider>
-          </AuthProvider>
-        </Router>
-      </ChecklistProvider>
+                  <AppRoutes />
+                </ChatProvider>
+              </WiseAppAccessProvider>
+            </AuthProvider>
+          </Router>
+        </ChecklistProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
