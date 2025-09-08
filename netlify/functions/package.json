@@ -1,6 +1,7 @@
 {
   "name": "netlify-functions",
   "version": "1.0.0",
+  "type": "module",
   "description": "Netlify Functions for Fleet Management System",
   "dependencies": {
     "@neondatabase/serverless": "^0.13.0",

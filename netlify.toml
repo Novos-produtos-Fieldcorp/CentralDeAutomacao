@@ -9,10 +9,11 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+  included_files = ["netlify/functions/**"]
 
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
+  to = "/.netlify/functions/api-native/:splat"
   status = 200
 
 [[redirects]]

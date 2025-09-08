@@ -1,6 +1,6 @@
-const express = require('express');
-const serverless = require('serverless-http');
-const { createClient } = require("@supabase/supabase-js");
+import express from 'express';
+import serverless from 'serverless-http';
+import { createClient } from '@supabase/supabase-js';
 
 // Create Express app
 const app = express();
@@ -364,4 +364,4 @@ app.use('*', (req, res) => {
 });
 
 // Export the serverless handler
-module.exports.handler = serverless(app);
+export const handler = serverless(app);
