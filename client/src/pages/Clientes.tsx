@@ -151,7 +151,7 @@ const Clientes = () => {
             setContextMenu({ ...contextMenu, visible: false });
           }
         };
-    
+
         document.addEventListener('click', handleClick);
         return () => {
           document.removeEventListener('click', handleClick);
@@ -161,7 +161,7 @@ const Clientes = () => {
     const fetchClientes = async () => {
         try {
             setLoading(true);
-            
+
             // Fetch clients with their addresses in a single query
             const { data, error } = await supabase
                 .from('cliente')
@@ -201,34 +201,34 @@ const Clientes = () => {
                 const endCliente = Array.isArray(cliente.end_cliente) 
                     ? cliente.end_cliente[0] 
                     : cliente.end_cliente;
-                
+
                 let endereco = null;
-                
+
                 if (endCliente) {
                     // Process logradouro
                     let logradouro = endCliente.logradouro;
                     if (Array.isArray(logradouro)) {
                         logradouro = logradouro[0];
                     }
-                    
+
                     // Process bairro
                     let bairro = logradouro?.bairro;
                     if (Array.isArray(bairro)) {
                         bairro = bairro[0];
                     }
-                    
+
                     // Process cidade
                     let cidade = bairro?.cidade;
                     if (Array.isArray(cidade)) {
                         cidade = cidade[0];
                     }
-                    
+
                     // Process estado
                     let estado = cidade?.estado;
                     if (Array.isArray(estado)) {
                         estado = estado[0];
                     }
-                    
+
                     // Reconstruct the address object with properly processed nested objects
                     endereco = {
                         id_end_cliente: endCliente.id_end_cliente,
@@ -253,7 +253,7 @@ const Clientes = () => {
                         } : undefined
                     };
                 }
-                
+
                 return {
                     ...cliente,
                     end_cliente: undefined, // Remove the original end_cliente to avoid duplication
@@ -273,11 +273,11 @@ const Clientes = () => {
     const formatCEP = (cep: string | undefined | null) => {
         if (!cep) return '';
         const cleanedCEP = cep.replace(/\D/g, '');
-        
+
         if (cleanedCEP.length !== 8) {
             return cep;
         }
-        
+
         return cleanedCEP.replace(/^(\d{5})(\d{3})$/, '$1-$2');
     };
 
@@ -285,7 +285,7 @@ const Clientes = () => {
         setSelectedCliente(cliente);
         setIsEditModalOpen(true);
     };
-    
+
     const toggleExpand = (clienteId: number) => {
         setClientes(prevClientes => 
             prevClientes.map(cliente => 
@@ -298,7 +298,7 @@ const Clientes = () => {
 
     const handleToggleStatus = async (cliente: Cliente) => {
         if (!companyId) return;
-        
+
         try {
             setUpdatingStatus(cliente.cliente_id);
             const { error } = await supabase
@@ -355,7 +355,7 @@ const Clientes = () => {
             newSelectedItems.add(id);
         }
         setSelectedItems(newSelectedItems);
-        
+
         // Update selectAll state
         setSelectAll(newSelectedItems.size === filteredClientes.length);
     };
@@ -371,7 +371,7 @@ const Clientes = () => {
 
     const handleBulkDelete = async () => {
         if (!companyId) return;
-        
+
         try {
             // Delete all selected items
             const { error } = await supabase
@@ -385,7 +385,7 @@ const Clientes = () => {
             // Update the list
             setClientes(clientes.filter(c => !selectedItems.has(c.cliente_id)));
             toast.success(`${selectedItems.size} cliente${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
-            
+
             // Reset selection
             setSelectedItems(new Set());
             setSelectAll(false);
@@ -562,9 +562,6 @@ const Clientes = () => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                             Telefone
                                         </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                            Status
-                                        </th>
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                             Ações
                                         </th>
@@ -622,34 +619,6 @@ const Clientes = () => {
                                                         {cliente.telefone ? formatTelefone(cliente.telefone.toString()) : '-'}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleToggleStatus(cliente);
-                                                        }}
-                                                        disabled={updatingStatus === cliente.cliente_id}
-                                                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                                                            cliente.st_cliente 
-                                                                ? 'bg-green-500 dark:bg-green-600' 
-                                                                : 'bg-red-500 dark:bg-red-600'
-                                                        } ${updatingStatus === cliente.cliente_id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        role="switch"
-                                                        aria-checked={cliente.st_cliente}
-                                                        title="Mudar status"
-                                                    >
-                                                        <span
-                                                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                                                cliente.st_cliente ? 'translate-x-5' : 'translate-x-0'
-                                                            }`}
-                                                        />
-                                                        {updatingStatus === cliente.cliente_id && (
-                                                            <Loader2 
-                                                                className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
-                                                            />
-                                                        )}
-                                                    </button>
-                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex items-center justify-end space-x-3">
                                                         <button
@@ -659,16 +628,42 @@ const Clientes = () => {
                                                         >
                                                             <FilePen size={18} className="text-blue-600 dark:text-blue-400" />
                                                         </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleToggleStatus(cliente);
+                                                            }}
+                                                            disabled={updatingStatus === cliente.cliente_id}
+                                                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                                                                cliente.st_cliente 
+                                                                    ? 'bg-green-500 dark:bg-green-600' 
+                                                                    : 'bg-red-500 dark:bg-red-600'
+                                                            } ${updatingStatus === cliente.cliente_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            role="switch"
+                                                            aria-checked={cliente.st_cliente}
+                                                            title="Mudar status"
+                                                        >
+                                                            <span
+                                                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                                                    cliente.st_cliente ? 'translate-x-5' : 'translate-x-0'
+                                                                }`}
+                                                            />
+                                                            {updatingStatus === cliente.cliente_id && (
+                                                                <Loader2 
+                                                                    className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" 
+                                                                />
+                                                            )}
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
-                                            
-                                            
+
+
                                             ,
                                             // Address Dropdown
                                             ...(cliente.isExpanded ? [
                                                 <tr key={`address-${cliente.cliente_id}`} className="bg-gray-50 dark:bg-gray-700/30">
-                                                    <td colSpan={7} className="px-6 py-4">
+                                                    <td colSpan={6} className="px-6 py-4"> {/* Adjusted colSpan to 6 */}
                                                         <div className="flex items-start gap-3">
                                                             <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
                                                             <div>
@@ -706,14 +701,14 @@ const Clientes = () => {
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         {/* Scroll indicators */}
                         <ScrollableTableIndicator 
                             containerRef={tableContainerRef} 
                             className="mr-2 ml-2"
                         />
                     </div>
-                    
+
                     <Pagination
                         currentPage={currentPage}
                         totalPages={totalPages}
