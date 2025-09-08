@@ -75,31 +75,65 @@ exports.handler = async (event, context) => {
         };
       }
       
-      const wiseappUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${phone}`;
+      // Formatar telefone com código do país (55)
+      const formattedPhone = `55${phone}`;
+      const wiseappUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${formattedPhone}`;
+      
       console.log(`Fetching from: ${wiseappUrl}`);
       
-      const response = await fetch(wiseappUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      // Implementar retry logic como no servidor
+      let response;
+      let attempts = 0;
+      const maxAttempts = 3;
+      const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+      while (attempts < maxAttempts) {
+        attempts++;
+        
+        try {
+          // Para account_id 20 ou outros accounts grandes, adicionar delay
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${accountId}, waiting 2s...`);
+            await delay(2000); // 2 segundos entre tentativas
+          }
+
+          response = await fetch(wiseappUrl, {
+            method: 'GET',
+            headers: {
+              'api_access_token': token,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            break; // Success!
+          }
+          
+          // Se 401 em account grande, tentar novamente
+          if (response.status === 401 && (accountId === '20' || parseInt(accountId) > 15)) {
+            console.log(`Got 401 for large account ${accountId}, attempt ${attempts}/${maxAttempts}`);
+            
+            if (attempts < maxAttempts) {
+              continue; // Try again
+            }
+          }
+          
+          // Para outros erros, falhar imediatamente
+          throw new Error(`WiseApp API responded with ${response.status}`);
+          
+        } catch (fetchError) {
+          if (attempts === maxAttempts) {
+            throw fetchError;
+          }
+          console.log(`Contact search attempt ${attempts} failed for account ${accountId}:`, fetchError);
         }
-      });
-      
-      console.log(`WiseApp response status: ${response.status}`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`WiseApp error: ${response.status} - ${errorText}`);
-        return {
-          statusCode: response.status,
-          headers: corsHeaders,
-          body: JSON.stringify({ 
-            error: `WiseApp API error: ${response.status}`,
-            details: errorText
-          })
-        };
       }
+
+      if (!response || !response.ok) {
+        throw new Error(`WiseApp contact search failed after ${maxAttempts} attempts with status ${response?.status || 'unknown'}`);
+      }
+      
+      console.log(`Contact search successful`);
       
       const data = await response.json();
       console.log(`Contact search successful`);
@@ -115,76 +149,143 @@ exports.handler = async (event, context) => {
         statusCode: 500,
         headers: corsHeaders,
         body: JSON.stringify({ 
-          error: 'Erro interno',
-          details: error.message 
+          error: 'Erro na busca de contatos',
+          details: error.message || 'Erro desconhecido'
         })
       };
     }
   }
   
-  // WiseApp labels - more flexible matching
+  // WiseApp labels - implementação completa como no servidor
   console.log(`Checking labels pattern for path: "${path}"`);
   if (httpMethod === 'GET' && (path.includes('/wiseapp/') && path.endsWith('/labels'))) {
     try {
-      // Extract company ID more reliably
       const wiseappMatch = path.match(/\/wiseapp\/(\d+)/);
-      const companyId = wiseappMatch ? wiseappMatch[1] : '2'; // Default to 2
+      const companyId = wiseappMatch ? wiseappMatch[1] : '2';
+      
+      console.log(`Fetching WiseApp labels for company ${companyId}`);
+      console.log('Request headers:', headers);
       
       const token = headers['wiseapp-token'];
       const accountId = headers['wiseapp-account-id'];
       
-      console.log(`Labels - Company: ${companyId}`);
+      console.log('Token from header:', token ? 'Found' : 'Not found');
+      console.log('Account ID from header:', accountId ? 'Found' : 'Not found');
       
-      if (!token || !accountId) {
+      if (!token) {
         return {
           statusCode: 401,
           headers: corsHeaders,
-          body: JSON.stringify({ error: 'Token e Account ID obrigatórios' })
+          body: JSON.stringify({ error: 'Token WiseApp não configurado para esta empresa' })
         };
       }
       
-      const wiseappUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
-      console.log(`Fetching from: ${wiseappUrl}`);
-      
-      const response = await fetch(wiseappUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log(`WiseApp labels response status: ${response.status}`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`WiseApp labels error: ${response.status} - ${errorText}`);
+      if (!accountId) {
         return {
-          statusCode: response.status,
+          statusCode: 400,
           headers: corsHeaders,
-          body: JSON.stringify({ 
-            error: `WiseApp API error: ${response.status}`,
-            details: errorText
-          })
+          body: JSON.stringify({ error: 'Account ID não configurado para esta empresa' })
         };
       }
-      
+
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
+      console.log(`Fetching labels from: ${wiseAppUrl}`);
+
+      // Log específico para account ID 20
+      if (accountId === '20') {
+        console.log(`Special handling for Account ID 20 - Token length: ${token?.length || 0}`);
+      }
+
+      // Implementar retry logic para accounts grandes (como account_id 20)
+      let response;
+      let attempts = 0;
+      const maxAttempts = 3;
+      const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+      while (attempts < maxAttempts) {
+        attempts++;
+        
+        try {
+          // Para account_id 20 ou outros accounts grandes, adicionar delay
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${accountId}, waiting 3s...`);
+            await delay(3000); // 3 segundos entre tentativas
+          }
+
+          // Try different header configurations for problematic accounts
+          const requestHeaders = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          };
+          
+          // For account ID 20, try different token header formats
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Attempting alternative headers for account ${accountId}, attempt ${attempts}`);
+            // Try both token formats
+            requestHeaders['Authorization'] = `Bearer ${token}`;
+            requestHeaders['api_access_token'] = token;
+          } else {
+            requestHeaders['api_access_token'] = token;
+          }
+          
+          response = await fetch(wiseAppUrl, {
+            method: 'GET',
+            headers: requestHeaders,
+          });
+
+          if (response.ok) {
+            break; // Success!
+          }
+          
+          // Se 401 em account grande, tentar novamente
+          if (response.status === 401 && (accountId === '20' || parseInt(accountId) > 15)) {
+            console.log(`Got 401 for large account ${accountId}, attempt ${attempts}/${maxAttempts}`);
+            
+            if (attempts < maxAttempts) {
+              continue; // Try again
+            }
+          }
+          
+          // Para outros erros, falhar imediatamente
+          throw new Error(`WiseApp API responded with ${response.status}`);
+          
+        } catch (fetchError) {
+          if (attempts === maxAttempts) {
+            throw fetchError;
+          }
+          console.log(`API fetch attempt ${attempts} failed for account ${accountId}:`, fetchError);
+        }
+      }
+
+      if (!response || !response.ok) {
+        throw new Error(`WiseApp API failed after ${maxAttempts} attempts with status ${response?.status || 'unknown'}`);
+      }
+
       const data = await response.json();
-      console.log(`Labels fetched successfully`);
       
+      // Transformar formato dos labels do WiseApp para nosso formato
+      const labels = data.payload?.map((label) => ({
+        id: label.id,
+        name: label.title,
+        color: label.color,
+        description: label.description
+      })) || [];
+
+      console.log(`Labels fetched successfully: ${labels.length} labels`);
+
       return {
         statusCode: 200,
         headers: corsHeaders,
-        body: JSON.stringify(data)
+        body: JSON.stringify(labels)
       };
     } catch (error) {
-      console.error('Labels error:', error);
+      console.error('Erro ao buscar labels do WiseApp:', error);
       return {
         statusCode: 500,
         headers: corsHeaders,
         body: JSON.stringify({ 
-          error: 'Erro interno',
-          details: error.message 
+          error: 'Erro ao buscar labels do WiseApp',
+          details: error.message || 'Erro desconhecido'
         })
       };
     }
