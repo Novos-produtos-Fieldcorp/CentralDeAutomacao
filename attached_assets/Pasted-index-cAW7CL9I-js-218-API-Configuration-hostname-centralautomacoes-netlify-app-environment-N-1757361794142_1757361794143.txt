@@ -1,0 +1,72 @@
+index-cAW7CL9I.js:218 API Configuration: {hostname: 'centralautomacoes.netlify.app', environment: 'Netlify', API_BASE_URL: '/api'}
+index-cAW7CL9I.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-cAW7CL9I.js:1060 Using cached WiseApp token and data
+index-cAW7CL9I.js:225 Using cached auth - account_id: 20 company_id: 5
+index-cAW7CL9I.js:1060 API URL: https://chat.wiseapp360.com/api/v1
+index-cAW7CL9I.js:1980 Sincronizando tags - Account ID: 20 Token disponível: true
+index-cAW7CL9I.js:225 🔧 Account ID 20 detected - usando token conhecido que funciona
+index-cAW7CL9I.js:225 Fazendo requisição via backend para: /api/wiseapp/2/labels
+index-cAW7CL9I.js:225  GET https://centralautomacoes.netlify.app/api/wiseapp/2/labels 502 (Bad Gateway)
+sE @ index-cAW7CL9I.js:225
+h @ index-cAW7CL9I.js:1980
+sle @ index-cAW7CL9I.js:37
+ole @ index-cAW7CL9I.js:37
+lle @ index-cAW7CL9I.js:37
+UI @ index-cAW7CL9I.js:37
+VK @ index-cAW7CL9I.js:37
+(anonymous) @ index-cAW7CL9I.js:37
+LF @ index-cAW7CL9I.js:40
+gK @ index-cAW7CL9I.js:37
+U4 @ index-cAW7CL9I.js:37
+uF @ index-cAW7CL9I.js:37
+_le @ index-cAW7CL9I.js:37
+index-cAW7CL9I.js:225 Response status: 502
+index-cAW7CL9I.js:225 Erro na API WiseApp via backend: 502 {"errorType":"Error","errorMessage":"require() of ES Module /var/task/netlify/functions/api.js from /var/task/api.js not supported.\n/var/task/netlify/functions/api.js is treated as an ES module file as it is a .js file whose nearest parent package.json contains \"type\": \"module\" which declares all .js files in that package scope as ES modules.\nInstead either rename /var/task/netlify/functions/api.js to end in .cjs, change the requiring code to use dynamic import() which is available in all CommonJS modules, or change \"type\": \"module\" to \"type\": \"commonjs\" in /var/task/netlify/functions/package.json to treat all .js files as CommonJS (using .mjs for all ES modules instead).\n","trace":["Error [ERR_REQUIRE_ESM]: require() of ES Module /var/task/netlify/functions/api.js from /var/task/api.js not supported.","/var/task/netlify/functions/api.js is treated as an ES module file as it is a .js file whose nearest parent package.json contains \"type\": \"module\" which declares all .js files in that package scope as ES modules.","Instead either rename /var/task/netlify/functions/api.js to end in .cjs, change the requiring code to use dynamic import() which is available in all CommonJS modules, or change \"type\": \"module\" to \"type\": \"commonjs\" in /var/task/netlify/functions/package.json to treat all .js files as CommonJS (using .mjs for all ES modules instead).","","    at Object.\u003canonymous\u003e (/var/task/api.js:1:18)","    at _tryRequireFile (file:///var/runtime/index.mjs:1024:37)","    at _tryRequire (file:///var/runtime/index.mjs:1074:25)","    at _loadUserApp (file:///var/runtime/index.mjs:1103:22)","    at UserFunction.js.module.exports.load (file:///var/runtime/index.mjs:1148:27)","    at start (file:///var/runtime/index.mjs:1335:42)","    at file:///var/runtime/index.mjs:1342:7"]}
+sE @ index-cAW7CL9I.js:225
+await in sE
+h @ index-cAW7CL9I.js:1980
+sle @ index-cAW7CL9I.js:37
+ole @ index-cAW7CL9I.js:37
+lle @ index-cAW7CL9I.js:37
+UI @ index-cAW7CL9I.js:37
+VK @ index-cAW7CL9I.js:37
+(anonymous) @ index-cAW7CL9I.js:37
+LF @ index-cAW7CL9I.js:40
+gK @ index-cAW7CL9I.js:37
+U4 @ index-cAW7CL9I.js:37
+uF @ index-cAW7CL9I.js:37
+_le @ index-cAW7CL9I.js:37
+index-cAW7CL9I.js:225 Erro na requisição via backend: Error: Erro ao buscar labels do WiseApp: 502 - {"errorType":"Error","errorMessage":"require() of ES Module /var/task/netlify/functions/api.js from /var/task/api.js not supported.\n/var/task/netlify/functions/api.js is treated as an ES module file as it is a .js file whose nearest parent package.json contains \"type\": \"module\" which declares all .js files in that package scope as ES modules.\nInstead either rename /var/task/netlify/functions/api.js to end in .cjs, change the requiring code to use dynamic import() which is available in all CommonJS modules, or change \"type\": \"module\" to \"type\": \"commonjs\" in /var/task/netlify/functions/package.json to treat all .js files as CommonJS (using .mjs for all ES modules instead).\n","trace":["Error [ERR_REQUIRE_ESM]: require() of ES Module /var/task/netlify/functions/api.js from /var/task/api.js not supported.","/var/task/netlify/functions/api.js is treated as an ES module file as it is a .js file whose nearest parent package.json contains \"type\": \"module\" which declares all .js files in that package scope as ES modules.","Instead either rename /var/task/netlify/functions/api.js to end in .cjs, change the requiring code to use dynamic import() which is available in all CommonJS modules, or change \"type\": \"module\" to \"type\": \"commonjs\" in /var/task/netlify/functions/package.json to treat all .js files as CommonJS (using .mjs for all ES modules instead).","","    at Object.\u003canonymous\u003e (/var/task/api.js:1:18)","    at _tryRequireFile (file:///var/runtime/index.mjs:1024:37)","    at _tryRequire (file:///var/runtime/index.mjs:1074:25)","    at _loadUserApp (file:///var/runtime/index.mjs:1103:22)","    at UserFunction.js.module.exports.load (file:///var/runtime/index.mjs:1148:27)","    at start (file:///var/runtime/index.mjs:1335:42)","    at file:///var/runtime/index.mjs:1342:7"]}
+    at sE (index-cAW7CL9I.js:225:40883)
+    at async h (index-cAW7CL9I.js:1980:43311)
+sE @ index-cAW7CL9I.js:225
+await in sE
+h @ index-cAW7CL9I.js:1980
+sle @ index-cAW7CL9I.js:37
+ole @ index-cAW7CL9I.js:37
+lle @ index-cAW7CL9I.js:37
+UI @ index-cAW7CL9I.js:37
+VK @ index-cAW7CL9I.js:37
+(anonymous) @ index-cAW7CL9I.js:37
+LF @ index-cAW7CL9I.js:40
+gK @ index-cAW7CL9I.js:37
+U4 @ index-cAW7CL9I.js:37
+uF @ index-cAW7CL9I.js:37
+_le @ index-cAW7CL9I.js:37
+index-cAW7CL9I.js:1980 Erro ao sincronizar tags do WiseApp: Error: Erro ao buscar labels do WiseApp: 502 - {"errorType":"Error","errorMessage":"require() of ES Module /var/task/netlify/functions/api.js from /var/task/api.js not supported.\n/var/task/netlify/functions/api.js is treated as an ES module file as it is a .js file whose nearest parent package.json contains \"type\": \"module\" which declares all .js files in that package scope as ES modules.\nInstead either rename /var/task/netlify/functions/api.js to end in .cjs, change the requiring code to use dynamic import() which is available in all CommonJS modules, or change \"type\": \"module\" to \"type\": \"commonjs\" in /var/task/netlify/functions/package.json to treat all .js files as CommonJS (using .mjs for all ES modules instead).\n","trace":["Error [ERR_REQUIRE_ESM]: require() of ES Module /var/task/netlify/functions/api.js from /var/task/api.js not supported.","/var/task/netlify/functions/api.js is treated as an ES module file as it is a .js file whose nearest parent package.json contains \"type\": \"module\" which declares all .js files in that package scope as ES modules.","Instead either rename /var/task/netlify/functions/api.js to end in .cjs, change the requiring code to use dynamic import() which is available in all CommonJS modules, or change \"type\": \"module\" to \"type\": \"commonjs\" in /var/task/netlify/functions/package.json to treat all .js files as CommonJS (using .mjs for all ES modules instead).","","    at Object.\u003canonymous\u003e (/var/task/api.js:1:18)","    at _tryRequireFile (file:///var/runtime/index.mjs:1024:37)","    at _tryRequire (file:///var/runtime/index.mjs:1074:25)","    at _loadUserApp (file:///var/runtime/index.mjs:1103:22)","    at UserFunction.js.module.exports.load (file:///var/runtime/index.mjs:1148:27)","    at start (file:///var/runtime/index.mjs:1335:42)","    at file:///var/runtime/index.mjs:1342:7"]}
+    at sE (index-cAW7CL9I.js:225:40883)
+    at async h (index-cAW7CL9I.js:1980:43311)
+h @ index-cAW7CL9I.js:1980
+await in h
+sle @ index-cAW7CL9I.js:37
+ole @ index-cAW7CL9I.js:37
+lle @ index-cAW7CL9I.js:37
+UI @ index-cAW7CL9I.js:37
+VK @ index-cAW7CL9I.js:37
+(anonymous) @ index-cAW7CL9I.js:37
+LF @ index-cAW7CL9I.js:40
+gK @ index-cAW7CL9I.js:37
+U4 @ index-cAW7CL9I.js:37
+uF @ index-cAW7CL9I.js:37
+_le @ index-cAW7CL9I.js:37
+index-cAW7CL9I.js:1980 Sistema continuará funcionando apenas com tags locais
