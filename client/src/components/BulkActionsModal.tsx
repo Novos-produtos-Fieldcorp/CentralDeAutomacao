@@ -263,9 +263,22 @@ const BulkActionsModal = ({
               if (contacts.length > 0) {
                 const contact = contacts[0];
 
-                // Aplicar tag ao contato usando o serviço existente
+                // Aplicar tag ao contato usando rota backend direta (atômico, evita race condition)
                 console.log(`[BULK] Aplicando tag "${tagData.nome}" ao contato ${contact.id} (${motorista.nome_motorista})`);
-                await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome], companyId);
+                
+                const tagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'wiseapp-token': wiseAppToken,
+                    'wiseapp-account-id': accountId
+                  },
+                  body: JSON.stringify({ tagName: tagData.nome })
+                });
+                
+                if (!tagResponse.ok) {
+                  throw new Error(`Erro ao aplicar tag: ${tagResponse.status}`);
+                }
 
                 syncSuccessCount++;
                 console.log(`[BULK] ✅ Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
