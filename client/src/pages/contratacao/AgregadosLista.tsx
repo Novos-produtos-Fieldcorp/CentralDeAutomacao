@@ -915,12 +915,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }, [contratados]);
 
 
-    // Sistema de aplicação automática de tags - DESABILITADO temporariamente para evitar conflito com operações em massa
-    // useEffect(() => {
-    //   if (tags.length > 0 && contratados.length > 0 && Object.keys(motoristaTags).length > 0) {
-    //     applyAutomaticTags();
-    //   }
-    // }, [tags, contratados, motoristaTags]);
+    // Sistema de aplicação automática de tags
+    useEffect(() => {
+      if (tags.length > 0 && contratados.length > 0 && Object.keys(motoristaTags).length > 0) {
+        applyAutomaticTags();
+      }
+    }, [tags, contratados, motoristaTags]);
 
     const applyAutomaticTags = async () => {
       const vipTag = tags.find(tag => tag.nome.toLowerCase().includes('vip'));
