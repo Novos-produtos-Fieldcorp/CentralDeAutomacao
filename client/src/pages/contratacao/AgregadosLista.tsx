@@ -86,21 +86,15 @@ export interface ViewContratado {
 }
 
 const checkVehicleTypeMatch = (motorista: ViewContratado, filters: string[]): boolean => {
-  // Check direct properties first
-  if (
-    (motorista.tipo_veiculo && filters.includes(motorista.tipo_veiculo)) ||
-    (motorista.tipo && filters.includes(motorista.tipo)) ||
-    (motorista.tipologia && filters.includes(motorista.tipologia))
-  ) {
+  // Check direct tipologia property first
+  if (motorista.tipologia && filters.includes(motorista.tipologia)) {
     return true;
   }
   
-  // Check veiculo array if it exists
+  // Check veiculo array if it exists (only tipologia field)
   if (motorista.veiculo && motorista.veiculo.length > 0) {
-    return motorista.veiculo.some((veiculo: { tipo_veiculo?: string; tipo?: string; tipologia?: string }) => 
-      (veiculo.tipo_veiculo && filters.includes(veiculo.tipo_veiculo)) ||
-      (veiculo.tipo && filters.includes(veiculo.tipo)) ||
-      (veiculo.tipologia && filters.includes(veiculo.tipologia))
+    return motorista.veiculo.some((veiculo: { tipologia?: string }) => 
+      veiculo.tipologia && filters.includes(veiculo.tipologia)
     );
   }
 
@@ -184,6 +178,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       setShowCidadeDropdown(false);
       setShowTipoVeiculoDropdown(false);
       setShowTagDropdown(false);
+      setCidadeSearchTerm(''); // Limpa o termo de busca das cidades
     };
 
     const toggleDropdown = (dropdownType: string) => {
@@ -197,6 +192,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           break;
         case 'cidade':
           setShowCidadeDropdown(true);
+          setCidadeSearchTerm(''); // Limpa o termo de busca ao abrir
           break;
         case 'tipoVeiculo':
           setShowTipoVeiculoDropdown(true);
@@ -472,7 +468,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     if (!motoristaId) return;
     
     try {
-      // Buscar dados da tag para remoção no Chatwoot
+      // Buscar dados da tag para remoção
       const tagToRemove = motoristaTags[motoristaId]?.find((tag: any) => tag.id === tagId);
       
       // Remover da base de dados local (ignora erros RLS)
@@ -495,13 +491,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         [motoristaId]: (prev[motoristaId] || []).filter((tag: any) => tag.id !== tagId)
       }));
       
-      // Sincronizar remoção com Chatwoot se disponível
+      // Sincronizar remoção se disponível
       if (accountId && wiseAppToken && tagToRemove) {
         try {
           await removeTagFromWiseApp(motoristaId, tagToRemove);
         } catch (wiseAppError) {
-          console.error('Erro ao remover tag do Chatwoot:', wiseAppError);
-          // Não falhar a operação se o Chatwoot falhar
+          console.error('Erro ao remover tag:', wiseAppError);
+          // Não falhar a operação local
         }
       }
       
@@ -559,6 +555,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const [cidades, setCidades] = useState<string[]>([]);
     const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
     const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
+    const [cidadeSearchTerm, setCidadeSearchTerm] = useState<string>('');
 
     const tableContainerRef = useRef<HTMLDivElement>(null);
     
@@ -577,6 +574,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         }
         if (showCidadeDropdown && cidadeDropdownRef.current && !cidadeDropdownRef.current.contains(target)) {
           setShowCidadeDropdown(false);
+          setCidadeSearchTerm(''); // Limpa o termo de busca ao fechar
         }
         if (showTipoVeiculoDropdown && tipoVeiculoDropdownRef.current && !tipoVeiculoDropdownRef.current.contains(target)) {
           setShowTipoVeiculoDropdown(false);
@@ -705,12 +703,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
   const [tagSearchTerm, setTagSearchTerm] = useState<{[key: number]: string}>({});
 
-  // Função para sincronizar tag com Chatwoot via proxy backend
+  // Função para sincronizar tag via proxy backend
   const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
     if (!companyId) return;
     
     try {
-      // 1. Buscar todas as tags existentes no Chatwoot
+      // 1. Buscar todas as tags existentes
       const labelsResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/labels`, {
         method: 'GET',
         headers: {
@@ -721,7 +719,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       });
 
       if (!labelsResponse.ok) {
-        console.warn(`Erro ao buscar tags do Chatwoot: ${labelsResponse.status}`);
+        // Erro ao buscar tags
         return;
       }
 
@@ -731,7 +729,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       );
 
       if (!existingTag) {
-        console.warn(`Tag "${tagData.nome}" não encontrada no Chatwoot`);
+        // Tag não encontrada
         return;
       }
 
@@ -742,7 +740,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         return;
       }
 
-      // 3. Buscar o contato no Chatwoot pelo telefone (sem +55 como funciona na individual)
+      // 3. Buscar o contato pelo telefone (sem +55 como funciona na individual)
       const phoneStr = String(motorista.telefone);
       const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
       
@@ -756,7 +754,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       });
 
       if (!searchContactResponse.ok) {
-        console.warn(`Erro ao buscar contato no Chatwoot para telefone ${motorista.telefone}: ${searchContactResponse.status}`);
+        // Erro ao buscar contato
         return;
       }
 
@@ -764,7 +762,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const contactId = contactData.payload?.[0]?.id || contactData[0]?.id;
 
       if (!contactId) {
-        console.warn(`Contato não encontrado no Chatwoot para telefone ${motorista.telefone}`);
+        // Contato não encontrado
         return;
       }
 
@@ -783,18 +781,18 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       });
 
       if (applyTagResponse.ok) {
-        console.log(`Tag "${tagData.nome}" aplicada com sucesso ao contato ${motorista.nome_motorista} no Chatwoot`);
+        // Tag aplicada com sucesso
       } else {
         const errorText = await applyTagResponse.text();
         console.error(`Erro ao aplicar tag ao contato: ${applyTagResponse.status} - ${errorText}`);
       }
 
     } catch (error) {
-      console.warn('Erro ao sincronizar tag com Chatwoot (não crítico):', error);
+      // Erro não crítico na sincronização
     }
   };
 
-  // Função para remover tag do Chatwoot via proxy backend
+  // Função para remover tag via proxy backend
   const removeTagFromWiseApp = async (motoristaId: number, tagData: any) => {
     if (!companyId) return;
     
@@ -806,7 +804,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         return;
       }
 
-      // 2. Buscar o contato no Chatwoot pelo telefone (sem +55 como funciona na individual)
+      // 2. Buscar o contato pelo telefone (sem +55 como funciona na individual)
       const phoneStr = String(motorista.telefone);
       const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
       
@@ -820,7 +818,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       });
 
       if (!searchContactResponse.ok) {
-        console.warn(`Erro ao buscar contato no Chatwoot para telefone ${motorista.telefone}: ${searchContactResponse.status}`);
+        // Erro ao buscar contato
         return;
       }
 
@@ -828,7 +826,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const contactId = contactData.payload?.[0]?.id || contactData[0]?.id;
 
       if (!contactId) {
-        console.warn(`Contato não encontrado no Chatwoot para telefone ${motorista.telefone}`);
+        // Contato não encontrado
         return;
       }
 
@@ -869,14 +867,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       });
 
       if (updateLabelsResponse.ok) {
-        console.log(`Tag "${tagData.nome}" removida com sucesso do contato ${motorista.nome_motorista} no Chatwoot`);
+        // Tag removida com sucesso
       } else {
         const errorText = await updateLabelsResponse.text();
         console.error(`Erro ao remover tag do contato: ${updateLabelsResponse.status} - ${errorText}`);
       }
 
     } catch (error) {
-      console.warn('Erro ao remover tag do Chatwoot (não crítico):', error);
+      // Erro não crítico
     }
   };
 
@@ -1159,15 +1157,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             uniqueCities.add(agregado.nome_cidade);
           }
           
-          // Extract vehicle types from different fields
+          // Extract vehicle types only from tipologia field
           if (agregado.tipologia && typeof agregado.tipologia === 'string') {
             uniqueVehicleTypes.add(agregado.tipologia);
-          }
-          if (agregado.tipo && typeof agregado.tipo === 'string') {
-            uniqueVehicleTypes.add(agregado.tipo);
-          }
-          if (agregado.tipo_veiculo && typeof agregado.tipo_veiculo === 'string') {
-            uniqueVehicleTypes.add(agregado.tipo_veiculo);
           }
           
           if (!agregadosAgrupadosMap.has(agregado.motorista_id)) {
@@ -1185,8 +1177,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         const agregadosAgrupados = Array.from(agregadosAgrupadosMap.values());
 
         // Filter out null or undefined values before setting the state
-        setCidades(Array.from(uniqueCities).filter((c): c is string => c != null).sort());
-        setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
+        const cidadesFiltradas = Array.from(uniqueCities).filter((c): c is string => c != null).sort();
+        const tipologiasFiltradas = Array.from(uniqueVehicleTypes).sort();
+        
+        
+        setCidades(cidadesFiltradas);
+        setTiposVeiculo(tipologiasFiltradas);
 
         setContratados(agregadosAgrupados);
         
@@ -2024,7 +2020,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         zIndex: 999999
                       }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center mb-2">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
                           <button 
                             type="button" 
@@ -2037,9 +2033,23 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             Limpar
                           </button>
                         </div>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Pesquisar cidade..."
+                            value={cidadeSearchTerm}
+                            onChange={(e) => setCidadeSearchTerm(e.target.value)}
+                            className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
                       </div>
                       {cidades
                         .filter((cidade): cidade is string => cidade != null)
+                        .filter((cidade) => 
+                          cidadeSearchTerm === '' || 
+                          cidade.toLowerCase().includes(cidadeSearchTerm.toLowerCase())
+                        )
                         .map((cidade) => (
                           <div key={cidade} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                             <label className="flex items-center cursor-pointer">

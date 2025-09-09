@@ -33,6 +33,7 @@ const BulkActionsModal = ({
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [tags, setTags] = useState<any[]>([]);
+  const [availableTagSlots, setAvailableTagSlots] = useState<number>(0);
 
   // Buscar tags quando o modal abrir para ação de tags
   useEffect(() => {
@@ -56,6 +57,56 @@ const BulkActionsModal = ({
       toast.error('Erro ao carregar marcadores');
     }
   };
+
+  // Calcular slots disponíveis quando tag for selecionada
+  const calculateAvailableSlots = async (tagId: string) => {
+    if (!tagId) {
+      setAvailableTagSlots(0);
+      return;
+    }
+
+    try {
+      const tag = tags.find(t => t.id.toString() === tagId);
+      if (!tag) {
+        setAvailableTagSlots(0);
+        return;
+      }
+
+      // Verificar quantas associações já existem para esta tag
+      const { count, error: countError } = await supabase
+        .from('associacao_tags')
+        .select('*', { count: 'exact', head: true })
+        .eq('tag_id', parseInt(tagId));
+
+      if (countError) {
+        console.warn('Erro ao contar associações existentes:', countError);
+        // Em caso de erro, assumir que pode usar o limite total
+        const tagLimit = tag.limite_max || 150;
+        setAvailableTagSlots(Math.min(selectedItems.size, tagLimit));
+        return;
+      }
+
+      const currentCount = count || 0;
+      const tagLimit = tag.limite_max || 150;
+      const availableSlots = Math.max(0, tagLimit - currentCount);
+      
+      // O número final é o menor entre: slots disponíveis e itens selecionados
+      setAvailableTagSlots(Math.min(selectedItems.size, availableSlots));
+    } catch (error) {
+      console.error('Erro ao calcular slots disponíveis:', error);
+      // Em caso de erro, usar selectedItems.size
+      setAvailableTagSlots(selectedItems.size);
+    }
+  };
+
+  // Executar cálculo quando tag ou selectedItems mudarem
+  useEffect(() => {
+    if (actionType === 'tags' && selectedTag) {
+      calculateAvailableSlots(selectedTag);
+    } else {
+      setAvailableTagSlots(0);
+    }
+  }, [selectedTag, selectedItems.size, actionType, tags]);
 
   // Função para aplicar tag aos contatos no WiseApp (usando serviços existentes)
   const applyTagToWiseAppContacts = async (tagData: any, motoristaIds: number[]) => {
@@ -256,9 +307,9 @@ const BulkActionsModal = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validar limite máximo de 150 seleções
-    if (selectedItems.size > 150) {
-      toast.error(`Você pode selecionar no máximo 150 itens por vez. Atualmente você tem ${selectedItems.size} itens selecionados.`);
+    // Validar limite máximo de 150 seleções apenas para status e client
+    if ((actionType === 'status' || actionType === 'client') && selectedItems.size > 150) {
+      toast.error(`Você pode selecionar no máximo 150 itens por vez para ${actionType === 'status' ? 'atualização de status' : 'atualização de cliente'}. Atualmente você tem ${selectedItems.size} itens selecionados.`);
       return;
     }
 
@@ -321,11 +372,13 @@ const BulkActionsModal = ({
         if (countError) throw countError;
 
         const currentCount = count || 0;
-        let availableSlots = tag.limite_max ? tag.limite_max - currentCount : itemIds.length;
+        // Se a tag não tem limite, usar 150 como padrão
+        const tagLimit = tag.limite_max || 150;
+        let availableSlots = tagLimit - currentCount;
 
-        // Se a tag tem limite e já atingiu o máximo, avisar e sair
-        if (tag.limite_max && availableSlots <= 0) {
-          toast.error(`Limite máximo de ${tag.limite_max} associados já atingido para o marcador "${tag.nome}"`);
+        // Se já atingiu o máximo, avisar e sair
+        if (availableSlots <= 0) {
+          toast.error(`Limite máximo de ${tagLimit} associados já atingido para o marcador "${tag.nome}"`);
           return;
         }
 
@@ -335,8 +388,8 @@ const BulkActionsModal = ({
         const motoristasComNovaTag: number[] = [];
 
         for (const motoristaId of itemIds) {
-          // Se temos limite e já atingimos, parar
-          if (tag.limite_max && addedCount >= availableSlots) {
+          // Se já atingimos o limite disponível, parar
+          if (addedCount >= availableSlots) {
             limitReached = true;
             break;
           }
@@ -464,19 +517,34 @@ const BulkActionsModal = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className={`p-4 rounded-lg ${
-            selectedItems.size > 150 
+            (actionType === 'status' || actionType === 'client') && selectedItems.size > 150 
               ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' 
               : 'bg-blue-50 dark:bg-blue-900/20'
           }`}>
             <p className={`text-sm ${
-              selectedItems.size > 150 
+              (actionType === 'status' || actionType === 'client') && selectedItems.size > 150 
                 ? 'text-red-700 dark:text-red-300' 
                 : 'text-blue-800 dark:text-blue-200'
             }`}>
-              Esta ação irá atualizar <strong>{selectedItems.size}</strong> item{selectedItems.size !== 1 ? 's' : ''} selecionado{selectedItems.size !== 1 ? 's' : ''}.
-              {selectedItems.size > 150 && (
+              Esta ação irá {actionType === 'tags' ? 'adicionar marcadores aos' : 'atualizar'} <strong>{actionType === 'tags' && selectedTag ? availableTagSlots : selectedItems.size}</strong> item{(actionType === 'tags' && selectedTag ? availableTagSlots : selectedItems.size) !== 1 ? 's' : ''} selecionado{(actionType === 'tags' && selectedTag ? availableTagSlots : selectedItems.size) !== 1 ? 's' : ''}.
+              {(actionType === 'status' || actionType === 'client') && selectedItems.size > 150 && (
                 <span className="block mt-2 font-medium">
                   ⚠️ Limite máximo é de 150 itens por operação
+                </span>
+              )}
+              {actionType === 'tags' && (
+                <span className="block mt-2 text-xs text-gray-600 dark:text-gray-400">
+                  {selectedTag ? (
+                    availableTagSlots === 0 ? (
+                      '⚠️ Este marcador já atingiu seu limite máximo'
+                    ) : availableTagSlots < selectedItems.size ? (
+                      `⚠️ Apenas ${availableTagSlots} itens receberão o marcador devido ao limite configurado`
+                    ) : (
+                      '✅ Todos os itens selecionados receberão o marcador'
+                    )
+                  ) : (
+                    '💡 Selecione um marcador para ver quantos itens receberão a tag'
+                  )}
                 </span>
               )}
             </p>
@@ -551,13 +619,23 @@ const BulkActionsModal = ({
                       </span>
                     </div>
                     {selectedTagData.limite_max ? (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Limite máximo: {selectedTagData.limite_max} associados
-                      </p>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        <p>Limite máximo: {selectedTagData.limite_max} associados</p>
+                        <p className="mt-1">
+                          <span className={availableTagSlots > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                            {availableTagSlots} slots disponíveis
+                          </span>
+                        </p>
+                      </div>
                     ) : (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Sem limite de associados
-                      </p>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        <p>Limite padrão: 150 associados</p>
+                        <p className="mt-1">
+                          <span className="text-green-600 dark:text-green-400">
+                            {availableTagSlots} slots disponíveis
+                          </span>
+                        </p>
+                      </div>
                     )}
                   </div>
                 ) : null;
@@ -582,19 +660,21 @@ const BulkActionsModal = ({
             <button
               type="submit"
               className={`px-4 py-2 text-sm font-medium text-white border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
-                selectedItems.size > 150 
+                ((actionType === 'status' || actionType === 'client') && selectedItems.size > 150) || (actionType === 'tags' && selectedTag && availableTagSlots === 0)
                   ? 'bg-gray-400 dark:bg-gray-600' 
                   : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 dark:hover:bg-blue-500'
               }`}
-              disabled={submitting || selectedItems.size > 150 || (actionType === 'status' && !selectedStatus) || (actionType === 'tags' && !selectedTag)}
+              disabled={submitting || ((actionType === 'status' || actionType === 'client') && selectedItems.size > 150) || (actionType === 'status' && !selectedStatus) || (actionType === 'tags' && (!selectedTag || availableTagSlots === 0))}
             >
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Atualizando...
                 </>
-              ) : selectedItems.size > 150 ? (
+              ) : ((actionType === 'status' || actionType === 'client') && selectedItems.size > 150) ? (
                 'Excede limite (150)'
+              ) : (actionType === 'tags' && selectedTag && availableTagSlots === 0) ? (
+                'Limite atingido'
               ) : (
                 'Atualizar'
               )}
