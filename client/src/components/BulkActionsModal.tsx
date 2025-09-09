@@ -6,7 +6,7 @@ import type { Cliente } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
-import { searchWiseAppContact, applyWiseAppContactLabels } from '../lib/directApiService';
+import { searchWiseAppContact } from '../lib/directApiService';
 
 interface BulkActionsModalProps {
   isOpen: boolean;
@@ -121,11 +121,11 @@ const BulkActionsModal = ({
       let syncSuccessCount = 0;
       console.log(`DEBUG: Processando ${motoristaIds.length} motoristas:`, motoristaIds);
 
-      // Rate limiting inteligente: mais delay para contas com muitos motoristas
+      // Rate limiting inteligente + proteção contra conflitos
       const shouldRateLimit = motoristaIds.length > 50 || accountId === '20';
-      const delayMs = shouldRateLimit ? 200 : 50; // 200ms para contas grandes
+      const delayMs = shouldRateLimit ? 300 : 100; // Mais delay para evitar conflitos com operações individuais
 
-      console.log(`Processing ${motoristaIds.length} motoristas with ${delayMs}ms delay (Account: ${accountId})`);
+      console.log(`[BULK] Processing ${motoristaIds.length} motoristas with ${delayMs}ms delay (Account: ${accountId})`);
 
       for (let i = 0; i < motoristaIds.length; i++) {
         const motoristaId = motoristaIds[i];
@@ -136,111 +136,116 @@ const BulkActionsModal = ({
         }
 
         try {
-          console.log(`DEBUG: Buscando dados do motorista ${motoristaId} (${i + 1}/${motoristaIds.length})`);
+          console.log(`[BULK] Processando motorista ${motoristaId} (${i + 1}/${motoristaIds.length})`);
 
-          // Buscar dados do motorista via view (para compatibilidade com AgregadosLista)
-          const { data: motorista, error: supabaseError } = await supabase
-            .from('vw_agregados_completo')
-            .select('telefone, nome_motorista')
-            .eq('motorista_id', motoristaId)
-            .single();
+          // Buscar dados do motorista usando abordagem mais confiável (tabelas diretas primeiro)
+          let motorista = null;
+          let motoristaError = null;
 
-          if (supabaseError) {
-            console.log(`DEBUG: Erro no Supabase para motorista ${motoristaId}:`, supabaseError);
-          }
-
-          console.log(`DEBUG: Dados do motorista ${motoristaId}:`, motorista);
-
-          if (!motorista) {
-            console.log(`DEBUG: Motorista ${motoristaId} não encontrado na view, tentando tabelas...`);
-
-            // Fallback: tentar buscar em diferentes tabelas
-            let motoristaFallback = null;
-
-            // Nota: motoristaId pode referenciar qualquer tipo de usuário
-            // Tentar diferentes campos de ID
-
-            // Tentar tabela motorista (usando motorista_id e id)
-            let { data: fromMotorista } = await supabase
+          // 1. Tentar tabela motorista primeiro (mais comum e confiável)
+          try {
+            const { data: fromMotorista, error } = await supabase
               .from('motorista')
               .select('telefone, nome')
-              .eq('id', motoristaId)
+              .eq('motorista_id', motoristaId)
               .single();
+            
+            if (!error && fromMotorista) {
+              motorista = { telefone: fromMotorista.telefone, nome_motorista: fromMotorista.nome };
+              console.log(`[BULK] Encontrado na tabela motorista:`, motorista);
+            } else if (error.code !== 'PGRST116') {
+              motoristaError = error;
+            }
+          } catch (err: any) {
+            if (err.code !== 'PGRST116') {
+              console.warn(`Erro ao buscar na tabela motorista:`, err);
+            }
+          }
 
-            if (!fromMotorista) {
-              const { data: fromMotoristaAlt } = await supabase
+          // 2. Se não encontrou, tentar tabela agregado
+          if (!motorista) {
+            try {
+              const { data: fromAgregado, error } = await supabase
+                .from('agregado')
+                .select('telefone, nome')
+                .eq('agregado_id', motoristaId)
+                .single();
+              
+              if (!error && fromAgregado) {
+                motorista = { telefone: fromAgregado.telefone, nome_motorista: fromAgregado.nome };
+                console.log(`DEBUG: Encontrado na tabela agregado:`, motorista);
+              }
+            } catch (err: any) {
+              if (err.code !== 'PGRST116') {
+                console.warn(`Erro ao buscar na tabela agregado:`, err);
+              }
+            }
+          }
+
+          // 3. Fallback: tentar pela coluna id em ambas as tabelas
+          if (!motorista) {
+            try {
+              const { data: fromMotoristaById } = await supabase
                 .from('motorista')
                 .select('telefone, nome')
-                .eq('motorista_id', motoristaId)
+                .eq('id', motoristaId)
                 .single();
-              fromMotorista = fromMotoristaAlt;
+              
+              if (fromMotoristaById) {
+                motorista = { telefone: fromMotoristaById.telefone, nome_motorista: fromMotoristaById.nome };
+                console.log(`DEBUG: Encontrado na tabela motorista por ID:`, motorista);
+              }
+            } catch (err: any) {
+              if (err.code !== 'PGRST116') {
+                console.warn(`Erro ao buscar motorista por ID:`, err);
+              }
             }
+          }
 
-            if (fromMotorista) {
-              motoristaFallback = fromMotorista;
-              console.log(`DEBUG: Encontrado na tabela motorista:`, motoristaFallback);
-            } else {
-              // Tentar tabela agregado (usando agregado_id e id)
-              let { data: fromAgregado } = await supabase
+          if (!motorista) {
+            try {
+              const { data: fromAgregadoById } = await supabase
                 .from('agregado')
                 .select('telefone, nome')
                 .eq('id', motoristaId)
                 .single();
-
-              if (!fromAgregado) {
-                const { data: fromAgregadoAlt } = await supabase
-                  .from('agregado')
-                  .select('telefone, nome')
-                  .eq('agregado_id', motoristaId)
-                  .single();
-                fromAgregado = fromAgregadoAlt;
+              
+              if (fromAgregadoById) {
+                motorista = { telefone: fromAgregadoById.telefone, nome_motorista: fromAgregadoById.nome };
+                console.log(`DEBUG: Encontrado na tabela agregado por ID:`, motorista);
               }
-
-              if (fromAgregado) {
-                motoristaFallback = fromAgregado;
-                console.log(`DEBUG: Encontrado na tabela agregado:`, motoristaFallback);
-              } else {
-                // Usar query mais ampla - buscar o telefone baseado no motorista_id da view
-                console.log(`DEBUG: Tentando busca ampla com motorista_id ${motoristaId}...`);
-
-                const { data: fromAnyTable } = await supabase
-                  .from('vw_agregados_completo')
-                  .select('telefone, nome_motorista')
-                  .eq('motorista_id', motoristaId)
-                  .limit(1);
-
-                if (fromAnyTable && fromAnyTable.length > 0) {
-                  motoristaFallback = {
-                    telefone: fromAnyTable[0].telefone,
-                    nome: fromAnyTable[0].nome_motorista
-                  };
-                  console.log(`DEBUG: Encontrado via busca ampla:`, motoristaFallback);
-                }
+            } catch (err: any) {
+              if (err.code !== 'PGRST116') {
+                console.warn(`Erro ao buscar agregado por ID:`, err);
               }
             }
+          }
 
-            console.log(`DEBUG: Dados fallback finais do ID ${motoristaId}:`, motoristaFallback);
+          // 4. Último recurso: tentar a view (pode dar 406, mas não vai quebrar)
+          if (!motorista) {
+            console.log(`DEBUG: Tentando busca na view como último recurso para ${motoristaId}...`);
+            try {
+              const { data: fromView } = await supabase
+                .from('vw_agregados_completo')
+                .select('telefone, nome_motorista')
+                .eq('motorista_id', motoristaId)
+                .limit(1)
+                .single();
 
-            if (motoristaFallback?.telefone) {
-              // Usar dados da tabela direta
-              const phoneStr = String(motoristaFallback.telefone);
-              const formattedPhone = phoneStr.replace(/^\+55/, ''); 
-
-              console.log(`DEBUG: Processando via fallback - telefone ${formattedPhone}`);
-
-              const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId);
-              const contacts = Array.isArray(searchData) ? searchData : (searchData?.payload || []);
-
-              if (contacts.length > 0) {
-                const contact = contacts[0];
-                await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome], companyId);
-                syncSuccessCount++;
-                console.log(`Tag "${tagData.nome}" aplicada ao contato ${motoristaFallback.nome} no WiseApp`);
-              } else {
-                console.log(`Contato não encontrado no WiseApp para ${motoristaFallback.nome} (${motoristaFallback.telefone})`);
+              if (fromView) {
+                motorista = { telefone: fromView.telefone, nome_motorista: fromView.nome_motorista };
+                console.log(`DEBUG: Encontrado na view:`, motorista);
               }
+            } catch (viewError: any) {
+              console.warn(`DEBUG: Erro na view (esperado): ${viewError.message}`);
+              // Não quebrar aqui, só log do erro
             }
-            continue; // Pular para próximo motorista
+          }
+
+          // Se ainda não encontrou motorista, pular este ID
+          if (!motorista || !motorista.telefone) {
+            console.log(`DEBUG: Motorista ${motoristaId} não encontrado em nenhuma fonte, pulando...`);
+            continue;
           }
 
           if (motorista?.telefone) {
@@ -258,14 +263,27 @@ const BulkActionsModal = ({
               if (contacts.length > 0) {
                 const contact = contacts[0];
 
-                // Aplicar tag ao contato usando o serviço existente
-                await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome], companyId);
+                // Aplicar tag ao contato usando rota backend direta (atômico, evita race condition)
+                console.log(`[BULK] Aplicando tag "${tagData.nome}" ao contato ${contact.id} (${motorista.nome_motorista})`);
+                
+                const tagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'wiseapp-token': wiseAppToken,
+                    'wiseapp-account-id': accountId
+                  },
+                  body: JSON.stringify({ tagName: tagData.nome })
+                });
+                
+                if (!tagResponse.ok) {
+                  throw new Error(`Erro ao aplicar tag: ${tagResponse.status}`);
+                }
 
                 syncSuccessCount++;
-                console.log(`Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
+                console.log(`[BULK] ✅ Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
               } else {
-                console.log(`BULK DEBUG: Nenhum contato retornado para telefone ${formattedPhone}`);
-                console.log(`Contato não encontrado no WiseApp para ${motorista.nome_motorista} (${motorista.telefone})`);
+                console.log(`[BULK] ❌ Nenhum contato encontrado no WiseApp para ${motorista.nome_motorista} (${formattedPhone})`);
               }
             } catch (searchError) {
               console.error(`BULK DEBUG: Erro na busca do contato:`, searchError);
