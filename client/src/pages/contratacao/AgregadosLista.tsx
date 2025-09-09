@@ -1044,7 +1044,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const fetchContratados = async () => {
       try {
         setLoading(true);
-        console.log('🏢 Buscando dados para company_id:', companyId);
         // Buscar os agregados da view específica
         let query = supabase
           .from('vw_agregados_completo')
@@ -1181,8 +1180,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         const cidadesFiltradas = Array.from(uniqueCities).filter((c): c is string => c != null).sort();
         const tipologiasFiltradas = Array.from(uniqueVehicleTypes).sort();
         
-        console.log('🏙️ Cidades encontradas para company_id', companyId, ':', cidadesFiltradas);
-        console.log('🚛 Tipologias encontradas para company_id', companyId, ':', tipologiasFiltradas);
         
         setCidades(cidadesFiltradas);
         setTiposVeiculo(tipologiasFiltradas);
