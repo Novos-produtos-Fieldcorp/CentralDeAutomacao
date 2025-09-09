@@ -269,6 +269,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
               const remainingTagNames = allMotoristaTagsAfterRemoval?.map((item: any) => item.tag.nome) || [];
 
               // Atualizar todas as tags (sem a removida)
+              console.log(`[INDIVIDUAL] Removendo tag do contato ${contact.id}, tags restantes:`, remainingTagNames);
               const updateResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                 method: 'POST',
                 headers: {
@@ -282,7 +283,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
               });
 
               if (updateResponse.ok) {
-                // Tag removida com sucesso
+                console.log(`[INDIVIDUAL] ✅ Tag removida, ${remainingTagNames.length} tags restantes aplicadas`);
               }
             }
           } catch (error) {

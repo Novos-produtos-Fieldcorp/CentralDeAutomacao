@@ -121,11 +121,11 @@ const BulkActionsModal = ({
       let syncSuccessCount = 0;
       console.log(`DEBUG: Processando ${motoristaIds.length} motoristas:`, motoristaIds);
 
-      // Rate limiting inteligente: mais delay para contas com muitos motoristas
+      // Rate limiting inteligente + proteção contra conflitos
       const shouldRateLimit = motoristaIds.length > 50 || accountId === '20';
-      const delayMs = shouldRateLimit ? 200 : 50; // 200ms para contas grandes
+      const delayMs = shouldRateLimit ? 300 : 100; // Mais delay para evitar conflitos com operações individuais
 
-      console.log(`Processing ${motoristaIds.length} motoristas with ${delayMs}ms delay (Account: ${accountId})`);
+      console.log(`[BULK] Processing ${motoristaIds.length} motoristas with ${delayMs}ms delay (Account: ${accountId})`);
 
       for (let i = 0; i < motoristaIds.length; i++) {
         const motoristaId = motoristaIds[i];
@@ -136,7 +136,7 @@ const BulkActionsModal = ({
         }
 
         try {
-          console.log(`DEBUG: Buscando dados do motorista ${motoristaId} (${i + 1}/${motoristaIds.length})`);
+          console.log(`[BULK] Processando motorista ${motoristaId} (${i + 1}/${motoristaIds.length})`);
 
           // Buscar dados do motorista usando abordagem mais confiável (tabelas diretas primeiro)
           let motorista = null;
@@ -152,7 +152,7 @@ const BulkActionsModal = ({
             
             if (!error && fromMotorista) {
               motorista = { telefone: fromMotorista.telefone, nome_motorista: fromMotorista.nome };
-              console.log(`DEBUG: Encontrado na tabela motorista:`, motorista);
+              console.log(`[BULK] Encontrado na tabela motorista:`, motorista);
             } else if (error.code !== 'PGRST116') {
               motoristaError = error;
             }
@@ -264,13 +264,13 @@ const BulkActionsModal = ({
                 const contact = contacts[0];
 
                 // Aplicar tag ao contato usando o serviço existente
+                console.log(`[BULK] Aplicando tag "${tagData.nome}" ao contato ${contact.id} (${motorista.nome_motorista})`);
                 await applyWiseAppContactLabels(accountId, wiseAppToken, contact.id, [tagData.nome], companyId);
 
                 syncSuccessCount++;
-                console.log(`Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
+                console.log(`[BULK] ✅ Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
               } else {
-                console.log(`BULK DEBUG: Nenhum contato retornado para telefone ${formattedPhone}`);
-                console.log(`Contato não encontrado no WiseApp para ${motorista.nome_motorista} (${motorista.telefone})`);
+                console.log(`[BULK] ❌ Nenhum contato encontrado no WiseApp para ${motorista.nome_motorista} (${formattedPhone})`);
               }
             } catch (searchError) {
               console.error(`BULK DEBUG: Erro na busca do contato:`, searchError);
