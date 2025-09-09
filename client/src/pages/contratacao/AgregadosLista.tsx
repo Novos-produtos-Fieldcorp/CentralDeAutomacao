@@ -86,21 +86,15 @@ export interface ViewContratado {
 }
 
 const checkVehicleTypeMatch = (motorista: ViewContratado, filters: string[]): boolean => {
-  // Check direct properties first
-  if (
-    (motorista.tipo_veiculo && filters.includes(motorista.tipo_veiculo)) ||
-    (motorista.tipo && filters.includes(motorista.tipo)) ||
-    (motorista.tipologia && filters.includes(motorista.tipologia))
-  ) {
+  // Check direct tipologia property first
+  if (motorista.tipologia && filters.includes(motorista.tipologia)) {
     return true;
   }
   
-  // Check veiculo array if it exists
+  // Check veiculo array if it exists (only tipologia field)
   if (motorista.veiculo && motorista.veiculo.length > 0) {
-    return motorista.veiculo.some((veiculo: { tipo_veiculo?: string; tipo?: string; tipologia?: string }) => 
-      (veiculo.tipo_veiculo && filters.includes(veiculo.tipo_veiculo)) ||
-      (veiculo.tipo && filters.includes(veiculo.tipo)) ||
-      (veiculo.tipologia && filters.includes(veiculo.tipologia))
+    return motorista.veiculo.some((veiculo: { tipologia?: string }) => 
+      veiculo.tipologia && filters.includes(veiculo.tipologia)
     );
   }
 
@@ -1163,15 +1157,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             uniqueCities.add(agregado.nome_cidade);
           }
           
-          // Extract vehicle types from different fields
+          // Extract vehicle types only from tipologia field
           if (agregado.tipologia && typeof agregado.tipologia === 'string') {
             uniqueVehicleTypes.add(agregado.tipologia);
-          }
-          if (agregado.tipo && typeof agregado.tipo === 'string') {
-            uniqueVehicleTypes.add(agregado.tipo);
-          }
-          if (agregado.tipo_veiculo && typeof agregado.tipo_veiculo === 'string') {
-            uniqueVehicleTypes.add(agregado.tipo_veiculo);
           }
           
           if (!agregadosAgrupadosMap.has(agregado.motorista_id)) {
