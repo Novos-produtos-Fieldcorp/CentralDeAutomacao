@@ -6,7 +6,7 @@ import type { Cliente } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
-import { searchWiseAppContact, applyWiseAppContactLabels } from '../lib/directApiService';
+import { searchWiseAppContact } from '../lib/directApiService';
 
 interface BulkActionsModalProps {
   isOpen: boolean;
