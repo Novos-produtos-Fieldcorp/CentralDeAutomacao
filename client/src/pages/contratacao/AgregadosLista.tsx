@@ -184,6 +184,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       setShowCidadeDropdown(false);
       setShowTipoVeiculoDropdown(false);
       setShowTagDropdown(false);
+      setCidadeSearchTerm(''); // Limpa o termo de busca das cidades
     };
 
     const toggleDropdown = (dropdownType: string) => {
@@ -197,6 +198,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           break;
         case 'cidade':
           setShowCidadeDropdown(true);
+          setCidadeSearchTerm(''); // Limpa o termo de busca ao abrir
           break;
         case 'tipoVeiculo':
           setShowTipoVeiculoDropdown(true);
@@ -559,6 +561,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const [cidades, setCidades] = useState<string[]>([]);
     const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
     const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
+    const [cidadeSearchTerm, setCidadeSearchTerm] = useState<string>('');
 
     const tableContainerRef = useRef<HTMLDivElement>(null);
     
@@ -577,6 +580,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         }
         if (showCidadeDropdown && cidadeDropdownRef.current && !cidadeDropdownRef.current.contains(target)) {
           setShowCidadeDropdown(false);
+          setCidadeSearchTerm(''); // Limpa o termo de busca ao fechar
         }
         if (showTipoVeiculoDropdown && tipoVeiculoDropdownRef.current && !tipoVeiculoDropdownRef.current.contains(target)) {
           setShowTipoVeiculoDropdown(false);
@@ -2024,7 +2028,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         zIndex: 999999
                       }}>
                       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center mb-2">
                           <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
                           <button 
                             type="button" 
@@ -2037,9 +2041,23 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             Limpar
                           </button>
                         </div>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Pesquisar cidade..."
+                            value={cidadeSearchTerm}
+                            onChange={(e) => setCidadeSearchTerm(e.target.value)}
+                            className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
                       </div>
                       {cidades
                         .filter((cidade): cidade is string => cidade != null)
+                        .filter((cidade) => 
+                          cidadeSearchTerm === '' || 
+                          cidade.toLowerCase().includes(cidadeSearchTerm.toLowerCase())
+                        )
                         .map((cidade) => (
                           <div key={cidade} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                             <label className="flex items-center cursor-pointer">
