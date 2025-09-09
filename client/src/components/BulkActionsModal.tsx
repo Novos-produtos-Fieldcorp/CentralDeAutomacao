@@ -266,34 +266,14 @@ const BulkActionsModal = ({
                 // Aplicar tag ao contato usando rota backend direta (atômico, evita race condition)
                 console.log(`[BULK] Aplicando tag "${tagData.nome}" ao contato ${contact.id} (${motorista.nome_motorista})`);
                 
-                // Aplicar tag diretamente na API WiseApp (sem rota backend para compatibilidade Netlify)
-                const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contact.id}/labels`;
-                
-                // Primeiro buscar tags existentes
-                const getResponse = await fetch(wiseAppUrl, {
-                  method: 'GET',
-                  headers: { 'api_access_token': wiseAppToken }
-                });
-                
-                let existingLabels: string[] = [];
-                if (getResponse.ok) {
-                  const result = await getResponse.json();
-                  existingLabels = result.payload || [];
-                }
-                
-                // Adicionar nova tag se não existe
-                const finalLabels = [...existingLabels];
-                if (!finalLabels.includes(tagData.nome)) {
-                  finalLabels.push(tagData.nome);
-                }
-                
-                const tagResponse = await fetch(wiseAppUrl, {
+                const tagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                   method: 'POST',
                   headers: {
-                    'api_access_token': wiseAppToken,
                     'Content-Type': 'application/json',
+                    'wiseapp-token': wiseAppToken,
+                    'wiseapp-account-id': accountId
                   },
-                  body: JSON.stringify({ labels: finalLabels })
+                  body: JSON.stringify({ tagName: tagData.nome })
                 });
                 
                 if (!tagResponse.ok) {
