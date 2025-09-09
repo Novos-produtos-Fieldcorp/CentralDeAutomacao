@@ -69,7 +69,7 @@ const InboxSelector: React.FC<InboxSelectorProps> = ({
       console.log('🔍 Tentando carregar inboxes para company:', companyId, 'account:', accountId);
       
       // Primeiro tentar a API otimizada
-      const response = await fetch(`/api/chatwoot/inboxes/${companyId}?account_id=${accountId}`, {
+      const response = await fetch(`/api/inboxes/${companyId}?account_id=${accountId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

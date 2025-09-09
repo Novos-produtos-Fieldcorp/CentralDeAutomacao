@@ -156,7 +156,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
         if (error) throw error;
 
-        // Sincronizar com Chatwoot via API
+        // Sincronizar via API
         if (motorista.telefone && accountId) {
           try {
             const response = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${motorista.telefone}`, {
@@ -172,7 +172,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
             if (contacts && contacts.length > 0) {
               const contact = contacts[0];
 
-              // Adicionar marcador no Chatwoot
+              // Adicionar marcador
               const addResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                 method: 'POST',
                 headers: {
@@ -187,11 +187,11 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
               });
 
               if (addResponse.ok) {
-                console.log(`Marcador "${tag.nome}" aplicado com sucesso ao contato ${motorista.nome} no Chatwoot`);
+                // Tag aplicada com sucesso
               }
             }
           } catch (error) {
-            console.warn('Erro ao sincronizar com Chatwoot:', error);
+            // Erro não crítico na sincronização
           }
         }
 
@@ -242,7 +242,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
         if (error) throw error;
 
-        // Sincronizar com Chatwoot via API
+        // Sincronizar via API
         if (motorista.telefone && accountId) {
           try {
             const response = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${motorista.telefone}`, {
@@ -268,7 +268,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
               const remainingTagNames = allMotoristaTagsAfterRemoval?.map((item: any) => item.tag.nome) || [];
 
-              // Atualizar todas as tags no Chatwoot (sem a removida)
+              // Atualizar todas as tags (sem a removida)
               const updateResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                 method: 'POST',
                 headers: {
@@ -282,11 +282,11 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
               });
 
               if (updateResponse.ok) {
-                console.log(`Tag "${tag.nome}" removida com sucesso do contato ${motorista.nome} no Chatwoot`);
+                // Tag removida com sucesso
               }
             }
           } catch (error) {
-            console.warn('Erro ao sincronizar com Chatwoot:', error);
+            // Erro não crítico na sincronização
           }
         }
 

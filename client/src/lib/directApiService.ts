@@ -482,7 +482,7 @@ export const chatWootService = {
     }
 
     // Verificar cache primeiro
-    const cacheKey = `chatwoot_inboxes_${companyId}_${accountId}`;
+    const cacheKey = `inboxes_${companyId}_${accountId}`;
     const cached = localStorage.getItem(cacheKey);
     
     if (cached) {

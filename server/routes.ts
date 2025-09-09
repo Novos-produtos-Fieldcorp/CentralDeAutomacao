@@ -101,7 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Nova rota específica para buscar inboxes com cache otimizado por company_id
-  app.get("/api/chatwoot/inboxes/:companyId", async (req, res) => {
+  app.get("/api/inboxes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
       const { account_id } = req.query;
@@ -1848,7 +1848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`TOKEN: ${token ? 'Present' : 'Missing'}`);
       console.log(`ACCOUNT ID: ${account_id}`);
       
-      // Enviar lista completa (conforme API do Chatwoot)
+      // Enviar lista completa de labels
       const response = await fetch(labelsUrl, {
         method: 'POST',
         headers: {
@@ -1860,9 +1860,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }),
       });
 
-      console.log(`CHATWOOT RESPONSE STATUS: ${response.status}`);
       const responseText = await response.text();
-      console.log(`CHATWOOT RESPONSE BODY: ${responseText}`);
 
       if (!response.ok) {
         throw new Error(`WiseApp API responded with ${response.status}: ${responseText}`);
