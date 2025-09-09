@@ -268,28 +268,22 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
               const remainingTagNames = allMotoristaTagsAfterRemoval?.map((item: any) => item.tag.nome) || [];
 
-              // Atualizar todas as tags (sem a removida) - APENAS se há tags restantes
+              // Atualizar todas as tags (sem a removida)
               console.log(`[INDIVIDUAL] Removendo tag do contato ${contact.id}, tags restantes:`, remainingTagNames);
-              
-              // PROTEÇÃO: Não enviar lista vazia para evitar conflito com operações em massa
-              if (remainingTagNames.length > 0) {
-                const updateResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
-                  method: 'POST',
-                  headers: {
-                    'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': accountId.toString(),
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ 
-                    labels: remainingTagNames
-                  })
-                });
+              const updateResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                method: 'POST',
+                headers: {
+                  'wiseapp-token': wiseAppToken,
+                  'wiseapp-account-id': accountId.toString(),
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                  labels: remainingTagNames
+                })
+              });
 
-                if (updateResponse.ok) {
-                  console.log(`[INDIVIDUAL] ✅ Tag removida, ${remainingTagNames.length} tags restantes aplicadas`);
-                }
-              } else {
-                console.log(`[INDIVIDUAL] ⚠️ Não enviando lista vazia para evitar conflito com operações em massa`);
+              if (updateResponse.ok) {
+                console.log(`[INDIVIDUAL] ✅ Tag removida, ${remainingTagNames.length} tags restantes aplicadas`);
               }
             }
           } catch (error) {
