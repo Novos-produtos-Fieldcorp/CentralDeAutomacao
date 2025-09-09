@@ -1849,6 +1849,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`ACCOUNT ID: ${account_id}`);
       
       // Enviar lista completa de labels
+      console.log(`🚀 FAZENDO CHAMADA PARA WISEAPP API...`);
       const response = await fetch(labelsUrl, {
         method: 'POST',
         headers: {
@@ -1860,7 +1861,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }),
       });
 
+      console.log(`📡 RESPOSTA WISEAPP: Status ${response.status}`);
       const responseText = await response.text();
+      console.log(`📄 RESPOSTA WISEAPP BODY:`, responseText);
 
       if (!response.ok) {
         throw new Error(`WiseApp API responded with ${response.status}: ${responseText}`);
