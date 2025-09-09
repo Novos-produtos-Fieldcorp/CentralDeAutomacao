@@ -350,7 +350,7 @@ exports.handler = async (event, context) => {
         const getResponse = await fetch(getUrl, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'api_access_token': token,
             'Content-Type': 'application/json'
           }
         });
@@ -380,7 +380,7 @@ exports.handler = async (event, context) => {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'api_access_token': token,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ labels: labelsToApply })
