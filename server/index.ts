@@ -38,12 +38,18 @@ app.use((req, res, next) => {
     'https://replit.com',
     'https://*.replit.dev',
     'https://*.replit.app',
+    'https://centralautomacoes.netlify.app',
+    'https://*.netlify.app',
     'http://localhost:3000',
     'http://localhost:5000'
   ];
   
-  // Allow all origins for iframe compatibility, but track them
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Allow specific origins or all for iframe compatibility
+  if (origin && (origin.includes('netlify.app') || origin.includes('replit.dev') || origin.includes('localhost'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
   res.setHeader('Access-Control-Allow-Headers', [
     'Content-Type',
@@ -64,6 +70,12 @@ app.use((req, res, next) => {
   
   // Responder a requisições OPTIONS otimizado
   if (req.method === 'OPTIONS') {
+    // Set CORS headers again for OPTIONS requests
+    if (origin && (origin.includes('netlify.app') || origin.includes('replit.dev') || origin.includes('localhost'))) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
     res.status(204).end();
     return;
   }
