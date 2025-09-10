@@ -387,6 +387,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           onClose={() => setIsCreateModalOpen(false)}
           onSave={handleCreateTag}
           isLoading={createTagMutation.isPending}
+          companyId={companyId}
         />
       )}
 
@@ -424,22 +425,80 @@ interface CreateTagModalProps {
   onClose: () => void;
   onSave: (tagData: Omit<Tag, 'id' | 'created_at' | 'updated_at'>) => void;
   isLoading: boolean;
+  companyId: number;
 }
 
-function CreateTagModal({ isOpen, onClose, onSave, isLoading }: CreateTagModalProps) {
+function CreateTagModal({ isOpen, onClose, onSave, isLoading, companyId }: CreateTagModalProps) {
   const [formData, setFormData] = useState({
     nome: '',
     cor: '#3B82F6',
     limite_max: ''
   });
+  const [nameError, setNameError] = useState<string>('');
+
+  const validateTagName = (name: string): boolean => {
+    setNameError('');
+    
+    if (!name.trim()) {
+      setNameError('Nome é obrigatório');
+      return false;
+    }
+
+    if (name.trim().length < 1) {
+      setNameError('Nome deve ter pelo menos 1 caractere');
+      return false;
+    }
+
+    if (name.trim().length > 40) {
+      setNameError('Nome deve ter no máximo 40 caracteres');
+      return false;
+    }
+
+    // Regras do WiseApp: sem espaços, sem maiúsculas
+    if (/\s/.test(name)) {
+      setNameError('Nome não pode conter espaços');
+      return false;
+    }
+
+    if (/[A-Z]/.test(name)) {
+      setNameError('Nome deve estar em letras minúsculas');
+      return false;
+    }
+
+    // Verificar caracteres especiais não permitidos (WiseApp permite letras minúsculas, números, hífen e underscore)
+    if (!/^[a-z0-9\-_]+$/.test(name)) {
+      setNameError('Use apenas letras minúsculas, números, hífens (-) e underscores (_)');
+      return false;
+    }
+
+    // Não pode começar ou terminar com hífen ou underscore
+    if (/^[\-_]|[\-_]$/.test(name)) {
+      setNameError('Não pode começar ou terminar com hífen ou underscore');
+      return false;
+    }
+
+    return true;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      nome: formData.nome,
+    
+    if (!validateTagName(formData.nome.trim())) {
+      return;
+    }
+    
+    console.log('Criando tag com dados:', {
+      nome: formData.nome.trim(),
       cor: formData.cor,
       limite_max: formData.limite_max ? parseInt(formData.limite_max.toString()) : null,
-      company_id: 1 // Isso deve vir do contexto
+      company_id: companyId
+    });
+    
+    onSave({
+      nome: formData.nome.trim(),
+      cor: formData.cor,
+      limite_max: formData.limite_max ? parseInt(formData.limite_max.toString()) : null,
+      company_id: companyId
     });
   };
 
@@ -466,11 +525,26 @@ function CreateTagModal({ isOpen, onClose, onSave, isLoading }: CreateTagModalPr
             <input
               type="text"
               value={formData.nome}
-              onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData(prev => ({ ...prev, nome: value }));
+                // Validar em tempo real
+                if (value) {
+                  validateTagName(value);
+                }
+              }}
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                nameError ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
+              }`}
               required
-              placeholder="Nome do marcador"
+              placeholder="exemplo: vendas-2024"
             />
+            {nameError && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{nameError}</p>
+            )}
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Use apenas letras minúsculas, números, hífens (-) e underscores (_). Sem espaços.
+            </p>
           </div>
 
           <div>

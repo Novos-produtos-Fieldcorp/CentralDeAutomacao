@@ -27,6 +27,7 @@ import { createPortal } from 'react-dom';
   import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
 import { API_BASE_URL } from '@/lib/api-config';
+import FilterTags from '../../components/FilterTags';
 
 interface AgregadosListaProps {
   onSuccess?: () => void;
@@ -1831,6 +1832,52 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             </div>
           </div>
 
+          {/* Filter Tags - Filtros aplicados como tags removíveis */}
+          <FilterTags
+            statusFilter={statusFilter}
+            ativoFilter={ativoFilter === 'active' ? 'true' : ativoFilter === 'inactive' ? 'false' : ''}
+            clienteFilter={clienteFilter}
+            cidadeFilter={cidadeFilter}
+            tagFilter={tagFilter}
+            tipoVeiculoFilter={tipoVeiculoFilter}
+            dateFilter={dateFilter}
+            customDateRange={customDateRange}
+            onRemoveStatus={(status) => {
+              setStatusFilter(statusFilter.filter(s => s !== status));
+            }}
+            onRemoveAtivo={() => {
+              setAtivoFilter('');
+            }}
+            onRemoveCliente={(clienteId) => {
+              setClienteFilter(clienteFilter.filter(c => c !== clienteId));
+            }}
+            onRemoveCidade={(cidade) => {
+              setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
+            }}
+            onRemoveTag={(tagId) => {
+              setTagFilter(tagFilter.filter(t => t !== tagId));
+            }}
+            onRemoveTipoVeiculo={(tipo) => {
+              setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== tipo));
+            }}
+            onRemoveDate={() => {
+              setDateFilter('all');
+            }}
+            onClearAll={() => {
+              setStatusFilter([]);
+              setCidadeFilter([]);
+              setClienteFilter([]);
+              setAtivoFilter('');
+              setTagFilter([]);
+              setTipoVeiculoFilter([]);
+              setDateFilter('all');
+            }}
+            clientes={clientes}
+            tags={tags}
+            cidades={cidades}
+            tiposVeiculo={tiposVeiculo}
+          />
+
           {/* Filtros modernos */}
           <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
             <div className="flex flex-wrap gap-2">
@@ -2616,7 +2663,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                         type="text"
                                         placeholder="Buscar marcadores..."
                                         className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                        value={tagSearchTerm[motorista.motorista_id] || ''}
+                                        value={tagSearchTerm[motorista.motorista_id!] || ''}
                                         onChange={(e) => setTagSearchTerm(prev => ({
                                           ...prev,
                                           [motorista.motorista_id!]: e.target.value
@@ -2628,7 +2675,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                       {tags
                                         .filter(tag => {
                                           const notAdded = !motorista.motorista_id || !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id);
-                                          const searchTerm = tagSearchTerm[motorista.motorista_id] || '';
+                                          const searchTerm = tagSearchTerm[motorista.motorista_id!] || '';
                                           const matchesSearch = !searchTerm || tag.nome.toLowerCase().includes(searchTerm.toLowerCase());
                                           return notAdded && matchesSearch;
                                         })
@@ -2665,12 +2712,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                       ))}
                                       {tags.filter(tag => {
                                         const notAdded = !motorista.motorista_id || !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id);
-                                        const searchTerm = tagSearchTerm[motorista.motorista_id] || '';
+                                        const searchTerm = tagSearchTerm[motorista.motorista_id!] || '';
                                         const matchesSearch = !searchTerm || tag.nome.toLowerCase().includes(searchTerm.toLowerCase());
                                         return notAdded && matchesSearch;
                                       }).length === 0 && (
                                         <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-                                          {tagSearchTerm[motorista.motorista_id] ? 'Nenhum marcador encontrado' : 'Todos os marcadores já foram adicionados'}
+                                          {tagSearchTerm[motorista.motorista_id!] ? 'Nenhum marcador encontrado' : 'Todos os marcadores já foram adicionados'}
                                         </div>
                                       )}
                                     </div>
