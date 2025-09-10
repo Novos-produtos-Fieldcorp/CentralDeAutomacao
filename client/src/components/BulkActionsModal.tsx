@@ -277,6 +277,12 @@ const BulkActionsModal = ({
                 });
                 
                 if (!tagResponse.ok) {
+                  // Verificar se é erro de timeout (408) ou outros problemas de rede
+                  if (tagResponse.status === 408) {
+                    console.warn(`[BULK] Timeout ao aplicar tag para ${motorista.nome_motorista}, continuando...`);
+                    // Não falhar a operação em massa por timeout de um item
+                    continue;
+                  }
                   throw new Error(`Erro ao aplicar tag: ${tagResponse.status}`);
                 }
 
