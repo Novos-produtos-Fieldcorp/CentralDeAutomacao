@@ -25,12 +25,14 @@ exports.handler = async (event, context) => {
   console.log('Final path:', path);
   console.log('======================');
   
-  // CORS headers
+  // CORS headers - mais permissivos para resolver problemas
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, wiseapp-token, wiseapp-account-id',
-    'Content-Type': 'application/json'
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, wiseapp-token, wiseapp-account-id, X-Requested-With, Accept, Origin',
+    'Access-Control-Allow-Credentials': 'false',
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate'
   };
   
   // Handle OPTIONS preflight
@@ -108,13 +110,27 @@ exports.handler = async (event, context) => {
             await delay(2000); // 2 segundos entre tentativas
           }
 
-          response = await fetch(wiseappUrl, {
-            method: 'GET',
-            headers: {
-              'api_access_token': token,
-              'Content-Type': 'application/json',
-            },
-          });
+          // Adicionar timeout para evitar "Failed to fetch"
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+          
+          try {
+            response = await fetch(wiseappUrl, {
+              method: 'GET',
+              headers: {
+                'api_access_token': token,
+                'Content-Type': 'application/json',
+              },
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+          } catch (fetchError) {
+            clearTimeout(timeoutId);
+            if (fetchError.name === 'AbortError') {
+              throw new Error('Timeout na requisição WiseApp (10s)');
+            }
+            throw fetchError;
+          }
 
           if (response.ok) {
             break; // Success!
@@ -358,13 +374,30 @@ exports.handler = async (event, context) => {
         
         // Get existing labels first
         const getUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
-        const getResponse = await fetch(getUrl, {
-          method: 'GET',
-          headers: {
-            'api_access_token': token,
-            'Content-Type': 'application/json'
+        // Adicionar timeout para get labels
+        const getController = new AbortController();
+        const getTimeoutId = setTimeout(() => getController.abort(), 8000);
+        
+        let getResponse;
+        try {
+          getResponse = await fetch(getUrl, {
+            method: 'GET',
+            headers: {
+              'api_access_token': token,
+              'Content-Type': 'application/json'
+            },
+            signal: getController.signal
+          });
+          clearTimeout(getTimeoutId);
+        } catch (getError) {
+          clearTimeout(getTimeoutId);
+          if (getError.name === 'AbortError') {
+            console.log('Timeout ao buscar labels existentes, continuando sem elas');
+            getResponse = { ok: false };
+          } else {
+            throw getError;
           }
-        });
+        }
 
         if (getResponse.ok) {
           const currentData = await getResponse.json();
@@ -388,14 +421,29 @@ exports.handler = async (event, context) => {
       console.log(`Posting to: ${url}`);
       console.log(`Payload: ${JSON.stringify({ labels: labelsToApply })}`);
       
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ labels: labelsToApply })
-      });
+      // Adicionar timeout para aplicar labels
+      const postController = new AbortController();
+      const postTimeoutId = setTimeout(() => postController.abort(), 12000);
+      
+      let response;
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'api_access_token': token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ labels: labelsToApply }),
+          signal: postController.signal
+        });
+        clearTimeout(postTimeoutId);
+      } catch (postError) {
+        clearTimeout(postTimeoutId);
+        if (postError.name === 'AbortError') {
+          throw new Error('Timeout ao aplicar labels no WiseApp (12s)');
+        }
+        throw postError;
+      }
       
       console.log(`WiseApp apply labels response status: ${response.status}`);
       
@@ -422,12 +470,19 @@ exports.handler = async (event, context) => {
       };
     } catch (error) {
       console.error('Apply contact labels error:', error);
+      // Não retornar detalhes do erro para o frontend em caso de timeout/fetch fail
+      const isNetworkError = error.message.includes('Timeout') || 
+                             error.message.includes('Failed to fetch') ||
+                             error.name === 'AbortError' ||
+                             error.message.includes('network');
+      
       return {
-        statusCode: 500,
+        statusCode: isNetworkError ? 408 : 500, // 408 Request Timeout para problemas de rede
         headers: corsHeaders,
         body: JSON.stringify({ 
-          error: 'Erro interno',
-          details: error.message
+          error: isNetworkError ? 'Timeout na comunicação com WiseApp' : 'Erro interno',
+          details: isNetworkError ? 'Tente novamente em alguns segundos' : error.message,
+          isTimeout: isNetworkError
         })
       };
     }
