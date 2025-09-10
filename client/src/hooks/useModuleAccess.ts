@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 interface ModuleAccess {
   checklist: boolean;
   motoristas: boolean;
+  vagas: boolean;
   hodometros: boolean;
   veiculos: boolean;
   clientes: boolean;
@@ -19,6 +20,7 @@ export const useModuleAccess = () => {
   const [moduleAccess, setModuleAccess] = useState<ModuleAccess>({
     checklist: true,
     motoristas: true,
+    vagas: true,
     hodometros: true,
     veiculos: true,
     clientes: true,
@@ -49,6 +51,7 @@ export const useModuleAccess = () => {
           setModuleAccess({
             checklist: true,
             motoristas: true,
+            vagas: true,
             hodometros: true,
             veiculos: true,
             clientes: true,
@@ -62,6 +65,7 @@ export const useModuleAccess = () => {
           setModuleAccess({
             checklist: company.checklist_access || false,
             motoristas: company.motorista_access || false,
+            vagas: company.motorista_access || false, // Mirror motoristas access
             hodometros: company.hodometro_acsess || false, // Note the typo in the column name
             veiculos: true, // Always enabled
             clientes: true,  // Always enabled
@@ -73,6 +77,7 @@ export const useModuleAccess = () => {
           setModuleAccess({
             checklist: true,
             motoristas: true,
+            vagas: true,
             hodometros: true,
             veiculos: true,
             clientes: true,
@@ -88,6 +93,7 @@ export const useModuleAccess = () => {
         setModuleAccess({
           checklist: true,
           motoristas: true,
+          vagas: true,
           hodometros: true,
           veiculos: true,
           clientes: true,
