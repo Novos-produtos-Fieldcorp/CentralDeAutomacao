@@ -11,8 +11,19 @@ exports.handler = async (event, context) => {
   console.log('================================');
   
   const { httpMethod, queryStringParameters: query, headers } = event;
-  // Use rawUrl path or path from event
-  const path = event.path || event.rawUrl?.split('?')[0] || '';
+  // Use rawUrl path or path from event - incluir :splat nos parâmetros
+  let path = event.path || event.rawUrl?.split('?')[0] || '';
+  
+  // Para Netlify functions, o path pode vir como parâmetro :splat
+  if (event.pathParameters && event.pathParameters.splat) {
+    path = '/' + event.pathParameters.splat;
+  }
+  
+  console.log('=== PATH PROCESSING ===');
+  console.log('Original path:', event.path);
+  console.log('Path parameters:', event.pathParameters);
+  console.log('Final path:', path);
+  console.log('======================');
   
   // CORS headers
   const corsHeaders = {
