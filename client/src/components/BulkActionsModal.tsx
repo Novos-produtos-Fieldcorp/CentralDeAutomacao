@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { searchWiseAppContact } from '../lib/directApiService';
+import { API_BASE_URL } from '@/lib/api-config';
 
 interface BulkActionsModalProps {
   isOpen: boolean;
@@ -266,7 +267,7 @@ const BulkActionsModal = ({
                 // Aplicar tag ao contato usando rota backend direta (atômico, evita race condition)
                 console.log(`[BULK] Aplicando tag "${tagData.nome}" ao contato ${contact.id} (${motorista.nome_motorista})`);
                 
-                const tagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                const tagResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
