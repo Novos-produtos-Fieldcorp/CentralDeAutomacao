@@ -12,7 +12,7 @@ interface DocumentPreviewProps {
   maxSize?: number; // in MB
   showRemoveButton?: boolean;
   className?: string;
-  data-testid?: string;
+  'data-testid'?: string;
 }
 
 const DocumentPreview = ({
