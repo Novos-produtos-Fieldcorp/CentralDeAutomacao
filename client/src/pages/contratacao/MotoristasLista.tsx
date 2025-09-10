@@ -25,10 +25,12 @@ import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
+import BulkContactTagsSync from '../../components/BulkContactTagsSync';
 import { useAuth } from '../../context/AuthContext';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { API_BASE_URL } from '@/lib/api-config';
+import FilterTags from '../../components/FilterTags';
 
 // Função auxiliar para converter ViewMotorista para Motorista
 const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
@@ -1492,7 +1494,18 @@ const MotoristasLista = () => {
 
       <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 p-6 rounded-xl shadow-lg border border-gray-200/70 dark:border-gray-700/70 backdrop-blur-sm">
         {/* Ações */}
-        <div className="flex justify-end items-center mb-4">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-3">
+            {/* Bulk Contact Tags Sync Button */}
+            <BulkContactTagsSync 
+              onSyncComplete={(result) => {
+                // Atualizar tags dos motoristas após sincronização
+                if (result.success && motoristas && motoristas.length > 0) {
+                  fetchAllMotoristaTags(motoristas);
+                }
+              }}
+            />
+          </div>
           <div className="flex items-center gap-2">
             {/* Contador de filtros ativos */}
             {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
@@ -1549,6 +1562,46 @@ const MotoristasLista = () => {
             )}
           </div>
         </div>
+
+        {/* Filter Tags - Filtros aplicados como tags removíveis */}
+        <FilterTags
+          statusFilter={statusFilter}
+          ativoFilter={ativoFilter}
+          clienteFilter={clienteFilter}
+          cidadeFilter={cidadeFilter}
+          tagFilter={tagFilter}
+          dateFilter={dateFilter}
+          customDateRange={customDateRange}
+          onRemoveStatus={(status) => {
+            setStatusFilter(statusFilter.filter(s => s !== status));
+          }}
+          onRemoveAtivo={() => {
+            setAtivoFilter('');
+          }}
+          onRemoveCliente={(clienteId) => {
+            setClienteFilter(clienteFilter.filter(c => c !== clienteId));
+          }}
+          onRemoveCidade={(cidade) => {
+            setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
+          }}
+          onRemoveTag={(tagId) => {
+            setTagFilter(tagFilter.filter(t => t !== tagId));
+          }}
+          onRemoveDate={() => {
+            setDateFilter('all');
+          }}
+          onClearAll={() => {
+            setStatusFilter([]);
+            setCidadeFilter([]);
+            setClienteFilter([]);
+            setAtivoFilter('');
+            setTagFilter([]);
+            setDateFilter('all');
+          }}
+          clientes={clientes}
+          tags={tags}
+          cidades={cidades}
+        />
 
         {/* Filtros modernos */}
         <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">

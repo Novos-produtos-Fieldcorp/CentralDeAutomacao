@@ -20,6 +20,7 @@ import {
   WiseAppCacheOptions 
 } from "./utils/api-retry";
 import { getBulkMotoristaTags } from "./bulk-tags-api";
+import { registerBulkContactTagsRoute } from "./bulk-contact-tags-sync";
 
 // Initialize Supabase client with bypass RLS for backend operations
 const supabaseUrl =
@@ -2518,6 +2519,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Register bulk contact tags sync route
+  registerBulkContactTagsRoute(app);
 
   const httpServer = createServer(app);
 
