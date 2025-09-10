@@ -320,6 +320,11 @@ exports.handler = async (event, context) => {
   
   // WiseApp apply labels to contact
   console.log(`Checking apply labels pattern for path: "${path}"`);
+  console.log(`Method: ${httpMethod}, Is POST: ${httpMethod === 'POST'}`);
+  console.log(`Path includes wiseapp: ${path.includes('/wiseapp/')}`);
+  console.log(`Path includes contacts: ${path.includes('/contacts/')}`);
+  console.log(`Path includes labels: ${path.includes('/labels')}`);
+  
   if (httpMethod === 'POST' && (path.includes('/wiseapp/') && path.includes('/contacts/') && path.includes('/labels'))) {
     try {
       // Extract company ID and contact ID
@@ -490,6 +495,12 @@ exports.handler = async (event, context) => {
 
   // Default 404
   console.log(`No route matched for ${httpMethod} ${path}`);
+  console.log(`Available routes check:`);
+  console.log(`- Health: ${path === '/health'}`);
+  console.log(`- WiseApp labels GET: ${httpMethod === 'GET' && path.includes('/wiseapp/') && path.endsWith('/labels')}`);
+  console.log(`- Contact search: ${httpMethod === 'GET' && path.includes('/wiseapp/') && path.includes('/contacts/search')}`);
+  console.log(`- Apply labels POST: ${httpMethod === 'POST' && path.includes('/wiseapp/') && path.includes('/contacts/') && path.includes('/labels')}`);
+  
   return {
     statusCode: 404,
     headers: corsHeaders,
@@ -500,7 +511,8 @@ exports.handler = async (event, context) => {
       debugInfo: {
         originalPath: event.path,
         rawUrl: event.rawUrl,
-        actualPath: path
+        actualPath: path,
+        pathParameters: event.pathParameters
       },
       available_routes: [
         'GET /health',
