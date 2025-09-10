@@ -19,10 +19,6 @@ exposeLocalhost = true
 localPort = 39475
 externalPort = 3001
 
-[[ports]]
-localPort = 44367
-externalPort = 3000
-
 [workflows]
 runButton = "Project"
 
