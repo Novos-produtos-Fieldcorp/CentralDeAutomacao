@@ -11,6 +11,7 @@ interface AccessControl {
   id_conta_wiseapp: string;
   checklist_access: boolean;
   motorista_access: boolean;
+  vagas_access: boolean;
   hodometro_acsess: boolean;
   resumo_access: boolean;
   tags_access: boolean | null;
@@ -79,7 +80,7 @@ const Admin = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('company')
-        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, tags_access, st_company')
+        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, vagas_access, hodometro_acsess, resumo_access, tags_access, st_company')
         .order('company_id', { ascending: true });
 
       if (error) throw error;
@@ -97,13 +98,13 @@ const Admin = () => {
     const control = accessControls[index];
     const currentValue = control[field];
     
-    // Calculate new value: if null, set to true; if true, set to false; if false, set to true
+    // Calculate new value: treat null/undefined as false and toggle
     let newValue;
     if (field === 'tags_access') {
       newValue = currentValue === true ? false : true;
     } else {
-      if (typeof currentValue !== 'boolean') return;
-      newValue = !currentValue;
+      // For boolean fields, treat null/undefined as false and toggle
+      newValue = currentValue === true ? false : true;
     }
 
     try {
@@ -146,6 +147,7 @@ const Admin = () => {
           .update({
             checklist_access: control.checklist_access,
             motorista_access: control.motorista_access,
+            vagas_access: control.vagas_access,
             hodometro_acsess: control.hodometro_acsess,
             resumo_access: control.resumo_access,
             tags_access: control.tags_access
@@ -205,6 +207,10 @@ const Admin = () => {
           telefone: companyFormData.telefone.replace(/\D/g, ''),
           st_company: true,
           id_conta_wiseapp: companyFormData.id_conta_wiseapp,
+          checklist_access: false,
+          motorista_access: false,
+          vagas_access: false,
+          hodometro_acsess: false,
           resumo_access: false,
           tags_access: true
         }])
@@ -354,6 +360,9 @@ const Admin = () => {
                       Contratações
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Vagas
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Hodômetro
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -393,6 +402,18 @@ const Admin = () => {
                           onClick={() => handleToggleAccess(index, 'motorista_access')}
                           className={`p-2 rounded-full ${
                             control.motorista_access
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                          }`}
+                        >
+                          <CheckCircle size={20} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleToggleAccess(index, 'vagas_access')}
+                          className={`p-2 rounded-full ${
+                            control.vagas_access
                               ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                               : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                           }`}
@@ -449,7 +470,7 @@ const Admin = () => {
                   ))}
                   {accessControls.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                         Nenhuma conta configurada
                       </td>
                     </tr>
