@@ -124,56 +124,109 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
 
       if (clienteError) throw clienteError;
 
-      // If we have address data, insert it
+      // If we have address data, insert it with verification of existing records
       if (formData.cep || formData.logradouro || formData.bairro || formData.cidade || formData.estado) {
-        // First, get or create the cidade
-        const { data: cidadeData, error: cidadeError } = await supabase
+        // 1. Get or create cidade (verificar se já existe)
+        let cidadeId: number;
+        const { data: existingCidade, error: cidadeSearchError } = await supabase
           .from('cidade')
-          .insert([{
-            cidade: formData.cidade.trim(),
-            id_estado: parseInt(formData.estado)
-          }])
-          .select()
-          .single();
+          .select('id_cidade')
+          .eq('cidade', formData.cidade.trim())
+          .eq('id_estado', parseInt(formData.estado))
+          .maybeSingle();
 
-        if (cidadeError) throw cidadeError;
+        if (cidadeSearchError && cidadeSearchError.code !== 'PGRST116') throw cidadeSearchError;
 
-        // Then, get or create the bairro
-        const { data: bairroData, error: bairroError } = await supabase
+        if (existingCidade) {
+          cidadeId = existingCidade.id_cidade;
+          console.log(`Cidade "${formData.cidade}" já existe com ID: ${cidadeId}`);
+        } else {
+          const { data: newCidade, error: cidadeError } = await supabase
+            .from('cidade')
+            .insert([{
+              cidade: formData.cidade.trim(),
+              id_estado: parseInt(formData.estado)
+            }])
+            .select('id_cidade')
+            .single();
+
+          if (cidadeError) throw cidadeError;
+          cidadeId = newCidade.id_cidade;
+          console.log(`Nova cidade "${formData.cidade}" criada com ID: ${cidadeId}`);
+        }
+
+        // 2. Get or create bairro (verificar se já existe)
+        let bairroId: number;
+        const { data: existingBairro, error: bairroSearchError } = await supabase
           .from('bairro')
-          .insert([{
-            bairro: formData.bairro.trim(),
-            id_cidade: cidadeData.id_cidade
-          }])
-          .select()
-          .single();
+          .select('id_bairro')
+          .eq('bairro', formData.bairro.trim())
+          .eq('id_cidade', cidadeId)
+          .maybeSingle();
 
-        if (bairroError) throw bairroError;
+        if (bairroSearchError && bairroSearchError.code !== 'PGRST116') throw bairroSearchError;
 
-        // Then, create the logradouro
-        const { data: logradouroData, error: logradouroError } = await supabase
+        if (existingBairro) {
+          bairroId = existingBairro.id_bairro;
+          console.log(`Bairro "${formData.bairro}" já existe com ID: ${bairroId}`);
+        } else {
+          const { data: newBairro, error: bairroError } = await supabase
+            .from('bairro')
+            .insert([{
+              bairro: formData.bairro.trim(),
+              id_cidade: cidadeId
+            }])
+            .select('id_bairro')
+            .single();
+
+          if (bairroError) throw bairroError;
+          bairroId = newBairro.id_bairro;
+          console.log(`Novo bairro "${formData.bairro}" criado com ID: ${bairroId}`);
+        }
+
+        // 3. Get or create logradouro (verificar se já existe)
+        let logradouroId: number;
+        const { data: existingLogradouro, error: logradouroSearchError } = await supabase
           .from('logradouro')
-          .insert([{
-            logradouro: formData.logradouro.trim(),
-            nr_cep: formData.cep.trim(),
-            id_bairro: bairroData.id_bairro
-          }])
-          .select()
-          .single();
+          .select('id_logradouro')
+          .eq('logradouro', formData.logradouro.trim())
+          .eq('nr_cep', formData.cep.trim())
+          .eq('id_bairro', bairroId)
+          .maybeSingle();
 
-        if (logradouroError) throw logradouroError;
+        if (logradouroSearchError && logradouroSearchError.code !== 'PGRST116') throw logradouroSearchError;
 
-        // Finally, create the endereco
+        if (existingLogradouro) {
+          logradouroId = existingLogradouro.id_logradouro;
+          console.log(`Logradouro "${formData.logradouro}" já existe com ID: ${logradouroId}`);
+        } else {
+          const { data: newLogradouro, error: logradouroError } = await supabase
+            .from('logradouro')
+            .insert([{
+              logradouro: formData.logradouro.trim(),
+              nr_cep: formData.cep.trim(),
+              id_bairro: bairroId
+            }])
+            .select('id_logradouro')
+            .single();
+
+          if (logradouroError) throw logradouroError;
+          logradouroId = newLogradouro.id_logradouro;
+          console.log(`Novo logradouro "${formData.logradouro}" criado com ID: ${logradouroId}`);
+        }
+
+        // 4. Finally, create the endereco
         const { error: enderecoError } = await supabase
           .from('end_cliente')
           .insert([{
             id_cliente: clienteData.cliente_id,
-            id_logradouro: logradouroData.id_logradouro,
+            id_logradouro: logradouroId,
             nr_end: formData.numero ? parseInt(formData.numero) : null,
             ds_complemento_end: formData.complemento.trim() || null
           }]);
 
         if (enderecoError) throw enderecoError;
+        console.log(`Endereço criado para cliente ${clienteData.cliente_id}`);
       }
 
       toast.success('Cliente cadastrado com sucesso');
