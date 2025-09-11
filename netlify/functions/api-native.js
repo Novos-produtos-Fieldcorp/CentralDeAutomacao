@@ -8,6 +8,7 @@ exports.handler = async (event, context) => {
   console.log('rawQuery:', event.rawQuery);
   console.log('Headers:', event.headers);
   console.log('Query:', event.queryStringParameters);
+  console.log('Function is executing!'); // Novo log
   console.log('================================');
   
   const { httpMethod, queryStringParameters: query, headers } = event;
@@ -28,9 +29,10 @@ exports.handler = async (event, context) => {
   // CORS headers - mais permissivos para resolver problemas
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, wiseapp-token, wiseapp-account-id, X-Requested-With, Accept, Origin',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, wiseapp-token, wiseapp-account-id, X-Requested-With, Accept, Origin, Cache-Control, Pragma, Expires',
     'Access-Control-Allow-Credentials': 'false',
+    'Access-Control-Max-Age': '86400',
     'Content-Type': 'application/json',
     'Cache-Control': 'no-cache, no-store, must-revalidate'
   };
@@ -54,6 +56,20 @@ exports.handler = async (event, context) => {
         timestamp: new Date().toISOString(),
         platform: 'netlify-native',
         version: '1.0'
+      })
+    };
+  }
+
+  // Simple test endpoint
+  if (path === '/test' || path.includes('/test')) {
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        message: 'Function is working!',
+        path: path,
+        originalPath: event.path,
+        timestamp: new Date().toISOString()
       })
     };
   }
