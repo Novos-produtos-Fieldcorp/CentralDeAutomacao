@@ -157,7 +157,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         if (error) throw error;
 
         // Sincronizar via API
-        if (motorista.telefone && accountId) {
+        if (motorista.telefone && accountId && wiseAppToken) {
           try {
             const response = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${motorista.telefone}`, {
               headers: {
@@ -243,7 +243,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         if (error) throw error;
 
         // Sincronizar via API
-        if (motorista.telefone && accountId) {
+        if (motorista.telefone && accountId && wiseAppToken) {
           try {
             const response = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${motorista.telefone}`, {
               headers: {

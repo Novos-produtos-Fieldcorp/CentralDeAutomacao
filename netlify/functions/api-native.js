@@ -28,9 +28,10 @@ exports.handler = async (event, context) => {
   // CORS headers - mais permissivos para resolver problemas
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, wiseapp-token, wiseapp-account-id, X-Requested-With, Accept, Origin',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, wiseapp-token, wiseapp-account-id, X-Requested-With, Accept, Origin, Cache-Control, Pragma, Expires',
     'Access-Control-Allow-Credentials': 'false',
+    'Access-Control-Max-Age': '86400',
     'Content-Type': 'application/json',
     'Cache-Control': 'no-cache, no-store, must-revalidate'
   };
