@@ -8,6 +8,7 @@ exports.handler = async (event, context) => {
   console.log('rawQuery:', event.rawQuery);
   console.log('Headers:', event.headers);
   console.log('Query:', event.queryStringParameters);
+  console.log('Function is executing!'); // Novo log
   console.log('================================');
   
   const { httpMethod, queryStringParameters: query, headers } = event;
@@ -55,6 +56,20 @@ exports.handler = async (event, context) => {
         timestamp: new Date().toISOString(),
         platform: 'netlify-native',
         version: '1.0'
+      })
+    };
+  }
+
+  // Simple test endpoint
+  if (path === '/test' || path.includes('/test')) {
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        message: 'Function is working!',
+        path: path,
+        originalPath: event.path,
+        timestamp: new Date().toISOString()
       })
     };
   }
