@@ -125,20 +125,17 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
       if (clienteError) throw clienteError;
 
       // If we have address data, insert it with verification of existing records
-      if (formData.cep || formData.logradouro || formData.bairro || formData.cidade || formData.estado) {
+      if (formData.cep && formData.logradouro && formData.bairro && formData.cidade && formData.estado) {
         // 1. Get or create cidade (verificar se já existe)
         let cidadeId: number;
-        const { data: existingCidade, error: cidadeSearchError } = await supabase
+        const { data: existingCidades } = await supabase
           .from('cidade')
           .select('id_cidade')
           .eq('cidade', formData.cidade.trim())
-          .eq('id_estado', parseInt(formData.estado))
-          .maybeSingle();
+          .eq('id_estado', parseInt(formData.estado));
 
-        if (cidadeSearchError && cidadeSearchError.code !== 'PGRST116') throw cidadeSearchError;
-
-        if (existingCidade) {
-          cidadeId = existingCidade.id_cidade;
+        if (existingCidades && existingCidades.length > 0) {
+          cidadeId = existingCidades[0].id_cidade;
           console.log(`Cidade "${formData.cidade}" já existe com ID: ${cidadeId}`);
         } else {
           const { data: newCidade, error: cidadeError } = await supabase
@@ -157,17 +154,14 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
 
         // 2. Get or create bairro (verificar se já existe)
         let bairroId: number;
-        const { data: existingBairro, error: bairroSearchError } = await supabase
+        const { data: existingBairros } = await supabase
           .from('bairro')
           .select('id_bairro')
           .eq('bairro', formData.bairro.trim())
-          .eq('id_cidade', cidadeId)
-          .maybeSingle();
+          .eq('id_cidade', cidadeId);
 
-        if (bairroSearchError && bairroSearchError.code !== 'PGRST116') throw bairroSearchError;
-
-        if (existingBairro) {
-          bairroId = existingBairro.id_bairro;
+        if (existingBairros && existingBairros.length > 0) {
+          bairroId = existingBairros[0].id_bairro;
           console.log(`Bairro "${formData.bairro}" já existe com ID: ${bairroId}`);
         } else {
           const { data: newBairro, error: bairroError } = await supabase
@@ -186,18 +180,15 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
 
         // 3. Get or create logradouro (verificar se já existe)
         let logradouroId: number;
-        const { data: existingLogradouro, error: logradouroSearchError } = await supabase
+        const { data: existingLogradouros } = await supabase
           .from('logradouro')
           .select('id_logradouro')
           .eq('logradouro', formData.logradouro.trim())
           .eq('nr_cep', formData.cep.trim())
-          .eq('id_bairro', bairroId)
-          .maybeSingle();
+          .eq('id_bairro', bairroId);
 
-        if (logradouroSearchError && logradouroSearchError.code !== 'PGRST116') throw logradouroSearchError;
-
-        if (existingLogradouro) {
-          logradouroId = existingLogradouro.id_logradouro;
+        if (existingLogradouros && existingLogradouros.length > 0) {
+          logradouroId = existingLogradouros[0].id_logradouro;
           console.log(`Logradouro "${formData.logradouro}" já existe com ID: ${logradouroId}`);
         } else {
           const { data: newLogradouro, error: logradouroError } = await supabase
@@ -219,7 +210,7 @@ const AddClienteModal = ({ isOpen, onClose, onSuccess }: AddClienteModalProps) =
         const { error: enderecoError } = await supabase
           .from('end_cliente')
           .insert([{
-            id_cliente: clienteData.cliente_id,
+            cliente_id: clienteData.cliente_id,
             id_logradouro: logradouroId,
             nr_end: formData.numero ? parseInt(formData.numero) : null,
             ds_complemento_end: formData.complemento.trim() || null

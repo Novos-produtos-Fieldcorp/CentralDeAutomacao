@@ -126,7 +126,7 @@ export const cliente = pgTable("cliente", {
 // End_cliente table (addresses for clients)
 export const end_cliente = pgTable("end_cliente", {
   id_end_cliente: serial("id_end_cliente").primaryKey(),
-  id_cliente: integer("id_cliente").references(() => cliente.cliente_id),
+  cliente_id: integer("cliente_id").references(() => cliente.cliente_id),
   id_logradouro: integer("id_logradouro").references(() => logradouro.id_logradouro),
   nr_end: integer("nr_end"),
   ds_complemento_end: text("ds_complemento_end"),
