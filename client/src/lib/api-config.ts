@@ -7,13 +7,13 @@ const isNetlify = window.location.hostname.includes('netlify.app');
 // Backend do Replit (sempre usar este)
 const REPLIT_BACKEND = 'https://e61f9f22-50c3-4e0f-9fb2-cca97e9cec43-00-3amgtfagebvlo.janeway.replit.dev/api';
 
-export const API_BASE_URL = isNetlify ? REPLIT_BACKEND : '/api';
+export const API_BASE_URL = '/api';
 
 console.log('API Configuration:', {
   hostname: window.location.hostname,
   environment: isNetlify ? 'Netlify' : isReplit ? 'Replit' : isLocalDev ? 'Local' : 'Unknown',
   API_BASE_URL,
-  usingReplitBackend: isNetlify
+  usingReplitBackend: false
 });
 
 export const createApiUrl = (path: string) => {
