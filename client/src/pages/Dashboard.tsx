@@ -23,6 +23,10 @@ import {
   ChevronRight,
   Clock,
   MapPin,
+  TrendingDown,
+  Filter,
+  Search,
+  Eye,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useModuleAccess } from "../hooks/useModuleAccess";
@@ -82,12 +86,40 @@ interface HodometroMonthData {
   };
 }
 
+interface VagasStats {
+  abertas: number;
+  preenchidas: number;
+  vencidas: number;
+  total: number;
+  taxaPreenchimento: number;
+  recentVagas: VagaWidget[];
+  statusData: { name: string; value: number; color: string }[];
+}
+
+interface ExpandedActivity {
+  id: string;
+  time: string;
+  timestamp: Date;
+  action: string;
+  type: 'hire' | 'vaga' | 'hodometro' | 'vehicle' | 'document' | 'other';
+  details: string;
+  user: string;
+  icon: LucideIcon;
+}
+
 interface DashboardStats {
   motoristas: number;
   agregados: number;
   contratados: number;
   agregadosPercentage: number;
   contratadosPercentage: number;
+  agregadosGrowth: number;
+  contratadosGrowth: number;
+  recentHires: {
+    name: string;
+    type: 'agregado' | 'contratado';
+    date: string;
+  }[];
   veiculos: number;
   checklists: number;
   comprovantes: number;
@@ -107,8 +139,10 @@ interface DashboardStats {
     user: string;
     icon: LucideIcon;
   }[];
+  expandedActivities: ExpandedActivity[];
   hodometroData: HodometroMonthData[];
   vagas: VagaWidget[];
+  vagasStats: VagasStats;
 }
 
 // Custom Tooltip Components
@@ -344,18 +378,7 @@ const ComprovantesTooltip = ({ active, payload, label }: any) => {
 
 // Hero Card Components
 const ContratacaoHeroCard = ({ stats }: { stats: DashboardStats }) => {
-  const totalVagas = stats.vagas.reduce(
-    (sum, vaga) => sum + vaga.quantidade,
-    0,
-  );
-  const vagasVencendo = stats.vagas.filter((vaga) => {
-    if (!vaga.dt_limite) return false;
-    const limite = new Date(vaga.dt_limite);
-    const proximaVencimento = addDays(new Date(), 7);
-    return isBefore(limite, proximaVencimento);
-  }).length;
-
-  const vagasSemPrazo = stats.vagas.filter((vaga) => !vaga.dt_limite).length;
+  const hasGrowthData = stats.agregadosGrowth !== 0 || stats.contratadosGrowth !== 0;
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-6 shadow-sm h-[320px]">
@@ -363,84 +386,267 @@ const ContratacaoHeroCard = ({ stats }: { stats: DashboardStats }) => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-            <Briefcase className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Contratação
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Gestão de vagas
+              Agregados vs Contratados
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            to="/vagas"
-            className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1"
-            data-testid="link-vagas-all"
-          >
-            Ver todas
-            <ExternalLink className="w-3 h-3" />
-          </Link>
-        </div>
+        <Link
+          to="/contratacao"
+          className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1"
+          data-testid="link-contratacao-all"
+        >
+          Ver todos
+          <ExternalLink className="w-3 h-3" />
+        </Link>
       </div>
 
       {/* KPI Principal */}
-      <div className="mb-6">
-        <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          {totalVagas}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-6">
+          {/* Agregados */}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+              <Truck className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {stats.agregados}
+              </div>
+              <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                Agregados ({stats.agregadosPercentage}%)
+              </p>
+            </div>
+          </div>
+
+          {/* vs */}
+          <div className="text-lg text-gray-400 dark:text-gray-500 font-medium">vs</div>
+
+          {/* Contratados */}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <UserCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {stats.contratados}
+              </div>
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                Contratados ({stats.contratadosPercentage}%)
+              </p>
+            </div>
+          </div>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {totalVagas === 1 ? "vaga aberta" : "vagas abertas"}
-        </p>
       </div>
 
-      {/* Sub-KPIs */}
-      <div className="flex gap-2 mb-6">
-        {vagasVencendo > 0 && (
-          <div className="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-xs font-medium">
-            {vagasVencendo} vencendo
-          </div>
-        )}
-        {vagasSemPrazo > 0 && (
-          <div className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium">
-            {vagasSemPrazo} sem prazo
-          </div>
-        )}
+      {/* Distribuição Visual */}
+      <div className="mb-4">
+        <div className="flex rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 h-3">
+          <div 
+            className="bg-orange-500 transition-all duration-300"
+            style={{ width: `${stats.agregadosPercentage}%` }}
+          />
+          <div 
+            className="bg-blue-500 transition-all duration-300"
+            style={{ width: `${stats.contratadosPercentage}%` }}
+          />
+        </div>
       </div>
 
-      {/* Lista Mini de Vagas */}
-      <div className="space-y-2 max-h-48 overflow-y-auto">
-        {stats.vagas.length === 0 ? (
-          <div className="text-center py-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Nenhuma vaga cadastrada
+      {/* Tendências de Crescimento */}
+      {hasGrowthData && (
+        <div className="flex gap-4 mb-4">
+          {stats.agregadosGrowth !== 0 && (
+            <div className="flex items-center gap-1">
+              {stats.agregadosGrowth > 0 ? (
+                <TrendingUp className="w-3 h-3 text-green-600 dark:text-green-400" />
+              ) : (
+                <TrendingDown className="w-3 h-3 text-red-600 dark:text-red-400" />
+              )}
+              <span className={`text-xs font-medium ${stats.agregadosGrowth > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {stats.agregadosGrowth > 0 ? '+' : ''}{stats.agregadosGrowth} agregados
+              </span>
+            </div>
+          )}
+          {stats.contratadosGrowth !== 0 && (
+            <div className="flex items-center gap-1">
+              {stats.contratadosGrowth > 0 ? (
+                <TrendingUp className="w-3 h-3 text-green-600 dark:text-green-400" />
+              ) : (
+                <TrendingDown className="w-3 h-3 text-red-600 dark:text-red-400" />
+              )}
+              <span className={`text-xs font-medium ${stats.contratadosGrowth > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {stats.contratadosGrowth > 0 ? '+' : ''}{stats.contratadosGrowth} contratados
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Últimas Contratações */}
+      <div className="space-y-2 max-h-32 overflow-y-auto">
+        {(!stats.recentHires || stats.recentHires.length === 0) ? (
+          <div className="text-center py-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Nenhuma contratação recente
             </p>
           </div>
         ) : (
-          stats.vagas.slice(0, 5).map((vaga) => {
-            const isUrgent =
-              vaga.dt_limite &&
+          (stats.recentHires || []).slice(0, 3).map((hire, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+            >
+              <div className="flex items-center gap-2">
+                {hire.type === 'agregado' ? (
+                  <Truck className="w-3 h-3 text-orange-600 dark:text-orange-400" />
+                ) : (
+                  <UserCheck className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                )}
+                <span className="text-xs font-medium text-gray-900 dark:text-white">
+                  {hire.name}
+                </span>
+              </div>
+              <div className={`text-xs px-2 py-1 rounded-full ${
+                hire.type === 'agregado' 
+                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                  : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+              }`}>
+                {hire.date}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+const VagasManagementHeroCard = ({ stats }: { stats: DashboardStats }) => {
+  const vagasStats = stats.vagasStats;
+  
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-6 shadow-sm h-[320px]">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+            <Briefcase className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Gestão de Vagas
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Status e performance
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/vagas"
+          className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1"
+          data-testid="link-vagas-all"
+        >
+          Ver todas
+          <ExternalLink className="w-3 h-3" />
+        </Link>
+      </div>
+
+      {/* KPIs Principais */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            {vagasStats.abertas}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Abertas</p>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            {vagasStats.preenchidas}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Preenchidas</p>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+            {vagasStats.vencidas}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Vencidas</p>
+        </div>
+      </div>
+
+      {/* Taxa de Preenchimento */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Taxa de Preenchimento
+          </span>
+          <span className="text-sm font-bold text-gray-900 dark:text-white">
+            {vagasStats.taxaPreenchimento}%
+          </span>
+        </div>
+        <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div 
+            className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${vagasStats.taxaPreenchimento}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Gráfico de Status */}
+      <div className="h-16 mb-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={vagasStats.statusData}
+              cx="50%"
+              cy="50%"
+              innerRadius={12}
+              outerRadius={28}
+              dataKey="value"
+            >
+              {vagasStats.statusData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip content={<SimpleTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Últimas Vagas */}
+      <div className="space-y-2 max-h-32 overflow-y-auto">
+        {(!vagasStats.recentVagas || vagasStats.recentVagas.length === 0) ? (
+          <div className="text-center py-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Nenhuma vaga recente
+            </p>
+          </div>
+        ) : (
+          (vagasStats.recentVagas || []).slice(0, 3).map((vaga) => {
+            const isUrgent = vaga.dt_limite && 
               isBefore(new Date(vaga.dt_limite), addDays(new Date(), 7));
             return (
               <div
                 key={vaga.id}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
               >
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <h4 className="text-xs font-medium text-gray-900 dark:text-white truncate">
                     {vaga.nome}
                   </h4>
                   {vaga.dt_limite && (
-                    <p
-                      className={`text-xs ${isUrgent ? "text-orange-600 dark:text-orange-400" : "text-gray-500 dark:text-gray-400"}`}
-                    >
-                      Até {format(new Date(vaga.dt_limite), "dd/MM/yyyy")}
+                    <p className={`text-xs ${isUrgent ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"}`}>
+                      {format(new Date(vaga.dt_limite), "dd/MM")}
                     </p>
                   )}
                 </div>
-                <div className="text-xs font-medium px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full">
+                <div className="text-xs font-medium px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full">
                   {vaga.quantidade}
                 </div>
               </div>
@@ -661,12 +867,12 @@ const AtividadeInsightCard = ({ stats }: { stats: DashboardStats }) => {
       </div>
 
       <div className="space-y-2 h-20 overflow-y-auto">
-        {stats.recentLogs.length === 0 ? (
+        {(!stats.recentLogs || stats.recentLogs.length === 0) ? (
           <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
             Nenhuma atividade recente
           </p>
         ) : (
-          stats.recentLogs.slice(0, 3).map((log, index) => (
+          (stats.recentLogs || []).slice(0, 3).map((log, index) => (
             <div key={index} className="flex items-center gap-2">
               <log.icon className="w-3 h-3 text-gray-400 dark:text-gray-500 flex-shrink-0" />
               <div className="flex-1 min-w-0">
@@ -681,6 +887,178 @@ const AtividadeInsightCard = ({ stats }: { stats: DashboardStats }) => {
           ))
         )}
       </div>
+    </div>
+  );
+};
+
+const ExpandedActivitiesSection = ({ stats }: { stats: DashboardStats }) => {
+  const [filter, setFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const activityTypeLabels = {
+    hire: 'Contratação',
+    vaga: 'Vagas',
+    hodometro: 'Hodômetro',
+    vehicle: 'Veículos',
+    document: 'Documentos',
+    other: 'Outros'
+  };
+
+  const filteredActivities = (stats.expandedActivities || []).filter(activity => {
+    const matchesFilter = filter === 'all' || activity.type === filter;
+    const matchesSearch = activity.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         activity.details.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
+  const getActivityTypeColor = (type: string) => {
+    switch (type) {
+      case 'hire': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+      case 'vaga': return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300';
+      case 'hodometro': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+      case 'vehicle': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300';
+      case 'document': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-6 shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+            <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Atividades Recentes
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Registro completo de ações no sistema
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+            {filteredActivities.length} atividades
+          </div>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        {/* Filtro por tipo */}
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid="filter-activity-type"
+          >
+            <option value="all">Todos os tipos</option>
+            {Object.entries(activityTypeLabels).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Busca */}
+        <div className="flex items-center gap-2 flex-1 max-w-xs">
+          <Search className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar atividades..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
+            data-testid="search-activities"
+          />
+        </div>
+      </div>
+
+      {/* Lista de Atividades */}
+      <div className="space-y-3 max-h-96 overflow-y-auto">
+        {filteredActivities.length === 0 ? (
+          <div className="text-center py-8">
+            <Activity className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {searchTerm || filter !== 'all' 
+                ? 'Nenhuma atividade encontrada com os filtros aplicados'
+                : 'Nenhuma atividade recente registrada'
+              }
+            </p>
+          </div>
+        ) : (
+          filteredActivities.slice(0, 15).map((activity) => (
+            <div
+              key={activity.id}
+              className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              data-testid={`activity-${activity.type}`}
+            >
+              {/* Ícone */}
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg flex items-center justify-center">
+                  <activity.icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                </div>
+              </div>
+
+              {/* Conteúdo */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {activity.action}
+                  </p>
+                  <span className={`text-xs px-2 py-1 rounded-full ${getActivityTypeColor(activity.type)}`}>
+                    {activityTypeLabels[activity.type]}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-300 mb-1">
+                  {activity.details}
+                </p>
+                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>{activity.time}</span>
+                  </div>
+                  {activity.user && (
+                    <div className="flex items-center gap-1">
+                      <UserCheck className="w-3 h-3" />
+                      <span>{activity.user}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Ação */}
+              <div className="flex-shrink-0">
+                <button
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  title="Ver detalhes"
+                  data-testid={`view-activity-${activity.id}`}
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Footer */}
+      {filteredActivities.length > 15 && (
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+          <div className="text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Mostrando 15 de {filteredActivities.length} atividades
+            </p>
+            <button className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mt-1">
+              Ver todas as atividades
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1263,12 +1641,42 @@ const Dashboard = () => {
           created_at: vaga.created_at,
         })) || [];
 
+      // Generate default vagas stats
+      const defaultVagasStats: VagasStats = {
+        abertas: vagasData.length,
+        preenchidas: 0,
+        vencidas: 0,
+        total: vagasData.length,
+        taxaPreenchimento: 0,
+        recentVagas: vagasData.slice(0, 5),
+        statusData: [
+          { name: 'Abertas', value: vagasData.length, color: '#10B981' },
+          { name: 'Preenchidas', value: 0, color: '#3B82F6' },
+          { name: 'Vencidas', value: 0, color: '#EF4444' }
+        ]
+      };
+
+      // Generate default expanded activities
+      const defaultExpandedActivities: ExpandedActivity[] = recentLogsProcessed.map((log, index) => ({
+        id: `activity-${index}`,
+        time: log.time,
+        timestamp: new Date(),
+        action: log.action,
+        type: 'other' as const,
+        details: `Atividade registrada no sistema`,
+        user: log.user || 'Sistema',
+        icon: log.icon
+      }));
+
       setStats({
         motoristas: motoristasCount || 0,
         agregados: agregadosCount,
         contratados: contratadosCount,
         agregadosPercentage,
         contratadosPercentage,
+        agregadosGrowth: 0,
+        contratadosGrowth: 0,
+        recentHires: [],
         veiculos: veiculosCount || 0,
         checklists: checklistsCount || 0,
         comprovantes: comprovantesCount || 0,
@@ -1277,8 +1685,10 @@ const Dashboard = () => {
         distributionData,
         vehicleTypeData,
         recentLogs: recentLogsProcessed,
+        expandedActivities: defaultExpandedActivities,
         hodometroData,
         vagas: vagasData,
+        vagasStats: defaultVagasStats,
       });
     } catch (error) {
       console.error(
@@ -1308,6 +1718,9 @@ const Dashboard = () => {
         contratados: 0,
         agregadosPercentage: 0,
         contratadosPercentage: 0,
+        agregadosGrowth: 0,
+        contratadosGrowth: 0,
+        recentHires: [],
         veiculos: 0,
         checklists: 0,
         comprovantes: 0,
@@ -1316,8 +1729,18 @@ const Dashboard = () => {
         distributionData: [],
         vehicleTypeData: [],
         recentLogs: [],
+        expandedActivities: [],
         hodometroData: [],
         vagas: [],
+        vagasStats: {
+          abertas: 0,
+          preenchidas: 0,
+          vencidas: 0,
+          total: 0,
+          taxaPreenchimento: 0,
+          recentVagas: [],
+          statusData: []
+        },
       });
     } finally {
       setStatsLoading(false);
@@ -1345,9 +1768,10 @@ const Dashboard = () => {
         {/* Stats Pills */}
         <StatsPills stats={stats} />
 
-        {/* Hero Cards Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Hero Cards Grid - 3 columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <ContratacaoHeroCard stats={stats} />
+          <VagasManagementHeroCard stats={stats} />
           <HodometroHeroCard stats={stats} />
         </div>
 
@@ -1358,6 +1782,9 @@ const Dashboard = () => {
           <MotoristasInsightCard stats={stats} />
           <AtividadeInsightCard stats={stats} />
         </div>
+
+        {/* Expanded Activities Section */}
+        <ExpandedActivitiesSection stats={stats} />
 
       </div>
 
