@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
-import toast from 'react-hot-toast';
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabase";
+import toast from "react-hot-toast";
 
 interface ModuleAccess {
   checklist: boolean;
@@ -12,6 +12,7 @@ interface ModuleAccess {
   clientes: boolean;
   resumos: boolean;
   tags: boolean;
+  comprovantes: boolean;
 }
 
 export const useModuleAccess = () => {
@@ -25,7 +26,8 @@ export const useModuleAccess = () => {
     veiculos: true,
     clientes: true,
     resumos: true,
-    tags: true
+    tags: true,
+    comprovantes: true,
   });
 
   useEffect(() => {
@@ -34,19 +36,21 @@ export const useModuleAccess = () => {
         setLoading(false);
         return;
       }
-      
+
       try {
         setLoading(true);
 
         // Use supabase directly to avoid circular dependency with useCompanyData
         const { data: company, error: companyError } = await supabase
-          .from('company')
-          .select('checklist_access, motorista_access, vagas_access, hodometro_acsess, resumo_access, tags_access')
-          .eq('company_id', companyId)
+          .from("company")
+          .select(
+            "checklist_access, motorista_access, vagas_access, hodometro_acsess, resumo_access, tags_access",
+          )
+          .eq("company_id", companyId)
           .maybeSingle();
 
         if (companyError) {
-          console.error('Error fetching company:', companyError);
+          console.error("Error fetching company:", companyError);
           // Default to all modules enabled if we can't fetch company data
           setModuleAccess({
             checklist: true,
@@ -56,7 +60,8 @@ export const useModuleAccess = () => {
             veiculos: true,
             clientes: true,
             resumos: true,
-            tags: true
+            tags: true,
+            comprovantes: true,
           });
           return;
         }
@@ -68,9 +73,10 @@ export const useModuleAccess = () => {
             vagas: company.vagas_access || false,
             hodometros: company.hodometro_acsess || false, // Note the typo in the column name
             veiculos: true, // Always enabled
-            clientes: true,  // Always enabled
+            clientes: true, // Always enabled
             resumos: company.resumo_access || false,
-            tags: company.tags_access || false
+            tags: company.tags_access || false,
+            comprovantes: true,
           });
         } else {
           // Default to all modules enabled if company data doesn't exist
@@ -82,13 +88,16 @@ export const useModuleAccess = () => {
             veiculos: true,
             clientes: true,
             resumos: true,
-            tags: true
+            tags: true,
+            comprovantes: true,
           });
         }
       } catch (error) {
-        console.error('Error checking module access:', error);
+        console.error("Error checking module access:", error);
         // Show user-friendly toast notification about connection issues
-        toast.error('Erro de conexão ao carregar configurações da empresa. Usando configurações padrão.');
+        toast.error(
+          "Erro de conexão ao carregar configurações da empresa. Usando configurações padrão.",
+        );
         // Default to all modules enabled on error
         setModuleAccess({
           checklist: true,
@@ -98,7 +107,8 @@ export const useModuleAccess = () => {
           veiculos: true,
           clientes: true,
           resumos: true,
-          tags: true
+          tags: true,
+          comprovantes: true,
         });
       } finally {
         setLoading(false);
