@@ -196,10 +196,9 @@ const AddComprovanteModal = ({ isOpen, onClose, onSuccess }: AddComprovanteModal
       setLoading(true);
 
       let fotoUrl = null;
-      // Temporariamente desabilitado para testar
-      // if (selectedImage) {
-      //   fotoUrl = await uploadImage(selectedImage);
-      // }
+      if (selectedImage) {
+        fotoUrl = await uploadImage(selectedImage);
+      }
 
       // Create logradouro if needed
       const logradouroId = await createLogradouro(data);
