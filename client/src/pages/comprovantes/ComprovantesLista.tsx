@@ -8,6 +8,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import { supabase } from '../../lib/supabase';
 import type { Comprovante } from '@/../../shared/schema';
 import AddComprovanteModal from '../../components/comprovantes/AddComprovanteModal';
+import EditComprovanteModal from '../../components/comprovantes/EditComprovanteModal';
 
 interface ComprovanteWithDetails extends Comprovante {
   motorista?: {
@@ -50,6 +51,8 @@ const ComprovantesLista = () => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedComprovante, setSelectedComprovante] = useState<ComprovanteWithDetails | null>(null);
   
   // Ref for dropdowns
   const dataDropdownRef = useRef<HTMLDivElement>(null);
@@ -525,7 +528,10 @@ const ComprovantesLista = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => {/* TODO: Implement edit */}}
+                        onClick={() => {
+                          setSelectedComprovante(comprovante);
+                          setShowEditModal(true);
+                        }}
                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                         data-testid={`button-edit-comprovante-${comprovante.id}`}
                         title="Editar comprovante"
@@ -566,6 +572,20 @@ const ComprovantesLista = () => {
           fetchComprovantes();
           fetchFilterOptions();
         }}
+      />
+
+      {/* Edit Modal */}
+      <EditComprovanteModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedComprovante(null);
+        }}
+        onSuccess={() => {
+          fetchComprovantes();
+          fetchFilterOptions();
+        }}
+        comprovante={selectedComprovante}
       />
     </div>
   );
