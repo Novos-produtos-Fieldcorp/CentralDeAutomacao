@@ -113,28 +113,14 @@ const ComprovantesLista = () => {
         setClientes(clientesData.map(c => ({ id: c.cliente_id, nome: c.nome })));
       }
 
-      // Fetch unique cities from comprovantes
+      // Fetch unique cities from addresses
       const { data: cidadesData } = await supabase
-        .from('comprovante')
-        .select(`
-          endereco:end_comprovante_entrega(
-            logradouro:id_logradouro(
-              bairro:id_bairro(
-                cidade:id_cidade(cidade)
-              )
-            )
-          )
-        `)
-        .eq('company_id', companyId);
+        .from('cidade')
+        .select('cidade')
+        .order('cidade');
 
       if (cidadesData) {
-        const uniqueCidades = [...new Set(
-          cidadesData
-            .flatMap(c => c.endereco || [])
-            .map(e => e?.logradouro?.bairro?.cidade?.cidade)
-            .filter(Boolean)
-        )];
-        setCidades(uniqueCidades);
+        setCidades(cidadesData.map(c => c.cidade));
       }
 
     } catch (error) {
@@ -196,7 +182,7 @@ const ComprovantesLista = () => {
       comprovante.cliente?.nome === clienteFilter;
 
     const matchesCidade = cidadeFilter === '' || 
-      comprovante.endereco?.some(e => e?.logradouro?.bairro?.cidade?.cidade === cidadeFilter);
+      comprovante.endereco?.[0]?.logradouro?.bairro?.cidade?.cidade === cidadeFilter;
 
     return matchesSearch && matchesData && matchesMotorista && matchesCliente && matchesCidade;
   });
