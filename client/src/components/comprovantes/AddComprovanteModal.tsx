@@ -33,6 +33,7 @@ const AddComprovanteModal = ({ isOpen, onClose, onSuccess }: AddComprovanteModal
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [motoristas, setMotoristas] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
+  const [loadingCep, setLoadingCep] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<ComprovanteFormData>({
@@ -244,6 +245,58 @@ const AddComprovanteModal = ({ isOpen, onClose, onSuccess }: AddComprovanteModal
     }
   };
 
+  const buscarCep = async (cep: string) => {
+    const cepLimpo = cep.replace(/\D/g, '');
+    
+    if (cepLimpo.length !== 8) {
+      return;
+    }
+
+    setLoadingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+      const data = await response.json();
+      
+      if (data.erro) {
+        toast.error('CEP não encontrado');
+        return;
+      }
+
+      // Preencher os campos automaticamente
+      form.setValue('logradouro', data.logradouro || '', { shouldDirty: true, shouldTouch: true });
+      form.setValue('bairro', data.bairro || '', { shouldDirty: true, shouldTouch: true });
+      form.setValue('cidade', data.localidade || '', { shouldDirty: true, shouldTouch: true });
+      
+      // Mostrar sucesso apenas se pelo menos cidade e bairro foram preenchidos
+      if (data.localidade && data.bairro) {
+        toast.success('Endereço preenchido automaticamente!');
+      } else if (data.localidade) {
+        toast.success('Cidade preenchida automaticamente');
+      } else {
+        toast.success('CEP válido, preencha os demais campos');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
+      toast.error('Erro ao buscar CEP');
+    } finally {
+      setLoadingCep(false);
+    }
+  };
+
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>, originalOnChange: (e: React.ChangeEvent<HTMLInputElement>) => void) => {
+    const valor = e.target.value;
+    const cepFormatado = valor.replace(/\D/g, '').replace(/(\d{5})(\d{3})/, '$1-$2');
+    
+    // Atualizar o valor formatado
+    const eventoFormatado = { ...e, target: { ...e.target, value: cepFormatado } };
+    originalOnChange(eventoFormatado);
+    
+    // Buscar automaticamente quando o CEP estiver completo
+    if (valor.replace(/\D/g, '').length === 8) {
+      buscarCep(valor);
+    }
+  };
+
   const handleClose = () => {
     form.reset();
     setSelectedImage(null);
@@ -391,14 +444,17 @@ const AddComprovanteModal = ({ isOpen, onClose, onSuccess }: AddComprovanteModal
             {/* CEP */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                CEP *
+                CEP * {loadingCep && <span className="text-blue-500 text-xs">(Buscando...)</span>}
               </label>
               <input
                 type="text"
-                {...form.register('cep')}
+                {...((field) => ({
+                  ...field,
+                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleCepChange(e, field.onChange)
+                }))(form.register('cep'))}
+                maxLength={9}
                 className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Ex: 01234-567"
-                maxLength={9}
                 data-testid="input-cep"
               />
               {form.formState.errors.cep && (
