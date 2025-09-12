@@ -208,15 +208,6 @@ const ContratacaoVagasHeroCard = ({ stats }: { stats: DashboardStats }) => {
             Contratação
             <ExternalLink className="w-2 h-2" />
           </Link>
-          <span className="text-gray-300 dark:text-gray-600">|</span>
-          <Link
-            to="/vagas"
-            className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1"
-            data-testid="link-vagas"
-          >
-            Vagas
-            <ExternalLink className="w-2 h-2" />
-          </Link>
         </div>
       </div>
 
@@ -296,6 +287,7 @@ const ContratacaoVagasHeroCard = ({ stats }: { stats: DashboardStats }) => {
 
       {/* Vagas Section */}
       <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+        
         <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
           Gestão de Vagas
         </h3>
@@ -926,11 +918,14 @@ const Dashboard: React.FC = () => {
       const statusVagasData = statusVagasResult.data || [];
       console.log("Vagas raw data:", vagas.length, "vagas");
       console.log("Status vagas data:", statusVagasData.length, "status");
-      
-      const statusMap = statusVagasData.reduce((map: any, status: any) => {
-        map[status.id] = status.status_vaga;
-        return map;
-      }, {} as Record<number, string>);
+
+      const statusMap = statusVagasData.reduce(
+        (map: any, status: any) => {
+          map[status.id] = status.status_vaga;
+          return map;
+        },
+        {} as Record<number, string>,
+      );
 
       let vagasAbertas = 0,
         vagasPreenchidas = 0,
@@ -938,11 +933,14 @@ const Dashboard: React.FC = () => {
 
       vagas.forEach((vaga: any) => {
         // Handle both st_vaga_id and st_vaga array format
-        const stVagaId = vaga.st_vaga_id || (vaga.st_vaga && vaga.st_vaga[0]?.id);
+        const stVagaId =
+          vaga.st_vaga_id || (vaga.st_vaga && vaga.st_vaga[0]?.id);
         const status = statusMap[stVagaId] || "";
         const isExpired = vaga.dt_limite && new Date(vaga.dt_limite) < now;
 
-        console.log(`Vaga ${vaga.id}: status="${status}", expired=${isExpired}`);
+        console.log(
+          `Vaga ${vaga.id}: status="${status}", expired=${isExpired}`,
+        );
 
         if (isExpired) {
           vagasVencidas++;
@@ -978,9 +976,10 @@ const Dashboard: React.FC = () => {
       // Process real hodometro data only - no fake data
       const hodometroData = hodometroResult.data || [];
       console.log("Hodometro raw data:", hodometroData.length, "registros");
-      
+
       // Only use real data, no fallback/fake data
-      const hodometroArray = hodometroData.length > 0 ? processRealHodometroData(hodometroData) : [];
+      const hodometroArray =
+        hodometroData.length > 0 ? processRealHodometroData(hodometroData) : [];
       console.log("Processed hodometro data:", hodometroArray);
 
       // Process real clientes data
@@ -1005,26 +1004,38 @@ const Dashboard: React.FC = () => {
       // Process real veiculos data with proper type classification
       const veiculos = veiculosResult.data || [];
       console.log("Veiculos raw data:", veiculos.length, "veículos", veiculos);
-      
+
       const vehicleTypes: { [key: string]: number } = {};
       veiculos.forEach((v: any) => {
         // Enhanced vehicle classification logic
         let tipo = "Veículo";
-        
+
         // First try tipo field
         if (v.tipo && v.tipo.trim()) {
           tipo = v.tipo.trim();
-        } 
+        }
         // Then try marca_veiculo field
         else if (v.marca_veiculo && v.marca_veiculo.trim()) {
           const marca = v.marca_veiculo.toLowerCase();
-          if (marca.includes('caminhão') || marca.includes('caminhao') || marca.includes('truck')) {
+          if (
+            marca.includes("caminhão") ||
+            marca.includes("caminhao") ||
+            marca.includes("truck")
+          ) {
             tipo = "Caminhão";
-          } else if (marca.includes('van') || marca.includes('furgão') || marca.includes('furgao')) {
+          } else if (
+            marca.includes("van") ||
+            marca.includes("furgão") ||
+            marca.includes("furgao")
+          ) {
             tipo = "Van";
-          } else if (marca.includes('carro') || marca.includes('sedan') || marca.includes('hatch')) {
+          } else if (
+            marca.includes("carro") ||
+            marca.includes("sedan") ||
+            marca.includes("hatch")
+          ) {
             tipo = "Carro";
-          } else if (marca.includes('moto')) {
+          } else if (marca.includes("moto")) {
             tipo = "Moto";
           } else {
             tipo = "Veículo";
@@ -1033,18 +1044,18 @@ const Dashboard: React.FC = () => {
         // Try modelo_veiculo field as fallback
         else if (v.modelo_veiculo && v.modelo_veiculo.trim()) {
           const modelo = v.modelo_veiculo.toLowerCase();
-          if (modelo.includes('caminhão') || modelo.includes('truck')) {
+          if (modelo.includes("caminhão") || modelo.includes("truck")) {
             tipo = "Caminhão";
-          } else if (modelo.includes('van') || modelo.includes('furgão')) {
+          } else if (modelo.includes("van") || modelo.includes("furgão")) {
             tipo = "Van";
           } else {
             tipo = "Veículo";
           }
         }
-        
+
         vehicleTypes[tipo] = (vehicleTypes[tipo] || 0) + 1;
       });
-      
+
       console.log("Vehicle types processed:", vehicleTypes);
 
       let vehicleTypeData = Object.entries(vehicleTypes).map(
@@ -1056,7 +1067,7 @@ const Dashboard: React.FC = () => {
           ],
         }),
       );
-      
+
       // Add better fallback data or show real data even if all are 'Outros'
       if (vehicleTypeData.length === 0) {
         vehicleTypeData = [
@@ -1066,14 +1077,17 @@ const Dashboard: React.FC = () => {
         ];
       }
       // If all vehicles are categorized as one type, still show them
-      else if (vehicleTypeData.length === 1 && vehicleTypeData[0].name === 'Veículo') {
+      else if (
+        vehicleTypeData.length === 1 &&
+        vehicleTypeData[0].name === "Veículo"
+      ) {
         // Rename 'Veículo' to more descriptive names based on quantity
         const total = vehicleTypeData[0].value;
         vehicleTypeData = [
-          { name: "Frota Geral", value: total, color: "#f97316" }
+          { name: "Frota Geral", value: total, color: "#f97316" },
         ];
       }
-      
+
       console.log("Final vehicle type data:", vehicleTypeData);
 
       // Process real comprovantes data by month
@@ -1181,7 +1195,7 @@ const Dashboard: React.FC = () => {
 
       setStats({
         agregados,
-        contratados: motoristas, // Now represents motoristas  
+        contratados: motoristas, // Now represents motoristas
         outros: contratados, // Now represents contratados
         vagasAbertas,
         vagasPreenchidas,
