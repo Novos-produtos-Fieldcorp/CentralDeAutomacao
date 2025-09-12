@@ -449,9 +449,6 @@ const ComprovantesLista = () => {
                   Cliente
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Cidade da Entrega
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Endereço de Entrega
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -476,9 +473,6 @@ const ComprovantesLista = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     {comprovante.cliente?.nome || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                    {comprovante.endereco?.[0]?.logradouro?.bairro?.cidade?.cidade || '-'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
                     {comprovante.endereco && comprovante.endereco.length > 0 ? (
