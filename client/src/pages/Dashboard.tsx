@@ -22,7 +22,7 @@ import { useWiseAppAccess } from "../context/WiseAppAccessContext";
 import ImportExportModal from "../components/ImportExportModal";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { format, subMonths } from 'date-fns';
+import { format, subMonths, isBefore, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '../lib/supabase';
 
@@ -44,6 +44,14 @@ interface StatCard {
   link: string;
 }
 
+interface VagaWidget {
+  id: number;
+  nome: string;
+  quantidade: number;
+  dt_limite: string | null;
+  created_at: string;
+}
+
 interface DashboardStats {
   motoristas: number;
   veiculos: number;
@@ -55,6 +63,7 @@ interface DashboardStats {
   vehicleTypeData: { name: string; value: number; color: string }[];
   recentLogs: { time: string; action: string; user: string; icon: LucideIcon }[];
   hodometroData: { month: string; km_rodados: number; leituras: number }[];
+  vagas: VagaWidget[];
 }
 
 const MenuCard = ({
@@ -187,6 +196,86 @@ const StatCard = ({ title, count, icon: Icon, color, link }: StatCard) => {
   );
 };
 
+const VagasWidget = ({ vagas }: { vagas: VagaWidget[] }) => {
+  const getUrgencyColor = (dtLimite: string | null) => {
+    if (!dtLimite) return 'text-gray-500 dark:text-gray-400';
+    
+    const limite = new Date(dtLimite);
+    const hoje = new Date();
+    const proximaVencimento = addDays(hoje, 7); // 7 dias de antecedência
+    
+    if (isBefore(limite, hoje)) {
+      return 'text-red-500 dark:text-red-400'; // Vencida
+    } else if (isBefore(limite, proximaVencimento)) {
+      return 'text-orange-500 dark:text-orange-400'; // Próxima do vencimento
+    }
+    return 'text-green-500 dark:text-green-400'; // OK
+  };
+  
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <Briefcase className="w-6 h-6 text-purple-500" />
+          Vagas Disponíveis
+        </h3>
+        <Link 
+          to="/vagas" 
+          className="text-purple-500 hover:text-purple-600 dark:hover:text-purple-400 text-sm font-medium transition-colors"
+          data-testid="link-vagas-full"
+        >
+          Ver todas →
+        </Link>
+      </div>
+      
+      <div className="space-y-4 max-h-64 overflow-y-auto">
+        {vagas.length === 0 ? (
+          <div className="text-center py-8">
+            <Briefcase className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              Nenhuma vaga cadastrada
+            </p>
+          </div>
+        ) : (
+          vagas.map((vaga) => {
+            const dtLimiteFormatted = vaga.dt_limite 
+              ? format(new Date(vaga.dt_limite), 'dd/MM/yyyy', { locale: ptBR })
+              : null;
+            
+            return (
+              <div key={vaga.id} className="p-4 rounded-lg bg-gray-50 dark:bg-gray-700 border-l-4 border-purple-500">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
+                    {vaga.nome}
+                  </h4>
+                  <span className="text-xs font-medium px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full">
+                    {vaga.quantidade} {vaga.quantidade === 1 ? 'vaga' : 'vagas'}
+                  </span>
+                </div>
+                
+                {dtLimiteFormatted && (
+                  <div className="flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    <span className={`text-xs font-medium ${getUrgencyColor(vaga.dt_limite)}`}>
+                      Até {dtLimiteFormatted}
+                    </span>
+                  </div>
+                )}
+                
+                {!dtLimiteFormatted && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    Sem prazo definido
+                  </span>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const { loading, moduleAccess } = useModuleAccess();
   const { companyId } = useWiseAppAccess();
@@ -201,7 +290,8 @@ const Dashboard = () => {
     distributionData: [],
     vehicleTypeData: [],
     recentLogs: [],
-    hodometroData: []
+    hodometroData: [],
+    vagas: []
   });
   const [statsLoading, setStatsLoading] = useState(false);
 
@@ -219,12 +309,13 @@ const Dashboard = () => {
       setStatsLoading(true);
       
       // Fetch counts in parallel with error checking
-      const [motoristasResult, veiculosResult, checklistsResult, comprovantesResult, hodometroResult] = await Promise.all([
+      const [motoristasResult, veiculosResult, checklistsResult, comprovantesResult, hodometroResult, vagasResult] = await Promise.all([
         supabase.from('motorista').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
         supabase.from('veiculo').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
         supabase.from('checklist').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
         supabase.from('comprovante').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
-        supabase.from('hodometro').select('*', { count: 'exact', head: true }).eq('company_id', companyId)
+        supabase.from('hodometro').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
+        supabase.from('vaga').select('id, nome, quantidade, dt_limite, created_at').eq('company_id', companyId).order('created_at', { ascending: false }).limit(5)
       ]);
       
       if (motoristasResult.error) throw new Error(`Erro ao buscar motoristas: ${motoristasResult.error.message}`);
@@ -232,6 +323,7 @@ const Dashboard = () => {
       if (checklistsResult.error) throw new Error(`Erro ao buscar checklists: ${checklistsResult.error.message}`);
       if (comprovantesResult.error) throw new Error(`Erro ao buscar comprovantes: ${comprovantesResult.error.message}`);
       if (hodometroResult.error) throw new Error(`Erro ao buscar hodômetros: ${hodometroResult.error.message}`);
+      if (vagasResult.error) throw new Error(`Erro ao buscar vagas: ${vagasResult.error.message}`);
       
       const motoristasCount = motoristasResult.count;
       const veiculosCount = veiculosResult.count;
@@ -482,6 +574,15 @@ const Dashboard = () => {
         }
       }
       
+      // Process vagas data
+      const vagasData = vagasResult.data?.map(vaga => ({
+        id: vaga.id,
+        nome: vaga.nome || 'Vaga não definida',
+        quantidade: Number(vaga.quantidade) || 0,
+        dt_limite: vaga.dt_limite,
+        created_at: vaga.created_at
+      })) || [];
+      
       setStats({
         motoristas: motoristasCount || 0,
         veiculos: veiculosCount || 0,
@@ -492,7 +593,8 @@ const Dashboard = () => {
         distributionData,
         vehicleTypeData,
         recentLogs: recentLogsProcessed,
-        hodometroData
+        hodometroData,
+        vagas: vagasData
       });
       
     } catch (error) {
@@ -508,7 +610,8 @@ const Dashboard = () => {
         distributionData: [],
         vehicleTypeData: [],
         recentLogs: [],
-        hodometroData: []
+        hodometroData: [],
+        vagas: []
       });
     } finally {
       setStatsLoading(false);
@@ -833,28 +936,43 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Recent Logs */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <FileText className="w-6 h-6 text-purple-500" />
-            Logs Recentes
-          </h3>
-          <div className="space-y-4">
-            {stats.recentLogs.map((log, index) => {
-              const IconComponent = log.icon;
-              return (
-                <div key={index} className="flex items-center gap-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
-                  <div className="text-sm text-gray-500 dark:text-gray-400 min-w-[80px]">
-                    {log.time}
-                  </div>
-                  <IconComponent className="w-5 h-5 text-blue-500" />
-                  <div className="text-sm text-gray-900 dark:text-white flex-1">
-                    {log.action}
-                  </div>
+        {/* Bottom section with Recent Logs and Vagas */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Recent Logs */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+              <Activity className="w-6 h-6 text-blue-500" />
+              Atividades Recentes
+            </h3>
+            <div className="space-y-4 max-h-64 overflow-y-auto">
+              {stats.recentLogs.length === 0 ? (
+                <div className="text-center py-8">
+                  <Activity className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    Nenhuma atividade recente
+                  </p>
                 </div>
-              );
-            })}
+              ) : (
+                stats.recentLogs.map((log, index) => {
+                  const IconComponent = log.icon;
+                  return (
+                    <div key={index} className="flex items-center gap-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 min-w-[80px]">
+                        {log.time}
+                      </div>
+                      <IconComponent className="w-5 h-5 text-blue-500" />
+                      <div className="text-sm text-gray-900 dark:text-white flex-1">
+                        {log.action}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
+          
+          {/* Vagas Widget */}
+          <VagasWidget vagas={stats.vagas} />
         </div>
       </div>
 
