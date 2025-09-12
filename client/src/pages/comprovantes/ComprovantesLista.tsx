@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { supabase } from '../../lib/supabase';
 import type { Comprovante } from '@/../../shared/schema';
+import AddComprovanteModal from '../../components/comprovantes/AddComprovanteModal';
 
 interface ComprovanteWithDetails extends Comprovante {
   motorista?: {
@@ -48,6 +49,7 @@ const ComprovantesLista = () => {
   const [showMotoristaDropdown, setShowMotoristaDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   
   // Ref for dropdowns
   const dataDropdownRef = useRef<HTMLDivElement>(null);
@@ -224,7 +226,7 @@ const ComprovantesLista = () => {
         </h2>
         <div className="flex gap-3">
           <button
-            onClick={() => {/* TODO: Implement add comprovante */}}
+            onClick={() => setShowAddModal(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
             data-testid="button-add-comprovante"
           >
@@ -569,6 +571,16 @@ const ComprovantesLista = () => {
           )}
         </div>
       </div>
+
+      {/* Add Modal */}
+      <AddComprovanteModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={() => {
+          fetchComprovantes();
+          fetchFilterOptions();
+        }}
+      />
     </div>
   );
 };
