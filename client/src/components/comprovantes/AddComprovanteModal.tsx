@@ -100,13 +100,13 @@ const AddComprovanteModal = ({ isOpen, onClose, onSuccess }: AddComprovanteModal
   const uploadImage = async (file: File): Promise<string> => {
     const fileName = `comprovante-${Date.now()}-${file.name}`;
     const { data, error } = await supabase.storage
-      .from('comprovantes')
+      .from('imagensdocs')
       .upload(fileName, file);
 
     if (error) throw error;
 
     const { data: { publicUrl } } = supabase.storage
-      .from('comprovantes')
+      .from('imagensdocs')
       .getPublicUrl(fileName);
 
     return publicUrl;
