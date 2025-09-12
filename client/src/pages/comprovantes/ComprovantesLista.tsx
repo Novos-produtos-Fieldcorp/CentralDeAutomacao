@@ -113,14 +113,15 @@ const ComprovantesLista = () => {
         setClientes(clientesData.map(c => ({ id: c.cliente_id, nome: c.nome })));
       }
 
-      // Fetch unique cities from addresses
+      // Fetch unique cities from addresses - simplified approach
       const { data: cidadesData } = await supabase
         .from('cidade')
         .select('cidade')
         .order('cidade');
 
       if (cidadesData) {
-        setCidades(cidadesData.map(c => c.cidade));
+        const uniqueCidades = [...new Set(cidadesData.map(c => c.cidade))];
+        setCidades(uniqueCidades);
       }
 
     } catch (error) {
@@ -224,7 +225,7 @@ const ComprovantesLista = () => {
 
       {/* Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <div className="flex flex-wrap gap-4 items-center">
+        <div className="flex flex-wrap gap-4 items-center overflow-x-auto">
           {/* Search */}
           <div className="flex-1 min-w-[300px]">
             <div className="relative">
@@ -384,10 +385,10 @@ const ComprovantesLista = () => {
               )}
             </button>
             {showCidadeDropdown && (
-              <div className="absolute top-full mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                {cidades.map((cidade) => (
+              <div className="absolute top-full mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                {cidades.map((cidade, index) => (
                   <button
-                    key={cidade}
+                    key={`cidade-${index}-${cidade}`}
                     onClick={() => {
                       setCidadeFilter(cidade);
                       setShowCidadeDropdown(false);
