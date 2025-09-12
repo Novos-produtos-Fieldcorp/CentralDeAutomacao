@@ -169,38 +169,38 @@ const EditComprovanteModal = ({ isOpen, onClose, onSuccess, comprovante }: EditC
     // Check if logradouro exists
     const { data: existingLogradouro } = await supabase
       .from('logradouro')
-      .select('logradouro_id, id_bairro(bairro_id, id_cidade(cidade_id, id_estado(estado_id)))')
+      .select('id_logradouro, id_bairro(id_bairro, id_cidade(id_cidade, id_estado(id_estado)))')
       .eq('logradouro', data.logradouro)
       .eq('nr_cep', data.cep.replace(/\D/g, ''))
       .single();
 
     if (existingLogradouro) {
-      return existingLogradouro.logradouro_id;
+      return existingLogradouro.id_logradouro;
     }
 
     // Create estado if needed
     let estadoId = 1; // Default estado
     const { data: existingEstado } = await supabase
       .from('estado')
-      .select('estado_id')
+      .select('id_estado')
       .eq('sigla_estado', 'BR')
       .single();
 
     if (existingEstado) {
-      estadoId = existingEstado.estado_id;
+      estadoId = existingEstado.id_estado;
     }
 
     // Create cidade if needed
     let cidadeId;
     const { data: existingCidade } = await supabase
       .from('cidade')
-      .select('cidade_id')
+      .select('id_cidade')
       .eq('cidade', data.cidade)
       .eq('id_estado', estadoId)
       .single();
 
     if (existingCidade) {
-      cidadeId = existingCidade.cidade_id;
+      cidadeId = existingCidade.id_cidade;
     } else {
       const { data: newCidade, error: cidadeError } = await supabase
         .from('cidade')
@@ -208,24 +208,24 @@ const EditComprovanteModal = ({ isOpen, onClose, onSuccess, comprovante }: EditC
           cidade: data.cidade,
           id_estado: estadoId,
         })
-        .select('cidade_id')
+        .select('id_cidade')
         .single();
 
       if (cidadeError) throw cidadeError;
-      cidadeId = newCidade.cidade_id;
+      cidadeId = newCidade.id_cidade;
     }
 
     // Create bairro if needed
     let bairroId;
     const { data: existingBairro } = await supabase
       .from('bairro')
-      .select('bairro_id')
+      .select('id_bairro')
       .eq('bairro', data.bairro)
       .eq('id_cidade', cidadeId)
       .single();
 
     if (existingBairro) {
-      bairroId = existingBairro.bairro_id;
+      bairroId = existingBairro.id_bairro;
     } else {
       const { data: newBairro, error: bairroError } = await supabase
         .from('bairro')
@@ -233,11 +233,11 @@ const EditComprovanteModal = ({ isOpen, onClose, onSuccess, comprovante }: EditC
           bairro: data.bairro,
           id_cidade: cidadeId,
         })
-        .select('bairro_id')
+        .select('id_bairro')
         .single();
 
       if (bairroError) throw bairroError;
-      bairroId = newBairro.bairro_id;
+      bairroId = newBairro.id_bairro;
     }
 
     // Create logradouro
@@ -248,11 +248,11 @@ const EditComprovanteModal = ({ isOpen, onClose, onSuccess, comprovante }: EditC
         nr_cep: data.cep.replace(/\D/g, ''),
         id_bairro: bairroId,
       })
-      .select('logradouro_id')
+      .select('id_logradouro')
       .single();
 
     if (logradouroError) throw logradouroError;
-    return newLogradouro.logradouro_id;
+    return newLogradouro.id_logradouro;
   };
 
   const onSubmit = async (data: ComprovanteFormData) => {
