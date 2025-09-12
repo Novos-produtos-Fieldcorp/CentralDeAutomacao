@@ -114,82 +114,118 @@ const AddComprovanteModal = ({ isOpen, onClose, onSuccess }: AddComprovanteModal
   };
 
   const createLogradouro = async (data: ComprovanteFormData) => {
-    // For simplicity, we'll create a basic address structure
-    // In a real app, you might want to use a proper address API
-    
-    // First, check if estado exists (using default for Brazil)
-    let { data: estadoData } = await supabase
-      .from('estado')
-      .select('id_estado')
-      .eq('sigla_estado', 'BR')
-      .single();
-
-    if (!estadoData) {
-      const { data: newEstado } = await supabase
-        .from('estado')
-        .insert({ estado: 'Brasil', sigla_estado: 'BR' })
-        .select('id_estado')
-        .single();
-      estadoData = newEstado;
-    }
-
-    // Check if cidade exists
-    let { data: cidadeData } = await supabase
-      .from('cidade')
-      .select('id_cidade')
-      .eq('cidade', data.cidade)
-      .eq('id_estado', estadoData?.id_estado)
-      .single();
-
-    if (!cidadeData) {
-      const { data: newCidade } = await supabase
-        .from('cidade')
-        .insert({ cidade: data.cidade, id_estado: estadoData?.id_estado })
-        .select('id_cidade')
-        .single();
-      cidadeData = newCidade;
-    }
-
-    // Check if bairro exists
-    let { data: bairroData } = await supabase
-      .from('bairro')
-      .select('id_bairro')
-      .eq('bairro', data.bairro)
-      .eq('id_cidade', cidadeData?.id_cidade)
-      .single();
-
-    if (!bairroData) {
-      const { data: newBairro } = await supabase
-        .from('bairro')
-        .insert({ bairro: data.bairro, id_cidade: cidadeData?.id_cidade })
-        .select('id_bairro')
-        .single();
-      bairroData = newBairro;
-    }
-
-    // Check if logradouro exists
-    let { data: logradouroData } = await supabase
+    // First check if exact logradouro combination already exists
+    const { data: existingLogradouro } = await supabase
       .from('logradouro')
       .select('id_logradouro')
       .eq('logradouro', data.logradouro)
       .eq('nr_cep', data.cep.replace(/\D/g, ''))
-      .eq('id_bairro', bairroData?.id_bairro)
-      .single();
+      .maybeSingle();
 
-    if (!logradouroData) {
-      const { data: newLogradouro } = await supabase
-        .from('logradouro')
-        .insert({ 
-          logradouro: data.logradouro, 
-          nr_cep: data.cep.replace(/\D/g, ''), 
-          id_bairro: bairroData?.id_bairro 
-        })
-        .select('id_logradouro')
-        .single();
-      logradouroData = newLogradouro;
+    if (existingLogradouro) {
+      return existingLogradouro.id_logradouro;
     }
 
-    return logradouroData?.id_logradouro;
+    // Check if estado exists, if not create it
+    let estadoId;
+    const { data: existingEstado } = await supabase
+      .from('estado')
+      .select('id_estado')
+      .eq('sigla_estado', 'BR')
+      .maybeSingle();
+
+    if (existingEstado) {
+      estadoId = existingEstado.id_estado;
+    } else {
+      const { data: newEstado, error: estadoError } = await supabase
+        .from('estado')
+        .insert({
+          estado: 'Brasil',
+          sigla_estado: 'BR'
+        })
+        .select('id_estado')
+        .single();
+
+      if (estadoError) throw estadoError;
+      estadoId = newEstado.id_estado;
+    }
+
+    // Check if cidade exists, if not create it
+    let cidadeId;
+    const { data: existingCidade } = await supabase
+      .from('cidade')
+      .select('id_cidade')
+      .eq('cidade', data.cidade)
+      .eq('id_estado', estadoId)
+      .maybeSingle();
+
+    if (existingCidade) {
+      cidadeId = existingCidade.id_cidade;
+    } else {
+      const { data: newCidade, error: cidadeError } = await supabase
+        .from('cidade')
+        .insert({
+          cidade: data.cidade,
+          id_estado: estadoId,
+        })
+        .select('id_cidade')
+        .single();
+
+      if (cidadeError) throw cidadeError;
+      cidadeId = newCidade.id_cidade;
+    }
+
+    // Check if bairro exists, if not create it
+    let bairroId;
+    const { data: existingBairro } = await supabase
+      .from('bairro')
+      .select('id_bairro')
+      .eq('bairro', data.bairro)
+      .eq('id_cidade', cidadeId)
+      .maybeSingle();
+
+    if (existingBairro) {
+      bairroId = existingBairro.id_bairro;
+    } else {
+      const { data: newBairro, error: bairroError } = await supabase
+        .from('bairro')
+        .insert({
+          bairro: data.bairro,
+          id_cidade: cidadeId,
+        })
+        .select('id_bairro')
+        .single();
+
+      if (bairroError) throw bairroError;
+      bairroId = newBairro.id_bairro;
+    }
+
+    // Final check if logradouro exists in this bairro (more specific check)
+    const { data: existingSpecificLogradouro } = await supabase
+      .from('logradouro')
+      .select('id_logradouro')
+      .eq('logradouro', data.logradouro)
+      .eq('nr_cep', data.cep.replace(/\D/g, ''))
+      .eq('id_bairro', bairroId)
+      .maybeSingle();
+
+    if (existingSpecificLogradouro) {
+      return existingSpecificLogradouro.id_logradouro;
+    }
+
+    // Create new logradouro only if it doesn't exist
+    const { data: newLogradouro, error: logradouroError } = await supabase
+      .from('logradouro')
+      .insert({
+        logradouro: data.logradouro,
+        nr_cep: data.cep.replace(/\D/g, ''),
+        id_bairro: bairroId,
+      })
+      .select('id_logradouro')
+      .single();
+
+    if (logradouroError) throw logradouroError;
+    return newLogradouro.id_logradouro;
   };
 
   const onSubmit = async (data: ComprovanteFormData) => {

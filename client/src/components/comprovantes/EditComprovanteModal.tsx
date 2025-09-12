@@ -166,38 +166,50 @@ const EditComprovanteModal = ({ isOpen, onClose, onSuccess, comprovante }: EditC
   };
 
   const createOrUpdateLogradouro = async (data: ComprovanteFormData) => {
-    // Check if logradouro exists
+    // First check if exact logradouro combination already exists
     const { data: existingLogradouro } = await supabase
       .from('logradouro')
-      .select('id_logradouro, id_bairro(id_bairro, id_cidade(id_cidade, id_estado(id_estado)))')
+      .select('id_logradouro')
       .eq('logradouro', data.logradouro)
       .eq('nr_cep', data.cep.replace(/\D/g, ''))
-      .single();
+      .maybeSingle();
 
     if (existingLogradouro) {
       return existingLogradouro.id_logradouro;
     }
 
-    // Create estado if needed
-    let estadoId = 1; // Default estado
+    // Check if estado exists, if not create it
+    let estadoId;
     const { data: existingEstado } = await supabase
       .from('estado')
       .select('id_estado')
       .eq('sigla_estado', 'BR')
-      .single();
+      .maybeSingle();
 
     if (existingEstado) {
       estadoId = existingEstado.id_estado;
+    } else {
+      const { data: newEstado, error: estadoError } = await supabase
+        .from('estado')
+        .insert({
+          estado: 'Brasil',
+          sigla_estado: 'BR'
+        })
+        .select('id_estado')
+        .single();
+
+      if (estadoError) throw estadoError;
+      estadoId = newEstado.id_estado;
     }
 
-    // Create cidade if needed
+    // Check if cidade exists, if not create it
     let cidadeId;
     const { data: existingCidade } = await supabase
       .from('cidade')
       .select('id_cidade')
       .eq('cidade', data.cidade)
       .eq('id_estado', estadoId)
-      .single();
+      .maybeSingle();
 
     if (existingCidade) {
       cidadeId = existingCidade.id_cidade;
@@ -215,14 +227,14 @@ const EditComprovanteModal = ({ isOpen, onClose, onSuccess, comprovante }: EditC
       cidadeId = newCidade.id_cidade;
     }
 
-    // Create bairro if needed
+    // Check if bairro exists, if not create it
     let bairroId;
     const { data: existingBairro } = await supabase
       .from('bairro')
       .select('id_bairro')
       .eq('bairro', data.bairro)
       .eq('id_cidade', cidadeId)
-      .single();
+      .maybeSingle();
 
     if (existingBairro) {
       bairroId = existingBairro.id_bairro;
@@ -240,7 +252,20 @@ const EditComprovanteModal = ({ isOpen, onClose, onSuccess, comprovante }: EditC
       bairroId = newBairro.id_bairro;
     }
 
-    // Create logradouro
+    // Final check if logradouro exists in this bairro (more specific check)
+    const { data: existingSpecificLogradouro } = await supabase
+      .from('logradouro')
+      .select('id_logradouro')
+      .eq('logradouro', data.logradouro)
+      .eq('nr_cep', data.cep.replace(/\D/g, ''))
+      .eq('id_bairro', bairroId)
+      .maybeSingle();
+
+    if (existingSpecificLogradouro) {
+      return existingSpecificLogradouro.id_logradouro;
+    }
+
+    // Create new logradouro only if it doesn't exist
     const { data: newLogradouro, error: logradouroError } = await supabase
       .from('logradouro')
       .insert({
