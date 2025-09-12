@@ -696,16 +696,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/vagas", async (req, res) => {
     try {
       const vagaData = req.body;
-      console.log("Creating vaga with data:", vagaData);
 
+      console.log("Creating new vaga:", vagaData);
       // Convert dias_trabalho to array if it's a string
       if (typeof vagaData.dias_trabalho === 'string') {
         vagaData.dias_trabalho = vagaData.dias_trabalho.split(',').map((d: string) => d.trim());
       }
 
       // Convert dt_limite to proper timestamp
-      if (vagaData.dt_limite) {
+      if (vagaData.dt_limite && vagaData.dt_limite.trim() !== '') {
         vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
+      } else {
+        vagaData.dt_limite = null;
       }
 
       const { data: newVaga, error } = await supabaseBackend
@@ -761,8 +763,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Convert dt_limite to proper timestamp
-      if (vagaData.dt_limite) {
+      if (vagaData.dt_limite && vagaData.dt_limite.trim() !== '') {
         vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
+      } else {
+        vagaData.dt_limite = null;
       }
 
       const { data: updatedVaga, error } = await supabaseBackend
@@ -804,7 +808,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   app.patch("/api/vagas/:vagaId/status", async (req, res) => {
     try {
       const { vagaId } = req.params;
