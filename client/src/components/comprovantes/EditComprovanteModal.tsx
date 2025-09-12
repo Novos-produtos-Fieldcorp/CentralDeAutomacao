@@ -75,9 +75,25 @@ const EditComprovanteModal = ({ isOpen, onClose, onSuccess, comprovante }: EditC
 
   useEffect(() => {
     if (isOpen) {
+      // Limpar formulário primeiro para evitar dados antigos
+      form.reset({
+        motorista_id: '',
+        cliente_id: '',
+        logradouro: '',
+        numero: '',
+        bairro: '',
+        cidade: '',
+        cep: '',
+      });
+      setImagePreview(null);
+      setSelectedImage(null);
+      
       fetchData();
       if (comprovante) {
-        populateForm();
+        // Aguardar um tick para garantir que o reset foi aplicado
+        setTimeout(() => {
+          populateForm();
+        }, 0);
       }
     }
   }, [isOpen, comprovante]);
@@ -93,7 +109,11 @@ const EditComprovanteModal = ({ isOpen, onClose, onSuccess, comprovante }: EditC
     form.setValue('numero', endereco?.nr_end?.toString() || '');
     form.setValue('bairro', endereco?.logradouro?.bairro?.bairro || '');
     form.setValue('cidade', endereco?.logradouro?.bairro?.cidade?.cidade || '');
-    form.setValue('cep', endereco?.logradouro?.nr_cep || '');
+    
+    // Formatar CEP corretamente ao pré-preencher
+    const cepRaw = endereco?.logradouro?.nr_cep || '';
+    const cepFormatado = cepRaw.replace(/\D/g, '').replace(/(\d{5})(\d{3})/, '$1-$2');
+    form.setValue('cep', cepFormatado);
     
     if (comprovante.foto_comprovante) {
       setImagePreview(comprovante.foto_comprovante);
@@ -386,9 +406,19 @@ const EditComprovanteModal = ({ isOpen, onClose, onSuccess, comprovante }: EditC
   };
 
   const handleClose = () => {
-    form.reset();
+    // Limpeza completa do formulário
+    form.reset({
+      motorista_id: '',
+      cliente_id: '',
+      logradouro: '',
+      numero: '',
+      bairro: '',
+      cidade: '',
+      cep: '',
+    });
     setSelectedImage(null);
     setImagePreview(null);
+    setLoadingCep(false);
     onClose();
   };
 
