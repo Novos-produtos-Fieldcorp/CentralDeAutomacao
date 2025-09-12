@@ -9,10 +9,10 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 interface NavbarProps {
-  // No props needed for now
+  onToggle?: (isExpanded: boolean) => void;
 }
 
-const Navbar = () => {
+const Navbar = ({ onToggle }: NavbarProps) => {
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [, setIsManuallyExpanded] = useState(false);
@@ -56,8 +56,10 @@ const Navbar = () => {
   };
 
   const toggleSidebar = () => {
-    setIsExpanded(!isExpanded);
-    setIsManuallyExpanded(!isExpanded);
+    const newExpanded = !isExpanded;
+    setIsExpanded(newExpanded);
+    setIsManuallyExpanded(newExpanded);
+    onToggle?.(newExpanded);
   };
 
   // Add event listener to detect clicks outside the navbar
