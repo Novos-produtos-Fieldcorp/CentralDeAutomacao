@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCEP } from '../utils/format';
 import DocumentPreview from './DocumentPreview';
+import { validateCnhNumber, formatCnhInput } from '../utils/cnhValidation';
 
 interface AddAjudanteModalProps {
   isOpen: boolean;
@@ -558,15 +559,18 @@ const AddAjudanteModal = ({ isOpen, onClose, motorista_id, onSuccess }: AddAjuda
                     name="nr_registro"
                     value={formData.nr_registro}
                     onChange={(e) => {
-                      const { validateCnhNumber, formatCnhInput } = require('../utils/cnhValidation');
                       const formattedValue = formatCnhInput(e.target.value);
-                      const validation = validateCnhNumber(formattedValue);
-                      
                       setFormData(prev => ({ ...prev, nr_registro: formattedValue }));
                       
-                      // Show validation error if exists
-                      if (formattedValue && !validation.isValid && validation.error) {
-                        toast.error(validation.error);
+                      // Only validate if there's a value to avoid showing errors on empty field
+                      if (formattedValue) {
+                        const validation = validateCnhNumber(formattedValue);
+                        if (!validation.isValid && validation.error) {
+                          // Only show error for complete fields, not while typing
+                          if (formattedValue.length >= 8) {
+                            toast.error(validation.error);
+                          }
+                        }
                       }
                     }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"

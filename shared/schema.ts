@@ -201,7 +201,7 @@ export const pessoa_fisica_dono_veiculo = pgTable("pessoa_fisica_dono_veiculo", 
 // Pessoa_juridica_dono_veiculo table
 export const pessoa_juridica_dono_veiculo = pgTable("pessoa_juridica_dono_veiculo", {
   id_pessoa_juridica_dono_veiculo: bigint("id_pessoa_juridica_dono_veiculo", { mode: "number" }).primaryKey(),
-  cnpj: numeric("cnpj"),
+  cnpj: text("cnpj"),
   inscricao_estadual: text("inscricao_estadual"),
   razao_social: text("razao_social"),
   id_documento_veiculo: bigint("id_documento_veiculo", { mode: "number" }),
