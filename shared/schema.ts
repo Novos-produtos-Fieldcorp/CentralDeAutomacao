@@ -592,6 +592,25 @@ export const wiseapp_acesso = pgTable("wiseapp_acesso", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
+// Comprovante tables
+export const comprovante = pgTable("comprovante", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
+  company_id: bigint("company_id", { mode: "number" }).references(() => company.company_id),
+  motorista_id: bigint("motorista_id", { mode: "number" }).references(() => motorista.motorista_id),
+  cliente_id: bigint("cliente_id", { mode: "number" }).references(() => cliente.cliente_id),
+  foto_comprovante: text("foto_comprovante"),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const end_comprovante_entrega = pgTable("end_comprovante_entrega", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
+  nr_end: numeric("nr_end"),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  id_comprovante: bigint("id_comprovante", { mode: "number" }).references(() => comprovante.id),
+  id_logradouro: bigint("id_logradouro", { mode: "number" }).references(() => logradouro.id_logradouro),
+  coordenada: text("coordenada"),
+});
+
 // Gestão de Risco tables
 export const gr_empresa = pgTable("gr_empresa", {
   id: serial("id").primaryKey(),
@@ -675,6 +694,51 @@ export type GrStatus = typeof gr_status.$inferSelect;
 export type InsertGrStatus = z.infer<typeof insertGrStatusSchema>;
 export type GrMotorista = typeof gr_motorista.$inferSelect;
 export type InsertGrMotorista = z.infer<typeof insertGrMotoristaSchema>;
+
+// Comprovante relations
+export const comprovanteRelations = relations(comprovante, ({ one, many }) => ({
+  company: one(company, {
+    fields: [comprovante.company_id],
+    references: [company.company_id],
+  }),
+  motorista: one(motorista, {
+    fields: [comprovante.motorista_id],
+    references: [motorista.motorista_id],
+  }),
+  cliente: one(cliente, {
+    fields: [comprovante.cliente_id],
+    references: [cliente.cliente_id],
+  }),
+  endereco: many(end_comprovante_entrega),
+}));
+
+export const endComprovanteEntregaRelations = relations(end_comprovante_entrega, ({ one }) => ({
+  comprovante: one(comprovante, {
+    fields: [end_comprovante_entrega.id_comprovante],
+    references: [comprovante.id],
+  }),
+  logradouro: one(logradouro, {
+    fields: [end_comprovante_entrega.id_logradouro],
+    references: [logradouro.id_logradouro],
+  }),
+}));
+
+// Insert schemas for Comprovante tables
+export const insertComprovanteSchema = createInsertSchema(comprovante).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertEndComprovanteEntregaSchema = createInsertSchema(end_comprovante_entrega).omit({
+  id: true,
+  created_at: true,
+});
+
+// Types for Comprovante
+export type Comprovante = typeof comprovante.$inferSelect;
+export type InsertComprovante = z.infer<typeof insertComprovanteSchema>;
+export type EndComprovanteEntrega = typeof end_comprovante_entrega.$inferSelect;
+export type InsertEndComprovanteEntrega = z.infer<typeof insertEndComprovanteEntregaSchema>;
 
 export interface MotoristaWithAddress extends Motorista {
   endereco?: {
