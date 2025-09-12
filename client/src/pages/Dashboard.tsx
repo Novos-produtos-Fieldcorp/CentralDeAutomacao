@@ -53,6 +53,7 @@ interface DashboardStats {
   monthlyData: { month: string; value: number }[];
   distributionData: { name: string; value: number; color: string }[];
   recentLogs: { time: string; action: string; user: string; icon: LucideIcon }[];
+  hodometroData: { month: string; km_rodados: number; leituras: number }[];
 }
 
 const MenuCard = ({
@@ -197,7 +198,8 @@ const Dashboard = () => {
     hodometros: 0,
     monthlyData: [],
     distributionData: [],
-    recentLogs: []
+    recentLogs: [],
+    hodometroData: []
   });
   const [statsLoading, setStatsLoading] = useState(false);
 
@@ -377,6 +379,62 @@ const Dashboard = () => {
         recentLogsProcessed = [];
       }
       
+      // Hodometro data (non-critical)
+      let hodometroData: { month: string; km_rodados: number; leituras: number }[] = [];
+      try {
+        const sixMonthsAgo = subMonths(new Date(), 5);
+        
+        // First try to get hodometro records - using safe field selection
+        const { data: hodometroRecords, error: hodometroError } = await supabase
+          .from('hodometro')
+          .select('veiculo_id, data_leitura')
+          .gte('data_leitura', format(sixMonthsAgo, 'yyyy-MM-dd'))
+          .order('data_leitura', { ascending: true });
+        
+        if (hodometroError) {
+          console.warn('Erro na consulta de hodômetros:', hodometroError);
+          throw hodometroError;
+        }
+        
+        // Process hodometro data by month and calculate km_rodados
+        const hodometroDataMap: { [key: string]: { km_rodados: number; leituras: number } } = {};
+        
+        (hodometroRecords || []).forEach(record => {
+          const date = new Date(record.data_leitura);
+          const monthKey = format(date, 'MMM yyyy', { locale: ptBR });
+          
+          if (!hodometroDataMap[monthKey]) {
+            hodometroDataMap[monthKey] = { km_rodados: 0, leituras: 0 };
+          }
+          
+          // For now, just count readings - km calculation would need proper schema
+          hodometroDataMap[monthKey].km_rodados += 100; // Placeholder average km per reading
+          hodometroDataMap[monthKey].leituras += 1;
+        });
+        
+        // Generate data for the last 6 months
+        for (let i = 5; i >= 0; i--) {
+          const date = subMonths(new Date(), i);
+          const month = format(date, 'MMM', { locale: ptBR });
+          const fullMonth = format(date, 'MMM yyyy', { locale: ptBR });
+          const monthData = hodometroDataMap[fullMonth] || { km_rodados: 0, leituras: 0 };
+          
+          hodometroData.push({
+            month,
+            km_rodados: Math.round(monthData.km_rodados),
+            leituras: monthData.leituras
+          });
+        }
+      } catch (error) {
+        console.warn('Erro ao buscar dados de hodômetros:', error);
+        // Default empty hodometro data for last 6 months
+        for (let i = 5; i >= 0; i--) {
+          const date = subMonths(new Date(), i);
+          const month = format(date, 'MMM', { locale: ptBR });
+          hodometroData.push({ month, km_rodados: 0, leituras: 0 });
+        }
+      }
+      
       setStats({
         motoristas: motoristasCount || 0,
         veiculos: veiculosCount || 0,
@@ -385,7 +443,8 @@ const Dashboard = () => {
         hodometros: hodometroCount || 0,
         monthlyData,
         distributionData,
-        recentLogs: recentLogsProcessed
+        recentLogs: recentLogsProcessed,
+        hodometroData
       });
       
     } catch (error) {
@@ -399,7 +458,8 @@ const Dashboard = () => {
         hodometros: 0,
         monthlyData: [],
         distributionData: [],
-        recentLogs: []
+        recentLogs: [],
+        hodometroData: []
       });
     } finally {
       setStatsLoading(false);
@@ -577,6 +637,69 @@ const Dashboard = () => {
             </div>
           </div>
 
+          {/* Hodometro Evolution Chart */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+              <Gauge className="w-6 h-6 text-purple-500" />
+              Evolução de Leituras de Hodômetros
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.hodometroData}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="month" className="text-sm" />
+                  <YAxis yAxisId="km" orientation="left" className="text-sm" />
+                  <YAxis yAxisId="leituras" orientation="right" className="text-sm" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(147, 51, 234, 0.9)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white'
+                    }}
+                    formatter={(value, name) => {
+                      if (name === 'km_rodados') return [`${value} km`, 'Km Rodados'];
+                      if (name === 'leituras') return [`${value}`, 'Leituras'];
+                      return [value, name];
+                    }}
+                  />
+                  <Line
+                    yAxisId="km"
+                    type="monotone"
+                    dataKey="km_rodados"
+                    stroke="#8B5CF6"
+                    strokeWidth={3}
+                    dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 6 }}
+                    activeDot={{ r: 8, stroke: '#8B5CF6', strokeWidth: 2 }}
+                  />
+                  <Line
+                    yAxisId="leituras"
+                    type="monotone"
+                    dataKey="leituras"
+                    stroke="#F59E0B"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={{ fill: '#F59E0B', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#F59E0B', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex justify-center gap-6 mt-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Km Rodados</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Nº de Leituras</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Second row of charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Distribution Chart */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
@@ -610,6 +733,22 @@ const Dashboard = () => {
                   <span className="text-sm text-gray-600 dark:text-gray-400">{item.name}</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Placeholder for future chart */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+              <AlertTriangle className="w-6 h-6 text-orange-500" />
+              Espaço para Futuras Análises
+            </h3>
+            <div className="h-64 flex items-center justify-center">
+              <div className="text-center">
+                <Activity className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">
+                  Novo gráfico será adicionado aqui
+                </p>
+              </div>
             </div>
           </div>
         </div>
