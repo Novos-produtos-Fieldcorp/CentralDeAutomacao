@@ -277,15 +277,15 @@ const Dashboard = () => {
       try {
         const { data: motoristaTypes, error: typesError } = await supabase
           .from('motorista')
-          .select('tipo')
+          .select('funcao')
           .eq('company_id', companyId);
         
         if (typesError) throw typesError;
         
         const typeCount: { [key: string]: number } = {};
         (motoristaTypes || []).forEach(item => {
-          const tipo = item.tipo || 'Não definido';
-          typeCount[tipo] = (typeCount[tipo] || 0) + 1;
+          const funcao = item.funcao || 'Não definido';
+          typeCount[funcao] = (typeCount[funcao] || 0) + 1;
         });
         
         const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'];
