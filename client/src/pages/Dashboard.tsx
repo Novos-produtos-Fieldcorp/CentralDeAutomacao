@@ -40,7 +40,7 @@ interface StatCard {
   title: string;
   count: number;
   icon: LucideIcon;
-  color: 'blue' | 'green' | 'purple' | 'orange';
+  color: 'blue' | 'green' | 'purple' | 'orange' | 'violet';
   link: string;
 }
 
@@ -49,6 +49,7 @@ interface DashboardStats {
   veiculos: number;
   checklists: number;
   comprovantes: number;
+  hodometros: number;
   monthlyData: { month: string; value: number }[];
   distributionData: { name: string; value: number; color: string }[];
   recentLogs: { time: string; action: string; user: string; icon: LucideIcon }[];
@@ -193,6 +194,7 @@ const Dashboard = () => {
     veiculos: 0,
     checklists: 0,
     comprovantes: 0,
+    hodometros: 0,
     monthlyData: [],
     distributionData: [],
     recentLogs: []
@@ -213,22 +215,25 @@ const Dashboard = () => {
       setStatsLoading(true);
       
       // Fetch counts in parallel with error checking
-      const [motoristasResult, veiculosResult, checklistsResult, comprovantesResult] = await Promise.all([
+      const [motoristasResult, veiculosResult, checklistsResult, comprovantesResult, hodometroResult] = await Promise.all([
         supabase.from('motorista').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
         supabase.from('veiculo').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
         supabase.from('checklist').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
-        supabase.from('comprovante').select('*', { count: 'exact', head: true }).eq('company_id', companyId)
+        supabase.from('comprovante').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
+        supabase.from('hodometro').select('*', { count: 'exact', head: true }).eq('company_id', companyId)
       ]);
       
       if (motoristasResult.error) throw new Error(`Erro ao buscar motoristas: ${motoristasResult.error.message}`);
       if (veiculosResult.error) throw new Error(`Erro ao buscar veículos: ${veiculosResult.error.message}`);
       if (checklistsResult.error) throw new Error(`Erro ao buscar checklists: ${checklistsResult.error.message}`);
       if (comprovantesResult.error) throw new Error(`Erro ao buscar comprovantes: ${comprovantesResult.error.message}`);
+      if (hodometroResult.error) throw new Error(`Erro ao buscar hodômetros: ${hodometroResult.error.message}`);
       
       const motoristasCount = motoristasResult.count;
       const veiculosCount = veiculosResult.count;
       const checklistsCount = checklistsResult.count;
       const comprovantesCount = comprovantesResult.count;
+      const hodometroCount = hodometroResult.count;
       
       // Fetch monthly data (non-critical)
       let monthlyData = [];
@@ -377,6 +382,7 @@ const Dashboard = () => {
         veiculos: veiculosCount || 0,
         checklists: checklistsCount || 0,
         comprovantes: comprovantesCount || 0,
+        hodometros: hodometroCount || 0,
         monthlyData,
         distributionData,
         recentLogs: recentLogsProcessed
@@ -390,6 +396,7 @@ const Dashboard = () => {
         veiculos: 0,
         checklists: 0,
         comprovantes: 0,
+        hodometros: 0,
         monthlyData: [],
         distributionData: [],
         recentLogs: []
@@ -501,6 +508,13 @@ const Dashboard = () => {
       icon: FileText,
       color: "orange",
       link: "/comprovantes"
+    },
+    {
+      title: "Hodômetros",
+      count: stats.hodometros,
+      icon: Gauge,
+      color: "purple",
+      link: "/hodometros"
     }
   ];
 
@@ -534,7 +548,7 @@ const Dashboard = () => {
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <TrendingUp className="w-6 h-6 text-blue-500" />
-              Registros nos últimos 6 meses
+              Comprovantes dos últimos 6 meses
             </h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -567,7 +581,7 @@ const Dashboard = () => {
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <Activity className="w-6 h-6 text-green-500" />
-              Distribuição por Tipo
+              Distribuição por Tipo de Motorista
             </h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
