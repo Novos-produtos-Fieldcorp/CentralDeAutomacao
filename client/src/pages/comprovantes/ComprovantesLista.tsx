@@ -225,9 +225,9 @@ const ComprovantesLista = () => {
 
       {/* Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <div className="flex flex-wrap gap-4 items-center overflow-x-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
           {/* Search */}
-          <div className="flex-1 min-w-[300px]">
+          <div className="lg:col-span-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
@@ -242,7 +242,7 @@ const ComprovantesLista = () => {
           </div>
 
           {/* Date Filter */}
-          <div className="relative" ref={dataDropdownRef}>
+          <div className="relative lg:col-span-2" ref={dataDropdownRef}>
             <button
               onClick={() => setShowDataDropdown(!showDataDropdown)}
               className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
@@ -280,7 +280,7 @@ const ComprovantesLista = () => {
           </div>
 
           {/* Motorista Filter */}
-          <div className="relative" ref={motoristaDropdownRef}>
+          <div className="relative lg:col-span-2" ref={motoristaDropdownRef}>
             <button
               onClick={() => setShowMotoristaDropdown(!showMotoristaDropdown)}
               className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
@@ -321,7 +321,7 @@ const ComprovantesLista = () => {
           </div>
 
           {/* Cliente Filter */}
-          <div className="relative" ref={clienteDropdownRef}>
+          <div className="relative lg:col-span-2" ref={clienteDropdownRef}>
             <button
               onClick={() => setShowClienteDropdown(!showClienteDropdown)}
               className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
@@ -362,7 +362,7 @@ const ComprovantesLista = () => {
           </div>
 
           {/* Cidade Filter */}
-          <div className="relative" ref={cidadeDropdownRef}>
+          <div className="relative lg:col-span-2" ref={cidadeDropdownRef}>
             <button
               onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
               className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
@@ -403,15 +403,17 @@ const ComprovantesLista = () => {
           </div>
 
           {/* Clear Filters */}
-          {(searchTerm || dataFilter || motoristaFilter || clienteFilter || cidadeFilter) && (
-            <button
-              onClick={clearFilters}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              data-testid="button-clear-filters"
-            >
-              Limpar filtros
-            </button>
-          )}
+          <div className="lg:col-span-12 lg:col-start-1">
+            {(searchTerm || dataFilter || motoristaFilter || clienteFilter || cidadeFilter) && (
+              <button
+                onClick={clearFilters}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
+                data-testid="button-clear-filters"
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
