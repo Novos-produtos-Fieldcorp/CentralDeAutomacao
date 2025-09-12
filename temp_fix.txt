@@ -1,0 +1,116 @@
+  // Vagas API routes using Supabase
+  app.post("/api/vagas", async (req, res) => {
+    try {
+      const vagaData = req.body;
+      console.log("Creating vaga with data:", vagaData);
+
+      // Convert dias_trabalho to array if it's a string
+      if (typeof vagaData.dias_trabalho === 'string') {
+        vagaData.dias_trabalho = vagaData.dias_trabalho.split(',').map((d: string) => d.trim());
+      }
+
+      // Convert dt_limite to proper timestamp
+      if (vagaData.dt_limite && vagaData.dt_limite.trim() !== '') {
+        vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
+      } else {
+        vagaData.dt_limite = null;
+      }
+
+      const { data: newVaga, error } = await supabaseBackend
+        .from("vaga")
+        .insert({
+          nome: vagaData.nome,
+          descricao: vagaData.descricao,
+          quantidade: Number(vagaData.quantidade),
+          dias_trabalho: vagaData.dias_trabalho,
+          horario: vagaData.horario,
+          dt_limite: vagaData.dt_limite,
+          company_id: Number(vagaData.company_id),
+          unidade_id: vagaData.unidade_id ? Number(vagaData.unidade_id) : null,
+          operacao_id: vagaData.operacao_id ? Number(vagaData.operacao_id) : null,
+          st_vaga_id: vagaData.st_vaga_id ? Number(vagaData.st_vaga_id) : null,
+          cliente_id: vagaData.cliente_id ? Number(vagaData.cliente_id) : null,
+          gr_id: vagaData.gr_id ? Number(vagaData.gr_id) : null,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating vaga:", error);
+        return res.status(500).json({
+          error: "Erro ao criar vaga",
+          details: error.message,
+        });
+      }
+
+      console.log("Vaga created successfully:", newVaga);
+      res.status(201).json(newVaga);
+    } catch (error) {
+      console.error("Error creating vaga:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
+  // Update vaga status
+  // Update complete vaga
+  app.put("/api/vagas/:vagaId", async (req, res) => {
+    try {
+      const { vagaId } = req.params;
+      const vagaData = req.body;
+
+      console.log("Updating vaga:", { vagaId, vagaData });
+
+      // Convert dias_trabalho to array if it's a string
+      if (typeof vagaData.dias_trabalho === 'string') {
+        vagaData.dias_trabalho = vagaData.dias_trabalho.split(',').map((d: string) => d.trim());
+      }
+
+      // Convert dt_limite to proper timestamp
+      if (vagaData.dt_limite && vagaData.dt_limite.trim() !== '') {
+        vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
+      } else {
+        vagaData.dt_limite = null;
+      }
+
+      const { data: updatedVaga, error } = await supabaseBackend
+        .from("vaga")
+        .update({
+          nome: vagaData.nome,
+          descricao: vagaData.descricao,
+          quantidade: Number(vagaData.quantidade),
+          dias_trabalho: vagaData.dias_trabalho,
+          horario: vagaData.horario,
+          dt_limite: vagaData.dt_limite,
+          company_id: Number(vagaData.company_id),
+          unidade_id: vagaData.unidade_id ? Number(vagaData.unidade_id) : null,
+          operacao_id: vagaData.operacao_id ? Number(vagaData.operacao_id) : null,
+          st_vaga_id: vagaData.st_vaga_id ? Number(vagaData.st_vaga_id) : null,
+          cliente_id: vagaData.cliente_id ? Number(vagaData.cliente_id) : null,
+          gr_id: vagaData.gr_id ? Number(vagaData.gr_id) : null,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", Number(vagaId))
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error updating vaga:", error);
+        return res.status(500).json({
+          error: "Erro ao atualizar vaga",
+          details: error.message,
+        });
+      }
+
+      console.log("Vaga updated successfully:", updatedVaga);
+      res.json({ success: true, vaga: updatedVaga });
+    } catch (error) {
+      console.error("Error updating vaga:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
