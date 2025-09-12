@@ -183,7 +183,7 @@ const SimpleTooltip = ({ active, payload, label }: any) => {
 // 1. ContratacaoVagasHeroCard - United Card with Pie Chart
 const ContratacaoVagasHeroCard = ({ stats }: { stats: DashboardStats }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[200px]">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -344,7 +344,7 @@ const HodometroHeroCard = ({ stats }: { stats: DashboardStats }) => {
   );
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[200px]">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -412,7 +412,7 @@ const HodometroHeroCard = ({ stats }: { stats: DashboardStats }) => {
 // 3. ClientesHeroCard with Pie Chart
 const ClientesHeroCard = ({ stats }: { stats: DashboardStats }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[200px]">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -559,7 +559,7 @@ const ClientesHeroCard = ({ stats }: { stats: DashboardStats }) => {
 // 4. VeiculosHeroCard
 const VeiculosHeroCard = ({ stats }: { stats: DashboardStats }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[200px]">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -650,7 +650,7 @@ const VeiculosHeroCard = ({ stats }: { stats: DashboardStats }) => {
 // 5. ComprovantesHeroCard
 const ComprovantesHeroCard = ({ stats }: { stats: DashboardStats }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[200px]">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -975,22 +975,12 @@ const Dashboard: React.FC = () => {
       const taxaPreenchimento =
         totalVagas > 0 ? Math.round((vagasPreenchidas / totalVagas) * 100) : 0;
 
-      // Process real hodometro data with debug logging
+      // Process real hodometro data only - no fake data
       const hodometroData = hodometroResult.data || [];
       console.log("Hodometro raw data:", hodometroData.length, "registros");
       
-      // Create fallback data if no real data exists for chart visualization
-      let hodometroArray = [];
-      if (hodometroData.length > 0) {
-        hodometroArray = processRealHodometroData(hodometroData);
-      } else {
-        // Create sample data for demonstration when no real data exists
-        hodometroArray = [
-          { month: "Jul", km_rodados: 1500, leituras: 8 },
-          { month: "Ago", km_rodados: 1200, leituras: 12 },
-          { month: "Set", km_rodados: 1800, leituras: 15 },
-        ];
-      }
+      // Only use real data, no fallback/fake data
+      const hodometroArray = hodometroData.length > 0 ? processRealHodometroData(hodometroData) : [];
       console.log("Processed hodometro data:", hodometroArray);
 
       // Process real clientes data
