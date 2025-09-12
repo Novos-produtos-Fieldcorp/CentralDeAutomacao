@@ -60,9 +60,12 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const fetchAgregadoDetails = async () => {
     if (!motorista) return;
 
+    let veiculoData = null;
+    let documentoData = null;
+
+    // Fetch veiculo
     try {
-      // Fetch veiculo
-      const { data: veiculoData, error: veiculoError } = await supabase
+      const { data: veiculoResult, error: veiculoError } = await supabase
         .from('veiculo')
         .select(`
           *,
@@ -70,63 +73,79 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
         `)
         .eq('motorista_id', motorista.motorista_id)
         .eq('status_veiculo', true)
+        .order('veiculo_id', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (veiculoError) throw veiculoError;
+      veiculoData = veiculoResult;
       setVeiculo(veiculoData);
-      
-      // Fetch gestão de risco
-      try {
-        const { data: grData, error: grError } = await supabase
-          .from('gr_motorista')
-          .select(`
-            *,
-            empresa:empresa_id(id, nome),
-            status:status_id(id, status)
-          `)
-          .eq('motorista_id', motorista.motorista_id)
-          .order('id', { ascending: false }) // Ordena pelo ID em ordem decrescente
-          .limit(1) // Limita a 1 resultado
-          .maybeSingle();
-          
-        if (grError) {
-          console.error('Erro ao buscar dados de gestão de risco:', grError);
-          throw grError;
-        }
+    } catch (error) {
+      console.error('Erro ao buscar dados do veículo:', error);
+      setVeiculo(null);
+    }
+    
+    // Fetch gestão de risco
+    try {
+      const { data: grData, error: grError } = await supabase
+        .from('gr_motorista')
+        .select(`
+          *,
+          empresa:empresa_id(id, nome),
+          status:status_id(id, status)
+        `)
+        .eq('motorista_id', motorista.motorista_id)
+        .order('id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
         
-        console.log('Dados de gestão de risco encontrados:', grData);
-        
-        // Atualiza o objeto motorista com os dados de gestão de risco
-        if (grData) {
-          motorista.gr_motorista_id = grData.id;
-          motorista.gr_motorista_motivo = grData.motivo || null;
-          motorista.empresa_motorista = grData.empresa?.nome || null;
-          motorista.status_motorista = grData.status?.status || null;
-          
-          console.log('Dados de gestão de risco atualizados no motorista:', {
-            gr_motorista_id: motorista.gr_motorista_id,
-            motivo: motorista.gr_motorista_motivo,
-            empresa: motorista.empresa_motorista,
-            status: motorista.status_motorista
-          });
-        } else {
-          console.log('Nenhum dado de gestão de risco encontrado para o motorista:', motorista.motorista_id);
-        }
-      } catch (error) {
-        console.error('Erro ao processar dados de gestão de risco:', error);
+      if (grError) {
+        console.error('Erro ao buscar dados de gestão de risco:', grError);
+        throw grError;
       }
+      
+      console.log('Dados de gestão de risco encontrados:', grData);
+      
+      // Atualiza o objeto motorista com os dados de gestão de risco
+      if (grData) {
+        motorista.gr_motorista_id = grData.id;
+        motorista.gr_motorista_motivo = grData.motivo || null;
+        motorista.empresa_motorista = grData.empresa?.nome || null;
+        motorista.status_motorista = grData.status?.status || null;
+        
+        console.log('Dados de gestão de risco atualizados no motorista:', {
+          gr_motorista_id: motorista.gr_motorista_id,
+          motivo: motorista.gr_motorista_motivo,
+          empresa: motorista.empresa_motorista,
+          status: motorista.status_motorista
+        });
+      } else {
+        console.log('Nenhum dado de gestão de risco encontrado para o motorista:', motorista.motorista_id);
+      }
+    } catch (error) {
+      console.error('Erro ao processar dados de gestão de risco:', error);
+    }
 
-      // Fetch documento
-      const { data: documentoData, error: documentoError } = await supabase
+    // Fetch documento
+    try {
+      const { data: documentoResult, error: documentoError } = await supabase
         .from('documento_motorista')
         .select('*')
         .eq('motorista_id', motorista.motorista_id)
+        .order('id_documento_motorista', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (documentoError) throw documentoError;
+      documentoData = documentoResult;
       setDocumento(documentoData);
+    } catch (error) {
+      console.error('Erro ao buscar documentos do motorista:', error);
+      setDocumento(null);
+    }
 
-      // Fetch endereco
+    // Fetch endereco
+    try {
       const { data: enderecoArr, error: enderecoError } = await supabase
         .from('end_motorista')
         .select(`
@@ -150,8 +169,13 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
 
       if (enderecoError) throw enderecoError;
       setEndereco(enderecoArr && enderecoArr.length > 0 ? enderecoArr[0] : null);
+    } catch (error) {
+      console.error('Erro ao buscar endereço do motorista:', error);
+      setEndereco(null);
+    }
 
-      // Fetch ajudantes
+    // Fetch ajudantes
+    try {
       const { data: ajudantesData, error: ajudantesError } = await supabase
         .from('documento_ajudante')
         .select(`
@@ -180,15 +204,26 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       if (ajudantesError) throw ajudantesError;
       setAjudantes(ajudantesData || []);
       setAjudantesCount(ajudantesData?.length || 0);
+    } catch (error) {
+      console.error('Erro ao buscar ajudantes:', error);
+      setAjudantes([]);
+      setAjudantesCount(0);
+    }
 
-      // Count documents
+    // Count documents
+    try {
       let docCount = 0;
       if (documentoData?.foto_cnh) docCount++;
       if (documentoData?.foto_comprovante_residencia) docCount++;
       if (veiculoData?.documento_veiculo?.[0]?.foto_crv) docCount++;
       setDocumentCount(docCount);
+    } catch (error) {
+      console.error('Erro ao contar documentos:', error);
+      setDocumentCount(0);
+    }
 
-      // Count gestao de risco
+    // Count gestao de risco
+    try {
       const { count: grCount, error: grCountError } = await supabase
         .from('gr_motorista')
         .select('id', { count: 'exact', head: true })
@@ -196,8 +231,13 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
 
       if (grCountError) throw grCountError;
       setGestaoRiscoCount(grCount || 0);
+    } catch (error) {
+      console.error('Erro ao contar gestão de risco:', error);
+      setGestaoRiscoCount(0);
+    }
 
-      // Get comment count
+    // Get comment count
+    try {
       const { count: comentarioCount, error: comentarioError } = await supabase
         .from('comentario')
         .select('*', { count: 'exact', head: true })
@@ -206,8 +246,8 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       if (comentarioError) throw comentarioError;
       setComentarioCount(comentarioCount || 0);
     } catch (error) {
-      console.error('Error fetching agregado details:', error);
-      toast.error('Erro ao carregar detalhes do agregado');
+      console.error('Erro ao contar comentários:', error);
+      setComentarioCount(0);
     }
   };
 
@@ -696,6 +736,97 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               )}
                             </dd>
                           </div>
+                        </dl>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Vehicle Owner Information */}
+                  {proprietarioVeiculo && (proprietarioVeiculo.pessoaFisica || proprietarioVeiculo.pessoaJuridica) && (
+                    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                      <div className="px-4 py-5 sm:px-6">
+                        <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                          Proprietário do Veículo
+                        </h3>
+                      </div>
+                      <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
+                        <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
+                          {proprietarioVeiculo.pessoaFisica && (
+                            <>
+                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                  Tipo
+                                </dt>
+                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                  Pessoa Física
+                                </dd>
+                              </div>
+                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                  Nome
+                                </dt>
+                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                  {proprietarioVeiculo.pessoaFisica.nome || 'Não informado'}
+                                </dd>
+                              </div>
+                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                  CPF
+                                </dt>
+                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                  {proprietarioVeiculo.pessoaFisica.cpf ? formatCPF(proprietarioVeiculo.pessoaFisica.cpf) : 'Não informado'}
+                                </dd>
+                              </div>
+                              {proprietarioVeiculo.pessoaFisica.telefone && (
+                                <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                    Telefone
+                                  </dt>
+                                  <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                    {formatPhone(proprietarioVeiculo.pessoaFisica.telefone.toString())}
+                                  </dd>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {proprietarioVeiculo.pessoaJuridica && (
+                            <>
+                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                  Tipo
+                                </dt>
+                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                  Pessoa Jurídica
+                                </dd>
+                              </div>
+                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                  Razão Social
+                                </dt>
+                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                  {proprietarioVeiculo.pessoaJuridica.razao_social || 'Não informado'}
+                                </dd>
+                              </div>
+                              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                  CNPJ
+                                </dt>
+                                <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                  {proprietarioVeiculo.pessoaJuridica.cnpj || 'Não informado'}
+                                </dd>
+                              </div>
+                              {proprietarioVeiculo.pessoaJuridica.telefone && (
+                                <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                    Telefone
+                                  </dt>
+                                  <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                    {formatPhone(proprietarioVeiculo.pessoaJuridica.telefone.toString())}
+                                  </dd>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </dl>
                       </div>
                     </div>
