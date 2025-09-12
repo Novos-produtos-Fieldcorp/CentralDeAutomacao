@@ -107,8 +107,8 @@ const processRealHodometroData = (hodometroData: any[]) => {
 interface DashboardStats {
   // Contratacao + Vagas data
   agregados: number;
-  contratados: number;
-  outros: number;
+  contratados: number; // Now represents motoristas
+  outros: number; // Now represents contratados
   vagasAbertas: number;
   vagasPreenchidas: number;
   vagasVencidas: number;
@@ -183,7 +183,7 @@ const SimpleTooltip = ({ active, payload, label }: any) => {
 // 1. ContratacaoVagasHeroCard - United Card with Pie Chart
 const ContratacaoVagasHeroCard = ({ stats }: { stats: DashboardStats }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[200px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -243,12 +243,26 @@ const ContratacaoVagasHeroCard = ({ stats }: { stats: DashboardStats }) => {
             </div>
 
             <div className="flex items-center gap-2">
+              <div className="w-5 h-5 bg-green-100 dark:bg-green-900/30 rounded flex items-center justify-center">
+                <Users className="w-3 h-3 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-gray-900 dark:text-white">
+                  {stats.contratados}
+                </div>
+                <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                  Motoristas
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
               <div className="w-5 h-5 bg-blue-100 dark:bg-blue-900/30 rounded flex items-center justify-center">
                 <UserCheck className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <div className="text-sm font-bold text-gray-900 dark:text-white">
-                  {stats.contratados}
+                  {stats.outros}
                 </div>
                 <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                   Contratados
@@ -330,7 +344,7 @@ const HodometroHeroCard = ({ stats }: { stats: DashboardStats }) => {
   );
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[200px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -390,7 +404,7 @@ const HodometroHeroCard = ({ stats }: { stats: DashboardStats }) => {
 // 3. ClientesHeroCard with Pie Chart
 const ClientesHeroCard = ({ stats }: { stats: DashboardStats }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[200px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -537,7 +551,7 @@ const ClientesHeroCard = ({ stats }: { stats: DashboardStats }) => {
 // 4. VeiculosHeroCard
 const VeiculosHeroCard = ({ stats }: { stats: DashboardStats }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[200px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -620,7 +634,7 @@ const VeiculosHeroCard = ({ stats }: { stats: DashboardStats }) => {
 // 5. ComprovantesHeroCard
 const ComprovantesHeroCard = ({ stats }: { stats: DashboardStats }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[200px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -739,8 +753,8 @@ const Dashboard: React.FC = () => {
       // Fetch all data in parallel with optimized queries
       const [
         agregadosResult,
+        motoristasResult,
         contratadosResult,
-        outrosResult,
         hodometroResult,
         clientesResult,
         clientesAtivosResult,
@@ -755,7 +769,7 @@ const Dashboard: React.FC = () => {
         recentVagaResult,
         recentComprovanteResult,
       ] = await Promise.all([
-        // Optimized count queries for motoristas
+        // Optimized count queries for motoristas - 3 categorias específicas
         supabase
           .from("motorista")
           .select("motorista_id", { count: "exact", head: true })
@@ -768,15 +782,14 @@ const Dashboard: React.FC = () => {
           .select("motorista_id", { count: "exact", head: true })
           .eq("company_id", companyId)
           .eq("ativo", true)
-          .ilike("funcao", "%contratado%"),
+          .ilike("funcao", "%motorista%"),
 
         supabase
           .from("motorista")
           .select("motorista_id", { count: "exact", head: true })
           .eq("company_id", companyId)
           .eq("ativo", true)
-          .not("funcao", "ilike", "%agregado%")
-          .not("funcao", "ilike", "%contratado%"),
+          .ilike("funcao", "%contratado%"),
 
         // Real hodometro data with correct fields - last 6 months
         supabase
@@ -881,6 +894,8 @@ const Dashboard: React.FC = () => {
       // Check for critical errors
       if (agregadosResult.error)
         console.warn("Erro agregados:", agregadosResult.error.message);
+      if (motoristasResult.error)
+        console.warn("Erro motoristas:", motoristasResult.error.message);
       if (contratadosResult.error)
         console.warn("Erro contratados:", contratadosResult.error.message);
       if (hodometroResult.error)
@@ -892,17 +907,19 @@ const Dashboard: React.FC = () => {
 
       // Process real vagas data
       const vagas = vagasResult.data || [];
-      const statusMap = (statusVagasResult.data || []).reduce((map, status) => {
+      const statusMap = (statusVagasResult.data || []).reduce((map: any, status: any) => {
         map[status.id] = status.status_vaga;
         return map;
-      }, {});
+      }, {} as Record<number, string>);
 
       let vagasAbertas = 0,
         vagasPreenchidas = 0,
         vagasVencidas = 0;
 
-      vagas.forEach((vaga) => {
-        const status = statusMap[vaga.st_vaga_id] || "";
+      vagas.forEach((vaga: any) => {
+        // Handle both st_vaga_id and st_vaga array format
+        const stVagaId = vaga.st_vaga_id || (vaga.st_vaga && vaga.st_vaga[0]?.id);
+        const status = statusMap[stVagaId] || "";
         const isExpired = vaga.dt_limite && new Date(vaga.dt_limite) < now;
 
         if (isExpired) {
@@ -948,11 +965,29 @@ const Dashboard: React.FC = () => {
         { name: "Inativos", value: clientesInativos, color: "#ef4444" },
       ].filter((item) => item.value > 0);
 
-      // Process real veiculos data
+      // Process real veiculos data with proper type classification
       const veiculos = veiculosResult.data || [];
       const vehicleTypes: { [key: string]: number } = {};
-      veiculos.forEach((v) => {
-        const tipo = v.tipo || "Outros";
+      veiculos.forEach((v: any) => {
+        // Classify vehicles properly
+        let tipo = "Outros";
+        if (v.tipo && v.tipo.trim()) {
+          tipo = v.tipo.trim();
+        } else {
+          // Fallback classification based on other fields
+          if (v.marca_veiculo) {
+            const marca = v.marca_veiculo.toLowerCase();
+            if (marca.includes('caminhão') || marca.includes('caminhao') || marca.includes('truck')) {
+              tipo = "Caminhão";
+            } else if (marca.includes('van') || marca.includes('furgão') || marca.includes('furgao')) {
+              tipo = "Van";
+            } else if (marca.includes('carro') || marca.includes('sedan')) {
+              tipo = "Carro";
+            } else {
+              tipo = "Outros";
+            }
+          }
+        }
         vehicleTypes[tipo] = (vehicleTypes[tipo] || 0) + 1;
       });
 
@@ -1005,19 +1040,19 @@ const Dashboard: React.FC = () => {
           return months.indexOf(a.month) - months.indexOf(b.month);
         });
 
-      // Pie chart data for contratacao
+      // Pie chart data for contratacao - 3 categorias específicas
       const agregados = agregadosResult.count || 0;
+      const motoristas = motoristasResult.count || 0;
       const contratados = contratadosResult.count || 0;
-      const outros = outrosResult.count || 0;
 
       const contratacaoPieData = [
         { name: "Agregados", value: agregados, color: "#f97316" },
+        { name: "Motoristas", value: motoristas, color: "#10b981" },
         { name: "Contratados", value: contratados, color: "#3b82f6" },
-        { name: "Outros", value: outros, color: "#8b5cf6" },
       ].filter((item) => item.value > 0);
 
       // Recent activity feed
-      const recentActivity = [];
+      const recentActivity: any[] = [];
 
       // Add recent motoristas
       (recentMotoristaResult.data || []).forEach((motorista, index) => {
@@ -1071,8 +1106,8 @@ const Dashboard: React.FC = () => {
 
       setStats({
         agregados,
-        contratados,
-        outros,
+        contratados: motoristas, // Now represents motoristas  
+        outros: contratados, // Now represents contratados
         vagasAbertas,
         vagasPreenchidas,
         vagasVencidas,

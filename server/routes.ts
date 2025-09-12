@@ -572,10 +572,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all related data in parallel
       const [clientesData, unidadesData, operacoesData, statusData] = await Promise.all([
-        supabase.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
-        supabase.from("unidade").select("id, unidade").eq("company_id", companyId),
-        supabase.from("operacao").select("id, operacao").eq("company_id", companyId),
-        supabase.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
+        supabaseBackend.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
+        supabaseBackend.from("unidade").select("id, unidade").eq("company_id", companyId),
+        supabaseBackend.from("operacao").select("id, operacao").eq("company_id", companyId),
+        supabaseBackend.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
       ]);
 
       // Create lookup maps
