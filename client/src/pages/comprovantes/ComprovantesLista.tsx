@@ -117,8 +117,8 @@ const ComprovantesLista = () => {
         .select(`
           endereco:end_comprovante_entrega(
             logradouro:id_logradouro(
-              bairro:bairro_id(
-                cidade:cidade_id(cidade)
+              bairro:id_bairro(
+                cidade:id_cidade(cidade)
               )
             )
           )
@@ -155,11 +155,11 @@ const ComprovantesLista = () => {
             logradouro:id_logradouro(
               logradouro,
               nr_cep,
-              bairro:bairro_id(
+              bairro:id_bairro(
                 bairro,
-                cidade:cidade_id(
+                cidade:id_cidade(
                   cidade,
-                  estado:estado_id(sigla_estado)
+                  estado:id_estado(sigla_estado)
                 )
               )
             )
