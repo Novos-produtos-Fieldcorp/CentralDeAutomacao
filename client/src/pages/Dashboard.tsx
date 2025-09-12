@@ -12,6 +12,7 @@ import {
   MessagesSquare,
   Tag,
   Briefcase,
+  FileText,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useModuleAccess } from "../hooks/useModuleAccess";
@@ -207,7 +208,7 @@ const Dashboard = () => {
     },
     {
       title: "Comprovantes",
-      icon: Tag,
+      icon: FileText,
       link: "/comprovantes",
       description:
         "Gerencie Comprovantes para acompanhar as entregas e envios dos motoristas",
