@@ -159,6 +159,7 @@ const ComprovantesLista = () => {
 
       if (error) throw error;
 
+
       setComprovantes(data || []);
     } catch (error) {
       console.error('Error fetching comprovantes:', error);
