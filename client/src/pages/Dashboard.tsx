@@ -52,6 +52,7 @@ interface DashboardStats {
   hodometros: number;
   monthlyData: { month: string; value: number }[];
   distributionData: { name: string; value: number; color: string }[];
+  vehicleTypeData: { name: string; value: number; color: string }[];
   recentLogs: { time: string; action: string; user: string; icon: LucideIcon }[];
   hodometroData: { month: string; km_rodados: number; leituras: number }[];
 }
@@ -198,6 +199,7 @@ const Dashboard = () => {
     hodometros: 0,
     monthlyData: [],
     distributionData: [],
+    vehicleTypeData: [],
     recentLogs: [],
     hodometroData: []
   });
@@ -304,6 +306,37 @@ const Dashboard = () => {
         ];
       }
       
+      // Vehicle type distribution data (non-critical)
+      let vehicleTypeData = [];
+      try {
+        const { data: vehicleTypes, error: vehicleTypesError } = await supabase
+          .from('veiculo')
+          .select('tipologia')
+          .eq('company_id', companyId)
+          .eq('status_veiculo', true);
+        
+        if (vehicleTypesError) throw vehicleTypesError;
+        
+        const vehicleTypeCount: { [key: string]: number } = {};
+        (vehicleTypes || []).forEach(item => {
+          const tipologia = item.tipologia || 'Não definido';
+          vehicleTypeCount[tipologia] = (vehicleTypeCount[tipologia] || 0) + 1;
+        });
+        
+        const vehicleColors = ['#F59E0B', '#EF4444', '#10B981', '#3B82F6', '#8B5CF6'];
+        vehicleTypeData = Object.entries(vehicleTypeCount).map(([name, value], index) => ({
+          name,
+          value,
+          color: vehicleColors[index % vehicleColors.length]
+        }));
+      } catch (error) {
+        console.warn('Erro ao buscar distribuição de tipos de veículos:', error);
+        // Default vehicle type distribution
+        vehicleTypeData = [
+          { name: 'Veículos', value: veiculosCount || 0, color: '#F59E0B' }
+        ];
+      }
+      
       // Recent activity logs (non-critical)
       let recentLogsProcessed: { time: string; action: string; user: string; icon: LucideIcon }[] = [];
       try {
@@ -384,32 +417,46 @@ const Dashboard = () => {
       try {
         const sixMonthsAgo = subMonths(new Date(), 5);
         
-        // First try to get hodometro records - using safe field selection
+        // Get hodometro records with correct field names
         const { data: hodometroRecords, error: hodometroError } = await supabase
           .from('hodometro')
-          .select('veiculo_id, data_leitura')
-          .gte('data_leitura', format(sixMonthsAgo, 'yyyy-MM-dd'))
-          .order('data_leitura', { ascending: true });
-        
+          .select('id_hodometro, veiculo_id, data, trip_lida, hod_lido, km_rodado, company_id')
+          .eq('company_id', companyId)
+          .gte('data', format(sixMonthsAgo, 'yyyy-MM-dd'))
+          .order('data', { ascending: true });
+          
         if (hodometroError) {
           console.warn('Erro na consulta de hodômetros:', hodometroError);
           throw hodometroError;
         }
         
-        // Process hodometro data by month and calculate km_rodados
-        const hodometroDataMap: { [key: string]: { km_rodados: number; leituras: number } } = {};
+        // Process hodometro data by month and calculate km_rodados using real field names
+        const hodometroDataMap: { [key: string]: { km_rodados: number; leituras: number; km_readings: number[] } } = {};
         
         (hodometroRecords || []).forEach(record => {
-          const date = new Date(record.data_leitura);
+          const date = new Date(record.data);
           const monthKey = format(date, 'MMM yyyy', { locale: ptBR });
           
+          // Use km_rodado if available, otherwise use trip_lida as numeric value, or hod_lido
+          const kmValue = Number(record.km_rodado) || Number(record.trip_lida) || Number(record.hod_lido) || 0;
+          
           if (!hodometroDataMap[monthKey]) {
-            hodometroDataMap[monthKey] = { km_rodados: 0, leituras: 0 };
+            hodometroDataMap[monthKey] = { km_rodados: 0, leituras: 0, km_readings: [] };
           }
           
-          // For now, just count readings - km calculation would need proper schema
-          hodometroDataMap[monthKey].km_rodados += 100; // Placeholder average km per reading
+          // Store km readings for later calculation  
+          hodometroDataMap[monthKey].km_readings.push(kmValue);
           hodometroDataMap[monthKey].leituras += 1;
+        });
+        
+        // Calculate km_rodados - sum up all km_rodado values or calculate difference between readings
+        Object.keys(hodometroDataMap).forEach(monthKey => {
+          const readings = hodometroDataMap[monthKey].km_readings;
+          if (readings.length > 0) {
+            // Sum up the km values for the month (since km_rodado might represent trip distances)
+            const totalKm = readings.reduce((sum, km) => sum + km, 0);
+            hodometroDataMap[monthKey].km_rodados = Math.round(totalKm);
+          }
         });
         
         // Generate data for the last 6 months
@@ -443,6 +490,7 @@ const Dashboard = () => {
         hodometros: hodometroCount || 0,
         monthlyData,
         distributionData,
+        vehicleTypeData,
         recentLogs: recentLogsProcessed,
         hodometroData
       });
@@ -458,6 +506,7 @@ const Dashboard = () => {
         hodometros: 0,
         monthlyData: [],
         distributionData: [],
+        vehicleTypeData: [],
         recentLogs: [],
         hodometroData: []
       });
@@ -736,19 +785,50 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Placeholder for future chart */}
+          {/* Vehicle Types Distribution Chart */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <AlertTriangle className="w-6 h-6 text-orange-500" />
-              Espaço para Futuras Análises
+              <Truck className="w-6 h-6 text-orange-500" />
+              Distribuição por Tipo de Veículo
             </h3>
-            <div className="h-64 flex items-center justify-center">
-              <div className="text-center">
-                <Activity className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">
-                  Novo gráfico será adicionado aqui
-                </p>
-              </div>
+            <div className="h-64">
+              {stats.vehicleTypeData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats.vehicleTypeData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {stats.vehicleTypeData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <Truck className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Nenhum veículo cadastrado
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-center gap-6 mt-4">
+              {stats.vehicleTypeData.map((item, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{item.name}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

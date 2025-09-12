@@ -238,15 +238,24 @@ export const checklist = pgTable("checklist", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
-// Hodometro table
+// Hodometro table (real structure from database)
 export const hodometro = pgTable("hodometro", {
-  id: serial("id").primaryKey(),
+  id_hodometro: serial("id_hodometro").primaryKey(),
   veiculo_id: integer("veiculo_id").references(() => veiculo.veiculo_id),
   motorista_id: integer("motorista_id").references(() => motorista.motorista_id),
-  km_inicial: numeric("km_inicial"),
-  km_final: numeric("km_final"),
-  data_leitura: date("data_leitura"),
-  created_at: timestamp("created_at").defaultNow(),
+  cliente_id: integer("cliente_id").references(() => cliente.cliente_id),
+  data: date("data"),
+  hora: text("hora"),
+  hod_informado: numeric("hod_informado"),
+  hod_lido: numeric("hod_lido"),
+  trip_lida: text("trip_lida"),
+  trip_informada: text("trip_informada"),
+  km_rodado: numeric("km_rodado"),
+  verificacao: boolean("verificacao").default(false),
+  comparacao_leitura: text("comparacao_leitura"),
+  foto_hodometro: text("foto_hodometro"),
+  company_id: integer("company_id").references(() => company.company_id),
+  bateria: text("bateria"),
 });
 
 // Relations
@@ -348,6 +357,10 @@ export const insertVeiculoSchema = createInsertSchema(veiculo).omit({
   veiculo_id: true,
 });
 
+export const insertHodometroSchema = createInsertSchema(hodometro).omit({
+  id_hodometro: true,
+});
+
 export const insertComentarioSchema = createInsertSchema(comentario).omit({
   id: true,
   created_at: true,
@@ -393,6 +406,8 @@ export type Cliente = typeof cliente.$inferSelect;
 export type InsertCliente = z.infer<typeof insertClienteSchema>;
 export type Veiculo = typeof veiculo.$inferSelect;
 export type InsertVeiculo = z.infer<typeof insertVeiculoSchema>;
+export type Hodometro = typeof hodometro.$inferSelect;
+export type InsertHodometro = z.infer<typeof insertHodometroSchema>;
 export type DocumentoMotorista = typeof documento_motorista.$inferSelect;
 export type DocumentoAjudante = typeof documento_ajudante.$inferSelect;
 export type DocumentoVeiculo = typeof documento_veiculo.$inferSelect;
