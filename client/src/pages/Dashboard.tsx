@@ -70,8 +70,24 @@ interface VagaWidget {
   created_at: string;
 }
 
+interface HodometroMonthData {
+  month: string;
+  fullMonth: string;
+  km_rodados: number;
+  leituras: number;
+  avgKmPerLeitura: number;
+  previousMonth?: {
+    km_rodados: number;
+    leituras: number;
+  };
+}
+
 interface DashboardStats {
   motoristas: number;
+  agregados: number;
+  contratados: number;
+  agregadosPercentage: number;
+  contratadosPercentage: number;
   veiculos: number;
   checklists: number;
   comprovantes: number;
@@ -91,7 +107,7 @@ interface DashboardStats {
     user: string;
     icon: LucideIcon;
   }[];
-  hodometroData: { month: string; km_rodados: number; leituras: number }[];
+  hodometroData: HodometroMonthData[];
   vagas: VagaWidget[];
 }
 
@@ -116,18 +132,209 @@ const SimpleTooltip = ({ active, payload, label }: any) => {
 const HodometroTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
+    const avgKmPerLeitura = data.leituras > 0 ? (data.km_rodados / data.leituras).toFixed(1) : 0;
+    const previousComparison = data.previousMonth ? {
+      kmDiff: data.km_rodados - data.previousMonth.km_rodados,
+      leiturasDiff: data.leituras - data.previousMonth.leituras,
+    } : null;
+
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-3">
-        <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-          {label}
-        </p>
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-4 min-w-[250px]">
+        <div className="flex items-center gap-2 mb-3">
+          <Gauge className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <p className="text-sm font-medium text-gray-900 dark:text-white">
+            {data.fullMonth}
+          </p>
+        </div>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-300">KM Rodados:</span>
+            <span className="font-semibold text-blue-600 dark:text-blue-400">
+              {data.km_rodados.toLocaleString()} km
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-300">Leituras:</span>
+            <span className="font-semibold text-green-600 dark:text-green-400">
+              {data.leituras}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-300">Média km/leitura:</span>
+            <span className="font-semibold text-purple-600 dark:text-purple-400">
+              {avgKmPerLeitura} km
+            </span>
+          </div>
+          {previousComparison && (
+            <div className="border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">vs. mês anterior:</p>
+              <div className="flex justify-between text-xs">
+                <span className={previousComparison.kmDiff >= 0 ? "text-green-600" : "text-red-600"}>
+                  {previousComparison.kmDiff >= 0 ? "+" : ""}{previousComparison.kmDiff.toLocaleString()} km
+                </span>
+                <span className={previousComparison.leiturasDiff >= 0 ? "text-green-600" : "text-red-600"}>
+                  {previousComparison.leiturasDiff >= 0 ? "+" : ""}{previousComparison.leiturasDiff} leituras
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const VehicleTypeTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    const totalVehicles = payload[0].payload.totalVehicles || data.value;
+    const percentage = totalVehicles > 0 ? ((data.value / totalVehicles) * 100).toFixed(1) : 0;
+    
+    const getVehicleIcon = (type: string) => {
+      switch (type.toLowerCase()) {
+        case 'caminhão':
+        case 'caminhao':
+          return <Truck className="w-4 h-4" />;
+        case 'van':
+        case 'furgão':
+        case 'furgao':
+          return <Users className="w-4 h-4" />;
+        default:
+          return <Truck className="w-4 h-4" />;
+      }
+    };
+
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div style={{ color: data.payload.color }}>
+            {getVehicleIcon(data.name)}
+          </div>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">
+            {data.name}
+          </p>
+        </div>
         <div className="space-y-1">
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            KM Rodados: <span className="font-semibold">{data.km_rodados}</span>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-300">Quantidade:</span>
+            <span className="font-semibold" style={{ color: data.payload.color }}>
+              {data.value}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-300">Percentual:</span>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {percentage}%
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const DriverDistributionTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    const totalDrivers = payload[0].payload.totalDrivers || data.value;
+    const percentage = totalDrivers > 0 ? ((data.value / totalDrivers) * 100).toFixed(1) : 0;
+    
+    const getDriverIcon = (type: string) => {
+      switch (type.toLowerCase()) {
+        case 'agregado':
+          return <UserCheck className="w-4 h-4" />;
+        case 'motorista':
+        case 'contratado':
+          return <Users className="w-4 h-4" />;
+        default:
+          return <Users className="w-4 h-4" />;
+      }
+    };
+
+    const getDriverTypeLabel = (type: string) => {
+      switch (type.toLowerCase()) {
+        case 'agregado':
+          return 'Agregados';
+        case 'motorista':
+          return 'Contratados';
+        default:
+          return type;
+      }
+    };
+
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div style={{ color: data.payload.color }}>
+            {getDriverIcon(data.name)}
+          </div>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">
+            {getDriverTypeLabel(data.name)}
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            Leituras: <span className="font-semibold">{data.leituras}</span>
+        </div>
+        <div className="space-y-1">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-300">Quantidade:</span>
+            <span className="font-semibold" style={{ color: data.payload.color }}>
+              {data.value}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-300">Percentual:</span>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {percentage}%
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const ComprovantesTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const activityStatus = data.value > data.avgPerDay ? "Alta atividade" : 
+                          data.value === 0 ? "Sem atividade" : "Atividade normal";
+
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-4 min-w-[220px]">
+        <div className="flex items-center gap-2 mb-3">
+          <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+          <p className="text-sm font-medium text-gray-900 dark:text-white">
+            {data.fullMonth}
           </p>
+        </div>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-300">Comprovantes:</span>
+            <span className="font-semibold text-green-600 dark:text-green-400">
+              {data.value}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-300">Clientes ativos:</span>
+            <span className="font-semibold text-blue-600 dark:text-blue-400">
+              {data.clients}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-300">Média/dia:</span>
+            <span className="font-semibold text-purple-600 dark:text-purple-400">
+              {data.avgPerDay}
+            </span>
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">
+            <div className="flex items-center gap-1">
+              <Activity className="w-3 h-3 text-gray-500" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {activityStatus}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -356,7 +563,7 @@ const ComprovantesInsightCard = ({ stats }: { stats: DashboardStats }) => {
               strokeWidth={1.5}
               dot={false}
             />
-            <Tooltip content={<SimpleTooltip />} />
+            <Tooltip content={<ComprovantesTooltip />} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -394,7 +601,7 @@ const VeiculosInsightCard = ({ stats }: { stats: DashboardStats }) => {
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip content={<SimpleTooltip />} />
+            <Tooltip content={<VehicleTypeTooltip />} />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -432,7 +639,7 @@ const MotoristasInsightCard = ({ stats }: { stats: DashboardStats }) => {
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip content={<SimpleTooltip />} />
+            <Tooltip content={<DriverDistributionTooltip />} />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -534,6 +741,10 @@ const Dashboard = () => {
   const { companyId } = useWiseAppAccess();
   const [stats, setStats] = useState<DashboardStats>({
     motoristas: 0,
+    agregados: 0,
+    contratados: 0,
+    agregadosPercentage: 0,
+    contratadosPercentage: 0,
     veiculos: 0,
     checklists: 0,
     comprovantes: 0,
@@ -702,8 +913,13 @@ const Dashboard = () => {
         }
       }
 
-      // Distribution data (non-critical)
+      // Agregados vs Contratados data and distribution (non-critical)
       let distributionData = [];
+      let agregadosCount = 0;
+      let contratadosCount = 0;
+      let agregadosPercentage = 0;
+      let contratadosPercentage = 0;
+      
       try {
         const { data: motoristaTypes, error: typesError } = await supabase
           .from("motorista")
@@ -716,21 +932,46 @@ const Dashboard = () => {
         (motoristaTypes || []).forEach((item) => {
           const funcao = item.funcao || "Não definido";
           typeCount[funcao] = (typeCount[funcao] || 0) + 1;
+          
+          // Count agregados vs contratados specifically
+          if (funcao.toLowerCase() === "agregado") {
+            agregadosCount += 1;
+          } else if (funcao.toLowerCase() === "motorista" || funcao.toLowerCase() === "contratado") {
+            contratadosCount += 1;
+          } else {
+            // Other types are considered contratados by default
+            contratadosCount += 1;
+          }
         });
 
-        const colors = ["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6"];
-        distributionData = Object.entries(typeCount).map(
-          ([name, value], index) => ({
-            name,
-            value,
-            color: colors[index % colors.length],
-          }),
-        );
+        // Calculate percentages
+        const totalDrivers = agregadosCount + contratadosCount;
+        if (totalDrivers > 0) {
+          agregadosPercentage = Number(((agregadosCount / totalDrivers) * 100).toFixed(1));
+          contratadosPercentage = Number(((contratadosCount / totalDrivers) * 100).toFixed(1));
+        }
+
+        // Build distribution data for chart with agregados vs contratados
+        distributionData = [
+          {
+            name: "Agregado",
+            value: agregadosCount,
+            color: "#10B981",
+            totalDrivers: totalDrivers
+          },
+          {
+            name: "Motorista",
+            value: contratadosCount,
+            color: "#3B82F6",
+            totalDrivers: totalDrivers
+          }
+        ].filter(item => item.value > 0); // Only show categories with data
+
       } catch (error) {
         console.warn("Erro ao buscar distribuição de tipos:", error);
         // Default distribution with totals
         distributionData = [
-          { name: "Motoristas", value: motoristasCount || 0, color: "#10B981" },
+          { name: "Motoristas", value: motoristasCount || 0, color: "#10B981", totalDrivers: motoristasCount || 0 },
         ];
       }
 
@@ -758,11 +999,13 @@ const Dashboard = () => {
           "#3B82F6",
           "#8B5CF6",
         ];
+        const totalVehicles = Object.values(vehicleTypeCount).reduce((sum, count) => sum + count, 0);
         vehicleTypeData = Object.entries(vehicleTypeCount).map(
           ([name, value], index) => ({
             name,
             value,
             color: vehicleColors[index % vehicleColors.length],
+            totalVehicles,
           }),
         );
       } catch (error) {
@@ -888,8 +1131,14 @@ const Dashboard = () => {
       // Hodometro data (non-critical)
       let hodometroData: {
         month: string;
+        fullMonth: string;
         km_rodados: number;
         leituras: number;
+        avgKmPerLeitura: number;
+        previousMonth?: {
+          km_rodados: number;
+          leituras: number;
+        };
       }[] = [];
       try {
         const sixMonthsAgo = subMonths(new Date(), 5);
@@ -952,7 +1201,8 @@ const Dashboard = () => {
           }
         });
 
-        // Generate data for the last 6 months
+        // Generate data for the last 6 months with enhanced calculations
+        const monthlyDataArray: HodometroMonthData[] = [];
         for (let i = 5; i >= 0; i--) {
           const date = subMonths(new Date(), i);
           const month = format(date, "MMM", { locale: ptBR });
@@ -962,19 +1212,44 @@ const Dashboard = () => {
             leituras: 0,
           };
 
-          hodometroData.push({
+          const avgKmPerLeitura = monthData.leituras > 0 ? 
+            Number((monthData.km_rodados / monthData.leituras).toFixed(1)) : 0;
+
+          monthlyDataArray.push({
             month,
+            fullMonth,
             km_rodados: Math.round(monthData.km_rodados),
             leituras: monthData.leituras,
+            avgKmPerLeitura,
           });
         }
+
+        // Add previous month comparison
+        hodometroData = monthlyDataArray.map((currentMonth, index) => {
+          const previousMonth = index > 0 ? monthlyDataArray[index - 1] : null;
+          return {
+            ...currentMonth,
+            previousMonth: previousMonth ? {
+              km_rodados: previousMonth.km_rodados,
+              leituras: previousMonth.leituras,
+            } : undefined,
+          };
+        });
       } catch (error) {
         console.warn("Erro ao buscar dados de hodômetros:", error);
-        // Default empty hodometro data for last 6 months
+        // Default empty hodometro data for last 6 months  
         for (let i = 5; i >= 0; i--) {
           const date = subMonths(new Date(), i);
           const month = format(date, "MMM", { locale: ptBR });
-          hodometroData.push({ month, km_rodados: 0, leituras: 0 });
+          const fullMonth = format(date, "MMM yyyy", { locale: ptBR });
+          hodometroData.push({ 
+            month, 
+            fullMonth,
+            km_rodados: 0, 
+            leituras: 0,
+            avgKmPerLeitura: 0,
+            previousMonth: undefined
+          });
         }
       }
 
@@ -990,6 +1265,10 @@ const Dashboard = () => {
 
       setStats({
         motoristas: motoristasCount || 0,
+        agregados: agregadosCount,
+        contratados: contratadosCount,
+        agregadosPercentage,
+        contratadosPercentage,
         veiculos: veiculosCount || 0,
         checklists: checklistsCount || 0,
         comprovantes: comprovantesCount || 0,
@@ -1025,6 +1304,10 @@ const Dashboard = () => {
 
       setStats({
         motoristas: 0,
+        agregados: 0,
+        contratados: 0,
+        agregadosPercentage: 0,
+        contratadosPercentage: 0,
         veiculos: 0,
         checklists: 0,
         comprovantes: 0,
