@@ -15,6 +15,9 @@ import {
   FileText,
   Activity,
   TrendingUp,
+  Calendar,
+  UserCheck,
+  BarChart3,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useModuleAccess } from "../hooks/useModuleAccess";
@@ -58,13 +61,83 @@ interface DashboardStats {
   checklists: number;
   comprovantes: number;
   hodometros: number;
-  monthlyData: { month: string; value: number }[];
+  monthlyData: { month: string; fullMonth: string; value: number; clients: number; avgPerDay: number }[];
   distributionData: { name: string; value: number; color: string }[];
   vehicleTypeData: { name: string; value: number; color: string }[];
   recentLogs: { time: string; action: string; user: string; icon: LucideIcon }[];
   hodometroData: { month: string; km_rodados: number; leituras: number }[];
   vagas: VagaWidget[];
 }
+
+// Custom Tooltip Component for Enhanced Chart Information
+const CustomComprovantesTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-4 min-w-[250px] max-w-[300px] md:min-w-[280px]">
+        <div className="flex items-center gap-2 mb-3">
+          <Calendar className="w-4 h-4 text-blue-500" />
+          <p className="font-semibold text-gray-900 dark:text-white text-sm">
+            {data.fullMonth}
+          </p>
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-green-500" />
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                Total de comprovantes
+              </span>
+            </div>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {data.value}
+            </span>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-purple-500" />
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                Clientes únicos
+              </span>
+            </div>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {data.clients}
+            </span>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-orange-500" />
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                Média por dia ativo
+              </span>
+            </div>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {data.avgPerDay}
+            </span>
+          </div>
+        </div>
+        
+        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-3 h-3 text-blue-500" />
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {data.value > 0 
+                ? `Período com atividade registrada` 
+                : `Nenhuma atividade no período`
+              }
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
 
 const MenuCard = ({
   title,
@@ -337,26 +410,50 @@ const Dashboard = () => {
         const sixMonthsAgo = subMonths(new Date(), 5);
         const { data: monthlyComprovantes, error: monthlyError } = await supabase
           .from('comprovante')
-          .select('created_at')
+          .select('created_at, cliente_id')
           .eq('company_id', companyId)
           .gte('created_at', sixMonthsAgo.toISOString())
           .order('created_at', { ascending: true });
         
         if (monthlyError) throw monthlyError;
         
-        // Process monthly data
-        const monthlyDataMap: { [key: string]: number } = {};
+        // Process monthly data with detailed information
+        const monthlyDataMap: { [key: string]: { count: number; clients: Set<string>; dates: Date[] } } = {};
         (monthlyComprovantes || []).forEach(item => {
           const date = new Date(item.created_at);
           const monthKey = format(date, 'MMM yyyy', { locale: ptBR });
-          monthlyDataMap[monthKey] = (monthlyDataMap[monthKey] || 0) + 1;
+          
+          if (!monthlyDataMap[monthKey]) {
+            monthlyDataMap[monthKey] = { count: 0, clients: new Set(), dates: [] };
+          }
+          
+          monthlyDataMap[monthKey].count += 1;
+          if (item.cliente_id) {
+            monthlyDataMap[monthKey].clients.add(item.cliente_id);
+          }
+          monthlyDataMap[monthKey].dates.push(date);
         });
         
         for (let i = 5; i >= 0; i--) {
           const date = subMonths(new Date(), i);
           const month = format(date, 'MMM', { locale: ptBR });
           const fullMonth = format(date, 'MMM yyyy', { locale: ptBR });
-          monthlyData.push({ month, value: monthlyDataMap[fullMonth] || 0 });
+          const monthData = monthlyDataMap[fullMonth];
+          
+          let avgPerDay = 0;
+          if (monthData && monthData.dates.length > 0) {
+            // Calculate unique days with activity
+            const uniqueDays = new Set(monthData.dates.map(d => format(d, 'yyyy-MM-dd')));
+            avgPerDay = monthData.count / uniqueDays.size;
+          }
+          
+          monthlyData.push({ 
+            month, 
+            fullMonth,
+            value: monthData?.count || 0,
+            clients: monthData?.clients.size || 0,
+            avgPerDay: Number(avgPerDay.toFixed(1))
+          });
         }
       } catch (error) {
         console.warn('Erro ao buscar dados mensais:', error);
@@ -364,7 +461,8 @@ const Dashboard = () => {
         for (let i = 5; i >= 0; i--) {
           const date = subMonths(new Date(), i);
           const month = format(date, 'MMM', { locale: ptBR });
-          monthlyData.push({ month, value: 0 });
+          const fullMonth = format(date, 'MMM yyyy', { locale: ptBR });
+          monthlyData.push({ month, fullMonth, value: 0, clients: 0, avgPerDay: 0 });
         }
       }
       
@@ -600,13 +698,21 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Erro ao buscar dados do dashboard:', error instanceof Error ? { message: error.message, stack: error.stack } : error);
       // Set default empty data on error
+      const defaultMonthlyData = [];
+      for (let i = 5; i >= 0; i--) {
+        const date = subMonths(new Date(), i);
+        const month = format(date, 'MMM', { locale: ptBR });
+        const fullMonth = format(date, 'MMM yyyy', { locale: ptBR });
+        defaultMonthlyData.push({ month, fullMonth, value: 0, clients: 0, avgPerDay: 0 });
+      }
+      
       setStats({
         motoristas: 0,
         veiculos: 0,
         checklists: 0,
         comprovantes: 0,
         hodometros: 0,
-        monthlyData: [],
+        monthlyData: defaultMonthlyData,
         distributionData: [],
         vehicleTypeData: [],
         recentLogs: [],
@@ -768,14 +874,7 @@ const Dashboard = () => {
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                   <XAxis dataKey="month" className="text-sm" />
                   <YAxis className="text-sm" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(59, 130, 246, 0.9)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: 'white'
-                    }}
-                  />
+                  <Tooltip content={<CustomComprovantesTooltip />} />
                   <Line
                     type="monotone"
                     dataKey="value"
