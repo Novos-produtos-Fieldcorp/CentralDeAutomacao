@@ -14,7 +14,7 @@ interface NavbarProps {
 
 const Navbar = () => {
   const location = useLocation();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [, setIsManuallyExpanded] = useState(false);
   const { moduleAccess } = useModuleAccess();
   const { companyId } = useAuth();
