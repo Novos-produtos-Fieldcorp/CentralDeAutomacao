@@ -26,6 +26,7 @@ import Admin from "./pages/Admin";
 import ResumosGrupo from "./pages/ResumosGrupo";
 import TagsAdmin from "./pages/TagsAdmin";
 import Vagas from "./pages/Vagas";
+import Comprovantes from "./pages/Comprovantes";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -89,6 +90,10 @@ const AppRoutes = () => {
                       element={<TagsAdmin />}
                     />
                     <Route path="/vagas/*" element={<Vagas />} />
+                    <Route
+                      path="/comprovantes/*"
+                      element={<Comprovantes />}
+                    />
                   </Routes>
                 </div>
               </main>

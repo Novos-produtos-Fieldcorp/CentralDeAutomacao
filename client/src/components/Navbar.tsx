@@ -90,6 +90,7 @@ const Navbar = () => {
     { path: '/veiculos', icon: Truck, label: 'Veículos', needsAccess: false, enabled: moduleAccess.veiculos },
     { path: '/hodometros', icon: Gauge, label: 'Hodômetros', needsAccess: true, enabled: moduleAccess.hodometros },
     { path: '/clientes', icon: Store, label: 'Clientes', needsAccess: false, enabled: moduleAccess.clientes },
+    { path: '/comprovantes', icon: FileText, label: 'Comprovantes', needsAccess: false, enabled: true },
     { path: '/resumos-grupo', icon: MessagesSquare, label: 'Resumos em Grupo', needsAccess: true, enabled: moduleAccess.resumos },
     { path: '/tags-admin', icon: Tags, label: 'Marcadores', needsAccess: true, enabled: moduleAccess.tags },
   ];
