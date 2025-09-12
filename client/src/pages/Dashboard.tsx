@@ -18,13 +18,18 @@ import {
   Calendar,
   UserCheck,
   BarChart3,
+  Plus,
+  ExternalLink,
+  ChevronRight,
+  Clock,
+  MapPin,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useModuleAccess } from "../hooks/useModuleAccess";
 import { useWiseAppAccess } from "../context/WiseAppAccessContext";
 import ImportExportModal from "../components/ImportExportModal";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { format, subMonths, isBefore, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '../lib/supabase';
@@ -39,11 +44,10 @@ interface MenuItem {
   onClick?: () => void;
 }
 
-interface StatCard {
+interface StatPill {
   title: string;
   count: number;
   icon: LucideIcon;
-  color: 'blue' | 'green' | 'purple' | 'orange' | 'violet';
   link: string;
 }
 
@@ -69,282 +73,380 @@ interface DashboardStats {
   vagas: VagaWidget[];
 }
 
-// Custom Tooltip Component for Enhanced Chart Information
-const CustomComprovantesTooltip = ({ active, payload, label }: any) => {
+// Custom Tooltip Components
+const SimpleTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    
+    const data = payload[0];
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-4 min-w-[250px] max-w-[300px] md:min-w-[280px]">
-        <div className="flex items-center gap-2 mb-3">
-          <Calendar className="w-4 h-4 text-blue-500" />
-          <p className="font-semibold text-gray-900 dark:text-white text-sm">
-            {data.fullMonth}
-          </p>
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-green-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                Total de comprovantes
-              </span>
-            </div>
-            <span className="font-semibold text-gray-900 dark:text-white">
-              {data.value}
-            </span>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-purple-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                Clientes únicos
-              </span>
-            </div>
-            <span className="font-semibold text-gray-900 dark:text-white">
-              {data.clients}
-            </span>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-orange-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                Média por dia ativo
-              </span>
-            </div>
-            <span className="font-semibold text-gray-900 dark:text-white">
-              {data.avgPerDay}
-            </span>
-          </div>
-        </div>
-        
-        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-3 h-3 text-blue-500" />
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {data.value > 0 
-                ? `Período com atividade registrada` 
-                : `Nenhuma atividade no período`
-              }
-            </span>
-          </div>
-        </div>
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-3">
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {label}
+        </p>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          {data.name}: <span className="font-semibold">{data.value}</span>
+        </p>
       </div>
     );
   }
-
   return null;
 };
 
-const MenuCard = ({
-  title,
-  icon: Icon,
-  link,
-  description,
-  enabled = true,
-  isSpecial = false,
-  onClick,
-}: MenuItem) => {
-  const cardContent = (
-    <>
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${
-          isSpecial
-            ? "from-orange-500/10 to-amber-500/5"
-            : "from-primary/5 to-transparent"
-        } opacity-0 transition-opacity duration-300 ${enabled ? "group-hover:opacity-100" : ""}`}
-      />
-      <div className="relative flex flex-col h-full justify-between p-6">
-        <div className="flex flex-col items-center text-center">
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-12 h-12 flex items-center justify-center ${
-                isSpecial
-                  ? "bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40"
-                  : "bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40"
-              } rounded-full transform transition-all duration-300 ${enabled ? "group-hover:scale-110" : ""}`}
-            >
-              <Icon
-                className={`w-6 h-6 ${
-                  isSpecial
-                    ? "text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300"
-                    : "text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300"
-                } transition-colors duration-300`}
-              />
-            </div>
-
-            <h3
-              className={`text-xl font-bold ${
-                isSpecial
-                  ? "text-orange-700 dark:text-orange-400"
-                  : "text-gray-800 dark:text-white"
-              }`}
-            >
-              {title}
-              {!enabled && (
-                <Lock className="w-4 h-4 text-gray-400 dark:text-gray-600 ml-2 inline-block" />
-              )}
-            </h3>
-          </div>
-
-          <p
-            className={`text-base text-center mt-8 ${
-              isSpecial
-                ? "text-orange-700/80 dark:text-orange-300/90"
-                : "text-gray-600 dark:text-gray-300"
-            }`}
-          >
-            {description}
+const HodometroTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-3">
+        <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+          {label}
+        </p>
+        <div className="space-y-1">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            KM Rodados: <span className="font-semibold">{data.km_rodados}</span>
+          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Leituras: <span className="font-semibold">{data.leituras}</span>
           </p>
         </div>
       </div>
-    </>
-  );
-
-  if (onClick) {
-    return (
-      <div
-        onClick={onClick}
-        className={`group relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl 
-                 border ${isSpecial ? "border-orange-200 dark:border-orange-800/50" : "border-gray-200 dark:border-gray-700"} 
-                 shadow-md hover:shadow-lg
-                 transform hover:-translate-y-1 transition-all duration-300
-                 w-full h-[200px] flex flex-col justify-between
-                 cursor-pointer`}
-        aria-label={`Acessar ${title}`}
-      >
-        {cardContent}
-      </div>
     );
   }
-
-  return enabled ? (
-    <Link
-      to={link}
-      className={`group relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl 
-                 border ${isSpecial ? "border-orange-200 dark:border-orange-800/50" : "border-gray-200 dark:border-gray-700"} 
-                 shadow-md hover:shadow-lg
-                 transform hover:-translate-y-1 transition-all duration-300
-                 w-full h-[200px] flex flex-col justify-between`}
-      aria-label={`Acessar ${title}`}
-    >
-      {cardContent}
-    </Link>
-  ) : (
-    <div
-      className="group relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl 
-                 border border-gray-200 dark:border-gray-700 shadow-md opacity-60
-                 w-full h-[200px] flex flex-col justify-between
-                 cursor-not-allowed select-none"
-      aria-disabled="true"
-    >
-      {cardContent}
-    </div>
-  );
+  return null;
 };
 
-const StatCard = ({ title, count, icon: Icon, color, link }: StatCard) => {
-  const colorClasses = {
-    blue: 'bg-blue-500 text-white',
-    green: 'bg-green-500 text-white',
-    purple: 'bg-purple-500 text-white',
-    orange: 'bg-orange-500 text-white'
-  };
+// Hero Card Components
+const ContratacaoHeroCard = ({ stats }: { stats: DashboardStats }) => {
+  const totalVagas = stats.vagas.reduce((sum, vaga) => sum + vaga.quantidade, 0);
+  const vagasVencendo = stats.vagas.filter(vaga => {
+    if (!vaga.dt_limite) return false;
+    const limite = new Date(vaga.dt_limite);
+    const proximaVencimento = addDays(new Date(), 7);
+    return isBefore(limite, proximaVencimento);
+  }).length;
+  
+  const vagasSemPrazo = stats.vagas.filter(vaga => !vaga.dt_limite).length;
 
   return (
-    <Link to={link} className="block">
-      <div className={`${colorClasses[color]} rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}>
-        <div className="flex items-center justify-between mb-4">
-          <Icon className="w-8 h-8" />
-          <div className="text-right">
-            <p className="text-sm opacity-90">{title}</p>
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-6 shadow-sm h-[320px]">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+            <Briefcase className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Contratação</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Gestão de vagas</p>
           </div>
         </div>
-        <div className="text-4xl font-bold mb-2">{count}</div>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/vagas"
+            className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1"
+            data-testid="link-vagas-all"
+          >
+            Ver todas
+            <ExternalLink className="w-3 h-3" />
+          </Link>
+        </div>
       </div>
-    </Link>
-  );
-};
 
-const VagasWidget = ({ vagas }: { vagas: VagaWidget[] }) => {
-  const getUrgencyColor = (dtLimite: string | null) => {
-    if (!dtLimite) return 'text-gray-500 dark:text-gray-400';
-    
-    const limite = new Date(dtLimite);
-    const hoje = new Date();
-    const proximaVencimento = addDays(hoje, 7); // 7 dias de antecedência
-    
-    if (isBefore(limite, hoje)) {
-      return 'text-red-500 dark:text-red-400'; // Vencida
-    } else if (isBefore(limite, proximaVencimento)) {
-      return 'text-orange-500 dark:text-orange-400'; // Próxima do vencimento
-    }
-    return 'text-green-500 dark:text-green-400'; // OK
-  };
-  
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-          <Briefcase className="w-6 h-6 text-purple-500" />
-          Vagas Disponíveis
-        </h3>
-        <Link 
-          to="/vagas" 
-          className="text-purple-500 hover:text-purple-600 dark:hover:text-purple-400 text-sm font-medium transition-colors"
-          data-testid="link-vagas-full"
-        >
-          Ver todas →
-        </Link>
+      {/* KPI Principal */}
+      <div className="mb-6">
+        <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          {totalVagas}
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {totalVagas === 1 ? 'vaga aberta' : 'vagas abertas'}
+        </p>
       </div>
-      
-      <div className="space-y-4 max-h-64 overflow-y-auto">
-        {vagas.length === 0 ? (
-          <div className="text-center py-8">
-            <Briefcase className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
+
+      {/* Sub-KPIs */}
+      <div className="flex gap-2 mb-6">
+        {vagasVencendo > 0 && (
+          <div className="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-xs font-medium">
+            {vagasVencendo} vencendo
+          </div>
+        )}
+        {vagasSemPrazo > 0 && (
+          <div className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium">
+            {vagasSemPrazo} sem prazo
+          </div>
+        )}
+      </div>
+
+      {/* Lista Mini de Vagas */}
+      <div className="space-y-2 max-h-48 overflow-y-auto">
+        {stats.vagas.length === 0 ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Nenhuma vaga cadastrada
             </p>
           </div>
         ) : (
-          vagas.map((vaga) => {
-            const dtLimiteFormatted = vaga.dt_limite 
-              ? format(new Date(vaga.dt_limite), 'dd/MM/yyyy', { locale: ptBR })
-              : null;
-            
+          stats.vagas.slice(0, 5).map((vaga) => {
+            const isUrgent = vaga.dt_limite && isBefore(new Date(vaga.dt_limite), addDays(new Date(), 7));
             return (
-              <div key={vaga.id} className="p-4 rounded-lg bg-gray-50 dark:bg-gray-700 border-l-4 border-purple-500">
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
+              <div key={vaga.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     {vaga.nome}
                   </h4>
-                  <span className="text-xs font-medium px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full">
-                    {vaga.quantidade} {vaga.quantidade === 1 ? 'vaga' : 'vagas'}
-                  </span>
+                  {vaga.dt_limite && (
+                    <p className={`text-xs ${isUrgent ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                      Até {format(new Date(vaga.dt_limite), 'dd/MM/yyyy')}
+                    </p>
+                  )}
                 </div>
-                
-                {dtLimiteFormatted && (
-                  <div className="flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    <span className={`text-xs font-medium ${getUrgencyColor(vaga.dt_limite)}`}>
-                      Até {dtLimiteFormatted}
-                    </span>
-                  </div>
-                )}
-                
-                {!dtLimiteFormatted && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Sem prazo definido
-                  </span>
-                )}
+                <div className="text-xs font-medium px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full">
+                  {vaga.quantidade}
+                </div>
               </div>
             );
           })
         )}
       </div>
+    </div>
+  );
+};
+
+const HodometroHeroCard = ({ stats }: { stats: DashboardStats }) => {
+  const totalKm = stats.hodometroData.reduce((sum, item) => sum + item.km_rodados, 0);
+  const totalLeituras = stats.hodometroData.reduce((sum, item) => sum + item.leituras, 0);
+
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-6 shadow-sm h-[320px]">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+            <Gauge className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Hodômetro</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Últimos 6 meses</p>
+          </div>
+        </div>
+        <Link
+          to="/hodometros"
+          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1"
+          data-testid="link-hodometros-all"
+        >
+          Ver detalhes
+          <ExternalLink className="w-3 h-3" />
+        </Link>
+      </div>
+
+      {/* KPI Chips */}
+      <div className="flex gap-3 mb-4">
+        <div className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+          {totalKm.toLocaleString()} km
+        </div>
+        <div className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-medium">
+          {totalLeituras} leituras
+        </div>
+      </div>
+
+      {/* Gráfico */}
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={stats.hodometroData}>
+            <defs>
+              <linearGradient id="kmGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <XAxis 
+              dataKey="month" 
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: 'currentColor' }}
+              tickCount={6}
+            />
+            <YAxis 
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: 'currentColor' }}
+              tickCount={5}
+            />
+            <Tooltip content={<HodometroTooltip />} />
+            <Area
+              type="monotone"
+              dataKey="km_rodados"
+              stroke="#3B82F6"
+              strokeWidth={1.5}
+              fill="url(#kmGradient)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+// Mini Cards Components
+const ComprovantesInsightCard = ({ stats }: { stats: DashboardStats }) => {
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4 shadow-sm h-40">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white">Comprovantes</h3>
+        </div>
+        <div className="text-lg font-semibold text-gray-900 dark:text-white">
+          {stats.comprovantes}
+        </div>
+      </div>
+      
+      <div className="h-20">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={stats.monthlyData}>
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke="#10B981"
+              strokeWidth={1.5}
+              dot={false}
+            />
+            <Tooltip content={<SimpleTooltip />} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+const VeiculosInsightCard = ({ stats }: { stats: DashboardStats }) => {
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4 shadow-sm h-40">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Truck className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white">Veículos</h3>
+        </div>
+        <div className="text-lg font-semibold text-gray-900 dark:text-white">
+          {stats.veiculos}
+        </div>
+      </div>
+      
+      <div className="h-20 flex items-center justify-center">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={stats.vehicleTypeData}
+              cx="50%"
+              cy="50%"
+              innerRadius={15}
+              outerRadius={30}
+              dataKey="value"
+            >
+              {stats.vehicleTypeData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip content={<SimpleTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+const MotoristasInsightCard = ({ stats }: { stats: DashboardStats }) => {
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4 shadow-sm h-40">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white">Motoristas</h3>
+        </div>
+        <div className="text-lg font-semibold text-gray-900 dark:text-white">
+          {stats.motoristas}
+        </div>
+      </div>
+      
+      <div className="h-20 flex items-center justify-center">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={stats.distributionData}
+              cx="50%"
+              cy="50%"
+              innerRadius={15}
+              outerRadius={30}
+              dataKey="value"
+            >
+              {stats.distributionData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip content={<SimpleTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+const AtividadeInsightCard = ({ stats }: { stats: DashboardStats }) => {
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4 shadow-sm h-40">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white">Atividade</h3>
+        </div>
+        <div className="text-xs text-gray-500 dark:text-gray-400">Recente</div>
+      </div>
+      
+      <div className="space-y-2 h-20 overflow-y-auto">
+        {stats.recentLogs.length === 0 ? (
+          <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+            Nenhuma atividade recente
+          </p>
+        ) : (
+          stats.recentLogs.slice(0, 3).map((log, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <log.icon className="w-3 h-3 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                  {log.action}
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  {log.time}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Stats Pills Component
+const StatsPills = ({ stats }: { stats: DashboardStats }) => {
+  const pills: StatPill[] = [
+    { title: "Motoristas", count: stats.motoristas, icon: Users, link: "/motoristas" },
+    { title: "Veículos", count: stats.veiculos, icon: Truck, link: "/veiculos" },
+    { title: "Checklists", count: stats.checklists, icon: ClipboardCheck, link: "/checklist" },
+    { title: "Comprovantes", count: stats.comprovantes, icon: FileText, link: "/comprovantes" },
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-3">
+      {pills.map((pill) => (
+        <Link
+          key={pill.title}
+          to={pill.link}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          data-testid={`pill-${pill.title.toLowerCase()}`}
+        >
+          <pill.icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <span className="text-sm text-gray-600 dark:text-gray-300">{pill.title}</span>
+          <span className="text-xl font-semibold text-gray-900 dark:text-white">{pill.count}</span>
+        </Link>
+      ))}
     </div>
   );
 };
@@ -372,7 +474,6 @@ const Dashboard = () => {
     if (companyId) {
       fetchDashboardData();
     } else {
-      // Se não tiver companyId, manter loading como false para não travar a UI
       setStatsLoading(false);
     }
   }, [companyId]);
@@ -730,355 +831,231 @@ const Dashboard = () => {
 
   const menuItems: MenuItem[] = [
     {
-      title: "Checklists",
-      icon: ClipboardCheck,
-      link: "/checklist",
-      description: "Gerencie os checklists semanais e mensais",
-      enabled: moduleAccess.checklist,
-    },
-    {
-      title: "Contratações",
+      title: "Motoristas",
       icon: Users,
       link: "/motoristas",
-      description:
-        "Gerencie as informações para contratação de novos motoristas e agregados",
+      description: "Gestão de motoristas e ajudantes",
       enabled: moduleAccess.motoristas,
-    },
-    {
-      title: "Vagas",
-      icon: Briefcase,
-      link: "/vagas",
-      description:
-        "Gerencie as vagas de emprego e processos seletivos da empresa",
-      enabled: moduleAccess.vagas,
     },
     {
       title: "Veículos",
       icon: Truck,
       link: "/veiculos",
-      description: "Gerencie os veículos dos agregados e da sua empresa",
+      description: "Gestão de frota e veículos",
       enabled: moduleAccess.veiculos,
     },
     {
-      title: "Hodômetros",
-      icon: Gauge,
-      link: "/hodometros",
-      description: "Acompanhe a leitura de hodômetro dos seus motoristas",
-      enabled: moduleAccess.hodometros,
-    },
-    {
-      title: "Clientes",
-      icon: Store,
-      link: "/clientes",
-      description: "Gerencie os clientes da sua empresa",
-      enabled: moduleAccess.clientes,
-    },
-    {
-      title: "Resumos em Grupo",
-      icon: MessagesSquare,
-      link: "/resumos-grupo",
-      description: "Configure resumos automáticos para seus grupos de WhatsApp",
-      enabled: moduleAccess.resumos,
-    },
-    {
-      title: "Marcadores",
-      icon: Tag,
-      link: "/tags-admin",
-      description:
-        "Gerencie marcadores para categorizar e organizar motoristas",
-      enabled: moduleAccess.tags,
+      title: "Checklist",
+      icon: ClipboardCheck,
+      link: "/checklist",
+      description: "Inspeções e checklists de segurança",
+      enabled: moduleAccess.checklist,
     },
     {
       title: "Comprovantes",
       icon: FileText,
       link: "/comprovantes",
-      description:
-        "Gerencie Comprovantes para acompanhar as entregas e envios dos motoristas",
+      description: "Gestão de documentos e comprovantes",
       enabled: moduleAccess.comprovantes,
-    },
-  ];
-
-  const statCards: StatCard[] = [
-    {
-      title: "Motoristas",
-      count: stats.motoristas,
-      icon: Users,
-      color: "blue",
-      link: "/motoristas"
-    },
-    {
-      title: "Veículos",
-      count: stats.veiculos,
-      icon: Truck,
-      color: "green",
-      link: "/veiculos"
-    },
-    {
-      title: "Checklists",
-      count: stats.checklists,
-      icon: ClipboardCheck,
-      color: "purple",
-      link: "/checklist"
-    },
-    {
-      title: "Comprovantes",
-      count: stats.comprovantes,
-      icon: FileText,
-      color: "orange",
-      link: "/comprovantes"
     },
     {
       title: "Hodômetros",
-      count: stats.hodometros,
       icon: Gauge,
-      color: "purple",
-      link: "/hodometros"
-    }
+      link: "/hodometros",
+      description: "Controle de quilometragem",
+      enabled: moduleAccess.hodometros,
+    },
+    {
+      title: "Vagas",
+      icon: Briefcase,
+      link: "/vagas",
+      description: "Gestão de vagas e contratação",
+      enabled: moduleAccess.vagas,
+    },
+    {
+      title: "Clientes",
+      icon: Store,
+      link: "/clientes",
+      description: "Gestão de clientes",
+      enabled: moduleAccess.clientes,
+    },
+    {
+      title: "Admin",
+      icon: Tag,
+      link: "/admin",
+      description: "Administração e configurações",
+      enabled: moduleAccess.admin,
+    },
+    {
+      title: "Importar/Exportar",
+      icon: FileDown,
+      link: "",
+      description: "Gestão de dados em lote",
+      enabled: true,
+      isSpecial: true,
+      onClick: () => setIsImportExportModalOpen(true),
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
         {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent mb-4 md:mb-0">
-            Central de Automações
-          </h1>
-          <button
-            onClick={() => setIsImportExportModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <FileDown className="w-4 h-4" />
-            Importar Dados
-          </button>
-        </header>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {statCards.map((card, index) => (
-            <StatCard key={index} {...card} />
-          ))}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Visão geral das operações e métricas principais
+          </p>
         </div>
 
-        {/* Charts and Logs */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Monthly Records Chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-blue-500" />
-              Comprovantes dos últimos 6 meses
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={stats.monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="month" className="text-sm" />
-                  <YAxis className="text-sm" />
-                  <Tooltip content={<CustomComprovantesTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#3B82F6"
-                    strokeWidth={3}
-                    dot={{ fill: '#3B82F6', strokeWidth: 2, r: 6 }}
-                    activeDot={{ r: 8, stroke: '#3B82F6', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+        {/* Stats Pills */}
+        <StatsPills stats={stats} />
 
-          {/* Hodometro Evolution Chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <Gauge className="w-6 h-6 text-purple-500" />
-              Evolução de Leituras de Hodômetros
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={stats.hodometroData}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="month" className="text-sm" />
-                  <YAxis yAxisId="km" orientation="left" className="text-sm" />
-                  <YAxis yAxisId="leituras" orientation="right" className="text-sm" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(147, 51, 234, 0.9)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: 'white'
-                    }}
-                    formatter={(value, name) => {
-                      if (name === 'km_rodados') return [`${value} km`, 'Km Rodados'];
-                      if (name === 'leituras') return [`${value}`, 'Leituras'];
-                      return [value, name];
-                    }}
-                  />
-                  <Line
-                    yAxisId="km"
-                    type="monotone"
-                    dataKey="km_rodados"
-                    stroke="#8B5CF6"
-                    strokeWidth={3}
-                    dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 6 }}
-                    activeDot={{ r: 8, stroke: '#8B5CF6', strokeWidth: 2 }}
-                  />
-                  <Line
-                    yAxisId="leituras"
-                    type="monotone"
-                    dataKey="leituras"
-                    stroke="#F59E0B"
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    dot={{ fill: '#F59E0B', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#F59E0B', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex justify-center gap-6 mt-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">Km Rodados</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">Nº de Leituras</span>
-              </div>
-            </div>
-          </div>
+        {/* Hero Cards Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ContratacaoHeroCard stats={stats} />
+          <HodometroHeroCard stats={stats} />
         </div>
 
-        {/* Second row of charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Distribution Chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <Activity className="w-6 h-6 text-green-500" />
-              Distribuição por Tipo de Motorista
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={stats.distributionData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {stats.distributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex justify-center gap-6 mt-4">
-              {stats.distributionData.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">{item.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Vehicle Types Distribution Chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <Truck className="w-6 h-6 text-orange-500" />
-              Distribuição por Tipo de Veículo
-            </h3>
-            <div className="h-64">
-              {stats.vehicleTypeData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={stats.vehicleTypeData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {stats.vehicleTypeData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <Truck className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Nenhum veículo cadastrado
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-center gap-6 mt-4">
-              {stats.vehicleTypeData.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">{item.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* Mini Insights Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <ComprovantesInsightCard stats={stats} />
+          <VeiculosInsightCard stats={stats} />
+          <MotoristasInsightCard stats={stats} />
+          <AtividadeInsightCard stats={stats} />
         </div>
 
-        {/* Bottom section with Recent Logs and Vagas */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Recent Logs */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <Activity className="w-6 h-6 text-blue-500" />
-              Atividades Recentes
-            </h3>
-            <div className="space-y-4 max-h-64 overflow-y-auto">
-              {stats.recentLogs.length === 0 ? (
-                <div className="text-center py-8">
-                  <Activity className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">
-                    Nenhuma atividade recente
-                  </p>
-                </div>
-              ) : (
-                stats.recentLogs.map((log, index) => {
-                  const IconComponent = log.icon;
-                  return (
-                    <div key={index} className="flex items-center gap-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
-                      <div className="text-sm text-gray-500 dark:text-gray-400 min-w-[80px]">
-                        {log.time}
-                      </div>
-                      <IconComponent className="w-5 h-5 text-blue-500" />
-                      <div className="text-sm text-gray-900 dark:text-white flex-1">
-                        {log.action}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+        {/* Navigation Menu */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+            Módulos do Sistema
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {menuItems.map((item) => (
+              <MenuCard key={item.title} {...item} />
+            ))}
           </div>
-          
-          {/* Vagas Widget */}
-          <VagasWidget vagas={stats.vagas} />
         </div>
       </div>
 
-      <ImportExportModal
-        isOpen={isImportExportModalOpen}
-        onClose={() => setIsImportExportModalOpen(false)}
+      {/* Import/Export Modal */}
+      {isImportExportModalOpen && (
+        <ImportExportModal
+          isOpen={isImportExportModalOpen}
+          onClose={() => setIsImportExportModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+// Keep existing MenuCard component unchanged
+const MenuCard = ({
+  title,
+  icon: Icon,
+  link,
+  description,
+  enabled = true,
+  isSpecial = false,
+  onClick,
+}: MenuItem) => {
+  const cardContent = (
+    <>
+      <div
+        className={`absolute inset-0 bg-gradient-to-br ${
+          isSpecial
+            ? "from-orange-500/10 to-amber-500/5"
+            : "from-primary/5 to-transparent"
+        } opacity-0 transition-opacity duration-300 ${enabled ? "group-hover:opacity-100" : ""}`}
       />
+      <div className="relative flex flex-col h-full justify-between p-6">
+        <div className="flex flex-col items-center text-center">
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-12 h-12 flex items-center justify-center ${
+                isSpecial
+                  ? "bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40"
+                  : "bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40"
+              } rounded-full transform transition-all duration-300 ${enabled ? "group-hover:scale-110" : ""}`}
+            >
+              <Icon
+                className={`w-6 h-6 ${
+                  isSpecial
+                    ? "text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300"
+                    : "text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300"
+                } transition-colors duration-300`}
+              />
+            </div>
+
+            <h3
+              className={`text-xl font-bold ${
+                isSpecial
+                  ? "text-orange-700 dark:text-orange-400"
+                  : "text-gray-800 dark:text-white"
+              }`}
+            >
+              {title}
+              {!enabled && (
+                <Lock className="w-4 h-4 text-gray-400 dark:text-gray-600 ml-2 inline-block" />
+              )}
+            </h3>
+          </div>
+
+          <p
+            className={`text-base text-center mt-8 ${
+              isSpecial
+                ? "text-orange-700/80 dark:text-orange-300/90"
+                : "text-gray-600 dark:text-gray-300"
+            }`}
+          >
+            {description}
+          </p>
+        </div>
+      </div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <div
+        onClick={onClick}
+        className={`group relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl 
+                 border ${isSpecial ? "border-orange-200 dark:border-orange-800/50" : "border-gray-200 dark:border-gray-700"} 
+                 shadow-md hover:shadow-lg
+                 transform hover:-translate-y-1 transition-all duration-300
+                 w-full h-[200px] flex flex-col justify-between
+                 cursor-pointer`}
+        aria-label={`Acessar ${title}`}
+        data-testid={`menu-card-${title.toLowerCase().replace(/\s+/g, '-')}`}
+      >
+        {cardContent}
+      </div>
+    );
+  }
+
+  return enabled ? (
+    <Link
+      to={link}
+      className={`group relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl 
+                 border ${isSpecial ? "border-orange-200 dark:border-orange-800/50" : "border-gray-200 dark:border-gray-700"} 
+                 shadow-md hover:shadow-lg
+                 transform hover:-translate-y-1 transition-all duration-300
+                 w-full h-[200px] flex flex-col justify-between`}
+      aria-label={`Acessar ${title}`}
+      data-testid={`menu-card-${title.toLowerCase().replace(/\s+/g, '-')}`}
+    >
+      {cardContent}
+    </Link>
+  ) : (
+    <div
+      className="group relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl 
+                 border border-gray-200 dark:border-gray-700 shadow-md opacity-60
+                 w-full h-[200px] flex flex-col justify-between
+                 cursor-not-allowed select-none"
+      aria-disabled="true"
+      data-testid={`menu-card-${title.toLowerCase().replace(/\s+/g, '-')}-disabled`}
+    >
+      {cardContent}
     </div>
   );
 };
