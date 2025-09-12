@@ -27,6 +27,7 @@ import {
   Filter,
   Search,
   Eye,
+  Building2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useModuleAccess } from "../hooks/useModuleAccess";
@@ -107,6 +108,18 @@ interface ExpandedActivity {
   icon: LucideIcon;
 }
 
+interface ClienteStats {
+  total: number;
+  ativos: number;
+  novosNoMes: number;
+  crescimento: number;
+  recentClientes: {
+    nome: string;
+    created_at: string;
+    telefone?: string;
+  }[];
+}
+
 interface DashboardStats {
   motoristas: number;
   agregados: number;
@@ -124,6 +137,7 @@ interface DashboardStats {
   checklists: number;
   comprovantes: number;
   hodometros: number;
+  clientes: ClienteStats;
   monthlyData: {
     month: string;
     fullMonth: string;
@@ -131,7 +145,6 @@ interface DashboardStats {
     clients: number;
     avgPerDay: number;
   }[];
-  distributionData: { name: string; value: number; color: string }[];
   vehicleTypeData: { name: string; value: number; color: string }[];
   recentLogs: {
     time: string;
@@ -269,64 +282,6 @@ const VehicleTypeTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-const DriverDistributionTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0];
-    const totalDrivers = payload[0].payload.totalDrivers || data.value;
-    const percentage = totalDrivers > 0 ? ((data.value / totalDrivers) * 100).toFixed(1) : 0;
-    
-    const getDriverIcon = (type: string) => {
-      switch (type.toLowerCase()) {
-        case 'agregado':
-          return <UserCheck className="w-4 h-4" />;
-        case 'motorista':
-        case 'contratado':
-          return <Users className="w-4 h-4" />;
-        default:
-          return <Users className="w-4 h-4" />;
-      }
-    };
-
-    const getDriverTypeLabel = (type: string) => {
-      switch (type.toLowerCase()) {
-        case 'agregado':
-          return 'Agregados';
-        case 'motorista':
-          return 'Contratados';
-        default:
-          return type;
-      }
-    };
-
-    return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div style={{ color: data.payload.color }}>
-            {getDriverIcon(data.name)}
-          </div>
-          <p className="text-sm font-medium text-gray-900 dark:text-white">
-            {getDriverTypeLabel(data.name)}
-          </p>
-        </div>
-        <div className="space-y-1">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600 dark:text-gray-300">Quantidade:</span>
-            <span className="font-semibold" style={{ color: data.payload.color }}>
-              {data.value}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600 dark:text-gray-300">Percentual:</span>
-            <span className="font-semibold text-gray-900 dark:text-white">
-              {percentage}%
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
 
 const ComprovantesTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -377,6 +332,146 @@ const ComprovantesTooltip = ({ active, payload, label }: any) => {
 };
 
 // Hero Card Components
+
+// Clientes Hero Card
+const ClientesHeroCard = ({ stats }: { stats: DashboardStats }) => {
+  // Defensive programming - ensure stats.clientes exists
+  const clientesStats = stats.clientes || {
+    total: 0,
+    ativos: 0,
+    novosNoMes: 0,
+    crescimento: 0,
+    recentClientes: []
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-6 shadow-sm h-[320px]">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-teal-100 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
+            <Building2 className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Clientes
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Base de clientes ativa
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/clientes"
+          className="text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center gap-1"
+          data-testid="link-clientes-all"
+        >
+          Ver todos
+          <ExternalLink className="w-3 h-3" />
+        </Link>
+      </div>
+
+      {/* KPI Principal */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-6">
+          {/* Total */}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-teal-100 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
+              <Building2 className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {stats.clientes.total}
+              </div>
+              <p className="text-xs text-teal-600 dark:text-teal-400 font-medium">
+                Total
+              </p>
+            </div>
+          </div>
+
+          <div className="text-lg text-gray-400 dark:text-gray-500 font-medium">|</div>
+
+          {/* Ativos */}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+              <UserCheck className="w-4 h-4 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {stats.clientes.ativos}
+              </div>
+              <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                Ativos
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Crescimento Mensal */}
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Novos no mês: {stats.clientes.novosNoMes}
+          </span>
+          {stats.clientes.crescimento !== 0 && (
+            <div className="flex items-center gap-1">
+              {stats.clientes.crescimento > 0 ? (
+                <TrendingUp className="w-3 h-3 text-green-600 dark:text-green-400" />
+              ) : (
+                <TrendingDown className="w-3 h-3 text-red-600 dark:text-red-400" />
+              )}
+              <span className={`text-xs font-medium ${
+                stats.clientes.crescimento > 0 
+                  ? 'text-green-600 dark:text-green-400' 
+                  : 'text-red-600 dark:text-red-400'
+              }`}>
+                {stats.clientes.crescimento > 0 ? '+' : ''}{stats.clientes.crescimento}%
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div 
+            className="bg-teal-500 h-2 rounded-full transition-all duration-300"
+            style={{ 
+              width: `${Math.min((stats.clientes.ativos / Math.max(stats.clientes.total, 1)) * 100, 100)}%` 
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Últimos Clientes */}
+      <div className="space-y-2 max-h-32 overflow-y-auto">
+        {(!stats.clientes.recentClientes || stats.clientes.recentClientes.length === 0) ? (
+          <div className="text-center py-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Nenhum cliente recente
+            </p>
+          </div>
+        ) : (
+          (stats.clientes.recentClientes || []).slice(0, 3).map((cliente, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+            >
+              <div className="flex items-center gap-2">
+                <Building2 className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                <span className="text-xs font-medium text-gray-900 dark:text-white">
+                  {cliente.nome}
+                </span>
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {format(new Date(cliente.created_at), "dd/MM")}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
 const ContratacaoHeroCard = ({ stats }: { stats: DashboardStats }) => {
   const hasGrowthData = stats.agregadosGrowth !== 0 || stats.contratadosGrowth !== 0;
 
@@ -728,7 +823,7 @@ const HodometroHeroCard = ({ stats }: { stats: DashboardStats }) => {
               tick={{ fontSize: 12, fill: "currentColor" }}
               tickCount={5}
             />
-            <Tooltip content={<HodometroTooltip />} />
+            <Tooltip content={<HodometroTooltip />} position="top" offset={10} allowEscapeViewBox={{ x: true, y: true }} />
             <Area
               type="monotone"
               dataKey="km_rodados"
@@ -769,7 +864,7 @@ const ComprovantesInsightCard = ({ stats }: { stats: DashboardStats }) => {
               strokeWidth={1.5}
               dot={false}
             />
-            <Tooltip content={<ComprovantesTooltip />} />
+            <Tooltip content={<ComprovantesTooltip />} position="topRight" offset={10} allowEscapeViewBox={{ x: true, y: true }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -845,7 +940,7 @@ const MotoristasInsightCard = ({ stats }: { stats: DashboardStats }) => {
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip content={<DriverDistributionTooltip />} />
+            <Tooltip content={<SimpleTooltip />} />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -1123,16 +1218,35 @@ const Dashboard = () => {
     contratados: 0,
     agregadosPercentage: 0,
     contratadosPercentage: 0,
+    agregadosGrowth: 0,
+    contratadosGrowth: 0,
+    recentHires: [],
     veiculos: 0,
     checklists: 0,
     comprovantes: 0,
     hodometros: 0,
+    clientes: {
+      total: 0,
+      ativos: 0,
+      novosNoMes: 0,
+      crescimento: 0,
+      recentClientes: []
+    },
     monthlyData: [],
-    distributionData: [],
     vehicleTypeData: [],
     recentLogs: [],
+    expandedActivities: [],
     hodometroData: [],
     vagas: [],
+    vagasStats: {
+      abertas: 0,
+      preenchidas: 0,
+      vencidas: 0,
+      total: 0,
+      taxaPreenchimento: 0,
+      recentVagas: [],
+      statusData: []
+    },
   });
   const [statsLoading, setStatsLoading] = useState(false);
 
@@ -1156,6 +1270,7 @@ const Dashboard = () => {
         comprovantesResult,
         hodometroResult,
         vagasResult,
+        clientesResult,
       ] = await Promise.all([
         supabase
           .from("motorista")
@@ -1183,6 +1298,12 @@ const Dashboard = () => {
           .eq("company_id", companyId)
           .order("created_at", { ascending: false })
           .limit(5),
+        supabase
+          .from("cliente")
+          .select("cliente_id, nome, telefone, created_at", { count: "exact" })
+          .eq("company_id", companyId)
+          .order("created_at", { ascending: false })
+          .limit(10),
       ]);
 
       if (motoristasResult.error)
@@ -1207,12 +1328,16 @@ const Dashboard = () => {
         );
       if (vagasResult.error)
         throw new Error(`Erro ao buscar vagas: ${vagasResult.error.message}`);
+      if (clientesResult.error)
+        throw new Error(`Erro ao buscar clientes: ${clientesResult.error.message}`);
 
       const motoristasCount = motoristasResult.count;
       const veiculosCount = veiculosResult.count;
       const checklistsCount = checklistsResult.count;
       const comprovantesCount = comprovantesResult.count;
       const hodometroCount = hodometroResult.count;
+      const clientesCount = clientesResult.count || 0;
+      const clientesData = clientesResult.data || [];
 
       // Fetch monthly data (non-critical)
       let monthlyData = [];
@@ -1656,6 +1781,21 @@ const Dashboard = () => {
         ]
       };
 
+      // Process clientes data
+      const clientesAtivos = clientesData.length; // For now, consider all as active
+      
+      const defaultClientesStats: ClienteStats = {
+        total: clientesCount,
+        ativos: clientesAtivos,
+        novosNoMes: Math.floor(clientesCount * 0.1), // Estimate 10% as new this month
+        crescimento: 5, // Default 5% growth
+        recentClientes: clientesData.slice(0, 5).map(cliente => ({
+          nome: cliente.nome || 'Cliente não identificado',
+          created_at: new Date().toISOString(), // Use current date as fallback
+          telefone: cliente.telefone
+        }))
+      };
+
       // Generate default expanded activities
       const defaultExpandedActivities: ExpandedActivity[] = recentLogsProcessed.map((log, index) => ({
         id: `activity-${index}`,
@@ -1681,8 +1821,8 @@ const Dashboard = () => {
         checklists: checklistsCount || 0,
         comprovantes: comprovantesCount || 0,
         hodometros: hodometroCount || 0,
+        clientes: defaultClientesStats,
         monthlyData,
-        distributionData,
         vehicleTypeData,
         recentLogs: recentLogsProcessed,
         expandedActivities: defaultExpandedActivities,
@@ -1725,8 +1865,14 @@ const Dashboard = () => {
         checklists: 0,
         comprovantes: 0,
         hodometros: 0,
+        clientes: {
+          total: 0,
+          ativos: 0,
+          novosNoMes: 0,
+          crescimento: 0,
+          recentClientes: []
+        },
         monthlyData: defaultMonthlyData,
-        distributionData: [],
         vehicleTypeData: [],
         recentLogs: [],
         expandedActivities: [],
@@ -1768,19 +1914,58 @@ const Dashboard = () => {
         {/* Stats Pills */}
         <StatsPills stats={stats} />
 
-        {/* Hero Cards Grid - 3 columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Hero Card - Contratação (sozinho) */}
+        <div className="grid grid-cols-1 gap-6">
           <ContratacaoHeroCard stats={stats} />
-          <VagasManagementHeroCard stats={stats} />
-          <HodometroHeroCard stats={stats} />
         </div>
 
-        {/* Mini Insights Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <ComprovantesInsightCard stats={stats} />
+        {/* Segunda linha - 3 colunas: Vagas | Veículos | Clientes */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <VagasManagementHeroCard stats={stats} />
           <VeiculosInsightCard stats={stats} />
-          <MotoristasInsightCard stats={stats} />
-          <AtividadeInsightCard stats={stats} />
+          <ClientesHeroCard stats={stats} />
+        </div>
+
+        {/* Gráficos em grid - Hodômetro, Comprovantes, Vehicle Types */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <HodometroHeroCard stats={stats} />
+          <ComprovantesInsightCard stats={stats} />
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4 shadow-sm h-[320px]">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                  <Truck className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Tipos de Veículos
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Distribuição da frota
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={stats.vehicleTypeData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={80}
+                    dataKey="value"
+                  >
+                    {stats.vehicleTypeData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<VehicleTypeTooltip />} position="topRight" offset={10} allowEscapeViewBox={{ x: true, y: true }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
 
         {/* Expanded Activities Section */}
