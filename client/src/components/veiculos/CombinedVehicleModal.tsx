@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Save, Edit2 } from 'lucide-react';
+import { X, Truck, MapPin, PenTool as Tool, FileText, CheckCircle2, XCircle, Camera, Loader2, ExternalLink, Upload, Save, Edit2, Search } from 'lucide-react';
 import type { Veiculo, DocumentoVeiculo } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { VEHICLE_TYPES } from '../../constants/vehicleTypes';
+import { consultarPlacaApi, validarPlaca, formatarPlaca } from '../../utils/placaService';
 
 interface CombinedVehicleModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [consultingPlaca, setConsultingPlaca] = useState(false);
   const [veiculoData, setVeiculoData] = useState<Veiculo | null>(null);
   const [documentoVeiculo, setDocumentoVeiculo] = useState<DocumentoVeiculo | null>(null);
 
@@ -67,6 +69,37 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
       }
     }
   }, [veiculoData, documentoVeiculo]);
+
+  const consultarPlacaLocal = async (placa: string) => {
+    if (!placa || placa.length < 7) return;
+    
+    if (!validarPlaca(placa)) {
+      toast.error('Formato de placa inválido');
+      return;
+    }
+
+    setConsultingPlaca(true);
+    try {
+      const data = await consultarPlacaApi(placa);
+      
+      setFormData(prev => ({
+        ...prev,
+        placa: formatarPlaca(data.placa || prev.placa),
+        marca: data.marca || prev.marca,
+        tipo: data.modelo || prev.tipo,
+        ano: data.ano || prev.ano,
+        cor: data.cor || prev.cor,
+        combustivel: data.combustivel || prev.combustivel
+      }));
+      
+      toast.success('Dados da placa preenchidos!');
+    } catch (error) {
+      console.error('Erro ao consultar placa:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao consultar placa');
+    } finally {
+      setConsultingPlaca(false);
+    }
+  };
 
   const fetchVehicleDetails = async () => {
     if (!veiculo) return;
@@ -351,15 +384,36 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Placa *
                             </label>
-                            <input
-                              type="text"
-                              name="placa"
-                              value={formData.placa}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                              required
-                              maxLength={7}
-                            />
+                            <div className="relative">
+                              <input
+                                type="text"
+                                name="placa"
+                                value={formData.placa}
+                                onChange={handleInputChange}
+                                onBlur={(e) => consultarPlacaLocal(e.target.value)}
+                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                required
+                                maxLength={8}
+                                placeholder="ABC-1234"
+                                data-testid="input-placa-veiculo"
+                              />
+                              {consultingPlaca && (
+                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                  <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                                </div>
+                              )}
+                              {!consultingPlaca && (
+                                <button
+                                  type="button"
+                                  onClick={() => consultarPlacaLocal(formData.placa)}
+                                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-blue-500"
+                                  data-testid="button-consultar-placa"
+                                  title="Consultar dados da placa"
+                                >
+                                  <Search className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
