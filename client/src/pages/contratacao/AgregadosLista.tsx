@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
   import WhatsAppAvatar from '../../components/WhatsAppAvatar';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
+  import { useDebounce } from '../../hooks/useDebounce';
   import { useQuery } from '@tanstack/react-query';
   import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database';
   import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -125,7 +126,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { token: wiseAppToken } = useWiseAppAccess();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFiltering, setIsFiltering] = useState(false);
+  
+  // Server-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms delay
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -519,10 +528,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const isOpening = !showTagDropdown;
     setShowTagDropdown(isOpening);
     
-    // Carregar tags dos motoristas apenas quando abrir o dropdown pela primeira vez
-    if (isOpening && Object.keys(motoristaTags).length === 0 && contratados.length > 0) {
-      await fetchMotoristaTags(contratados);
-    }
+    // Tags are now loaded per page in fetchContratados - no need for global loading
+    // This prevents loading tags for all 6,379 records
   };
 
   // Fechar dropdown quando clicar fora
@@ -904,29 +911,42 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     });
 
     useEffect(() => {
-      fetchContratados();
+      fetchContratados(1, pageSize, true); // true = initial load
+      setCurrentPage(1);
       fetchClientes();
-    }, [dateFilter, customDateRange]);
+    }, [dateFilter, customDateRange, statusFilter, clienteFilter, cidadeFilter, ativoFilter, debouncedSearchTerm, tipoVeiculoFilter, tagFilter]);
+    
+    // Handle page changes
+    const handlePageChange = (page: number) => {
+      fetchContratados(page, pageSize, false); // false = pagination, not initial load
+    };
+    
+    // Handle page size changes
+    const handlePageSizeChange = (size: number) => {
+      setPageSize(size);
+      fetchContratados(1, size, false); // false = page size change, not initial load
+      setCurrentPage(1);
+    };
 
-    // Carregar tags dos agregados automaticamente quando a lista de contratados mudar
-    useEffect(() => {
-      if (contratados && contratados.length > 0) {
-        fetchMotoristaTags(contratados);
-      }
-    }, [contratados]);
+    // Remove automatic tag loading - now handled in fetchContratados
 
 
-    // Sistema de aplicação automática de tags
-    useEffect(() => {
-      if (tags.length > 0 && contratados.length > 0 && Object.keys(motoristaTags).length > 0) {
-        applyAutomaticTags();
-      }
-    }, [tags, contratados, motoristaTags]);
+    // Disable automatic tag application for performance - only apply on-demand
+    // This prevents processing all 6,379 records automatically
+    // useEffect(() => {
+    //   if (tags.length > 0 && contratados.length > 0 && Object.keys(motoristaTags).length > 0) {
+    //     applyAutomaticTags();
+    //   }
+    // }, [tags, contratados, motoristaTags]);
 
+    // Apply automatic tags only to current page records for performance
     const applyAutomaticTags = async () => {
+      // Limit automatic tag application to current page records only
+      const currentPageRecords = contratados.slice(0, pageSize); // Only current page
+      
       const vipTag = tags.find(tag => tag.nome.toLowerCase().includes('vip'));
       if (vipTag) {
-        for (const agregado of contratados) {
+        for (const agregado of currentPageRecords) {
           const hasVeiculo = agregado.veiculo_id && agregado.placa;
           const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some((tag: any) => tag.id === vipTag.id);
           
@@ -939,7 +959,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       // Critério 2: Aplicar tag "Novo" para agregados cadastrados nos últimos 7 dias
       const novoTag = tags.find(tag => tag.nome.toLowerCase().includes('novo'));
       if (novoTag) {
-        for (const agregado of contratados) {
+        for (const agregado of currentPageRecords) {
           const cadastroDate = new Date(agregado.data_cadastro || '');
           const daysSinceCadastro = (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
           const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some((tag: any) => tag.id === novoTag.id);
@@ -1018,8 +1038,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         );
         
         // Se estiver em uma visualização filtrada, atualiza a lista
-        if (searchTerm) {
-          fetchContratados();
+        if (debouncedSearchTerm) {
+          fetchContratados(1, pageSize, false); // false = search update, not initial load
         }
         
         // Fecha o modal
@@ -1046,9 +1066,57 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       });
     };
 
-    const fetchContratados = async () => {
+    const fetchContratados = async (page: number = 1, size: number = 10, isInitialLoad: boolean = false) => {
       try {
-        setLoading(true);
+        // Use different loading states: full loading for initial load, filtering state for filters
+        if (isInitialLoad) {
+          setLoading(true);
+        } else {
+          setIsFiltering(true);
+        }
+        
+        // Calculate pagination parameters
+        const from = (page - 1) * size;
+        const to = from + size - 1;
+        
+        // First get total count for pagination
+        let countQuery = supabase
+          .from('vw_agregados_completo')
+          .select('motorista_id', { count: 'exact', head: true })
+          .eq('company_id', companyId);
+        
+        // Apply server-side filters to count query
+        if (statusFilter.length > 0) {
+          countQuery = countQuery.in('st_cadastro', statusFilter);
+        }
+        
+        if (clienteFilter.length > 0) {
+          if (clienteFilter.includes('sem_cliente')) {
+            if (clienteFilter.length === 1) {
+              countQuery = countQuery.is('cliente_id', null);
+            } else {
+              const otherFilters = clienteFilter.filter(f => f !== 'sem_cliente');
+              countQuery = countQuery.or(`cliente_id.is.null,cliente_id.in.(${otherFilters.join(',')})`);
+            }
+          } else {
+            countQuery = countQuery.in('cliente_id', clienteFilter.map(f => parseInt(f)));
+          }
+        }
+        
+        if (cidadeFilter.length > 0) {
+          countQuery = countQuery.in('nome_cidade', cidadeFilter);
+        }
+        
+        if (ativoFilter === 'active') {
+          countQuery = countQuery.eq('ativo', true);
+        } else if (ativoFilter === 'inactive') {
+          countQuery = countQuery.eq('ativo', false);
+        }
+        
+        if (debouncedSearchTerm) {
+          countQuery = countQuery.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%,telefone.ilike.%${debouncedSearchTerm}%`);
+        }
+        
         // Buscar os agregados da view específica
         let query = supabase
           .from('vw_agregados_completo')
@@ -1084,12 +1152,61 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           }
         }
 
+        // Apply server-side filters to main query
+        if (statusFilter.length > 0) {
+          query = query.in('st_cadastro', statusFilter);
+        }
+        
+        if (clienteFilter.length > 0) {
+          if (clienteFilter.includes('sem_cliente')) {
+            if (clienteFilter.length === 1) {
+              query = query.is('cliente_id', null);
+            } else {
+              const otherFilters = clienteFilter.filter(f => f !== 'sem_cliente');
+              query = query.or(`cliente_id.is.null,cliente_id.in.(${otherFilters.join(',')})`);
+            }
+          } else {
+            query = query.in('cliente_id', clienteFilter.map(f => parseInt(f)));
+          }
+        }
+        
+        if (cidadeFilter.length > 0) {
+          query = query.in('nome_cidade', cidadeFilter);
+        }
+        
+        if (ativoFilter === 'active') {
+          query = query.eq('ativo', true);
+        } else if (ativoFilter === 'inactive') {
+          query = query.eq('ativo', false);
+        }
+        
+        if (debouncedSearchTerm) {
+          query = query.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%,telefone.ilike.%${debouncedSearchTerm}%`);
+        }
+        
         // Order by data_cadastro (newest first)
         query = query.order('data_cadastro', { ascending: false });
-
-        const { data, error } = await query;
-
-        if (error) throw error;
+        
+        // Apply pagination
+        query = query.range(from, to);
+        
+        // Execute both queries
+        const [countResult, dataResult] = await Promise.all([
+          countQuery,
+          query
+        ]);
+        
+        if (countResult.error) throw countResult.error;
+        if (dataResult.error) throw dataResult.error;
+        
+        const data = dataResult.data;
+        const totalCount = countResult.count || 0;
+        
+        // Update pagination state
+        setTotalItems(totalCount);
+        setTotalPages(Math.max(1, Math.ceil(totalCount / size)));
+        setCurrentPage(page);
+        setPageSize(size);
 
         // Log para debug dos valores de funcao
         console.log('Valores de funcao encontrados:', Array.from(new Set(data?.map(item => item.funcao))));
@@ -1194,13 +1311,17 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         setContratados(agregadosAgrupados);
         
-        // Tags serão carregadas apenas quando necessário (filtro, ações em massa, etc.)
-        // Para melhor performance, não carregar automaticamente
+        // Load tags only for visible drivers on current page
+        if (agregadosAgrupados.length > 0) {
+          await fetchMotoristaTags(agregadosAgrupados);
+        }
       } catch (error) {
         console.error('Error fetching contratados:', error);
         toast.error('Erro ao carregar contratados');
       } finally {
+        // Reset both loading states
         setLoading(false);
+        setIsFiltering(false);
       }
     };
 
@@ -1586,55 +1707,27 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       return motorista.nome_cidade ?? '';
     };
 
+    // Server-side filtering - removed client-side filteredContratados
+    // All filtering is now done in the Supabase query for better performance
+    
+    // Apply client-side tag and vehicle type filters (these are complex to do server-side)
     const filteredContratados = contratados.filter((motorista): boolean => {
-      const searchLower = searchTerm.toLowerCase();
-      
-      // Lógica para filtro de status (multiseleção)
-      const statusMatch = statusFilter.length === 0 || 
-        (motorista.st_cadastro && statusFilter.includes(motorista.st_cadastro));
-      
-      // Lógica para filtro de cliente (multiseleção)
-      let clienteMatch = true;
-      if (clienteFilter.length > 0) {
-        if (clienteFilter.includes('sem_cliente')) {
-          // Se 'sem_cliente' está selecionado, inclui registros sem cliente
-          clienteMatch = motorista.cliente_id === null || motorista.cliente_id === undefined;
-        } else {
-          // Verifica se o cliente do motorista está na lista de clientes selecionados
-          clienteMatch = motorista.cliente_id !== null && 
-            motorista.cliente_id !== undefined &&
-            clienteFilter.includes(motorista.cliente_id.toString());
-        }
-        
-        // Se 'sem_cliente' está selecionado junto com outros clientes, combina os resultados
-        if (clienteFilter.includes('sem_cliente') && clienteFilter.length > 1) {
-          clienteMatch = clienteMatch || (motorista.cliente_id === null || motorista.cliente_id === undefined);
-        }
-      }
-      
-      // Lógica para filtro de cidade (multiseleção)
-      const cidadeMatch = cidadeFilter.length === 0 || 
-        (motorista.nome_cidade != null && cidadeFilter.includes(motorista.nome_cidade));
-      
-      // Lógica para filtro de tipo de veículo (multiseleção)
+      // Vehicle type filter (complex logic, keep client-side)
       let tipoVeiculoMatch = true;
       if (tipoVeiculoFilter.length > 0) {
-        // Check for 'sem_veiculo' filter
         if (tipoVeiculoFilter.includes('sem_veiculo')) {
           tipoVeiculoMatch = !motorista.veiculo || motorista.veiculo.length === 0;
           
-          // If other filters are also selected, we need to check them too
           if (tipoVeiculoFilter.length > 1) {
             const hasMatchingVehicle = checkVehicleTypeMatch(motorista, tipoVeiculoFilter.filter(t => t !== 'sem_veiculo'));
             tipoVeiculoMatch = tipoVeiculoMatch || hasMatchingVehicle;
           }
         } else {
-          // Check vehicle type against filters
           tipoVeiculoMatch = checkVehicleTypeMatch(motorista, tipoVeiculoFilter);
         }
       }
       
-      // Lógica para filtro de tags (multiseleção)
+      // Tag filter (complex logic, keep client-side)
       let tagMatch = true;
       if (tagFilter.length > 0) {
         const motoristaId = motorista.motorista_id;
@@ -1643,60 +1736,35 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           const motoristaTagIds = motoristaTagsList.map((tag: any) => tag.id.toString());
           
           if (tagFilterMode === 'contains') {
-            // Modo "contém": motorista deve ter pelo menos uma das tags selecionadas
             tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
           } else {
-            // Modo "não contém": motorista NÃO deve ter nenhuma das tags selecionadas
             tagMatch = !tagFilter.some(tagId => motoristaTagIds.includes(tagId));
           }
-          
         } else {
-          // Se não tem ID, no modo "contém" não passa, no modo "não contém" passa
           tagMatch = tagFilterMode === 'not_contains';
         }
       }
       
-      const ativoMatch = ativoFilter === '' ? true : 
-                        ativoFilter === 'active' ? motorista.ativo === true : 
-                        ativoFilter === 'inactive' ? motorista.ativo === false : true;
-      
-      const searchMatch = Boolean(
-        (motorista.nome_motorista && motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
-        (motorista.cpf && motorista.cpf.includes(searchLower)) ||
-        (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
-        (motorista.telefone && motorista.telefone.toString().includes(searchLower))
-      );
-      
-      return Boolean(
-        statusMatch &&
-        clienteMatch &&
-        cidadeMatch &&
-        tipoVeiculoMatch &&
-        tagMatch &&
-        ativoMatch &&
-        searchMatch
-      );
+      return tipoVeiculoMatch && tagMatch;
     });
 
-    const {
-      currentPage,
-      pageSize,
-      totalPages,
-      totalItems,
-      paginatedData,
-      handlePageChange,
-      handlePageSizeChange
-    } = usePagination({
-      data: filteredContratados,
-      initialPageSize: 10
-    });
+    // Use server-side pagination data directly
+    const paginatedData = filteredContratados;
 
+    // Only show full loading spinner on initial load, not during filtering
     if (loading) {
       return <LoadingSpinner />;
     }
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 relative">
+        {/* Discrete filtering indicator */}
+        {isFiltering && (
+          <div className="absolute top-0 right-0 z-10 flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
+            <span className="text-sm text-blue-600 dark:text-blue-400">Filtrando...</span>
+          </div>
+        )}
         
         <div className="flex justify-between items-center">
           <div className="flex items-center">
@@ -1787,7 +1855,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               
               {/* Botão limpar filtros */}
               {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
-                ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
+                ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all' || debouncedSearchTerm) && (
                 <button
                   onClick={() => {
                     setStatusFilter([]);
@@ -2847,7 +2915,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           onClose={() => setIsDocumentUploadOpen(false)}
           motorista_id={selectedMotorista?.motorista_id || 0}
           nome={selectedMotorista?.nome_motorista || ''}
-          onUploadSuccess={fetchContratados}
+          onUploadSuccess={() => fetchContratados(1, pageSize, false)} // false = refresh after upload
         />
 
         <EditMotoristaModal
@@ -2888,7 +2956,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             };
             return motoristaWithAddress;
           })() : null}
-          onUpdate={fetchContratados}
+          onUpdate={() => fetchContratados(1, pageSize, false)} // false = refresh after update
         />
 
         <DeleteConfirmationModal
@@ -2932,7 +3000,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           selectedItems={selectedItems}
           actionType={bulkActionType}
           onSuccess={() => {
-            fetchContratados();
+            fetchContratados(1, pageSize, false); // false = refresh after bulk action
             // Recarregar tags imediatamente após operação em massa
             if (contratados && contratados.length > 0) {
               fetchMotoristaTags(contratados);
@@ -2969,7 +3037,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           onSuccess={() => {
             setShowAddModal(false);
             // Refresh the list after successful addition
-            fetchContratados();
+            fetchContratados(1, pageSize, false); // false = refresh after adding new
             if (onSuccess) onSuccess();
           }}
         />
