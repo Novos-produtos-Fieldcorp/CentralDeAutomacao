@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Download, Calendar, User, Building, MapPin, FileText, Eye, Trash2, Plus, X } from 'lucide-react';
+import { Search, Filter, Download, Calendar, User, Building, MapPin, FileText, Trash2, Plus, X, Edit } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -524,16 +524,14 @@ const ComprovantesLista = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center gap-2">
-                      {comprovante.foto_comprovante && (
-                        <button
-                          onClick={() => openImageInNewTab(comprovante.foto_comprovante!)}
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                          data-testid={`button-view-comprovante-${comprovante.id}`}
-                          title="Ver comprovante"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => {/* TODO: Implement edit */}}
+                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        data-testid={`button-edit-comprovante-${comprovante.id}`}
+                        title="Editar comprovante"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => {/* TODO: Implement delete */}}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
