@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
   import WhatsAppAvatar from '../../components/WhatsAppAvatar';
   import AddAgregadoModal from '../../components/AddAgregadoModal';
   import { useCompanyData } from '../../hooks/useCompanyData';
+  import { useDebounce } from '../../hooks/useDebounce';
   import { useQuery } from '@tanstack/react-query';
   import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database';
   import { formatCPF, formatPhone, formatDate } from '../../utils/format';
@@ -125,6 +126,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { token: wiseAppToken } = useWiseAppAccess();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFiltering, setIsFiltering] = useState(false);
   
   // Server-side pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -132,6 +134,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms delay
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -908,20 +911,20 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     });
 
     useEffect(() => {
-      fetchContratados(1, pageSize); // Reset to page 1 when filters change
+      fetchContratados(1, pageSize, true); // true = initial load
       setCurrentPage(1);
       fetchClientes();
-    }, [dateFilter, customDateRange, statusFilter, clienteFilter, cidadeFilter, ativoFilter, searchTerm, tipoVeiculoFilter, tagFilter]);
+    }, [dateFilter, customDateRange, statusFilter, clienteFilter, cidadeFilter, ativoFilter, debouncedSearchTerm, tipoVeiculoFilter, tagFilter]);
     
     // Handle page changes
     const handlePageChange = (page: number) => {
-      fetchContratados(page, pageSize);
+      fetchContratados(page, pageSize, false); // false = pagination, not initial load
     };
     
     // Handle page size changes
     const handlePageSizeChange = (size: number) => {
       setPageSize(size);
-      fetchContratados(1, size);
+      fetchContratados(1, size, false); // false = page size change, not initial load
       setCurrentPage(1);
     };
 
@@ -1035,8 +1038,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         );
         
         // Se estiver em uma visualização filtrada, atualiza a lista
-        if (searchTerm) {
-          fetchContratados();
+        if (debouncedSearchTerm) {
+          fetchContratados(1, pageSize, false); // false = search update, not initial load
         }
         
         // Fecha o modal
@@ -1063,9 +1066,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       });
     };
 
-    const fetchContratados = async (page: number = 1, size: number = 10) => {
+    const fetchContratados = async (page: number = 1, size: number = 10, isInitialLoad: boolean = false) => {
       try {
-        setLoading(true);
+        // Use different loading states: full loading for initial load, filtering state for filters
+        if (isInitialLoad) {
+          setLoading(true);
+        } else {
+          setIsFiltering(true);
+        }
         
         // Calculate pagination parameters
         const from = (page - 1) * size;
@@ -1105,8 +1113,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           countQuery = countQuery.eq('ativo', false);
         }
         
-        if (searchTerm) {
-          countQuery = countQuery.or(`nome_motorista.ilike.%${searchTerm}%,cpf.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,telefone.ilike.%${searchTerm}%`);
+        if (debouncedSearchTerm) {
+          countQuery = countQuery.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%,telefone.ilike.%${debouncedSearchTerm}%`);
         }
         
         // Buscar os agregados da view específica
@@ -1172,8 +1180,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           query = query.eq('ativo', false);
         }
         
-        if (searchTerm) {
-          query = query.or(`nome_motorista.ilike.%${searchTerm}%,cpf.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,telefone.ilike.%${searchTerm}%`);
+        if (debouncedSearchTerm) {
+          query = query.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%,telefone.ilike.%${debouncedSearchTerm}%`);
         }
         
         // Order by data_cadastro (newest first)
@@ -1311,7 +1319,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         console.error('Error fetching contratados:', error);
         toast.error('Erro ao carregar contratados');
       } finally {
+        // Reset both loading states
         setLoading(false);
+        setIsFiltering(false);
       }
     };
 
@@ -1741,12 +1751,20 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     // Use server-side pagination data directly
     const paginatedData = filteredContratados;
 
+    // Only show full loading spinner on initial load, not during filtering
     if (loading) {
       return <LoadingSpinner />;
     }
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 relative">
+        {/* Discrete filtering indicator */}
+        {isFiltering && (
+          <div className="absolute top-0 right-0 z-10 flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
+            <span className="text-sm text-blue-600 dark:text-blue-400">Filtrando...</span>
+          </div>
+        )}
         
         <div className="flex justify-between items-center">
           <div className="flex items-center">
@@ -1837,7 +1855,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               
               {/* Botão limpar filtros */}
               {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
-                ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
+                ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all' || debouncedSearchTerm) && (
                 <button
                   onClick={() => {
                     setStatusFilter([]);
@@ -2897,7 +2915,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           onClose={() => setIsDocumentUploadOpen(false)}
           motorista_id={selectedMotorista?.motorista_id || 0}
           nome={selectedMotorista?.nome_motorista || ''}
-          onUploadSuccess={fetchContratados}
+          onUploadSuccess={() => fetchContratados(1, pageSize, false)} // false = refresh after upload
         />
 
         <EditMotoristaModal
@@ -2938,7 +2956,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             };
             return motoristaWithAddress;
           })() : null}
-          onUpdate={fetchContratados}
+          onUpdate={() => fetchContratados(1, pageSize, false)} // false = refresh after update
         />
 
         <DeleteConfirmationModal
@@ -2982,7 +3000,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           selectedItems={selectedItems}
           actionType={bulkActionType}
           onSuccess={() => {
-            fetchContratados();
+            fetchContratados(1, pageSize, false); // false = refresh after bulk action
             // Recarregar tags imediatamente após operação em massa
             if (contratados && contratados.length > 0) {
               fetchMotoristaTags(contratados);
@@ -3019,7 +3037,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           onSuccess={() => {
             setShowAddModal(false);
             // Refresh the list after successful addition
-            fetchContratados();
+            fetchContratados(1, pageSize, false); // false = refresh after adding new
             if (onSuccess) onSuccess();
           }}
         />
