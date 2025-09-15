@@ -11,6 +11,8 @@ import {
   company,
   vaga,
   motorista,
+  comentario,
+  insertComentarioSchema,
 } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import { 
@@ -3060,6 +3062,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   };
+
+  // Comments API routes
+  app.get("/api/comentarios/:motoristaId", async (req, res) => {
+    try {
+      const { motoristaId } = req.params;
+      
+      if (!motoristaId) {
+        return res.status(400).json({ error: "motorista_id é obrigatório" });
+      }
+
+      console.log("Fetching comments for motorista_id:", motoristaId);
+
+      const { data: comentarios, error } = await supabaseBackend
+        .from("comentario")
+        .select(`
+          id,
+          id_motorista,
+          id_atendente,
+          comentario,
+          created_at,
+          updated_at
+        `)
+        .eq("id_motorista", parseInt(motoristaId))
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching comments:", error);
+        return res.status(500).json({ error: "Erro ao buscar comentários" });
+      }
+
+      let comentariosWithNames = comentarios || [];
+      
+      if (comentarios && comentarios.length > 0) {
+        const userIds = Array.from(
+          new Set(
+            comentarios
+              .map(c => c.id_atendente)
+              .filter(id => id !== null)
+          )
+        );
+        
+        if (userIds.length > 0) {
+          const { data: attendants } = await supabaseBackend
+            .from("wiseapp_acesso")
+            .select("wiseapp_acesso_id, nome")
+            .in("wiseapp_acesso_id", userIds);
+            
+          const attendantMap = attendants?.reduce((acc, attendant) => {
+            acc[attendant.wiseapp_acesso_id] = attendant.nome || "Atendente";
+            return acc;
+          }, {} as Record<number, string>) || {};
+          
+          comentariosWithNames = comentarios.map(comment => ({
+            ...comment,
+            atendente_nome: comment.id_atendente ? attendantMap[comment.id_atendente] || null : null
+          }));
+        }
+      }
+
+      console.log(`Found ${comentariosWithNames.length} comments for motorista ${motoristaId}`);
+      res.json(comentariosWithNames);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
+  app.post("/api/comentarios", async (req, res) => {
+    try {
+      const commentData = req.body;
+      console.log("Creating comment with data:", commentData);
+
+      if (!commentData.id_motorista || !commentData.comentario || !commentData.id_atendente) {
+        return res.status(400).json({ 
+          error: "id_motorista, comentario e id_atendente são obrigatórios" 
+        });
+      }
+
+      const validatedData = insertComentarioSchema.parse({
+        id_motorista: parseInt(commentData.id_motorista),
+        id_atendente: parseInt(commentData.id_atendente),
+        comentario: commentData.comentario.trim()
+      });
+
+      const { data: newComment, error } = await supabaseBackend
+        .from("comentario")
+        .insert(validatedData)
+        .select(`
+          id,
+          id_motorista,
+          id_atendente,
+          comentario,
+          created_at,
+          updated_at
+        `)
+        .single();
+
+      if (error) {
+        console.error("Error creating comment:", error);
+        return res.status(500).json({
+          error: "Erro ao criar comentário",
+          details: error.message,
+        });
+      }
+
+      let commentWithName = newComment;
+      if (newComment.id_atendente) {
+        const { data: attendant } = await supabaseBackend
+          .from("wiseapp_acesso")
+          .select("nome")
+          .eq("wiseapp_acesso_id", newComment.id_atendente)
+          .single();
+          
+        commentWithName = {
+          ...newComment,
+          atendente_nome: attendant?.nome || null
+        };
+      }
+
+      console.log("Comment created successfully:", commentWithName);
+      res.status(201).json(commentWithName);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({
+          error: "Dados inválidos",
+          details: error.message,
+        });
+      }
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
 
   // Register bulk contact tags sync route
   registerBulkContactTagsRoute(app);
