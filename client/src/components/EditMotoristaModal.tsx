@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Motorista, MotoristaWithAddress, Veiculo } from '../types/database';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { formatCEP } from '../utils/format';
 import WhatsAppAvatar from './WhatsAppAvatar';
+import { 
+  validateCep, 
+  validateAddressField, 
+  validateAddressForSubmission,
+  useCepLookup,
+  type AddressFormData 
+} from '../utils/addressValidation';
+import { validateCpfNumber } from '../utils/cpfValidation';
+import { validateCompleteCnh, CNH_CATEGORIES, formatCnhInput } from '../utils/cnhValidation';
 
 interface EditMotoristaModalProps {
   isOpen: boolean;
@@ -18,7 +27,10 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
   const [submitting, setSubmitting] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [addressWarnings, setAddressWarnings] = useState<string[]>([]);
   const { companyId } = useAuth();
+  const { lookupCep } = useCepLookup();
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
@@ -64,6 +76,13 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     complemento: ''
   });
 
+  const [cnhData, setCnhData] = useState({
+    nr_registro_cnh: '',
+    categoria_cnh: '',
+    validade_cnh: '',
+    uf_cnh: ''
+  });
+
   const [veiculo, setVeiculo] = useState<Veiculo | null>(null);
   
   interface EnderecoMotorista {
@@ -107,6 +126,9 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
 
       // Fetch address data
       fetchEndereco();
+      
+      // Fetch CNH data
+      fetchCnhData();
     }
   }, [motorista]);
 
@@ -159,6 +181,34 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     } catch (error) {
       console.error('Erro ao buscar veículo:', error);
       toast.error('Erro ao carregar dados do veículo');
+    }
+  };
+
+  const fetchCnhData = async () => {
+    if (!motorista?.motorista_id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('documento_motorista')
+        .select('nr_registro_cnh, categoria_cnh, validade_cnh, uf_cnh')
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching CNH data:', error);
+        return;
+      }
+
+      if (data) {
+        setCnhData({
+          nr_registro_cnh: data.nr_registro_cnh || '',
+          categoria_cnh: data.categoria_cnh || '',
+          validade_cnh: data.validade_cnh || '',
+          uf_cnh: data.uf_cnh || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching CNH data:', error);
     }
   };
 
@@ -244,68 +294,36 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     }
   };
 
-  const consultarCepLocal = async (cep: string) => {
+  // Use standardized CEP lookup approach
+  const handleCepLookup = async (cep: string) => {
     if (cep.length !== 8) return;
-
-    setLoadingCep(true);
-    try {
-      const { consultarCep } = await import('../utils/cepService');
-      const data = await consultarCep(cep);
-
-      // Find estado_id based on UF
-      const estado = estados.find(e => e.sigla_estado === data.uf);
-
+    
+    // Clear previous CEP validation errors
+    setFieldErrors(prev => {
+      const { cep: _, ...rest } = prev;
+      return rest;
+    });
+    
+    const success = await lookupCep(cep, estados, (data) => {
       setEnderecoData(prev => ({
         ...prev,
-        logradouro: data.logradouro || '',
-        bairro: data.bairro || '',
-        cidade: data.localidade || '',
-        estado: estado ? estado.id_estado.toString() : '',
-        complemento: data.complemento || ''
+        cep: data.cep || prev.cep,
+        estado: data.estado || prev.estado,
+        cidade: data.cidade || prev.cidade,
+        bairro: data.bairro || prev.bairro,
+        logradouro: data.logradouro || prev.logradouro,
+        complemento: data.complemento || prev.complemento
       }));
-
-      toast.success('CEP encontrado!');
-    } catch (error) {
-      console.error('Erro ao consultar CEP:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao consultar CEP');
-      
-      // Clear address fields on error
-      setEnderecoData(prev => ({
-        ...prev,
-        logradouro: '',
-        bairro: '',
-        cidade: '',
-        estado: '',
-        complemento: ''
-      }));
-    } finally {
-      setLoadingCep(false);
+    }, setLoadingCep);
+    
+    if (success) {
+      setAddressWarnings([]);
     }
   };
 
+  // CPF lookup has been disabled due to security concerns
   const consultarCpfLocal = async (cpf: string) => {
-    if (!cpf || cpf.length !== 11) return;
-    
-    try {
-      const { consultarCpfApi } = await import('../utils/cpfService');
-      const data = await consultarCpfApi(cpf);
-      
-      setFormData(prev => ({
-        ...prev,
-        nome: data.nome || prev.nome,
-        dt_nascimento: data.dt_nascimento || prev.dt_nascimento,
-        telefone: data.telefone || prev.telefone
-      }));
-      
-      if (data.cep) {
-        await consultarCepLocal(data.cep.replace(/\D/g, ''));
-      }
-      
-      toast.success('Dados do CPF preenchidos!');
-    } catch (error) {
-      console.error('Erro ao consultar CPF:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao consultar CPF');
-    }
+    toast.error('Consulta de CPF temporariamente desabilitada por segurança. Entre em contato com o administrador se necessário.');
   };
 
   const saveEndereco = async (motorista_id: number) => {
@@ -460,13 +478,53 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     try {
       setSubmitting(true);
 
+      // Comprehensive validation before submission
+      const validationErrors: string[] = [];
+      
+      // Validate CPF
+      if (!formData.cpf || formData.cpf.length !== 11) {
+        validationErrors.push('CPF é obrigatório e deve ter 11 dígitos');
+      } else {
+        const cpfValidation = validateCpfNumber(formData.cpf);
+        if (!cpfValidation.isValid) {
+          validationErrors.push(cpfValidation.error || 'CPF inválido');
+        }
+      }
+      
       // Validate required fields
       if (!formData.telefone) {
-        throw new Error('O telefone é obrigatório.');
+        validationErrors.push('Telefone é obrigatório');
+      } else if (formData.telefone.length < 10) {
+        validationErrors.push('Telefone deve ter pelo menos 10 dígitos');
       }
 
       if (!formData.dt_nascimento) {
-        throw new Error('A data de nascimento é obrigatória.');
+        validationErrors.push('Data de nascimento é obrigatória');
+      } else {
+        const birthDate = new Date(formData.dt_nascimento);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        if (age < 18 || age > 100) {
+          validationErrors.push('Motorista deve ter entre 18 e 100 anos');
+        }
+      }
+      
+      // Validate CNH if any field is provided
+      if (cnhData.nr_registro_cnh || cnhData.categoria_cnh || cnhData.validade_cnh) {
+        const cnhValidation = validateCompleteCnh(
+          cnhData.nr_registro_cnh,
+          cnhData.categoria_cnh,
+          cnhData.validade_cnh
+        );
+        
+        if (!cnhValidation.isValid) {
+          validationErrors.push(...cnhValidation.errors);
+        }
+      }
+      
+      // Stop submission if there are validation errors
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join('\n'));
       }
 
       // Update motorista data
@@ -483,6 +541,49 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
       // Save address data
       if (enderecoData.cep) {
         await saveEndereco(motorista.motorista_id);
+      }
+
+      // Save or update CNH data if provided
+      if (cnhData.nr_registro_cnh || cnhData.categoria_cnh || cnhData.validade_cnh) {
+        try {
+          // Check if document exists
+          const { data: existingDoc } = await supabase
+            .from('documento_motorista')
+            .select('id_documento_motorista')
+            .eq('motorista_id', motorista.motorista_id)
+            .maybeSingle();
+
+          if (existingDoc) {
+            // Update existing document
+            const { error: updateError } = await supabase
+              .from('documento_motorista')
+              .update({
+                nr_registro_cnh: cnhData.nr_registro_cnh || null,
+                categoria_cnh: cnhData.categoria_cnh || null,
+                validade_cnh: cnhData.validade_cnh || null,
+                uf_cnh: cnhData.uf_cnh || null
+              })
+              .eq('motorista_id', motorista.motorista_id);
+
+            if (updateError) throw updateError;
+          } else {
+            // Create new document
+            const { error: insertError } = await supabase
+              .from('documento_motorista')
+              .insert({
+                motorista_id: motorista.motorista_id,
+                nr_registro_cnh: cnhData.nr_registro_cnh || null,
+                categoria_cnh: cnhData.categoria_cnh || null,
+                validade_cnh: cnhData.validade_cnh || null,
+                uf_cnh: cnhData.uf_cnh || null
+              });
+
+            if (insertError) throw insertError;
+          }
+        } catch (error) {
+          console.error('Erro ao salvar dados da CNH:', error);
+          toast.error('Erro ao salvar dados da CNH, mas o cadastro foi atualizado');
+        }
       }
 
       // Update or create vehicle data if it's an agregado
@@ -560,7 +661,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     
     // If CEP is being changed and has 8 digits, trigger CEP lookup
     if (name === 'cep' && value.length === 8) {
-      consultarCepLocal(value);
+      handleCepLookup(value);
     }
   };
 
@@ -832,6 +933,88 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
                   onChange={handleEnderecoChange}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* CNH Information Section */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Informações da CNH (Opcional)
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Número da CNH
+                </label>
+                <input
+                  type="text"
+                  name="nr_registro_cnh"
+                  value={cnhData.nr_registro_cnh}
+                  onChange={(e) => {
+                    const value = formatCnhInput(e.target.value);
+                    setCnhData(prev => ({ ...prev, nr_registro_cnh: value }));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="Digite os 11 dígitos"
+                  maxLength={11}
+                  data-testid="input-cnh-numero"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Categoria da CNH
+                </label>
+                <select
+                  name="categoria_cnh"
+                  value={cnhData.categoria_cnh}
+                  onChange={(e) => setCnhData(prev => ({ ...prev, categoria_cnh: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  data-testid="select-cnh-categoria"
+                >
+                  <option value="">Selecione a categoria</option>
+                  {CNH_CATEGORIES.map(category => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Validade da CNH
+                </label>
+                <input
+                  type="date"
+                  name="validade_cnh"
+                  value={cnhData.validade_cnh}
+                  onChange={(e) => setCnhData(prev => ({ ...prev, validade_cnh: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  data-testid="input-cnh-validade"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  UF da CNH
+                </label>
+                <select
+                  name="uf_cnh"
+                  value={cnhData.uf_cnh}
+                  onChange={(e) => setCnhData(prev => ({ ...prev, uf_cnh: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  data-testid="select-cnh-uf"
+                >
+                  <option value="">Selecione o estado</option>
+                  {estados.map(estado => (
+                    <option key={estado.id_estado} value={estado.sigla_estado}>
+                      {estado.sigla_estado}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
