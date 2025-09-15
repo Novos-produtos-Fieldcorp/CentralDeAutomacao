@@ -253,7 +253,7 @@ const ChecklistMensal = () => {
         'Motorista': checklist.motorista?.nome || 'Não informado',
         'CPF': checklist.motorista?.cpf || 'Não informado',
         'Veículo': checklist.veiculo?.placa || 'Não informado',
-        'Status': checklist.status ? 'Ativo' : 'Inativo',
+        'Status': checklist.status ? 'Ativo' : 'Desativo',
         'Observações': checklist.observacoes || '-',
       }));
 

@@ -126,7 +126,7 @@ interface DashboardStats {
   clientes: {
     total: number;
     ativos: number;
-    inativos: number;
+    desativos: number;
     novosNoMes: number;
     crescimento: number;
     recentClientes: {
@@ -730,7 +730,7 @@ const Dashboard: React.FC = () => {
     clientes: {
       total: 0,
       ativos: 0,
-      inativos: 0,
+      desativos: 0,
       novosNoMes: 0,
       crescimento: 0,
       recentClientes: [],
@@ -994,7 +994,7 @@ const Dashboard: React.FC = () => {
       // Process real clientes data
       const clientes = clientesResult.data || [];
       const clientesAtivos = clientesAtivosResult.count || 0;
-      const clientesInativos = clientes.length - clientesAtivos;
+      const clientesDesativos = clientes.length - clientesAtivos;
 
       // Calculate new clients this month - using fallback since created_at doesn't exist
       const clientesNoMes = 0; // Disabled due to schema limitation
@@ -1007,7 +1007,7 @@ const Dashboard: React.FC = () => {
       // Pie chart data for clientes
       const clientesPieData = [
         { name: "Ativos", value: clientesAtivos, color: "#10b981" },
-        { name: "Inativos", value: clientesInativos, color: "#ef4444" },
+        { name: "Desativos", value: clientesDesativos, color: "#ef4444" },
       ].filter((item) => item.value > 0);
 
       // Process real veiculos data with proper type classification
@@ -1215,7 +1215,7 @@ const Dashboard: React.FC = () => {
         clientes: {
           total: clientes.length,
           ativos: clientesAtivos,
-          inativos: clientesInativos,
+          desativos: clientesDesativos,
           novosNoMes: clientesNoMes,
           crescimento: 0, // Could calculate month-over-month if needed
           recentClientes,
@@ -1250,7 +1250,7 @@ const Dashboard: React.FC = () => {
         clientes: {
           total: 0,
           ativos: 0,
-          inativos: 0,
+          desativos: 0,
           novosNoMes: 0,
           crescimento: 0,
           recentClientes: [],
