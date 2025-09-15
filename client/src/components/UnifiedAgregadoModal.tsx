@@ -920,8 +920,8 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             </div>
                           )}
                           
-                          {/* Seção do Proprietário do Veículo */}
-                          {proprietarioVeiculo && (
+                          {/* Seção do Proprietário do Veículo - apenas para agregados */}
+                          {motorista.funcao === 'Agregado' && proprietarioVeiculo && (
                             <>
                               <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:px-6">
                                 <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
@@ -936,7 +936,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       Nome Completo
                                     </dt>
                                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                      {proprietarioVeiculo.pessoaFisica.nome || 'Não informado'}
+                                      {proprietarioVeiculo.pessoaFisica?.nome || 'Não informado'}
                                     </dd>
                                   </div>
                                   <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -944,7 +944,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       CPF
                                     </dt>
                                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                      {proprietarioVeiculo.pessoaFisica.cpf || 'Não informado'}
+                                      {proprietarioVeiculo.pessoaFisica?.cpf ? formatCPF(proprietarioVeiculo.pessoaFisica.cpf.toString()) : 'Não informado'}
                                     </dd>
                                   </div>
                                   <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -952,7 +952,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       RG
                                     </dt>
                                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                      {proprietarioVeiculo.pessoaFisica.nr_rg || 'Não informado'}
+                                      {proprietarioVeiculo.pessoaFisica?.nr_rg || 'Não informado'}
                                     </dd>
                                   </div>
                                   <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -960,7 +960,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       Órgão Expedidor
                                     </dt>
                                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                      {proprietarioVeiculo.pessoaFisica.orgao_expedidor || 'Não informado'}
+                                      {proprietarioVeiculo.pessoaFisica?.orgao_expedidor || 'Não informado'}
                                     </dd>
                                   </div>
                                   <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -968,7 +968,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       Nome da Mãe
                                     </dt>
                                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                      {proprietarioVeiculo.pessoaFisica.nome_mae || 'Não informado'}
+                                      {proprietarioVeiculo.pessoaFisica?.nome_mae || 'Não informado'}
                                     </dd>
                                   </div>
                                   <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -976,10 +976,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       Nome do Pai
                                     </dt>
                                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                      {proprietarioVeiculo.pessoaFisica.nome_pai || 'Não informado'}
+                                      {proprietarioVeiculo.pessoaFisica?.nome_pai || 'Não informado'}
                                     </dd>
                                   </div>
-                                  {proprietarioVeiculo.pessoaFisica.foto_documento && (
+                                  {proprietarioVeiculo.pessoaFisica?.foto_documento && (
                                     <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                         Documento (RG/CNH)
@@ -987,19 +987,19 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                                         <div className="flex items-center">
                                           <button
-                                            onClick={() => openDocumentInNewTab(proprietarioVeiculo.pessoaFisica.foto_documento)}
+                                            onClick={() => openDocumentInNewTab(proprietarioVeiculo.pessoaFisica?.foto_documento)}
                                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
                                           >
                                             <FileText className="w-5 h-5 mr-2" />
-                                            {isPdf(proprietarioVeiculo.pessoaFisica.foto_documento) ? 'Ver PDF' : 'Ver Imagem'}
+                                            {isPdf(proprietarioVeiculo.pessoaFisica?.foto_documento) ? 'Ver PDF' : 'Ver Imagem'}
                                           </button>
-                                          {!isPdf(proprietarioVeiculo.pessoaFisica.foto_documento) && (
+                                          {!isPdf(proprietarioVeiculo.pessoaFisica?.foto_documento) && (
                                             <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
                                               <img 
-                                                src={proprietarioVeiculo.pessoaFisica.foto_documento} 
+                                                src={proprietarioVeiculo.pessoaFisica?.foto_documento} 
                                                 alt="Documento Preview" 
                                                 className="w-full h-full object-cover cursor-pointer"
-                                                onClick={() => setActiveDocument(proprietarioVeiculo.pessoaFisica.foto_documento)}
+                                                onClick={() => setActiveDocument(proprietarioVeiculo.pessoaFisica?.foto_documento)}
                                               />
                                             </div>
                                           )}
@@ -1007,7 +1007,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       </dd>
                                     </div>
                                   )}
-                                  {proprietarioVeiculo.pessoaFisica.comprovante_residencia && (
+                                  {proprietarioVeiculo.pessoaFisica?.comprovante_residencia && (
                                     <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                         Comprovante de Residência
@@ -1015,19 +1015,19 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                                         <div className="flex items-center">
                                           <button
-                                            onClick={() => openDocumentInNewTab(proprietarioVeiculo.pessoaFisica.comprovante_residencia)}
+                                            onClick={() => openDocumentInNewTab(proprietarioVeiculo.pessoaFisica?.comprovante_residencia)}
                                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
                                           >
                                             <FileText className="w-5 h-5 mr-2" />
-                                            {isPdf(proprietarioVeiculo.pessoaFisica.comprovante_residencia) ? 'Ver PDF' : 'Ver Imagem'}
+                                            {isPdf(proprietarioVeiculo.pessoaFisica?.comprovante_residencia) ? 'Ver PDF' : 'Ver Imagem'}
                                           </button>
-                                          {!isPdf(proprietarioVeiculo.pessoaFisica.comprovante_residencia) && (
+                                          {!isPdf(proprietarioVeiculo.pessoaFisica?.comprovante_residencia) && (
                                             <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
                                               <img 
-                                                src={proprietarioVeiculo.pessoaFisica.comprovante_residencia} 
+                                                src={proprietarioVeiculo.pessoaFisica?.comprovante_residencia} 
                                                 alt="Comprovante Preview" 
                                                 className="w-full h-full object-cover cursor-pointer"
-                                                onClick={() => setActiveDocument(proprietarioVeiculo.pessoaFisica.comprovante_residencia)}
+                                                onClick={() => setActiveDocument(proprietarioVeiculo.pessoaFisica?.comprovante_residencia)}
                                               />
                                             </div>
                                           )}
@@ -1045,7 +1045,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       Razão Social
                                     </dt>
                                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                      {proprietarioVeiculo.pessoaJuridica.razao_social || 'Não informado'}
+                                      {proprietarioVeiculo.pessoaJuridica?.razao_social || 'Não informado'}
                                     </dd>
                                   </div>
                                   <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -1053,7 +1053,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       CNPJ
                                     </dt>
                                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                      {proprietarioVeiculo.pessoaJuridica.cnpj || 'Não informado'}
+                                      {proprietarioVeiculo.pessoaJuridica?.cnpj ? proprietarioVeiculo.pessoaJuridica.cnpj.toString().replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : 'Não informado'}
                                     </dd>
                                   </div>
                                   <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -1061,10 +1061,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       Inscrição Estadual
                                     </dt>
                                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                      {proprietarioVeiculo.pessoaJuridica.inscricao_estadual || 'Não informado'}
+                                      {proprietarioVeiculo.pessoaJuridica?.inscricao_estadual || 'Não informado'}
                                     </dd>
                                   </div>
-                                  {proprietarioVeiculo.pessoaJuridica.comprovante_residencia && (
+                                  {proprietarioVeiculo.pessoaJuridica?.comprovante_residencia && (
                                     <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                         Comprovante de Endereço
@@ -1072,19 +1072,19 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
                                         <div className="flex items-center">
                                           <button
-                                            onClick={() => openDocumentInNewTab(proprietarioVeiculo.pessoaJuridica.comprovante_residencia)}
+                                            onClick={() => openDocumentInNewTab(proprietarioVeiculo.pessoaJuridica?.comprovante_residencia)}
                                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
                                           >
                                             <FileText className="w-5 h-5 mr-2" />
-                                            {isPdf(proprietarioVeiculo.pessoaJuridica.comprovante_residencia) ? 'Ver PDF' : 'Ver Imagem'}
+                                            {isPdf(proprietarioVeiculo.pessoaJuridica?.comprovante_residencia) ? 'Ver PDF' : 'Ver Imagem'}
                                           </button>
-                                          {!isPdf(proprietarioVeiculo.pessoaJuridica.comprovante_residencia) && (
+                                          {!isPdf(proprietarioVeiculo.pessoaJuridica?.comprovante_residencia) && (
                                             <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
                                               <img 
-                                                src={proprietarioVeiculo.pessoaJuridica.comprovante_residencia} 
+                                                src={proprietarioVeiculo.pessoaJuridica?.comprovante_residencia} 
                                                 alt="Comprovante Preview" 
                                                 className="w-full h-full object-cover cursor-pointer"
-                                                onClick={() => setActiveDocument(proprietarioVeiculo.pessoaJuridica.comprovante_residencia)}
+                                                onClick={() => setActiveDocument(proprietarioVeiculo.pessoaJuridica?.comprovante_residencia)}
                                               />
                                             </div>
                                           )}
