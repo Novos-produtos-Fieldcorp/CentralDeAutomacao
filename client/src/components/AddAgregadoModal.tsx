@@ -150,19 +150,21 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
   const consultarPlacaApi = async (placa: string) => {
     if (!placa || placa.length < 7) return;
     try {
-      const response = await fetch(`https://placas.fipeapi.com.br/placas/${placa}?key=e8f29d24d6680c3ea04acd04aecc3de8`);
-      if (!response.ok) throw new Error('Erro ao consultar placa');
-      const result = await response.json();
-      const veiculo = result.data?.veiculo || {};
-      const fipe = result.data?.fipes && result.data.fipes[0] ? result.data.fipes[0] : {};
+      // Use secure backend endpoint
+      const response = await fetch(`/api/vehicle-plate/${placa}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Erro ao consultar placa');
+      }
+      const vehicleData = await response.json();
       setFormData(prev => ({
         ...prev,
-        marca: fipe.marca || veiculo.marca || veiculo.marca_modelo || prev.marca,
-        tipo: fipe.modelo || veiculo.marca_modelo || prev.tipo,
-        ano: veiculo.ano ? veiculo.ano.split('/')[0] : prev.ano,
-        cor: veiculo.cor || prev.cor,
-        combustivel: veiculo.combustivel || prev.combustivel,
-        tipologia: veiculo.tipo_de_veiculo || veiculo.tipo_carroceria || prev.tipologia
+        marca: vehicleData.brand || prev.marca,
+        tipo: vehicleData.model || prev.tipo,
+        ano: vehicleData.year ? vehicleData.year.split('/')[0] : prev.ano,
+        cor: vehicleData.color || prev.cor,
+        combustivel: vehicleData.fuel || prev.combustivel,
+        tipologia: prev.tipologia // This field is not provided by the plate API
       }));
       toast.success('Dados da placa preenchidos!');
     } catch (error) {

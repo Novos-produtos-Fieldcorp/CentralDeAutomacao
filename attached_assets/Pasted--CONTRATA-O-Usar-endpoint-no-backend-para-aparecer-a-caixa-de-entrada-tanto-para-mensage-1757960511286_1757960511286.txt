@@ -1,0 +1,29 @@
+----CONTRATAÇÃO----
+- Usar endpoint no backend para aparecer a caixa de entrada (tanto para mensagem individual quanto para mensagem em massa) - Testar as tags e caixas de entrada após deploy antes de subir para a main
+- Atualizar envio de mensagem em massa
+
+Motorista
+- Botão de sincronizar tags com wiseapp funcionando (Ao clicar, sobe todas as tag de cada registro para a central)
+- Erro no endereço ao cadastrar novo motorista (ao salvar endereços no banco, verificar se o registro já existe, de estado(todos ja no banco), cidade, bairro e logradouro
+- Erro no endereço ao editar motorista (ao salvar endereços no banco, verificar se o registro já existe, de estado(todos ja no banco), cidade, bairro e logradouro) Ao recarregar página aparece o endereço (investigar o que pode estar acontecendo)
+- Ao adicionar documentos do motorista, adicionar restrição em numero da CNH, igual tem em adicionar ajudante
+- Erro no endereço ao adicionar ajudante
+- Padronizar modal de edição de ajudante (hoje, esta diferente do de adicionar ajudante. Deixar ambos iguais.)
+- Em motorista, mostrar as informações preenchidas do ajudante (igual agregado)
+- Não é possivel adicionar comentários em motoristas
+- Ao adicionar ajudante, colocar o campo de CPF no começo
+
+Agregado
+- Ao adicionar documentos de agregado, adicionar restrição em numero da CNH, igual tem em adicionar ajudante
+- Ao editar os documentos de agregado, não puxa as fotos e nenhuma informação do dono do veículo
+- Mostrar informações do dono do veículo, caso tenha, na pagina de documentos de agregado
+- retirar botão duplicado de adicionar ajudante quando nao tiver nenhum ajudante (pagina de agregado)
+- Em ajudantes, as informações que foram informadas, vem como não informada, e não tem o preview das imagens (teste feito adicionando tudo)
+- Erro ao adicionar comentário em agregado
+- Mudar nomenclatura de filtros de status (mudar para ativo e desativo)
+
+Contratados
+- Ao rolar para o lado, o design da tabela não vem junto
+- Ao clicar duas vezes, mudar data de integração e treinamento
+- Qualquer contratado, vem como motorista, não mostrando informações de veiculo e respectivos documentos (verificar se pode ser por conta da view no banco)
+- Erro ao adicionar integração interna e treinamento em massa

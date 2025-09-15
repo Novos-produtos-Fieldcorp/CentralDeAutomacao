@@ -54,7 +54,7 @@ const MassMessageModal: React.FC<MassMessageModalProps> = ({
 
     // Enforce the 100 message limit
     if (validNumbers.length > 100) {
-      toast.warning('Limite de 100 mensagens por vez para evitar bloqueios do WhatsApp.');
+      toast.error('Limite de 100 mensagens por vez para evitar bloqueios do WhatsApp.');
       // Truncate the array to 100 numbers
       validNumbers.splice(100);
     }
@@ -64,115 +64,50 @@ const MassMessageModal: React.FC<MassMessageModalProps> = ({
     setNetworkError(false);
 
     try {
-      const sendMessageWithDelay = async (number: string, _index: number) => {
-        // Generate random wait time between 10 and 25 seconds
-        const minWait = 10;
-        const maxWait = 25;
-        const randomWaitTime =
-          Math.floor(Math.random() * (maxWait - minWait + 1)) + minWait;
+      console.log('Enviando mensagem em massa para:', validNumbers.length, 'números');
 
-        if (!checkNetworkStatus()) {
-          setNetworkError(true);
-          throw new Error('Conexão de rede perdida');
-        }
+      // Use the secure backend endpoint
+      const response = await fetch('/api/send-bulk-messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          numbers: validNumbers,
+          message: message.trim()
+        }),
+      });
 
-        try {
-          // Wait for the random time
-          await new Promise((resolve) =>
-            setTimeout(resolve, randomWaitTime * 1000)
-          );
+      const responseData = await response.json();
+      console.log('Resposta do backend:', responseData);
 
-          // Format phone number (ensure it has country code)
-          const formattedNumber = formatPhoneNumber(number);
-          console.log('Enviando mensagem para:', formattedNumber);
-
-          // Prepare the request payload
-          const payload = {
-            number: formattedNumber,
-            options: {
-              delay: randomWaitTime * 1000, // delay in milliseconds
-              presence: "composing",
-              linkPreview: false
-            },
-              text: message
-          };
-
-          console.log('Payload da requisição:', JSON.stringify(payload, null, 2));
-
-          // Send message using the API
-          const response = await fetch(
-            'https://api.outr.one/message/sendText/20_90_x4XrtisNVuUHJdh8fmFBervp',
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': 'x4XrtisNVuUHJdh8fmFBervp'
-              },
-              body: JSON.stringify(payload),
-            }
-          );
-
-          const responseData = await response.text();
-          console.log('Resposta do servidor:', response.status, responseData);
-
-          if (!response.ok) {
-            throw new Error(`Erro ao enviar mensagem: ${response.status} - ${responseData}`);
-          }
-
-          // Update progress
-          setProgress((prev) => ({ ...prev, sent: prev.sent + 1 }));
-
-          return {
-            number: formattedNumber,
-            waitTime: randomWaitTime,
-            success: true,
-          };
-        } catch (error) {
-          console.error(`Erro ao enviar para ${number}:`, error);
-
-          const errorDetails = {
-            number,
-            error: error instanceof Error ? error.message : 'Erro desconhecido',
-            timestamp: new Date().toISOString(),
-          };
-          console.error('Detalhes completos do erro:', JSON.stringify(errorDetails, null, 2));
-
-          setProgress((prev) => ({ ...prev, sent: prev.sent + 1 }));
-
-          return {
-            number,
-            waitTime: randomWaitTime,
-            success: false,
-            error: error instanceof Error ? error.message : 'Erro desconhecido',
-          };
-        }
-      };
-
-      // Process messages sequentially to avoid rate limiting
-      const results = [];
-      for (let i = 0; i < validNumbers.length; i++) {
-        if (!checkNetworkStatus()) {
-          setNetworkError(true);
-          throw new Error('Conexão de rede perdida durante o envio');
-        }
-        const result = await sendMessageWithDelay(validNumbers[i], i);
-        results.push(result);
+      if (!response.ok) {
+        throw new Error(responseData.error || `Erro HTTP ${response.status}`);
       }
 
-      const successCount = results.filter((r) => r.success).length;
-      const failCount = results.filter((r) => !r.success).length;
+      if (responseData.success && responseData.summary) {
+        const { successful, failed, total } = responseData.summary;
+        
+        if (failed === 0) {
+          toast.success(`${successful} mensagens enviadas com sucesso!`);
+        } else {
+          toast.success(
+            `${successful} mensagens enviadas com sucesso, ${failed} falhas de um total de ${total}.`
+          );
+          
+          // Log failed results for debugging
+          if (responseData.summary.results) {
+            const failedResults = responseData.summary.results.filter((r: any) => !r.success);
+            if (failedResults.length > 0) {
+              console.error('Failed message sends:', failedResults);
+            }
+          }
+        }
 
-      if (failCount === 0) {
-        toast.success(`${successCount} mensagens enviadas com sucesso!`);
+        // Update progress to show completion
+        setProgress({ sent: total, total });
       } else {
-        toast.success(
-          `${successCount} mensagens enviadas com sucesso, ${failCount} falhas.`
-        );
-        // Log failed numbers for debugging
-        const failedNumbers = results
-          .filter((r) => !r.success)
-          .map((r) => ({ number: r.number, error: r.error }));
-        console.error('Failed message sends:', failedNumbers);
+        throw new Error('Resposta inválida do servidor');
       }
 
       onClose();
@@ -183,22 +118,13 @@ const MassMessageModal: React.FC<MassMessageModalProps> = ({
       toast.error(`Erro ao enviar mensagens: ${errorMessage}`);
     } finally {
       setIsSending(false);
-      setProgress({ sent: 0, total: 0 });
+      setTimeout(() => {
+        setProgress({ sent: 0, total: 0 });
+      }, 2000); // Keep progress visible for 2 seconds
     }
   };
 
-  // Helper function to format phone number with country code
-  const formatPhoneNumber = (phone: string): string => {
-    // Remove any non-digit characters
-    const digits = phone.replace(/\D/g, '');
-
-    // If it doesn't start with country code, add Brazil's code (55)
-    if (!digits.startsWith('55') && digits.length <= 11) {
-      return `55${digits}`;
-    }
-
-    return digits;
-  };
+  // Note: Phone number formatting is now handled by the backend
 
   if (!isOpen) return null;
 

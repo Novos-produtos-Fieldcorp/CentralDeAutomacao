@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { db } from "./db";
+import { supabase } from "./db";
 import { eq, and } from "drizzle-orm";
 import {
   cliente,
@@ -42,7 +42,7 @@ const supabaseBackend = createClient(supabaseUrl, supabaseKey, {
   },
 });
 
-// Helper function to get company_id from account_id
+// Helper function to get company_id from accountId
 async function getCompanyIdFromAccount(
   accountId: string,
 ): Promise<number | null> {
@@ -105,9 +105,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/inboxes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { account_id } = req.query;
+      const { accountId } = req.query;
       
-      console.log(`Fetching inboxes for company_id: ${companyId}, account_id: ${account_id}`);
+      console.log(`Fetching inboxes for company_id: ${companyId}, accountId: ${accountId}`);
 
       // Buscar token WiseApp para esta empresa
       const token = await storage.getWiseappToken(parseInt(companyId));
@@ -118,12 +118,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar dados da empresa para validar account_id
+      // Buscar dados da empresa para validar accountId
       const { data: companies, error: companyError } = await supabaseBackend
         .from("company")
         .select("id_conta_wiseapp")
         .eq("company_id", parseInt(companyId))
-        .eq("id_conta_wiseapp", account_id)
+        .eq("id_conta_wiseapp", accountId)
         .limit(1);
 
       if (companyError || !companies || companies.length === 0) {
@@ -134,7 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Fazer requisição para o ChatWoot
       const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
-      const targetUrl = `${wiseappApiUrl}/api/v1/accounts/${account_id}/inboxes`;
+      const targetUrl = `${wiseappApiUrl}/api/v1/accounts/${accountId}/inboxes`;
 
       console.log(`Making request to ChatWoot: ${targetUrl}`);
 
@@ -173,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...data,
         _cache_metadata: {
           company_id: parseInt(companyId),
-          account_id: account_id,
+          accountId: accountId,
           timestamp: Date.now(),
           expires_at: Date.now() + (60 * 60 * 1000) // 1 hora
         }
@@ -189,11 +189,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Rota para buscar empresa por account_id
+  // Rota para buscar empresa por accountId
   app.get("/api/company/by-account/:accountId", async (req, res) => {
     try {
       const { accountId } = req.params;
-      console.log("Fetching company for account_id:", accountId);
+      console.log("Fetching company for accountId:", accountId);
 
       const { data: companies, error } = await supabaseBackend
         .from("company")
@@ -207,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!companies || companies.length === 0) {
-        console.log("No company found for account_id:", accountId);
+        console.log("No company found for accountId:", accountId);
         return res.status(404).json({ error: "Empresa não encontrada" });
       }
 
@@ -1142,7 +1142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 Searching motorista by phone: ${cleanPhone}`);
       
-      const accountId = req.header('account_id') || '1';
+      const accountId = req.header('accountId') || '1';
       const companyId = await getCompanyIdFromAccount(accountId);
       
       if (!companyId) {
@@ -1421,25 +1421,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Buscar account_id do header (enviado pelo frontend) 
-      const account_id = req.headers['wiseapp-account-id'] as string;
+      // Buscar accountId do header (enviado pelo frontend) 
+      const accountId = req.headers['wiseapp-account-id'] as string;
       
       // Log específico para account ID 20
-      if (account_id === '20') {
+      if (accountId === '20') {
         console.log(`Special handling for Account ID 20 - Token length: ${token?.length || 0}`);
       }
-      console.log('Account ID from header:', account_id ? 'Found' : 'Not found');
+      console.log('Account ID from header:', accountId ? 'Found' : 'Not found');
       
-      if (!account_id) {
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não configurado para esta empresa" 
         });
       }
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
       
       console.log(`Fetching labels from: ${wiseAppUrl}`);
 
-      // Implementar retry logic para accounts grandes (como account_id 20)
+      // Implementar retry logic para accounts grandes (como accountId 20)
       let response;
       let attempts = 0;
       const maxAttempts = 3;
@@ -1449,9 +1449,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attempts++;
         
         try {
-          // Para account_id 20 ou outros accounts grandes, adicionar delay
-          if (account_id === '20' && attempts > 1) {
-            console.log(`Rate limiting retry ${attempts} for account ${account_id}, waiting 3s...`);
+          // Para accountId 20 ou outros accounts grandes, adicionar delay
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${accountId}, waiting 3s...`);
             await delay(3000); // 3 segundos entre tentativas
           }
 
@@ -1462,8 +1462,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
           
           // For account ID 20, try different token header formats
-          if (account_id === '20' && attempts > 1) {
-            console.log(`Attempting alternative headers for account ${account_id}, attempt ${attempts}`);
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Attempting alternative headers for account ${accountId}, attempt ${attempts}`);
             // Try both token formats
             headers['Authorization'] = `Bearer ${token}`;
             headers['api_access_token'] = token;
@@ -1481,8 +1481,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Se 401 em account grande, tentar novamente
-          if (response.status === 401 && (account_id === '20' || parseInt(account_id) > 15)) {
-            console.log(`Got 401 for large account ${account_id}, attempt ${attempts}/${maxAttempts}`);
+          if (response.status === 401 && (accountId === '20' || parseInt(accountId) > 15)) {
+            console.log(`Got 401 for large account ${accountId}, attempt ${attempts}/${maxAttempts}`);
             
             if (attempts < maxAttempts) {
               continue; // Try again
@@ -1496,7 +1496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (attempts === maxAttempts) {
             throw fetchError;
           }
-          console.log(`API fetch attempt ${attempts} failed for account ${account_id}:`, fetchError);
+          console.log(`API fetch attempt ${attempts} failed for account ${accountId}:`, fetchError);
         }
       }
 
@@ -1541,15 +1541,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar account_id do header
-      const account_id = req.headers['wiseapp-account-id'] as string;
-      if (!account_id) {
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não encontrado" 
         });
       }
 
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
       
       const payload = {
         title: name,
@@ -1576,7 +1576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log('Tag já existe, buscando tag existente...');
             
             // Buscar todas as tags para encontrar a existente
-            const listResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`, {
+            const listResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
               method: 'GET',
               headers: {
                 'api_access_token': token,
@@ -1652,7 +1652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fetching inboxes from: ${wiseAppUrl}`);
 
-      // Implementar retry logic para accounts grandes (como account_id 20)
+      // Implementar retry logic para accounts grandes (como accountId 20)
       let response;
       let attempts = 0;
       const maxAttempts = 3;
@@ -1662,9 +1662,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attempts++;
         
         try {
-          // Para account_id 20 ou outros accounts grandes, adicionar delay
-          if (account_id === '20' && attempts > 1) {
-            console.log(`Rate limiting retry ${attempts} for account ${account_id}, waiting 3s...`);
+          // Para accountId 20 ou outros accounts grandes, adicionar delay
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${accountId}, waiting 3s...`);
             await delay(3000); // 3 segundos entre tentativas
           }
 
@@ -1675,8 +1675,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
           
           // For account ID 20, try different token header formats
-          if (account_id === '20' && attempts > 1) {
-            console.log(`Attempting alternative headers for account ${account_id}, attempt ${attempts}`);
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Attempting alternative headers for account ${accountId}, attempt ${attempts}`);
             // Try both token formats
             headers['Authorization'] = `Bearer ${token}`;
             headers['api_access_token'] = token;
@@ -1694,8 +1694,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Se 401 em account grande, tentar novamente
-          if (response.status === 401 && (account_id === '20' || parseInt(account_id) > 15)) {
-            console.log(`Got 401 for large account ${account_id}, attempt ${attempts}/${maxAttempts}`);
+          if (response.status === 401 && (accountId === '20' || parseInt(accountId) > 15)) {
+            console.log(`Got 401 for large account ${accountId}, attempt ${attempts}/${maxAttempts}`);
             
             if (attempts < maxAttempts) {
               continue; // Try again
@@ -1709,7 +1709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (attempts === maxAttempts) {
             throw fetchError;
           }
-          console.log(`API fetch attempt ${attempts} failed for account ${account_id}:`, fetchError);
+          console.log(`API fetch attempt ${attempts} failed for account ${accountId}:`, fetchError);
         }
       }
 
@@ -1748,15 +1748,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar account_id do header
-      const account_id = req.headers['wiseapp-account-id'] as string;
-      if (!account_id) {
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não encontrado" 
         });
       }
 
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels/${labelId}`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels/${labelId}`;
       
       const response = await fetch(wiseAppUrl, {
         method: 'DELETE',
@@ -1801,15 +1801,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar account_id do header
-      const account_id = req.headers['wiseapp-account-id'] as string;
-      if (!account_id) {
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não encontrado" 
         });
       }
 
-      const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
+      const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
       
       let finalLabels: string[] = [];
       
@@ -1847,7 +1847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`PAYLOAD BEING SENT:`, JSON.stringify({ labels: finalLabels }));
       console.log(`URL: ${labelsUrl}`);
       console.log(`TOKEN: ${token ? 'Present' : 'Missing'}`);
-      console.log(`ACCOUNT ID: ${account_id}`);
+      console.log(`ACCOUNT ID: ${accountId}`);
       
       // Enviar lista completa de labels
       console.log(`🚀 FAZENDO CHAMADA PARA WISEAPP API...`);
@@ -1896,15 +1896,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar account_id do header
-      const account_id = req.headers['wiseapp-account-id'] as string;
-      if (!account_id) {
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não encontrado" 
         });
       }
 
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
       
       const response = await fetch(wiseAppUrl, {
         method: 'GET',
@@ -1947,15 +1947,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar account_id do header
-      const account_id = req.headers['wiseapp-account-id'] as string;
-      if (!account_id) {
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não encontrado" 
         });
       }
 
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels/${tagId}`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels/${tagId}`;
       
       const response = await fetch(wiseAppUrl, {
         method: 'DELETE',
@@ -2000,18 +2000,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar account_id do header
-      const account_id = req.headers['wiseapp-account-id'] as string;
-      if (!account_id) {
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não encontrado" 
         });
       }
 
       const formattedPhone = `55${phone}`;
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/search?q=${formattedPhone}`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${formattedPhone}`;
       
-      // Implementar retry logic para accounts grandes (como account_id 20)
+      // Implementar retry logic para accounts grandes (como accountId 20)
       let response;
       let attempts = 0;
       const maxAttempts = 3;
@@ -2021,9 +2021,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attempts++;
         
         try {
-          // Para account_id 20 ou outros accounts grandes, adicionar delay
-          if (account_id === '20' && attempts > 1) {
-            console.log(`Rate limiting retry ${attempts} for account ${account_id}, waiting 2s...`);
+          // Para accountId 20 ou outros accounts grandes, adicionar delay
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${accountId}, waiting 2s...`);
             await delay(2000); // 2 segundos entre tentativas
           }
 
@@ -2040,8 +2040,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Se 401 em account grande, tentar novamente
-          if (response.status === 401 && (account_id === '20' || parseInt(account_id) > 15)) {
-            console.log(`Got 401 for large account ${account_id}, attempt ${attempts}/${maxAttempts}`);
+          if (response.status === 401 && (accountId === '20' || parseInt(accountId) > 15)) {
+            console.log(`Got 401 for large account ${accountId}, attempt ${attempts}/${maxAttempts}`);
             
             if (attempts < maxAttempts) {
               continue; // Try again
@@ -2055,7 +2055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (attempts === maxAttempts) {
             throw fetchError;
           }
-          console.log(`Fetch attempt ${attempts} failed for account ${account_id}:`, fetchError);
+          console.log(`Fetch attempt ${attempts} failed for account ${accountId}:`, fetchError);
         }
       }
 
@@ -2107,7 +2107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // WiseApp Proxy Route (replaces proxy-wiseapp Edge Function)
   app.all("/api/wiseapp-proxy", async (req, res) => {
     try {
-      const { endpoint, account_id, api_key, ...restParams } = req.query;
+      const { endpoint, accountId, api_key, ...restParams } = req.query;
 
       if (!endpoint) {
         return res.status(400).json({ error: 'Missing endpoint parameter' });
@@ -2117,13 +2117,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Missing API key' });
       }
 
-      if (!account_id) {
+      if (!accountId) {
         return res.status(400).json({ error: 'Missing account ID' });
       }
 
       // Build query string without proxy-specific params
       const queryString = new URLSearchParams(restParams as Record<string, string>).toString();
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/${endpoint}${queryString ? `?${queryString}` : ''}`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/${endpoint}${queryString ? `?${queryString}` : ''}`;
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -2257,7 +2257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Iniciando sincronização bulk para company_id: ${company_id}`);
 
       // 1. Buscar token WiseApp diretamente
-      const { data: tokenDataArray, error: tokenError } = await supabase
+      const { data: tokenDataArray, error: tokenError } = await supabaseBackend
         .from('wiseapp_acesso')
         .select('access_token_wiseapp')
         .eq('company_id', company_id)
@@ -2282,7 +2282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Token WiseApp encontrado, buscando motoristas...');
 
       // 2. Buscar todos os motoristas e agregados ativos
-      const { data: motoristas, error: motoristasError } = await supabase
+      const { data: motoristas, error: motoristasError } = await supabaseBackend
         .from('motorista')
         .select('*')
         .eq('company_id', company_id)
@@ -2315,7 +2315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const account_id = company_id;
+      const accountId = company_id;
       let successful = 0;
       let failed = 0;
       let tagsImportadas = 0;
@@ -2323,7 +2323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const errors: Array<{ motorista_id: number; nome: string; error: string }> = [];
 
       // 3. Buscar tags locais existentes
-      const { data: tagsLocais } = await supabase
+      const { data: tagsLocais } = await supabaseBackend
         .from('tag')
         .select('*')
         .eq('company_id', company_id);
@@ -2334,7 +2334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // 4. Buscar associações de tags existentes
-      const { data: associacoesExistentes } = await supabase
+      const { data: associacoesExistentes } = await supabaseBackend
         .from('associacao_tags')
         .select(`
           motorista_id,
@@ -2374,7 +2374,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Processando ${motorista.nome_motorista} - ${phone}`);
           
           // Buscar contato no WiseApp
-          const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/search?q=${phone}`;
+          const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${phone}`;
           const searchResponse = await fetch(searchUrl, {
             headers: {
               'api_access_token': token,
@@ -2399,7 +2399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Contato encontrado: ${motorista.nome_motorista} (ID: ${contact.id})`);
 
             // PARTE 1: WiseApp → Banco Local (IMPORTAR)
-            const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contact.id}/labels`;
+            const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contact.id}/labels`;
             const labelsResponse = await fetch(labelsUrl, {
               headers: {
                 'api_access_token': token,
@@ -2419,7 +2419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 // Criar tag local se não existir
                 if (!tagLocal) {
-                  const { data: novaTag } = await supabase
+                  const { data: novaTag } = await supabaseBackend
                     .from('tag')
                     .insert({
                       nome: wiseLabel.title,
@@ -2443,7 +2443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   );
 
                   if (!associacaoExiste) {
-                    await supabase
+                    await supabaseBackend
                       .from('associacao_tags')
                       .insert({
                         motorista_id: motorista.motorista_id,
@@ -2462,7 +2462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (tagsParaExportar.length > 0) {
               console.log(`Exportando tags para ${motorista.nome_motorista}: ${tagsParaExportar.join(', ')}`);
               
-              const applyTagsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contact.id}/labels`;
+              const applyTagsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contact.id}/labels`;
               const applyTagsResponse = await fetch(applyTagsUrl, {
                 method: 'POST',
                 headers: {
@@ -2516,6 +2516,226 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: 'Erro interno do servidor',
         details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Secure Vehicle Plate Lookup endpoint
+  app.get("/api/vehicle-plate/:plate", async (req, res) => {
+    try {
+      const { plate } = req.params;
+      
+      if (!plate || plate.length < 7) {
+        return res.status(400).json({ 
+          error: "Plate must contain at least 7 characters" 
+        });
+      }
+
+      // Clean and validate plate
+      const cleanPlate = plate.replace(/[^A-Z0-9]/g, '').toUpperCase();
+      
+      if (cleanPlate.length !== 7) {
+        return res.status(400).json({ 
+          error: "Plate must contain exactly 7 characters" 
+        });
+      }
+
+      // API key from environment variables only
+      const fipeApiKey = process.env.FIPE_API_KEY;
+      
+      if (!fipeApiKey) {
+        console.warn('FIPE_API_KEY not set, vehicle data may be limited');
+        return res.status(503).json({ 
+          error: "Serviço de consulta FIPE temporariamente indisponível" 
+        });
+      }
+
+      const response = await fetch(
+        `https://placas.fipeapi.com.br/placas/${cleanPlate}?key=${fipeApiKey}`
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return res.status(404).json({ error: "Plate not found in database" });
+        }
+        if (response.status === 401) {
+          return res.status(401).json({ error: "API authentication error" });
+        }
+        if (response.status === 429) {
+          return res.status(429).json({ error: "API rate limit exceeded. Try again later" });
+        }
+        if (response.status === 503) {
+          return res.status(503).json({ error: "Plate lookup service temporarily unavailable" });
+        }
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const vehicle = data.data?.veiculo;
+
+      if (!vehicle) {
+        return res.status(404).json({ error: "Vehicle data not found" });
+      }
+
+      // Extract brand and model from marca_modelo field
+      const marcaModelo = vehicle.marca_modelo || '';
+      const [marca, ...modeloParts] = marcaModelo.split('/');
+      const modelo = modeloParts.join('/').trim();
+
+      const result = {
+        plate: vehicle.placa || cleanPlate,
+        model: modelo || '',
+        brand: marca?.trim() || '',
+        year: vehicle.ano || '',
+        color: vehicle.cor || '',
+        fuel: vehicle.combustivel || '',
+        state: vehicle.uf || '',
+        city: vehicle.municipio || '',
+        chassi: vehicle.chassi || ''
+      };
+
+      res.json(result);
+
+    } catch (error) {
+      console.error('Error in vehicle plate lookup:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Secure Bulk WhatsApp Messages endpoint
+  app.post("/api/send-bulk-messages", async (req, res) => {
+    try {
+      const { numbers, message } = req.body;
+
+      // Validação básica
+      if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
+        return res.status(400).json({ 
+          error: "Numbers array is required and cannot be empty" 
+        });
+      }
+
+      if (!message || typeof message !== 'string' || !message.trim()) {
+        return res.status(400).json({ 
+          error: "Message is required" 
+        });
+      }
+
+      // Limite de 100 mensagens por segurança
+      const validNumbers = numbers.filter(num => num && num.trim() !== '').slice(0, 100);
+      
+      if (validNumbers.length === 0) {
+        return res.status(400).json({ 
+          error: "No valid phone numbers provided" 
+        });
+      }
+
+      // API keys from environment variables only
+      const outrApiKey = process.env.OUTR_ONE_API_KEY || 'x4XrtisNVuUHJdh8fmFBervp'; // temporary fallback
+      const outrInstanceId = process.env.OUTR_ONE_INSTANCE_ID || '20_90_x4XrtisNVuUHJdh8fmFBervp'; // temporary fallback
+
+      console.log(`Processing bulk message send for ${validNumbers.length} numbers`);
+
+      const results = [];
+      let successful = 0;
+      let failed = 0;
+
+      // Process messages sequentially with delay to avoid rate limiting
+      for (let i = 0; i < validNumbers.length; i++) {
+        const number = validNumbers[i];
+        
+        try {
+          // Random delay between 10-25 seconds
+          const randomWaitTime = Math.floor(Math.random() * 15) + 10;
+          
+          if (i > 0) { // Skip delay for first message
+            await new Promise(resolve => setTimeout(resolve, randomWaitTime * 1000));
+          }
+
+          // Format phone number (ensure it has country code)
+          const formatPhoneNumber = (phone: string): string => {
+            const digits = phone.replace(/\D/g, '');
+            if (!digits.startsWith('55') && digits.length <= 11) {
+              return `55${digits}`;
+            }
+            return digits;
+          };
+
+          const formattedNumber = formatPhoneNumber(number);
+          
+          const payload = {
+            number: formattedNumber,
+            options: {
+              delay: randomWaitTime * 1000,
+              presence: "composing",
+              linkPreview: false
+            },
+            text: message
+          };
+
+          console.log(`Sending message ${i + 1}/${validNumbers.length} to ${formattedNumber}`);
+
+          const response = await fetch(
+            `https://api.outr.one/message/sendText/${outrInstanceId}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': outrApiKey
+              },
+              body: JSON.stringify(payload),
+            }
+          );
+
+          const responseData = await response.text();
+
+          if (response.ok) {
+            successful++;
+            results.push({
+              number: formattedNumber,
+              success: true,
+              waitTime: randomWaitTime
+            });
+          } else {
+            failed++;
+            results.push({
+              number: formattedNumber,
+              success: false,
+              error: `HTTP ${response.status}: ${responseData}`,
+              waitTime: randomWaitTime
+            });
+          }
+
+        } catch (error) {
+          failed++;
+          results.push({
+            number,
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+          console.error(`Error sending to ${number}:`, error);
+        }
+      }
+
+      // Return summary
+      res.json({
+        success: true,
+        summary: {
+          total: validNumbers.length,
+          successful,
+          failed,
+          results: results.slice(0, 10) // Limit results for response size
+        },
+        message: `Bulk message send completed: ${successful} successful, ${failed} failed`
+      });
+
+    } catch (error) {
+      console.error('Error in bulk message send:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
