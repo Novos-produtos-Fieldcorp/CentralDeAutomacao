@@ -12,8 +12,7 @@ import DocumentUploader from './DocumentUploader';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
-import AddAjudanteModal from './AddAjudanteModal';
-import EditAjudanteModal from './EditAjudanteModal';
+import UnifiedAjudanteModal from './UnifiedAjudanteModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import GestaoRiscoTab from './GestaoRiscoTab';
 import ComentariosTab from './ComentariosTab';
@@ -34,8 +33,8 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
-  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
+  const [isAjudanteModalOpen, setIsAjudanteModalOpen] = useState(false);
+  const [ajudanteModalMode, setAjudanteModalMode] = useState<'add' | 'edit'>('add');
   const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
   const [selectedAjudante, setSelectedAjudante] = useState<any>(null);
   const [veiculo, setVeiculo] = useState<Veiculo | null>(null);
@@ -309,7 +308,14 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
 
   const handleEditAjudante = (ajudante: any) => {
     setSelectedAjudante(ajudante);
-    setIsEditAjudanteModalOpen(true);
+    setAjudanteModalMode('edit');
+    setIsAjudanteModalOpen(true);
+  };
+
+  const handleAddAjudante = () => {
+    setSelectedAjudante(null);
+    setAjudanteModalMode('add');
+    setIsAjudanteModalOpen(true);
   };
 
   const handleDeleteAjudante = (ajudante: any) => {
@@ -347,9 +353,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
     }
   };
 
-  const handleAjudanteUpdated = async () => {
+  const handleAjudanteSuccess = async () => {
+    setIsAjudanteModalOpen(false);
+    setSelectedAjudante(null);
     await fetchAgregadoDetails();
-    toast.success('Ajudante atualizado com sucesso');
+    onSuccess?.();
   };
   
   return (
@@ -1100,8 +1108,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       Ajudantes
                     </h3>
                     <button
-                      onClick={() => setIsAddAjudanteModalOpen(true)}
+                      onClick={handleAddAjudante}
                       className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      data-testid="button-add-ajudante-header"
                     >
                       <Edit2 className="w-4 h-4 mr-2" />
                       Adicionar Ajudante
@@ -1322,8 +1331,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       </p>
                       <div className="mt-6">
                         <button
-                          onClick={() => setIsAddAjudanteModalOpen(true)}
+                          onClick={handleAddAjudante}
                           className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          data-testid="button-add-ajudante-empty"
                         >
                           <Edit2 className="-ml-1 mr-2 h-5 w-5" />
                           Adicionar Ajudante
@@ -1381,27 +1391,17 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
           }}
         />
       )}
-      <AddAjudanteModal
-        isOpen={isAddAjudanteModalOpen}
-        onClose={() => setIsAddAjudanteModalOpen(false)}
-        motorista_id={motorista.motorista_id}
-        onSuccess={() => {
-          setIsAddAjudanteModalOpen(false);
-          fetchAgregadoDetails();
-          onSuccess?.();
+      <UnifiedAjudanteModal
+        isOpen={isAjudanteModalOpen}
+        onClose={() => {
+          setIsAjudanteModalOpen(false);
+          setSelectedAjudante(null);
         }}
+        mode={ajudanteModalMode}
+        motorista_id={motorista.motorista_id}
+        ajudante={selectedAjudante}
+        onSuccess={handleAjudanteSuccess}
       />
-      {isEditAjudanteModalOpen && selectedAjudante && (
-        <EditAjudanteModal
-          isOpen={isEditAjudanteModalOpen}
-          onClose={() => {
-            setIsEditAjudanteModalOpen(false);
-            setSelectedAjudante(null);
-          }}
-          ajudante={selectedAjudante}
-          onSuccess={handleAjudanteUpdated}
-        />
-      )}
       {veiculo && (
         <EditVeiculoModal
           isOpen={isEditVeiculoModalOpen}
