@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { wiseAppService } from '@/lib/directApiService';
+// Removed direct API service - now using secure backend routes
 import { useAuth } from '@/context/AuthContext';
 
 interface SyncResult {
@@ -32,11 +32,27 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
   const queryClient = useQueryClient();
   const { companyId } = useAuth();
 
-  // Individual motorista sync mutation
+  // Individual motorista sync mutation using secure backend
   const syncMotoristaMutation = useMutation({
     mutationFn: async (motoristaId: number) => {
       if (!companyId) throw new Error('Company ID not found');
-      return wiseAppService.syncMotorista(motoristaId, companyId);
+      
+      const response = await fetch(`/api/wiseapp/sync-motorista/${motoristaId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          companyId: companyId
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Sync failed');
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
       if (data.success) {
@@ -52,11 +68,27 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
-  // Bulk sync mutation com sincronização bidirecional de tags
+  // Bulk sync mutation using secure backend
   const bulkSyncMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
-      return wiseAppService.syncMotoristasBulkWithTags(companyId);
+      
+      const response = await fetch('/api/wiseapp/sync-all-motoristas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          companyId: companyId
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Bulk sync failed');
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
       const result = data.data as BulkSyncResult;
@@ -92,11 +124,27 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
-  // Config validation mutation
+  // Config validation mutation using secure backend
   const validateConfigMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
-      return wiseAppService.validateConfig(companyId);
+      
+      const response = await fetch('/api/wiseapp/validate-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          companyId: companyId
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Config validation failed');
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
       setConfigValid(data.valid);

@@ -22,6 +22,52 @@ import {
 import { getBulkMotoristaTags } from "./bulk-tags-api";
 import { registerBulkContactTagsRoute } from "./bulk-contact-tags-sync";
 
+// Job tracking system for progress monitoring
+interface JobStatus {
+  id: string;
+  status: 'running' | 'completed' | 'error';
+  currentStep: string;
+  processedContacts: number;
+  totalContacts: number;
+  processedTags: number;
+  totalTags: number;
+  message: string;
+  startTime: number;
+  result?: any;
+  error?: string;
+}
+
+const jobTracker = new Map<string, JobStatus>();
+
+// Utility to generate job IDs
+function generateJobId(): string {
+  return `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Job progress update helper
+function updateJobProgress(jobId: string, updates: Partial<JobStatus>) {
+  const job = jobTracker.get(jobId);
+  if (job) {
+    Object.assign(job, updates);
+    console.log(`[Job ${jobId}] Progress: ${updates.currentStep || job.currentStep} - ${job.processedContacts}/${job.totalContacts} contacts`);
+  }
+}
+
+// Clean up old jobs (older than 1 hour)
+function cleanupOldJobs() {
+  const now = Date.now();
+  const oneHour = 60 * 60 * 1000;
+  
+  for (const [jobId, job] of jobTracker.entries()) {
+    if (now - job.startTime > oneHour) {
+      jobTracker.delete(jobId);
+    }
+  }
+}
+
+// Clean up jobs every 30 minutes
+setInterval(cleanupOldJobs, 30 * 60 * 1000);
+
 // Initialize Supabase client with bypass RLS for backend operations
 const supabaseUrl =
   process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co";
@@ -1980,6 +2026,187 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Individual sync backend proxy route for motorista tag operations (CRITICAL)
+  app.post("/api/wiseapp/sync-contact-tags/:motoristaId", async (req, res) => {
+    try {
+      const { motoristaId } = req.params;
+      const { operation, tagId, tagName, companyId, accountId } = req.body;
+      
+      console.log(`Individual tag sync for motorista ${motoristaId}, operation: ${operation}`);
+      
+      if (!motoristaId || !companyId || !accountId || !operation) {
+        return res.status(400).json({ 
+          error: "motoristaId, companyId, accountId e operation são obrigatórios" 
+        });
+      }
+
+      // Buscar token WiseApp para esta empresa de forma segura
+      const { data: tokenData, error: tokenError } = await supabaseBackend
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('company_id', parseInt(companyId))
+        .limit(1);
+
+      if (tokenError || !tokenData || tokenData.length === 0) {
+        return res.status(404).json({ 
+          error: "Token WiseApp não configurado para esta empresa" 
+        });
+      }
+
+      const token = tokenData[0].access_token_wiseapp;
+      if (!token) {
+        return res.status(404).json({ 
+          error: "Token WiseApp não encontrado" 
+        });
+      }
+
+      // Buscar dados do motorista
+      const { data: motorista, error: motoristaError } = await supabaseBackend
+        .from('motorista')
+        .select('nome, telefone')
+        .eq('motorista_id', parseInt(motoristaId))
+        .eq('company_id', parseInt(companyId))
+        .single();
+
+      if (motoristaError || !motorista) {
+        return res.status(404).json({ 
+          error: "Motorista não encontrado" 
+        });
+      }
+
+      if (!motorista.telefone) {
+        return res.status(400).json({ 
+          error: "Motorista não possui telefone cadastrado" 
+        });
+      }
+
+      // Buscar contato no WiseApp pelo telefone
+      const formattedPhone = `55${motorista.telefone}`;
+      const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${formattedPhone}`;
+
+      const searchResponse = await fetch(searchUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!searchResponse.ok) {
+        return res.status(500).json({ 
+          error: `Erro ao buscar contato no WiseApp: ${searchResponse.status}` 
+        });
+      }
+
+      const searchData = await searchResponse.json();
+      const contacts = searchData.payload || [];
+
+      if (contacts.length === 0) {
+        return res.status(404).json({ 
+          error: "Contato não encontrado no WiseApp" 
+        });
+      }
+
+      const contact = contacts[0];
+
+      // Executar operação específica
+      if (operation === 'add_tag') {
+        // Buscar tags existentes do contato
+        const getLabelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contact.id}/labels`;
+        const getLabelsResponse = await fetch(getLabelsUrl, {
+          method: 'GET',
+          headers: {
+            'api_access_token': token,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        let existingLabels: string[] = [];
+        if (getLabelsResponse.ok) {
+          const labelsResult = await getLabelsResponse.json();
+          existingLabels = labelsResult.payload || [];
+        }
+
+        // Adicionar nova tag se não existir
+        if (tagName && !existingLabels.includes(tagName)) {
+          existingLabels.push(tagName);
+        }
+
+        // Aplicar todas as tags (preservando existentes)
+        const applyLabelsResponse = await fetch(getLabelsUrl, {
+          method: 'POST',
+          headers: {
+            'api_access_token': token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ labels: existingLabels })
+        });
+
+        if (!applyLabelsResponse.ok) {
+          const errorText = await applyLabelsResponse.text();
+          return res.status(500).json({ 
+            error: `Erro ao aplicar tag no WiseApp: ${applyLabelsResponse.status} - ${errorText}` 
+          });
+        }
+
+        return res.json({ 
+          success: true, 
+          message: "Tag adicionada com sucesso",
+          contactId: contact.id,
+          appliedLabels: existingLabels
+        });
+
+      } else if (operation === 'remove_tag') {
+        // Buscar tags do motorista no banco local para determinar quais manter
+        const { data: motoristaTagsData } = await supabaseBackend
+          .from('associacao_tags')
+          .select(`
+            tag:tag_id (nome)
+          `)
+          .eq('motorista_id', parseInt(motoristaId));
+
+        const remainingTagNames = motoristaTagsData?.map((item: any) => item.tag.nome).filter(Boolean) || [];
+
+        // Aplicar apenas as tags restantes (efetivamente removendo a deletada)
+        const applyLabelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contact.id}/labels`;
+        const applyLabelsResponse = await fetch(applyLabelsUrl, {
+          method: 'POST',
+          headers: {
+            'api_access_token': token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ labels: remainingTagNames })
+        });
+
+        if (!applyLabelsResponse.ok) {
+          const errorText = await applyLabelsResponse.text();
+          return res.status(500).json({ 
+            error: `Erro ao remover tag no WiseApp: ${applyLabelsResponse.status} - ${errorText}` 
+          });
+        }
+
+        return res.json({ 
+          success: true, 
+          message: "Tag removida com sucesso",
+          contactId: contact.id,
+          remainingLabels: remainingTagNames
+        });
+
+      } else {
+        return res.status(400).json({ 
+          error: "Operação não suportada. Use 'add_tag' ou 'remove_tag'" 
+        });
+      }
+
+    } catch (error) {
+      console.error("Erro na sincronização individual de tag:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
   // Buscar contato no WiseApp por telefone
   app.get("/api/wiseapp/:companyId/contacts/search", async (req, res) => {
     try {
@@ -2739,6 +2966,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // GET route for job progress monitoring
+  app.get("/api/wiseapp/bulk-sync-progress/:jobId", async (req, res) => {
+    try {
+      const { jobId } = req.params;
+      
+      console.log(`[Progress Check] Checking progress for job: ${jobId}`);
+      
+      const job = jobTracker.get(jobId);
+      
+      if (!job) {
+        return res.status(404).json({ 
+          error: `Job ${jobId} not found`,
+          status: 'error',
+          message: 'Job não encontrado ou expirou'
+        });
+      }
+      
+      // Return current job status
+      const response = {
+        status: job.status,
+        currentStep: job.currentStep,
+        processedContacts: job.processedContacts,
+        totalContacts: job.totalContacts,
+        processedTags: job.processedTags,
+        totalTags: job.totalTags,
+        message: job.message,
+        progress: job.totalContacts > 0 ? Math.round((job.processedContacts / job.totalContacts) * 100) : 0
+      };
+      
+      // If job is completed, include result
+      if (job.status === 'completed' && job.result) {
+        Object.assign(response, { result: job.result });
+      }
+      
+      // If job errored, include error
+      if (job.status === 'error' && job.error) {
+        Object.assign(response, { error: job.error });
+      }
+      
+      console.log(`[Progress Check] Job ${jobId} status:`, response);
+      res.json(response);
+      
+    } catch (error) {
+      console.error("Error fetching job progress:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  });
+
+  // Export job tracking functions for use in bulk-contact-tags-sync
+  (app as any).jobTracker = {
+    generateJobId,
+    updateJobProgress,
+    createJob: (jobId: string, totalContacts: number, totalTags: number = 0) => {
+      const job: JobStatus = {
+        id: jobId,
+        status: 'running',
+        currentStep: 'Iniciando sincronização...',
+        processedContacts: 0,
+        totalContacts,
+        processedTags: 0,
+        totalTags,
+        message: 'Sincronização iniciada',
+        startTime: Date.now()
+      };
+      jobTracker.set(jobId, job);
+      console.log(`[Job Tracker] Created job ${jobId} with ${totalContacts} contacts, ${totalTags} tags`);
+      return job;
+    },
+    getStatus: (jobId: string) => {
+      return jobTracker.get(jobId) || null;
+    },
+    completeJob: (jobId: string, result: any) => {
+      console.log(`[Job Tracker] Completing job ${jobId} with result:`, result);
+      updateJobProgress(jobId, {
+        status: 'completed',
+        currentStep: 'Concluído',
+        message: 'Sincronização concluída com sucesso',
+        result
+      });
+    },
+    errorJob: (jobId: string, error: string) => {
+      console.log(`[Job Tracker] Error job ${jobId}:`, error);
+      updateJobProgress(jobId, {
+        status: 'error',
+        currentStep: 'Erro',
+        message: 'Erro durante sincronização',
+        error
+      });
+    }
+  };
 
   // Register bulk contact tags sync route
   registerBulkContactTagsRoute(app);

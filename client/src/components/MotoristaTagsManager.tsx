@@ -156,42 +156,31 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
         if (error) throw error;
 
-        // Sincronizar via API
-        if (motorista.telefone && accountId && wiseAppToken) {
+        // Sincronizar via backend seguro
+        if (motorista.telefone && accountId) {
           try {
-            const response = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${motorista.telefone}`, {
+            const syncResponse = await fetch(`/api/wiseapp/sync-contact-tags/${motoristaId}`, {
+              method: 'POST',
               headers: {
-                'wiseapp-token': wiseAppToken,
-                'wiseapp-account-id': accountId.toString(),
                 'Content-Type': 'application/json'
-              }
+              },
+              body: JSON.stringify({
+                operation: 'add_tag',
+                tagId: tagId,
+                tagName: tag.nome,
+                companyId: companyId,
+                accountId: accountId.toString()
+              })
             });
 
-            const contacts = await response.json();
-
-            if (contacts && contacts.length > 0) {
-              const contact = contacts[0];
-
-              // Adicionar marcador
-              const addResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
-                method: 'POST',
-                headers: {
-                  'wiseapp-token': wiseAppToken,
-                  'wiseapp-account-id': accountId.toString(),
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                  tagId: tagId,
-                  tagName: tag.nome 
-                })
-              });
-
-              if (addResponse.ok) {
-                // Tag aplicada com sucesso
-              }
+            if (syncResponse.ok) {
+              console.log(`✅ Tag "${tag.nome}" sincronizada com sucesso no WiseApp`);
+            } else {
+              const errorData = await syncResponse.json();
+              console.warn(`⚠️ Erro na sincronização WiseApp:`, errorData.error);
             }
           } catch (error) {
-            // Erro não crítico na sincronização
+            console.warn(`⚠️ Erro não crítico na sincronização:`, error);
           }
         }
 
@@ -242,52 +231,32 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
         if (error) throw error;
 
-        // Sincronizar via API
-        if (motorista.telefone && accountId && wiseAppToken) {
+        // Sincronizar via backend seguro
+        if (motorista.telefone && accountId) {
           try {
-            const response = await fetch(`/api/wiseapp/${companyId}/contacts/search?phone=${motorista.telefone}`, {
+            const syncResponse = await fetch(`/api/wiseapp/sync-contact-tags/${motoristaId}`, {
+              method: 'POST',
               headers: {
-                'wiseapp-token': wiseAppToken,
-                'wiseapp-account-id': accountId.toString(),
                 'Content-Type': 'application/json'
-              }
+              },
+              body: JSON.stringify({
+                operation: 'remove_tag',
+                tagId: tagId,
+                tagName: tag.nome,
+                companyId: companyId,
+                accountId: accountId.toString()
+              })
             });
 
-            const contacts = await response.json();
-
-            if (contacts && contacts.length > 0) {
-              const contact = contacts[0];
-
-              // Buscar todas as tags atuais do motorista
-              const { data: allMotoristaTagsAfterRemoval } = await supabase
-                .from('associacao_tags')
-                .select(`
-                  tag:tag_id (nome)
-                `)
-                .eq('motorista_id', motoristaId);
-
-              const remainingTagNames = allMotoristaTagsAfterRemoval?.map((item: any) => item.tag.nome) || [];
-
-              // Atualizar todas as tags (sem a removida)
-              console.log(`[INDIVIDUAL] Removendo tag do contato ${contact.id}, tags restantes:`, remainingTagNames);
-              const updateResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
-                method: 'POST',
-                headers: {
-                  'wiseapp-token': wiseAppToken,
-                  'wiseapp-account-id': accountId.toString(),
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                  labels: remainingTagNames
-                })
-              });
-
-              if (updateResponse.ok) {
-                console.log(`[INDIVIDUAL] ✅ Tag removida, ${remainingTagNames.length} tags restantes aplicadas`);
-              }
+            if (syncResponse.ok) {
+              const result = await syncResponse.json();
+              console.log(`✅ Tag "${tag.nome}" removida e sincronizada no WiseApp. Tags restantes: ${result.remainingLabels?.length || 0}`);
+            } else {
+              const errorData = await syncResponse.json();
+              console.warn(`⚠️ Erro na sincronização WiseApp:`, errorData.error);
             }
           } catch (error) {
-            // Erro não crítico na sincronização
+            console.warn(`⚠️ Erro não crítico na sincronização:`, error);
           }
         }
 
