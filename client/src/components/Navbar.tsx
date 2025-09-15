@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, Tags, Briefcase, FileText } from 'lucide-react';
+import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, Tags, FileText } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
@@ -88,7 +88,6 @@ const Navbar = ({ onToggle }: NavbarProps) => {
     { path: '/', icon: Home, label: 'Menu', isTitle: false, enabled: true },
     { path: '/checklist', icon: ClipboardCheck, label: 'Checklists', needsAccess: true, enabled: moduleAccess.checklist },
     { path: '/motoristas', icon: Users, label: 'Contratações', needsAccess: true, enabled: moduleAccess.motoristas },
-    { path: '/vagas', icon: Briefcase, label: 'Vagas', needsAccess: true, enabled: moduleAccess.vagas },
     { path: '/veiculos', icon: Truck, label: 'Veículos', needsAccess: false, enabled: moduleAccess.veiculos },
     { path: '/hodometros', icon: Gauge, label: 'Hodômetros', needsAccess: true, enabled: moduleAccess.hodometros },
     { path: '/clientes', icon: Store, label: 'Clientes', needsAccess: false, enabled: moduleAccess.clientes },
