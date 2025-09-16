@@ -130,7 +130,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  console.log('🚀 Iniciando servidor...');
+  console.log('📋 Variáveis de ambiente:');
+  console.log('  NODE_ENV:', process.env.NODE_ENV);
+  console.log('  PORT:', process.env.PORT);
+  
   const server = await registerRoutes(app);
+  console.log('✅ Rotas registradas com sucesso');
 
   // Sistema de error handling robusto com fallbacks
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
@@ -214,11 +220,21 @@ app.use((req, res, next) => {
   const port = process.env.PORT || 5000;
   const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
   
+  console.log('🌐 Configuração do servidor:');
+  console.log('  Porta:', port);
+  console.log('  Host:', host);
+  console.log('  Ambiente:', process.env.NODE_ENV || 'development');
+  
   server.listen({
     port,
     host,
     reusePort: false,
   }, () => {
+    console.log('✅ Servidor iniciado com sucesso!');
     log(`serving on ${host}:${port}`);
+  });
+  
+  server.on('error', (err) => {
+    console.error('❌ Erro ao iniciar servidor:', err);
   });
 })();
