@@ -65,7 +65,7 @@ const Comprovantes = () => {
 
   const tabs = [
     { path: '/comprovantes/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/comprovantes/lista', icon: FileText, label: 'Comprovantes' },
+    { path: '/comprovantes/lista', icon: FileText, label: 'Canhoto Digital' },
   ];
 
   const isActive = (path: string) => {
@@ -81,7 +81,7 @@ const Comprovantes = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Comprovantes</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Canhoto Digital</h1>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
