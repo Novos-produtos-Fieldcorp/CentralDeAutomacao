@@ -66,7 +66,7 @@ app.use((req, res, next) => {
   
   // Definir Access-Control-Allow-Origin
   if (isOriginAllowed(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
     console.log(`[CORS] Origin allowed: ${origin}`);
   } else {
     // Para iframe embedding, permitir qualquer origem se não for uma requisição de API sensível
@@ -102,7 +102,7 @@ app.use((req, res, next) => {
     
     // Definir headers CORS para preflight
     if (isOriginAllowed(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
       console.log(`[CORS] Preflight - Origin allowed: ${origin}`);
     } else {
       res.setHeader('Access-Control-Allow-Origin', '*');
