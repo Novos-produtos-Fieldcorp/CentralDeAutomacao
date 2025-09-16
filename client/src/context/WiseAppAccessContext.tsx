@@ -20,70 +20,21 @@ const WiseAppAccessContext = createContext<WiseAppAccessContextType>({
 });
 
 export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode }) => {
-  // Initialize from localStorage if available
-  const [token, setToken] = useState<string | null>(() => {
-    try {
-      const cached = localStorage.getItem('wiseapp_token_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const isExpired = Date.now() > parsed.expiresAt;
-        if (!isExpired) {
-          return parsed.token;
-        }
-      }
-    } catch (error) {
-      console.log('Error loading cached token:', error);
-    }
-    return null;
-  });
+  // Clear stale cache if there's a mismatch between cache and database
+  const clearStaleCache = () => {
+    console.log('Clearing stale WiseApp cache due to authentication mismatch');
+    localStorage.removeItem('wiseapp_token_cache');
+    localStorage.removeItem('wiseapp_company_cache');
+    localStorage.removeItem('wiseapp_attendant_cache');
+  };
+
+  // Initialize token state - don't use cache initially, validate against backend first
+  const [token, setToken] = useState<string | null>(null);
   
-  const [companyId, setCompanyId] = useState<number | null>(() => {
-    try {
-      const cached = localStorage.getItem('wiseapp_company_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const isExpired = Date.now() > parsed.expiresAt;
-        if (!isExpired) {
-          return parsed.companyId;
-        }
-      }
-    } catch (error) {
-      console.log('Error loading cached company:', error);
-    }
-    return null;
-  });
-  
-  const [attendantId, setAttendantId] = useState<number | null>(() => {
-    try {
-      const cached = localStorage.getItem('wiseapp_attendant_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const isExpired = Date.now() > parsed.expiresAt;
-        if (!isExpired) {
-          return parsed.attendantId;
-        }
-      }
-    } catch (error) {
-      console.log('Error loading cached attendant:', error);
-    }
-    return null;
-  });
-  
-  const [attendantName, setAttendantName] = useState<string | null>(() => {
-    try {
-      const cached = localStorage.getItem('wiseapp_attendant_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const isExpired = Date.now() > parsed.expiresAt;
-        if (!isExpired) {
-          return parsed.attendantName;
-        }
-      }
-    } catch (error) {
-      console.log('Error loading cached attendant name:', error);
-    }
-    return null;
-  });
+  // Initialize all states as null - will be populated from database verification
+  const [companyId, setCompanyId] = useState<number | null>(null);
+  const [attendantId, setAttendantId] = useState<number | null>(null);
+  const [attendantName, setAttendantName] = useState<string | null>(null);
   
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,136 +80,83 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       if (!accountId) {
         // Get from localStorage if available
         try {
-          accountId = localStorage?.getItem('account_id');
+          accountId = localStorage?.getItem('account_id') || undefined;
         } catch {
-          accountId = null;
+          accountId = undefined;
         }
       }
       if (!accountId) {
+        console.log('No account_id found - showing modal for token configuration');
+        setShowModal(true);
         setIsLoading(false);
         setHasCheckedToken(true);
         return;
       }
 
+      // Store account_id for future use
+      localStorage.setItem('account_id', accountId);
+
       try {
-        // Check if we have valid cached data first
-        const cachedToken = localStorage.getItem('wiseapp_token_cache');
-        const cachedCompany = localStorage.getItem('wiseapp_company_cache');
-        const cachedAttendant = localStorage.getItem('wiseapp_attendant_cache');
+        console.log('Fetching fresh WiseApp token from database for account_id:', accountId);
         
-        let useCache = false;
-        
-        if (cachedToken && cachedCompany && cachedAttendant) {
-          try {
-            const tokenData = JSON.parse(cachedToken);
-            const companyData = JSON.parse(cachedCompany);
-            const attendantData = JSON.parse(cachedAttendant);
-            
-            const isTokenValid = Date.now() < tokenData.expiresAt;
-            const isCompanyValid = Date.now() < companyData.expiresAt;
-            const isAttendantValid = Date.now() < attendantData.expiresAt;
-            
-            if (isTokenValid && isCompanyValid && isAttendantValid) {
-              console.log('Using cached WiseApp token and data');
-              setToken(tokenData.token);
-              setCompanyId(companyData.companyId);
-              setAttendantId(attendantData.attendantId);
-              setAttendantName(attendantData.attendantName);
-              useCache = true;
-            }
-          } catch (cacheError) {
-            console.log('Error reading cache, will fetch fresh data:', cacheError);
-          }
+        // Get company ID from account ID
+        const { data: company, error: companyError } = await supabase
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', accountId)
+          .single();
+
+        if (companyError) {
+          console.error('Error fetching company:', companyError);
+          clearStaleCache();
+          setShowModal(true);
+          setIsLoading(false);
+          setHasCheckedToken(true);
+          return;
         }
-        
-        if (!useCache) {
-          console.log('Fetching fresh WiseApp token from database');
-          
-          // Get company ID from account ID
-          const { data: company, error: companyError } = await supabase
-            .from('company')
-            .select('company_id')
-            .eq('id_conta_wiseapp', accountId)
-            .single();
 
-          if (companyError) {
-            console.error('Error fetching company:', companyError);
-            setIsLoading(false);
-            return;
+        if (company) {
+          console.log('Found company_id:', company.company_id);
+          setCompanyId(company.company_id);
+          
+          // Check if there's a valid token for this company in database
+          const { data: access, error: accessError } = await supabase
+            .from('wiseapp_acesso')
+            .select('wiseapp_acesso_id, access_token_wiseapp, nome')
+            .eq('company_id', company.company_id)
+            .not('access_token_wiseapp', 'is', null)
+            .maybeSingle();
+
+          if (accessError && accessError.code !== 'PGRST116') {
+            console.error('Error fetching access token:', accessError);
           }
 
-          if (company) {
-            setCompanyId(company.company_id);
+          if (access && access.access_token_wiseapp) {
+            console.log('Found valid WiseApp token in database');
+            setToken(access.access_token_wiseapp);
+            setAttendantId(access.wiseapp_acesso_id);
+            setAttendantName(access.nome);
             
-            // Cache company data
+            // Now cache the valid data
+            cacheData('wiseapp_token_cache', { token: access.access_token_wiseapp });
             cacheData('wiseapp_company_cache', { companyId: company.company_id });
+            cacheData('wiseapp_attendant_cache', { 
+              attendantId: access.wiseapp_acesso_id, 
+              attendantName: access.nome 
+            });
             
-            // Check if there's a token for this company
-            const { data: access, error: accessError } = await supabase
-              .from('wiseapp_acesso')
-              .select('wiseapp_acesso_id, access_token_wiseapp, nome')
-              .eq('company_id', company.company_id)
-              .maybeSingle();
-
-            if (accessError && accessError.code !== 'PGRST116') {
-              console.error('Error fetching access token:', accessError);
-            }
-
-            if (access && access.access_token_wiseapp) {
-              updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome);
-              console.log('WiseApp token fetched and cached successfully');
-            } else {
-              // Check if we have a valid cached token that could be saved to database
-              try {
-                const cachedToken = localStorage.getItem('wiseapp_token_cache');
-                if (cachedToken) {
-                  const tokenData = JSON.parse(cachedToken);
-                  const isTokenValid = Date.now() < tokenData.expiresAt;
-                  
-                  if (isTokenValid && tokenData.token) {
-                    console.log('Found valid cached token, saving to database...');
-                    
-                    // Try to save the cached token to database
-                    const { error: insertError } = await supabase
-                      .from('wiseapp_acesso')
-                      .insert([{ 
-                        email: 'auto@sistema.com', 
-                        nome: 'Token Automático', 
-                        company_id: company.company_id, 
-                        id_conta_wiseapp: accountId, 
-                        access_token_wiseapp: tokenData.token 
-                      }]);
-                    
-                    if (!insertError) {
-                      // Successfully saved, now fetch it back to get the ID
-                      const { data: newAccess } = await supabase
-                        .from('wiseapp_acesso')
-                        .select('wiseapp_acesso_id, access_token_wiseapp, nome')
-                        .eq('company_id', company.company_id)
-                        .eq('access_token_wiseapp', tokenData.token)
-                        .single();
-                      
-                      if (newAccess) {
-                        updateToken(newAccess.access_token_wiseapp, newAccess.wiseapp_acesso_id, newAccess.nome);
-                        console.log('Cached token successfully saved to database and loaded');
-                        return; // Don't show modal, we're done
-                      }
-                    } else {
-                      console.error('Error saving cached token to database:', insertError);
-                    }
-                  }
-                }
-              } catch (cacheError) {
-                console.log('Error processing cached token:', cacheError);
-              }
-              
-              // No token found and couldn't save cached token, show modal
-              setShowModal(true);
-            }
+            console.log('WiseApp token loaded and cached successfully');
+          } else {
+            console.log('No WiseApp token found in database - showing configuration modal');
+            // Clear any stale cache since database has no token
+            clearStaleCache();
+            setShowModal(true);
           }
         }
       } catch (error) {
         console.error('Error verifying access:', error);
+        clearStaleCache();
+        setShowModal(true);
       } finally {
         setIsLoading(false);
         setHasCheckedToken(true);
@@ -274,10 +172,17 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       <WiseAppTokenModal
         open={showModal}
         onClose={() => setShowModal(false)}
-        onTokenSaved={(newToken, attendantId, attendantName) => {
-          updateToken(newToken, attendantId || 0, attendantName || 'Atendente');
+        onTokenSaved={(newToken: string) => {
+          // The modal will handle saving to database, just update local state
+          setToken(newToken);
           setShowModal(false);
           setHasCheckedToken(true);
+          // Clear all cache to force fresh data fetch
+          localStorage.removeItem('wiseapp_token_cache');
+          localStorage.removeItem('wiseapp_company_cache');
+          localStorage.removeItem('wiseapp_attendant_cache');
+          // Trigger page reload to get fresh data
+          window.location.reload();
         }}
         companyId={companyId}
       />
