@@ -1363,7 +1363,7 @@ const Dashboard: React.FC = () => {
         <div className="xl:col-span-2">
           <ContratacaoVagasHeroCard 
             stats={stats} 
-            hasAccess={moduleAccess.motoristas && moduleAccess.vagas} 
+            hasAccess={moduleAccess.motoristas} 
           />
         </div>
 
