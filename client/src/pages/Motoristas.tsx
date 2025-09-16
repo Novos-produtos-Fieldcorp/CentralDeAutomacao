@@ -17,6 +17,7 @@ import VagasList from '../components/VagasList';
 import AddVagaModal from '../components/AddVagaModal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useModuleAccess } from '../hooks/useModuleAccess';
+import AccessTooltip from '../components/AccessTooltip';
 
 const Motoristas = () => {
   const location = useLocation();
@@ -184,7 +185,9 @@ const Motoristas = () => {
               ) : (
                 <div className="flex items-center justify-center h-64">
                   <div className="text-center">
-                    <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <AccessTooltip module="vagas">
+                      <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    </AccessTooltip>
                     <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">Acesso Restrito</h3>
                     <p className="text-sm text-gray-400 dark:text-gray-500">Você não tem permissão para acessar a funcionalidade de Vagas.</p>
                   </div>
@@ -232,7 +235,9 @@ const Motoristas = () => {
               ) : (
                 <div className="flex items-center justify-center h-64">
                   <div className="text-center">
-                    <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <AccessTooltip module="vagas">
+                      <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    </AccessTooltip>
                     <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">Acesso Restrito</h3>
                     <p className="text-sm text-gray-400 dark:text-gray-500">Você não tem permissão para acessar o dashboard de Vagas.</p>
                   </div>
