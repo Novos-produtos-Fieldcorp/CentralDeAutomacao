@@ -40,23 +40,11 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   
-  // CORS otimizado com fallbacks
+  // CORS ultra-permissivo para resolver problemas de acesso
   const origin = req.headers.origin;
-  const allowedOrigins = [
-    'https://replit.com',
-    'https://*.replit.dev',
-    'https://*.replit.app',
-    'https://centralautomacoes.netlify.app',
-    'https://*.netlify.app',
-    'http://localhost:3000',
-    'http://localhost:5000'
-  ];
   
-  // Allow specific origins or all for iframe compatibility
-  if (origin && (origin.includes('netlify.app') || origin.includes('replit.dev') || origin.includes('localhost'))) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (origin) {
-    // Allow any origin that contains netlify.app or replit.dev
+  // Sempre permitir qualquer origem para resolver problemas de CORS
+  if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   } else {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -79,13 +67,10 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Credentials', 'false');
   res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
   
-  // Responder a requisições OPTIONS otimizado
+  // Responder a requisições OPTIONS de forma ultra-permissiva
   if (req.method === 'OPTIONS') {
-    // Set CORS headers again for OPTIONS requests
-    if (origin && (origin.includes('netlify.app') || origin.includes('replit.dev') || origin.includes('localhost'))) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    } else if (origin) {
-      // Allow any origin that contains netlify.app or replit.dev
+    // Sempre permitir qualquer origem para OPTIONS
+    if (origin) {
       res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
       res.setHeader('Access-Control-Allow-Origin', '*');
