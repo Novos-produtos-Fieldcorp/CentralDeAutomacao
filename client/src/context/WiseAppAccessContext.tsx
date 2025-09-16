@@ -172,17 +172,45 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       <WiseAppTokenModal
         open={showModal}
         onClose={() => setShowModal(false)}
-        onTokenSaved={(newToken: string) => {
-          // The modal will handle saving to database, just update local state
-          setToken(newToken);
-          setShowModal(false);
-          setHasCheckedToken(true);
-          // Clear all cache to force fresh data fetch
+        onTokenSaved={async (newToken: string) => {
+          // Token was saved to database by modal, now fetch fresh data
+          console.log('Token saved, fetching fresh data from database');
+          
+          // Clear all cache first
           localStorage.removeItem('wiseapp_token_cache');
           localStorage.removeItem('wiseapp_company_cache');
           localStorage.removeItem('wiseapp_attendant_cache');
-          // Trigger page reload to get fresh data
-          window.location.reload();
+          
+          if (companyId) {
+            try {
+              // Fetch the updated token info from database
+              const { data: access, error: accessError } = await supabase
+                .from('wiseapp_acesso')
+                .select('wiseapp_acesso_id, access_token_wiseapp, nome')
+                .eq('company_id', companyId)
+                .not('access_token_wiseapp', 'is', null)
+                .maybeSingle();
+
+              if (access && access.access_token_wiseapp) {
+                console.log('Fresh token loaded from database successfully');
+                setToken(access.access_token_wiseapp);
+                setAttendantId(access.wiseapp_acesso_id);
+                setAttendantName(access.nome);
+                
+                // Cache the fresh data
+                cacheData('wiseapp_token_cache', { token: access.access_token_wiseapp });
+                cacheData('wiseapp_attendant_cache', { 
+                  attendantId: access.wiseapp_acesso_id, 
+                  attendantName: access.nome 
+                });
+              }
+            } catch (error) {
+              console.error('Error fetching fresh token:', error);
+            }
+          }
+          
+          setShowModal(false);
+          setHasCheckedToken(true);
         }}
         companyId={companyId}
       />
