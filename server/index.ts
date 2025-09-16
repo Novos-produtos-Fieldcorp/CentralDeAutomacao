@@ -2,6 +2,14 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+// Declaração para process global do Node.js
+declare const process: {
+  env: {
+    NODE_ENV?: string;
+    PORT?: string;
+  };
+};
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -217,14 +225,15 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Using port 3000 with localhost to avoid network interface issues
-  // This serves both the API and the client
-  const port = 5000;
+  // Using port 5000 - configurado para aceitar conexões externas no Replit
+  const port = process.env.PORT || 5000;
+  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+  
   server.listen({
     port,
-    host: "127.0.0.1",
+    host,
     reusePort: false,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`serving on ${host}:${port}`);
   });
 })();
