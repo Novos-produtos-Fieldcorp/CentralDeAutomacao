@@ -28,8 +28,6 @@ interface ProgressStatus {
   processedTags: number;
   totalTags: number;
   message: string;
-  result?: BulkSyncResult;
-  error?: string;
 }
 
 interface BulkContactTagsSyncProps {

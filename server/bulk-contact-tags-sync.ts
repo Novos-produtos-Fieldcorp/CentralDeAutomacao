@@ -99,7 +99,7 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
     const { companyId } = req.params;
     const { accountId, withProgress } = req.body;
     
-    console.log(`[SECURITY] Starting bulk contact tags sync for company_id: ${companyId}, account_id: ${accountId}`);
+    console.log(`Starting bulk contact tags sync for company_id: ${companyId}, account_id: ${accountId}`);
 
     // Buscar token WiseApp para esta empresa
     console.log(`[bulkSyncContactTags] Tentando obter token para company_id: ${companyId}`);
@@ -115,7 +115,7 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
       return;
     }
     
-    console.log(`[SECURITY] Token validation successful - proceeding with bulk sync`);
+    console.log(`[bulkSyncContactTags] Token obtido com sucesso`);
 
     // Validar que a empresa existe e corresponde ao account_id
     const { data: companies, error: companyError } = await supabaseBackend
@@ -256,7 +256,7 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
             const contactLabelsResponse = await fetch(`${wiseappApiUrl}/api/v1/accounts/${accountId}/contacts/${contact.id}/labels`, {
               method: 'GET',
               headers: {
-                'api_access_token': token!,
+                'api_access_token': token,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
               }
@@ -376,14 +376,14 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
     }
 
     try {
-      // 1. Buscar todos os contatos do WiseApp usando nossa rota proxy
+      // 1. Buscar todos os contatos do WiseApp
       console.log("Fetching all contacts from WiseApp...");
-      const contactsResponse = await fetch(`http://0.0.0.0:5000/api/wiseapp/${companyId}/contacts`, {
+      const contactsResponse = await fetch(`${wiseappApiUrl}/api/v1/accounts/${accountId}/contacts`, {
         method: 'GET',
         headers: {
-          'wiseapp-token': token!,
-          'wiseapp-account-id': accountId.toString(),
-          'Content-Type': 'application/json'
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
       });
 
@@ -391,7 +391,8 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
         throw new Error(`Erro ao buscar contatos: ${contactsResponse.status}`);
       }
 
-      const contacts = await contactsResponse.json();
+      const contactsData = await contactsResponse.json();
+      const contacts = contactsData.payload || contactsData || [];
 
       console.log(`Found ${contacts.length} contacts in WiseApp`);
 

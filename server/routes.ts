@@ -275,8 +275,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Proxy para API do WiseApp (Chat)
-  // SECURITY FIX: DISABLED - This was a vulnerable open proxy route
-  // app.all("/api/api/v1/*", async (req, res) => {
+  app.all("/api/api/v1/*", async (req, res) => {
+    try {
+      const wiseappApiUrl =
+        process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
+      const apiKey =
+        req.headers["api_access_token"] || req.headers["authorization"];
+
+      if (!apiKey) {
+        return res.status(401).json({ error: "Token de acesso não fornecido" });
+      }
+
+      // Remover /api do início da URL para fazer o proxy
+      const targetPath = req.url.replace("/api", "");
+      const targetUrl = `${wiseappApiUrl}${targetPath}`;
+
+      console.log(`Proxying request to: ${targetUrl}`);
+
+      const fetchOptions: any = {
+        method: req.method,
+        headers: {
+          api_access_token: apiKey,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      };
+
+      // Adicionar body para requests que não sejam GET
+      if (req.method !== "GET" && req.body) {
+        fetchOptions.body = JSON.stringify(req.body);
+      }
+
+      const response = await fetch(targetUrl, fetchOptions);
+      const data = await response.json();
+
+      // Adicionar headers de no-cache na resposta
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.setHeader("Last-Modified", new Date().toUTCString());
+      res.setHeader("ETag", `"${Date.now()}"`);
+
+      res.status(response.status).json(data);
+    } catch (error) {
+      console.error("Erro no proxy WiseApp:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor ao acessar a API do WiseApp",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
 
   // Proxy para consulta de CEP com múltiplas APIs de fallback
   app.get("/api/cep/:cep", async (req, res) => {
@@ -1400,143 +1451,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Rota específica para buscar contatos do WiseApp
-  app.get("/api/wiseapp/:companyId/contacts", async (req, res) => {
-    try {
-      const { companyId } = req.params;
-      console.log(`[SECURITY] Fetching WiseApp contacts for company ${companyId}`);
-      // SECURITY FIX: Sanitized logging - no longer expose full headers
-      console.log(`[SECURITY] Request from client - companyId: ${companyId}`);
-      
-      // SECURITY FIX: Get token from database instead of trusting client headers
-      console.log(`[SECURITY] Validating token for company_id: ${companyId}`);
-      
-      // Get server-stored token from database
-      const dbToken = await storage.getWiseappToken(parseInt(companyId));
-      
-      if (!dbToken) {
-        console.log(`[SECURITY] No WiseApp token found in database for company_id: ${companyId}`);
-        return res.status(401).json({ 
-          error: "Token WiseApp não configurado para esta empresa",
-          details: "Configure um token WiseApp válido nas configurações da empresa",
-          company_id: parseInt(companyId)
-        });
-      }
-
-      // Get account ID from database  
-      const { data: companies, error: companyError } = await supabaseBackend
-        .from("company")
-        .select("id_conta_wiseapp")
-        .eq("company_id", parseInt(companyId))
-        .limit(1);
-
-      if (companyError || !companies || companies.length === 0) {
-        console.log(`[SECURITY] Company not found for company_id: ${companyId}`);
-        return res.status(400).json({ 
-          error: "Empresa não encontrada",
-          company_id: parseInt(companyId)
-        });
-      }
-      
-      const accountId = companies[0].id_conta_wiseapp;
-      const token = dbToken; // Use database token, not client header
-      
-      console.log(`[SECURITY] Using database token for company_id: ${companyId}, account_id: ${accountId}`);
-
-      // Buscar contatos do WiseApp
-      const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
-      const contactsUrl = `${wiseappApiUrl}/api/v1/accounts/${accountId}/contacts`;
-      
-      console.log('Fetching contacts from:', contactsUrl);
-      
-      const response = await fetch(contactsUrl, {
-        method: 'GET',
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          return res.status(401).json({ 
-            error: "Token de autenticação inválido ou expirado" 
-          });
-        } else if (response.status === 403) {
-          return res.status(403).json({ 
-            error: "Acesso negado. Verifique as permissões da conta" 
-          });
-        } else if (response.status === 404) {
-          return res.status(404).json({ 
-            error: "Conta não encontrada no ChatWoot" 
-          });
-        }
-        
-        throw new Error(`ChatWoot API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const contacts = data.payload || data || [];
-      
-      console.log(`[SECURITY] Successfully fetched ${contacts.length} contacts from WiseApp using validated database token`);
-      res.json(contacts);
-
-    } catch (error) {
-      console.error("[SECURITY] Erro ao buscar contatos do WiseApp:", error);
-      res.status(500).json({
-        error: "Erro ao buscar contatos do WiseApp",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      });
-    }
-  });
-
-  // SECURITY: Secure route for fetching WiseApp labels with database token validation
+  // Rota específica para buscar labels do WiseApp
   app.get("/api/wiseapp/:companyId/labels", async (req, res) => {
     try {
       const { companyId } = req.params;
-      console.log(`[SECURITY] Fetching WiseApp labels for company ${companyId}`);
-      // SECURITY FIX: Sanitized logging - no longer expose full headers
-      console.log(`[SECURITY] Request from client - companyId: ${companyId}`);
+      console.log(`Fetching WiseApp labels for company ${companyId}`);
+      console.log('Request headers:', req.headers);
       
-      // SECURITY FIX: Get token from database instead of trusting client headers
-      console.log(`[SECURITY] Validating token for company_id: ${companyId}`);
+      // Buscar token do header (enviado pelo frontend)
+      const token = req.headers['wiseapp-token'] as string;
+      console.log('Token from header:', token ? 'Found' : 'Not found');
       
-      // Get server-stored token from database
-      const dbToken = await storage.getWiseappToken(parseInt(companyId));
-      
-      if (!dbToken) {
-        console.log(`[SECURITY] No WiseApp token found in database for company_id: ${companyId}`);
+      if (!token) {
+        console.log('No token found in header');
         return res.status(401).json({ 
-          error: "Token WiseApp não configurado para esta empresa",
-          details: "Configure um token WiseApp válido nas configurações da empresa",
-          company_id: parseInt(companyId)
+          error: "Token WiseApp não configurado para esta empresa" 
         });
       }
-
-      // Get account ID from database  
-      const { data: companies, error: companyError } = await supabaseBackend
-        .from("company")
-        .select("id_conta_wiseapp")
-        .eq("company_id", parseInt(companyId))
-        .limit(1);
-
-      if (companyError || !companies || companies.length === 0) {
-        console.log(`[SECURITY] Company not found for company_id: ${companyId}`);
+      
+      // Buscar accountId do header (enviado pelo frontend) 
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      
+      // Log específico para account ID 20
+      if (accountId === '20') {
+        console.log(`Special handling for Account ID 20 - Token length: ${token?.length || 0}`);
+      }
+      console.log('Account ID from header:', accountId ? 'Found' : 'Not found');
+      
+      if (!accountId) {
         return res.status(400).json({ 
-          error: "Empresa não encontrada",
-          company_id: parseInt(companyId)
+          error: "Account ID não configurado para esta empresa" 
         });
       }
-      
-      const accountId = companies[0].id_conta_wiseapp;
-      const token = dbToken; // Use database token, not client header
-      
-      console.log(`[SECURITY] Using database token for company_id: ${companyId}, account_id: ${accountId}`);
       const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
       
-      console.log(`[SECURITY] Making validated request to: ${wiseAppUrl}`);
+      console.log(`Fetching labels from: ${wiseAppUrl}`);
 
       // Implementar retry logic para accounts grandes (como accountId 20)
       let response;
@@ -1889,43 +1838,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId, contactId } = req.params;
       const { tagId, tagName, labels } = req.body;
       
-      console.log(`[SECURITY] Applying labels to contact ${contactId} for company ${companyId}`);
-      console.log(`[SECURITY] Request body (sanitized):`, { 
-        hasLabels: !!req.body.labels, 
-        labelsCount: req.body.labels?.length || 0,
-        tagName: req.body.tagName || 'none',
-        tagId: req.body.tagId || 'none'
-      });
+      console.log(`Applying labels to contact ${contactId} for company ${companyId}`);
+      console.log(`Request body:`, req.body);
       
-      // SECURITY FIX: Get token from database instead of trusting client headers
-      const dbToken = await storage.getWiseappToken(parseInt(companyId));
-      
-      if (!dbToken) {
-        console.log(`[SECURITY] No WiseApp token found in database for company_id: ${companyId}`);
+      // Buscar token do header
+      const token = req.headers['wiseapp-token'] as string;
+      if (!token) {
         return res.status(401).json({ 
-          error: "Token WiseApp não configurado para esta empresa",
-          details: "Configure um token WiseApp válido nas configurações da empresa",
-          company_id: parseInt(companyId)
+          error: "Token WiseApp não encontrado" 
         });
       }
 
-      // Get account ID from database  
-      const { data: companies, error: companyError } = await supabaseBackend
-        .from("company")
-        .select("id_conta_wiseapp")
-        .eq("company_id", parseInt(companyId))
-        .limit(1);
-
-      if (companyError || !companies || companies.length === 0) {
-        console.log(`[SECURITY] Company not found for company_id: ${companyId}`);
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
-          error: "Empresa não encontrada",
-          company_id: parseInt(companyId)
+          error: "Account ID não encontrado" 
         });
       }
-      
-      const accountId = companies[0].id_conta_wiseapp;
-      const token = dbToken;
 
       const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
       
@@ -1961,13 +1891,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      console.log(`[SECURITY] Applying ${finalLabels.length} labels using validated database token`);
-      console.log(`[SECURITY] Sanitized payload:`, { labelsCount: finalLabels.length });
-      console.log(`[SECURITY] URL: ${labelsUrl}`);
-      console.log(`[SECURITY] Using validated database token for company_id: ${companyId}, account_id: ${accountId}`);
+      console.log(`Applying ${finalLabels.length} labels: ${finalLabels.join(', ')}`);
+      console.log(`PAYLOAD BEING SENT:`, JSON.stringify({ labels: finalLabels }));
+      console.log(`URL: ${labelsUrl}`);
+      console.log(`TOKEN: ${token ? 'Present' : 'Missing'}`);
+      console.log(`ACCOUNT ID: ${accountId}`);
       
       // Enviar lista completa de labels
-      console.log(`[SECURITY] Making validated request to WiseApp API...`);
+      console.log(`🚀 FAZENDO CHAMADA PARA WISEAPP API...`);
       const response = await fetch(labelsUrl, {
         method: 'POST',
         headers: {
@@ -2003,39 +1934,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { companyId, contactId } = req.params;
       
-      console.log(`[SECURITY] Fetching labels for contact ${contactId} in company ${companyId}`);
+      console.log(`Fetching labels for contact ${contactId} in company ${companyId}`);
       
-      // SECURITY FIX: Get token from database instead of trusting client headers
-      const dbToken = await storage.getWiseappToken(parseInt(companyId));
-      
-      if (!dbToken) {
-        console.log(`[SECURITY] No WiseApp token found in database for company_id: ${companyId}`);
+      // Buscar token do header
+      const token = req.headers['wiseapp-token'] as string;
+      if (!token) {
         return res.status(401).json({ 
-          error: "Token WiseApp não configurado para esta empresa",
-          details: "Configure um token WiseApp válido nas configurações da empresa",
-          company_id: parseInt(companyId)
+          error: "Token WiseApp não encontrado" 
         });
       }
 
-      // Get account ID from database  
-      const { data: companies, error: companyError } = await supabaseBackend
-        .from("company")
-        .select("id_conta_wiseapp")
-        .eq("company_id", parseInt(companyId))
-        .limit(1);
-
-      if (companyError || !companies || companies.length === 0) {
-        console.log(`[SECURITY] Company not found for company_id: ${companyId}`);
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
-          error: "Empresa não encontrada",
-          company_id: parseInt(companyId)
+          error: "Account ID não encontrado" 
         });
       }
-      
-      const accountId = companies[0].id_conta_wiseapp;
-      const token = dbToken;
-      
-      console.log(`[SECURITY] Using validated database token for company_id: ${companyId}, account_id: ${accountId}`);
 
       const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
       
@@ -2070,39 +1985,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { companyId, contactId, tagId } = req.params;
       
-      console.log(`[SECURITY] Removing tag ${tagId} from contact ${contactId} for company ${companyId}`);
+      console.log(`Removing tag ${tagId} from contact ${contactId} for company ${companyId}`);
       
-      // SECURITY FIX: Get token from database instead of trusting client headers
-      const dbToken = await storage.getWiseappToken(parseInt(companyId));
-      
-      if (!dbToken) {
-        console.log(`[SECURITY] No WiseApp token found in database for company_id: ${companyId}`);
+      // Buscar token do header
+      const token = req.headers['wiseapp-token'] as string;
+      if (!token) {
         return res.status(401).json({ 
-          error: "Token WiseApp não configurado para esta empresa",
-          details: "Configure um token WiseApp válido nas configurações da empresa",
-          company_id: parseInt(companyId)
+          error: "Token WiseApp não encontrado" 
         });
       }
 
-      // Get account ID from database  
-      const { data: companies, error: companyError } = await supabaseBackend
-        .from("company")
-        .select("id_conta_wiseapp")
-        .eq("company_id", parseInt(companyId))
-        .limit(1);
-
-      if (companyError || !companies || companies.length === 0) {
-        console.log(`[SECURITY] Company not found for company_id: ${companyId}`);
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
-          error: "Empresa não encontrada",
-          company_id: parseInt(companyId)
+          error: "Account ID não encontrado" 
         });
       }
-      
-      const accountId = companies[0].id_conta_wiseapp;
-      const token = dbToken;
-      
-      console.log(`[SECURITY] Using validated database token for company_id: ${companyId}, account_id: ${accountId}`);
 
       const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels/${tagId}`;
       
@@ -2320,39 +2219,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Telefone é obrigatório" });
       }
 
-      console.log(`[SECURITY] Searching contact by phone for company ${companyId}`);
+      console.log(`Searching contact by phone ${phone} for company ${companyId}`);
       
-      // SECURITY FIX: Get token from database instead of trusting client headers
-      const dbToken = await storage.getWiseappToken(parseInt(companyId));
-      
-      if (!dbToken) {
-        console.log(`[SECURITY] No WiseApp token found in database for company_id: ${companyId}`);
+      // Buscar token do header
+      const token = req.headers['wiseapp-token'] as string;
+      if (!token) {
         return res.status(401).json({ 
-          error: "Token WiseApp não configurado para esta empresa",
-          details: "Configure um token WiseApp válido nas configurações da empresa",
-          company_id: parseInt(companyId)
+          error: "Token WiseApp não encontrado" 
         });
       }
 
-      // Get account ID from database  
-      const { data: companies, error: companyError } = await supabaseBackend
-        .from("company")
-        .select("id_conta_wiseapp")
-        .eq("company_id", parseInt(companyId))
-        .limit(1);
-
-      if (companyError || !companies || companies.length === 0) {
-        console.log(`[SECURITY] Company not found for company_id: ${companyId}`);
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
-          error: "Empresa não encontrada",
-          company_id: parseInt(companyId)
+          error: "Account ID não encontrado" 
         });
       }
-      
-      const accountId = companies[0].id_conta_wiseapp;
-      const token = dbToken;
-      
-      console.log(`[SECURITY] Using validated database token for company_id: ${companyId}, account_id: ${accountId}`);
 
       const formattedPhone = `55${phone}`;
       const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${formattedPhone}`;
@@ -3298,7 +3181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         commentWithName = {
           ...newComment,
           atendente_nome: attendant?.nome || null
-        } as any;
+        };
       }
 
       console.log("Comment created successfully:", commentWithName);
