@@ -47,6 +47,9 @@ app.use((req, res, next) => {
   // Allow specific origins or all for iframe compatibility
   if (origin && (origin.includes('netlify.app') || origin.includes('replit.dev') || origin.includes('localhost'))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (origin) {
+    // Allow any origin that contains netlify.app or replit.dev
+    res.setHeader('Access-Control-Allow-Origin', origin);
   } else {
     res.setHeader('Access-Control-Allow-Origin', '*');
   }
@@ -72,6 +75,9 @@ app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
     // Set CORS headers again for OPTIONS requests
     if (origin && (origin.includes('netlify.app') || origin.includes('replit.dev') || origin.includes('localhost'))) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else if (origin) {
+      // Allow any origin that contains netlify.app or replit.dev
       res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
       res.setHeader('Access-Control-Allow-Origin', '*');
