@@ -660,7 +660,7 @@ const ComprovantesHeroCard = ({ stats }: { stats: DashboardStats }) => {
           </div>
           <div>
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-              Comprovantes
+              Canhoto Digital
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Documentação mensal
@@ -705,7 +705,7 @@ const ComprovantesHeroCard = ({ stats }: { stats: DashboardStats }) => {
               stroke="#16a34a"
               fill="#16a34a"
               fillOpacity={0.3}
-              name="Comprovantes"
+              name="Canhoto Digital"
             />
           </AreaChart>
         </ResponsiveContainer>

@@ -21,7 +21,7 @@ const Comprovantes = () => {
   useEffect(() => {
     const checkAccess = async () => {
       try {
-        setHasAccess(true); // Always allow access to Comprovantes module
+        setHasAccess(true); // Always allow access to Canhoto Digital module
       } catch (error) {
         console.error('Error checking access:', error);
         toast.error('Erro ao verificar acesso ao módulo');
