@@ -211,14 +211,15 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Using port 3000 with localhost to avoid network interface issues
-  // This serves both the API and the client
+  // Using port 5000 and bind to all interfaces for production compatibility
   const port = 5000;
+  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+  
   server.listen({
     port,
-    host: "127.0.0.1",
+    host,
     reusePort: false,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`serving on port ${port} (host: ${host})`);
   });
 })();
