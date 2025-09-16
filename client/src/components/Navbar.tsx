@@ -15,20 +15,11 @@ interface NavbarProps {
 
 const Navbar = ({ onToggle }: NavbarProps) => {
   const location = useLocation();
-  // Fallback to local state if SidebarContext is not available
   const [localExpanded, setLocalExpanded] = useState(true);
   const [, setIsManuallyExpanded] = useState(false);
   
-  let isExpanded, setIsExpanded;
-  try {
-    const sidebarContext = useSidebar();
-    isExpanded = sidebarContext.isExpanded;
-    setIsExpanded = sidebarContext.setIsExpanded;
-  } catch {
-    // Use local state as fallback
-    isExpanded = localExpanded;
-    setIsExpanded = setLocalExpanded;
-  }
+  // Use sidebar context directly - SidebarContext now provides fallback
+  const { isExpanded, setIsExpanded } = useSidebar();
   const { moduleAccess } = useModuleAccess();
   const { companyId } = useAuth();
   const [companyName, setCompanyName] = useState('');
