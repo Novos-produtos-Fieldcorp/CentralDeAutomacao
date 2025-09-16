@@ -38,6 +38,7 @@ import {
 import { format, subMonths, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "../lib/supabase";
+import AccessTooltip from "../components/AccessTooltip";
 
 // Helper function to process hodometro data with correct field names
 const processRealHodometroData = (hodometroData: any[]) => {
@@ -197,9 +198,11 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
       {/* Lock overlay for restricted access - CENTRALIZADO */}
       {!hasAccess && (
         <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-contratacao">
-          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
-            <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-          </div>
+          <AccessTooltip module="motoristas">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
         </div>
       )}
       
@@ -370,9 +373,11 @@ const HodometroHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       {/* Lock overlay for restricted access - CENTRALIZADO */}
       {!hasAccess && (
         <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-hodometros">
-          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
-            <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-          </div>
+          <AccessTooltip module="hodometro">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
         </div>
       )}
       
@@ -449,9 +454,11 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       {/* Lock overlay for restricted access - CENTRALIZADO */}
       {!hasAccess && (
         <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-clientes">
-          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
-            <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-          </div>
+          <AccessTooltip module="resumo">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
         </div>
       )}
       
@@ -607,9 +614,11 @@ const VeiculosHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       {/* Lock overlay for restricted access - CENTRALIZADO */}
       {!hasAccess && (
         <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-veiculos">
-          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
-            <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-          </div>
+          <AccessTooltip module="resumo">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
         </div>
       )}
       
@@ -709,9 +718,11 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       {/* Lock overlay for restricted access - CENTRALIZADO */}
       {!hasAccess && (
         <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-comprovantes">
-          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
-            <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-          </div>
+          <AccessTooltip module="resumo">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
         </div>
       )}
       
