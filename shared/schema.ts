@@ -14,6 +14,7 @@ export const company = pgTable("company", {
   st_company: boolean("st_company").default(true),
   checklist_access: boolean("checklist_access").default(true),
   motorista_access: boolean("motorista_access").default(true),
+  vagas_access: boolean("vagas_access").default(true),
   hodometro_acsess: boolean("hodometro_acsess").default(true),
   resumo_access: boolean("resumo_access").default(false),
   tags_access: boolean("tags_access").default(true),

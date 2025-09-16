@@ -194,11 +194,11 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access */}
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
       {!hasAccess && (
-        <div className="absolute top-2 right-2 z-10">
-          <div className="w-6 h-6 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center" data-testid="lock-contratacao">
-            <Lock className="w-3 h-3 text-red-600 dark:text-red-400" />
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-contratacao">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+            <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
         </div>
       )}
@@ -367,11 +367,11 @@ const HodometroHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access */}
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
       {!hasAccess && (
-        <div className="absolute top-2 right-2 z-10">
-          <div className="w-6 h-6 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center" data-testid="lock-hodometros">
-            <Lock className="w-3 h-3 text-red-600 dark:text-red-400" />
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-hodometros">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+            <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
         </div>
       )}
@@ -446,11 +446,11 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access */}
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
       {!hasAccess && (
-        <div className="absolute top-2 right-2 z-10">
-          <div className="w-6 h-6 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center" data-testid="lock-clientes">
-            <Lock className="w-3 h-3 text-red-600 dark:text-red-400" />
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-clientes">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+            <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
         </div>
       )}
@@ -604,11 +604,11 @@ const VeiculosHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access */}
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
       {!hasAccess && (
-        <div className="absolute top-2 right-2 z-10">
-          <div className="w-6 h-6 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center" data-testid="lock-veiculos">
-            <Lock className="w-3 h-3 text-red-600 dark:text-red-400" />
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-veiculos">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+            <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
         </div>
       )}
@@ -706,11 +706,11 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access */}
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
       {!hasAccess && (
-        <div className="absolute top-2 right-2 z-10">
-          <div className="w-6 h-6 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center" data-testid="lock-comprovantes">
-            <Lock className="w-3 h-3 text-red-600 dark:text-red-400" />
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-comprovantes">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+            <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
         </div>
       )}
