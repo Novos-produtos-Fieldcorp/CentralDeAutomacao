@@ -1,25 +1,34 @@
-import { useState, ReactNode } from 'react';
+import { ReactNode } from 'react';
 import Navbar from './Navbar';
+import { SidebarProvider, useSidebar } from '../context/SidebarContext';
 
 interface SidebarLayoutProps {
   children: ReactNode;
 }
 
-const SidebarLayout = ({ children }: SidebarLayoutProps) => {
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+const SidebarLayoutContent = ({ children }: SidebarLayoutProps) => {
+  const { isExpanded, setIsExpanded } = useSidebar();
 
   return (
     <div className="min-h-screen bg-background relative theme-transition">
-      <Navbar onToggle={setSidebarExpanded} />
+      <Navbar onToggle={setIsExpanded} />
       <main 
         className={`relative transition-all duration-500 min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden
-                    ${sidebarExpanded ? 'ml-64' : 'ml-20'}`}
+                    ${isExpanded ? 'ml-64' : 'ml-20'}`}
       >
         <div className="max-w-[2000px] mx-auto p-8">
           {children}
         </div>
       </main>
     </div>
+  );
+};
+
+const SidebarLayout = ({ children }: SidebarLayoutProps) => {
+  return (
+    <SidebarProvider>
+      <SidebarLayoutContent>{children}</SidebarLayoutContent>
+    </SidebarProvider>
   );
 };
 
