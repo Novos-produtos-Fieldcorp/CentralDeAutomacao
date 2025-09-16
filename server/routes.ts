@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { db } from "./db";
+
 import { eq, and } from "drizzle-orm";
 import {
   cliente,
@@ -23,12 +23,12 @@ import { getBulkMotoristaTags } from "./bulk-tags-api";
 import { registerBulkContactTagsRoute } from "./bulk-contact-tags-sync";
 
 // Initialize Supabase client with bypass RLS for backend operations
-const supabaseUrl =
-  process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co";
-const supabaseKey =
+const supabaseBackendUrl =
+  process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabaseBackend.co";
+const supabaseBackendKey =
   process.env.VITE_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ";
-const supabaseBackend = createClient(supabaseUrl, supabaseKey, {
+const supabaseBackendBackend = createClient(supabaseBackendUrl, supabaseBackendKey, {
   db: { schema: "public" },
   auth: {
     persistSession: false,
@@ -37,17 +37,17 @@ const supabaseBackend = createClient(supabaseUrl, supabaseKey, {
   },
   global: {
     headers: {
-      Authorization: `Bearer ${supabaseKey}`,
+      Authorization: `Bearer ${supabaseBackendKey}`,
     },
   },
 });
 
-// Helper function to get company_id from account_id
+// Helper function to get company_id from accountId
 async function getCompanyIdFromAccount(
   accountId: string,
 ): Promise<number | null> {
   try {
-    const { data: companies, error } = await supabaseBackend
+    const { data: companies, error } = await supabaseBackendBackend
       .from("company")
       .select("company_id")
       .eq("id_conta_wiseapp", accountId)
@@ -105,9 +105,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/inboxes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { account_id } = req.query;
+      const { accountId } = req.query;
       
-      console.log(`Fetching inboxes for company_id: ${companyId}, account_id: ${account_id}`);
+      console.log(`Fetching inboxes for company_id: ${companyId}, accountId: ${accountId}`);
 
       // Buscar token WiseApp para esta empresa
       const token = await storage.getWiseappToken(parseInt(companyId));
@@ -118,12 +118,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar dados da empresa para validar account_id
-      const { data: companies, error: companyError } = await supabaseBackend
+      // Buscar dados da empresa para validar accountId
+      const { data: companies, error: companyError } = await supabaseBackendBackend
         .from("company")
         .select("id_conta_wiseapp")
         .eq("company_id", parseInt(companyId))
-        .eq("id_conta_wiseapp", account_id)
+        .eq("id_conta_wiseapp", accountId)
         .limit(1);
 
       if (companyError || !companies || companies.length === 0) {
@@ -134,7 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Fazer requisição para o ChatWoot
       const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
-      const targetUrl = `${wiseappApiUrl}/api/v1/accounts/${account_id}/inboxes`;
+      const targetUrl = `${wiseappApiUrl}/api/v1/accounts/${accountId}/inboxes`;
 
       console.log(`Making request to ChatWoot: ${targetUrl}`);
 
@@ -173,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...data,
         _cache_metadata: {
           company_id: parseInt(companyId),
-          account_id: account_id,
+          accountId: accountId,
           timestamp: Date.now(),
           expires_at: Date.now() + (60 * 60 * 1000) // 1 hora
         }
@@ -189,13 +189,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Rota para buscar empresa por account_id
+  // Rota para buscar empresa por accountId
   app.get("/api/company/by-account/:accountId", async (req, res) => {
     try {
       const { accountId } = req.params;
-      console.log("Fetching company for account_id:", accountId);
+      console.log("Fetching company for accountId:", accountId);
 
-      const { data: companies, error } = await supabaseBackend
+      const { data: companies, error } = await supabaseBackendBackend
         .from("company")
         .select("*")
         .eq("id_conta_wiseapp", accountId)
@@ -207,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!companies || companies.length === 0) {
-        console.log("No company found for account_id:", accountId);
+        console.log("No company found for accountId:", accountId);
         return res.status(404).json({ error: "Empresa não encontrada" });
       }
 
@@ -472,7 +472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clientes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: clientes, error } = await supabaseBackend
+      const { data: clientes, error } = await supabaseBackendBackend
         .from("cliente")
         .select("*")
         .eq("company_id", companyId);
@@ -492,7 +492,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/unidades/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: unidades, error } = await supabaseBackend
+      const { data: unidades, error } = await supabaseBackendBackend
         .from("unidade")
         .select("*")
         .eq("company_id", companyId);
@@ -512,7 +512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/operacoes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: operacoes, error } = await supabaseBackend
+      const { data: operacoes, error } = await supabaseBackendBackend
         .from("operacao")
         .select("*")
         .eq("company_id", companyId);
@@ -532,7 +532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/status-vagas/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: statusVagas, error } = await supabaseBackend
+      const { data: statusVagas, error } = await supabaseBackendBackend
         .from("st_vaga")
         .select("*")
         .eq("company_id", companyId);
@@ -555,7 +555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       
       // Fetch vagas
-      const { data: vagas, error: vagasError } = await supabaseBackend
+      const { data: vagas, error: vagasError } = await supabaseBackendBackend
         .from("vaga")
         .select("*")
         .eq("company_id", companyId)
@@ -572,24 +572,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all related data in parallel
       const [clientesData, unidadesData, operacoesData, statusData] = await Promise.all([
-        supabase.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
-        supabase.from("unidade").select("id, unidade").eq("company_id", companyId),
-        supabase.from("operacao").select("id, operacao").eq("company_id", companyId),
-        supabase.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
+        supabaseBackendBackend.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
+        supabaseBackendBackend.from("unidade").select("id, unidade").eq("company_id", companyId),
+        supabaseBackendBackend.from("operacao").select("id, operacao").eq("company_id", companyId),
+        supabaseBackendBackend.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
       ]);
 
       // Create lookup maps
       const clientesMap = new Map();
-      clientesData.data?.forEach(c => clientesMap.set(c.cliente_id, c.nome));
+      clientesData.data?.forEach((c: any) => clientesMap.set(c.cliente_id, c.nome));
       
       const unidadesMap = new Map();
-      unidadesData.data?.forEach(u => unidadesMap.set(u.id, u.unidade));
+      unidadesData.data?.forEach((u: any) => unidadesMap.set(u.id, u.unidade));
       
       const operacoesMap = new Map();
-      operacoesData.data?.forEach(o => operacoesMap.set(o.id, o.operacao));
+      operacoesData.data?.forEach((o: any) => operacoesMap.set(o.id, o.operacao));
       
       const statusMap = new Map();
-      statusData.data?.forEach(s => statusMap.set(s.id, s.status_vaga));
+      statusData.data?.forEach((s: any) => statusMap.set(s.id, s.status_vaga));
 
       // Enrich vagas with related data
       const enrichedVagas = vagas.map(vaga => ({
@@ -611,7 +611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/vagas/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: vagas, error } = await supabaseBackend
+      const { data: vagas, error } = await supabaseBackendBackend
         .from("vaga")
         .select("*")
         .eq("company_id", companyId);
@@ -633,13 +633,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       
       // Fetch all vagas for the company
-      const { data: vagas, error } = await supabaseBackend
+      const { data: vagas, error } = await supabaseBackendBackend
         .from("vaga")
         .select("*")
         .eq("company_id", companyId);
 
       // Get status information separately
-      const { data: statusData } = await supabaseBackend
+      const { data: statusData } = await supabaseBackendBackend
         .from("st_vaga")
         .select("id, status_vaga")
         .eq("company_id", companyId);
@@ -708,7 +708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
       }
 
-      const { data: newVaga, error } = await supabaseBackend
+      const { data: newVaga, error } = await supabaseBackendBackend
         .from("vaga")
         .insert({
           nome: vagaData.nome,
@@ -765,7 +765,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
       }
 
-      const { data: updatedVaga, error } = await supabaseBackend
+      const { data: updatedVaga, error } = await supabaseBackendBackend
         .from("vaga")
         .update({
           nome: vagaData.nome,
@@ -812,7 +812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Updating vaga status:", { vagaId, st_vaga_id });
 
-      const { data: updatedVaga, error } = await supabaseBackend
+      const { data: updatedVaga, error } = await supabaseBackendBackend
         .from("vaga")
         .update({ 
           st_vaga_id: Number(st_vaga_id),
@@ -848,7 +848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Deleting vaga:", vagaId);
 
-      const { error } = await supabaseBackend
+      const { error } = await supabaseBackendBackend
         .from("vaga")
         .delete()
         .eq("id", Number(vagaId));
@@ -877,7 +877,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { unidade: unidadeNome, company_id } = req.body;
       
-      const { data: newUnidade, error } = await supabaseBackend
+      const { data: newUnidade, error } = await supabaseBackendBackend
         .from("unidade")
         .insert({
           unidade: unidadeNome,
@@ -902,7 +902,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { operacao: operacaoNome, company_id } = req.body;
       
-      const { data: newOperacao, error } = await supabaseBackend
+      const { data: newOperacao, error } = await supabaseBackendBackend
         .from("operacao")
         .insert({
           operacao: operacaoNome,
@@ -927,7 +927,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { status_vaga, company_id } = req.body;
       
-      const { data: newStatus, error } = await supabaseBackend
+      const { data: newStatus, error } = await supabaseBackendBackend
         .from("st_vaga")
         .insert({
           status_vaga,
@@ -957,7 +957,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar tags diretamente do Supabase
-      const { data: tags, error } = await supabaseBackend
+      const { data: tags, error } = await supabaseBackendBackend
         .from('tag')
         .select('*')
         .eq('company_id', companyId)
@@ -1142,7 +1142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 Searching motorista by phone: ${cleanPhone}`);
       
-      const accountId = req.header('account_id') || '1';
+      const accountId = req.header('accountId') || '1';
       const companyId = await getCompanyIdFromAccount(accountId);
       
       if (!companyId) {
@@ -1150,7 +1150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar diretamente usando Supabase
-      const { data: result, error } = await supabaseBackend
+      const { data: result, error } = await supabaseBackendBackend
         .from('motorista')
         .select('motorista_id, nome, telefone')
         .eq('company_id', companyId)
@@ -1176,7 +1176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`❌ Nenhum motorista encontrado com telefone ${cleanPhone} na empresa ${companyId}`);
         
         // Debug: mostrar alguns motoristas da empresa
-        const { data: allMotoristas } = await supabaseBackend
+        const { data: allMotoristas } = await supabaseBackendBackend
           .from('motorista')
           .select('nome, telefone')
           .eq('company_id', companyId)
@@ -1203,7 +1203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "foto_whatsapp is required" });
       }
 
-      const { data, error } = await supabaseBackend
+      const { data, error } = await supabaseBackendBackend
         .from('motorista')
         .update({ foto_whatsapp })
         .eq('motorista_id', id)
@@ -1229,7 +1229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const companyId = req.headers['company-id'] || '1';
       
       // Buscar dados do motorista
-      const { data: motorista, error: motoristaError } = await supabaseBackend
+      const { data: motorista, error: motoristaError } = await supabaseBackendBackend
         .from('motorista')
         .select('motorista_id, nome, telefone, foto_whatsapp')
         .eq('motorista_id', id)
@@ -1266,7 +1266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Se tem foto e é diferente da atual, atualizar
         if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
-          const { error: updateError } = await supabaseBackend
+          const { error: updateError } = await supabaseBackendBackend
             .from('motorista')
             .update({ foto_whatsapp: contact.thumbnail })
             .eq('motorista_id', id);
@@ -1304,7 +1304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const companyId = req.headers['company-id'] || '1';
       
       // Buscar todos os motoristas ativos com telefone
-      const { data: motoristas, error: motoristasError } = await supabaseBackend
+      const { data: motoristas, error: motoristasError } = await supabaseBackendBackend
         .from('motorista')
         .select('motorista_id, nome, telefone, foto_whatsapp')
         .eq('company_id', companyId)
@@ -1347,7 +1347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Se tem foto e é diferente da atual, atualizar
               if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
-                const { error: updateError } = await supabaseBackend
+                const { error: updateError } = await supabaseBackendBackend
                   .from('motorista')
                   .update({ foto_whatsapp: contact.thumbnail })
                   .eq('motorista_id', motorista.motorista_id);
@@ -1421,25 +1421,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Buscar account_id do header (enviado pelo frontend) 
-      const account_id = req.headers['wiseapp-account-id'] as string;
+      // Buscar accountId do header (enviado pelo frontend) 
+      const accountId = req.headers['wiseapp-account-id'] as string;
       
       // Log específico para account ID 20
-      if (account_id === '20') {
+      if (accountId === '20') {
         console.log(`Special handling for Account ID 20 - Token length: ${token?.length || 0}`);
       }
-      console.log('Account ID from header:', account_id ? 'Found' : 'Not found');
+      console.log('Account ID from header:', accountId ? 'Found' : 'Not found');
       
-      if (!account_id) {
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não configurado para esta empresa" 
         });
       }
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
       
       console.log(`Fetching labels from: ${wiseAppUrl}`);
 
-      // Implementar retry logic para accounts grandes (como account_id 20)
+      // Implementar retry logic para accounts grandes (como accountId 20)
       let response;
       let attempts = 0;
       const maxAttempts = 3;
@@ -1449,9 +1449,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attempts++;
         
         try {
-          // Para account_id 20 ou outros accounts grandes, adicionar delay
-          if (account_id === '20' && attempts > 1) {
-            console.log(`Rate limiting retry ${attempts} for account ${account_id}, waiting 3s...`);
+          // Para accountId 20 ou outros accounts grandes, adicionar delay
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${accountId}, waiting 3s...`);
             await delay(3000); // 3 segundos entre tentativas
           }
 
@@ -1462,8 +1462,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
           
           // For account ID 20, try different token header formats
-          if (account_id === '20' && attempts > 1) {
-            console.log(`Attempting alternative headers for account ${account_id}, attempt ${attempts}`);
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Attempting alternative headers for account ${accountId}, attempt ${attempts}`);
             // Try both token formats
             headers['Authorization'] = `Bearer ${token}`;
             headers['api_access_token'] = token;
@@ -1481,8 +1481,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Se 401 em account grande, tentar novamente
-          if (response.status === 401 && (account_id === '20' || parseInt(account_id) > 15)) {
-            console.log(`Got 401 for large account ${account_id}, attempt ${attempts}/${maxAttempts}`);
+          if (response.status === 401 && (accountId === '20' || parseInt(accountId) > 15)) {
+            console.log(`Got 401 for large account ${accountId}, attempt ${attempts}/${maxAttempts}`);
             
             if (attempts < maxAttempts) {
               continue; // Try again
@@ -1496,7 +1496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (attempts === maxAttempts) {
             throw fetchError;
           }
-          console.log(`API fetch attempt ${attempts} failed for account ${account_id}:`, fetchError);
+          console.log(`API fetch attempt ${attempts} failed for account ${accountId}:`, fetchError);
         }
       }
 
@@ -1541,15 +1541,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar account_id do header
-      const account_id = req.headers['wiseapp-account-id'] as string;
-      if (!account_id) {
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não encontrado" 
         });
       }
 
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
       
       const payload = {
         title: name,
@@ -1576,7 +1576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log('Tag já existe, buscando tag existente...');
             
             // Buscar todas as tags para encontrar a existente
-            const listResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels`, {
+            const listResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
               method: 'GET',
               headers: {
                 'api_access_token': token,
@@ -1652,7 +1652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fetching inboxes from: ${wiseAppUrl}`);
 
-      // Implementar retry logic para accounts grandes (como account_id 20)
+      // Implementar retry logic para accounts grandes (como accountId 20)
       let response;
       let attempts = 0;
       const maxAttempts = 3;
@@ -1662,9 +1662,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attempts++;
         
         try {
-          // Para account_id 20 ou outros accounts grandes, adicionar delay
-          if (account_id === '20' && attempts > 1) {
-            console.log(`Rate limiting retry ${attempts} for account ${account_id}, waiting 3s...`);
+          // Para accountId 20 ou outros accounts grandes, adicionar delay
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${accountId}, waiting 3s...`);
             await delay(3000); // 3 segundos entre tentativas
           }
 
@@ -1675,8 +1675,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
           
           // For account ID 20, try different token header formats
-          if (account_id === '20' && attempts > 1) {
-            console.log(`Attempting alternative headers for account ${account_id}, attempt ${attempts}`);
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Attempting alternative headers for account ${accountId}, attempt ${attempts}`);
             // Try both token formats
             headers['Authorization'] = `Bearer ${token}`;
             headers['api_access_token'] = token;
@@ -1694,8 +1694,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Se 401 em account grande, tentar novamente
-          if (response.status === 401 && (account_id === '20' || parseInt(account_id) > 15)) {
-            console.log(`Got 401 for large account ${account_id}, attempt ${attempts}/${maxAttempts}`);
+          if (response.status === 401 && (accountId === '20' || parseInt(accountId) > 15)) {
+            console.log(`Got 401 for large account ${accountId}, attempt ${attempts}/${maxAttempts}`);
             
             if (attempts < maxAttempts) {
               continue; // Try again
@@ -1709,7 +1709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (attempts === maxAttempts) {
             throw fetchError;
           }
-          console.log(`API fetch attempt ${attempts} failed for account ${account_id}:`, fetchError);
+          console.log(`API fetch attempt ${attempts} failed for account ${accountId}:`, fetchError);
         }
       }
 
@@ -1748,15 +1748,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar account_id do header
-      const account_id = req.headers['wiseapp-account-id'] as string;
-      if (!account_id) {
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não encontrado" 
         });
       }
 
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/labels/${labelId}`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels/${labelId}`;
       
       const response = await fetch(wiseAppUrl, {
         method: 'DELETE',
@@ -1801,15 +1801,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar account_id do header
-      const account_id = req.headers['wiseapp-account-id'] as string;
-      if (!account_id) {
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não encontrado" 
         });
       }
 
-      const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
+      const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
       
       let finalLabels: string[] = [];
       
@@ -1847,7 +1847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`PAYLOAD BEING SENT:`, JSON.stringify({ labels: finalLabels }));
       console.log(`URL: ${labelsUrl}`);
       console.log(`TOKEN: ${token ? 'Present' : 'Missing'}`);
-      console.log(`ACCOUNT ID: ${account_id}`);
+      console.log(`ACCOUNT ID: ${accountId}`);
       
       // Enviar lista completa de labels
       console.log(`🚀 FAZENDO CHAMADA PARA WISEAPP API...`);
@@ -1896,15 +1896,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar account_id do header
-      const account_id = req.headers['wiseapp-account-id'] as string;
-      if (!account_id) {
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não encontrado" 
         });
       }
 
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`;
       
       const response = await fetch(wiseAppUrl, {
         method: 'GET',
@@ -1947,15 +1947,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar account_id do header
-      const account_id = req.headers['wiseapp-account-id'] as string;
-      if (!account_id) {
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não encontrado" 
         });
       }
 
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contactId}/labels/${tagId}`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels/${tagId}`;
       
       const response = await fetch(wiseAppUrl, {
         method: 'DELETE',
@@ -2000,18 +2000,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar account_id do header
-      const account_id = req.headers['wiseapp-account-id'] as string;
-      if (!account_id) {
+      // Buscar accountId do header
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não encontrado" 
         });
       }
 
       const formattedPhone = `55${phone}`;
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/search?q=${formattedPhone}`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${formattedPhone}`;
       
-      // Implementar retry logic para accounts grandes (como account_id 20)
+      // Implementar retry logic para accounts grandes (como accountId 20)
       let response;
       let attempts = 0;
       const maxAttempts = 3;
@@ -2021,9 +2021,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attempts++;
         
         try {
-          // Para account_id 20 ou outros accounts grandes, adicionar delay
-          if (account_id === '20' && attempts > 1) {
-            console.log(`Rate limiting retry ${attempts} for account ${account_id}, waiting 2s...`);
+          // Para accountId 20 ou outros accounts grandes, adicionar delay
+          if (accountId === '20' && attempts > 1) {
+            console.log(`Rate limiting retry ${attempts} for account ${accountId}, waiting 2s...`);
             await delay(2000); // 2 segundos entre tentativas
           }
 
@@ -2040,8 +2040,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Se 401 em account grande, tentar novamente
-          if (response.status === 401 && (account_id === '20' || parseInt(account_id) > 15)) {
-            console.log(`Got 401 for large account ${account_id}, attempt ${attempts}/${maxAttempts}`);
+          if (response.status === 401 && (accountId === '20' || parseInt(accountId) > 15)) {
+            console.log(`Got 401 for large account ${accountId}, attempt ${attempts}/${maxAttempts}`);
             
             if (attempts < maxAttempts) {
               continue; // Try again
@@ -2055,7 +2055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (attempts === maxAttempts) {
             throw fetchError;
           }
-          console.log(`Fetch attempt ${attempts} failed for account ${account_id}:`, fetchError);
+          console.log(`Fetch attempt ${attempts} failed for account ${accountId}:`, fetchError);
         }
       }
 
@@ -2107,7 +2107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // WiseApp Proxy Route (replaces proxy-wiseapp Edge Function)
   app.all("/api/wiseapp-proxy", async (req, res) => {
     try {
-      const { endpoint, account_id, api_key, ...restParams } = req.query;
+      const { endpoint, accountId, api_key, ...restParams } = req.query;
 
       if (!endpoint) {
         return res.status(400).json({ error: 'Missing endpoint parameter' });
@@ -2117,13 +2117,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Missing API key' });
       }
 
-      if (!account_id) {
+      if (!accountId) {
         return res.status(400).json({ error: 'Missing account ID' });
       }
 
       // Build query string without proxy-specific params
       const queryString = new URLSearchParams(restParams as Record<string, string>).toString();
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/${endpoint}${queryString ? `?${queryString}` : ''}`;
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/${endpoint}${queryString ? `?${queryString}` : ''}`;
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -2257,7 +2257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Iniciando sincronização bulk para company_id: ${company_id}`);
 
       // 1. Buscar token WiseApp diretamente
-      const { data: tokenDataArray, error: tokenError } = await supabase
+      const { data: tokenDataArray, error: tokenError } = await supabaseBackendBackend
         .from('wiseapp_acesso')
         .select('access_token_wiseapp')
         .eq('company_id', company_id)
@@ -2282,7 +2282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Token WiseApp encontrado, buscando motoristas...');
 
       // 2. Buscar todos os motoristas e agregados ativos
-      const { data: motoristas, error: motoristasError } = await supabase
+      const { data: motoristas, error: motoristasError } = await supabaseBackend
         .from('motorista')
         .select('*')
         .eq('company_id', company_id)
@@ -2315,7 +2315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const account_id = company_id;
+      const accountId = company_id;
       let successful = 0;
       let failed = 0;
       let tagsImportadas = 0;
@@ -2323,18 +2323,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const errors: Array<{ motorista_id: number; nome: string; error: string }> = [];
 
       // 3. Buscar tags locais existentes
-      const { data: tagsLocais } = await supabase
+      const { data: tagsLocais } = await supabaseBackend
         .from('tag')
         .select('*')
         .eq('company_id', company_id);
 
       const tagsLocaisPorNome = new Map();
-      tagsLocais?.forEach(tag => {
+      tagsLocais?.forEach((tag: any) => {
         tagsLocaisPorNome.set(tag.nome.toLowerCase(), tag);
       });
 
       // 4. Buscar associações de tags existentes
-      const { data: associacoesExistentes } = await supabase
+      const { data: associacoesExistentes } = await supabaseBackend
         .from('associacao_tags')
         .select(`
           motorista_id,
@@ -2346,7 +2346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             company_id
           )
         `)
-        .in('motorista_id', motoristas.map(m => m.motorista_id))
+        .in('motorista_id', motoristas.map((m: any) => m.motorista_id))
         .eq('tag.company_id', company_id);
 
       // Organizar tags locais por motorista
@@ -2374,7 +2374,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Processando ${motorista.nome_motorista} - ${phone}`);
           
           // Buscar contato no WiseApp
-          const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/search?q=${phone}`;
+          const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${phone}`;
           const searchResponse = await fetch(searchUrl, {
             headers: {
               'api_access_token': token,
@@ -2399,7 +2399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Contato encontrado: ${motorista.nome_motorista} (ID: ${contact.id})`);
 
             // PARTE 1: WiseApp → Banco Local (IMPORTAR)
-            const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contact.id}/labels`;
+            const labelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contact.id}/labels`;
             const labelsResponse = await fetch(labelsUrl, {
               headers: {
                 'api_access_token': token,
@@ -2419,7 +2419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 // Criar tag local se não existir
                 if (!tagLocal) {
-                  const { data: novaTag } = await supabase
+                  const { data: novaTag } = await supabaseBackend
                     .from('tag')
                     .insert({
                       nome: wiseLabel.title,
@@ -2443,7 +2443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   );
 
                   if (!associacaoExiste) {
-                    await supabase
+                    await supabaseBackend
                       .from('associacao_tags')
                       .insert({
                         motorista_id: motorista.motorista_id,
@@ -2462,7 +2462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (tagsParaExportar.length > 0) {
               console.log(`Exportando tags para ${motorista.nome_motorista}: ${tagsParaExportar.join(', ')}`);
               
-              const applyTagsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${account_id}/contacts/${contact.id}/labels`;
+              const applyTagsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contact.id}/labels`;
               const applyTagsResponse = await fetch(applyTagsUrl, {
                 method: 'POST',
                 headers: {
