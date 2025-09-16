@@ -16,9 +16,11 @@ import {
   Activity,
   Plus,
   Edit,
+  Lock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useWiseAppAccess } from "../context/WiseAppAccessContext";
+import { useModuleAccess } from "../hooks/useModuleAccess";
 import LoadingSpinner from "../components/LoadingSpinner";
 import {
   LineChart,
@@ -180,10 +182,27 @@ const SimpleTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+// Interface for HeroCard props
+interface HeroCardProps {
+  stats: DashboardStats;
+  hasAccess?: boolean;
+}
+
 // 1. ContratacaoVagasHeroCard - United Card with Pie Chart
-const ContratacaoVagasHeroCard = ({ stats }: { stats: DashboardStats }) => {
+const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && (
+        <div className="absolute top-2 right-2 z-10">
+          <div className="w-6 h-6 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center" data-testid="lock-contratacao">
+            <Lock className="w-3 h-3 text-red-600 dark:text-red-400" />
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -334,7 +353,7 @@ const ContratacaoVagasHeroCard = ({ stats }: { stats: DashboardStats }) => {
 };
 
 // 2. HodometroHeroCard
-const HodometroHeroCard = ({ stats }: { stats: DashboardStats }) => {
+const HodometroHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   const totalKm = (stats.hodometroData || []).reduce(
     (sum, item) => sum + item.km_rodados,
     0,
@@ -345,7 +364,18 @@ const HodometroHeroCard = ({ stats }: { stats: DashboardStats }) => {
   );
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && (
+        <div className="absolute top-2 right-2 z-10">
+          <div className="w-6 h-6 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center" data-testid="lock-hodometros">
+            <Lock className="w-3 h-3 text-red-600 dark:text-red-400" />
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -411,9 +441,20 @@ const HodometroHeroCard = ({ stats }: { stats: DashboardStats }) => {
 };
 
 // 3. ClientesHeroCard with Pie Chart
-const ClientesHeroCard = ({ stats }: { stats: DashboardStats }) => {
+const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && (
+        <div className="absolute top-2 right-2 z-10">
+          <div className="w-6 h-6 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center" data-testid="lock-clientes">
+            <Lock className="w-3 h-3 text-red-600 dark:text-red-400" />
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -558,9 +599,20 @@ const ClientesHeroCard = ({ stats }: { stats: DashboardStats }) => {
 };
 
 // 4. VeiculosHeroCard
-const VeiculosHeroCard = ({ stats }: { stats: DashboardStats }) => {
+const VeiculosHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && (
+        <div className="absolute top-2 right-2 z-10">
+          <div className="w-6 h-6 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center" data-testid="lock-veiculos">
+            <Lock className="w-3 h-3 text-red-600 dark:text-red-400" />
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -649,9 +701,20 @@ const VeiculosHeroCard = ({ stats }: { stats: DashboardStats }) => {
 };
 
 // 5. ComprovantesHeroCard
-const ComprovantesHeroCard = ({ stats }: { stats: DashboardStats }) => {
+const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && (
+        <div className="absolute top-2 right-2 z-10">
+          <div className="w-6 h-6 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center" data-testid="lock-comprovantes">
+            <Lock className="w-3 h-3 text-red-600 dark:text-red-400" />
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -717,6 +780,7 @@ const ComprovantesHeroCard = ({ stats }: { stats: DashboardStats }) => {
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
   const { companyId } = useWiseAppAccess();
+  const { loading: moduleAccessLoading, moduleAccess } = useModuleAccess();
   const [stats, setStats] = useState<DashboardStats>({
     agregados: 0,
     contratados: 0,
@@ -1271,7 +1335,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (statsLoading) {
+  if (statsLoading || moduleAccessLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner />
@@ -1297,20 +1361,35 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Contratação + Vagas (spans 2 columns if space allows) */}
         <div className="xl:col-span-2">
-          <ContratacaoVagasHeroCard stats={stats} />
+          <ContratacaoVagasHeroCard 
+            stats={stats} 
+            hasAccess={moduleAccess.motoristas && moduleAccess.vagas} 
+          />
         </div>
 
         {/* Hodômetro */}
-        <HodometroHeroCard stats={stats} />
+        <HodometroHeroCard 
+          stats={stats} 
+          hasAccess={moduleAccess.hodometros} 
+        />
 
         {/* Clientes */}
-        <ClientesHeroCard stats={stats} />
+        <ClientesHeroCard 
+          stats={stats} 
+          hasAccess={moduleAccess.clientes} 
+        />
 
         {/* Veículos */}
-        <VeiculosHeroCard stats={stats} />
+        <VeiculosHeroCard 
+          stats={stats} 
+          hasAccess={moduleAccess.veiculos} 
+        />
 
         {/* Comprovantes */}
-        <ComprovantesHeroCard stats={stats} />
+        <ComprovantesHeroCard 
+          stats={stats} 
+          hasAccess={moduleAccess.comprovantes} 
+        />
       </div>
 
       {/* Recent Activity Section */}
