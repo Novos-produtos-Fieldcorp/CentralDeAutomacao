@@ -6,16 +6,6 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import VagaDetailsModal from './VagaDetailsModal';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { 
-  fetchVagasWithRelations, 
-  fetchStatusVagas, 
-  fetchClientes, 
-  fetchUnidades, 
-  fetchOperacoes, 
-  fetchCompanyByAccount,
-  VagaWithRelations 
-} from '../lib/vagasService';
 
 interface VagasListProps {
   onRefresh: () => void;
@@ -24,9 +14,12 @@ interface VagasListProps {
 
 const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const { accountId } = useAuth();
-  const queryClient = useQueryClient();
-  const [selectedVaga, setSelectedVaga] = useState<VagaWithRelations | null>(null);
+  const [vagas, setVagas] = useState<Vaga[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedVaga, setSelectedVaga] = useState<Vaga | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [statusOptions, setStatusOptions] = useState<Array<{id: number, status_vaga: string}>>([]);
   const [companyId, setCompanyId] = useState<number | null>(null);
   
   // Filter states
@@ -45,58 +38,76 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const [showOperacaoDropdown, setShowOperacaoDropdown] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
-  // Get company ID using React Query
-  const { data: companyData } = useQuery({
-    queryKey: ['company', accountId],
-    queryFn: () => fetchCompanyByAccount(accountId),
-    enabled: !!accountId,
-  });
+  // Options for filters
+  const [clientes, setClientes] = useState<Array<{cliente_id: number, nome: string}>>([]);
+  const [unidades, setUnidades] = useState<Array<{id: number, unidade: string}>>([]);
+  const [operacoes, setOperacoes] = useState<Array<{id: number, operacao: string}>>([]);
 
-  // Update local companyId when data is available
-  useEffect(() => {
-    if (companyData?.company_id) {
-      setCompanyId(companyData.company_id);
+  const fetchVagas = async () => {
+    try {
+      setLoading(true);
+      
+      // First get company_id from account_id
+      const companyRes = await fetch(`/api/company/by-account/${accountId}`);
+      if (!companyRes.ok) {
+        setError('Erro ao buscar dados da empresa');
+        return;
+      }
+      
+      const companyData = await companyRes.json();
+      const fetchedCompanyId = companyData.company_id;
+      setCompanyId(fetchedCompanyId);
+      
+      // Fetch vagas and all options in parallel
+      const [vagasResponse, statusResponse, clientesResponse, unidadesResponse, operacoesResponse] = await Promise.all([
+        fetch(`/api/vagas/company/${fetchedCompanyId}`),
+        fetch(`/api/status-vagas/${fetchedCompanyId}`),
+        fetch(`/api/clientes/${fetchedCompanyId}`),
+        fetch(`/api/unidades/${fetchedCompanyId}`),
+        fetch(`/api/operacoes/${fetchedCompanyId}`)
+      ]);
+      
+      if (vagasResponse.ok) {
+        const vagasData = await vagasResponse.json();
+        setVagas(vagasData);
+      } else {
+        setError('Erro ao carregar vagas');
+        return;
+      }
+      
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        setStatusOptions(statusData);
+      }
+      
+      if (clientesResponse.ok) {
+        const clientesData = await clientesResponse.json();
+        setClientes(clientesData);
+      }
+      
+      if (unidadesResponse.ok) {
+        const unidadesData = await unidadesResponse.json();
+        setUnidades(unidadesData);
+      }
+      
+      if (operacoesResponse.ok) {
+        const operacoesData = await operacoesResponse.json();
+        setOperacoes(operacoesData);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching vagas:', error);
+      setError('Erro ao carregar vagas');
+    } finally {
+      setLoading(false);
     }
-  }, [companyData]);
+  };
 
-  // Fetch vagas using React Query with Supabase
-  const { data: vagas = [], isLoading: vagasLoading, error: vagasError } = useQuery({
-    queryKey: ['vagas', companyId],
-    queryFn: () => fetchVagasWithRelations(companyId!),
-    enabled: !!companyId,
-  });
-
-  // Fetch status options
-  const { data: statusOptions = [] } = useQuery({
-    queryKey: ['status-vagas', companyId],
-    queryFn: () => fetchStatusVagas(companyId!),
-    enabled: !!companyId,
-  });
-
-  // Fetch clientes
-  const { data: clientes = [] } = useQuery({
-    queryKey: ['clientes', companyId],
-    queryFn: () => fetchClientes(companyId!),
-    enabled: !!companyId,
-  });
-
-  // Fetch unidades
-  const { data: unidades = [] } = useQuery({
-    queryKey: ['unidades', companyId],
-    queryFn: () => fetchUnidades(companyId!),
-    enabled: !!companyId,
-  });
-
-  // Fetch operacoes
-  const { data: operacoes = [] } = useQuery({
-    queryKey: ['operacoes', companyId],
-    queryFn: () => fetchOperacoes(companyId!),
-    enabled: !!companyId,
-  });
-
-  // Loading and error states
-  const loading = vagasLoading || !companyData;
-  const error = vagasError ? 'Erro ao carregar vagas' : null;
+  useEffect(() => {
+    if (accountId) {
+      fetchVagas();
+    }
+  }, [accountId]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -273,7 +284,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
 
       if (response.ok) {
         toast.success('Status atualizado com sucesso!');
-        queryClient.invalidateQueries({ queryKey: ['vagas', companyId] }); // Refresh the list
+        fetchVagas(); // Refresh the list
         onRefresh(); // Update dashboard
       } else {
         toast.error('Erro ao atualizar status');
@@ -309,7 +320,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
 
                 if (response.ok) {
                   // Refresh the list and dashboard
-                  queryClient.invalidateQueries({ queryKey: ['vagas', companyId] });
+                  await fetchVagas();
                   onRefresh();
                   toast.success('Vaga deletada com sucesso!');
                 } else {
@@ -826,7 +837,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
             setSelectedVaga(null);
           }}
           onUpdate={() => {
-            queryClient.invalidateQueries({ queryKey: ['vagas', companyId] });
+            fetchVagas();
             onRefresh();
           }}
         />
