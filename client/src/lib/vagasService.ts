@@ -1,11 +1,12 @@
 import { supabase } from './supabase';
+import { InsertVaga, Vaga, InsertStVaga, InsertUnidade, InsertOperacao } from '@shared/schema';
 
 export interface VagaWithRelations {
   id: number;
   nome: string;
   descricao: string;
   quantidade: number;
-  dias_trabalho: string;
+  dias_trabalho: string[];
   horario: string;
   dt_limite: string;
   created_at: string;
@@ -23,9 +24,22 @@ export interface VagaWithRelations {
   status_nome: string | null;
 }
 
+// Helper function to set company context for RLS - SECURE VERSION
+const setCompanyContext = async (companyId: number) => {
+  if (!companyId || companyId <= 0) {
+    throw new Error('Company ID deve ser um número válido e positivo');
+  }
+  
+  // Set company context using SQL function (replaces insecure set_config)
+  await supabase.rpc('set_current_company_id', { company_id: companyId });
+};
+
 // Buscar vagas com dados relacionados para uma empresa
 export const fetchVagasWithRelations = async (companyId: number): Promise<VagaWithRelations[]> => {
   try {
+    // Set company context for RLS
+    await setCompanyContext(companyId);
+    
     // Buscar vagas
     const { data: vagas, error: vagasError } = await supabase
       .from('vaga')
@@ -144,6 +158,142 @@ export const fetchCompanyByAccount = async (accountId: string) => {
 
   if (error) {
     throw new Error(`Erro ao buscar dados da empresa: ${error.message}`);
+  }
+
+  return data;
+};
+
+// ========== CRUD OPERATIONS ==========
+
+// Criar nova vaga
+export const createVaga = async (vagaData: Omit<InsertVaga, 'created_at' | 'updated_at'>) => {
+  await setCompanyContext(vagaData.company_id);
+  
+  const { data, error } = await supabase
+    .from('vaga')
+    .insert({
+      ...vagaData,
+      updated_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Erro ao criar vaga: ${error.message}`);
+  }
+
+  return data;
+};
+
+// Atualizar vaga existente
+export const updateVaga = async (id: number, vagaData: Partial<Omit<InsertVaga, 'company_id' | 'created_at'>>, companyId: number) => {
+  await setCompanyContext(companyId);
+  
+  const { data, error } = await supabase
+    .from('vaga')
+    .update({
+      ...vagaData,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .eq('company_id', companyId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Erro ao atualizar vaga: ${error.message}`);
+  }
+
+  return data;
+};
+
+// Deletar vaga
+export const deleteVaga = async (id: number, companyId: number) => {
+  await setCompanyContext(companyId);
+  
+  const { error } = await supabase
+    .from('vaga')
+    .delete()
+    .eq('id', id)
+    .eq('company_id', companyId);
+
+  if (error) {
+    throw new Error(`Erro ao deletar vaga: ${error.message}`);
+  }
+
+  return { success: true };
+};
+
+// Atualizar status da vaga
+export const updateVagaStatus = async (id: number, statusId: number, companyId: number) => {
+  await setCompanyContext(companyId);
+  
+  const { data, error } = await supabase
+    .from('vaga')
+    .update({ 
+      st_vaga_id: statusId,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .eq('company_id', companyId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Erro ao atualizar status da vaga: ${error.message}`);
+  }
+
+  return data;
+};
+
+// ========== AUXILIARY CRUD OPERATIONS ==========
+
+// Criar novo status de vaga
+export const createStatusVaga = async (statusData: Omit<InsertStVaga, 'created_at' | 'updated_at'>) => {
+  await setCompanyContext(Number(statusData.company_id));
+  
+  const { data, error } = await supabase
+    .from('st_vaga')
+    .insert(statusData)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Erro ao criar status de vaga: ${error.message}`);
+  }
+
+  return data;
+};
+
+// Criar nova unidade
+export const createUnidade = async (unidadeData: Omit<InsertUnidade, 'created_at' | 'updated_at'>) => {
+  await setCompanyContext(Number(unidadeData.company_id));
+  
+  const { data, error } = await supabase
+    .from('unidade')
+    .insert(unidadeData)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Erro ao criar unidade: ${error.message}`);
+  }
+
+  return data;
+};
+
+// Criar nova operação
+export const createOperacao = async (operacaoData: Omit<InsertOperacao, 'created_at' | 'updated_at'>) => {
+  await setCompanyContext(Number(operacaoData.company_id));
+  
+  const { data, error } = await supabase
+    .from('operacao')
+    .insert(operacaoData)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Erro ao criar operação: ${error.message}`);
   }
 
   return data;
