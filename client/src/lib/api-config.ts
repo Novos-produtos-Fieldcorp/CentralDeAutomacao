@@ -4,7 +4,7 @@ const isLocalDev = window.location.hostname === 'localhost' || window.location.h
 const isNetlify = window.location.hostname.includes('netlify.app');
 
 // Backend do Replit (fallback)
-const REPLIT_BACKEND = 'https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api';
+const REPLIT_BACKEND = 'https://1e1a5ee6-9748-4d09-b3ab-4870aa096db9-00-1wwkj8tjwx7bv.kirk.replit.dev/api';
 
 // Usar backend do Replit no Netlify, senão usar API local
 export const API_BASE_URL = isNetlify ? REPLIT_BACKEND : '/api';
