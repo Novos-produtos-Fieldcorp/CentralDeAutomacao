@@ -46,15 +46,18 @@ export const consultarPlacaApi = async (placa: string): Promise<PlacaData> => {
   }
 
   try {
-    // Using FIPE API for vehicle plate consultation
-    const response = await fetch(`https://placas.fipeapi.com.br/placas/${placaLimpa}?key=e8f29d24d6680c3ea04acd04aecc3de8`);
+    // Using secure backend endpoint for vehicle plate consultation
+    const response = await fetch(`/api/vehicle-plate/${placaLimpa}`);
 
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || 'Erro ao consultar dados da placa';
+      
       if (response.status === 404) {
         throw new Error('Placa não encontrada na base de dados');
       }
       if (response.status === 401) {
-        throw new Error('⚠️ Erro de autenticação na API de placas. Verifique a chave da API.');
+        throw new Error('⚠️ Erro de autenticação na API de placas. Entre em contato com o suporte.');
       }
       if (response.status === 429) {
         throw new Error('⚠️ Limite de consultas da API excedido. Tente novamente mais tarde.');
@@ -62,31 +65,25 @@ export const consultarPlacaApi = async (placa: string): Promise<PlacaData> => {
       if (response.status === 503) {
         throw new Error('⚠️ Consulta de placa temporariamente indisponível. Preencha os dados manualmente.');
       }
-      throw new Error('Erro ao consultar dados da placa');
+      throw new Error(errorMessage);
     }
 
-    const response_data: FipeApiResponse = await response.json();
-    const veiculo = response_data.data?.veiculo;
+    const vehicleData = await response.json();
 
-    if (!veiculo) {
+    if (!vehicleData) {
       throw new Error('Dados do veículo não encontrados');
     }
 
-    // Extract marca and modelo from marca_modelo field
-    const marcaModelo = veiculo.marca_modelo || '';
-    const [marca, ...modeloParts] = marcaModelo.split('/');
-    const modelo = modeloParts.join('/').trim();
-
     return {
-      placa: veiculo.placa || placaLimpa,
-      modelo: modelo || '',
-      marca: marca?.trim() || '',
-      ano: veiculo.ano || '',
-      cor: veiculo.cor || '',
-      combustivel: veiculo.combustivel || '',
-      categoria: veiculo.tipo_carroceria || '',
-      uf: veiculo.uf || '',
-      municipio: veiculo.municipio || ''
+      placa: vehicleData.plate || placaLimpa,
+      modelo: vehicleData.model || '',
+      marca: vehicleData.brand || '',
+      ano: vehicleData.year || '',
+      cor: vehicleData.color || '',
+      combustivel: vehicleData.fuel || '',
+      categoria: '',
+      uf: vehicleData.state || '',
+      municipio: vehicleData.city || ''
     };
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('fetch')) {

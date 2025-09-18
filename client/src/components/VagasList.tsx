@@ -1,11 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus } from 'lucide-react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { Vaga } from '@shared/schema';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { queryClient } from '../lib/queryClient';
 import VagaDetailsModal from './VagaDetailsModal';
+import {
+  fetchVagasWithRelations,
+  fetchStatusVagas,
+  fetchClientes,
+  fetchUnidades,
+  fetchOperacoes,
+  fetchCompanyByAccount,
+  updateVagaStatus,
+  deleteVaga,
+  VagaWithRelations
+} from '../lib/vagasService';
 
 interface VagasListProps {
   onRefresh: () => void;
@@ -14,13 +27,8 @@ interface VagasListProps {
 
 const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const { accountId } = useAuth();
-  const [vagas, setVagas] = useState<Vaga[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedVaga, setSelectedVaga] = useState<Vaga | null>(null);
+  const [selectedVaga, setSelectedVaga] = useState<VagaWithRelations | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [statusOptions, setStatusOptions] = useState<Array<{id: number, status_vaga: string}>>([]);
-  const [companyId, setCompanyId] = useState<number | null>(null);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,77 +45,74 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const [showUnidadeDropdown, setShowUnidadeDropdown] = useState(false);
   const [showOperacaoDropdown, setShowOperacaoDropdown] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  
-  // Options for filters
-  const [clientes, setClientes] = useState<Array<{cliente_id: number, nome: string}>>([]);
-  const [unidades, setUnidades] = useState<Array<{id: number, unidade: string}>>([]);
-  const [operacoes, setOperacoes] = useState<Array<{id: number, operacao: string}>>([]);
 
-  const fetchVagas = async () => {
-    try {
-      setLoading(true);
-      
-      // First get company_id from account_id
-      const companyRes = await fetch(`/api/company/by-account/${accountId}`);
-      if (!companyRes.ok) {
-        setError('Erro ao buscar dados da empresa');
-        return;
-      }
-      
-      const companyData = await companyRes.json();
-      const fetchedCompanyId = companyData.company_id;
-      setCompanyId(fetchedCompanyId);
-      
-      // Fetch vagas and all options in parallel
-      const [vagasResponse, statusResponse, clientesResponse, unidadesResponse, operacoesResponse] = await Promise.all([
-        fetch(`/api/vagas/company/${fetchedCompanyId}`),
-        fetch(`/api/status-vagas/${fetchedCompanyId}`),
-        fetch(`/api/clientes/${fetchedCompanyId}`),
-        fetch(`/api/unidades/${fetchedCompanyId}`),
-        fetch(`/api/operacoes/${fetchedCompanyId}`)
-      ]);
-      
-      if (vagasResponse.ok) {
-        const vagasData = await vagasResponse.json();
-        setVagas(vagasData);
-      } else {
-        setError('Erro ao carregar vagas');
-        return;
-      }
-      
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json();
-        setStatusOptions(statusData);
-      }
-      
-      if (clientesResponse.ok) {
-        const clientesData = await clientesResponse.json();
-        setClientes(clientesData);
-      }
-      
-      if (unidadesResponse.ok) {
-        const unidadesData = await unidadesResponse.json();
-        setUnidades(unidadesData);
-      }
-      
-      if (operacoesResponse.ok) {
-        const operacoesData = await operacoesResponse.json();
-        setOperacoes(operacoesData);
-      }
-      
-    } catch (error) {
-      console.error('Error fetching vagas:', error);
-      setError('Erro ao carregar vagas');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Get company data first
+  const { data: companyData, isLoading: companyLoading, error: companyError } = useQuery({
+    queryKey: ['company', accountId],
+    queryFn: () => fetchCompanyByAccount(accountId || ''),
+    enabled: !!accountId,
+  });
 
-  useEffect(() => {
-    if (accountId) {
-      fetchVagas();
-    }
-  }, [accountId]);
+  const companyId = companyData?.company_id;
+
+  // Fetch all data using React Query
+  const { data: vagas = [], isLoading: vagasLoading, error: vagasError } = useQuery({
+    queryKey: ['vagas', companyId],
+    queryFn: () => fetchVagasWithRelations(companyId!),
+    enabled: !!companyId,
+  });
+
+  const { data: statusOptions = [] } = useQuery({
+    queryKey: ['status-vagas', companyId],
+    queryFn: () => fetchStatusVagas(companyId!),
+    enabled: !!companyId,
+  });
+
+  const { data: clientes = [] } = useQuery({
+    queryKey: ['clientes', companyId],
+    queryFn: () => fetchClientes(companyId!),
+    enabled: !!companyId,
+  });
+
+  const { data: unidades = [] } = useQuery({
+    queryKey: ['unidades', companyId],
+    queryFn: () => fetchUnidades(companyId!),
+    enabled: !!companyId,
+  });
+
+  const { data: operacoes = [] } = useQuery({
+    queryKey: ['operacoes', companyId],
+    queryFn: () => fetchOperacoes(companyId!),
+    enabled: !!companyId,
+  });
+
+  // Create mutations for CRUD operations
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ vagaId, statusId }: { vagaId: number; statusId: number }) =>
+      updateVagaStatus(vagaId, statusId, companyId!),
+    onSuccess: () => {
+      toast.success('Status atualizado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['vagas', companyId] });
+      // Removed redundant onRefresh() - queryClient.invalidateQueries already refreshes data
+    },
+    onError: (error) => {
+      console.error('Error updating status:', error);
+      toast.error('Erro ao atualizar status');
+    },
+  });
+
+  const deleteVagaMutation = useMutation({
+    mutationFn: (vagaId: number) => deleteVaga(vagaId, companyId!),
+    onSuccess: () => {
+      toast.success('Vaga deletada com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['vagas', companyId] });
+      // Removed redundant onRefresh() - queryClient.invalidateQueries already refreshes data
+    },
+    onError: (error) => {
+      console.error('Error deleting vaga:', error);
+      toast.error('Erro ao deletar vaga');
+    },
+  });
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -221,7 +226,9 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
     }
   };
 
-  // Apply filters to vagas
+  // Loading states
+  const loading = companyLoading || vagasLoading;
+  const error = companyError || vagasError;
   const filteredVagas = vagas.filter((vaga) => {
     const searchLower = searchTerm.toLowerCase();
     
@@ -229,9 +236,9 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
     const searchMatch = searchTerm === '' || 
       (vaga.nome || '').toLowerCase().includes(searchLower) ||
       (vaga.descricao || '').toLowerCase().includes(searchLower) ||
-      ((vaga as any).cliente_nome || '').toLowerCase().includes(searchLower) ||
-      ((vaga as any).unidade_nome || '').toLowerCase().includes(searchLower) ||
-      ((vaga as any).operacao_nome || '').toLowerCase().includes(searchLower);
+      (vaga.cliente_nome || '').toLowerCase().includes(searchLower) ||
+      (vaga.unidade_nome || '').toLowerCase().includes(searchLower) ||
+      (vaga.operacao_nome || '').toLowerCase().includes(searchLower);
     
     // Status filter
     const statusMatch = statusFilter.length === 0 || 
@@ -272,30 +279,11 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
     }
   };
 
-  const handleStatusChange = async (vagaId: number, newStatusId: number) => {
-    try {
-      const response = await fetch(`/api/vagas/${vagaId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ st_vaga_id: newStatusId }),
-      });
-
-      if (response.ok) {
-        toast.success('Status atualizado com sucesso!');
-        fetchVagas(); // Refresh the list
-        onRefresh(); // Update dashboard
-      } else {
-        toast.error('Erro ao atualizar status');
-      }
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Erro ao atualizar status');
-    }
+  const handleStatusChange = (vagaId: number, newStatusId: number) => {
+    updateStatusMutation.mutate({ vagaId, statusId: newStatusId });
   };
 
-  const handleDeleteVaga = async (vagaId: number) => {
+  const handleDeleteVaga = (vagaId: number) => {
     // Show confirmation toast
     toast((t) => (
       <div className="flex items-center space-x-3">
@@ -305,33 +293,9 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
         </div>
         <div className="flex space-x-2">
           <button
-            onClick={async () => {
+            onClick={() => {
               toast.dismiss(t.id);
-              
-              // Show loading toast
-              const loadingToast = toast.loading('Deletando vaga...');
-              
-              try {
-                const response = await fetch(`/api/vagas/${vagaId}`, {
-                  method: 'DELETE',
-                });
-
-                toast.dismiss(loadingToast);
-
-                if (response.ok) {
-                  // Refresh the list and dashboard
-                  await fetchVagas();
-                  onRefresh();
-                  toast.success('Vaga deletada com sucesso!');
-                } else {
-                  const errorData = await response.json();
-                  toast.error(`Erro ao deletar: ${errorData.error || 'Erro desconhecido'}`);
-                }
-              } catch (error) {
-                toast.dismiss(loadingToast);
-                console.error('Error deleting vaga:', error);
-                toast.error('Erro ao deletar vaga');
-              }
+              deleteVagaMutation.mutate(vagaId);
             }}
             className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700"
           >

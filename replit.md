@@ -29,10 +29,11 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Architectural Decisions
 - **Authentication**: Dynamic context-based system using account IDs from URL parameters, enabling multi-company support with company-specific data isolation.
-- **Database Layer**: Supabase for PostgreSQL with real-time subscriptions, Row Level Security (RLS), and built-in authentication. Type-safe database operations with Supabase client.
+- **Database Layer**: Direct Supabase integration with PostgreSQL, featuring comprehensive Row Level Security (RLS) policies for multi-tenant data isolation, real-time subscriptions, and type-safe operations. Complete migration from Express.js API to direct database access for improved performance.
 - **UI/UX**: Emphasis on a comprehensive, responsive component library with dark/light theme support, consistent design via custom CSS variables, and streamlined user interactions.
-- **Data Flow**: Custom React hooks and TanStack Query manage frontend-to-backend communication, ensuring company-filtered queries and data isolation.
+- **Data Flow**: TanStack Query with direct Supabase calls for optimal caching and state management, ensuring company-filtered queries and secure data isolation through RLS policies.
 - **External Integrations**: Designed for modular integration with third-party services like Supabase and WiseApp through a proxy system for secure communication.
+- **Vagas Module Migration**: Successfully migrated from Express.js backend API to direct Supabase database access with React Query integration, implementing critical Row Level Security for company-based data isolation and eliminating API roundtrips for improved performance.
 - **WhatsApp Integration**: Seamless photo capture system using WiseApp API for contact search, with automatic photo storage in Supabase and real-time avatar updates across all driver management interfaces.
 - **Deployment**: Configured for Netlify, utilizing serverless functions and environment-based configurations for seamless development and production transitions, including iframe embedding support.
 - **Job Vacancy Management**: A dedicated module with its own data model and APIs, supporting inline creation of related entities (units, operations, statuses) and real-time dashboard statistics.

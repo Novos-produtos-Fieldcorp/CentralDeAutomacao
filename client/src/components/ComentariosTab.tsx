@@ -1,25 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { MessageSquare, Send, Loader2, User } from 'lucide-react';
-import { supabase, testSupabaseConnection } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useComentarios, useCreateComentario } from '../hooks/useComentarios';
 
 interface ComentariosTabProps {
   motorista_id: number;
   onUpdateSuccess?: () => void;
-}
-
-interface Comentario {
-  id: number;
-  created_at: string;
-  updated_at: string | null;
-  id_motorista: number | null;
-  id_atendente: number | null;
-  comentario: string | null;
-  atendente_nome?: string | null;
 }
 
 const ComentariosTab: React.FC<ComentariosTabProps> = ({
@@ -27,92 +17,32 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
   onUpdateSuccess
 }) => {
   const [comentario, setComentario] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const { accountId } = useAuth();
   const { attendantId } = useWiseAppAccess();
+  
+  // Use React Query hooks
+  const { 
+    data: comentarios = [], 
+    isLoading: loading, 
+    error,
+    refetch 
+  } = useComentarios(motorista_id);
+  
+  const createComentarioMutation = useCreateComentario();
 
-  useEffect(() => {
-    let isMounted = true;
-    
-    const loadComentarios = async () => {
-      if (isMounted) {
-        await fetchComentarios();
-      }
-    };
-    
-    loadComentarios();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [motorista_id]);
-
-  const fetchComentarios = async () => {
-    try {
-      setLoading(true);
-      
-      // Test connection first
-      const isConnected = await testSupabaseConnection();
-      if (!isConnected) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão com a internet.');
-      }
-      
-      const { data, error } = await supabase
-        .from('comentario')
-        .select('id, created_at, updated_at, id_motorista, id_atendente, comentario')
-        .eq('id_motorista', motorista_id)
-        .order('created_at', { ascending: false });
-        
-      if (error) {
-        console.error('Supabase error:', error);
-        throw new Error(`Erro ao buscar comentários: ${error.message}`);
-      }
-      
-      if (data && data.length > 0) {
-        // Get unique user IDs from comments
-        const userIds = Array.from(new Set(data.map(c => c.id_atendente).filter(id => id !== null)));
-        
-        // Fetch attendant names for those IDs from wiseapp_acesso
-        let attendantMap: Record<number, string> = {};
-        if (userIds.length > 0) {
-          const { data: attendants } = await supabase
-            .from('wiseapp_acesso')
-            .select('wiseapp_acesso_id, nome')
-            .in('wiseapp_acesso_id', userIds);
-            
-          if (attendants) {
-            attendantMap = attendants.reduce((acc, attendant) => {
-              acc[attendant.wiseapp_acesso_id] = attendant.nome || 'Atendente';
-              return acc;
-            }, {} as Record<number, string>);
-          }
-        }
-        
-        // Transform data to include atendente_nome
-        const comentariosWithNames = data.map(comment => ({
-          ...comment,
-          atendente_nome: comment.id_atendente ? attendantMap[comment.id_atendente] || null : null
-        }));
-        
-        setComentarios(comentariosWithNames);
-      } else {
-        setComentarios([]);
-      }
-      
-      // If onUpdateSuccess is provided, call it to update the comment count in the parent component
-      if (onUpdateSuccess) {
-        onUpdateSuccess();
-      }
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar comentários';
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
+  // Handle error states in useEffect to avoid render-time side effects
+  React.useEffect(() => {
+    if (error) {
+      toast.error('Erro ao carregar comentários');
     }
-  };
+  }, [error]);
+
+  // Call onUpdateSuccess when data changes (for parent component updates)
+  React.useEffect(() => {
+    if (comentarios && onUpdateSuccess) {
+      onUpdateSuccess();
+    }
+  }, [comentarios, onUpdateSuccess]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,48 +59,23 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
       toast.error('Erro: ID do atendente não encontrado. Faça login novamente.');
       return;
     }
-    
-    try {
-      setSubmitting(true);
-      
-      // Test connection first
-      const isConnected = await testSupabaseConnection();
-      if (!isConnected) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão com a internet.');
+
+    // Use the mutation to create the comment
+    createComentarioMutation.mutate(
+      {
+        id_motorista: motorista_id,
+        id_atendente: currentAttendantId,
+        comentario: comentario.trim()
+      },
+      {
+        onSuccess: () => {
+          setComentario('');
+          if (onUpdateSuccess) {
+            onUpdateSuccess();
+          }
+        }
       }
-      
-      // Always create a new comment
-      const { data, error } = await supabase
-        .from('comentario')
-        .insert([{
-          id_motorista: motorista_id,
-          id_atendente: currentAttendantId,
-          comentario: comentario.trim()
-        }])
-        .select();
-        
-      if (error) {
-        console.error('Supabase error:', error);
-        throw new Error(`Erro ao salvar comentário: ${error.message}`);
-      }
-      
-      if (!data || data.length === 0) {
-        throw new Error('Nenhum dado retornado ao salvar o comentário');
-      }
-      
-      toast.success('Comentário salvo com sucesso');
-      setComentario('');
-      await fetchComentarios(); // Refresh the comments
-      
-      if (onUpdateSuccess) {
-        onUpdateSuccess();
-      }
-    } catch (error) {
-      console.error('Error saving comment:', error);
-      toast.error('Erro ao salvar comentário');
-    } finally {
-      setSubmitting(false);
-    }
+    );
   };
 
   const formatDate = (dateString: string) => {
@@ -213,10 +118,11 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
             <div className="mt-4 flex justify-end">
               <button
                 type="submit"
-                disabled={submitting || !comentario.trim()}
+                disabled={createComentarioMutation.isPending || !comentario.trim()}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                data-testid="submit-comentario-btn"
               >
-                {submitting ? (
+                {createComentarioMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Salvando...

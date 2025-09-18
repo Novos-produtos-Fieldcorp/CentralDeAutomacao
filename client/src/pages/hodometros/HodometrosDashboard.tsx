@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   BarChart2, Calendar, TrendingUp, Truck, Users, 
   AlertTriangle, Activity, FileText, Camera, X, Eye,
-  Gauge, AlertCircle, FileBarChart, ChevronDown
+  Gauge, AlertCircle, FileBarChart, ChevronDown, Lock
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
@@ -11,6 +11,7 @@ import { useDateRange } from '../../hooks/useDateRange';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
 import { useAuth } from '../../context/AuthContext';
+import { useModuleAccess } from '../../hooks/useModuleAccess';
 
 interface DailyMileage {
   date: string;
@@ -87,6 +88,7 @@ interface DailyVehicleReadings {
 const HodometrosDashboard = () => {
   const { query } = useCompanyData();
   const { companyId } = useAuth();
+  const { loading: moduleLoading, moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
   const [dailyMileage, setDailyMileage] = useState<DailyMileage[]>([]);
   const [driverMileage, setDriverMileage] = useState<DriverMileage[]>([]);
@@ -113,12 +115,13 @@ const HodometrosDashboard = () => {
 
   useEffect(() => {
     // Only fetch when date range actually changes, not on pending changes
-    if (!pendingDateRange) {
+    // AND when user has access to the module
+    if (moduleAccess.hodometros && !pendingDateRange) {
       fetchData();
       fetchTodayReadings();
       fetchInconsistencies();
     }
-  }, [dateRange, pendingDateRange]);
+  }, [dateRange, pendingDateRange, moduleAccess.hodometros]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -584,6 +587,9 @@ const HodometrosDashboard = () => {
 
   // Retry connection function
   const retryConnection = () => {
+    // Only retry if user has module access
+    if (!moduleAccess.hodometros) return;
+    
     setConnectionError(false);
     fetchData();
     fetchTodayReadings();
@@ -616,6 +622,54 @@ const HodometrosDashboard = () => {
     return false;
   };
 
+  // Show loading spinner while checking module access
+  if (moduleLoading) {
+    return <LoadingSpinner />;
+  }
+
+  // Show access denied state if user doesn't have hodometros module access
+  if (!moduleAccess.hodometros) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
+        <div className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <Lock className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              </div>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Acesso Restrito
+              </h1>
+            </div>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Módulo Hodômetros não está disponível
+            </p>
+          </div>
+          
+          <div className="p-6 space-y-4">
+            <p className="text-gray-600 dark:text-gray-400">
+              Sua empresa não possui acesso ao módulo de Hodômetros. Entre em contato com o administrador do sistema para mais informações sobre como habilitar este recurso.
+            </p>
+            
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Recursos do Módulo Hodômetros:
+              </h2>
+              <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400 list-disc list-inside">
+                <li>Dashboard de quilometragem por período</li>
+                <li>Relatórios de leituras por motorista</li>
+                <li>Análise de quilometragem por veículo</li>
+                <li>Detecção de inconsistências nas leituras</li>
+                <li>Gráficos e estatísticas detalhadas</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading spinner while fetching data (only for users with access)
   if (loading) {
     return <LoadingSpinner />;
   }

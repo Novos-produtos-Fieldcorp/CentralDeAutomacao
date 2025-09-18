@@ -108,11 +108,13 @@ const Contratados = () => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
+  const [showFuncaoDropdown, setShowFuncaoDropdown] = useState(false);
   
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
   const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
+  const funcaoDropdownRef = useRef<HTMLDivElement>(null);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -173,6 +175,8 @@ const Contratados = () => {
   const [cidades, setCidades] = useState<string[]>([]);
   const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
   const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
+  const [funcaoFilter, setFuncaoFilter] = useState<string[]>([]);
+  const [funcoes, setFuncoes] = useState<string[]>([]);
   const [tags, setTags] = useState<any[]>([]);
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [visibleTags, setVisibleTags] = useState<string[]>([]);
@@ -199,6 +203,9 @@ const Contratados = () => {
       if (showTipoVeiculoDropdown && tipoVeiculoDropdownRef.current && !tipoVeiculoDropdownRef.current.contains(target)) {
         setShowTipoVeiculoDropdown(false);
       }
+      if (showFuncaoDropdown && funcaoDropdownRef.current && !funcaoDropdownRef.current.contains(target)) {
+        setShowFuncaoDropdown(false);
+      }
       if (showTagsDropdown && !(event.target as HTMLElement).closest('#tags-dropdown')) {
         setShowTagsDropdown(false);
       }
@@ -208,7 +215,7 @@ const Contratados = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown, showTagsDropdown]);
+  }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown, showFuncaoDropdown, showTagsDropdown]);
   
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -225,6 +232,8 @@ const Contratados = () => {
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [isApplyingTag, setIsApplyingTag] = useState(false);
+  const [editingDate, setEditingDate] = useState<{type: 'integracao' | 'treinamento' | 'cadastro', motoristaId: number} | null>(null);
+  const [tempDate, setTempDate] = useState<string>('');
 
   const convertToMotorista = (contratado: ViewContratado | null): MotoristaWithAddress | null => {
     if (!contratado) return null;
@@ -375,9 +384,10 @@ const Contratados = () => {
       // Log the data to check the ativo field
       console.log('Fetched contratados:', data);
 
-      // Extract unique cities from contratados
+      // Extract unique cities, vehicle types, and functions from contratados
       const uniqueCities = new Set<string>();
       const uniqueVehicleTypes = new Set<string>();
+      const uniqueFunctions = new Set<string>();
       
       // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
       const motoristaIds = data?.map(m => m.motorista_id) || [];
@@ -458,10 +468,16 @@ const Contratados = () => {
             }
           });
         }
+        
+        // Extract functions
+        if (motorista.funcao) {
+          uniqueFunctions.add(motorista.funcao);
+        }
       });
       
       setCidades(Array.from(uniqueCities).sort());
       setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
+      setFuncoes(Array.from(uniqueFunctions).sort());
 
       setContratados(contratadosAgrupados);
     } catch (error) {
@@ -562,7 +578,7 @@ const Contratados = () => {
   };
   
   // Funções para manipular filtros de múltipla seleção
-  const toggleFilterOption = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo', value: string) => {
+  const toggleFilterOption = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'funcao', value: string) => {
     switch (filterType) {
       case 'status':
         setStatusFilter(prev => 
@@ -592,10 +608,17 @@ const Contratados = () => {
             : [...prev, value]
         );
         break;
+      case 'funcao':
+        setFuncaoFilter(prev => 
+          prev.includes(value) 
+            ? prev.filter(v => v !== value) 
+            : [...prev, value]
+        );
+        break;
     }
   };
   
-  const clearFilter = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo') => {
+  const clearFilter = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'funcao') => {
     switch (filterType) {
       case 'status':
         setStatusFilter([]);
@@ -609,10 +632,13 @@ const Contratados = () => {
       case 'tipoVeiculo':
         setTipoVeiculoFilter([]);
         break;
+      case 'funcao':
+        setFuncaoFilter([]);
+        break;
     }
   };
   
-  const getFilterButtonText = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo') => {
+  const getFilterButtonText = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'funcao') => {
     const filterMap = {
       status: { 
         label: 'Status', 
@@ -633,6 +659,11 @@ const Contratados = () => {
         label: 'Tipo de Veículo', 
         filter: tipoVeiculoFilter,
         allText: 'Todos os tipos de veículo'
+      },
+      funcao: { 
+        label: 'Função', 
+        filter: funcaoFilter,
+        allText: 'Todas as funções'
       }
     };
     
@@ -642,6 +673,7 @@ const Contratados = () => {
     if (filter.length === 1) {
       if (filter[0] === 'sem_cliente') return 'Sem cliente';
       if (filter[0] === 'sem_veiculo') return 'Sem veículo';
+      if (filter[0] === 'sem_funcao') return 'Sem função';
       return `${filter[0]}`;
     }
     return `${filter.length} selecionado(s)`;
@@ -726,6 +758,10 @@ const Contratados = () => {
     } catch (error) {
       console.error('Erro ao atualizar treinamento em massa:', error);
       toast.error('Erro ao atualizar treinamento');
+    } finally {
+      // Reset selection
+      setSelectedItems(new Set());
+      setSelectAll(false);
     }
   };
 
@@ -766,6 +802,10 @@ const Contratados = () => {
       );
 
       toast.success(`Integração Interna ${marcar ? 'marcada' : 'desmarcada'} em massa com sucesso`);
+      
+      // Reset selection
+      setSelectedItems(new Set());
+      setSelectAll(false);
     } catch (error) {
       console.error('Erro ao atualizar integração em massa:', error);
       toast.error('Erro ao atualizar integração');
@@ -774,6 +814,85 @@ const Contratados = () => {
 
   const handleMassMessage = () => {
     setIsMassMessageModalOpen(true);
+  };
+
+  const handleApplyTagsBulk = async (tagIds: string[]) => {
+    if (selectedItems.size === 0) {
+      toast.error('Selecione pelo menos um motorista');
+      return;
+    }
+
+    try {
+      // Process each selected motorista
+      for (const motoristaId of Array.from(selectedItems)) {
+        const motorista = contratados.find(m => m.motorista_id === motoristaId);
+        if (motorista && motorista.telefone) {
+          await applyTagToContactById(motorista, tagIds);
+        }
+      }
+
+      toast.success(`Tags aplicadas a ${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
+      
+      // Reset selection
+      setSelectedItems(new Set());
+      setSelectAll(false);
+    } catch (error) {
+      console.error('Erro ao aplicar tags em massa:', error);
+      toast.error('Erro ao aplicar tags em massa');
+    }
+  };
+
+  const applyTagToContactById = async (motorista: ViewContratado, tagIds: string[]) => {
+    if (!motorista.telefone) return;
+
+    try {
+      // Buscar o contato no WiseApp
+      const searchData = await searchWiseAppContact(accountId || '', wiseAppToken || '', motorista.telefone);
+      const contacts = searchData.payload || [];
+      
+      if (contacts.length === 0) return;
+
+      const contact = contacts[0];
+
+      // Buscar as tags pelo ID
+      const labelsData = await getWiseAppLabels(accountId || '', wiseAppToken || '');
+      const tagNames = tagIds.map(tagId => {
+        const tag = labelsData.payload?.find((t: any) => t.id.toString() === tagId);
+        return tag?.title || tag?.name;
+      }).filter(Boolean);
+      
+      if (tagNames.length > 0) {
+        await applyWiseAppContactLabels(accountId || '', wiseAppToken || '', contact.id, tagNames);
+      }
+    } catch (error) {
+      console.error('Erro ao aplicar tag ao contato:', error);
+    }
+  };
+
+  const handleUpdateDataCadastro = async (motorista: ViewContratado, novaData: string) => {
+    try {
+      // Update the data_cadastro in the database
+      const { error } = await supabase
+        .from('motorista')
+        .update({ data_cadastro: novaData })
+        .eq('motorista_id', motorista.motorista_id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setContratados(prev => 
+        prev.map(m => 
+          m.motorista_id === motorista.motorista_id 
+            ? { ...m, data_cadastro: novaData } 
+            : m
+        )
+      );
+      
+      toast.success('Data de cadastro atualizada com sucesso');
+    } catch (error) {
+      console.error('Erro ao atualizar data de cadastro:', error);
+      toast.error('Erro ao atualizar data de cadastro');
+    }
   };
 
   const handleApplyTags = (motorista: ViewContratado) => {
@@ -808,8 +927,6 @@ const Contratados = () => {
         throw new Error('Tag não encontrada');
       }
       
-      // Aplicar a tag ao contato usando o nome da tag
-      await applyWiseAppContactLabels(accountId || '', wiseAppToken || '', contact.id, [tagToApply.title || tagToApply.name]);
 
       toast.success(`Marcador "${tagToApply.title || tagToApply.name}" aplicado ao contato ${selectedMotorista.nome_motorista}!`);
       setIsTagModalOpen(false);
@@ -1111,6 +1228,21 @@ const Contratados = () => {
       }
     }
     
+    // Lógica para filtro de função (multiseleção)
+    let funcaoMatch = true;
+    if (funcaoFilter.length > 0) {
+      if (funcaoFilter.includes('sem_funcao')) {
+        funcaoMatch = !motorista.funcao || motorista.funcao.trim() === '';
+      } else {
+        funcaoMatch = !!(motorista.funcao && funcaoFilter.includes(motorista.funcao));
+      }
+      
+      // Se 'sem_funcao' está selecionado junto com outras funções, combina os resultados
+      if (funcaoFilter.includes('sem_funcao') && funcaoFilter.length > 1) {
+        funcaoMatch = funcaoMatch || (!motorista.funcao || motorista.funcao.trim() === '');
+      }
+    }
+    
     const ativoMatch = ativoFilter === '' ? true : 
                       ativoFilter === 'active' ? motorista.ativo === true : 
                       ativoFilter === 'inactive' ? motorista.ativo === false : true;
@@ -1127,6 +1259,7 @@ const Contratados = () => {
       clienteMatch &&
       cidadeMatch &&
       tipoVeiculoMatch &&
+      funcaoMatch &&
       ativoMatch &&
       searchMatch
     );
@@ -1248,16 +1381,16 @@ const Contratados = () => {
           <div className="flex items-center gap-2">
             {/* Contador de filtros ativos */}
             {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
-              ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all') && (
+              ativoFilter !== '' || tipoVeiculoFilter.length > 0 || funcaoFilter.length > 0 || dateFilter !== 'all') && (
               <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
                 <Filter className="w-3 h-3" />
-                <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
+                <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, funcaoFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
               </div>
             )}
             
             {/* Botão limpar filtros */}
             {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
-              ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
+              ativoFilter !== '' || tipoVeiculoFilter.length > 0 || funcaoFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
               <button
                 onClick={() => {
                   setStatusFilter([]);
@@ -1265,6 +1398,7 @@ const Contratados = () => {
                   setClienteFilter([]);
                   setAtivoFilter('');
                   setTipoVeiculoFilter([]);
+                  setFuncaoFilter([]);
                   setDateFilter('all');
                   setSearchTerm('');
                   setCustomDateRange({ startDate: '', endDate: '' });
@@ -1626,6 +1760,91 @@ const Contratados = () => {
               </div>
             </div>
 
+            {/* Função Filter */}
+            <div className="relative z-[30]">
+              <div className="relative group" ref={funcaoDropdownRef}>
+                <button
+                  type="button"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                  onClick={() => setShowFuncaoDropdown(!showFuncaoDropdown)}
+                >
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>
+                      {funcaoFilter.length === 0 ? 'Função' : `Função (${funcaoFilter.length})`}
+                    </span>
+                  </div>
+
+                </button>
+
+                {showFuncaoDropdown && (
+                  <div 
+                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      marginBottom: '4px',
+                      zIndex: 999999
+                    }}>
+                    <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar funções</span>
+                        <button 
+                          type="button" 
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFuncaoFilter([]);
+                          }}
+                        >
+                          Limpar
+                        </button>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                          checked={funcaoFilter.includes('sem_funcao')}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFuncaoFilter([...funcaoFilter, 'sem_funcao']);
+                            } else {
+                              setFuncaoFilter(funcaoFilter.filter(f => f !== 'sem_funcao'));
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">Sem função</span>
+                      </label>
+                    </div>
+                    {funcoes.map((funcao, index) => (
+                      <div key={index} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                            checked={funcaoFilter.includes(funcao)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFuncaoFilter([...funcaoFilter, funcao]);
+                              } else {
+                                setFuncaoFilter(funcaoFilter.filter(f => f !== funcao));
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-200">{funcao}</span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Status Ativo Filter */}
             <div className="relative z-[20]">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
@@ -1694,7 +1913,7 @@ const Contratados = () => {
 
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative z-[1]">
         <div className="overflow-visible">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
+          <div className="sticky top-0 z-20 p-4 border-b border-gray-200 dark:border-gray-700 flex items-center bg-white dark:bg-gray-800">
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -1708,23 +1927,23 @@ const Contratados = () => {
             </div>
           </div>
           
-          <div className="relative" style={{ overflow: 'visible' }}>
-            <div ref={tableContainerRef} className="w-full" style={{ overflow: 'visible' }}>
+          <div className="relative max-h-[600px] overflow-auto">
+            <div ref={tableContainerRef} className="w-full">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800"></th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Nome</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Integração Interna</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Treinamento Cliente</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
+                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600"></th>
+                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Nome</th>
+                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">CPF</th>
+                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Contato</th>
+                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Status</th>
+                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Cliente</th>
+                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Cidade</th>
+                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Integração Interna</th>
+                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Treinamento Cliente</th>
+                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Veículo</th>
+                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Data Cadastro</th>
+                    <th className="sticky top-0 z-10 px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -1871,9 +2090,43 @@ const Contratados = () => {
                             />
                           </label>
                           {motorista.integracao_data && (
-                            <span className="text-sm text-gray-600">
-                              {new Date(motorista.integracao_data).toLocaleDateString('pt-BR')}
-                            </span>
+                            editingDate?.type === 'integracao' && editingDate?.motoristaId === motorista.motorista_id ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="date"
+                                  value={tempDate}
+                                  onChange={(e) => setTempDate(e.target.value)}
+                                  onBlur={async () => {
+                                    if (tempDate && tempDate !== motorista.integracao_data?.split('T')[0]) {
+                                      await handleUpdateIntegracaoInterna(motorista, tempDate);
+                                    }
+                                    setEditingDate(null);
+                                    setTempDate('');
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.currentTarget.blur();
+                                    } else if (e.key === 'Escape') {
+                                      setEditingDate(null);
+                                      setTempDate('');
+                                    }
+                                  }}
+                                  className="text-xs border rounded px-1 py-0.5 w-24"
+                                  autoFocus
+                                />
+                              </div>
+                            ) : (
+                              <span 
+                                className="text-sm text-gray-600 cursor-pointer hover:text-blue-600 hover:underline transition-colors"
+                                onDoubleClick={() => {
+                                  setEditingDate({type: 'integracao', motoristaId: motorista.motorista_id || 0});
+                                  setTempDate(motorista.integracao_data?.split('T')[0] || '');
+                                }}
+                                title="Duplo clique para editar data"
+                              >
+                                {new Date(motorista.integracao_data).toLocaleDateString('pt-BR')}
+                              </span>
+                            )
                           )}
                         </div>
                       </td>
@@ -1891,9 +2144,43 @@ const Contratados = () => {
                             />
                           </label>
                           {motorista.treinamento_data && (
-                            <span className="text-sm text-gray-600">
-                              {new Date(motorista.treinamento_data).toLocaleDateString('pt-BR')}
-                            </span>
+                            editingDate?.type === 'treinamento' && editingDate?.motoristaId === motorista.motorista_id ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="date"
+                                  value={tempDate}
+                                  onChange={(e) => setTempDate(e.target.value)}
+                                  onBlur={async () => {
+                                    if (tempDate && tempDate !== motorista.treinamento_data?.split('T')[0]) {
+                                      await handleUpdateTreinamentoCliente(motorista, tempDate);
+                                    }
+                                    setEditingDate(null);
+                                    setTempDate('');
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.currentTarget.blur();
+                                    } else if (e.key === 'Escape') {
+                                      setEditingDate(null);
+                                      setTempDate('');
+                                    }
+                                  }}
+                                  className="text-xs border rounded px-1 py-0.5 w-24"
+                                  autoFocus
+                                />
+                              </div>
+                            ) : (
+                              <span 
+                                className="text-sm text-gray-600 cursor-pointer hover:text-blue-600 hover:underline transition-colors"
+                                onDoubleClick={() => {
+                                  setEditingDate({type: 'treinamento', motoristaId: motorista.motorista_id || 0});
+                                  setTempDate(motorista.treinamento_data?.split('T')[0] || '');
+                                }}
+                                title="Duplo clique para editar data"
+                              >
+                                {new Date(motorista.treinamento_data).toLocaleDateString('pt-BR')}
+                              </span>
+                            )
                           )}
                         </div>
                       </td>
@@ -1912,8 +2199,51 @@ const Contratados = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {formatDate(motorista.data_cadastro)}
+                        <div className="flex items-center gap-2">
+                          {editingDate?.type === 'cadastro' && editingDate?.motoristaId === motorista.motorista_id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="date"
+                                value={tempDate}
+                                onChange={(e) => setTempDate(e.target.value)}
+                                onBlur={async () => {
+                                  if (tempDate && tempDate !== motorista.data_cadastro?.split('T')[0]) {
+                                    await handleUpdateDataCadastro(motorista, tempDate);
+                                  }
+                                  setEditingDate(null);
+                                  setTempDate('');
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.currentTarget.blur();
+                                  } else if (e.key === 'Escape') {
+                                    setEditingDate(null);
+                                    setTempDate('');
+                                  }
+                                }}
+                                className="text-xs border rounded px-1 py-0.5 w-24"
+                                autoFocus
+                              />
+                            </div>
+                          ) : (
+                            <span 
+                              className="text-sm text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
+                              onDoubleClick={() => {
+                                setEditingDate({type: 'cadastro', motoristaId: motorista.motorista_id || 0});
+                                setTempDate(motorista.data_cadastro?.split('T')[0] || '');
+                              }}
+                              title="Duplo clique para editar data (ou copiar com Ctrl+Click)"
+                              onClickCapture={(e) => {
+                                if (e.ctrlKey || e.metaKey) {
+                                  const formattedDate = formatDate(motorista.data_cadastro);
+                                  navigator.clipboard.writeText(formattedDate);
+                                  toast.success('Data copiada para a área de transferência');
+                                }
+                              }}
+                            >
+                              {formatDate(motorista.data_cadastro)}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

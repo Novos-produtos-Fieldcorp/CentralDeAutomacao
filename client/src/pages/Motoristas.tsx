@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, Routes, Route, Navigate } from 'react-router-dom';
-import { Users, TruckIcon, LayoutDashboard, Kanban, CheckCircle2, Lock, ChevronRight } from 'lucide-react';
+import { Users, TruckIcon, LayoutDashboard, Kanban, CheckCircle2, Lock, ChevronRight, Building, Plus, Calendar, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useState, useEffect, useRef } from 'react';
@@ -12,15 +12,43 @@ import ContratacaoDashboard from './contratacao/ContratacaoDashboard';
 import ContratacaoKanban from './contratacao/ContratacaoKanban';
 import Contratados from './contratacao/Contratados';
 import MotoristasInfiniteList from './motoristas/MotoristasInfiniteList';
+import DashboardStats from '../components/DashboardStats';
+import VagasList from '../components/VagasList';
+import AddVagaModal from '../components/AddVagaModal';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useModuleAccess } from '../hooks/useModuleAccess';
+import AccessTooltip from '../components/AccessTooltip';
 
 const Motoristas = () => {
   const location = useLocation();
-  const { query } = useCompanyData();
+  const { query, companyId } = useCompanyData();
+  const { accountId } = useAuth();
+  const { moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+  const [showAddVagaModal, setShowAddVagaModal] = useState(false);
+  const [dashboardData, setDashboardData] = useState({
+    totalVagas: 0,
+    vagasAbertas: 0,
+    vagasFechadas: 0,
+    vagasVencendo: 0,
+  });
   const navRef = useRef<HTMLDivElement>(null);
+
+  const fetchVagasDashboardData = async () => {
+    try {
+      if (!companyId) return;
+      
+      const response = await fetch(`/api/vagas/dashboard/${companyId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching vagas dashboard data:', error);
+    }
+  };
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -35,7 +63,8 @@ const Motoristas = () => {
     };
 
     checkAccess();
-  }, []);
+    fetchVagasDashboardData();
+  }, [companyId]);
 
   // Check if scrolling is needed and update indicator visibility
   useEffect(() => {
@@ -67,13 +96,22 @@ const Motoristas = () => {
     };
   }, []);
 
-  const tabs = [
+  const allTabs = [
     { path: '/motoristas/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/motoristas/lista', icon: Users, label: 'Motoristas' },
     { path: '/motoristas/agregados', icon: TruckIcon, label: 'Agregados' },
     { path: '/motoristas/contratados', icon: CheckCircle2, label: 'Contratados' },
+    { path: '/motoristas/vagas', icon: Building, label: 'Vagas', count: dashboardData.totalVagas, requiresAccess: 'vagas' },
     { path: '/motoristas/kanban', icon: Kanban, label: 'Kanban' },
   ];
+
+  // Filter tabs based on module access
+  const tabs = allTabs.filter(tab => {
+    if (tab.requiresAccess === 'vagas') {
+      return moduleAccess.vagas;
+    }
+    return true;
+  });
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -110,6 +148,15 @@ const Motoristas = () => {
               >
                 <tab.icon className="w-5 h-5 mr-2" />
                 {tab.label}
+                {tab.count !== undefined && (
+                  <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-medium ${
+                    isActive(tab.path)
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
@@ -129,10 +176,90 @@ const Motoristas = () => {
             <Route path="lista-infinita" element={<Navigate to="/motoristas/lista\" replace />} />
             <Route path="agregados" element={<AgregadosLista />} />
             <Route path="contratados" element={<Contratados />} />
+            <Route path="vagas" element={
+              moduleAccess.vagas ? (
+                <VagasList 
+                  onRefresh={fetchVagasDashboardData} 
+                  onAddClick={() => setShowAddVagaModal(true)}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <AccessTooltip module="vagas">
+                      <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    </AccessTooltip>
+                    <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">Acesso Restrito</h3>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">Você não tem permissão para acessar a funcionalidade de Vagas.</p>
+                  </div>
+                </div>
+              )
+            } />
+            <Route path="vagas/dashboard" element={
+              moduleAccess.vagas ? (
+                <div className="space-y-6">
+                  <DashboardStats stats={[
+                  {
+                    title: 'Total de Vagas',
+                    value: dashboardData.totalVagas,
+                    icon: <Building className="h-8 w-8" />,
+                    color: 'bg-blue-500',
+                    change: '+0%',
+                    changeType: 'neutral' as const,
+                  },
+                  {
+                    title: 'Vagas Abertas',
+                    value: dashboardData.vagasAbertas,
+                    icon: <Plus className="h-8 w-8" />,
+                    color: 'bg-green-500',
+                    change: '+0%',
+                    changeType: 'positive' as const,
+                  },
+                  {
+                    title: 'Vagas Fechadas',
+                    value: dashboardData.vagasFechadas,
+                    icon: <Calendar className="h-8 w-8" />,
+                    color: 'bg-gray-500',
+                    change: '+0%',
+                    changeType: 'neutral' as const,
+                  },
+                  {
+                    title: 'Vencendo em 7 dias',
+                    value: dashboardData.vagasVencendo,
+                    icon: <Clock className="h-8 w-8" />,
+                    color: 'bg-yellow-500',
+                    change: '+0%',
+                    changeType: 'warning' as const,
+                  },
+                  ]} />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <AccessTooltip module="vagas">
+                      <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    </AccessTooltip>
+                    <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">Acesso Restrito</h3>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">Você não tem permissão para acessar o dashboard de Vagas.</p>
+                  </div>
+                </div>
+              )
+            } />
             <Route path="kanban" element={<ContratacaoKanban />} />
             <Route path="dashboard" element={<ContratacaoDashboard />} />
           </Routes>
-        </div></>) : (
+        </div>
+        
+        {/* Add Vaga Modal - Only render if has access */}
+        {moduleAccess.vagas && (
+          <AddVagaModal
+            isOpen={showAddVagaModal}
+            onClose={() => setShowAddVagaModal(false)}
+            onSuccess={() => {
+              setShowAddVagaModal(false);
+              fetchVagasDashboardData();
+            }}
+          />
+        )}</>) : (
           <div className="p-8 text-center">
             <Users className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">

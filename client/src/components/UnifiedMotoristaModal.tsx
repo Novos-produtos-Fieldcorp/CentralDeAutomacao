@@ -12,8 +12,7 @@ import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
-import AddAjudanteModal from './AddAjudanteModal';
-import EditAjudanteModal from './EditAjudanteModal';
+import UnifiedAjudanteModal from './UnifiedAjudanteModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import GestaoRiscoTab from './GestaoRiscoTab';
 import ComentariosTab from './ComentariosTab';
@@ -46,8 +45,8 @@ const UnifiedMotoristaModal = ({
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [endereco, setEndereco] = useState<any>(null);
-  const [isAddAjudanteModalOpen, setIsAddAjudanteModalOpen] = useState(false);
-  const [isEditAjudanteModalOpen, setIsEditAjudanteModalOpen] = useState(false);
+  const [isAjudanteModalOpen, setIsAjudanteModalOpen] = useState(false);
+  const [ajudanteModalMode, setAjudanteModalMode] = useState<'add' | 'edit'>('add');
   const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
   const [isDeleteAjudanteModalOpen, setIsDeleteAjudanteModalOpen] = useState(false);
   const [selectedAjudante, setSelectedAjudante] = useState<DocumentoAjudante | null>(null);
@@ -356,7 +355,14 @@ const UnifiedMotoristaModal = ({
 
   const handleEditAjudante = (ajudante: DocumentoAjudante) => {
     setSelectedAjudante(ajudante);
-    setIsEditAjudanteModalOpen(true);
+    setAjudanteModalMode('edit');
+    setIsAjudanteModalOpen(true);
+  };
+
+  const handleAddAjudante = () => {
+    setSelectedAjudante(null);
+    setAjudanteModalMode('add');
+    setIsAjudanteModalOpen(true);
   };
 
   const handleDeleteAjudante = async (ajudante: DocumentoAjudante) => {
@@ -390,14 +396,11 @@ const UnifiedMotoristaModal = ({
     }
   };
 
-  const handleAjudanteAdded = async () => {
+  const handleAjudanteSuccess = async () => {
+    setIsAjudanteModalOpen(false);
+    setSelectedAjudante(null);
     await fetchAjudantes();
-    toast.success('Ajudante adicionado com sucesso');
-  };
-
-  const handleAjudanteUpdated = async () => {
-    await fetchAjudantes();
-    toast.success('Ajudante atualizado com sucesso');
+    onSuccess?.();
   };
 
 
@@ -1021,8 +1024,9 @@ const UnifiedMotoristaModal = ({
                       Ajudantes
                     </h3>
                     <button
-                      onClick={() => setIsAddAjudanteModalOpen(true)}
+                      onClick={handleAddAjudante}
                       className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      data-testid="button-add-ajudante"
                     >
                       <Edit2 className="w-4 h-4 mr-2" />
                       Adicionar Ajudante
@@ -1139,23 +1143,17 @@ const UnifiedMotoristaModal = ({
         />
       )}
 
-      {isAddAjudanteModalOpen && motorista && (
-        <AddAjudanteModal
-          isOpen={isAddAjudanteModalOpen}
-          onClose={() => setIsAddAjudanteModalOpen(false)}
-          motorista_id={motorista.motorista_id}
-          onSuccess={handleAjudanteAdded}
-        />
-      )}
-
-      {isEditAjudanteModalOpen && selectedAjudante && (
-        <EditAjudanteModal
-          isOpen={isEditAjudanteModalOpen}
-          onClose={() => setIsEditAjudanteModalOpen(false)}
-          ajudante={selectedAjudante}
-          onSuccess={handleAjudanteUpdated}
-        />
-      )}
+      <UnifiedAjudanteModal
+        isOpen={isAjudanteModalOpen}
+        onClose={() => {
+          setIsAjudanteModalOpen(false);
+          setSelectedAjudante(null);
+        }}
+        mode={ajudanteModalMode}
+        motorista_id={motorista.motorista_id}
+        ajudante={selectedAjudante}
+        onSuccess={handleAjudanteSuccess}
+      />
 
       {isDeleteAjudanteModalOpen && selectedAjudante && (
         <DeleteConfirmationModal

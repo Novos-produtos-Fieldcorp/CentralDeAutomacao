@@ -5,6 +5,19 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { insertVagaSchema, type InsertVaga, type Cliente, type Unidade, type Operacao, type StVaga } from '@shared/schema';
 import toast from 'react-hot-toast';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient } from '../lib/queryClient';
+import {
+  fetchCompanyByAccount,
+  fetchClientes,
+  fetchUnidades,
+  fetchOperacoes,
+  fetchStatusVagas,
+  createVaga,
+  createUnidade,
+  createOperacao,
+  createStatusVaga
+} from '../lib/vagasService';
 
 interface AddVagaModalProps {
   isOpen: boolean;
@@ -14,18 +27,46 @@ interface AddVagaModalProps {
 
 const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { accountId } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [companyId, setCompanyId] = useState<number | null>(null);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [unidades, setUnidades] = useState<Unidade[]>([]);
-  const [operacoes, setOperacoes] = useState<Operacao[]>([]);
-  const [statusVagas, setStatusVagas] = useState<StVaga[]>([]);
   const [showNewUnidadeInput, setShowNewUnidadeInput] = useState(false);
   const [showNewOperacaoInput, setShowNewOperacaoInput] = useState(false);
   const [showNewStatusInput, setShowNewStatusInput] = useState(false);
   const [newUnidadeName, setNewUnidadeName] = useState('');
   const [newOperacaoName, setNewOperacaoName] = useState('');
   const [newStatusName, setNewStatusName] = useState('');
+
+  // Get company data first
+  const { data: companyData, isLoading: companyLoading } = useQuery({
+    queryKey: ['company', accountId],
+    queryFn: () => fetchCompanyByAccount(accountId || ''),
+    enabled: !!accountId && isOpen,
+  });
+
+  const companyId = companyData?.company_id;
+
+  // Fetch all dropdown data using React Query
+  const { data: clientes = [] } = useQuery({
+    queryKey: ['clientes', companyId],
+    queryFn: () => fetchClientes(companyId!),
+    enabled: !!companyId && isOpen,
+  });
+
+  const { data: unidades = [] } = useQuery({
+    queryKey: ['unidades', companyId],
+    queryFn: () => fetchUnidades(companyId!),
+    enabled: !!companyId && isOpen,
+  });
+
+  const { data: operacoes = [] } = useQuery({
+    queryKey: ['operacoes', companyId],
+    queryFn: () => fetchOperacoes(companyId!),
+    enabled: !!companyId && isOpen,
+  });
+
+  const { data: statusVagas = [] } = useQuery({
+    queryKey: ['status-vagas', companyId],
+    queryFn: () => fetchStatusVagas(companyId!),
+    enabled: !!companyId && isOpen,
+  });
 
   const {
     register,
@@ -40,184 +81,102 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     },
   });
 
-  // Fetch company ID first, then dropdown data
+  // Update company_id in form when it changes
   useEffect(() => {
-    if (isOpen && accountId) {
-      fetchCompanyAndDropdownData();
+    if (companyId) {
+      setValue('company_id', companyId);
     }
-  }, [isOpen, accountId]);
+  }, [companyId, setValue]);
 
-  const fetchCompanyAndDropdownData = async () => {
-    try {
-      // First get company_id from account_id
-      const companyRes = await fetch(`/api/company/by-account/${accountId}`);
-      if (!companyRes.ok) {
-        console.error('Failed to fetch company data');
-        return;
-      }
-      
-      const companyData = await companyRes.json();
-      const fetchedCompanyId = companyData.company_id;
-      setCompanyId(fetchedCompanyId);
-      setValue('company_id', fetchedCompanyId);
-
-      // Now fetch dropdown data using company_id
-      const [clientesRes, unidadesRes, operacoesRes, statusRes] = await Promise.all([
-        fetch(`/api/clientes/${fetchedCompanyId}`),
-        fetch(`/api/unidades/${fetchedCompanyId}`),
-        fetch(`/api/operacoes/${fetchedCompanyId}`),
-        fetch(`/api/status-vagas/${fetchedCompanyId}`)
-      ]);
-
-      if (clientesRes.ok) {
-        const clientesData = await clientesRes.json();
-        setClientes(clientesData);
-      }
-      
-      if (unidadesRes.ok) {
-        const unidadesData = await unidadesRes.json();
-        setUnidades(unidadesData);
-      }
-      
-      if (operacoesRes.ok) {
-        const operacoesData = await operacoesRes.json();
-        setOperacoes(operacoesData);
-      }
-      
-      if (statusRes.ok) {
-        const statusData = await statusRes.json();
-        setStatusVagas(statusData);
-      }
-    } catch (error) {
-      console.error('Error fetching company and dropdown data:', error);
-    }
-  };
-
-  const onSubmit = async (data: InsertVaga) => {
-    try {
-      setIsLoading(true);
-      
-      // Get selected weekdays from checkboxes
-      const checkboxes = document.querySelectorAll('input[name="dias_trabalho"]:checked') as NodeListOf<HTMLInputElement>;
-      const diasSelecionados: string[] = Array.from(checkboxes).map(checkbox => checkbox.value);
-      
-      const response = await fetch(`/api/vagas`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...data,
-          dias_trabalho: diasSelecionados,
-          company_id: companyId,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('Vaga criada com sucesso!');
-        reset();
-        onSuccess();
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || 'Erro ao criar vaga');
-      }
-    } catch (error) {
+  // Create mutations for CRUD operations
+  const createVagaMutation = useMutation({
+    mutationFn: (vagaData: InsertVaga) => createVaga(vagaData),
+    onSuccess: () => {
+      toast.success('Vaga criada com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['vagas', companyId] });
+      reset();
+      onSuccess();
+      onClose();
+    },
+    onError: (error) => {
       console.error('Error creating vaga:', error);
       toast.error('Erro ao criar vaga');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+  });
 
-  const createNewUnidade = async () => {
-    if (!newUnidadeName.trim()) return;
-    
-    try {
-      const response = await fetch('/api/unidades', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          unidade: newUnidadeName.trim(),
-          company_id: companyId
-        })
-      });
-
-      if (response.ok) {
-        const newUnidade = await response.json();
-        setUnidades(prev => [...prev, newUnidade]);
-        setValue('unidade_id', newUnidade.id);
-        setShowNewUnidadeInput(false);
-        setNewUnidadeName('');
-        toast.success('Unidade criada com sucesso!');
-      } else {
-        toast.error('Erro ao criar unidade');
-      }
-    } catch (error) {
+  const createUnidadeMutation = useMutation({
+    mutationFn: (nome: string) => createUnidade({ unidade: nome, company_id: companyId! }),
+    onSuccess: () => {
+      toast.success('Unidade criada com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['unidades', companyId] });
+      setShowNewUnidadeInput(false);
+      setNewUnidadeName('');
+    },
+    onError: (error) => {
       console.error('Error creating unidade:', error);
       toast.error('Erro ao criar unidade');
-    }
-  };
+    },
+  });
 
-  const createNewOperacao = async () => {
-    if (!newOperacaoName.trim()) return;
-    
-    try {
-      const response = await fetch('/api/operacoes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          operacao: newOperacaoName.trim(),
-          company_id: companyId
-        })
-      });
-
-      if (response.ok) {
-        const newOperacao = await response.json();
-        setOperacoes(prev => [...prev, newOperacao]);
-        setValue('operacao_id', newOperacao.id);
-        setShowNewOperacaoInput(false);
-        setNewOperacaoName('');
-        toast.success('Operação criada com sucesso!');
-      } else {
-        toast.error('Erro ao criar operação');
-      }
-    } catch (error) {
+  const createOperacaoMutation = useMutation({
+    mutationFn: (nome: string) => createOperacao({ operacao: nome, company_id: companyId! }),
+    onSuccess: () => {
+      toast.success('Operação criada com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['operacoes', companyId] });
+      setShowNewOperacaoInput(false);
+      setNewOperacaoName('');
+    },
+    onError: (error) => {
       console.error('Error creating operacao:', error);
       toast.error('Erro ao criar operação');
-    }
-  };
+    },
+  });
 
-  const createNewStatus = async () => {
-    if (!newStatusName.trim()) return;
-    
-    try {
-      const response = await fetch('/api/status-vagas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status_vaga: newStatusName.trim(),
-          company_id: companyId
-        })
-      });
-
-      if (response.ok) {
-        const newStatus = await response.json();
-        setStatusVagas(prev => [...prev, newStatus]);
-        setValue('st_vaga_id', newStatus.id);
-        setShowNewStatusInput(false);
-        setNewStatusName('');
-        toast.success('Status criado com sucesso!');
-      } else {
-        toast.error('Erro ao criar status');
-      }
-    } catch (error) {
+  const createStatusMutation = useMutation({
+    mutationFn: (nome: string) => createStatusVaga({ status_vaga: nome, company_id: companyId! }),
+    onSuccess: () => {
+      toast.success('Status criado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['status-vagas', companyId] });
+      setShowNewStatusInput(false);
+      setNewStatusName('');
+    },
+    onError: (error) => {
       console.error('Error creating status:', error);
       toast.error('Erro ao criar status');
-    }
+    },
+  });
+
+  const onSubmit = (data: InsertVaga) => {
+    // Get selected weekdays from checkboxes
+    const checkboxes = document.querySelectorAll('input[name="dias_trabalho"]:checked') as NodeListOf<HTMLInputElement>;
+    const diasSelecionados: string[] = Array.from(checkboxes).map(checkbox => checkbox.value);
+    
+    const vagaData = {
+      ...data,
+      dias_trabalho: diasSelecionados,
+      company_id: companyId!,
+    };
+
+    createVagaMutation.mutate(vagaData);
+  };
+
+  const createNewUnidade = () => {
+    if (!newUnidadeName.trim()) return;
+    createUnidadeMutation.mutate(newUnidadeName);
+  };
+
+  const createNewOperacao = () => {
+    if (!newOperacaoName.trim()) return;
+    createOperacaoMutation.mutate(newOperacaoName);
+  };
+
+  const createNewStatus = () => {
+    if (!newStatusName.trim()) return;
+    createStatusMutation.mutate(newStatusName);
   };
 
   const handleClose = () => {
-    if (!isLoading) {
+    if (!createVagaMutation.isPending) {
       reset();
       onClose();
     }
@@ -234,7 +193,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           </h2>
           <button
             onClick={handleClose}
-            disabled={isLoading}
+            disabled={createVagaMutation.isPending}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
             <X size={24} />
@@ -556,17 +515,17 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             <button
               type="button"
               onClick={handleClose}
-              disabled={isLoading}
+              disabled={createVagaMutation.isPending}
               className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={createVagaMutation.isPending}
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
+              {createVagaMutation.isPending ? (
                 <>
                   <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   Criando...

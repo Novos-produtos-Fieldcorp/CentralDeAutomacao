@@ -2011,7 +2011,7 @@ const MotoristasLista = () => {
                         setShowAtivoDropdown(false);
                       }}
                     >
-                      Somente Inativos
+                      Somente Desativos
                     </div>
                   </div>
                 )}

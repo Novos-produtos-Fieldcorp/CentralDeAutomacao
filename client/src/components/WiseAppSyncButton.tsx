@@ -29,50 +29,115 @@ export function WiseAppSyncButton({
   // Função para capturar e salvar token do localStorage
   const captureAndSaveToken = async () => {
     try {
-      const cachedToken = localStorage.getItem('wiseapp_token_cache');
-      if (cachedToken) {
-        const tokenData = JSON.parse(cachedToken);
-        const isTokenValid = Date.now() < tokenData.expiresAt;
-        
-        if (isTokenValid && tokenData.token && companyId) {
-          console.log('Salvando token do localStorage no banco...');
-          
-          // Salvar token no banco de dados
-          const { error } = await supabase
-            .from('wiseapp_acesso')
-            .upsert({
-              company_id: companyId,
-              access_token_wiseapp: tokenData.token,
-              nome: 'Token Automático',
-              email: 'auto@sistema.com',
-              id_conta_wiseapp: accountId
-            }, {
-              onConflict: 'company_id'
-            });
-          
-          if (!error) {
-            console.log('✅ Token salvo com sucesso!');
-            return true;
-          } else {
-            console.error('Erro ao salvar token:', error);
+      console.log(`[captureAndSaveToken] Tentando capturar token para company_id: ${companyId}, account_id: ${accountId}`);
+      
+      // Tentar várias formas de encontrar o token no localStorage
+      const possibleKeys = [
+        'wiseapp_token_cache',
+        'authToken',
+        'access_token',
+        'wiseapp_token',
+        'token'
+      ];
+      
+      let foundToken = null;
+      let foundKey = null;
+      
+      for (const key of possibleKeys) {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (parsed.token && typeof parsed.token === 'string') {
+              foundToken = parsed.token;
+              foundKey = key;
+              console.log(`[captureAndSaveToken] Token encontrado na chave: ${key}`);
+              break;
+            }
+          } catch {
+            // Se não for JSON, pode ser um token direto
+            if (typeof stored === 'string' && stored.length > 10) {
+              foundToken = stored;
+              foundKey = key;
+              console.log(`[captureAndSaveToken] Token direto encontrado na chave: ${key}`);
+              break;
+            }
           }
         }
       }
+      
+      if (!foundToken) {
+        console.log('[captureAndSaveToken] Nenhum token encontrado no localStorage');
+        
+        // Listar todas as chaves do localStorage para debug
+        const allKeys = Object.keys(localStorage);
+        console.log('[captureAndSaveToken] Chaves disponíveis no localStorage:', allKeys);
+        return false;
+      }
+      
+      if (!companyId || !accountId) {
+        console.error('[captureAndSaveToken] company_id ou account_id não definidos:', { companyId, accountId });
+        return false;
+      }
+      
+      console.log(`[captureAndSaveToken] Salvando token no banco (key: ${foundKey}, token length: ${foundToken.length})`);
+      
+      // Salvar token no banco de dados
+      const tokenData = {
+        company_id: companyId,
+        access_token_wiseapp: foundToken,
+        nome: 'Token Automático Capturado',
+        email: 'auto@sistema.com',
+        id_conta_wiseapp: accountId
+      };
+      
+      console.log('[captureAndSaveToken] Dados a serem salvos:', {
+        ...tokenData,
+        access_token_wiseapp: `${foundToken.substring(0, 10)}...`
+      });
+      
+      const { data, error } = await supabase
+        .from('wiseapp_acesso')
+        .upsert(tokenData, {
+          onConflict: 'company_id'
+        })
+        .select();
+      
+      if (error) {
+        console.error('[captureAndSaveToken] Erro ao salvar token:', error);
+        return false;
+      }
+      
+      console.log('[captureAndSaveToken] ✅ Token salvo com sucesso!', data);
+      return true;
+      
     } catch (error) {
-      console.error('Erro ao capturar token:', error);
+      console.error('[captureAndSaveToken] Erro inesperado:', error);
+      return false;
     }
-    return false;
   };
 
   const handleSync = async () => {
+    console.log(`[handleSync] Iniciando sync ${variant} ${motoristaId ? `para motorista ${motoristaId}` : ''}`);
+    
     // Primeiro, tenta capturar e salvar o token automaticamente
-    await captureAndSaveToken();
+    const tokenSaved = await captureAndSaveToken();
+    
+    if (tokenSaved) {
+      console.log('[handleSync] Token capturado e salvo, prosseguindo com sincronização');
+    } else {
+      console.warn('[handleSync] Não foi possível capturar token, tentando sincronização mesmo assim');
+    }
     
     // Depois executa a sincronização
-    if (variant === 'individual' && motoristaId) {
-      await syncMotorista(motoristaId);
-    } else if (variant === 'bulk') {
-      await syncAllMotoristas();
+    try {
+      if (variant === 'individual' && motoristaId) {
+        await syncMotorista(motoristaId);
+      } else if (variant === 'bulk') {
+        await syncAllMotoristas();
+      }
+    } catch (error) {
+      console.error('[handleSync] Erro durante sincronização:', error);
     }
   };
 

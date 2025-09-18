@@ -20,6 +20,16 @@ interface BulkSyncResult {
   syncedTags?: string[];
 }
 
+interface ProgressStatus {
+  status: 'running' | 'completed' | 'error';
+  currentStep: string;
+  processedContacts: number;
+  totalContacts: number;
+  processedTags: number;
+  totalTags: number;
+  message: string;
+}
+
 interface BulkContactTagsSyncProps {
   onSyncComplete?: (result: BulkSyncResult) => void;
   className?: string;
@@ -30,44 +40,141 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
   const [showModal, setShowModal] = useState(false);
   const [syncResult, setSyncResult] = useState<BulkSyncResult | null>(null);
   const [progress, setProgress] = useState<string>('');
+  const [progressStatus, setProgressStatus] = useState<ProgressStatus | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
   
   const { accountId } = useAuth();
   const { companyId } = useCompanyData();
 
+  // Polling function to get progress updates - CRITICAL FIX: Actually wait for completion
+  const pollProgress = async (jobId: string): Promise<ProgressStatus | null> => {
+    console.log(`[pollProgress] Starting polling for job ${jobId}`);
+    
+    return new Promise(async (resolve, reject) => {
+      const poll = async () => {
+        try {
+          console.log(`[pollProgress] Checking status for job ${jobId}`);
+          const response = await fetch(`${API_BASE_URL}/wiseapp/bulk-sync-progress/${jobId}`);
+          
+          if (!response.ok) {
+            console.error(`[pollProgress] Request failed: ${response.status}`);
+            if (response.status === 404) {
+              resolve(null); // Job not found
+              return;
+            }
+            throw new Error(`Request failed: ${response.status}`);
+          }
+          
+          const status: ProgressStatus & { result?: BulkSyncResult; error?: string } = await response.json();
+          console.log(`[pollProgress] Job ${jobId} status:`, status.status, status.message);
+          
+          setProgressStatus(status);
+          
+          // Update progress text with real counts
+          if (status.status === 'running') {
+            setProgress(
+              `${status.currentStep} - Processando contato ${status.processedContacts}/${status.totalContacts} (${status.processedTags}/${status.totalTags} tags)`
+            );
+            
+            // Continue polling after 1 second
+            setTimeout(poll, 1000);
+          } else if (status.status === 'completed') {
+            console.log(`[pollProgress] Job ${jobId} completed successfully`);
+            setProgress('Sincronização concluída!');
+            resolve(status);
+          } else if (status.status === 'error') {
+            console.log(`[pollProgress] Job ${jobId} failed with error:`, status.error);
+            setProgress(`Erro: ${status.error || 'Erro desconhecido'}`);
+            resolve(status);
+          } else {
+            console.warn(`[pollProgress] Unexpected status: ${status.status}`);
+            resolve(status);
+          }
+          
+        } catch (error) {
+          console.error(`[pollProgress] Error polling job ${jobId}:`, error);
+          reject(error);
+        }
+      };
+      
+      // Start polling
+      poll();
+    });
+  };
+
   const startBulkSync = async () => {
     if (!companyId || !accountId) {
+      console.error('[startBulkSync] Dados insuficientes:', { companyId, accountId });
       toast.error('Dados da empresa ou conta não encontrados');
       return;
     }
 
+    console.log(`[startBulkSync] Iniciando sync para company_id: ${companyId}, account_id: ${accountId}`);
+    
     setIsSyncing(true);
     setShowModal(true);
     setProgress('Iniciando sincronização...');
     setSyncResult(null);
+    setProgressStatus(null);
 
     try {
-      setProgress('Conectando com WiseApp...');
+      setProgress('Verificando token WiseApp...');
+      console.log('[startBulkSync] Fazendo requisição para:', `${API_BASE_URL}/wiseapp/bulk-sync-contact-tags/${companyId}`);
       
+      // Start the sync and get job ID for polling
       const response = await fetch(`${API_BASE_URL}/wiseapp/bulk-sync-contact-tags/${companyId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          accountId: accountId
+          accountId: accountId,
+          withProgress: true // Request progress tracking
         })
       });
 
-      const result: BulkSyncResult = await response.json();
-
+      console.log(`[startBulkSync] Response status: ${response.status}`);
+      
       if (!response.ok) {
-        throw new Error(result.errors?.[0] || 'Erro na sincronização');
+        if (response.status === 404) {
+          throw new Error('Token WiseApp não configurado. Use o botão "Sincronizar Todos" na área de contatos primeiro para capturar o token automaticamente.');
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.errors?.[0] || `Erro na sincronização (${response.status})`);
       }
 
-      setSyncResult(result);
+      const result = await response.json();
+      console.log('[startBulkSync] Response data:', result);
+
+      // Check if we got a job ID for polling
+      if (result.jobId) {
+        setJobId(result.jobId);
+        setProgress('Sincronização iniciada. Aguardando progresso...');
+        
+        // Start polling for progress - DON'T return here to avoid finally block
+        const finalStatus = await pollProgress(result.jobId);
+        
+        // Handle completion based on polling result
+        if (finalStatus && finalStatus.status === 'completed' && finalStatus.result) {
+          setSyncResult(finalStatus.result);
+          if (finalStatus.result.success) {
+            toast.success('Sincronização concluída com sucesso!');
+            onSyncComplete?.(finalStatus.result);
+          } else {
+            toast.error('Sincronização concluída com erros.');
+          }
+        }
+        
+        setIsSyncing(false); // Only set to false after polling completes
+        return;
+      }
+
+      // Handle immediate result (fallback for non-progressive sync)
+      const syncResult = result as BulkSyncResult;
+      setSyncResult(syncResult);
       
-      if (result.success) {
-        const { summary } = result;
+      if (syncResult.success) {
+        const { summary } = syncResult;
         const successMessage = `Sincronização concluída! ${summary.successfulTags} tags sincronizadas, ${summary.newTagsCreated} novas tags criadas.`;
         toast.success(successMessage, { duration: 6000 });
         
@@ -75,15 +182,24 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
         await queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
         await queryClient.invalidateQueries({ queryKey: ['motoristas-tags'] });
         
-        onSyncComplete?.(result);
+        onSyncComplete?.(syncResult);
       } else {
         toast.error('Sincronização concluída com erros. Verifique os detalhes.', { duration: 5000 });
       }
 
     } catch (error) {
-      console.error('Erro na sincronização bulk:', error);
+      console.error('[startBulkSync] Erro na sincronização bulk:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast.error(`Erro na sincronização: ${errorMessage}`, { duration: 5000 });
+      
+      // Mensagem mais clara para o usuário dependendo do tipo de erro
+      let userMessage = errorMessage;
+      if (errorMessage.includes('Token WiseApp não configurado')) {
+        userMessage = 'Token WiseApp não encontrado. Clique em "Sincronizar Todos" na área de contatos primeiro!';
+      } else if (errorMessage.includes('401')) {
+        userMessage = 'Token WiseApp inválido ou expirado. Refaça o login no WiseApp e tente novamente.';
+      }
+      
+      toast.error(userMessage, { duration: 8000 });
       
       setSyncResult({
         success: false,
@@ -99,7 +215,7 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
       });
     } finally {
       setIsSyncing(false);
-      setProgress('');
+      setJobId(null);
     }
   };
 

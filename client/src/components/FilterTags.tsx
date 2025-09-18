@@ -148,7 +148,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
             ) : (
               <AlertTriangle className="h-3 w-3" />
             )}
-            <span>{ativoFilter === 'true' ? 'Ativo' : 'Inativo'}</span>
+            <span>{ativoFilter === 'true' ? 'Ativo' : 'Desativo'}</span>
             {onRemoveAtivo && (
               <button
                 onClick={onRemoveAtivo}

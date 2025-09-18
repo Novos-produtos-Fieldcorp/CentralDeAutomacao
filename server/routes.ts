@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-
+import { supabase } from "./db";
 import { eq, and } from "drizzle-orm";
 import {
   cliente,
@@ -11,6 +11,8 @@ import {
   company,
   vaga,
   motorista,
+  comentario,
+  insertComentarioSchema,
 } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import { 
@@ -21,6 +23,52 @@ import {
 } from "./utils/api-retry";
 import { getBulkMotoristaTags } from "./bulk-tags-api";
 import { registerBulkContactTagsRoute } from "./bulk-contact-tags-sync";
+
+// Job tracking system for progress monitoring
+interface JobStatus {
+  id: string;
+  status: 'running' | 'completed' | 'error';
+  currentStep: string;
+  processedContacts: number;
+  totalContacts: number;
+  processedTags: number;
+  totalTags: number;
+  message: string;
+  startTime: number;
+  result?: any;
+  error?: string;
+}
+
+const jobTracker = new Map<string, JobStatus>();
+
+// Utility to generate job IDs
+function generateJobId(): string {
+  return `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Job progress update helper
+function updateJobProgress(jobId: string, updates: Partial<JobStatus>) {
+  const job = jobTracker.get(jobId);
+  if (job) {
+    Object.assign(job, updates);
+    console.log(`[Job ${jobId}] Progress: ${updates.currentStep || job.currentStep} - ${job.processedContacts}/${job.totalContacts} contacts`);
+  }
+}
+
+// Clean up old jobs (older than 1 hour)
+function cleanupOldJobs() {
+  const now = Date.now();
+  const oneHour = 60 * 60 * 1000;
+  
+  for (const [jobId, job] of jobTracker.entries()) {
+    if (now - job.startTime > oneHour) {
+      jobTracker.delete(jobId);
+    }
+  }
+}
+
+// Clean up jobs every 30 minutes
+setInterval(cleanupOldJobs, 30 * 60 * 1000);
 
 // Initialize Supabase client with bypass RLS for backend operations
 const supabaseBackendUrl =
@@ -119,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar dados da empresa para validar accountId
-      const { data: companies, error: companyError } = await supabaseBackendBackend
+      const { data: companies, error: companyError } = await supabaseBackend
         .from("company")
         .select("id_conta_wiseapp")
         .eq("company_id", parseInt(companyId))
@@ -572,10 +620,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all related data in parallel
       const [clientesData, unidadesData, operacoesData, statusData] = await Promise.all([
-        supabaseBackendBackend.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
-        supabaseBackendBackend.from("unidade").select("id, unidade").eq("company_id", companyId),
-        supabaseBackendBackend.from("operacao").select("id, operacao").eq("company_id", companyId),
-        supabaseBackendBackend.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
+        supabaseBackend.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
+        supabaseBackend.from("unidade").select("id, unidade").eq("company_id", companyId),
+        supabaseBackend.from("operacao").select("id, operacao").eq("company_id", companyId),
+        supabaseBackend.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
       ]);
 
       // Create lookup maps
@@ -1980,6 +2028,187 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Individual sync backend proxy route for motorista tag operations (CRITICAL)
+  app.post("/api/wiseapp/sync-contact-tags/:motoristaId", async (req, res) => {
+    try {
+      const { motoristaId } = req.params;
+      const { operation, tagId, tagName, companyId, accountId } = req.body;
+      
+      console.log(`Individual tag sync for motorista ${motoristaId}, operation: ${operation}`);
+      
+      if (!motoristaId || !companyId || !accountId || !operation) {
+        return res.status(400).json({ 
+          error: "motoristaId, companyId, accountId e operation são obrigatórios" 
+        });
+      }
+
+      // Buscar token WiseApp para esta empresa de forma segura
+      const { data: tokenData, error: tokenError } = await supabaseBackend
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('company_id', parseInt(companyId))
+        .limit(1);
+
+      if (tokenError || !tokenData || tokenData.length === 0) {
+        return res.status(404).json({ 
+          error: "Token WiseApp não configurado para esta empresa" 
+        });
+      }
+
+      const token = tokenData[0].access_token_wiseapp;
+      if (!token) {
+        return res.status(404).json({ 
+          error: "Token WiseApp não encontrado" 
+        });
+      }
+
+      // Buscar dados do motorista
+      const { data: motorista, error: motoristaError } = await supabaseBackend
+        .from('motorista')
+        .select('nome, telefone')
+        .eq('motorista_id', parseInt(motoristaId))
+        .eq('company_id', parseInt(companyId))
+        .single();
+
+      if (motoristaError || !motorista) {
+        return res.status(404).json({ 
+          error: "Motorista não encontrado" 
+        });
+      }
+
+      if (!motorista.telefone) {
+        return res.status(400).json({ 
+          error: "Motorista não possui telefone cadastrado" 
+        });
+      }
+
+      // Buscar contato no WiseApp pelo telefone
+      const formattedPhone = `55${motorista.telefone}`;
+      const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${formattedPhone}`;
+
+      const searchResponse = await fetch(searchUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!searchResponse.ok) {
+        return res.status(500).json({ 
+          error: `Erro ao buscar contato no WiseApp: ${searchResponse.status}` 
+        });
+      }
+
+      const searchData = await searchResponse.json();
+      const contacts = searchData.payload || [];
+
+      if (contacts.length === 0) {
+        return res.status(404).json({ 
+          error: "Contato não encontrado no WiseApp" 
+        });
+      }
+
+      const contact = contacts[0];
+
+      // Executar operação específica
+      if (operation === 'add_tag') {
+        // Buscar tags existentes do contato
+        const getLabelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contact.id}/labels`;
+        const getLabelsResponse = await fetch(getLabelsUrl, {
+          method: 'GET',
+          headers: {
+            'api_access_token': token,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        let existingLabels: string[] = [];
+        if (getLabelsResponse.ok) {
+          const labelsResult = await getLabelsResponse.json();
+          existingLabels = labelsResult.payload || [];
+        }
+
+        // Adicionar nova tag se não existir
+        if (tagName && !existingLabels.includes(tagName)) {
+          existingLabels.push(tagName);
+        }
+
+        // Aplicar todas as tags (preservando existentes)
+        const applyLabelsResponse = await fetch(getLabelsUrl, {
+          method: 'POST',
+          headers: {
+            'api_access_token': token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ labels: existingLabels })
+        });
+
+        if (!applyLabelsResponse.ok) {
+          const errorText = await applyLabelsResponse.text();
+          return res.status(500).json({ 
+            error: `Erro ao aplicar tag no WiseApp: ${applyLabelsResponse.status} - ${errorText}` 
+          });
+        }
+
+        return res.json({ 
+          success: true, 
+          message: "Tag adicionada com sucesso",
+          contactId: contact.id,
+          appliedLabels: existingLabels
+        });
+
+      } else if (operation === 'remove_tag') {
+        // Buscar tags do motorista no banco local para determinar quais manter
+        const { data: motoristaTagsData } = await supabaseBackend
+          .from('associacao_tags')
+          .select(`
+            tag:tag_id (nome)
+          `)
+          .eq('motorista_id', parseInt(motoristaId));
+
+        const remainingTagNames = motoristaTagsData?.map((item: any) => item.tag.nome).filter(Boolean) || [];
+
+        // Aplicar apenas as tags restantes (efetivamente removendo a deletada)
+        const applyLabelsUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contact.id}/labels`;
+        const applyLabelsResponse = await fetch(applyLabelsUrl, {
+          method: 'POST',
+          headers: {
+            'api_access_token': token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ labels: remainingTagNames })
+        });
+
+        if (!applyLabelsResponse.ok) {
+          const errorText = await applyLabelsResponse.text();
+          return res.status(500).json({ 
+            error: `Erro ao remover tag no WiseApp: ${applyLabelsResponse.status} - ${errorText}` 
+          });
+        }
+
+        return res.json({ 
+          success: true, 
+          message: "Tag removida com sucesso",
+          contactId: contact.id,
+          remainingLabels: remainingTagNames
+        });
+
+      } else {
+        return res.status(400).json({ 
+          error: "Operação não suportada. Use 'add_tag' ou 'remove_tag'" 
+        });
+      }
+
+    } catch (error) {
+      console.error("Erro na sincronização individual de tag:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
   // Buscar contato no WiseApp por telefone
   app.get("/api/wiseapp/:companyId/contacts/search", async (req, res) => {
     try {
@@ -2257,7 +2486,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Iniciando sincronização bulk para company_id: ${company_id}`);
 
       // 1. Buscar token WiseApp diretamente
-      const { data: tokenDataArray, error: tokenError } = await supabaseBackendBackend
+
+      const { data: tokenDataArray, error: tokenError } = await supabaseBackend
         .from('wiseapp_acesso')
         .select('access_token_wiseapp')
         .eq('company_id', company_id)
@@ -2516,6 +2746,458 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: 'Erro interno do servidor',
         details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Secure Vehicle Plate Lookup endpoint
+  app.get("/api/vehicle-plate/:plate", async (req, res) => {
+    try {
+      const { plate } = req.params;
+      
+      if (!plate || plate.length < 7) {
+        return res.status(400).json({ 
+          error: "Plate must contain at least 7 characters" 
+        });
+      }
+
+      // Clean and validate plate
+      const cleanPlate = plate.replace(/[^A-Z0-9]/g, '').toUpperCase();
+      
+      if (cleanPlate.length !== 7) {
+        return res.status(400).json({ 
+          error: "Plate must contain exactly 7 characters" 
+        });
+      }
+
+      // API key from environment variables only
+      const fipeApiKey = process.env.FIPE_API_KEY;
+      
+      if (!fipeApiKey) {
+        console.warn('FIPE_API_KEY not set, vehicle data may be limited');
+        return res.status(503).json({ 
+          error: "Serviço de consulta FIPE temporariamente indisponível" 
+        });
+      }
+
+      const response = await fetch(
+        `https://placas.fipeapi.com.br/placas/${cleanPlate}?key=${fipeApiKey}`
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return res.status(404).json({ error: "Plate not found in database" });
+        }
+        if (response.status === 401) {
+          return res.status(401).json({ error: "API authentication error" });
+        }
+        if (response.status === 429) {
+          return res.status(429).json({ error: "API rate limit exceeded. Try again later" });
+        }
+        if (response.status === 503) {
+          return res.status(503).json({ error: "Plate lookup service temporarily unavailable" });
+        }
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const vehicle = data.data?.veiculo;
+
+      if (!vehicle) {
+        return res.status(404).json({ error: "Vehicle data not found" });
+      }
+
+      // Extract brand and model from marca_modelo field
+      const marcaModelo = vehicle.marca_modelo || '';
+      const [marca, ...modeloParts] = marcaModelo.split('/');
+      const modelo = modeloParts.join('/').trim();
+
+      const result = {
+        plate: vehicle.placa || cleanPlate,
+        model: modelo || '',
+        brand: marca?.trim() || '',
+        year: vehicle.ano || '',
+        color: vehicle.cor || '',
+        fuel: vehicle.combustivel || '',
+        state: vehicle.uf || '',
+        city: vehicle.municipio || '',
+        chassi: vehicle.chassi || ''
+      };
+
+      res.json(result);
+
+    } catch (error) {
+      console.error('Error in vehicle plate lookup:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Secure Bulk WhatsApp Messages endpoint
+  app.post("/api/send-bulk-messages", async (req, res) => {
+    try {
+      const { numbers, message } = req.body;
+
+      // Validação básica
+      if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
+        return res.status(400).json({ 
+          error: "Numbers array is required and cannot be empty" 
+        });
+      }
+
+      if (!message || typeof message !== 'string' || !message.trim()) {
+        return res.status(400).json({ 
+          error: "Message is required" 
+        });
+      }
+
+      // Limite de 100 mensagens por segurança
+      const validNumbers = numbers.filter(num => num && num.trim() !== '').slice(0, 100);
+      
+      if (validNumbers.length === 0) {
+        return res.status(400).json({ 
+          error: "No valid phone numbers provided" 
+        });
+      }
+
+      // API keys from environment variables only
+      const outrApiKey = process.env.OUTR_ONE_API_KEY || 'x4XrtisNVuUHJdh8fmFBervp'; // temporary fallback
+      const outrInstanceId = process.env.OUTR_ONE_INSTANCE_ID || '20_90_x4XrtisNVuUHJdh8fmFBervp'; // temporary fallback
+
+      console.log(`Processing bulk message send for ${validNumbers.length} numbers`);
+
+      const results = [];
+      let successful = 0;
+      let failed = 0;
+
+      // Process messages sequentially with delay to avoid rate limiting
+      for (let i = 0; i < validNumbers.length; i++) {
+        const number = validNumbers[i];
+        
+        try {
+          // Random delay between 10-25 seconds
+          const randomWaitTime = Math.floor(Math.random() * 15) + 10;
+          
+          if (i > 0) { // Skip delay for first message
+            await new Promise(resolve => setTimeout(resolve, randomWaitTime * 1000));
+          }
+
+          // Format phone number (ensure it has country code)
+          const formatPhoneNumber = (phone: string): string => {
+            const digits = phone.replace(/\D/g, '');
+            if (!digits.startsWith('55') && digits.length <= 11) {
+              return `55${digits}`;
+            }
+            return digits;
+          };
+
+          const formattedNumber = formatPhoneNumber(number);
+          
+          const payload = {
+            number: formattedNumber,
+            options: {
+              delay: randomWaitTime * 1000,
+              presence: "composing",
+              linkPreview: false
+            },
+            text: message
+          };
+
+          console.log(`Sending message ${i + 1}/${validNumbers.length} to ${formattedNumber}`);
+
+          const response = await fetch(
+            `https://api.outr.one/message/sendText/${outrInstanceId}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': outrApiKey
+              },
+              body: JSON.stringify(payload),
+            }
+          );
+
+          const responseData = await response.text();
+
+          if (response.ok) {
+            successful++;
+            results.push({
+              number: formattedNumber,
+              success: true,
+              waitTime: randomWaitTime
+            });
+          } else {
+            failed++;
+            results.push({
+              number: formattedNumber,
+              success: false,
+              error: `HTTP ${response.status}: ${responseData}`,
+              waitTime: randomWaitTime
+            });
+          }
+
+        } catch (error) {
+          failed++;
+          results.push({
+            number,
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+          console.error(`Error sending to ${number}:`, error);
+        }
+      }
+
+      // Return summary
+      res.json({
+        success: true,
+        summary: {
+          total: validNumbers.length,
+          successful,
+          failed,
+          results: results.slice(0, 10) // Limit results for response size
+        },
+        message: `Bulk message send completed: ${successful} successful, ${failed} failed`
+      });
+
+    } catch (error) {
+      console.error('Error in bulk message send:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // GET route for job progress monitoring
+  app.get("/api/wiseapp/bulk-sync-progress/:jobId", async (req, res) => {
+    try {
+      const { jobId } = req.params;
+      
+      console.log(`[Progress Check] Checking progress for job: ${jobId}`);
+      
+      const job = jobTracker.get(jobId);
+      
+      if (!job) {
+        return res.status(404).json({ 
+          error: `Job ${jobId} not found`,
+          status: 'error',
+          message: 'Job não encontrado ou expirou'
+        });
+      }
+      
+      // Return current job status
+      const response = {
+        status: job.status,
+        currentStep: job.currentStep,
+        processedContacts: job.processedContacts,
+        totalContacts: job.totalContacts,
+        processedTags: job.processedTags,
+        totalTags: job.totalTags,
+        message: job.message,
+        progress: job.totalContacts > 0 ? Math.round((job.processedContacts / job.totalContacts) * 100) : 0
+      };
+      
+      // If job is completed, include result
+      if (job.status === 'completed' && job.result) {
+        Object.assign(response, { result: job.result });
+      }
+      
+      // If job errored, include error
+      if (job.status === 'error' && job.error) {
+        Object.assign(response, { error: job.error });
+      }
+      
+      console.log(`[Progress Check] Job ${jobId} status:`, response);
+      res.json(response);
+      
+    } catch (error) {
+      console.error("Error fetching job progress:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  });
+
+  // Export job tracking functions for use in bulk-contact-tags-sync
+  (app as any).jobTracker = {
+    generateJobId,
+    updateJobProgress,
+    createJob: (jobId: string, totalContacts: number, totalTags: number = 0) => {
+      const job: JobStatus = {
+        id: jobId,
+        status: 'running',
+        currentStep: 'Iniciando sincronização...',
+        processedContacts: 0,
+        totalContacts,
+        processedTags: 0,
+        totalTags,
+        message: 'Sincronização iniciada',
+        startTime: Date.now()
+      };
+      jobTracker.set(jobId, job);
+      console.log(`[Job Tracker] Created job ${jobId} with ${totalContacts} contacts, ${totalTags} tags`);
+      return job;
+    },
+    getStatus: (jobId: string) => {
+      return jobTracker.get(jobId) || null;
+    },
+    completeJob: (jobId: string, result: any) => {
+      console.log(`[Job Tracker] Completing job ${jobId} with result:`, result);
+      updateJobProgress(jobId, {
+        status: 'completed',
+        currentStep: 'Concluído',
+        message: 'Sincronização concluída com sucesso',
+        result
+      });
+    },
+    errorJob: (jobId: string, error: string) => {
+      console.log(`[Job Tracker] Error job ${jobId}:`, error);
+      updateJobProgress(jobId, {
+        status: 'error',
+        currentStep: 'Erro',
+        message: 'Erro durante sincronização',
+        error
+      });
+    }
+  };
+
+  // Comments API routes
+  app.get("/api/comentarios/:motoristaId", async (req, res) => {
+    try {
+      const { motoristaId } = req.params;
+      
+      if (!motoristaId) {
+        return res.status(400).json({ error: "motorista_id é obrigatório" });
+      }
+
+      console.log("Fetching comments for motorista_id:", motoristaId);
+
+      const { data: comentarios, error } = await supabaseBackend
+        .from("comentario")
+        .select(`
+          id,
+          id_motorista,
+          id_atendente,
+          comentario,
+          created_at,
+          updated_at
+        `)
+        .eq("id_motorista", parseInt(motoristaId))
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching comments:", error);
+        return res.status(500).json({ error: "Erro ao buscar comentários" });
+      }
+
+      let comentariosWithNames = comentarios || [];
+      
+      if (comentarios && comentarios.length > 0) {
+        const userIds = Array.from(
+          new Set(
+            comentarios
+              .map(c => c.id_atendente)
+              .filter(id => id !== null)
+          )
+        );
+        
+        if (userIds.length > 0) {
+          const { data: attendants } = await supabaseBackend
+            .from("wiseapp_acesso")
+            .select("wiseapp_acesso_id, nome")
+            .in("wiseapp_acesso_id", userIds);
+            
+          const attendantMap = attendants?.reduce((acc, attendant) => {
+            acc[attendant.wiseapp_acesso_id] = attendant.nome || "Atendente";
+            return acc;
+          }, {} as Record<number, string>) || {};
+          
+          comentariosWithNames = comentarios.map(comment => ({
+            ...comment,
+            atendente_nome: comment.id_atendente ? attendantMap[comment.id_atendente] || null : null
+          }));
+        }
+      }
+
+      console.log(`Found ${comentariosWithNames.length} comments for motorista ${motoristaId}`);
+      res.json(comentariosWithNames);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
+  app.post("/api/comentarios", async (req, res) => {
+    try {
+      const commentData = req.body;
+      console.log("Creating comment with data:", commentData);
+
+      if (!commentData.id_motorista || !commentData.comentario || !commentData.id_atendente) {
+        return res.status(400).json({ 
+          error: "id_motorista, comentario e id_atendente são obrigatórios" 
+        });
+      }
+
+      const validatedData = insertComentarioSchema.parse({
+        id_motorista: parseInt(commentData.id_motorista),
+        id_atendente: parseInt(commentData.id_atendente),
+        comentario: commentData.comentario.trim()
+      });
+
+      const { data: newComment, error } = await supabaseBackend
+        .from("comentario")
+        .insert(validatedData)
+        .select(`
+          id,
+          id_motorista,
+          id_atendente,
+          comentario,
+          created_at,
+          updated_at
+        `)
+        .single();
+
+      if (error) {
+        console.error("Error creating comment:", error);
+        return res.status(500).json({
+          error: "Erro ao criar comentário",
+          details: error.message,
+        });
+      }
+
+      let commentWithName = newComment;
+      if (newComment.id_atendente) {
+        const { data: attendant } = await supabaseBackend
+          .from("wiseapp_acesso")
+          .select("nome")
+          .eq("wiseapp_acesso_id", newComment.id_atendente)
+          .single();
+          
+        commentWithName = {
+          ...newComment,
+          atendente_nome: attendant?.nome || null
+        };
+      }
+
+      console.log("Comment created successfully:", commentWithName);
+      res.status(201).json(commentWithName);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({
+          error: "Dados inválidos",
+          details: error.message,
+        });
+      }
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }
   });

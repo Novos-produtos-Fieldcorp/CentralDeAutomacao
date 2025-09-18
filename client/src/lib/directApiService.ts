@@ -253,8 +253,8 @@ export const wiseAppService = {
       };
     }
 
-    // Testar acesso ao WiseApp
-    const testUrl = `https://chat.wiseapp360.com/api/v1/accounts/${companyId}/inboxes`;
+    // Testar acesso ao WiseApp via backend proxy
+    const testUrl = `/api/api/v1/accounts/${companyId}/inboxes`;
 
     try {
       const testResponse = await fetch(testUrl, {
@@ -284,19 +284,18 @@ export const wiseAppService = {
   }
 };
 
-// Funções para WiseApp API direto
-const CHAT_API_URL = import.meta.env.VITE_CHAT_API_URL || 'https://chat.wiseapp360.com';
+// Funções para WiseApp API via backend proxy
+const CHAT_API_URL = '/api/api/v1'; // Use backend proxy instead of direct API
 
 // Buscar todas as labels da conta via backend existente
 export const getWiseAppLabels = async (accountId: string, token: string) => {
   // Usar a rota existente no backend com URL configurável
   const url = `${API_BASE_URL}/wiseapp/2/labels`; // Usando companyId 2
   
-  // SOLUÇÃO TEMPORÁRIA: Para Account ID 20, usar token que funciona
-  let finalToken = token;
-  if (accountId === '20') {
-    finalToken = 'rS4bEfSNwfpMTkwNBhqf2NFV'; // Token que funciona para Account ID 20
-    console.log('🔧 Account ID 20 detected - usando token conhecido que funciona');
+  // Use the token from context/storage - no hardcoded tokens
+  const finalToken = token;
+  if (!finalToken) {
+    throw new Error('Token WiseApp não encontrado. Configure nas configurações da empresa.');
   }
   
   console.log('Fazendo requisição via backend para:', url);
@@ -350,11 +349,10 @@ export const getContactLabels = async (accountId: string, token: string, contact
 export const searchWiseAppContact = async (accountId: string, token: string, phone: string, companyId: number = 2) => {
   const url = `${API_BASE_URL}/wiseapp/${companyId}/contacts/search?phone=${phone}`;
   
-  // SOLUÇÃO TEMPORÁRIA: Para Account ID 20, usar token que funciona
-  let finalToken = token;
-  if (accountId === '20') {
-    finalToken = 'rS4bEfSNwfpMTkwNBhqf2NFV'; // Token que funciona para Account ID 20
-    console.log('🔧 Account ID 20 detected in searchWiseAppContact - usando token conhecido que funciona');
+  // Use the provided token - no hardcoded tokens for security
+  const finalToken = token;
+  if (!finalToken) {
+    throw new Error('Token WiseApp não encontrado. Configure nas configurações da empresa.');
   }
   
   const response = await fetch(url, {
@@ -396,11 +394,10 @@ export const getWiseAppContact = async (accountId: string, token: string, contac
 export const applyWiseAppContactLabels = async (accountId: string, token: string, contactId: number, labelNames: string[], companyId: number = 2) => {
   const url = `${API_BASE_URL}/wiseapp/${companyId}/contacts/${contactId}/labels`;
   
-  // SOLUÇÃO TEMPORÁRIA: Para Account ID 20, usar token que funciona
-  let finalToken = token;
-  if (accountId === '20') {
-    finalToken = 'rS4bEfSNwfpMTkwNBhqf2NFV'; // Token que funciona para Account ID 20
-    console.log('🔧 Account ID 20 detected in applyWiseAppContactLabels - usando token conhecido que funciona');
+  // Use the provided token - no hardcoded tokens for security
+  const finalToken = token;
+  if (!finalToken) {
+    throw new Error('Token WiseApp não encontrado. Configure nas configurações da empresa.');
   }
   
   // 1. Buscar labels existentes primeiro (mesma lógica que funciona individual)

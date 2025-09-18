@@ -90,7 +90,7 @@ export const formatVeiculoData = (veiculo: Veiculo) => {
     'Marca/Modelo': `${veiculo.marca || ''} ${veiculo.tipo || ''}`.trim() || 'N/A',
     'Ano': veiculo.ano || 'N/A',
     'Tipo de Veículo': veiculo.tipologia || 'N/A',
-    'Status': veiculo.status_veiculo ? 'Ativo' : 'Inativo',
+    'Status': veiculo.status_veiculo ? 'Ativo' : 'Desativo',
     'Capacidade de Carga': veiculo.peso ? `${veiculo.peso} kg` : 'N/A',
     'Cubagem': veiculo.cubagem ? `${veiculo.cubagem} m³` : 'N/A',
     'Rastreador': veiculo.possui_rastreador ? 'Sim' : 'Não',

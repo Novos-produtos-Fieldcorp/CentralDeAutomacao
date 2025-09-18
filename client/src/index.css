@@ -232,7 +232,7 @@
 
 @layer components {
   .card {
-    @apply bg-card p-6 rounded-card border border-card-border shadow-card;
+    @apply bg-card p-6 rounded-xl border border-card-border shadow-lg;
     transition: all 500ms ease;
   }
 

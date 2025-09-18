@@ -1,21 +1,34 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, Tags, Briefcase, FileText } from 'lucide-react';
+import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, Tags, FileText } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
+import { useSidebar } from '../context/SidebarContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 interface NavbarProps {
-  // No props needed for now
+  onToggle?: (isExpanded: boolean) => void;
 }
 
-const Navbar = () => {
+const Navbar = ({ onToggle }: NavbarProps) => {
   const location = useLocation();
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Fallback to local state if SidebarContext is not available
+  const [localExpanded, setLocalExpanded] = useState(true);
   const [, setIsManuallyExpanded] = useState(false);
+  
+  let isExpanded, setIsExpanded;
+  try {
+    const sidebarContext = useSidebar();
+    isExpanded = sidebarContext.isExpanded;
+    setIsExpanded = sidebarContext.setIsExpanded;
+  } catch {
+    // Use local state as fallback
+    isExpanded = localExpanded;
+    setIsExpanded = setLocalExpanded;
+  }
   const { moduleAccess } = useModuleAccess();
   const { companyId } = useAuth();
   const [companyName, setCompanyName] = useState('');
@@ -56,8 +69,10 @@ const Navbar = () => {
   };
 
   const toggleSidebar = () => {
-    setIsExpanded(!isExpanded);
-    setIsManuallyExpanded(!isExpanded);
+    const newExpanded = !isExpanded;
+    setIsExpanded(newExpanded);
+    setIsManuallyExpanded(newExpanded);
+    onToggle?.(newExpanded);
   };
 
   // Add event listener to detect clicks outside the navbar
@@ -65,6 +80,18 @@ const Navbar = () => {
     const handleClickOutside = (event: MouseEvent) => {
       // Get the navbar element
       const navbar = document.querySelector('.navbar-container');
+      
+      // Check if the click is on a modal or authentication element
+      const clickedElement = event.target as Element;
+      const isOnModal = clickedElement.closest('[role="dialog"]') || 
+                       clickedElement.closest('.fixed.inset-0') || 
+                       clickedElement.closest('[data-modal]') ||
+                       clickedElement.closest('[data-overlay]');
+      
+      // Don't close navbar if clicking on modals or authentication elements
+      if (isOnModal) {
+        return;
+      }
       
       // If the navbar is expanded and the click is outside the navbar
       if (isExpanded && navbar && !navbar.contains(event.target as Node)) {
@@ -80,13 +107,12 @@ const Navbar = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isExpanded]);
+  }, [isExpanded, setIsExpanded]);
 
   const menuItems = [
     { path: '/', icon: Home, label: 'Menu', isTitle: false, enabled: true },
     { path: '/checklist', icon: ClipboardCheck, label: 'Checklists', needsAccess: true, enabled: moduleAccess.checklist },
     { path: '/motoristas', icon: Users, label: 'Contratações', needsAccess: true, enabled: moduleAccess.motoristas },
-    { path: '/vagas', icon: Briefcase, label: 'Vagas', needsAccess: true, enabled: moduleAccess.vagas },
     { path: '/veiculos', icon: Truck, label: 'Veículos', needsAccess: false, enabled: moduleAccess.veiculos },
     { path: '/hodometros', icon: Gauge, label: 'Hodômetros', needsAccess: true, enabled: moduleAccess.hodometros },
     { path: '/clientes', icon: Store, label: 'Clientes', needsAccess: false, enabled: moduleAccess.clientes },

@@ -1,25 +1,31 @@
 import { useState, useEffect } from 'react';
-import { X, Loader2, Camera, Upload, Eye, FileText } from 'lucide-react';
+import { X, Loader2, User, Phone, MapPin, Camera, Upload, Eye, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatCEP } from '../utils/format';
 import DocumentPreview from './DocumentPreview';
+import { validateCnhNumber, formatCnhInput } from '../utils/cnhValidation';
 
-// Using any type for the address data to avoid complex type definitions
-// This is a temporary solution to fix TypeScript errors
-
-interface EditAjudanteModalProps {
+interface UnifiedAjudanteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  ajudante: any;
+  mode: 'add' | 'edit';
+  motorista_id: number;
+  ajudante?: any; // Only required for edit mode
   onSuccess: () => void;
 }
 
-const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudanteModalProps) => {
-  // Move all hooks to the top of the component
+const UnifiedAjudanteModal = ({ 
+  isOpen, 
+  onClose, 
+  mode, 
+  motorista_id, 
+  ajudante = null, 
+  onSuccess 
+}: UnifiedAjudanteModalProps) => {
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
   const [documentType, setDocumentType] = useState<'cnh' | 'rg'>('cnh');
   const [uploading, setUploading] = useState<{cnh: boolean, rg: boolean, comprovante: boolean}>({
@@ -27,14 +33,10 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     rg: false,
     comprovante: false
   });
-  
-  const [showPreview, setShowPreview] = useState<{[key: string]: boolean}>({
-    foto_cnh: false,
-    foto_rg: false,
-    comprovante_residencia: false
-  });
   const [previewDocument, setPreviewDocument] = useState<string | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [cnhData, setCnhData] = useState<any | null>(null);
+  const [rgData, setRgData] = useState<any | null>(null);
   
   const [formData, setFormData] = useState({
     nome: '',
@@ -67,32 +69,47 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     comprovante_residencia: ''
   });
 
-  // Remove unused state since we're not using it elsewhere
-  // const [endereco, setEndereco] = useState<EnderecoAjudante | null>(null);
-  const [cnhData, setCnhData] = useState<any | null>(null);
-  const [rgData, setRgData] = useState<any | null>(null);
-
-  // useEffect hooks
   useEffect(() => {
     if (isOpen) {
       fetchEstados();
+      if (mode === 'edit' && ajudante) {
+        fetchAjudanteData();
+      } else if (mode === 'add') {
+        // Reset form for add mode
+        resetForm();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, mode, ajudante]);
 
-  useEffect(() => {
-    if (isOpen && ajudante) {
-      fetchAjudanteData();
-    }
-  }, [isOpen, ajudante]);
-
-  // Early return after all hooks
-  if (!isOpen) return null;
-  
-  // Check for valid ajudante ID
-  if (!ajudante || !ajudante.id_ajudante) {
-    console.error('Invalid ajudante ID:', ajudante);
-    return null;
-  }
+  const resetForm = () => {
+    setFormData({
+      nome: '',
+      cpf: '',
+      telefone: '',
+      genero: '',
+      nr_registro: '',
+      categoria: '',
+      nome_pai: '',
+      nome_mae: '',
+      foto_cnh: '',
+      nr_rg: '',
+      data_emissao: '',
+      orgao_expedidor: '',
+      filiacao: '',
+      foto_rg: '',
+      cep: '',
+      estado: '',
+      cidade: '',
+      bairro: '',
+      logradouro: '',
+      numero: '',
+      complemento: '',
+      comprovante_residencia: ''
+    });
+    setDocumentType('cnh');
+    setCnhData(null);
+    setRgData(null);
+  };
 
   const fetchEstados = async () => {
     try {
@@ -110,40 +127,20 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
   };
 
   const fetchAjudanteData = async () => {
+    if (!ajudante || !ajudante.id_ajudante) return;
+
     try {
       setLoading(true);
       
-      // Fetch ajudante details
-      setFormData({
+      // Set basic ajudante data
+      setFormData(prev => ({
+        ...prev,
         nome: ajudante.nome || '',
         cpf: ajudante.cpf ? String(ajudante.cpf) : '',
         telefone: ajudante.telefone || '',
         genero: ajudante.genero || '',
-        
-        // CNH
-        nr_registro: '',
-        categoria: '',
-        nome_pai: '',
-        nome_mae: '',
-        foto_cnh: '',
-        
-        // RG
-        nr_rg: '',
-        data_emissao: '',
-        orgao_expedidor: '',
-        filiacao: '',
-        foto_rg: '',
-        
-        // Endereço
-        cep: '',
-        estado: '',
-        cidade: '',
-        bairro: '',
-        logradouro: '',
-        numero: '',
-        complemento: '',
         comprovante_residencia: ajudante.comprovante_residencia || ''
-      });
+      }));
       
       // Fetch CNH data
       const { data: cnhData, error: cnhError } = await supabase
@@ -178,7 +175,9 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
       
       if (rgData) {
         setRgData(rgData);
-        setDocumentType('rg');
+        if (!cnhData) { // Only set RG as default if no CNH data
+          setDocumentType('rg');
+        }
         setFormData(prev => ({
           ...prev,
           nr_rg: rgData.nr_rg ? String(rgData.nr_rg) : '',
@@ -216,16 +215,14 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
       if (enderecoError && enderecoError.code !== 'PGRST116') throw enderecoError;
       
       if (enderecoData) {
-        // Simplify the address data handling
         const logradouro = Array.isArray(enderecoData.logradouro) ? enderecoData.logradouro[0] : enderecoData.logradouro;
         const bairro = logradouro?.bairro?.[0] || {};
         const cidade = bairro?.cidade?.[0] || {};
         const estado = cidade?.estado?.[0] || {};
         
-        // Create a safe address object with fallbacks
         const address = {
           cep: logradouro?.nr_cep || '',
-          estado: estado?.id_estado?.toString() || '',
+          estado: estado?.sigla_estado || '',
           cidade: cidade?.cidade || '',
           bairro: bairro?.bairro || '',
           logradouro: logradouro?.logradouro || '',
@@ -254,14 +251,14 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
       const { consultarCep } = await import('../utils/cepService');
       const data = await consultarCep(cep);
 
-      const estadoId = estados.find(e => e.sigla_estado === data.uf)?.id_estado.toString() || '';
-      
+      const estado = estados.find(e => e.sigla_estado === data.uf);
+
       setFormData(prev => ({
         ...prev,
         logradouro: data.logradouro || '',
         bairro: data.bairro || '',
         cidade: data.localidade || '',
-        estado: estadoId,
+        estado: estado ? estado.sigla_estado : '',
         complemento: data.complemento || ''
       }));
 
@@ -270,7 +267,6 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
       console.error('Erro ao consultar CEP:', error);
       toast.error(error instanceof Error ? error.message : 'Erro ao consultar CEP');
       
-      // Clear address fields on error
       setFormData(prev => ({
         ...prev,
         logradouro: '',
@@ -291,8 +287,6 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
       const { consultarCpfApi } = await import('../utils/cpfService');
       const data = await consultarCpfApi(cpf);
       
-      const estadoId = estados.find(e => e.sigla_estado === data.estado)?.id_estado.toString() || '';
-      
       setFormData(prev => ({
         ...prev,
         nome: data.nome || prev.nome,
@@ -302,7 +296,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
         complemento: data.complemento || prev.complemento,
         bairro: data.bairro || prev.bairro,
         cidade: data.cidade || prev.cidade,
-        estado: estadoId || prev.estado,
+        estado: data.estado || prev.estado,
         cep: data.cep || prev.cep
       }));
       
@@ -311,47 +305,6 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
       console.error('Erro ao consultar CPF:', error);
       toast.error(error instanceof Error ? error.message : 'Erro ao consultar CPF');
     }
-  };
-
-  const consultarCpfApi = async (cpf: string) => {
-    if (!cpf || cpf.length !== 11) return;
-    
-    try {
-      const { consultarCpfApi } = await import('../utils/cpfService');
-      const data = await consultarCpfApi(cpf);
-      
-      const estadoId = estados.find(e => e.sigla_estado === data.estado)?.id_estado.toString() || '';
-      
-      setFormData(prev => ({
-        ...prev,
-        nome: data.nome || prev.nome,
-        telefone: data.telefone || prev.telefone,
-        logradouro: data.logradouro || prev.logradouro,
-        numero: data.numero || prev.numero,
-        complemento: data.complemento || prev.complemento,
-        bairro: data.bairro || prev.bairro,
-        cidade: data.cidade || prev.cidade,
-        estado: estadoId || prev.estado,
-        cep: data.cep || prev.cep
-      }));
-      
-      toast.success('Dados do CPF preenchidos!');
-    } catch (error) {
-      console.error('Erro ao consultar CPF:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao consultar CPF');
-    }
-  };
-
-  const togglePreview = (field: string) => {
-    setShowPreview(prev => ({ ...prev, [field]: !prev[field] }));
-  };
-
-  const isImageFile = (url: string) => {
-    return url.toLowerCase().match(/\.(jpeg|jpg|png|gif)$/);
-  };
-
-  const isPDFFile = (url: string) => {
-    return url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('pdf');
   };
 
   const handleFileUpload = async (file: File, field: 'foto_cnh' | 'foto_rg' | 'comprovante_residencia') => {
@@ -360,23 +313,19 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     try {
       setUploading(prev => ({ ...prev, [field]: true }));
       
-      // Create a unique file name
       const fileExt = file.name.split('.').pop();
-      const fileName = `ajudante_${ajudante.id_ajudante}_${field}_${Date.now()}.${fileExt}`;
+      const fileName = `ajudante_${Date.now()}_${field}.${fileExt}`;
       
-      // Upload to Supabase Storage
-      const { error } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from('imagensdocs')
         .upload(fileName, file);
         
       if (error) throw error;
       
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('imagensdocs')
         .getPublicUrl(fileName);
         
-      // Update form data with the URL
       setFormData(prev => ({ ...prev, [field]: publicUrl }));
       
       toast.success('Arquivo enviado com sucesso');
@@ -403,278 +352,380 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
     try {
       setSubmitting(true);
 
-      // Update ajudante basic info using the standard Supabase client
-      const { error: ajudanteError } = await supabase
-        .from('documento_ajudante')
-        .update({
-          nome: formData.nome,
-          cpf: formData.cpf ? parseFloat(formData.cpf) : null,
-          telefone: formData.telefone || null,
-          genero: formData.genero || null,
-          comprovante_residencia: formData.comprovante_residencia || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id_ajudante', ajudante.id_ajudante);
-
-      if (ajudanteError) throw ajudanteError;
-
-      // Handle document type (CNH or RG)
-      if (documentType === 'cnh') {
-        // Check if CNH record exists
-        if (cnhData) {
-          // Update existing CNH
-          const { error: cnhError } = await supabase
-            .from('cnh_ajudante')
-            .update({
-              nr_registro: formData.nr_registro ? parseFloat(formData.nr_registro) : null,
-              categoria: formData.categoria || null,
-              nome_pai: formData.nome_pai || null,
-              nome_mae: formData.nome_mae || null,
-              foto_cnh: formData.foto_cnh || null
-            })
-            .eq('id_cnh_ajudante', cnhData.id_cnh_ajudante);
-
-          if (cnhError) throw cnhError;
-        } else {
-          // Create new CNH record
-          const { error: cnhError } = await supabase
-            .from('cnh_ajudante')
-            .insert({
-              nr_registro: formData.nr_registro ? parseFloat(formData.nr_registro) : null,
-              categoria: formData.categoria || null,
-              nome_pai: formData.nome_pai || null,
-              nome_mae: formData.nome_mae || null,
-              foto_cnh: formData.foto_cnh || null,
-              id_ajudante: ajudante.id_ajudante
-            });
-
-          if (cnhError) throw cnhError;
-        }
-        
-        // Delete RG if it exists and we're switching to CNH
-        if (rgData) {
-          const { error: deleteRgError } = await supabase
-            .from('rg_ajudante')
-            .delete()
-            .eq('id_rg_ajudante', rgData.id_rg_ajudante);
-            
-          if (deleteRgError) throw deleteRgError;
-        }
-      } else if (documentType === 'rg') {
-        // Check if RG record exists
-        if (rgData) {
-          // Update existing RG
-          const { error: rgError } = await supabase
-            .from('rg_ajudante')
-            .update({
-              nr_rg: formData.nr_rg ? parseFloat(formData.nr_rg) : null,
-              data_emissao: formData.data_emissao || null,
-              orgao_expedidor: formData.orgao_expedidor || null,
-              filiacao: formData.filiacao || null,
-              foto_rg: formData.foto_rg || null
-            })
-            .eq('id_rg_ajudante', rgData.id_rg_ajudante);
-
-          if (rgError) throw rgError;
-        } else {
-          // Create new RG record
-          const { error: rgError } = await supabase
-            .from('rg_ajudante')
-            .insert({
-              nr_rg: formData.nr_rg ? parseFloat(formData.nr_rg) : null,
-              data_emissao: formData.data_emissao || null,
-              orgao_expedidor: formData.orgao_expedidor || null,
-              filiacao: formData.filiacao || null,
-              foto_rg: formData.foto_rg || null,
-              id_ajudante: ajudante.id_ajudante
-            });
-
-          if (rgError) throw rgError;
-        }
-        
-        // Delete CNH if it exists and we're switching to RG
-        if (cnhData) {
-          const { error: deleteCnhError } = await supabase
-            .from('cnh_ajudante')
-            .delete()
-            .eq('id_cnh_ajudante', cnhData.id_cnh_ajudante);
-            
-          if (deleteCnhError) throw deleteCnhError;
-        }
+      // Validate CPF format
+      if (!/^\d{11}$/.test(formData.cpf)) {
+        throw new Error('CPF inválido. Digite 11 números.');
       }
 
-      // Handle address
-      if (formData.logradouro && formData.cidade && formData.estado) {
-        try {
-          // First, find the estado_id based on sigla_estado
-          const estadoId = parseInt(formData.estado);
-          
-          // Check if cidade exists
-          let cidadeId: number;
-          const { data: cidade, error: cidadeError } = await supabase
-            .from('cidade')
-            .select('id_cidade')
-            .eq('cidade', formData.cidade)
-            .eq('id_estado', estadoId)
-            .maybeSingle();
-
-          if (cidadeError && cidadeError.code !== 'PGRST116') {
-            throw cidadeError;
-          }
-
-          if (cidade) {
-            cidadeId = cidade.id_cidade;
-          } else {
-            // Create cidade if it doesn't exist
-            const { data: newCidade, error: newCidadeError } = await supabase
-              .from('cidade')
-              .insert({
-                cidade: formData.cidade,
-                id_estado: estadoId
-              })
-              .select()
-              .single();
-
-            if (newCidadeError) throw newCidadeError;
-            if (!newCidade) throw new Error('Erro ao criar cidade');
-            cidadeId = newCidade.id_cidade;
-          }
-
-          // Check if bairro exists
-          let bairroId: number;
-          const { data: bairro, error: bairroError } = await supabase
-            .from('bairro')
-            .select('id_bairro')
-            .eq('bairro', formData.bairro || 'Centro')
-            .eq('id_cidade', cidadeId)
-            .maybeSingle();
-
-          if (bairroError && bairroError.code !== 'PGRST116') {
-            throw bairroError;
-          }
-          
-          if (bairro) {
-            bairroId = bairro.id_bairro;
-          } else {
-            // Create bairro if it doesn't exist
-            const { data: newBairro, error: newBairroError } = await supabase
-              .from('bairro')
-              .insert({
-                bairro: formData.bairro || 'Centro',
-                id_cidade: cidadeId
-              })
-              .select()
-              .single();
-
-            if (newBairroError) throw newBairroError;
-            if (!newBairro) throw new Error('Erro ao criar bairro');
-            bairroId = newBairro.id_bairro;
-          }
-
-          // Check if logradouro exists
-          let logradouroId: number;
-          const { data: logradouro, error: logradouroError } = await supabase
-            .from('logradouro')
-            .select('id_logradouro')
-            .eq('logradouro', formData.logradouro)
-            .eq('nr_cep', formData.cep || null)
-            .eq('id_bairro', bairroId)
-            .maybeSingle();
-
-          if (logradouroError && logradouroError.code !== 'PGRST116') {
-            throw logradouroError;
-          }
-          
-          if (logradouro) {
-            logradouroId = logradouro.id_logradouro;
-          } else {
-            // Create logradouro if it doesn't exist
-            const { data: newLogradouro, error: newLogradouroError } = await supabase
-              .from('logradouro')
-              .insert({
-                logradouro: formData.logradouro,
-                nr_cep: formData.cep || null,
-                id_bairro: bairroId
-              })
-              .select()
-              .single();
-
-            if (newLogradouroError) throw newLogradouroError;
-            if (!newLogradouro) throw new Error('Erro ao criar logradouro');
-            logradouroId = newLogradouro.id_logradouro;
-          }
-
-          // Check if endereco exists
-          const { data: existingEndereco, error: enderecoCheckError } = await supabase
-            .from('end_ajudante')
-            .select('id_end_ajudante')
-            .eq('id_ajudante', ajudante.id_ajudante)
-            .maybeSingle();
-            
-          if (enderecoCheckError && enderecoCheckError.code !== 'PGRST116') {
-            throw enderecoCheckError;
-          }
-          
-          if (existingEndereco) {
-            // Update existing endereco
-            const { error: updateEnderecoError } = await supabase
-              .from('end_ajudante')
-              .update({
-                nr_end: formData.numero ? parseInt(formData.numero) : null,
-                ds_complemento_end: formData.complemento || null,
-                id_logradouro: logradouroId
-              })
-              .eq('id_end_ajudante', existingEndereco.id_end_ajudante);
-
-            if (updateEnderecoError) throw updateEnderecoError;
-          } else {
-            // Create new endereco
-            const { error: newEnderecoError } = await supabase
-              .from('end_ajudante')
-              .insert({
-                nr_end: formData.numero ? parseInt(formData.numero) : null,
-                ds_complemento_end: formData.complemento || null,
-                id_ajudante: ajudante.id_ajudante,
-                id_logradouro: logradouroId
-              });
-
-            if (newEnderecoError) throw newEnderecoError;
-          }
-        } catch (error) {
-          console.error('Erro ao atualizar endereço:', error);
-          toast.error('Erro ao atualizar endereço');
-        }
+      if (mode === 'add') {
+        await handleAddAjudante();
+      } else {
+        await handleEditAjudante();
       }
 
-      toast.success('Ajudante atualizado com sucesso');
+      toast.success(`Ajudante ${mode === 'add' ? 'cadastrado' : 'atualizado'} com sucesso`);
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Error updating ajudante:', error);
-      toast.error('Erro ao atualizar ajudante');
+      console.error(`Erro ao ${mode === 'add' ? 'cadastrar' : 'atualizar'} ajudante:`, error);
+      toast.error(error instanceof Error ? error.message : `Erro ao ${mode === 'add' ? 'cadastrar' : 'atualizar'} ajudante`);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleAddAjudante = async () => {
+    // Insert documento_ajudante
+    const { data: ajudanteData, error: ajudanteError } = await supabase
+      .from('documento_ajudante')
+      .insert({
+        nome: formData.nome,
+        cpf: formData.cpf ? parseFloat(formData.cpf) : null,
+        telefone: formData.telefone || null,
+        genero: formData.genero || null,
+        motorista_id: motorista_id,
+        comprovante_residencia: formData.comprovante_residencia || null
+      })
+      .select()
+      .single();
+
+    if (ajudanteError) {
+      if (ajudanteError.code === '23505') {
+        throw new Error('CPF já cadastrado no sistema.');
+      }
+      throw new Error(`Erro ao cadastrar ajudante: ${ajudanteError.message}`);
+    }
+
+    if (!ajudanteData) {
+      throw new Error('Erro ao cadastrar ajudante: nenhum dado retornado');
+    }
+
+    await handleDocumentInserts(ajudanteData.id_ajudante);
+    await handleAddressInsert(ajudanteData.id_ajudante);
+  };
+
+  const handleEditAjudante = async () => {
+    if (!ajudante?.id_ajudante) throw new Error('ID do ajudante não encontrado');
+
+    // Update documento_ajudante
+    const { error: ajudanteError } = await supabase
+      .from('documento_ajudante')
+      .update({
+        nome: formData.nome,
+        cpf: formData.cpf ? parseFloat(formData.cpf) : null,
+        telefone: formData.telefone || null,
+        genero: formData.genero || null,
+        comprovante_residencia: formData.comprovante_residencia || null
+      })
+      .eq('id_ajudante', ajudante.id_ajudante);
+
+    if (ajudanteError) throw ajudanteError;
+
+    await handleDocumentUpdates(ajudante.id_ajudante);
+    await handleAddressUpdate(ajudante.id_ajudante);
+  };
+
+  const handleDocumentInserts = async (ajudanteId: number) => {
+    // Insert CNH if data is provided and document type is CNH
+    if (documentType === 'cnh' && (formData.nr_registro || formData.categoria || formData.nome_pai || formData.nome_mae || formData.foto_cnh)) {
+      const { error: cnhError } = await supabase
+        .from('cnh_ajudante')
+        .insert({
+          nr_registro: formData.nr_registro ? parseFloat(formData.nr_registro) : null,
+          categoria: formData.categoria || null,
+          nome_pai: formData.nome_pai || null,
+          nome_mae: formData.nome_mae || null,
+          foto_cnh: formData.foto_cnh || null,
+          id_ajudante: ajudanteId
+        });
+
+      if (cnhError) throw cnhError;
+    }
+
+    // Insert RG if data is provided and document type is RG
+    if (documentType === 'rg' && (formData.nr_rg || formData.data_emissao || formData.orgao_expedidor || formData.filiacao || formData.foto_rg)) {
+      const { error: rgError } = await supabase
+        .from('rg_ajudante')
+        .insert({
+          nr_rg: formData.nr_rg ? parseFloat(formData.nr_rg) : null,
+          data_emissao: formData.data_emissao || null,
+          orgao_expedidor: formData.orgao_expedidor || null,
+          filiacao: formData.filiacao || null,
+          foto_rg: formData.foto_rg || null,
+          id_ajudante: ajudanteId
+        });
+
+      if (rgError) throw rgError;
+    }
+  };
+
+  const handleDocumentUpdates = async (ajudanteId: number) => {
+    // Update or create CNH data
+    if (documentType === 'cnh') {
+      if (cnhData) {
+        // Update existing CNH
+        const { error: cnhError } = await supabase
+          .from('cnh_ajudante')
+          .update({
+            nr_registro: formData.nr_registro ? parseFloat(formData.nr_registro) : null,
+            categoria: formData.categoria || null,
+            nome_pai: formData.nome_pai || null,
+            nome_mae: formData.nome_mae || null,
+            foto_cnh: formData.foto_cnh || null
+          })
+          .eq('id_ajudante', ajudanteId);
+
+        if (cnhError) throw cnhError;
+      } else if (formData.nr_registro || formData.categoria || formData.nome_pai || formData.nome_mae || formData.foto_cnh) {
+        // Create new CNH record
+        const { error: cnhError } = await supabase
+          .from('cnh_ajudante')
+          .insert({
+            nr_registro: formData.nr_registro ? parseFloat(formData.nr_registro) : null,
+            categoria: formData.categoria || null,
+            nome_pai: formData.nome_pai || null,
+            nome_mae: formData.nome_mae || null,
+            foto_cnh: formData.foto_cnh || null,
+            id_ajudante: ajudanteId
+          });
+
+        if (cnhError) throw cnhError;
+      }
+    }
+
+    // Update or create RG data
+    if (documentType === 'rg') {
+      if (rgData) {
+        // Update existing RG
+        const { error: rgError } = await supabase
+          .from('rg_ajudante')
+          .update({
+            nr_rg: formData.nr_rg ? parseFloat(formData.nr_rg) : null,
+            data_emissao: formData.data_emissao || null,
+            orgao_expedidor: formData.orgao_expedidor || null,
+            filiacao: formData.filiacao || null,
+            foto_rg: formData.foto_rg || null
+          })
+          .eq('id_ajudante', ajudanteId);
+
+        if (rgError) throw rgError;
+      } else if (formData.nr_rg || formData.data_emissao || formData.orgao_expedidor || formData.filiacao || formData.foto_rg) {
+        // Create new RG record
+        const { error: rgError } = await supabase
+          .from('rg_ajudante')
+          .insert({
+            nr_rg: formData.nr_rg ? parseFloat(formData.nr_rg) : null,
+            data_emissao: formData.data_emissao || null,
+            orgao_expedidor: formData.orgao_expedidor || null,
+            filiacao: formData.filiacao || null,
+            foto_rg: formData.foto_rg || null,
+            id_ajudante: ajudanteId
+          });
+
+        if (rgError) throw rgError;
+      }
+    }
+  };
+
+  const handleAddressInsert = async (ajudanteId: number) => {
+    if (!formData.logradouro || !formData.cidade || !formData.estado) return;
+
+    try {
+      // Find the estado_id based on sigla_estado
+      const { data: estadoData, error: estadoError } = await supabase
+        .from('estado')
+        .select('id_estado')
+        .eq('sigla_estado', formData.estado)
+        .single();
+
+      if (estadoError) {
+        throw new Error(`Estado "${formData.estado}" não encontrado. Use a sigla do estado (ex: SP, RJ).`);
+      }
+      
+      // Check if cidade exists or create it
+      let cidadeId = await getOrCreateCidade(formData.cidade, estadoData.id_estado);
+      
+      // Check if bairro exists or create it
+      let bairroId = await getOrCreateBairro(formData.bairro || 'Centro', cidadeId);
+      
+      // Check if logradouro exists or create it
+      let logradouroId = await getOrCreateLogradouro(formData.logradouro, formData.cep, bairroId);
+
+      // Create end_ajudante
+      const { error: enderecoError } = await supabase
+        .from('end_ajudante')
+        .insert({
+          nr_end: formData.numero ? parseInt(formData.numero) : null,
+          ds_complemento_end: formData.complemento || null,
+          id_ajudante: ajudanteId,
+          id_logradouro: logradouroId
+        });
+
+      if (enderecoError) throw enderecoError;
+    } catch (error) {
+      console.error('Erro ao cadastrar endereço:', error);
+      toast.error('Erro ao cadastrar endereço, mas o ajudante foi salvo');
+    }
+  };
+
+  const handleAddressUpdate = async (ajudanteId: number) => {
+    if (!formData.logradouro || !formData.cidade || !formData.estado) return;
+
+    try {
+      // Similar logic to insert but update existing address if it exists
+      const { data: estadoData, error: estadoError } = await supabase
+        .from('estado')
+        .select('id_estado')
+        .eq('sigla_estado', formData.estado)
+        .single();
+
+      if (estadoError) {
+        throw new Error(`Estado "${formData.estado}" não encontrado.`);
+      }
+      
+      let cidadeId = await getOrCreateCidade(formData.cidade, estadoData.id_estado);
+      let bairroId = await getOrCreateBairro(formData.bairro || 'Centro', cidadeId);
+      let logradouroId = await getOrCreateLogradouro(formData.logradouro, formData.cep, bairroId);
+
+      // Check if address exists
+      const { data: existingAddress, error: addressError } = await supabase
+        .from('end_ajudante')
+        .select('*')
+        .eq('id_ajudante', ajudanteId)
+        .maybeSingle();
+
+      if (addressError && addressError.code !== 'PGRST116') throw addressError;
+
+      if (existingAddress) {
+        // Update existing address
+        const { error: updateError } = await supabase
+          .from('end_ajudante')
+          .update({
+            nr_end: formData.numero ? parseInt(formData.numero) : null,
+            ds_complemento_end: formData.complemento || null,
+            id_logradouro: logradouroId
+          })
+          .eq('id_ajudante', ajudanteId);
+
+        if (updateError) throw updateError;
+      } else {
+        // Create new address
+        const { error: insertError } = await supabase
+          .from('end_ajudante')
+          .insert({
+            nr_end: formData.numero ? parseInt(formData.numero) : null,
+            ds_complemento_end: formData.complemento || null,
+            id_ajudante: ajudanteId,
+            id_logradouro: logradouroId
+          });
+
+        if (insertError) throw insertError;
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar endereço:', error);
+      toast.error('Erro ao atualizar endereço, mas o ajudante foi salvo');
+    }
+  };
+
+  // Helper functions for address handling
+  const getOrCreateCidade = async (cidade: string, estadoId: number): Promise<number> => {
+    const { data: existing, error: findError } = await supabase
+      .from('cidade')
+      .select('id_cidade')
+      .eq('cidade', cidade)
+      .eq('id_estado', estadoId)
+      .maybeSingle();
+
+    if (findError && findError.code !== 'PGRST116') throw findError;
+
+    if (existing) {
+      return existing.id_cidade;
+    }
+
+    const { data: newCidade, error: createError } = await supabase
+      .from('cidade')
+      .insert({ cidade, id_estado: estadoId })
+      .select()
+      .single();
+
+    if (createError) throw createError;
+    return newCidade.id_cidade;
+  };
+
+  const getOrCreateBairro = async (bairro: string, cidadeId: number): Promise<number> => {
+    const { data: existing, error: findError } = await supabase
+      .from('bairro')
+      .select('id_bairro')
+      .eq('bairro', bairro)
+      .eq('id_cidade', cidadeId)
+      .maybeSingle();
+
+    if (findError && findError.code !== 'PGRST116') throw findError;
+
+    if (existing) {
+      return existing.id_bairro;
+    }
+
+    const { data: newBairro, error: createError } = await supabase
+      .from('bairro')
+      .insert({ bairro, id_cidade: cidadeId })
+      .select()
+      .single();
+
+    if (createError) throw createError;
+    return newBairro.id_bairro;
+  };
+
+  const getOrCreateLogradouro = async (logradouro: string, cep: string | null, bairroId: number): Promise<number> => {
+    const { data: existing, error: findError } = await supabase
+      .from('logradouro')
+      .select('id_logradouro')
+      .eq('logradouro', logradouro)
+      .eq('nr_cep', cep || null)
+      .eq('id_bairro', bairroId)
+      .maybeSingle();
+
+    if (findError && findError.code !== 'PGRST116') throw findError;
+
+    if (existing) {
+      return existing.id_logradouro;
+    }
+
+    const { data: newLogradouro, error: createError } = await supabase
+      .from('logradouro')
+      .insert({ logradouro, nr_cep: cep || null, id_bairro: bairroId })
+      .select()
+      .single();
+
+    if (createError) throw createError;
+    return newLogradouro.id_logradouro;
+  };
+
+  if (!isOpen) return null;
+
+  const isEditMode = mode === 'edit';
+  const title = isEditMode ? 'Editar Ajudante' : 'Adicionar Ajudante';
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Editar Ajudante
+            {title}
           </h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            data-testid="button-close-modal"
           >
             <X size={24} />
           </button>
         </div>
 
         {loading ? (
-          <div className="p-6 flex justify-center">
-            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+          <div className="p-12 flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <span className="ml-3 text-gray-600 dark:text-gray-400">Carregando dados...</span>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -696,6 +747,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                     onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     required
+                    data-testid="input-nome"
                   />
                 </div>
 
@@ -723,6 +775,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                     required
                     maxLength={11}
                     placeholder="Digite o CPF (somente números)"
+                    data-testid="input-cpf"
                   />
                 </div>
 
@@ -740,6 +793,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                     }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="(00) 00000-0000"
+                    data-testid="input-telefone"
                   />
                 </div>
 
@@ -752,11 +806,11 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                     value={formData.genero}
                     onChange={(e) => setFormData(prev => ({ ...prev, genero: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="select-genero"
                   >
                     <option value="">Selecione</option>
                     <option value="M">Masculino</option>
                     <option value="F">Feminino</option>
-                    <option value="O">Outro</option>
                   </select>
                 </div>
               </div>
@@ -768,13 +822,14 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                 Tipo de Documento
               </h3>
               
-              <div className="flex gap-4">
+              <div className="flex space-x-6">
                 <label className="flex items-center">
                   <input
                     type="radio"
                     checked={documentType === 'cnh'}
                     onChange={() => setDocumentType('cnh')}
                     className="mr-2 rounded-full border-gray-300 text-blue-600 focus:ring-blue-500"
+                    data-testid="radio-cnh"
                   />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">CNH</span>
                 </label>
@@ -785,13 +840,14 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                     checked={documentType === 'rg'}
                     onChange={() => setDocumentType('rg')}
                     className="mr-2 rounded-full border-gray-300 text-blue-600 focus:ring-blue-500"
+                    data-testid="radio-rg"
                   />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">RG</span>
                 </label>
               </div>
             </div>
 
-            {/* CNH Information - Only show if CNH is selected */}
+            {/* CNH Information */}
             {documentType === 'cnh' && (
               <div className="space-y-6">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
@@ -808,13 +864,11 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                       name="nr_registro"
                       value={formData.nr_registro}
                       onChange={(e) => {
-                        const { validateCnhNumber, formatCnhInput } = require('../utils/cnhValidation');
                         const formattedValue = formatCnhInput(e.target.value);
                         const validation = validateCnhNumber(formattedValue);
                         
                         setFormData(prev => ({ ...prev, nr_registro: formattedValue }));
                         
-                        // Show validation error if exists
                         if (formattedValue && !validation.isValid && validation.error) {
                           toast.error(validation.error);
                         }
@@ -838,6 +892,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                       value={formData.categoria}
                       onChange={(e) => setFormData(prev => ({ ...prev, categoria: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      data-testid="select-categoria"
                     >
                       <option value="">Selecione</option>
                       <option value="A">A</option>
@@ -862,6 +917,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                       value={formData.nome_pai}
                       onChange={(e) => setFormData(prev => ({ ...prev, nome_pai: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      data-testid="input-nome-pai"
                     />
                   </div>
                   
@@ -875,6 +931,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                       value={formData.nome_mae}
                       onChange={(e) => setFormData(prev => ({ ...prev, nome_mae: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      data-testid="input-nome-mae"
                     />
                   </div>
 
@@ -886,14 +943,14 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                       onPreview={handlePreviewDocument}
                       onRemove={() => handleRemoveDocument('foto_cnh')}
                       label="Foto da CNH"
-                      data-testid="edit-cnh-document-preview"
+                      data-testid="cnh-document-preview"
                     />
                   </div>
                 </div>
               </div>
             )}
 
-            {/* RG Information - Only show if RG is selected */}
+            {/* RG Information */}
             {documentType === 'rg' && (
               <div className="space-y-6">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
@@ -911,6 +968,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                       value={formData.nr_rg}
                       onChange={(e) => setFormData(prev => ({ ...prev, nr_rg: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      data-testid="input-rg-numero"
                     />
                   </div>
                   
@@ -924,6 +982,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                       value={formData.data_emissao}
                       onChange={(e) => setFormData(prev => ({ ...prev, data_emissao: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      data-testid="input-data-emissao"
                     />
                   </div>
                   
@@ -937,6 +996,8 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                       value={formData.orgao_expedidor}
                       onChange={(e) => setFormData(prev => ({ ...prev, orgao_expedidor: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="Ex: SSP"
+                      data-testid="input-orgao-expedidor"
                     />
                   </div>
                   
@@ -950,104 +1011,20 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                       value={formData.filiacao}
                       onChange={(e) => setFormData(prev => ({ ...prev, filiacao: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      data-testid="input-filiacao"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Foto do RG
-                    </label>
-                    <div className="mt-1 flex items-center">
-                      <div className="flex-1">
-                        <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                          <div className="space-y-1 text-center">
-                            <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                            <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                              <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                {formData.foto_rg ? 'Trocar arquivo' : 'Enviar arquivo'}
-                              </span>
-                              <input 
-                                id="foto_rg" 
-                                name="foto_rg" 
-                                type="file" 
-                                className="sr-only"
-                                onChange={(e) => handleFileUpload(e, 'foto_rg')}
-                                accept="image/jpeg,image/png,application/pdf"
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              PNG, JPG ou PDF até 5MB
-                            </p>
-                          </div>
-                        </label>
-                      </div>
-                      {uploading.rg && (
-                        <div className="ml-4">
-                          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                        </div>
-                      )}
-                      {formData.foto_rg && !uploading.rg && (
-                        <div className="ml-4 flex items-center gap-2">
-                          <div className="flex items-center text-sm text-green-600 dark:text-green-400">
-                            <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                            Documento enviado
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => togglePreview('foto_rg')}
-                            className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                            {showPreview.foto_rg ? 'Ocultar' : 'Ver'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Inline RG Preview */}
-                    {formData.foto_rg && showPreview.foto_rg && (
-                      <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
-                        <div className="flex justify-between items-start mb-3">
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Foto do RG</h4>
-                          <div className="flex items-center gap-2">
-                            <a
-                              href={formData.foto_rg}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                              Abrir em nova aba
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() => togglePreview('foto_rg')}
-                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        {isImageFile(formData.foto_rg) ? (
-                          <img
-                            src={formData.foto_rg}
-                            alt="Foto do RG"
-                            className="max-w-full h-auto max-h-64 rounded-md mx-auto block"
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center h-32 bg-gray-100 dark:bg-gray-700 rounded-md">
-                            <div className="text-center">
-                              <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                              <p className="text-sm text-gray-500 dark:text-gray-400">PDF Document</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <DocumentPreview
+                      documentUrl={formData.foto_rg}
+                      isUploading={uploading.rg}
+                      onUpload={(file) => handleFileUpload(file, 'foto_rg')}
+                      onPreview={handlePreviewDocument}
+                      onRemove={() => handleRemoveDocument('foto_rg')}
+                      label="Foto do RG"
+                      data-testid="rg-document-preview"
+                    />
                   </div>
                 </div>
               </div>
@@ -1064,33 +1041,34 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     CEP
                   </label>
-                  <div className="flex gap-2">
+                  <div className="relative">
                     <input
                       type="text"
                       name="cep"
                       value={formData.cep}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '');
-                        setFormData(prev => ({ ...prev, cep: value }));
-                        if (value.length === 8) {
-                          consultarCepLocal(value);
+                        if (value.length <= 8) {
+                          setFormData(prev => ({ ...prev, cep: value }));
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const cep = e.target.value.replace(/\D/g, '');
+                        if (cep.length === 8) {
+                          consultarCepLocal(cep);
                         }
                       }}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="Digite o CEP"
                       maxLength={8}
-                      placeholder="00000-000"
+                      data-testid="input-cep"
                     />
                     {loadingCep && (
-                      <div className="flex items-center px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg">
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
                       </div>
                     )}
                   </div>
-                  {formData.cep && formData.cep.length === 8 && (
-                    <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      {formatCEP(formData.cep)}
-                    </div>
-                  )}
                 </div>
 
                 <div>
@@ -1102,10 +1080,11 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                     value={formData.estado}
                     onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="select-estado"
                   >
                     <option value="">Selecione um estado</option>
                     {estados.map(estado => (
-                      <option key={estado.id_estado} value={estado.id_estado}>
+                      <option key={estado.id_estado} value={estado.sigla_estado}>
                         {estado.sigla_estado}
                       </option>
                     ))}
@@ -1122,6 +1101,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                     value={formData.cidade}
                     onChange={(e) => setFormData(prev => ({ ...prev, cidade: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="input-cidade"
                   />
                 </div>
 
@@ -1135,6 +1115,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                     value={formData.bairro}
                     onChange={(e) => setFormData(prev => ({ ...prev, bairro: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="input-bairro"
                   />
                 </div>
 
@@ -1148,6 +1129,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                     value={formData.logradouro}
                     onChange={(e) => setFormData(prev => ({ ...prev, logradouro: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="input-logradouro"
                   />
                 </div>
 
@@ -1160,12 +1142,12 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                     name="numero"
                     value={formData.numero}
                     onChange={(e) => {
-                      // Only allow numbers
                       const value = e.target.value.replace(/\D/g, '');
                       setFormData(prev => ({ ...prev, numero: value }));
                     }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="Digite apenas números"
+                    data-testid="input-numero"
                   />
                 </div>
 
@@ -1179,104 +1161,20 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                     value={formData.complemento}
                     onChange={(e) => setFormData(prev => ({ ...prev, complemento: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="input-complemento"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Comprovante de Residência
-                  </label>
-                  <div className="mt-1 flex items-center">
-                    <div className="flex-1">
-                      <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                        <div className="space-y-1 text-center">
-                          <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                          <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                            <span className="relative rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                              {formData.comprovante_residencia ? 'Trocar arquivo' : 'Enviar arquivo'}
-                            </span>
-                            <input 
-                              id="comprovante_residencia" 
-                              name="comprovante_residencia" 
-                              type="file" 
-                              className="sr-only"
-                              onChange={(e) => handleFileUpload(e, 'comprovante_residencia')}
-                              accept="image/jpeg,image/png,application/pdf"
-                            />
-                          </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            PNG, JPG ou PDF até 5MB
-                          </p>
-                        </div>
-                      </label>
-                    </div>
-                    {uploading.comprovante && (
-                      <div className="ml-4">
-                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                      </div>
-                    )}
-                    {formData.comprovante_residencia && !uploading.comprovante && (
-                      <div className="ml-4 flex items-center gap-2">
-                        <div className="flex items-center text-sm text-green-600 dark:text-green-400">
-                          <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          Documento enviado
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => togglePreview('comprovante_residencia')}
-                          className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                          {showPreview.comprovante_residencia ? 'Ocultar' : 'Ver'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Inline Address Proof Preview */}
-                  {formData.comprovante_residencia && showPreview.comprovante_residencia && (
-                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
-                      <div className="flex justify-between items-start mb-3">
-                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Comprovante de Residência</h4>
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={formData.comprovante_residencia}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                            Abrir em nova aba
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => togglePreview('comprovante_residencia')}
-                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      {isImageFile(formData.comprovante_residencia) ? (
-                        <img
-                          src={formData.comprovante_residencia}
-                          alt="Comprovante de Residência"
-                          className="max-w-full h-auto max-h-64 rounded-md mx-auto block"
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center h-32 bg-gray-100 dark:bg-gray-700 rounded-md">
-                          <div className="text-center">
-                            <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-500 dark:text-gray-400">PDF Document</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <DocumentPreview
+                    documentUrl={formData.comprovante_residencia}
+                    isUploading={uploading.comprovante}
+                    onUpload={(file) => handleFileUpload(file, 'comprovante_residencia')}
+                    onPreview={handlePreviewDocument}
+                    onRemove={() => handleRemoveDocument('comprovante_residencia')}
+                    label="Comprovante de Residência"
+                    data-testid="comprovante-document-preview"
+                  />
                 </div>
               </div>
             </div>
@@ -1287,6 +1185,7 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                 onClick={onClose}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
                 disabled={submitting}
+                data-testid="button-cancel"
               >
                 Cancelar
               </button>
@@ -1294,16 +1193,17 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                 type="submit"
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 disabled={submitting}
+                data-testid="button-submit"
               >
                 {submitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Salvando...
+                    {isEditMode ? 'Atualizando...' : 'Salvando...'}
                   </>
                 ) : (
                   <>
                     <Upload className="w-4 h-4" />
-                    Salvar
+                    {isEditMode ? 'Atualizar' : 'Salvar'}
                   </>
                 )}
               </button>
@@ -1341,18 +1241,19 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
                   </button>
                 </div>
               </div>
-              <div className="relative h-[calc(90vh-80px)]">
-                {isPDFFile(previewDocument) ? (
-                  <iframe 
-                    src={`${previewDocument}#toolbar=1`} 
-                    className="w-full h-full" 
-                    title="PDF Viewer"
+              <div className="p-4 max-h-[80vh] overflow-auto">
+                {previewDocument.toLowerCase().includes('.pdf') ? (
+                  <iframe
+                    src={previewDocument}
+                    className="w-full h-[70vh] border-0"
+                    title="Document Preview"
                   />
                 ) : (
                   <img
                     src={previewDocument}
-                    alt="Documento"
-                    className="w-full h-full object-contain"
+                    alt="Document Preview"
+                    className="max-w-full h-auto mx-auto"
+                    style={{ maxHeight: '70vh' }}
                   />
                 )}
               </div>
@@ -1360,10 +1261,8 @@ const EditAjudanteModal = ({ isOpen, onClose, ajudante, onSuccess }: EditAjudant
           </div>
         )}
       </div>
-
-
     </div>
   );
 };
 
-export default EditAjudanteModal;
+export default UnifiedAjudanteModal;

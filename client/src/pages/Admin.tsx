@@ -463,7 +463,7 @@ const Admin = () => {
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
                             : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
                         }`}>
-                          {control.st_company ? 'Ativo' : 'Inativo'}
+                          {control.st_company ? 'Ativo' : 'Desativo'}
                         </span>
                       </td>
                     </tr>

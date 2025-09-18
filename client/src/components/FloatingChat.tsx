@@ -137,7 +137,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const apiKey = contextToken || (typeof localStorage !== 'undefined' ? localStorage?.getItem("wiseapp_token") : null);
 
   const api = axios.create({
-    baseURL: "https://chat.wiseapp360.com/api/v1",
+    baseURL: "/api",
     headers: {
       api_access_token: apiKey,
       "Content-Type": "application/json",
@@ -145,7 +145,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     },
   });
 
-  console.log("API URL: https://chat.wiseapp360.com/api/v1");
+  console.log("Using secure backend proxy for WiseApp API");
 
   const checkNetworkConnectivity = () => {
     return navigator.onLine;

@@ -991,7 +991,7 @@ const ContratacaoKanban = () => {
                       setShowAtivoDropdown(false);
                     }}
                   >
-                    Somente Inativos
+                    Somente Desativos
                   </div>
                 </div>
               )}

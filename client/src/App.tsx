@@ -13,7 +13,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ChecklistProvider } from "./context/ChecklistContext";
 import { ChatProvider } from "./context/ChatContext";
 import { WiseAppAccessProvider } from "./context/WiseAppAccessContext";
-import Navbar from "./components/Navbar";
+import SidebarLayout from "./components/SidebarLayout";
 import Version from "./components/Version";
 import Dashboard from "./pages/Dashboard";
 import Motoristas from "./pages/Motoristas";
@@ -25,7 +25,6 @@ import Unauthorized from "./pages/Unauthorized";
 import Admin from "./pages/Admin";
 import ResumosGrupo from "./pages/ResumosGrupo";
 import TagsAdmin from "./pages/TagsAdmin";
-import Vagas from "./pages/Vagas";
 import Comprovantes from "./pages/Comprovantes";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -55,48 +54,42 @@ const AppRoutes = () => {
         path="/*"
         element={
           <ProtectedRoute>
-            <div className="min-h-screen bg-background relative theme-transition">
-              <Navbar />
-              <main className="relative ml-20 transition-all duration-300 min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
-                <div className="max-w-[2000px] mx-auto p-8">
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route
-                      path="/motoristas/*"
-                      element={<Motoristas />}
-                    />
-                    <Route
-                      path="/veiculos/*"
-                      element={<Veiculos />}
-                    />
-                    <Route
-                      path="/hodometros/*"
-                      element={<Hodometros />}
-                    />
-                    <Route
-                      path="/checklist/*"
-                      element={<Checklist />}
-                    />
-                    <Route
-                      path="/clientes"
-                      element={<Clientes />}
-                    />
-                    <Route
-                      path="/resumos-grupo"
-                      element={<ResumosGrupo />}
-                    />
-                    <Route
-                      path="/tags-admin"
-                      element={<TagsAdmin />}
-                    />
-                    <Route path="/vagas/*" element={<Vagas />} />
-                    <Route
-                      path="/comprovantes/*"
-                      element={<Comprovantes />}
-                    />
-                  </Routes>
-                </div>
-              </main>
+            <SidebarLayout>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route
+                  path="/motoristas/*"
+                  element={<Motoristas />}
+                />
+                <Route
+                  path="/veiculos/*"
+                  element={<Veiculos />}
+                />
+                <Route
+                  path="/hodometros/*"
+                  element={<Hodometros />}
+                />
+                <Route
+                  path="/checklist/*"
+                  element={<Checklist />}
+                />
+                <Route
+                  path="/clientes"
+                  element={<Clientes />}
+                />
+                <Route
+                  path="/resumos-grupo"
+                  element={<ResumosGrupo />}
+                />
+                <Route
+                  path="/tags-admin"
+                  element={<TagsAdmin />}
+                />
+                <Route
+                  path="/comprovantes/*"
+                  element={<Comprovantes />}
+                />
+              </Routes>
               <Version />
               <Toaster
                 position="top-right"
@@ -104,7 +97,7 @@ const AppRoutes = () => {
                   className: "z-[60]",
                 }}
               />
-            </div>
+            </SidebarLayout>
           </ProtectedRoute>
         }
       />

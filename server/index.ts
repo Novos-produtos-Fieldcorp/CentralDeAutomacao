@@ -42,12 +42,45 @@ app.use((req, res, next) => {
   
   // CORS ultra-permissivo para resolver problemas de acesso
   const origin = req.headers.origin;
+
+  console.log(`[CORS] Request from origin: ${origin}`);
   
-  // Sempre permitir qualquer origem para resolver problemas de CORS
-  if (origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
+  const allowedOrigins = [
+    'https://replit.com',
+    'https://centralautomacoes.netlify.app',
+    'https://feat-dashboard--centralautomacoes.netlify.app',
+    'http://localhost:3000',
+    'http://localhost:5000'
+  ];
+  
+  // Função para verificar se origem é permitida
+  const isOriginAllowed = (requestOrigin: string | undefined): boolean => {
+    if (!requestOrigin) return false;
+    
+    // Verificar origens específicas
+    if (allowedOrigins.includes(requestOrigin)) {
+      return true;
+    }
+    
+    // Verificar padrões dinâmicos
+    if (requestOrigin.includes('replit.dev') || 
+        requestOrigin.includes('replit.app') ||
+        requestOrigin.includes('netlify.app') ||
+        requestOrigin.includes('localhost')) {
+      return true;
+    }
+    
+    return false;
+  };
+  
+  // Definir Access-Control-Allow-Origin
+  if (isOriginAllowed(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    console.log(`[CORS] Origin allowed: ${origin}`);
   } else {
+    // Para iframe embedding, permitir qualquer origem se não for uma requisição de API sensível
     res.setHeader('Access-Control-Allow-Origin', '*');
+    console.log(`[CORS] Origin not in allowed list, using wildcard: ${origin}`);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
   res.setHeader('Access-Control-Allow-Headers', [
@@ -62,19 +95,53 @@ app.use((req, res, next) => {
     'wiseapp-account-id',
     'X-Requested-With',
     'Accept',
-    'Origin'
+    'Origin',
+    'Referer',
+    'User-Agent',
+    'Sec-Fetch-Mode',
+    'Sec-Fetch-Dest',
+    'Sec-Fetch-Site'
   ].join(', '));
   res.setHeader('Access-Control-Allow-Credentials', 'false');
   res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
   
-  // Responder a requisições OPTIONS de forma ultra-permissiva
+
+  // Responder a requisições OPTIONS otimizado (preflight)
   if (req.method === 'OPTIONS') {
-    // Sempre permitir qualquer origem para OPTIONS
-    if (origin) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
+    console.log(`[CORS] Handling OPTIONS preflight request from: ${origin}`);
+    
+    // Definir headers CORS para preflight
+    if (isOriginAllowed(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+      console.log(`[CORS] Preflight - Origin allowed: ${origin}`);
     } else {
       res.setHeader('Access-Control-Allow-Origin', '*');
+      console.log(`[CORS] Preflight - Using wildcard for: ${origin}`);
     }
+    
+    // Repetir headers essenciais para preflight
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
+    res.setHeader('Access-Control-Allow-Headers', [
+      'Content-Type',
+      'Authorization', 
+      'api_access_token',
+      'Cache-Control',
+      'Pragma',
+      'Expires',
+      'wiseapp-token',
+      'company-id',
+      'wiseapp-account-id',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Referer',
+      'User-Agent',
+      'Sec-Fetch-Mode',
+      'Sec-Fetch-Dest',
+      'Sec-Fetch-Site'
+    ].join(', '));
+    res.setHeader('Access-Control-Max-Age', '86400');
+    
     res.status(204).end();
     return;
   }
