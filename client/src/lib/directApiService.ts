@@ -383,31 +383,37 @@ export const getContactLabels = async (accountId: string, token: string, contact
   return response.json();
 };
 
-// Buscar contato por telefone via backend existente
+// Buscar contato por telefone via backend existente com retry robusto
 export const searchWiseAppContact = async (accountId: string, token: string, phone: string, companyId: number = 2) => {
-  const url = `${API_BASE_URL}/wiseapp/${companyId}/contacts/search?phone=${phone}`;
-  
-  // Use the provided token - no hardcoded tokens for security
-  const finalToken = token;
-  if (!finalToken) {
-    throw new Error('Token WiseApp não encontrado. Configure nas configurações da empresa.');
-  }
-  
-  const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      'wiseapp-token': finalToken,
-      'wiseapp-account-id': accountId
-    }
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Erro na API WiseApp via backend:', response.status, errorText);
-    throw new Error(`Erro ao buscar contato no WiseApp: ${response.status}`);
+  if (!accountId || !token) {
+    throw new Error('AccountId e token são obrigatórios para buscar contatos do WiseApp.');
   }
 
-  return response.json();
+  const primaryUrl = `${API_BASE_URL}/wiseapp/${companyId}/contacts/search?phone=${phone}`;
+  const fallbackUrls = [
+    `${API_BASE_URL}/wiseapp/2/contacts/search?phone=${phone}`, // Fallback para companyId 2
+    `${API_BASE_URL}/wiseapp/1/contacts/search?phone=${phone}`  // Fallback para companyId 1
+  ].filter(url => url !== primaryUrl); // Remove duplicatas
+  
+  console.log(`Buscando contato por telefone ${phone} via backend para:`, primaryUrl);
+  
+  try {
+    return await robustWiseAppFetch(primaryUrl, {
+      method: 'GET',
+      cacheKey: `wiseapp-contact-${accountId}-${phone}`,
+      cacheTtl: 2 * 60 * 1000, // 2 minutos de cache para contatos
+      fallbackUrls,
+      onRetry: (attempt, error) => {
+        console.log(`[WiseApp Contact] Tentativa ${attempt} falhou para telefone ${phone}: ${error.message}`);
+      },
+      onFallback: (url, error) => {
+        console.log(`[WiseApp Contact] Usando URL alternativa ${url} após erro: ${error.message}`);
+      }
+    }, accountId, token);
+  } catch (error) {
+    console.error(`Erro na requisição de contato por telefone ${phone} (todas as tentativas falharam):`, error);
+    throw error;
+  }
 };
 
 // Buscar detalhes de um contato específico
@@ -428,58 +434,49 @@ export const getWiseAppContact = async (accountId: string, token: string, contac
   return response.json();
 };
 
-// Aplicar labels a um contato preservando existentes (mesma lógica que funciona individual)
+// Aplicar labels a um contato preservando existentes com retry robusto
 export const applyWiseAppContactLabels = async (accountId: string, token: string, contactId: number, labelNames: string[], companyId: number = 2) => {
+  if (!accountId || !token || !contactId) {
+    throw new Error('AccountId, token e contactId são obrigatórios para aplicar labels.');
+  }
+
   const url = `${API_BASE_URL}/wiseapp/${companyId}/contacts/${contactId}/labels`;
   
-  // Use the provided token - no hardcoded tokens for security
-  const finalToken = token;
-  if (!finalToken) {
-    throw new Error('Token WiseApp não encontrado. Configure nas configurações da empresa.');
-  }
+  console.log(`Aplicando labels [${labelNames.join(', ')}] ao contato ${contactId}`);
   
-  // 1. Buscar labels existentes primeiro (mesma lógica que funciona individual)
-  const getResponse = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'wiseapp-token': finalToken,
-      'wiseapp-account-id': accountId
+  try {
+    // 1. Buscar labels existentes primeiro (mesma lógica que funciona individual)
+    const existingLabelsData = await robustWiseAppFetch(url, {
+      method: 'GET',
+      cacheKey: `wiseapp-contact-labels-${accountId}-${contactId}`,
+      cacheTtl: 30 * 1000, // 30 segundos de cache para labels de contatos
+      onRetry: (attempt, error) => {
+        console.log(`[WiseApp Labels Get] Tentativa ${attempt} falhou para contato ${contactId}: ${error.message}`);
+      }
+    }, accountId, token);
+    
+    const existingLabels: string[] = existingLabelsData?.payload || [];
+    
+    // 2. Adicionar novas labels se não existirem
+    const mergedLabels = [...existingLabels];
+    for (const newLabel of labelNames) {
+      if (!mergedLabels.includes(newLabel)) {
+        mergedLabels.push(newLabel);
+      }
     }
-  });
-  
-  let existingLabels: string[] = [];
-  if (getResponse.ok) {
-    const result = await getResponse.json();
-    existingLabels = result.payload || [];
+    
+    // 3. Enviar lista completa (mesma lógica que funciona individual)
+    return await robustWiseAppFetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ labels: mergedLabels }),
+      onRetry: (attempt, error) => {
+        console.log(`[WiseApp Labels Apply] Tentativa ${attempt} falhou para contato ${contactId}: ${error.message}`);
+      }
+    }, accountId, token);
+  } catch (error) {
+    console.error(`Erro ao aplicar labels ao contato ${contactId} (todas as tentativas falharam):`, error);
+    throw error;
   }
-  
-  // 2. Adicionar novas labels se não existirem
-  const mergedLabels = [...existingLabels];
-  for (const newLabel of labelNames) {
-    if (!mergedLabels.includes(newLabel)) {
-      mergedLabels.push(newLabel);
-    }
-  }
-  
-  // 3. Enviar lista completa (mesma lógica que funciona individual)
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'wiseapp-token': finalToken,
-      'wiseapp-account-id': accountId
-    },
-    body: JSON.stringify({ labels: mergedLabels })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Erro na API WiseApp via backend:', response.status, errorText);
-    throw new Error(`Erro ao aplicar labels no WiseApp: ${response.status}`);
-  }
-
-  return response.json();
 };
 
 // Criar uma nova label na conta
