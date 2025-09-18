@@ -1,0 +1,339 @@
+// Utilitário para requisições HTTP robustas com retry, fallback e cache
+interface RobustFetchOptions extends RequestInit {
+  timeout?: number;
+  retries?: number;
+  retryDelay?: number;
+  fallbackUrls?: string[];
+  cacheKey?: string;
+  cacheTtl?: number;
+  showProgress?: boolean;
+  onRetry?: (attempt: number, error: Error) => void;
+  onFallback?: (url: string, error: Error) => void;
+}
+
+interface CachedResponse {
+  data: any;
+  timestamp: number;
+  ttl: number;
+}
+
+// Cache em memória para performance
+const memoryCache = new Map<string, CachedResponse>();
+
+// Funções para cache persistente
+const PERSISTENT_CACHE_KEY = 'wiseapp-robust-cache';
+
+function getPersistentCache(): Record<string, CachedResponse> {
+  try {
+    const cached = localStorage.getItem(PERSISTENT_CACHE_KEY);
+    return cached ? JSON.parse(cached) : {};
+  } catch {
+    return {};
+  }
+}
+
+function setPersistentCache(cache: Record<string, CachedResponse>): void {
+  try {
+    localStorage.setItem(PERSISTENT_CACHE_KEY, JSON.stringify(cache));
+  } catch (error) {
+    console.warn('Não foi possível salvar cache persistente:', error);
+  }
+}
+
+function cleanExpiredPersistentCache(): void {
+  const cache = getPersistentCache();
+  const now = Date.now();
+  const cleaned: Record<string, CachedResponse> = {};
+  
+  for (const [key, entry] of Object.entries(cache)) {
+    if (now - entry.timestamp <= entry.ttl) {
+      cleaned[key] = entry;
+    }
+  }
+  
+  setPersistentCache(cleaned);
+}
+
+// Função para verificar se o cache é válido (tenta memória primeiro, depois persistente)
+function getCachedData(key: string): any | null {
+  if (!key) return null;
+  
+  const now = Date.now();
+  
+  // Verificar cache em memória primeiro
+  const memoryCached = memoryCache.get(key);
+  if (memoryCached && (now - memoryCached.timestamp <= memoryCached.ttl)) {
+    console.log(`[RobustFetch] Using memory cached data for key: ${key}`);
+    return memoryCached.data;
+  }
+  
+  // Verificar cache persistente
+  const persistentCache = getPersistentCache();
+  const persistentCached = persistentCache[key];
+  if (persistentCached && (now - persistentCached.timestamp <= persistentCached.ttl)) {
+    // Replicar para cache em memória para próximas consultas
+    memoryCache.set(key, persistentCached);
+    console.log(`[RobustFetch] Using persistent cached data for key: ${key}`);
+    return persistentCached.data;
+  }
+  
+  // Limpar cache expirado
+  if (memoryCached) memoryCache.delete(key);
+  
+  return null;
+}
+
+// Função para armazenar no cache (memória + persistente)
+function setCachedData(key: string, data: any, ttl: number): void {
+  if (!key) return;
+  
+  const cacheEntry: CachedResponse = {
+    data,
+    timestamp: Date.now(),
+    ttl
+  };
+  
+  // Armazenar em memória
+  memoryCache.set(key, cacheEntry);
+  
+  // Armazenar persistente (apenas para dados importantes)
+  if (key.includes('wiseapp-labels') || key.includes('wiseapp-contact')) {
+    const persistentCache = getPersistentCache();
+    persistentCache[key] = cacheEntry;
+    setPersistentCache(persistentCache);
+    
+    // Limpar cache expirado ocasionalmente
+    if (Math.random() < 0.1) { // 10% de chance
+      cleanExpiredPersistentCache();
+    }
+  }
+  
+  console.log(`[RobustFetch] Cached data for key: ${key}, TTL: ${ttl}ms`);
+}
+
+// Função para fazer fetch com timeout
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+// Função para aguardar com delay exponencial
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Função principal robusta para requisições HTTP
+export async function robustFetch(
+  url: string,
+  options: RobustFetchOptions = {}
+): Promise<any> {
+  const {
+    timeout = 10000,
+    retries = 3,
+    retryDelay = 1000,
+    fallbackUrls = [],
+    cacheKey,
+    cacheTtl = 5 * 60 * 1000, // 5 minutos por padrão
+    showProgress = false,
+    onRetry,
+    onFallback,
+    ...fetchOptions
+  } = options;
+
+  // Verificar cache primeiro
+  if (cacheKey) {
+    const cachedData = getCachedData(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+  }
+
+  const urls = [url, ...fallbackUrls];
+  const errors: Error[] = [];
+  
+  for (let urlIndex = 0; urlIndex < urls.length; urlIndex++) {
+    const currentUrl = urls[urlIndex];
+    
+    // Se está usando URL de fallback, notificar
+    if (urlIndex > 0 && onFallback) {
+      onFallback(currentUrl, errors[errors.length - 1]);
+    }
+    
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        if (showProgress && attempt > 0) {
+          console.log(`[RobustFetch] Tentativa ${attempt + 1} de ${retries + 1} para URL: ${currentUrl}`);
+        }
+        
+        // Se é uma tentativa de retry, notificar
+        if (attempt > 0 && onRetry) {
+          onRetry(attempt, errors[errors.length - 1] || new Error('Unknown error'));
+        }
+        
+        // Aguardar delay exponencial antes do retry
+        if (attempt > 0) {
+          const delayTime = retryDelay * Math.pow(2, attempt - 1);
+          await delay(delayTime);
+        }
+        
+        const response = await fetchWithTimeout(currentUrl, fetchOptions, timeout);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Armazenar no cache se for bem-sucedido
+        if (cacheKey) {
+          setCachedData(cacheKey, data, cacheTtl);
+        }
+        
+        console.log(`[RobustFetch] Sucesso na URL: ${currentUrl} após ${attempt + 1} tentativa(s)`);
+        return data;
+        
+      } catch (error) {
+        const errorObj = error instanceof Error ? error : new Error('Unknown error');
+        errors.push(errorObj);
+        
+        console.warn(`[RobustFetch] Erro na tentativa ${attempt + 1} para URL ${currentUrl}:`, errorObj.message);
+        
+        // Se é a última tentativa da última URL, não continua
+        if (urlIndex === urls.length - 1 && attempt === retries) {
+          break;
+        }
+        
+        // Se é a última tentativa desta URL, vai para a próxima URL
+        if (attempt === retries) {
+          break;
+        }
+      }
+    }
+  }
+  
+  // Se chegou aqui, todas as tentativas falharam
+  console.error(`[RobustFetch] Todas as tentativas falharam para as URLs: ${urls.join(', ')}`);
+  
+  // Se há dados em cache antigo (mesmo expirado), usar como último recurso
+  if (cacheKey) {
+    // Tentar cache em memória primeiro
+    const memoryStaleCache = memoryCache.get(cacheKey);
+    if (memoryStaleCache) {
+      console.warn(`[RobustFetch] Usando dados em cache de memória expirados como último recurso para: ${cacheKey}`);
+      return memoryStaleCache.data;
+    }
+    
+    // Tentar cache persistente
+    const persistentCache = getPersistentCache();
+    const persistentStaleCache = persistentCache[cacheKey];
+    if (persistentStaleCache) {
+      console.warn(`[RobustFetch] Usando dados em cache persistente expirados como último recurso para: ${cacheKey}`);
+      return persistentStaleCache.data;
+    }
+  }
+  
+  // Lançar erro composto com todas as falhas
+  const aggregatedError = new Error(
+    `Failed to fetch after ${retries + 1} retries across ${urls.length} URLs. Last errors: ${errors.slice(-3).map(e => e.message).join(', ')}`
+  );
+  
+  throw aggregatedError;
+}
+
+// Função específica para WiseApp com configurações otimizadas
+export async function robustWiseAppFetch(
+  url: string,
+  options: RobustFetchOptions = {},
+  accountId?: string,
+  token?: string
+): Promise<any> {
+  // Headers padrão para WiseApp
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+    ...(token && { 'wiseapp-token': token }),
+    ...(accountId && { 'wiseapp-account-id': accountId })
+  };
+  
+  return robustFetch(url, {
+    timeout: 15000, // 15 segundos para WiseApp
+    retries: 5, // Mais tentativas para WiseApp
+    retryDelay: 2000, // 2 segundos de delay inicial
+    cacheTtl: 10 * 60 * 1000, // Cache de 10 minutos para dados do WiseApp
+    showProgress: true,
+    ...options,
+    headers: {
+      ...defaultHeaders,
+      ...options.headers
+    },
+    onRetry: (attempt, error) => {
+      console.log(`[WiseApp] Tentativa ${attempt} falhou: ${error.message}. Tentando novamente...`);
+      if (options.onRetry) {
+        options.onRetry(attempt, error);
+      }
+    },
+    onFallback: (url, error) => {
+      console.log(`[WiseApp] Tentando URL alternativa: ${url} após erro: ${error.message}`);
+      if (options.onFallback) {
+        options.onFallback(url, error);
+      }
+    }
+  });
+}
+
+// Função utilitária para limpar cache (memória + persistente)
+export function clearCache(keyPattern?: string): void {
+  if (!keyPattern) {
+    memoryCache.clear();
+    localStorage.removeItem(PERSISTENT_CACHE_KEY);
+    console.log('[RobustFetch] Cache completamente limpo (memória + persistente)');
+    return;
+  }
+  
+  // Limpar cache em memória
+  const memoryKeysToDelete: string[] = [];
+  for (const key of memoryCache.keys()) {
+    if (key.includes(keyPattern)) {
+      memoryKeysToDelete.push(key);
+    }
+  }
+  memoryKeysToDelete.forEach(key => memoryCache.delete(key));
+  
+  // Limpar cache persistente
+  const persistentCache = getPersistentCache();
+  const filteredCache: Record<string, CachedResponse> = {};
+  
+  for (const [key, value] of Object.entries(persistentCache)) {
+    if (!key.includes(keyPattern)) {
+      filteredCache[key] = value;
+    }
+  }
+  
+  setPersistentCache(filteredCache);
+  
+  const totalRemoved = memoryKeysToDelete.length + (Object.keys(persistentCache).length - Object.keys(filteredCache).length);
+  console.log(`[RobustFetch] Removidas ${totalRemoved} entradas do cache que continham: ${keyPattern}`);
+}
+
+// Função utilitária para verificar conectividade
+export async function checkConnectivity(url = '/api/health'): Promise<boolean> {
+  try {
+    const response = await fetchWithTimeout(url, { method: 'HEAD' }, 5000);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+export default robustFetch;
