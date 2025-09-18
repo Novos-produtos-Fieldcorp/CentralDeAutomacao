@@ -57,31 +57,43 @@ export function TagManager({ companyId }: TagManagerProps) {
     if (isSyncingWiseApp) return;
 
     setIsSyncingWiseApp(true);
+    
+    // Mostrar notificação de início com progresso
+    const syncToast = toast.loading('Conectando com WiseApp...');
+    
     try {
       if (!accountId) {
-        toast.error('ID da conta não encontrado');
+        toast.error('ID da conta não encontrado', { id: syncToast });
         return;
       }
 
       // Verificar se temos token WiseApp
       if (!wiseAppToken) {
-        toast.error('Token WiseApp não encontrado. Configure o token primeiro.');
+        toast.error('Token WiseApp não encontrado. Configure o token primeiro.', { id: syncToast });
         return;
       }
 
-      // Buscar tags do WiseApp
+      // Atualizar progresso
+      toast.loading('Buscando marcadores do WiseApp...', { id: syncToast });
+
+      // Buscar tags do WiseApp usando função robusta
       console.log('Sincronizando tags - Account ID:', accountId, 'Token disponível:', !!wiseAppToken);
-      const wiseAppLabelsResponse = await getWiseAppLabels(accountId || '', wiseAppToken || '');
+      const wiseAppLabelsResponse = await getWiseAppLabels(accountId || '', wiseAppToken || '', companyId);
       const wiseAppTagsData = wiseAppLabelsResponse.payload || wiseAppLabelsResponse || [];
       console.log('Tags encontradas:', wiseAppTagsData);
       console.log('WiseApp labels found:', wiseAppTagsData);
 
       if (!wiseAppTagsData || wiseAppTagsData.length === 0) {
         toast('Nenhum marcador encontrado no WiseApp.', {
-          icon: 'ℹ️'
+          id: syncToast,
+          icon: 'ℹ️',
+          duration: 4000
         });
         return;
       }
+
+      // Atualizar progresso
+      toast.loading(`Processando ${wiseAppTagsData.length} marcadores...`, { id: syncToast });
 
       // Salvar tags no Supabase
       console.log('Salvando tags no Supabase para company_id:', companyId);
@@ -113,6 +125,9 @@ export function TagManager({ companyId }: TagManagerProps) {
       console.log('Tags para inserir:', tagsToInsert);
 
       if (tagsToInsert.length > 0) {
+        // Atualizar progresso
+        toast.loading(`Salvando ${tagsToInsert.length} novos marcadores...`, { id: syncToast });
+        
         const { data: insertedTags, error: insertError } = await supabase
           .from('tag')
           .insert(tagsToInsert)
@@ -124,10 +139,14 @@ export function TagManager({ companyId }: TagManagerProps) {
         }
 
         console.log('Tags inseridas com sucesso:', insertedTags);
-        toast.success(`${tagsToInsert.length} marcadores sincronizados e salvos no banco de dados!`);
+        toast.success(`✅ ${tagsToInsert.length} marcadores sincronizados e salvos no banco de dados!`, {
+          id: syncToast,
+          duration: 5000
+        });
       } else {
-        toast('Todos os marcadores já existem no banco de dados.', {
-          icon: 'ℹ️'
+        toast.success('✅ Todos os marcadores já estão atualizados no banco de dados.', {
+          id: syncToast,
+          duration: 4000
         });
       }
 
@@ -138,27 +157,45 @@ export function TagManager({ companyId }: TagManagerProps) {
     } catch (error) {
       console.error('Erro ao sincronizar tags do WiseApp:', error);
 
-      // Enhanced fallback messaging for different error types
+      // Enhanced fallback messaging with detailed error analysis
+      let errorMessage = 'Erro desconhecido ao sincronizar marcadores do WiseApp';
+      
       if (error instanceof Error) {
-        if (error.message.includes('401')) {
-          toast.error(`Falha na autenticação WiseApp (Account ID: ${accountId}). Verifique as credenciais.`, {
-            duration: 5000
-          });
-        } else if (error.message.includes('500')) {
-          toast.error('Servidor WiseApp temporariamente indisponível. Tente novamente mais tarde.', {
-            duration: 5000
-          });
+        const message = error.message.toLowerCase();
+        
+        if (message.includes('failed to fetch') || message.includes('network') || message.includes('timeout')) {
+          errorMessage = '🔄 Problema de conectividade detectado. O sistema tentou múltiplas vezes mas não conseguiu conectar com o WiseApp. Tente novamente em alguns minutos.';
+        } else if (message.includes('401') || message.includes('unauthorized')) {
+          errorMessage = `🔐 Falha na autenticação WiseApp (Account ID: ${accountId}). Verifique se as credenciais estão corretas e atualizadas.`;
+        } else if (message.includes('403') || message.includes('forbidden')) {
+          errorMessage = '⛔ Acesso negado pelo WiseApp. Verifique as permissões da sua conta.';
+        } else if (message.includes('404') || message.includes('not found')) {
+          errorMessage = '❓ Conta ou recurso não encontrado no WiseApp. Verifique se o Account ID está correto.';
+        } else if (message.includes('500') || message.includes('internal server')) {
+          errorMessage = '⚠️ Servidor WiseApp temporariamente indisponível. Tente novamente mais tarde.';
+        } else if (message.includes('rate limit') || message.includes('too many requests')) {
+          errorMessage = '⏱️ Muitas requisições ao WiseApp. Aguarde um momento e tente novamente.';
         } else {
-          toast.error(`Erro ao sincronizar com WiseApp: ${error.message}`, {
-            duration: 4000
-          });
+          errorMessage = `❌ ${error.message}`;
         }
-      } else {
-        toast.error('Erro desconhecido ao sincronizar marcadores do WiseApp');
       }
+
+      toast.error(errorMessage, {
+        id: syncToast,
+        duration: 6000
+      });
 
       // Still show local tags even if WiseApp fails
       console.log('Sistema continuará funcionando apenas com tags locais');
+      
+      // Mostrar informação adicional se há tags locais disponíveis
+      if (tags.length > 0) {
+        setTimeout(() => {
+          toast(`ℹ️ Continuando com ${tags.length} marcadores locais disponíveis.`, {
+            duration: 4000
+          });
+        }, 1000);
+      }
     } finally {
       setIsSyncingWiseApp(false);
     }
@@ -180,7 +217,8 @@ export function TagManager({ companyId }: TagManagerProps) {
             <button
               onClick={syncWiseAppTags}
               disabled={isSyncingWiseApp}
-              className="bg-green-600 dark:bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-700 dark:hover:bg-green-600 flex items-center gap-2 transition-colors disabled:opacity-50"
+              className="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-700 dark:hover:bg-green-600 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              title={isSyncingWiseApp ? 'Sincronização em andamento...' : 'Clique para sincronizar marcadores do WiseApp'}
             >
               <RefreshCw className={`w-4 h-4 ${isSyncingWiseApp ? 'animate-spin' : ''}`} />
               {isSyncingWiseApp ? 'Sincronizando...' : 'Sincronizar com WiseApp'}
