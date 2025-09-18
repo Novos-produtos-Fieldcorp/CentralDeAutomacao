@@ -50,12 +50,15 @@ app.use((req, res, next) => {
     'https://centralautomacoes.netlify.app',
     'https://feat-dashboard--centralautomacoes.netlify.app',
     'http://localhost:3000',
-    'http://localhost:5000'
+    'http://localhost:5000',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5000'
   ];
   
   // Função para verificar se origem é permitida
   const isOriginAllowed = (requestOrigin: string | undefined): boolean => {
-    if (!requestOrigin) return false;
+    // Permitir origens undefined/null (pode ocorrer em certos contextos como Postman, apps desktop, etc)
+    if (!requestOrigin) return true;
     
     // Verificar origens específicas
     if (allowedOrigins.includes(requestOrigin)) {
@@ -66,7 +69,8 @@ app.use((req, res, next) => {
     if (requestOrigin.includes('replit.dev') || 
         requestOrigin.includes('replit.app') ||
         requestOrigin.includes('netlify.app') ||
-        requestOrigin.includes('localhost')) {
+        requestOrigin.includes('localhost') ||
+        requestOrigin.includes('127.0.0.1')) {
       return true;
     }
     
@@ -76,11 +80,11 @@ app.use((req, res, next) => {
   // Definir Access-Control-Allow-Origin
   if (isOriginAllowed(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    console.log(`[CORS] Origin allowed: ${origin}`);
+    console.log(`[CORS] Origin allowed: ${origin || 'undefined'}`);
   } else {
     // Para iframe embedding, permitir qualquer origem se não for uma requisição de API sensível
     res.setHeader('Access-Control-Allow-Origin', '*');
-    console.log(`[CORS] Origin not in allowed list, using wildcard: ${origin}`);
+    console.log(`[CORS] Origin not in allowed list, using wildcard: ${origin || 'undefined'}`);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
   res.setHeader('Access-Control-Allow-Headers', [
@@ -113,10 +117,10 @@ app.use((req, res, next) => {
     // Definir headers CORS para preflight
     if (isOriginAllowed(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin || '*');
-      console.log(`[CORS] Preflight - Origin allowed: ${origin}`);
+      console.log(`[CORS] Preflight - Origin allowed: ${origin || 'undefined'}`);
     } else {
       res.setHeader('Access-Control-Allow-Origin', '*');
-      console.log(`[CORS] Preflight - Using wildcard for: ${origin}`);
+      console.log(`[CORS] Preflight - Using wildcard for: ${origin || 'undefined'}`);
     }
     
     // Repetir headers essenciais para preflight
