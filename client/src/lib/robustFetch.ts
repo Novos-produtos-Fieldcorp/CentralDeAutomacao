@@ -17,34 +17,96 @@ interface CachedResponse {
   ttl: number;
 }
 
-const cache = new Map<string, CachedResponse>();
+// Cache em memória para performance
+const memoryCache = new Map<string, CachedResponse>();
 
-// Função para verificar se o cache é válido
+// Funções para cache persistente
+const PERSISTENT_CACHE_KEY = 'wiseapp-robust-cache';
+
+function getPersistentCache(): Record<string, CachedResponse> {
+  try {
+    const cached = localStorage.getItem(PERSISTENT_CACHE_KEY);
+    return cached ? JSON.parse(cached) : {};
+  } catch {
+    return {};
+  }
+}
+
+function setPersistentCache(cache: Record<string, CachedResponse>): void {
+  try {
+    localStorage.setItem(PERSISTENT_CACHE_KEY, JSON.stringify(cache));
+  } catch (error) {
+    console.warn('Não foi possível salvar cache persistente:', error);
+  }
+}
+
+function cleanExpiredPersistentCache(): void {
+  const cache = getPersistentCache();
+  const now = Date.now();
+  const cleaned: Record<string, CachedResponse> = {};
+  
+  for (const [key, entry] of Object.entries(cache)) {
+    if (now - entry.timestamp <= entry.ttl) {
+      cleaned[key] = entry;
+    }
+  }
+  
+  setPersistentCache(cleaned);
+}
+
+// Função para verificar se o cache é válido (tenta memória primeiro, depois persistente)
 function getCachedData(key: string): any | null {
   if (!key) return null;
   
-  const cached = cache.get(key);
-  if (!cached) return null;
-  
   const now = Date.now();
-  if (now - cached.timestamp > cached.ttl) {
-    cache.delete(key);
-    return null;
+  
+  // Verificar cache em memória primeiro
+  const memoryCached = memoryCache.get(key);
+  if (memoryCached && (now - memoryCached.timestamp <= memoryCached.ttl)) {
+    console.log(`[RobustFetch] Using memory cached data for key: ${key}`);
+    return memoryCached.data;
   }
   
-  console.log(`[RobustFetch] Using cached data for key: ${key}`);
-  return cached.data;
+  // Verificar cache persistente
+  const persistentCache = getPersistentCache();
+  const persistentCached = persistentCache[key];
+  if (persistentCached && (now - persistentCached.timestamp <= persistentCached.ttl)) {
+    // Replicar para cache em memória para próximas consultas
+    memoryCache.set(key, persistentCached);
+    console.log(`[RobustFetch] Using persistent cached data for key: ${key}`);
+    return persistentCached.data;
+  }
+  
+  // Limpar cache expirado
+  if (memoryCached) memoryCache.delete(key);
+  
+  return null;
 }
 
-// Função para armazenar no cache
+// Função para armazenar no cache (memória + persistente)
 function setCachedData(key: string, data: any, ttl: number): void {
   if (!key) return;
   
-  cache.set(key, {
+  const cacheEntry: CachedResponse = {
     data,
     timestamp: Date.now(),
     ttl
-  });
+  };
+  
+  // Armazenar em memória
+  memoryCache.set(key, cacheEntry);
+  
+  // Armazenar persistente (apenas para dados importantes)
+  if (key.includes('wiseapp-labels') || key.includes('wiseapp-contact')) {
+    const persistentCache = getPersistentCache();
+    persistentCache[key] = cacheEntry;
+    setPersistentCache(persistentCache);
+    
+    // Limpar cache expirado ocasionalmente
+    if (Math.random() < 0.1) { // 10% de chance
+      cleanExpiredPersistentCache();
+    }
+  }
   
   console.log(`[RobustFetch] Cached data for key: ${key}, TTL: ${ttl}ms`);
 }
@@ -166,10 +228,19 @@ export async function robustFetch(
   
   // Se há dados em cache antigo (mesmo expirado), usar como último recurso
   if (cacheKey) {
-    const staleCache = cache.get(cacheKey);
-    if (staleCache) {
-      console.warn(`[RobustFetch] Usando dados em cache expirados como último recurso para: ${cacheKey}`);
-      return staleCache.data;
+    // Tentar cache em memória primeiro
+    const memoryStaleCache = memoryCache.get(cacheKey);
+    if (memoryStaleCache) {
+      console.warn(`[RobustFetch] Usando dados em cache de memória expirados como último recurso para: ${cacheKey}`);
+      return memoryStaleCache.data;
+    }
+    
+    // Tentar cache persistente
+    const persistentCache = getPersistentCache();
+    const persistentStaleCache = persistentCache[cacheKey];
+    if (persistentStaleCache) {
+      console.warn(`[RobustFetch] Usando dados em cache persistente expirados como último recurso para: ${cacheKey}`);
+      return persistentStaleCache.data;
     }
   }
   
@@ -221,23 +292,38 @@ export async function robustWiseAppFetch(
   });
 }
 
-// Função utilitária para limpar cache
+// Função utilitária para limpar cache (memória + persistente)
 export function clearCache(keyPattern?: string): void {
   if (!keyPattern) {
-    cache.clear();
-    console.log('[RobustFetch] Cache completamente limpo');
+    memoryCache.clear();
+    localStorage.removeItem(PERSISTENT_CACHE_KEY);
+    console.log('[RobustFetch] Cache completamente limpo (memória + persistente)');
     return;
   }
   
-  const keysToDelete: string[] = [];
-  for (const key of cache.keys()) {
+  // Limpar cache em memória
+  const memoryKeysToDelete: string[] = [];
+  for (const key of memoryCache.keys()) {
     if (key.includes(keyPattern)) {
-      keysToDelete.push(key);
+      memoryKeysToDelete.push(key);
+    }
+  }
+  memoryKeysToDelete.forEach(key => memoryCache.delete(key));
+  
+  // Limpar cache persistente
+  const persistentCache = getPersistentCache();
+  const filteredCache: Record<string, CachedResponse> = {};
+  
+  for (const [key, value] of Object.entries(persistentCache)) {
+    if (!key.includes(keyPattern)) {
+      filteredCache[key] = value;
     }
   }
   
-  keysToDelete.forEach(key => cache.delete(key));
-  console.log(`[RobustFetch] Removidas ${keysToDelete.length} entradas do cache que continham: ${keyPattern}`);
+  setPersistentCache(filteredCache);
+  
+  const totalRemoved = memoryKeysToDelete.length + (Object.keys(persistentCache).length - Object.keys(filteredCache).length);
+  console.log(`[RobustFetch] Removidas ${totalRemoved} entradas do cache que continham: ${keyPattern}`);
 }
 
 // Função utilitária para verificar conectividade
