@@ -140,7 +140,15 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
         cep: data.cep || prev.cep
       }));
       
-      toast.success('Dados do CPF preenchidos automaticamente!');
+      // Como a API está retornando vazio, informa que preenchimento manual é necessário
+      if (Object.keys(data).length === 0) {
+        toast('CPF validado. Preencha os dados manualmente.', {
+          duration: 3000,
+          icon: 'ℹ️'
+        });
+      } else {
+        toast.success('Dados do CPF preenchidos automaticamente!');
+      }
     } catch (error) {
       console.error('Erro ao consultar CPF:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro ao consultar CPF';
