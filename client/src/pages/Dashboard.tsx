@@ -891,10 +891,10 @@ const Dashboard: React.FC = () => {
           .gte("data", sixMonthsAgo.toISOString().split("T")[0])
           .order("data", { ascending: true }),
 
-        // Real clientes data without created_at (field doesn't exist)
+        // Count total clients (optimized)
         supabase
           .from("cliente")
-          .select("cliente_id, nome, st_cliente")
+          .select("cliente_id", { count: "exact", head: true })
           .eq("company_id", companyId),
 
         // Count active clients
@@ -904,7 +904,7 @@ const Dashboard: React.FC = () => {
           .eq("company_id", companyId)
           .eq("st_cliente", true),
 
-        // Recent clients for activity feed (without created_at)
+        // Recent clients for activity feed (limited to 5)
         supabase
           .from("cliente")
           .select("nome, cliente_id")
@@ -912,11 +912,12 @@ const Dashboard: React.FC = () => {
           .order("cliente_id", { ascending: false })
           .limit(5),
 
-        // Real vehicles data
+        // Count vehicles by type (optimized query)
         supabase
           .from("veiculo")
-          .select("veiculo_id, tipo")
-          .eq("company_id", companyId),
+          .select("tipo", { count: "exact" })
+          .eq("company_id", companyId)
+          .limit(1000), // Limit for performance
 
         // Real vagas data with status
         supabase
@@ -1000,8 +1001,7 @@ const Dashboard: React.FC = () => {
       // Process real vagas data with debug logging
       const vagas = vagasResult.data || [];
       const statusVagasData = statusVagasResult.data || [];
-      console.log("Vagas raw data:", vagas.length, "vagas");
-      console.log("Status vagas data:", statusVagasData.length, "status");
+      // Vagas processing optimized for performance
 
       const statusMap = statusVagasData.reduce(
         (map: any, status: any) => {
@@ -1022,9 +1022,7 @@ const Dashboard: React.FC = () => {
         const status = statusMap[stVagaId] || "";
         const isExpired = vaga.dt_limite && new Date(vaga.dt_limite) < now;
 
-        console.log(
-          `Vaga ${vaga.id}: status="${status}", expired=${isExpired}`,
-        );
+        // Processing vaga status
 
         if (isExpired) {
           vagasVencidas++;
@@ -1059,12 +1057,12 @@ const Dashboard: React.FC = () => {
 
       // Process real hodometro data only - no fake data
       const hodometroData = hodometroResult.data || [];
-      console.log("Hodometro raw data:", hodometroData.length, "registros");
+      // Hodometro data processing
 
       // Only use real data, no fallback/fake data
       const hodometroArray =
         hodometroData.length > 0 ? processRealHodometroData(hodometroData) : [];
-      console.log("Processed hodometro data:", hodometroArray);
+      // Hodometro processing complete
 
       // Process real clientes data
       const clientes = clientesResult.data || [];
@@ -1087,7 +1085,7 @@ const Dashboard: React.FC = () => {
 
       // Process real veiculos data with proper type classification
       const veiculos = veiculosResult.data || [];
-      console.log("Veiculos raw data:", veiculos.length, "veículos");
+      // Vehicles data processing
 
       // Lista canônica de tipos válidos - apenas categorias gerais de veículos
       const VALID_VEHICLE_TYPES = [
@@ -1141,7 +1139,7 @@ const Dashboard: React.FC = () => {
         vehicleTypes[tipo] = (vehicleTypes[tipo] || 0) + 1;
       });
 
-      console.log("Vehicle types processed:", vehicleTypes);
+      // Vehicle types processing complete
 
       let vehicleTypeData = Object.entries(vehicleTypes).map(
         ([name, value], index) => ({
