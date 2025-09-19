@@ -1080,11 +1080,16 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const fetchContratados = async () => {
       try {
         setLoading(true);
-        // Buscar os agregados da view específica
+        // Buscar os agregados diretamente da tabela motorista com joins necessários
         let query = supabase
-          .from('vw_agregados_completo')
-          .select('*')
-          .eq('company_id', companyId);
+          .from('motorista')
+          .select(`
+            *,
+            cliente(nome),
+            veiculo(*)
+          `)
+          .eq('company_id', companyId)
+          .eq('funcao', 'Agregado');
 
         // Apply date filter
         if (dateFilter !== 'all') {
