@@ -23,7 +23,7 @@ import {
 } from "./utils/api-retry";
 import { getBulkMotoristaTags } from "./bulk-tags-api";
 import { registerBulkContactTagsRoute } from "./bulk-contact-tags-sync";
-import { registerCpfRoute } from "./cpf-api";
+// CPF agora é consultado diretamente do frontend
 
 // Job tracking system for progress monitoring
 interface JobStatus {
@@ -3207,7 +3207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerBulkContactTagsRoute(app);
 
   // Register CPF API route
-  registerCpfRoute(app);
+  // CPF consultado diretamente no frontend
 
   const httpServer = createServer(app);
 
