@@ -140,14 +140,16 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
         cep: data.cep || prev.cep
       }));
       
-      // Como a API está retornando vazio, informa que preenchimento manual é necessário
-      if (Object.keys(data).length === 0) {
-        toast('CPF validado. Preencha os dados manualmente.', {
+      // Verifica se dados foram retornados
+      const hasData = Object.values(data).some(value => value !== undefined && value !== null && value !== '');
+      
+      if (hasData) {
+        toast.success('Dados do CPF preenchidos automaticamente!');
+      } else {
+        toast('CPF validado. Nenhum dado adicional encontrado.', {
           duration: 3000,
           icon: 'ℹ️'
         });
-      } else {
-        toast.success('Dados do CPF preenchidos automaticamente!');
       }
     } catch (error) {
       console.error('Erro ao consultar CPF:', error);

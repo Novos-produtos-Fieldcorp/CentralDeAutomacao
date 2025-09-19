@@ -23,6 +23,7 @@ import {
 } from "./utils/api-retry";
 import { getBulkMotoristaTags } from "./bulk-tags-api";
 import { registerBulkContactTagsRoute } from "./bulk-contact-tags-sync";
+import { registerCpfRoute } from "./cpf-api";
 
 // Job tracking system for progress monitoring
 interface JobStatus {
@@ -71,12 +72,12 @@ function cleanupOldJobs() {
 setInterval(cleanupOldJobs, 30 * 60 * 1000);
 
 // Initialize Supabase client with bypass RLS for backend operations
-const supabaseBackendUrl =
-  process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabaseBackend.co";
-const supabaseBackendKey =
+const supabaseBackendBackendUrl =
+  process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co";
+const supabaseBackendBackendKey =
   process.env.VITE_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ";
-const supabaseBackendBackend = createClient(supabaseBackendUrl, supabaseBackendKey, {
+const supabaseBackendBackend = createClient(supabaseBackendBackendUrl, supabaseBackendBackendKey, {
   db: { schema: "public" },
   auth: {
     persistSession: false,
@@ -85,7 +86,7 @@ const supabaseBackendBackend = createClient(supabaseBackendUrl, supabaseBackendK
   },
   global: {
     headers: {
-      Authorization: `Bearer ${supabaseBackendKey}`,
+      Authorization: `Bearer ${supabaseBackendBackendKey}`,
     },
   },
 });
@@ -95,7 +96,7 @@ async function getCompanyIdFromAccount(
   accountId: string,
 ): Promise<number | null> {
   try {
-    const { data: companies, error } = await supabaseBackendBackend
+    const { data: companies, error } = await supabaseBackendBackendBackend
       .from("company")
       .select("company_id")
       .eq("id_conta_wiseapp", accountId)
@@ -167,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar dados da empresa para validar accountId
-      const { data: companies, error: companyError } = await supabaseBackend
+      const { data: companies, error: companyError } = await supabaseBackendBackendBackend
         .from("company")
         .select("id_conta_wiseapp")
         .eq("company_id", parseInt(companyId))
@@ -243,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { accountId } = req.params;
       console.log("Fetching company for accountId:", accountId);
 
-      const { data: companies, error } = await supabaseBackendBackend
+      const { data: companies, error } = await supabaseBackendBackendBackend
         .from("company")
         .select("*")
         .eq("id_conta_wiseapp", accountId)
@@ -520,7 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clientes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: clientes, error } = await supabaseBackendBackend
+      const { data: clientes, error } = await supabaseBackendBackendBackend
         .from("cliente")
         .select("*")
         .eq("company_id", companyId);
@@ -540,7 +541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/unidades/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: unidades, error } = await supabaseBackendBackend
+      const { data: unidades, error } = await supabaseBackendBackendBackend
         .from("unidade")
         .select("*")
         .eq("company_id", companyId);
@@ -560,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/operacoes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: operacoes, error } = await supabaseBackendBackend
+      const { data: operacoes, error } = await supabaseBackendBackendBackend
         .from("operacao")
         .select("*")
         .eq("company_id", companyId);
@@ -580,7 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/status-vagas/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: statusVagas, error } = await supabaseBackendBackend
+      const { data: statusVagas, error } = await supabaseBackendBackendBackend
         .from("st_vaga")
         .select("*")
         .eq("company_id", companyId);
@@ -603,7 +604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       
       // Fetch vagas
-      const { data: vagas, error: vagasError } = await supabaseBackendBackend
+      const { data: vagas, error: vagasError } = await supabaseBackendBackendBackend
         .from("vaga")
         .select("*")
         .eq("company_id", companyId)
@@ -620,10 +621,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all related data in parallel
       const [clientesData, unidadesData, operacoesData, statusData] = await Promise.all([
-        supabaseBackend.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
-        supabaseBackend.from("unidade").select("id, unidade").eq("company_id", companyId),
-        supabaseBackend.from("operacao").select("id, operacao").eq("company_id", companyId),
-        supabaseBackend.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
+        supabaseBackendBackendBackend.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
+        supabaseBackendBackendBackend.from("unidade").select("id, unidade").eq("company_id", companyId),
+        supabaseBackendBackendBackend.from("operacao").select("id, operacao").eq("company_id", companyId),
+        supabaseBackendBackendBackend.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
       ]);
 
       // Create lookup maps
@@ -659,7 +660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/vagas/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: vagas, error } = await supabaseBackendBackend
+      const { data: vagas, error } = await supabaseBackendBackendBackend
         .from("vaga")
         .select("*")
         .eq("company_id", companyId);
@@ -681,13 +682,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       
       // Fetch all vagas for the company
-      const { data: vagas, error } = await supabaseBackendBackend
+      const { data: vagas, error } = await supabaseBackendBackendBackend
         .from("vaga")
         .select("*")
         .eq("company_id", companyId);
 
       // Get status information separately
-      const { data: statusData } = await supabaseBackendBackend
+      const { data: statusData } = await supabaseBackendBackendBackend
         .from("st_vaga")
         .select("id, status_vaga")
         .eq("company_id", companyId);
@@ -756,7 +757,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
       }
 
-      const { data: newVaga, error } = await supabaseBackendBackend
+      const { data: newVaga, error } = await supabaseBackendBackendBackend
         .from("vaga")
         .insert({
           nome: vagaData.nome,
@@ -813,7 +814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
       }
 
-      const { data: updatedVaga, error } = await supabaseBackendBackend
+      const { data: updatedVaga, error } = await supabaseBackendBackendBackend
         .from("vaga")
         .update({
           nome: vagaData.nome,
@@ -860,7 +861,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Updating vaga status:", { vagaId, st_vaga_id });
 
-      const { data: updatedVaga, error } = await supabaseBackendBackend
+      const { data: updatedVaga, error } = await supabaseBackendBackendBackend
         .from("vaga")
         .update({ 
           st_vaga_id: Number(st_vaga_id),
@@ -896,7 +897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Deleting vaga:", vagaId);
 
-      const { error } = await supabaseBackendBackend
+      const { error } = await supabaseBackendBackendBackend
         .from("vaga")
         .delete()
         .eq("id", Number(vagaId));
@@ -925,7 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { unidade: unidadeNome, company_id } = req.body;
       
-      const { data: newUnidade, error } = await supabaseBackendBackend
+      const { data: newUnidade, error } = await supabaseBackendBackendBackend
         .from("unidade")
         .insert({
           unidade: unidadeNome,
@@ -950,7 +951,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { operacao: operacaoNome, company_id } = req.body;
       
-      const { data: newOperacao, error } = await supabaseBackendBackend
+      const { data: newOperacao, error } = await supabaseBackendBackendBackend
         .from("operacao")
         .insert({
           operacao: operacaoNome,
@@ -975,7 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { status_vaga, company_id } = req.body;
       
-      const { data: newStatus, error } = await supabaseBackendBackend
+      const { data: newStatus, error } = await supabaseBackendBackendBackend
         .from("st_vaga")
         .insert({
           status_vaga,
@@ -1005,7 +1006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar tags diretamente do Supabase
-      const { data: tags, error } = await supabaseBackendBackend
+      const { data: tags, error } = await supabaseBackendBackendBackend
         .from('tag')
         .select('*')
         .eq('company_id', companyId)
@@ -1198,7 +1199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar diretamente usando Supabase
-      const { data: result, error } = await supabaseBackendBackend
+      const { data: result, error } = await supabaseBackendBackendBackend
         .from('motorista')
         .select('motorista_id, nome, telefone')
         .eq('company_id', companyId)
@@ -1224,7 +1225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`❌ Nenhum motorista encontrado com telefone ${cleanPhone} na empresa ${companyId}`);
         
         // Debug: mostrar alguns motoristas da empresa
-        const { data: allMotoristas } = await supabaseBackendBackend
+        const { data: allMotoristas } = await supabaseBackendBackendBackend
           .from('motorista')
           .select('nome, telefone')
           .eq('company_id', companyId)
@@ -1251,7 +1252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "foto_whatsapp is required" });
       }
 
-      const { data, error } = await supabaseBackendBackend
+      const { data, error } = await supabaseBackendBackendBackend
         .from('motorista')
         .update({ foto_whatsapp })
         .eq('motorista_id', id)
@@ -1277,7 +1278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const companyId = req.headers['company-id'] || '1';
       
       // Buscar dados do motorista
-      const { data: motorista, error: motoristaError } = await supabaseBackendBackend
+      const { data: motorista, error: motoristaError } = await supabaseBackendBackendBackend
         .from('motorista')
         .select('motorista_id, nome, telefone, foto_whatsapp')
         .eq('motorista_id', id)
@@ -1314,7 +1315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Se tem foto e é diferente da atual, atualizar
         if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
-          const { error: updateError } = await supabaseBackendBackend
+          const { error: updateError } = await supabaseBackendBackendBackend
             .from('motorista')
             .update({ foto_whatsapp: contact.thumbnail })
             .eq('motorista_id', id);
@@ -1352,7 +1353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const companyId = req.headers['company-id'] || '1';
       
       // Buscar todos os motoristas ativos com telefone
-      const { data: motoristas, error: motoristasError } = await supabaseBackendBackend
+      const { data: motoristas, error: motoristasError } = await supabaseBackendBackendBackend
         .from('motorista')
         .select('motorista_id, nome, telefone, foto_whatsapp')
         .eq('company_id', companyId)
@@ -1395,7 +1396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Se tem foto e é diferente da atual, atualizar
               if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
-                const { error: updateError } = await supabaseBackendBackend
+                const { error: updateError } = await supabaseBackendBackendBackend
                   .from('motorista')
                   .update({ foto_whatsapp: contact.thumbnail })
                   .eq('motorista_id', motorista.motorista_id);
@@ -2043,7 +2044,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar token WiseApp para esta empresa de forma segura
-      const { data: tokenData, error: tokenError } = await supabaseBackend
+      const { data: tokenData, error: tokenError } = await supabaseBackendBackend
         .from('wiseapp_acesso')
         .select('access_token_wiseapp')
         .eq('company_id', parseInt(companyId))
@@ -2063,7 +2064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar dados do motorista
-      const { data: motorista, error: motoristaError } = await supabaseBackend
+      const { data: motorista, error: motoristaError } = await supabaseBackendBackend
         .from('motorista')
         .select('nome, telefone')
         .eq('motorista_id', parseInt(motoristaId))
@@ -2160,7 +2161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       } else if (operation === 'remove_tag') {
         // Buscar tags do motorista no banco local para determinar quais manter
-        const { data: motoristaTagsData } = await supabaseBackend
+        const { data: motoristaTagsData } = await supabaseBackendBackend
           .from('associacao_tags')
           .select(`
             tag:tag_id (nome)
@@ -2487,7 +2488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 1. Buscar token WiseApp diretamente
 
-      const { data: tokenDataArray, error: tokenError } = await supabaseBackend
+      const { data: tokenDataArray, error: tokenError } = await supabaseBackendBackend
         .from('wiseapp_acesso')
         .select('access_token_wiseapp')
         .eq('company_id', company_id)
@@ -2512,7 +2513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Token WiseApp encontrado, buscando motoristas...');
 
       // 2. Buscar todos os motoristas e agregados ativos
-      const { data: motoristas, error: motoristasError } = await supabaseBackend
+      const { data: motoristas, error: motoristasError } = await supabaseBackendBackend
         .from('motorista')
         .select('*')
         .eq('company_id', company_id)
@@ -2553,7 +2554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const errors: Array<{ motorista_id: number; nome: string; error: string }> = [];
 
       // 3. Buscar tags locais existentes
-      const { data: tagsLocais } = await supabaseBackend
+      const { data: tagsLocais } = await supabaseBackendBackend
         .from('tag')
         .select('*')
         .eq('company_id', company_id);
@@ -2564,7 +2565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // 4. Buscar associações de tags existentes
-      const { data: associacoesExistentes } = await supabaseBackend
+      const { data: associacoesExistentes } = await supabaseBackendBackend
         .from('associacao_tags')
         .select(`
           motorista_id,
@@ -2649,7 +2650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 // Criar tag local se não existir
                 if (!tagLocal) {
-                  const { data: novaTag } = await supabaseBackend
+                  const { data: novaTag } = await supabaseBackendBackend
                     .from('tag')
                     .insert({
                       nome: wiseLabel.title,
@@ -2673,7 +2674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   );
 
                   if (!associacaoExiste) {
-                    await supabaseBackend
+                    await supabaseBackendBackend
                       .from('associacao_tags')
                       .insert({
                         motorista_id: motorista.motorista_id,
@@ -3075,7 +3076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Fetching comments for motorista_id:", motoristaId);
 
-      const { data: comentarios, error } = await supabaseBackend
+      const { data: comentarios, error } = await supabaseBackendBackend
         .from("comentario")
         .select(`
           id,
@@ -3105,7 +3106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         if (userIds.length > 0) {
-          const { data: attendants } = await supabaseBackend
+          const { data: attendants } = await supabaseBackendBackend
             .from("wiseapp_acesso")
             .select("wiseapp_acesso_id, nome")
             .in("wiseapp_acesso_id", userIds);
@@ -3150,7 +3151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         comentario: commentData.comentario.trim()
       });
 
-      const { data: newComment, error } = await supabaseBackend
+      const { data: newComment, error } = await supabaseBackendBackend
         .from("comentario")
         .insert(validatedData)
         .select(`
@@ -3173,7 +3174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let commentWithName = newComment;
       if (newComment.id_atendente) {
-        const { data: attendant } = await supabaseBackend
+        const { data: attendant } = await supabaseBackendBackend
           .from("wiseapp_acesso")
           .select("nome")
           .eq("wiseapp_acesso_id", newComment.id_atendente)
@@ -3204,6 +3205,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register bulk contact tags sync route
   registerBulkContactTagsRoute(app);
+
+  // Register CPF API route
+  registerCpfRoute(app);
 
   const httpServer = createServer(app);
 
