@@ -317,8 +317,8 @@ export const getWiseAppLabels = async (accountId: string, token: string, company
     `${API_BASE_URL}/wiseapp/1/labels`  // Fallback para companyId 1
   ].filter(url => url !== primaryUrl); // Remove duplicatas
   
-  console.log('Sincronizando tags - Account ID:', accountId, 'Token disponível:', !!token);
-  console.log('Fazendo requisição via backend para:', primaryUrl);
+  // Synchronizing tags with WiseApp
+  // Making request via backend
   
   try {
     const data = await robustWiseAppFetch(primaryUrl, {
@@ -327,15 +327,15 @@ export const getWiseAppLabels = async (accountId: string, token: string, company
       cacheTtl: 5 * 60 * 1000, // 5 minutos de cache
       fallbackUrls,
       onRetry: (attempt, error) => {
-        console.log(`[WiseApp Labels] Tentativa ${attempt} falhou para account ${accountId}: ${error.message}`);
+        // WiseApp request retry attempt failed
       },
       onFallback: (url, error) => {
-        console.log(`[WiseApp Labels] Usando URL alternativa ${url} após erro: ${error.message}`);
+        // Using alternative URL for WiseApp request
       }
     }, accountId, token);
 
-    console.log('Response status: 200');
-    console.log('Response data:', data);
+    // Response received successfully
+    // Response data processed
     return data;
   } catch (error) {
     console.error('Erro na requisição via backend (todas as tentativas falharam):', error);

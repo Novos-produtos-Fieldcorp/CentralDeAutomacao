@@ -1171,7 +1171,7 @@ const Dashboard: React.FC = () => {
         ];
       }
 
-      console.log("Final vehicle type data:", vehicleTypeData);
+      // Vehicle type data processing completed
 
       // Process real comprovantes data by month
       const comprovantesData = comprovantesResult.data || [];

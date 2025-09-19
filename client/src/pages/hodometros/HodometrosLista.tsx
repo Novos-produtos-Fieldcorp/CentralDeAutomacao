@@ -85,12 +85,7 @@ const HodometrosLista = () => {
         return;
       }
 
-      // Log query parameters for debugging
-      console.log('Fetching hodometro data with params:', {
-        companyId,
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate
-      });
+      // Fetching hodometro data for the specified period
 
       // Get all readings in the period
       const { data, error } = await supabase.from('hodometro')
@@ -125,8 +120,7 @@ const HodometrosLista = () => {
         .lte('data', dateRange.endDate)
         .order('data', { ascending: false }); // Order by date descending for newest first
 
-      // Log raw response for debugging
-      console.log('Supabase response:', { data: data?.length || 0, error });
+      // Processing Supabase response
       
       if (error) {
         console.error('Supabase query error details:', error);
@@ -134,13 +128,13 @@ const HodometrosLista = () => {
       }
 
       if (!data || data.length === 0) {
-        console.log('No data returned from Supabase query');
+        // No data returned from query
         setVehicleData([]);
         setLoading(false);
         return;
       }
 
-      console.log('First 5 records from response:', data.slice(0, 5));
+      // Processing response data
 
       // Process data to get mileage by vehicle and date
       const vehicleMap = new Map<number, {
@@ -154,7 +148,7 @@ const HodometrosLista = () => {
         readings: HodometroReading[];
       }>();
 
-      console.log('Processing hodometro records...');
+      // Processing hodometro records
       
       // First, create a unique set of vehicle IDs to avoid duplicates
       const uniqueVehicleIds = new Set<number>();
@@ -165,7 +159,7 @@ const HodometrosLista = () => {
         }
       });
       
-      console.log(`Found ${uniqueVehicleIds.size} unique vehicles`);
+      // Processing unique vehicles from dataset
       
       // Create a map to store daily vehicle readings
       const dailyVehicleReadingsMap = new Map<string, {
@@ -330,10 +324,7 @@ const HodometrosLista = () => {
         vehicleMap.set(vehicleId, vehicleData);
       }
 
-      console.log('Vehicle map after processing:', {
-        vehicleCount: vehicleMap.size,
-        vehicleIds: Array.from(vehicleMap.keys())
-      });
+      // Vehicle data processing completed
 
       // Convert to array and sort by total km (descending)
       const vehiclesArray: VehicleData[] = Array.from(vehicleMap.entries()).map(([veiculo_id, data]) => {
@@ -368,17 +359,7 @@ const HodometrosLista = () => {
         };
       }).sort((a, b) => b.totalKm - a.totalKm);
 
-      console.log('Final processed vehicle data:', {
-        count: vehiclesArray.length,
-        totalKm: vehiclesArray.reduce((sum, vehicle) => sum + vehicle.totalKm, 0),
-        firstVehicle: vehiclesArray.length > 0 ? {
-          placa: vehiclesArray[0].placa,
-          totalKm: vehiclesArray[0].totalKm,
-          daysWithReadings: vehiclesArray[0].daysWithReadings,
-          motoristasCount: vehiclesArray[0].motoristas.length,
-          readingsCount: vehiclesArray[0].readings.length
-        } : null
-      });
+      // Final vehicle data array prepared for display
 
       setVehicleData(vehiclesArray);
     } catch (error) {

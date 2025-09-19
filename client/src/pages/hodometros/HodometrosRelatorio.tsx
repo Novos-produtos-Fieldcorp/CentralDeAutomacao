@@ -80,12 +80,7 @@ const HodometrosRelatorio = () => {
         return;
       }
 
-      // Log query parameters for debugging
-      console.log('Fetching hodometro data with params:', {
-        companyId,
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate
-      });
+      // Fetching hodometro data for the specified period
 
       // Get all readings in the period
       const { data, error } = await supabase.from('hodometro')
@@ -131,7 +126,7 @@ const HodometrosRelatorio = () => {
       }
 
       if (!data || data.length === 0) {
-        console.log('No data returned from Supabase query');
+        // No data returned from query
         setReadings([]);
         setLoading(false);
         return;

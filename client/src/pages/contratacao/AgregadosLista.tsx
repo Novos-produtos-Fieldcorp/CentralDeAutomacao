@@ -311,7 +311,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const chunkSize = 50; // Limite seguro para evitar URLs muito longas com associacao_tags
       const associations = [];
       
-      console.log(`Buscando tags para ${motoristaIds.length} motoristas em chunks de ${chunkSize}`);
+      // Fetching tags for motoristas in chunks
       
       for (let i = 0; i < motoristaIds.length; i += chunkSize) {
         const chunk = motoristaIds.slice(i, i + chunkSize);
@@ -334,7 +334,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             .in('motorista_id', chunk);
           
           if (chunkError) {
-            console.warn(`Erro ao buscar chunk ${i}-${i + chunkSize}:`, chunkError);
+            // Error fetching chunk, continuing with next
             continue; // Continue com próximo chunk
           }
           
@@ -342,7 +342,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             associations.push(...chunkAssociations);
           }
         } catch (chunkError) {
-          console.warn(`Erro no chunk ${i}-${i + chunkSize}:`, chunkError);
+          // Error in chunk processing
         }
       }
       
@@ -434,7 +434,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       } catch (error: any) {
         // Ignorar erros RLS (406/PGRST301) - continuar com a operação
         if (error?.code === 'PGRST301' || error?.status === 406) {
-          console.log('RLS error ignored, continuing with tag association');
+          // RLS error ignored, continuing with tag association
         } else {
           console.warn('Error checking existing association (non-critical):', error);
         }
@@ -518,7 +518,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (error && error.code !== 'PGRST301') {
         throw error;
       } else if (error) {
-        console.log('RLS error ignored during tag removal');
+        // RLS error ignored during tag removal
       }
 
       // Atualizar estado local
@@ -1129,8 +1129,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         if (error) throw error;
 
         // Log para debug dos valores de funcao
-        console.log('Valores de funcao encontrados:', Array.from(new Set(data?.map(item => item.funcao))));
-        console.log('Dados completos:', data);
+        // Processing function values from data
+        // Data processing completed
 
         // Extract unique cities from contratados - only include non-null/undefined city names
         const uniqueCities = new Set<string>();
@@ -1234,7 +1234,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       try {
         // Usar companyId do hook useCompanyData
         if (!companyId) {
-          console.log('Company ID não encontrado - não é possível filtrar tipos de veículos');
+          // Company ID not found - cannot filter vehicle types
           return;
         }
 
@@ -1249,8 +1249,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           return;
         }
 
-        console.log(`Dados brutos da tabela veiculo para empresa ${companyId} (primeiros 5):`, data?.slice(0, 5));
-        console.log(`Total de registros encontrados:`, data?.length);
+        // Processing vehicle data for company
+        // Vehicle records retrieved
 
         // Lista canônica de tipos válidos - apenas categorias gerais de veículos
         const VALID_VEHICLE_TYPES = [
@@ -1312,8 +1312,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         const tipologiasFiltradas = Array.from(uniqueVehicleTypes).sort();
         setTiposVeiculo(tipologiasFiltradas);
         
-        console.log(`Tipos de veículos finais para empresa ${companyId}:`, tipologiasFiltradas);
-        console.log(`Total rejeitados: ${debugInfo.rejeitados.length}`);
+        // Vehicle types processing completed for company
+        // Debug info: rejected types processed
         
       } catch (error) {
         console.error('Erro ao buscar tipos de veículos:', error);

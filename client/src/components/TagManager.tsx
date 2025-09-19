@@ -41,7 +41,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       if (!accountId || !wiseAppToken) {
         throw new Error('AccountId ou token não disponível');
       }
-      console.log('Buscando tags do WiseApp para account:', accountId);
+      // Fetching WiseApp tags for account
       return getWiseAppLabels(accountId, wiseAppToken);
     },
     enabled: false, // Não carregar automaticamente
@@ -77,11 +77,11 @@ export function TagManager({ companyId }: TagManagerProps) {
       toast.loading('Buscando marcadores do WiseApp...', { id: syncToast });
 
       // Buscar tags do WiseApp usando função robusta
-      console.log('Sincronizando tags - Account ID:', accountId, 'Token disponível:', !!wiseAppToken);
+      // Synchronizing tags with WiseApp
       const wiseAppLabelsResponse = await getWiseAppLabels(accountId || '', wiseAppToken || '', companyId);
       const wiseAppTagsData = wiseAppLabelsResponse.payload || wiseAppLabelsResponse || [];
-      console.log('Tags encontradas:', wiseAppTagsData);
-      console.log('WiseApp labels found:', wiseAppTagsData);
+      // Tags found from WiseApp
+      // WiseApp labels retrieved
 
       if (!wiseAppTagsData || wiseAppTagsData.length === 0) {
         toast('Nenhum marcador encontrado no WiseApp.', {
@@ -96,7 +96,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       toast.loading(`Processando ${wiseAppTagsData.length} marcadores...`, { id: syncToast });
 
       // Salvar tags no Supabase
-      console.log('Salvando tags no Supabase para company_id:', companyId);
+      // Saving tags to Supabase
 
       // Primeiro, buscar tags existentes para evitar duplicatas
       const { data: existingTags, error: fetchError } = await supabase
@@ -122,7 +122,7 @@ export function TagManager({ companyId }: TagManagerProps) {
           updated_at: new Date().toISOString()
         }));
 
-      console.log('Tags para inserir:', tagsToInsert);
+      // Processing tags for insertion
 
       if (tagsToInsert.length > 0) {
         // Atualizar progresso
@@ -138,7 +138,7 @@ export function TagManager({ companyId }: TagManagerProps) {
           throw insertError;
         }
 
-        console.log('Tags inseridas com sucesso:', insertedTags);
+        // Tags inserted successfully
         toast.success(`✅ ${tagsToInsert.length} marcadores sincronizados e salvos no banco de dados!`, {
           id: syncToast,
           duration: 5000
@@ -186,7 +186,7 @@ export function TagManager({ companyId }: TagManagerProps) {
       });
 
       // Still show local tags even if WiseApp fails
-      console.log('Sistema continuará funcionando apenas com tags locais');
+      // System will continue with local tags only
       
       // Mostrar informação adicional se há tags locais disponíveis
       if (tags.length > 0) {

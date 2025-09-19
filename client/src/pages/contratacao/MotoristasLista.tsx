@@ -209,7 +209,7 @@ const MotoristasLista = () => {
 
       if (!existingTag) {
         // Tag não encontrada
-        console.log('📋 Tags disponíveis:', labels.map((l: any) => l.name));
+        // Available tags processed
         return;
       }
 
@@ -242,20 +242,20 @@ const MotoristasLista = () => {
       }
 
       const contactData = await searchContactResponse.json();
-      console.log('Dados do contato retornados:', contactData);
+      // Contact data retrieved
 
       const contactId = contactData.payload?.[0]?.id || contactData[0]?.id;
 
       if (!contactId) {
         // Contato não encontrado
-        console.log('Estrutura dos dados de contato:', contactData);
+        // Contact data structure processed
         return;
       }
 
-      console.log(`Contato encontrado - ID: ${contactId}`);
+      // Contact found with ID
 
       // 4. Aplicar a tag existente ao contato específico
-      console.log(`Aplicando tag ${existingTag.id} ao contato ${contactId}...`);
+      // Applying tag to contact
       const applyTagResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/contacts/${contactId}/labels`, {
         method: 'POST',
         headers: {
@@ -269,7 +269,7 @@ const MotoristasLista = () => {
         })
       });
 
-      console.log(`Status da aplicação da tag: ${applyTagResponse.status}`);
+      // Tag application completed
 
       if (applyTagResponse.ok) {
         // Tag aplicada com sucesso
@@ -319,7 +319,7 @@ const MotoristasLista = () => {
           });
 
           if (deleteResponse.ok) {
-            console.log('Tag removida do WiseApp com sucesso');
+            // Tag removed from WiseApp successfully
           } else {
             console.warn(`Erro ao remover tag do WiseApp: ${deleteResponse.status}`);
           }

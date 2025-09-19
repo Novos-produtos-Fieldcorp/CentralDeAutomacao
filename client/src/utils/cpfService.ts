@@ -17,7 +17,7 @@ export const consultarCpfApi = async (cpf: string): Promise<CpfData> => {
     throw new Error('CPF deve conter exatamente 11 dígitos');
   }
 
-  console.log('Consultando CPF via rota direta:', cpf);
+  // Consulting CPF via direct route
   
   try {
     const response = await fetch(`https://api.gw.cellereit.com.br/bg-check/cpf-completo?cpf=${cpf}`, {
@@ -52,7 +52,7 @@ export const consultarCpfApi = async (cpf: string): Promise<CpfData> => {
       complemento: pessoa.Enderecos?.[0]?.Complemento || ''
     };
 
-    console.log('✅ CPF consultado com sucesso via rota direta');
+    // CPF consulted successfully via direct route
     return result;
 
   } catch (error) {
