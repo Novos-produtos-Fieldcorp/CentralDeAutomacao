@@ -1087,54 +1087,55 @@ const Dashboard: React.FC = () => {
 
       // Process real veiculos data with proper type classification
       const veiculos = veiculosResult.data || [];
-      console.log("Veiculos raw data:", veiculos.length, "veículos", veiculos);
+      console.log("Veiculos raw data:", veiculos.length, "veículos");
+
+      // Lista canônica de tipos válidos - apenas categorias gerais de veículos
+      const VALID_VEHICLE_TYPES = [
+        'FIORINO', 'VAN', 'CAMINHÃO', 'CAMINHÃO 3/4', 'HR', 'CAVALO', 'PASSEIO', 
+        'FURGÃO', 'OUTROS', 'DUCATO', 'DOBLO', 'H100', 'BESTA', 'BOXER',
+        'CAMINHONETE', 'CARRETA', 'MOTO', 'VUC', 'AUTOMOVEL', 'UTILITARIO',
+        'KOMBI', 'TRATOR', 'PICKUP'
+      ];
+      
+      // Função para normalizar tipo de veículo
+      const normalizeVehicleType = (type: string): string | null => {
+        if (!type || typeof type !== 'string') return null;
+        
+        // Normalizar removendo acentos e convertendo para maiúsculo
+        let normalized = type.trim().toUpperCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, ''); // Remove acentos
+        
+        // Mapear algumas variações comuns
+        const typeMapping: Record<string, string> = {
+          'CAMINHAO': 'CAMINHÃO',
+          'CAMINHAO 3/4': 'CAMINHÃO 3/4',
+          'FURGAO': 'FURGÃO',
+          'MOTOCICLETA': 'MOTO',
+          'MOTORCYCLE': 'MOTO',
+          'TRACTOR': 'TRATOR',
+          'AUTOMOVEL': 'AUTOMOVEL',
+          'UTILITARIO': 'UTILITARIO'
+        };
+        
+        const mappedType = typeMapping[normalized] || normalized;
+        
+        return VALID_VEHICLE_TYPES.includes(mappedType) ? mappedType : null;
+      };
 
       const vehicleTypes: { [key: string]: number } = {};
       veiculos.forEach((v: any) => {
-        // Enhanced vehicle classification logic
-        let tipo = "Veículo";
-
-        // First try tipo field
-        if (v.tipo && v.tipo.trim()) {
-          tipo = v.tipo.trim();
+        // Primeiro tentar normalizar o campo tipo
+        let tipo = normalizeVehicleType(v.tipo);
+        
+        // Se não conseguiu tipo válido, tentar tipologia  
+        if (!tipo && v.tipologia) {
+          tipo = normalizeVehicleType(v.tipologia);
         }
-        // Then try marca_veiculo field
-        else if (v.marca_veiculo && v.marca_veiculo.trim()) {
-          const marca = v.marca_veiculo.toLowerCase();
-          if (
-            marca.includes("caminhão") ||
-            marca.includes("caminhao") ||
-            marca.includes("truck")
-          ) {
-            tipo = "Caminhão";
-          } else if (
-            marca.includes("van") ||
-            marca.includes("furgão") ||
-            marca.includes("furgao")
-          ) {
-            tipo = "Van";
-          } else if (
-            marca.includes("carro") ||
-            marca.includes("sedan") ||
-            marca.includes("hatch")
-          ) {
-            tipo = "Carro";
-          } else if (marca.includes("moto")) {
-            tipo = "Moto";
-          } else {
-            tipo = "Veículo";
-          }
-        }
-        // Try modelo_veiculo field as fallback
-        else if (v.modelo_veiculo && v.modelo_veiculo.trim()) {
-          const modelo = v.modelo_veiculo.toLowerCase();
-          if (modelo.includes("caminhão") || modelo.includes("truck")) {
-            tipo = "Caminhão";
-          } else if (modelo.includes("van") || modelo.includes("furgão")) {
-            tipo = "Van";
-          } else {
-            tipo = "Veículo";
-          }
+        
+        // Se ainda não conseguiu, usar categoria padrão
+        if (!tipo) {
+          tipo = "OUTROS";
         }
 
         vehicleTypes[tipo] = (vehicleTypes[tipo] || 0) + 1;

@@ -87,20 +87,50 @@ export interface ViewContratado {
 }
 
 const checkVehicleTypeMatch = (motorista: ViewContratado, filters: string[]): boolean => {
-  // Check direct properties first (tipologia and tipo)
+  // Função auxiliar de normalização (igual à usada no filtro)
+  const normalizeType = (type: string): string | null => {
+    if (!type || typeof type !== 'string') return null;
+    
+    let normalized = type.trim().toUpperCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    
+    const typeMapping: Record<string, string> = {
+      'CAMINHAO': 'CAMINHÃO',
+      'CAMINHAO 3/4': 'CAMINHÃO 3/4',
+      'FURGAO': 'FURGÃO',
+      'MOTOCICLETA': 'MOTO',
+      'MOTORCYCLE': 'MOTO',
+      'TRACTOR': 'TRATOR',
+      'AUTOMOVEL': 'AUTOMOVEL',
+      'UTILITARIO': 'UTILITARIO'
+    };
+    
+    return typeMapping[normalized] || normalized;
+  };
+
+  // Check direct properties first (tipologia and tipo) - usando normalização
+  const normalizedMotorTipologia = normalizeType(motorista.tipologia);
+  const normalizedMotorTipo = normalizeType(motorista.tipo);
+  
   if (
-    (motorista.tipologia && filters.includes(motorista.tipologia)) ||
-    (motorista.tipo && filters.includes(motorista.tipo))
+    (normalizedMotorTipologia && filters.includes(normalizedMotorTipologia)) ||
+    (normalizedMotorTipo && filters.includes(normalizedMotorTipo))
   ) {
     return true;
   }
   
-  // Check veiculo array if it exists (tipologia and tipo fields)
+  // Check veiculo array if it exists (tipologia and tipo fields) - usando normalização
   if (motorista.veiculo && motorista.veiculo.length > 0) {
-    return motorista.veiculo.some((veiculo: { tipologia?: string; tipo?: string }) => 
-      (veiculo.tipologia && filters.includes(veiculo.tipologia)) ||
-      (veiculo.tipo && filters.includes(veiculo.tipo))
-    );
+    return motorista.veiculo.some((veiculo: { tipologia?: string; tipo?: string }) => {
+      const normalizedVeiculoTipologia = normalizeType(veiculo.tipologia);
+      const normalizedVeiculoTipo = normalizeType(veiculo.tipo);
+      
+      return (
+        (normalizedVeiculoTipologia && filters.includes(normalizedVeiculoTipologia)) ||
+        (normalizedVeiculoTipo && filters.includes(normalizedVeiculoTipo))
+      );
+    });
   }
 
   return false;
@@ -1216,12 +1246,35 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         console.log(`Dados brutos da tabela veiculo para empresa ${companyId} (primeiros 5):`, data?.slice(0, 5));
         console.log(`Total de registros encontrados:`, data?.length);
 
-        // Lista de tipos válidos - apenas categorias gerais de veículos
-        const tiposValidos = [
+        // Lista canônica de tipos válidos - apenas categorias gerais de veículos
+        const VALID_VEHICLE_TYPES = [
           'FIORINO', 'VAN', 'CAMINHÃO', 'CAMINHÃO 3/4', 'HR', 'CAVALO', 'PASSEIO', 
           'FURGÃO', 'OUTROS', 'DUCATO', 'DOBLO', 'H100', 'BESTA', 'BOXER',
-          'CAMINHONETE', 'CARRETA', 'MOTO', 'VUC', 'AUTOMOVEL', 'UTILITARIO'
+          'CAMINHONETE', 'CARRETA', 'MOTO', 'VUC', 'AUTOMOVEL', 'UTILITARIO',
+          'KOMBI', 'TRACTOR', 'PICKUP', 'MOTORCYCLE'
         ];
+        
+        // Função para normalizar tipo de veículo
+        const normalizeVehicleType = (type: string): string | null => {
+          if (!type || typeof type !== 'string') return null;
+          
+          const normalized = type.trim().toUpperCase();
+          
+          // Mapear algumas variações comuns
+          const typeMapping: Record<string, string> = {
+            'CAMINHAO': 'CAMINHÃO',
+            'FURGAO': 'FURGÃO',
+            'MOTOCICLETA': 'MOTO',
+            'MOTORCYCLE': 'MOTO',
+            'TRACTOR': 'TRATOR',
+            'AUTOMÓVEL': 'AUTOMOVEL',
+            'UTILITÁRIO': 'UTILITARIO'
+          };
+          
+          const mappedType = typeMapping[normalized] || normalized;
+          
+          return VALID_VEHICLE_TYPES.includes(mappedType) ? mappedType : null;
+        };
 
         const uniqueVehicleTypes = new Set<string>();
         const debugInfo = { 
@@ -1232,36 +1285,29 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         
         data?.forEach(veiculo => {
           // Processar campo tipo
-          if (veiculo.tipo && typeof veiculo.tipo === 'string') {
-            const tipoLimpo = veiculo.tipo.trim().toUpperCase();
-            if (tipoLimpo !== '' && tiposValidos.includes(tipoLimpo)) {
-              uniqueVehicleTypes.add(tipoLimpo);
-              debugInfo.tipo.push(tipoLimpo);
-            } else if (tipoLimpo !== '') {
-              debugInfo.rejeitados.push(`tipo: ${tipoLimpo}`);
-            }
+          const normalizedTipo = normalizeVehicleType(veiculo.tipo);
+          if (normalizedTipo) {
+            uniqueVehicleTypes.add(normalizedTipo);
+            debugInfo.tipo.push(normalizedTipo);
+          } else if (veiculo.tipo) {
+            debugInfo.rejeitados.push(`tipo: ${veiculo.tipo}`);
           }
           
           // Processar campo tipologia
-          if (veiculo.tipologia && typeof veiculo.tipologia === 'string') {
-            const tipologiaLimpa = veiculo.tipologia.trim().toUpperCase();
-            if (tipologiaLimpa !== '' && tiposValidos.includes(tipologiaLimpa)) {
-              uniqueVehicleTypes.add(tipologiaLimpa);
-              debugInfo.tipologia.push(tipologiaLimpa);
-            } else if (tipologiaLimpa !== '') {
-              debugInfo.rejeitados.push(`tipologia: ${tipologiaLimpa}`);
-            }
+          const normalizedTipologia = normalizeVehicleType(veiculo.tipologia);
+          if (normalizedTipologia) {
+            uniqueVehicleTypes.add(normalizedTipologia);
+            debugInfo.tipologia.push(normalizedTipologia);
+          } else if (veiculo.tipologia) {
+            debugInfo.rejeitados.push(`tipologia: ${veiculo.tipologia}`);
           }
         });
-
-        console.log(`Debug - tipos válidos encontrados:`, debugInfo.tipo);
-        console.log(`Debug - tipologias válidas encontradas:`, debugInfo.tipologia);
-        console.log(`Debug - tipos rejeitados (primeiros 10):`, debugInfo.rejeitados.slice(0, 10));
 
         const tipologiasFiltradas = Array.from(uniqueVehicleTypes).sort();
         setTiposVeiculo(tipologiasFiltradas);
         
         console.log(`Tipos de veículos finais para empresa ${companyId}:`, tipologiasFiltradas);
+        console.log(`Total rejeitados: ${debugInfo.rejeitados.length}`);
         
       } catch (error) {
         console.error('Erro ao buscar tipos de veículos:', error);
